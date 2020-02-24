@@ -1,9 +1,16 @@
-import sys, itertools, unittest
-from test import support
-from io import StringIO
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import ast
+import sys
 import types
+import unittest
+import itertools
+
+from io import StringIO
+
+from iptest import is_cli, run_test
 
 def to_tuple(t):
     if t is None or isinstance(t, (str, int, complex)):
@@ -18,7 +25,6 @@ def to_tuple(t):
     for f in t._fields:
         result.append(to_tuple(getattr(t, f)))
     return tuple(result)
-
 
 # These tests are compiled through "exec"
 # There should be at least one test per statement
@@ -38,8 +44,6 @@ exec_tests = [
     "v = 1",
     # AugAssign
     "v += 1",
-    # Print
-    "print >>f, 1, ",
     # For
     "for v in v:pass",
     # While
@@ -49,7 +53,7 @@ exec_tests = [
     # If elif else
     "if v:pass\nelif u:pass\nelse: pass",
     # Raise
-    "raise Exception, 'string'",
+    "raise Exception('string')",
     # TryExcept
     "try:\n  pass\nexcept Exception:\n  pass",
     # TryFinally
@@ -60,8 +64,6 @@ exec_tests = [
     "import sys",
     # ImportFrom
     "from sys import v",
-    # Exec
-    "exec 'v'",
     # Global
     "global v",
     # Expr
@@ -121,10 +123,8 @@ eval_tests = [
   "1 < 2 < 3",
   # Call
   "f(1,2,c=3,*d,**e)",
-  # Repr
-  "`v`",
   # Num
-  "10L",
+  "10",
   # Str
   "'string'",
   # Attribute
@@ -185,7 +185,7 @@ class AST_Tests(unittest.TestCase):
         p = ast.parse("not True", mode="eval")
         c = compile(p,"<unknown>", mode="eval" )
         self.assertEqual( eval(c), False)
-        
+
     def test_compile_from_ast_004(self):
         p = ast.parse("2+2", mode="eval")
         c = compile(p,"<unknown>", mode="eval")
@@ -268,20 +268,19 @@ class AST_Tests(unittest.TestCase):
         c = compile(p,"<unknown>", mode="eval")
         self.assertEqual( eval(c), [0,1] )
 
-
     def test_compile_from_ast_020(self):
         # list comprehension
         p = ast.parse("[(x, y, z) for x in [1,2,3] if x!=2 for y in [3,1,4] for z in [7,8,9] if x != y]", mode="eval")
         c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), [(1, 3, 7), (1, 3, 8), (1, 3, 9), (1, 4, 7), 
-                                    (1, 4, 8), (1, 4, 9), (3, 1, 7), (3, 1, 8), 
+        self.assertEqual( eval(c), [(1, 3, 7), (1, 3, 8), (1, 3, 9), (1, 4, 7),
+                                    (1, 4, 8), (1, 4, 9), (3, 1, 7), (3, 1, 8),
                                     (3, 1, 9), (3, 4, 7), (3, 4, 8), (3, 4, 9)] )
 
     def test_compile_from_ast_021(self):
         p = ast.parse("2>1", mode="eval") # Compare
         c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), True )  
-        
+        self.assertEqual( eval(c), True )
+
     def test_compile_from_ast_022(self):
         p = ast.parse("2>1<3==3", mode="eval")  # All comparisons evaluate to True
         c = compile(p,"<unknown>", mode="eval")
@@ -343,11 +342,6 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( next(g), 3 )
         self.assertRaises( StopIteration, g.__next__ )
 
-    def test_compile_from_ast_030(self):
-        p = ast.parse("`101`", mode="eval") # repr
-        c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), '101' )
-
     def test_compile_from_ast_031(self):
         p = ast.parse("range(13)[10]", mode="eval") # index
         c = compile(p,"<unknown>", mode="eval")
@@ -356,17 +350,17 @@ class AST_Tests(unittest.TestCase):
     def test_compile_from_ast_032(self):
         p = ast.parse("range(42)[1:5]", mode="eval") # slice
         c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), list(range(1,5)))
+        self.assertEqual( eval(c), range(1, 5))
 
     def test_compile_from_ast_033(self):
         p = ast.parse("range(42)[1:5:2]", mode="eval") # extended? slice
         c = compile(p,"<unknown>", mode="eval")
-        self.assertEqual( eval(c), [1,3])
+        self.assertEqual( eval(c), range(1, 5, 2))
 
     def test_compile_from_ast_034(self):
         # plain generator
         page = [ "line1 aaaaa bbb cccccc ddddddddd", "line2 xxxxxxxx yyyyyyy zzzzzz", "line3 ssssss ttttttttttt uuuu" ]
-        p = ast.parse("(word  for line in page  for word in line.split())", mode="eval") 
+        p = ast.parse("(word  for line in page  for word in line.split())", mode="eval")
         c = compile(p,"<unknown>", mode="eval")
         g = eval(c)
         self.assertEqual( next(g), 'line1' )
@@ -383,7 +377,6 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual( next(g), 'ttttttttttt' )
         self.assertEqual( next(g), 'uuuu' )
         self.assertRaises( StopIteration, g.__next__ )
-
 
     def test_compile_from_ast_035(self):
         # generator with multiple ifs
@@ -407,7 +400,7 @@ class AST_Tests(unittest.TestCase):
 
     def test_compile_from_ast_036(self):
         # the results comply 1:1 with cpython 2.7.3 on Linux
-        p = ast.parse("((yield i) for i in range(3))", mode="eval") # yield inside generator 
+        p = ast.parse("((yield i) for i in range(3))", mode="eval") # yield inside generator
         c = compile(p,"<unknown>", mode="eval")
         g = eval(c)
         self.assertEqual(next(g),0)
@@ -430,38 +423,38 @@ class AST_Tests(unittest.TestCase):
         self.assertEqual(next(g),1)
         self.assertRaises(StopIteration, g.__next__ )
 
-
     def test_compile_from_ast_100(self):
-        p = ast.parse("pass", mode="exec") 
+        p = ast.parse("pass", mode="exec")
         c = compile(p,"<unknown>", mode="exec")
         self.assertEqual( eval(c), None)
 
     def test_compile_from_ast_101(self):
         cap = StringIO()
-        p = ast.parse("print >> cap, 1, 2,", mode="exec")  # print
+        p = ast.parse("print(1, 2, end='', file=cap)", mode="exec")  # print
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual( cap.getvalue(), "1 2")
-    
+
     def test_compile_from_ast_102(self):
-        p = ast.parse("a=b=42", mode="exec") # assignment 
+        p = ast.parse("a=b=42", mode="exec") # assignment
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(a, 42) 
-        self.assertEqual(b, 42) 
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'a': 42, 'b': 42})
 
     def test_compile_from_ast_103(self):
-        p = ast.parse("a,b=13,42", mode="exec") # assignment 
+        p = ast.parse("a,b=13,42", mode="exec") # assignment
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(a, 13) 
-        self.assertEqual(b, 42) 
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'a': 13, 'b': 42})
 
     def test_compile_from_ast_104(self):
-        p = ast.parse("a=42\na+=1", mode="exec") # assignment 
+        p = ast.parse("a=42\na+=1", mode="exec") # assignment
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(a, 43) 
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'a': 43})
 
     def test_compile_from_ast_105(self):
         p = ast.parse("assert True", mode="exec") # assert no exception
@@ -477,7 +470,7 @@ class AST_Tests(unittest.TestCase):
         self.assertTrue(raised)
 
     def test_compile_from_ast_106(self):
-        p = ast.parse("a=1\ndel a\nprint a", mode="exec") # delete statement
+        p = ast.parse("a=1\ndel a\nprint(a)", mode="exec") # delete statement
         c = compile(p,"<unknown>", mode="exec")
         raised=False
         try:
@@ -487,21 +480,23 @@ class AST_Tests(unittest.TestCase):
         self.assertTrue(raised)
 
     def test_compile_from_ast_107(self):
-        p = ast.parse("def f(): return\nf()", mode="exec") # return statement 
+        p = ast.parse("def f(): return\nf()", mode="exec") # return statement
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
 
     def test_compile_from_ast_108(self):
         cap = StringIO()
-        p = ast.parse("def f(): return 42\nprint >> cap, f(),", mode="exec") # return statement 
+        p = ast.parse("def f(): return 42\nprint(f(), end='', file=cap)", mode="exec") # return statement
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(),'42')
 
     def test_compile_from_ast_109(self):
-        p = ast.parse("def f(): yield 42", mode="exec") # yield statement 
+        p = ast.parse("def f(): yield 42", mode="exec") # yield statement
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
+        res = {}
+        exec(c, res)
+        f = res["f"]
         g = f()
         self.assertEqual(next(g),42)
         self.assertRaises(StopIteration, g.__next__ )
@@ -514,20 +509,22 @@ class AST_Tests(unittest.TestCase):
             exec(c)
         except Exception as e:
             raised=True
-            self.assertEqual(e.message,'expected')
-        self.assertTrue(raised)    
+            self.assertEqual(e.args[0],'expected')
+        self.assertTrue(raised)
 
     def test_compile_from_ast_111(self):
         p = ast.parse("n=0\nwhile n==0:\n n=1\n break\n n=2", mode="exec") # break
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(n,1) 
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'n': 1})
 
     def test_compile_from_ast_112(self):
         p = ast.parse("n=0\nwhile n==0:\n n=1\n continue\n raise Exception()", mode="exec") # continue
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(n,1)
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'n': 1})
 
     # TODO: test relative imports
     # TODO: test imports with subpackages structure
@@ -535,7 +532,7 @@ class AST_Tests(unittest.TestCase):
     def test_compile_from_ast_113(self):
         p = ast.parse("import dummy_module", mode="exec") # import
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
+        exec(c, globals())
         from sys import modules
         self.assertNotEqual(modules.get('dummy_module'),None)
         self.assertEqual(modules.get('dummy_module'),dummy_module)
@@ -543,7 +540,7 @@ class AST_Tests(unittest.TestCase):
     def test_compile_from_ast_114(self):
         p = ast.parse("import dummy_module as baz", mode="exec") # import as
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
+        exec(c, globals())
         from sys import modules
         self.assertNotEqual(modules.get('dummy_module'),None)
         self.assertEqual(modules.get('dummy_module'),baz)
@@ -551,12 +548,11 @@ class AST_Tests(unittest.TestCase):
     def test_compile_from_ast_115(self):
         p = ast.parse("from dummy_module import *", mode="exec") # from import *
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
+        res = {}
+        exec(c, globals(), res)
         from sys import modules
         self.assertNotEqual(modules.get('dummy_module'),None)
-        self.assertEqual(foo,1)
-        self.assertEqual(bar,2)
-        self.assertEqual(foobar,3)
+        self.assertEqual(res, {'foo':1, 'bar': 2, 'foobar': 3})
 
     def test_compile_from_ast_116(self):
         p = ast.parse("def f():\n global i\n i+=41\nf()", mode="exec") # global
@@ -567,7 +563,7 @@ class AST_Tests(unittest.TestCase):
 
     def test_compile_from_ast_117(self):
         cap = StringIO()
-        p = ast.parse("exec 'print >> cap, 42,'", mode="exec") # exec
+        p = ast.parse("exec('print(42, end=\\'\\', file=cap)')", mode="exec") # exec
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), '42')
@@ -576,103 +572,105 @@ class AST_Tests(unittest.TestCase):
         p = ast.parse("if a:\n x=1\nelif b:\n x=2\nelse:\n x=3", mode="exec") # if elif else
         c = compile(p,"<unknown>", mode="exec")
 
-        a = True
-        exec(c)
-        self.assertEqual(x,1)
+        res = {'a': True}
+        exec(c, res)
+        self.assertEqual(res['x'], 1)
 
-        a = False
-        b = True
-        exec(c)
-        self.assertEqual(x,2)
+        res = {'a': False, 'b': True}
+        exec(c, res)
+        self.assertEqual(res['x'], 2)
 
-        a = False
-        b = False
-        exec(c)
-        self.assertEqual(x,3)
+        res = {'a': False, 'b': False}
+        exec(c, res)
+        self.assertEqual(res['x'], 3)
 
     def test_compile_from_ast_119(self):
         p = ast.parse("a=1; b=2", mode="exec") # statement list?
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(a,1)
-        self.assertEqual(b,2)
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'a': 1, 'b': 2})
 
     def test_compile_from_ast_120(self):
         p = ast.parse("n=1\nwhile n==0:\n n=13\nelse: n=42", mode="exec") # while with else
         c = compile(p,"<unknown>", mode="exec")
-        exec(c)
-        self.assertEqual(n,42) 
-             
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'n': 42})
+
     def test_compile_from_ast_121(self):
         cap = StringIO()
-        p = ast.parse("for i in [0,1,2]:\n print>> cap, i,\nelse:\n print>>cap, 'else',", mode="exec") # for with else
+        p = ast.parse("for i in [0,1,2]:\n print(i, end='', file=cap)\nelse:\n print('else', end='', file=cap)", mode="exec") # for with else
         exec(compile(p,"<unknown>", mode="exec"))
-        self.assertEqual(cap.getvalue(),"0 1 2 else") 
+        self.assertEqual(cap.getvalue(),"012else")
 
     def test_compile_from_ast_122(self):
         cap = StringIO()
         tc = """
 try:
-    print >> cap, 1,
+    print(1, end='', file=cap)
     raise Exception("test")
-    print >> cap, 2,
+    print(2, end='', file=cap)
 except Exception as e:
-    print >> cap, 3,
+    print(3, end='', file=cap)
 else:
-    print >> cap, 4,
+    print(4, end='', file=cap)
 finally:
-    print >> cap, 5,
-            """ 
-        p = ast.parse( tc, mode="exec") # try except
+    print(5, end='', file=cap)
+            """
+        p = ast.parse(tc, mode="exec") # try except
         exec(compile(p,"<unknown>", mode="exec"))
-        self.assertEqual(cap.getvalue(), "1 3 5") 
+        self.assertEqual(cap.getvalue(), "135")
 
     def test_compile_from_ast_123(self):
         cap = StringIO()
         tc = """
 try:
-    print >> cap, 1,
+    print(1, end='', file=cap)
     # raise Exception("test")
-    print >> cap, 2,
+    print(2, end='', file=cap)
 except Exception as e:
-    print >> cap, 3
+    print(3, end='', file=cap)
 else:
-    print >> cap, 4,
+    print(4, end='', file=cap)
 finally:
-    print >> cap, 5,
-            """ 
-        p = ast.parse( tc, mode="exec") # try except
+    print(5, end='', file=cap)
+            """
+        p = ast.parse(tc, mode="exec") # try except
         exec(compile(p,"<unknown>", mode="exec"))
-        self.assertEqual(cap.getvalue(),"1 2 4 5") 
+        self.assertEqual(cap.getvalue(),"1245")
 
     def test_compile_from_ast_124(self):
         tc = """
 with open("dummy_module.py") as dm:
     l = len(dm.read())
-            """ 
-        p = ast.parse( tc, mode="exec") # try except
-        exec(compile(p,"<unknown>", mode="exec"))
-        self.assertEqual(l,20) 
+            """
+        p = ast.parse(tc, mode="exec") # try except
+        c = compile(p,"<unknown>", mode="exec")
+        res = {}
+        exec(c, res)
+        self.assertEqual(res['l'], 20)
 
     def test_compile_from_ast_125(self):
         tc = """
 class Foo(object):
     pass
 foo=Foo()
-            """ 
-        p = ast.parse( tc, mode="exec") # try except
-        exec(compile(p,"<unknown>", mode="exec"))
-        self.assertIsInstance(foo,Foo) 
-
+            """
+        p = ast.parse(tc, mode="exec") # try except
+        c = compile(p,"<unknown>", mode="exec")
+        res = {}
+        exec(c, res)
+        self.assertIsInstance(res['foo'], res['Foo'])
 
     def test_compile_from_ast_126(self):
         cap = StringIO()
         tc = """
 def f(a):
     return a
-print >> cap, f(22),
+print(f(22), end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # call function with an argument
+        p = ast.parse(tc, mode="exec") # call function with an argument
         exec(compile(p,"<unknown>", mode="exec"))
         self.assertEqual(cap.getvalue(), "22")
 
@@ -681,9 +679,9 @@ print >> cap, f(22),
         tc = """
 def f(a):
     return a
-print >> cap, f(a=222),
+print(f(a=222), end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # call function with an argument, pass as keyword
+        p = ast.parse(tc, mode="exec") # call function with an argument, pass as keyword
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "222")
@@ -693,9 +691,9 @@ print >> cap, f(a=222),
         tc = """
 def f(a,*args):
     return args[1]
-print >> cap, f(1,2,42),
+print(f(1,2,42), end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # call function with a variable number of arguments
+        p = ast.parse(tc, mode="exec") # call function with a variable number of arguments
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "42")
@@ -706,9 +704,9 @@ print >> cap, f(1,2,42),
 def f(a,**kwargs):
     return kwargs["two"]
 d={ "one":13, "two":42 }
-print >> cap, f(1, **d),
+print(f(1, **d), end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # call function with a keyword argument
+        p = ast.parse(tc, mode="exec") # call function with a keyword argument
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "42")
@@ -718,9 +716,9 @@ print >> cap, f(1, **d),
         tc = """
 def f(a,**kwargs):
     return kwargs["two"]
-print >> cap, f(1, two=42, one=13),
+print(f(1, two=42, one=13), end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # call function with a keyword argument
+        p = ast.parse(tc, mode="exec") # call function with a keyword argument
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "42")
@@ -730,15 +728,15 @@ print >> cap, f(1, two=42, one=13),
         tc = """
 def deco(fx):
     def wrap():
-        print >> cap, "wrapped"
+        print("wrapped", file=cap)
         fx()
     return wrap
 @deco
 def f():
-    print >> cap, "f"
+    print("f", file=cap)
 f()
             """
-        p = ast.parse( tc, mode="exec") # function decorator
+        p = ast.parse(tc, mode="exec") # function decorator
         c = compile(p,"<unknown>", mode="exec")
         exec(c, {"cap": cap})
         self.assertEqual(cap.getvalue(), "wrapped\nf\n")
@@ -753,9 +751,9 @@ def deco(k):
 class C:
     pass
 c=C()
-print >> cap, c.foo,
+print(c.foo, end='', file=cap)
             """
-        p = ast.parse( tc, mode="exec") # function decorator
+        p = ast.parse(tc, mode="exec") # function decorator
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "42")
@@ -770,12 +768,12 @@ def fNone():
     yield
 
 for v in f1():
-    print >> cap, v
+    print(v, file=cap)
 for v in fNone():
-    print >> cap, v
+    print(v, file=cap)
 
             """
-        p = ast.parse( tc, mode="exec") # yield
+        p = ast.parse(tc, mode="exec") # yield
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         self.assertEqual(cap.getvalue(), "1\nNone\n")
@@ -783,9 +781,9 @@ for v in fNone():
     def test_compile_from_ast_200(self):
         p = ast.parse("a=1; b=2", mode="single") # something with single
         c = compile(p,"<unknown>", mode="single")
-        exec(c)
-        self.assertEqual(a,1)
-        self.assertEqual(b,2)
+        res = {}
+        exec(c, {}, res)
+        self.assertEqual(res, {'a': 1, 'b': 2})
 
     def test_compile_from_ast_201(self):
         p = ast.parse("1+1", mode="single") # expression in single should find its way into stdout
@@ -801,8 +799,8 @@ for v in fNone():
         c = compile(p, "<unknown>", mode="eval")
         self.assertEqual(eval(c),2)
 
-    def test_compile_argument_buffer(self):
-        p = ast.parse(buffer('1+1'), "<unknown>", mode="eval")
+    def test_compile_argument_memoryview(self):
+        p = ast.parse(memoryview(b'1+1'), "<unknown>", mode="eval")
         c = compile(p, "<unknown>", mode="eval")
         self.assertEqual(eval(c),2)
 
@@ -848,8 +846,7 @@ for v in fNone():
         slc = ast.parse("x[::]").body[0].value.slice
         self.assertIsNone(slc.upper)
         self.assertIsNone(slc.lower)
-        self.assertIsInstance(slc.step, ast.Name)
-        self.assertEqual(slc.step.id, "None")
+        self.assertIsNone(slc.step)
 
     def test_from_import(self):
         im = ast.parse("from . import y").body[0]
@@ -912,192 +909,177 @@ for v in fNone():
 
     def test_operators(self):
         boolop0 = ast.BoolOp()
-        boolop1 = ast.BoolOp(ast.And(), 
+        boolop1 = ast.BoolOp(ast.And(),
                           [ ast.Name('True', ast.Load()), ast.Name('False', ast.Load()), ast.Name('a',ast.Load())])
-        boolop2 = ast.BoolOp(ast.And(), 
+        boolop2 = ast.BoolOp(ast.And(),
                           [ ast.Name('True', ast.Load()), ast.Name('False', ast.Load()), ast.Name('a',ast.Load())],
-                          0, 0)
+                          lineno=0, col_offset=0)
         binop0 = ast.BinOp()
         binop1 = ast.BinOp(ast.Str('xy'), ast.Mult(), ast.Num(3))
-        binop2 = ast.BinOp(ast.Str('xy'), ast.Mult(), ast.Num(3), 0, 0)
+        binop2 = ast.BinOp(ast.Str('xy'), ast.Mult(), ast.Num(3), lineno=0, col_offset=0)
 
         unaryop0 = ast.UnaryOp()
-        unaryop1 = ast.UnaryOp(ast.Not(), ast.Name('True',ast.Load())) 
-        unaryop2 = ast.UnaryOp(ast.Not(), ast.Name('True',ast.Load()), 0, 0)
+        unaryop1 = ast.UnaryOp(ast.Not(), ast.Name('True',ast.Load()))
+        unaryop2 = ast.UnaryOp(ast.Not(), ast.Name('True',ast.Load()), lineno=0, col_offset=0)
 
         lambda0 = ast.Lambda()
-        lambda1 = ast.Lambda(ast.arguments([ast.Name('x', ast.Param())], None, None, []), ast.Name('x', ast.Load()))
-        
+        lambda1 = ast.Lambda(ast.arguments([ast.Name('x', ast.Param())], None, [], [], None, []), ast.Name('x', ast.Load()))
+
         ifexp0 = ast.IfExp()
         ifexp1 = ast.IfExp(ast.Name('True',ast.Load()), ast.Num(1), ast.Num(0))
-        ifexp2 = ast.IfExp(ast.Name('True',ast.Load()), ast.Num(1), ast.Num(0), 0, 0)
+        ifexp2 = ast.IfExp(ast.Name('True',ast.Load()), ast.Num(1), ast.Num(0), lineno=0, col_offset=0)
 
         dict0 = ast.Dict()
         dict1 = ast.Dict([ast.Num(1), ast.Num(2)], [ast.Str('a'), ast.Str('b')])
-        dict2 = ast.Dict([ast.Num(1), ast.Num(2)], [ast.Str('a'), ast.Str('b')], 0, 0)
+        dict2 = ast.Dict([ast.Num(1), ast.Num(2)], [ast.Str('a'), ast.Str('b')], lineno=0, col_offset=0)
 
         set0 = ast.Set()
         set1 = ast.Set([ast.Num(1), ast.Num(2)])
-        set2 = ast.Set([ast.Num(1), ast.Num(2)], 0, 0)
+        set2 = ast.Set([ast.Num(1), ast.Num(2)], lineno=0, col_offset=0)
 
         lc0 = ast.ListComp()
-        lc1 = ast.ListComp( ast.Name('x',ast.Load()), 
-                   [ast.comprehension(ast.Name('x', ast.Store()), 
+        lc1 = ast.ListComp( ast.Name('x',ast.Load()),
+                   [ast.comprehension(ast.Name('x', ast.Store()),
                                       ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])])
-        lc2 = ast.ListComp( ast.Name('x',ast.Load()), 
-                   [ast.comprehension(ast.Name('x', ast.Store()), 
-                                      ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])], 0, 0)
-
+        lc2 = ast.ListComp( ast.Name('x',ast.Load()),
+                   [ast.comprehension(ast.Name('x', ast.Store()),
+                                      ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])], lineno=0, col_offset=0)
 
         setcomp0 = ast.SetComp()
-        setcomp1 = ast.SetComp(ast.Name('x', ast.Load()), 
-                   [ast.comprehension(ast.Name('x', ast.Store()), ast.Str('abracadabra'), 
-                                      [ast.Compare(ast.Name('x', ast.Load()), [ast.NotIn()], 
+        setcomp1 = ast.SetComp(ast.Name('x', ast.Load()),
+                   [ast.comprehension(ast.Name('x', ast.Store()), ast.Str('abracadabra'),
+                                      [ast.Compare(ast.Name('x', ast.Load()), [ast.NotIn()],
                                                    [ast.Str('abc')])])])
 
-
         comprehension0 = ast.comprehension()
-        comprehension1 = ast.comprehension(ast.Name('x', ast.Store()), 
+        comprehension1 = ast.comprehension(ast.Name('x', ast.Store()),
                                            ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])
-
 
         # "{i : chr(65+i) for i in (1,2)}")
         dictcomp0 = ast.DictComp()
-        dictcomp1 = ast.DictComp(ast.Name('i', ast.Load()), 
-                                 ast.Call(ast.Name('chr', ast.Load()), 
+        dictcomp1 = ast.DictComp(ast.Name('i', ast.Load()),
+                                 ast.Call(ast.Name('chr', ast.Load()),
                                           [ast.BinOp(ast.Num(65), ast.Add(), ast.Name('i', ast.Load()))],
-                                          [], None, None), 
-                                 [ast.comprehension(ast.Name('i', ast.Store()), 
+                                          [], None, None),
+                                 [ast.comprehension(ast.Name('i', ast.Store()),
                                                     ast.Tuple([ast.Num(1), ast.Num(n=2)], ast.Load()), [])])
-        dictcomp2 = ast.DictComp(ast.Name('i', ast.Load()), 
-                                 ast.Call(ast.Name('chr', ast.Load()), 
+        dictcomp2 = ast.DictComp(ast.Name('i', ast.Load()),
+                                 ast.Call(ast.Name('chr', ast.Load()),
                                           [ast.BinOp(ast.Num(65), ast.Add(), ast.Name('i', ast.Load()))],
-                                          [], None, None), 
-                                 [ast.comprehension(ast.Name('i', ast.Store()), 
-                                                    ast.Tuple([ast.Num(1), ast.Num(n=2)], ast.Load()), [])],0,0)
+                                          [], None, None),
+                                 [ast.comprehension(ast.Name('i', ast.Store()),
+                                                    ast.Tuple([ast.Num(1), ast.Num(n=2)], ast.Load()), [])], lineno=0, col_offset=0)
 
         # (x for x in (1,2))
         genexp0 = ast.GeneratorExp()
-        genexp1 = ast.GeneratorExp(ast.Name('x', ast.Load()), 
-                                   [ast.comprehension(ast.Name('x', ast.Store()), 
+        genexp1 = ast.GeneratorExp(ast.Name('x', ast.Load()),
+                                   [ast.comprehension(ast.Name('x', ast.Store()),
                                                       ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])])
-        genexp2 = ast.GeneratorExp(ast.Name('x', ast.Load()), 
-                                   [ast.comprehension(ast.Name('x', ast.Store()), 
-                                                      ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])],0,0)
+        genexp2 = ast.GeneratorExp(ast.Name('x', ast.Load()),
+                                   [ast.comprehension(ast.Name('x', ast.Store()),
+                                                      ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load()), [])], lineno=0, col_offset=0)
 
         # yield 2
         yield0 = ast.Yield()
         yield1 = ast.Yield(ast.Num(2))
-        yield2 = ast.Yield(ast.Num(2),0,0)
+        yield2 = ast.Yield(ast.Num(2), lineno=0, col_offset=0)
         yield20 = ast.Yield(lineno=0, col_offset=0)
 
         # a>0
         compare0 = ast.Compare()
         compare1 = ast.Compare(ast.Name('a', ast.Load()), [ast.Gt()], [ast.Num(0)])
-        compare2 = ast.Compare(ast.Name('a', ast.Load()), [ast.Gt()], [ast.Num(0)],0,0)
+        compare2 = ast.Compare(ast.Name('a', ast.Load()), [ast.Gt()], [ast.Num(0)], lineno=0, col_offset=0)
 
         # chr(65)
         call0 = ast.Call()
         call1 = ast.Call(ast.Name('chr', ast.Load()), [ast.Num(65)], [], None, None)
-        call2 = ast.Call(ast.Name('chr', ast.Load()), [ast.Num(65)], [], None, None, 0, 0)
-        call20 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [])
-        call21 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [], lineno=0, col_offset=0)
+        call2 = ast.Call(ast.Name('chr', ast.Load()), [ast.Num(65)], [], None, None, lineno=0, col_offset=0)
+        call20 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [], None, None)
+        call21 = ast.Call(ast.Name('f', ast.Load()), [ast.Num(0)], [], None, None, lineno=0, col_offset=0)
 
         # 0
         num0 = ast.Num()
         num1 = ast.Num(0)
-        num2 = ast.Num(0,0,0)
+        num2 = ast.Num(0, lineno=0, col_offset=0)
 
         # "foo"
         str0 = ast.Str()
         str1 = ast.Str("foo")
-        str2 = ast.Str("foo",0,0)
-
-        # TODO: come back
-        repr0 = ast.Repr()
-        repr1 = ast.Repr(ast.Num(0))
-        repr2 = ast.Repr(ast.Num(0),0,0)
+        str2 = ast.Str("foo", lineno=0, col_offset=0)
 
         # foo.bar
         attr0 = ast.Attribute()
         attr1 = ast.Attribute(ast.Name('foo', ast.Load()), 'bar', ast.Load())
-        attr2 = ast.Attribute(ast.Name('foo', ast.Load()), 'bar', ast.Load(), 0,0)
+        attr2 = ast.Attribute(ast.Name('foo', ast.Load()), 'bar', ast.Load(), lineno=0, col_offset=0)
 
         # a[1:2]
         subscript0 = ast.Subscript()
-        subscript1 = ast.Subscript(ast.Name('a', ast.Load()), ast.Slice(ast.Num(1), ast.Num(2)), ast.Load())
-        subscript2 = ast.Subscript(ast.Name('a', ast.Load()), ast.ExtSlice([ast.Num(1), ast.Num(2)]), ast.Load(), 0, 0)
+        subscript1 = ast.Subscript(ast.Name('a', ast.Load()), ast.Slice(ast.Num(1), ast.Num(2), None), ast.Load())
+        subscript2 = ast.Subscript(ast.Name('a', ast.Load()), ast.ExtSlice([ast.Num(1), ast.Num(2)]), ast.Load(), lineno=0, col_offset=0)
 
         # name
         name0 = ast.Name()
         name1 = ast.Name("name", ast.Load())
-        name2 = ast.Name("name", ast.Load(),0,0)
+        name2 = ast.Name("name", ast.Load(), lineno=0, col_offset=0)
 
         # [1,2]
         list0 = ast.List()
         list1 = ast.List([ast.Num(1), ast.Num(2)], ast.Load())
-        list2 = ast.List([ast.Num(1), ast.Num(2)], ast.Load(),0,0)
+        list2 = ast.List([ast.Num(1), ast.Num(2)], ast.Load(), lineno=0, col_offset=0)
 
         # (1,2)
         tuple0 = ast.Tuple()
         tuple1 = ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load())
-        tuple2 = ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load(), 0, 0)
-
+        tuple2 = ast.Tuple([ast.Num(1), ast.Num(2)], ast.Load(), lineno=0, col_offset=0)
 
     def test_stmt(self):
 
         # def foo():
         #   pass
         fundef0 = ast.FunctionDef()
-        fundef1 = ast.FunctionDef('foo', ast.arguments([], None, None, []), [ast.Pass()], [])
-        fundef2 = ast.FunctionDef('foo', ast.arguments([], None, None, []), [ast.Pass()], [], 0,0 )
+        fundef1 = ast.FunctionDef('foo', ast.arguments([], None, [], [], None, []), [ast.Pass()], [], None)
+        fundef2 = ast.FunctionDef('foo', ast.arguments([], None, [], [], None, []), [ast.Pass()], [], None, lineno=0, col_offset=0)
 
         # class foo(object):
         #   pass
         classdef0 = ast.ClassDef()
-        classdef1 = ast.ClassDef('foo', [ast.Name('object', ast.Load())], [ast.Pass()], [])
-        classdef1 = ast.ClassDef('foo', [ast.Name('object', ast.Load())], [ast.Pass()], [], 0,0)
+        classdef1 = ast.ClassDef('foo', [ast.Name('object', ast.Load())], [], None, None, [ast.Pass()], [])
+        classdef1 = ast.ClassDef('foo', [ast.Name('object', ast.Load())], [], None, None, [ast.Pass()], [], lineno=0, col_offset=0)
 
         # return 0
         return0 = ast.Return()
         return1 = ast.Return(ast.Num(0))
-        return2 = ast.Return(ast.Num(0),0,0)
+        return2 = ast.Return(ast.Num(0), lineno=0, col_offset=0)
         return20 = ast.Return(lineno=0, col_offset=0)
 
         # del d[1]
         del0 = ast.Delete()
         del1 = ast.Delete([ast.Subscript(ast.Name('d', ast.Load()), ast.Index(ast.Num(1)), ast.Del())])
-        del2 = ast.Delete([ast.Subscript(ast.Name('d', ast.Load()), ast.Index(ast.Num(1)), ast.Del())],0,0)
+        del2 = ast.Delete([ast.Subscript(ast.Name('d', ast.Load()), ast.Index(ast.Num(1)), ast.Del())], lineno=0, col_offset=0)
 
         # a=1
         assign0=ast.Assign()
         assign1=ast.Assign([ast.Name('a', ast.Store())], ast.Num(1))
-        assign2=ast.Assign([ast.Name('a', ast.Store())], ast.Num(1),0,0)
+        assign2=ast.Assign([ast.Name('a', ast.Store())], ast.Num(1), lineno=0, col_offset=0)
 
         # a+=1
         augassign0=ast.AugAssign()
         augassign1=ast.AugAssign(ast.Name('a', ast.Store()), ast.Add(), ast.Num(1))
-        augassign2=ast.AugAssign(ast.Name('a', ast.Store()), ast.Add(), ast.Num(1),0,0)
-        
-        # print 1
-        print0 = ast.Print()
-        print1 = ast.Print(None, [ast.Num(1)], True)
-        print2 = ast.Print(None, [ast.Num(1)], True, 0, 0)
-        print20 = ast.Print( values=[ast.Num(1)], nl=True)
+        augassign2=ast.AugAssign(ast.Name('a', ast.Store()), ast.Add(), ast.Num(1), lineno=0, col_offset=0)
 
         # for i in l:
         #   print i
         # else:
         #   pass
         for0 = ast.For()
-        for1 = ast.For(ast.Name('i', ast.Store()), 
-                       ast.Name('l', ast.Load()), 
-                       [ast.Print(None, [ast.Name('i', ast.Load())], True)], 
+        for1 = ast.For(ast.Name('i', ast.Store()),
+                       ast.Name('l', ast.Load()),
+                       [ast.Assert(ast.Name('i', ast.Load()), None)],
                        [ast.Pass()])
-        for2 = ast.For(ast.Name('i', ast.Store()), 
-                       ast.Name('l', ast.Load()), 
-                       [ast.Print(None, [ast.Name('i', ast.Load())], True)], 
-                       [ast.Pass()],0,0)
+        for2 = ast.For(ast.Name('i', ast.Store()),
+                       ast.Name('l', ast.Load()),
+                       [ast.Assert(ast.Name('i', ast.Load()), None)],
+                       [ast.Pass()], lineno=0, col_offset=0)
 
         # while True:
         #   pass
@@ -1105,7 +1087,7 @@ for v in fNone():
         #   pass
         while0 = ast.While()
         while1 = ast.While(ast.Name('True', ast.Load()), [ast.Pass()], [ast.Pass()])
-        while2 = ast.While(ast.Name('True', ast.Load()), [ast.Pass()], [ast.Pass()], 0,0 )
+        while2 = ast.While(ast.Name('True', ast.Load()), [ast.Pass()], [ast.Pass()], lineno=0, col_offset=0)
 
         # if a:
         #   pass
@@ -1113,19 +1095,19 @@ for v in fNone():
         #   pass
         if0 = ast.If()
         if1 = ast.If(ast.Name('a', ast.Load()), [ast.Pass()], [ast.Pass()])
-        if2 = ast.If(ast.Name('a', ast.Load()), [ast.Pass()], [ast.Pass()] ,0,0)
+        if2 = ast.If(ast.Name('a', ast.Load()), [ast.Pass()], [ast.Pass()], lineno=0, col_offset=0)
 
-        # with with open("foo") as f:
+        # with open("foo") as f:
         #   pass
         with0 = ast.With()
-        with0 = ast.With(ast.Call(ast.Name('open', ast.Load()), [ast.Str('foo')], []), 
-                         ast.Name('f', ast.Store()), 
+        with0 = ast.With([ast.withitem(ast.Call(ast.Name('open', ast.Load()), [ast.Str('foo')], [], None, None),
+                         ast.Name('f', ast.Store()))],
                          [ast.Pass()])
 
         # raise Exception()
         raise0 = ast.Raise()
-        raise1 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], []), None, None)
-        raise2 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], []), None, None, 0, 0)
+        raise1 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], [], None, None), None)
+        raise2 = ast.Raise(ast.Call(ast.Name('Exception', ast.Load()), [], [], None, None), None, lineno=0, col_offset=0)
 
     def test_attributes(self):
         # assert True, "bad"
@@ -1143,12 +1125,12 @@ for v in fNone():
             tmp=assert1.col_offset
         except Exception as e:
             self.assertTrue(isinstance(e,AttributeError))
-        assert2 = ast.Assert(ast.Name('True', ast.Load()), ast.Str('bad'),2,3)
+        assert2 = ast.Assert(ast.Name('True', ast.Load()), ast.Str('bad'), lineno=2, col_offset=3)
         self.assertEqual(assert2.lineno,2)
         self.assertEqual(assert2.col_offset,3)
 
     def test_compare(self):
-        # 
+        #
         c0 = to_tuple(ast.parse("a<b>c"))
         c1 = to_tuple(ast.parse("(a<b)>c"))
         c2 = to_tuple(ast.parse("a<(b>c)"))
@@ -1156,13 +1138,12 @@ for v in fNone():
         self.assertNotEqual(c1,c2)
         self.assertNotEqual(c0,c2)
 
-
     def test_pickling(self):
         import pickle
         mods = [pickle]
         try:
             import pickle
-            mods.append(cPickle)
+            mods.append(pickle)
         except ImportError:
             pass
         protocols = [0, 1, 2]
@@ -1276,7 +1257,7 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('2j'), 2j)
         self.assertEqual(ast.literal_eval('10 + 2j'), 10 + 2j)
         self.assertEqual(ast.literal_eval('1.5 - 2j'), 1.5 - 2j)
-        self.assertRaises(ValueError, ast.literal_eval, '2 + (3 + 4j)')
+        self.assertEqual(ast.literal_eval('2 + (3 + 4j)'), 5 + 4j)
 
     def test_literal_eval_cp35572(self):
         self.assertEqual(ast.literal_eval('-1'), -1)
@@ -1285,13 +1266,6 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('+1j'), 1j)
         self.assertEqual(ast.literal_eval('-1.1'), -1.1)
         self.assertEqual(ast.literal_eval('+1.1'), 1.1)
-        self.assertEqual(ast.literal_eval('-1L'), -1)
-        self.assertEqual(ast.literal_eval('+1L'), 1)
-
-def test_main():
-    with support.check_py3k_warnings(("backquote not supported",
-                                             SyntaxWarning)):
-        support.run_unittest(AST_Tests, ASTHelpers_Test)
 
 def main():
     if __name__ != '__main__':
@@ -1316,40 +1290,37 @@ def main():
         raise SystemExit
     test_main()
 
-
 #### GENERATED FOR IRONPYTHON ####
 exec_results = [
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Pass', (1, 9))], [])]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, []), [('Pass', (1, 10))], [])]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('Name', (1, 6), 'a', ('Param',))], None, None, [('Num', (1, 8), 1)]), [('Pass', (1, 12))], [])]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], 'args', 'kwargs', []), [('Pass', (1, 24))], [])]),
-('Module', [('ClassDef', (1, 0), 'C', [], [('Pass', (1, 8))], [])]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Return', (1, 8), ('Num', (1, 15), 1))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Pass', (1, 9))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', 'a', None) if is_cli else ('arg', (1, 6), 'a', None)], None, [], [], None, []), [('Pass', (1, 10))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', 'a', None) if is_cli else ('arg', (1, 6), 'a', None)], None, [], [], None, [('Num', (1, 8), 1)]), [('Pass', (1, 12))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], 'args' if is_cli else ('arg', (1, 7), 'args', None), [], [], 'kwargs' if is_cli else ('arg', (1, 15), 'kwargs', None), []), [('Pass', (1, 24))], [], None)]),
+('Module', [('ClassDef', (1, 0), 'C', [], [], None, None, [('Pass', (1, 8))], [])]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Return', (1, 8), ('Num', (1, 15), 1))], [], None)]),
 ('Module', [('Delete', (1, 0), [('Name', (1, 4), 'v', ('Del',))])]),
 ('Module', [('Assign', (1, 0), [('Name', (1, 0), 'v', ('Store',))], ('Num', (1, 4), 1))]),
 ('Module', [('AugAssign', (1, 0), ('Name', (1, 0), 'v', ('Store',)), ('Add',), ('Num', (1, 5), 1))]),
-('Module', [('Print', (1, 0), ('Name', (1, 8), 'f', ('Load',)), [('Num', (1, 11), 1)], False)]),
 ('Module', [('For', (1, 0), ('Name', (1, 4), 'v', ('Store',)), ('Name', (1, 9), 'v', ('Load',)), [('Pass', (1, 11))], [])]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'v', ('Load',)), [('Pass', (1, 8))], [])]),
 ('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [])]),
-('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [('If', (2, 0), ('Name', (2, 5), 'u', ('Load',)), [('Pass', (2, 7))], [('Pass', (3, 6))])])]),
-('Module', [('Raise', (1, 0), ('Name', (1, 6), 'Exception', ('Load',)), ('Str', (1, 17), 'string'), None)]),
-('Module', [('TryExcept', (1, 0), [('Pass', (2, 2))], [('ExceptHandler', (3, 0), ('Name', (3, 7), 'Exception', ('Load',)), None, [('Pass', (4, 2))])], [])]),
-('Module', [('TryFinally', (1, 0), [('Pass', (2, 2))], [('Pass', (4, 2))])]),
+('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [('If', (2, 0) if is_cli else (2, 5), ('Name', (2, 5), 'u', ('Load',)), [('Pass', (2, 7))], [('Pass', (3, 6))])])]),
+('Module', [('Raise', (1, 0), ('Call', (1, 6), ('Name', (1, 6), 'Exception', ('Load',)), [('Str', (1, 16), 'string')], [], None, None), None)]),
+('Module', [('Try', (1, 0), [('Pass', (2, 2))], [('ExceptHandler', (3, 0), ('Name', (3, 7), 'Exception', ('Load',)), None, [('Pass', (4, 2))])], [], [])]),
+('Module', [('Try', (1, 0), [('Pass', (2, 2))], [], [], [('Pass', (4, 2))])]),
 ('Module', [('Assert', (1, 0), ('Name', (1, 7), 'v', ('Load',)), None)]),
 ('Module', [('Import', (1, 0), [('alias', 'sys', None)])]),
 ('Module', [('ImportFrom', (1, 0), 'sys', [('alias', 'v', None)], 0)]),
-('Module', [('Exec', (1, 0), ('Str', (1, 5), 'v'), None, None)]),
 ('Module', [('Global', (1, 0), ['v'])]),
 ('Module', [('Expr', (1, 0), ('Num', (1, 0), 1))]),
 ('Module', [('Pass', (1, 0))]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Break', (1, 9))], [])]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Continue', (1, 9))], [])]),
 ('Module', [('For', (1, 0), ('Tuple', (1, 4), [('Name', (1, 4), 'a', ('Store',)), ('Name', (1, 6), 'b', ('Store',))], ('Store',)), ('Name', (1, 11), 'c', ('Load',)), [('Pass', (1, 14))], [])]),
-('Module', [('Expr', (1, 0), ('ListComp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
-('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [])]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Name', (1, 9), 'None', ('Load',))))], [])]),
+('Module', [('Expr', (1, 0), ('ListComp', (1, 0) if is_cli else (1, 1), ('Tuple', (1, 1) if is_cli else (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Tuple', (1, 1) if is_cli else (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('NameConstant', (1, 9), None) if is_cli else None))], [], None)]),
 ('Module', []),
 ]
 single_results = [
@@ -1359,18 +1330,17 @@ eval_results = [
 ('Expression', ('BoolOp', (1, 0), ('And',), [('Name', (1, 0), 'a', ('Load',)), ('Name', (1, 6), 'b', ('Load',))])),
 ('Expression', ('BinOp', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Add',), ('Name', (1, 4), 'b', ('Load',)))),
 ('Expression', ('UnaryOp', (1, 0), ('Not',), ('Name', (1, 4), 'v', ('Load',)))),
-('Expression', ('Lambda', (1, 0), ('arguments', [], None, None, []), ('Name', (1, 7), 'None', ('Load',)))),
-('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Name', (1, 10), 'x', ('Load',)))),
-('Expression', ('Lambda', (1, 0), ('arguments', [('Name', (1, 7), 'x', ('Param',))], None, None, []), ('Yield', (1, 10), ('Name', (1, 17), 'x', ('Load',))))),
+('Expression', ('Lambda', (1, 0), ('arguments', [], None, [], [], None, []), ('NameConstant', (1, 7), None))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('arg', 'x', None) if is_cli else ('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Name', (1, 10), 'x', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('arg', 'x', None) if is_cli else ('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Yield', (1, 10) if is_cli else (1, 11), ('Name', (1, 17), 'x', ('Load',))))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
-('Expression', ('ListComp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
-('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-('Expression', ('GeneratorExp', (1, 0), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
-('Expression', ('GeneratorExp', (1, 0), ('Yield', (1, 1), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
+('Expression', ('ListComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Yield', (1, 1) if is_cli else (1, 2), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
-('Expression', ('Repr', (1, 0), ('Name', (1, 1), 'v', ('Load',)))),
 ('Expression', ('Num', (1, 0), 10)),
 ('Expression', ('Str', (1, 0), 'string')),
 ('Expression', ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',))),
@@ -1379,11 +1349,11 @@ eval_results = [
 ('Expression', ('List', (1, 0), [('Num', (1, 1), 1), ('Num', (1, 3), 2), ('Num', (1, 5), 3)], ('Load',))),
 ('Expression', ('Tuple', (1, 0), [('Num', (1, 0), 1), ('Num', (1, 2), 2), ('Num', (1, 4), 3)], ('Load',))),
 ('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
-('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis',), ('Load',))),
-('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1), 1)), ('Load',))),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Ellipsis',) if is_cli else ('Index', ('Ellipsis', (1, 2))), ('Load',))),
+('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1) if is_cli else (1, 2), 1)), ('Load',))),
 ('Expression', ('Set', (1, 0), [('Name', (1, 1), 'a', ('Load',)), ('Name', (1, 3), 'b', ('Load',)), ('Name', (1, 5), 'c', ('Load',))])),
-('Expression', ('DictComp', (1, 0), ('Name', (1, 1), 'k', ('Load',)), ('Name', (1, 3), 'v', ('Load',)), [('comprehension', ('Tuple', (1, 9), [('Name', (1, 9), 'k', ('Store',)), ('Name', (1, 11), 'v', ('Store',))], ('Store',)), ('Name', (1, 16), 'li', ('Load',)), [])])),
-('Expression', ('SetComp', (1, 0), ('Name', (1, 1), 'e', ('Load',)), [('comprehension', ('Name', (1, 7), 'e', ('Store',)), ('Name', (1, 12), 'li', ('Load',)), [])])),
+('Expression', ('DictComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'k', ('Load',)), ('Name', (1, 3), 'v', ('Load',)), [('comprehension', ('Tuple', (1, 9), [('Name', (1, 9), 'k', ('Store',)), ('Name', (1, 11), 'v', ('Store',))], ('Store',)), ('Name', (1, 16), 'li', ('Load',)), [])])),
+('Expression', ('SetComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'e', ('Load',)), [('comprehension', ('Name', (1, 7), 'e', ('Store',)), ('Name', (1, 12), 'li', ('Load',)), [])])),
 ]
 
-main()
+run_test(__name__)

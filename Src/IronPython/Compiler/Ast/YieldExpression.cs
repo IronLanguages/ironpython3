@@ -93,6 +93,7 @@ else:
             if (!isYieldFrom) return null;
 
             var expr = Modules._ast.ConvertToPythonAst(Runtime.DefaultContext.Default, yieldFromAst, "").Body;
+            Modules._ast._containsYield = false; // reset state of _ast module
             expr.Parent = expression.Parent;
 
             return new SuiteStatement(new[] {

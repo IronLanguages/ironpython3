@@ -225,6 +225,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
 
+        public static object compile(CodeContext/*!*/ context, MemoryView source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1)
+            => compile(context, source.tobytes(), filename, mode, flags, dont_inherit, optimize);
+
         [Documentation("")] // provided by first overload
         public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize

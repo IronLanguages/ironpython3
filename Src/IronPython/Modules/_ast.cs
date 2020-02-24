@@ -173,6 +173,7 @@ namespace IronPython.Modules {
                 return __reduce__();
             }
 
+            [PythonHidden]
             protected void GetSourceLocation(Node node) {
                 _lineno = node.Start.Line;
 
@@ -263,8 +264,6 @@ namespace IronPython.Modules {
             internal static slice TrySliceConvert(AstExpression expr) {
                 if (expr is SliceExpression)
                     return new Slice((SliceExpression)expr);
-                if (expr is ConstantExpression && ((ConstantExpression)expr).Value == PythonOps.Ellipsis)
-                    return Ellipsis.Instance;
                 if (expr is TupleExpression && ((TupleExpression)expr).IsExpandable)
                     return new ExtSlice(((Tuple)Convert(expr)).elts);
                 return null;
@@ -318,6 +317,8 @@ namespace IronPython.Modules {
                     ast = new Str((string)expr.Value);
                 else if (expr.Value is IronPython.Runtime.Bytes)
                     ast = new Bytes((IronPython.Runtime.Bytes)expr.Value);
+                else if (expr.Value is IronPython.Runtime.Types.Ellipsis)
+                    ast = Ellipsis.Instance;
                 else
                     throw new ArgumentTypeException("Unexpected constant type: " + expr.Value.GetType());
 
@@ -449,8 +450,12 @@ namespace IronPython.Modules {
 
         [PythonType("arg"), PythonHidden]
         public class ArgType : AST {
+            private static PythonTuple __attributes = PythonTuple.MakeTuple(new[] { nameof(lineno), nameof(col_offset) });
+            private static PythonTuple __fields = PythonTuple.MakeTuple(new[] { nameof(arg), nameof(annotation) });
+
             public ArgType() {
-                _fields = new PythonTuple(new[] { nameof(arg), nameof(annotation) });
+                _attributes = __attributes;
+                _fields = __fields;
             }
 
             public ArgType(string arg, object annotation) : this() {
@@ -461,6 +466,7 @@ namespace IronPython.Modules {
             internal ArgType(Parameter parameter) : this() {
                 arg = parameter.Name;
                 annotation = parameter.Annotation == null ? null : Convert(parameter.Annotation);
+                GetSourceLocation(parameter);
             }
 
             public string arg { get; set; }
@@ -473,7 +479,7 @@ namespace IronPython.Modules {
                 _fields = new PythonTuple(new[] { nameof(args), nameof(vararg), nameof(kwonlyargs), nameof(kw_defaults), nameof(kwarg), nameof(defaults) });
             }
 
-            public arguments(PythonList args, string vararg, PythonList kwonlyargs, PythonList kw_defaults, string kwarg, PythonList defaults)
+            public arguments(PythonList args, ArgType vararg, PythonList kwonlyargs, PythonList kw_defaults, ArgType kwarg, PythonList defaults)
                 : this() {
                 this.args = args;
                 this.vararg = vararg;
@@ -492,10 +498,10 @@ namespace IronPython.Modules {
                 foreach (Parameter param in parameters) {
                     switch (param.Kind) {
                         case ParameterKind.List:
-                            vararg = param.Name;
+                            vararg = new ArgType(param);
                             break;
                         case ParameterKind.Dictionary:
-                            kwarg = param.Name;
+                            kwarg = new ArgType(param);
                             break;
                         case ParameterKind.KeywordOnly:
                             kwonlyargs.Add(new ArgType(param));
@@ -535,21 +541,21 @@ namespace IronPython.Modules {
                 }
                 parameters.Reverse();
                 if (vararg != null)
-                    parameters.Add(new Parameter(vararg, ParameterKind.List));
+                    parameters.Add(new Parameter(vararg.arg, ParameterKind.List));
                 if (kwarg != null)
-                    parameters.Add(new Parameter(kwarg, ParameterKind.Dictionary));
+                    parameters.Add(new Parameter(kwarg.arg, ParameterKind.Dictionary));
                 return parameters.ToArray();
             }
 
             public PythonList args { get; set; }
 
-            public string vararg { get; set; }
+            public ArgType vararg { get; set; }
 
             public PythonList kwonlyargs { get; set; }
 
             public PythonList kw_defaults { get; set; }
 
-            public string kwarg { get; set; }
+            public ArgType kwarg { get; set; }
 
             public PythonList defaults { get; set; }
         }
@@ -607,14 +613,14 @@ namespace IronPython.Modules {
         [PythonType]
         public class excepthandler : AST {
             public excepthandler() {
-                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
+                _attributes = new PythonTuple(new[] { nameof(lineno), nameof(col_offset) });
             }
         }
 
         [PythonType]
         public abstract class expr : AST {
             protected expr() {
-                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
+                _attributes = new PythonTuple(new[] { nameof(lineno), nameof(col_offset) });
             }
 
             internal virtual AstExpression Revert() {
@@ -686,7 +692,7 @@ namespace IronPython.Modules {
         [PythonType]
         public abstract class stmt : AST {
             protected stmt() {
-                _attributes = new PythonTuple(new[] { "lineno", "col_offset" });
+                _attributes = new PythonTuple(new[] { nameof(lineno), nameof(col_offset) });
             }
 
             internal virtual Statement Revert() {
@@ -1327,8 +1333,9 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class Ellipsis : slice {
+        public class Ellipsis : expr {
             internal static readonly Ellipsis Instance = new Ellipsis();
+            internal override AstExpression Revert() => new ConstantExpression(PythonOps.Ellipsis);
         }
 
         [PythonType]
@@ -2530,8 +2537,6 @@ namespace IronPython.Modules {
                     if (concreteSlice.step != null)
                         step = expr.Revert(concreteSlice.step);
                     index = new SliceExpression(start, stop, step);
-                } else if (slice is Ellipsis) {
-                    index = new ConstantExpression(PythonOps.Ellipsis);
                 } else if (slice is ExtSlice) {
                     index = new TupleExpression(true, ((ExtSlice)slice).Revert());
                 } else {

@@ -28,14 +28,25 @@ def to_tuple(t):
 
 # These tests are compiled through "exec"
 # There should be at least one test per statement
-exec_tests = [
+exec_tests_stdlib = [
+    # None
+    "None",
     # FunctionDef
     "def f(): pass",
+    # FunctionDef with arg
     "def f(a): pass",
-    "def f(a=1): pass",
-    "def f(*args, **kwargs): pass",
+    # FunctionDef with arg and default value
+    "def f(a=0): pass",
+    # FunctionDef with varargs
+    "def f(*args): pass",
+    # FunctionDef with kwargs
+    "def f(**kwargs): pass",
+    # FunctionDef with all kind of args
+    "def f(a, b=1, c=None, d=[], e={}, *args, f=42, **kwargs): pass",
     # ClassDef
     "class C:pass",
+    # ClassDef, new style class
+    "class C(object): pass",
     # Return
     "def f():return 1",
     # Delete
@@ -50,8 +61,9 @@ exec_tests = [
     "while v:pass",
     # If
     "if v:pass",
-    # If elif else
-    "if v:pass\nelif u:pass\nelse: pass",
+    # With
+    "with x as y: pass",
+    "with x as y, z as q: pass",
     # Raise
     "raise Exception('string')",
     # TryExcept
@@ -71,22 +83,52 @@ exec_tests = [
     # Pass,
     "pass",
     # Break
+    # "break", doesn't work outside a loop in IronPython
+    # Continue
+    # "continue", doesn't work outside a loop in IronPython
+    # for statements with naked tuples (see http://bugs.python.org/issue6704)
+    "for a,b in c: pass",
+    "[(a,b) for a,b in c]",
+    "((a,b) for a,b in c)",
+    "((a,b) for (a,b) in c)",
+    # Multiline generator expression (test for .lineno & .col_offset)
+    """(
+    (
+    Aa
+    ,
+       Bb
+    )
+    for
+    Aa
+    ,
+    Bb in Cc
+    )""",
+    # dictcomp
+    "{a : b for w in x for m in p if g}",
+    # dictcomp with naked tuple
+    "{a : b for v,w in x}",
+    # setcomp
+    "{r for l in x if g}",
+    # setcomp with naked tuple
+    "{r for l,m in x}",
+]
+
+# extra tests not in stdlib
+exec_tests = exec_tests_stdlib + [
+    # Break
     # "break", doesn't work outside a loop
     "while x: break",
     # Continue
     # "continue", doesn't work outside a loop
     "while x: continue",
-    # for statements with naked tuples (see http://bugs.python.org/issue6704)
-    "for a,b in c: pass",
-    "[(a,b) for a,b in c]",
-    "((a,b) for a,b in c)",
+    # If elif else
+    "if v:pass\nelif u:pass\nelse: pass",
     # yield makes no sense outside function
     "def f(): yield 1",
     # CP35001
     "def f(): yield",
     # comment
     "#"
-
 ]
 
 # These are compiled through "single"
@@ -98,7 +140,9 @@ single_tests = [
 
 # These are compiled through "eval"
 # It should test all expressions
-eval_tests = [
+eval_tests_stdlib = [
+  # None
+  "None",
   # BoolOp
   "a and b",
   # BinOp
@@ -107,18 +151,24 @@ eval_tests = [
   "not v",
   # Lambda
   "lambda:None",
-  "lambda x: x",
-  "lambda x: (yield x)",
   # Dict
   "{ 1:2 }",
+  # Empty dict
+  "{}",
+  # Set
+  "{None,}",
+  # Multiline dict (test for .lineno & .col_offset)
+  """{
+      1
+        :
+          2
+     }""",
   # ListComp
   "[a for b in c if d]",
   # GeneratorExp
-  "(a for b in c for d in e for f in g)",
   "(a for b in c if d)",
-  "(a for b in c for c in d)",
-  # Yield
-  "((yield i) for i in range(5))",
+  # Yield - yield expressions can't work outside a function
+  #
   # Compare
   "1 < 2 < 3",
   # Call
@@ -135,10 +185,28 @@ eval_tests = [
   "v",
   # List
   "[1,2,3]",
+  # Empty list
+  "[]",
   # Tuple
   "1,2,3",
+  # Tuple
+  "(1,2,3)",
+  # Empty tuple
+  "()",
   # Combination
   "a.b.c.d(a.b[1:2])",
+]
+
+# extra tests not in stdlib
+eval_tests = eval_tests_stdlib + [
+  # Lambda
+  "lambda x: x",
+  "lambda x: (yield x)",
+  # GeneratorExp
+  "(a for b in c for d in e for f in g)",
+  "(a for b in c for c in d)",
+  # Yield
+  "((yield i) for i in range(5))",
   # ellipsis
   "a[...]",
   # index
@@ -1291,12 +1359,16 @@ def main():
     test_main()
 
 #### GENERATED FOR IRONPYTHON ####
-exec_results = [
+exec_results_stdlib = [
+('Module', [('Expr', (1, 0), ('NameConstant', (1, 0), None))]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Pass', (1, 9))], [], None)]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', (1, 6), 'a', None)], None, [], [], None, []), [('Pass', (1, 10))], [], None)]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', (1, 6), 'a', None)], None, [], [], None, [('Num', (1, 8), 1)]), [('Pass', (1, 12))], [], None)]),
-('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], ('arg', (1, 7), 'args', None), [], [], ('arg', (1, 15), 'kwargs', None), []), [('Pass', (1, 24))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', (1, 6), 'a', None)], None, [], [], None, [('Num', (1, 8), 0)]), [('Pass', (1, 12))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], ('arg', (1, 7), 'args', None), [], [], None, []), [('Pass', (1, 14))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], ('arg', (1, 8), 'kwargs', None), []), [('Pass', (1, 17))], [], None)]),
+('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [('arg', (1, 6), 'a', None), ('arg', (1, 9), 'b', None), ('arg', (1, 14), 'c', None), ('arg', (1, 22), 'd', None), ('arg', (1, 28), 'e', None)], ('arg', (1, 35), 'args', None), [('arg', (1, 41), 'f', None)], [('Num', (1, 43), 42)], ('arg', (1, 49), 'kwargs', None), [('Num', (1, 11), 1), ('NameConstant', (1, 16), None), ('List', (1, 24), [], ('Load',)), ('Dict', (1, 30), [], [])]), [('Pass', (1, 58))], [], None)]),
 ('Module', [('ClassDef', (1, 0), 'C', [], [], None, None, [('Pass', (1, 8))], [])]),
+('Module', [('ClassDef', (1, 0), 'C', [('Name', (1, 8), 'object', ('Load',))], [], None, None, [('Pass', (1, 17))], [])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Return', (1, 8), ('Num', (1, 15), 1))], [], None)]),
 ('Module', [('Delete', (1, 0), [('Name', (1, 4), 'v', ('Del',))])]),
 ('Module', [('Assign', (1, 0), [('Name', (1, 0), 'v', ('Store',))], ('Num', (1, 4), 1))]),
@@ -1304,7 +1376,9 @@ exec_results = [
 ('Module', [('For', (1, 0), ('Name', (1, 4), 'v', ('Store',)), ('Name', (1, 9), 'v', ('Load',)), [('Pass', (1, 11))], [])]),
 ('Module', [('While', (1, 0), ('Name', (1, 6), 'v', ('Load',)), [('Pass', (1, 8))], [])]),
 ('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [])]),
-('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [('If', (2, 0) if is_cli else (2, 5), ('Name', (2, 5), 'u', ('Load',)), [('Pass', (2, 7))], [('Pass', (3, 6))])])]),
+('Module', [('With', (1, 0), [('withitem', ('Name', (1, 5), 'x', ('Load',)), ('Name', (1, 10), 'y', ('Load' if is_cli else 'Store',)))], [('Pass', (1, 13))])]),
+('Module', [('With', (1, 0), [('withitem', ('Name', (1, 5), 'x', ('Load',)), ('Name', (1, 10), 'y', ('Load',)))], [('With', (1, 0), [('withitem', ('Name', (1, 13), 'z', ('Load',)), ('Name', (1, 18), 'q', ('Load',)))], [('Pass', (1, 21))])])]) if is_cli else
+('Module', [('With', (1, 0), [('withitem', ('Name', (1, 5), 'x', ('Load',)), ('Name', (1, 10), 'y', ('Store',))), ('withitem', ('Name', (1, 13), 'z', ('Load',)), ('Name', (1, 18), 'q', ('Store',)))], [('Pass', (1, 21))])]),
 ('Module', [('Raise', (1, 0), ('Call', (1, 6), ('Name', (1, 6), 'Exception', ('Load',)), [('Str', (1, 16), 'string')], [], None, None), None)]),
 ('Module', [('Try', (1, 0), [('Pass', (2, 2))], [('ExceptHandler', (3, 0), ('Name', (3, 7), 'Exception', ('Load',)), None, [('Pass', (4, 2))])], [], [])]),
 ('Module', [('Try', (1, 0), [('Pass', (2, 2))], [], [], [('Pass', (4, 2))])]),
@@ -1314,11 +1388,22 @@ exec_results = [
 ('Module', [('Global', (1, 0), ['v'])]),
 ('Module', [('Expr', (1, 0), ('Num', (1, 0), 1))]),
 ('Module', [('Pass', (1, 0))]),
-('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Break', (1, 9))], [])]),
-('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Continue', (1, 9))], [])]),
+#('Module', [('Break', (1, 0))]), # doesn't work outside a loop in IronPython
+#('Module', [('Continue', (1, 0))]), # doesn't work outside a loop in IronPython
 ('Module', [('For', (1, 0), ('Tuple', (1, 4), [('Name', (1, 4), 'a', ('Store',)), ('Name', (1, 6), 'b', ('Store',))], ('Store',)), ('Name', (1, 11), 'c', ('Load',)), [('Pass', (1, 14))], [])]),
 ('Module', [('Expr', (1, 0), ('ListComp', (1, 0) if is_cli else (1, 1), ('Tuple', (1, 1) if is_cli else (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Tuple', (1, 1) if is_cli else (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Tuple', (1, 1) if is_cli else (1, 2), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11) if is_cli else (1, 12), [('Name', (1, 12), 'a', ('Store',)), ('Name', (1, 14), 'b', ('Store',))], ('Store',)), ('Name', (1, 20), 'c', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0) if is_cli else (2, 4), ('Tuple', (2, 4) if is_cli else (3, 4), [('Name', (3, 4), 'Aa', ('Load',)), ('Name', (5, 7), 'Bb', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (8, 4), [('Name', (8, 4), 'Aa', ('Store',)), ('Name', (10, 4), 'Bb', ('Store',))], ('Store',)), ('Name', (10, 10), 'Cc', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('DictComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), ('Name', (1, 5), 'b', ('Load',)), [('comprehension', ('Name', (1, 11), 'w', ('Store',)), ('Name', (1, 16), 'x', ('Load',)), []), ('comprehension', ('Name', (1, 22), 'm', ('Store',)), ('Name', (1, 27), 'p', ('Load',)), [('Name', (1, 32), 'g', ('Load',))])]))]),
+('Module', [('Expr', (1, 0), ('DictComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), ('Name', (1, 5), 'b', ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'v', ('Store',)), ('Name', (1, 13), 'w', ('Store',))], ('Store',)), ('Name', (1, 18), 'x', ('Load',)), [])]))]),
+('Module', [('Expr', (1, 0), ('SetComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'r', ('Load',)), [('comprehension', ('Name', (1, 7), 'l', ('Store',)), ('Name', (1, 12), 'x', ('Load',)), [('Name', (1, 17), 'g', ('Load',))])]))]),
+('Module', [('Expr', (1, 0), ('SetComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'r', ('Load',)), [('comprehension', ('Tuple', (1, 7), [('Name', (1, 7), 'l', ('Store',)), ('Name', (1, 9), 'm', ('Store',))], ('Store',)), ('Name', (1, 14), 'x', ('Load',)), [])]))]),
+]
+exec_results = exec_results_stdlib + [
+('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Break', (1, 9))], [])]),
+('Module', [('While', (1, 0), ('Name', (1, 6), 'x', ('Load',)), [('Continue', (1, 9))], [])]),
+('Module', [('If', (1, 0), ('Name', (1, 3), 'v', ('Load',)), [('Pass', (1, 5))], [('If', (2, 0) if is_cli else (2, 5), ('Name', (2, 5), 'u', ('Load',)), [('Pass', (2, 7))], [('Pass', (3, 6))])])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [], None)]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, [], [], None, []), [('Expr', (1, 9), ('Yield', (1, 9), None))], [], None)]),
 ('Module', []),
@@ -1326,19 +1411,18 @@ exec_results = [
 single_results = [
 ('Interactive', [('Expr', (1, 0), ('BinOp', (1, 0), ('Num', (1, 0), 1), ('Add',), ('Num', (1, 2), 2)))]),
 ]
-eval_results = [
+eval_results_stdlib = [
+('Expression', ('NameConstant', (1, 0), None)),
 ('Expression', ('BoolOp', (1, 0), ('And',), [('Name', (1, 0), 'a', ('Load',)), ('Name', (1, 6), 'b', ('Load',))])),
 ('Expression', ('BinOp', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Add',), ('Name', (1, 4), 'b', ('Load',)))),
 ('Expression', ('UnaryOp', (1, 0), ('Not',), ('Name', (1, 4), 'v', ('Load',)))),
 ('Expression', ('Lambda', (1, 0), ('arguments', [], None, [], [], None, []), ('NameConstant', (1, 7), None))),
-('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Name', (1, 10), 'x', ('Load',)))),
-('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Yield', (1, 10) if is_cli else (1, 11), ('Name', (1, 17), 'x', ('Load',))))),
 ('Expression', ('Dict', (1, 0), [('Num', (1, 2), 1)], [('Num', (1, 4), 2)])),
+('Expression', ('Dict', (1, 0), [], [])),
+('Expression', ('Set', (1, 0), [('NameConstant', (1, 1), None)])),
+('Expression', ('Dict', (1, 0), [('Num', (2, 6), 1)], [('Num', (4, 10), 2)])),
 ('Expression', ('ListComp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
 ('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), [('Name', (1, 17), 'd', ('Load',))])])),
-('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
-('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Yield', (1, 1) if is_cli else (1, 2), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Compare', (1, 0), ('Num', (1, 0), 1), [('Lt',), ('Lt',)], [('Num', (1, 4), 2), ('Num', (1, 8), 3)])),
 ('Expression', ('Call', (1, 0), ('Name', (1, 0), 'f', ('Load',)), [('Num', (1, 2), 1), ('Num', (1, 4), 2)], [('keyword', 'c', ('Num', (1, 8), 3))], ('Name', (1, 11), 'd', ('Load',)), ('Name', (1, 15), 'e', ('Load',)))),
 ('Expression', ('Num', (1, 0), 10)),
@@ -1347,8 +1431,18 @@ eval_results = [
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Slice', ('Name', (1, 2), 'b', ('Load',)), ('Name', (1, 4), 'c', ('Load',)), None), ('Load',))),
 ('Expression', ('Name', (1, 0), 'v', ('Load',))),
 ('Expression', ('List', (1, 0), [('Num', (1, 1), 1), ('Num', (1, 3), 2), ('Num', (1, 5), 3)], ('Load',))),
+('Expression', ('List', (1, 0), [], ('Load',))),
 ('Expression', ('Tuple', (1, 0), [('Num', (1, 0), 1), ('Num', (1, 2), 2), ('Num', (1, 4), 3)], ('Load',))),
+('Expression', ('Tuple', (1, 0) if is_cli else (1, 1), [('Num', (1, 1), 1), ('Num', (1, 3), 2), ('Num', (1, 5), 3)], ('Load',))),
+('Expression', ('Tuple', (1, 0), [], ('Load',))),
 ('Expression', ('Call', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Attribute', (1, 0), ('Name', (1, 0), 'a', ('Load',)), 'b', ('Load',)), 'c', ('Load',)), 'd', ('Load',)), [('Subscript', (1, 8), ('Attribute', (1, 8), ('Name', (1, 8), 'a', ('Load',)), 'b', ('Load',)), ('Slice', ('Num', (1, 12), 1), ('Num', (1, 14), 2), None), ('Load',))], [], None, None)),
+]
+eval_results = eval_results_stdlib + [
+('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Name', (1, 10), 'x', ('Load',)))),
+('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Yield', (1, 10) if is_cli else (1, 11), ('Name', (1, 17), 'x', ('Load',))))),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0) if is_cli else (1, 1), ('Yield', (1, 1) if is_cli else (1, 2), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Ellipsis', (1, 1) if is_cli else (1, 2))), ('Load',))),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1) if is_cli else (1, 2), 1)), ('Load',))),
 ('Expression', ('Set', (1, 0), [('Name', (1, 1), 'a', ('Load',)), ('Name', (1, 3), 'b', ('Load',)), ('Name', (1, 5), 'c', ('Load',))])),

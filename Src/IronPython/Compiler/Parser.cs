@@ -590,25 +590,22 @@ namespace IronPython.Compiler {
 
             var start = GetStart();
 
-            // Parse expression list after yield. This can be:
-            // 1) empty, in which case it becomes 'yield None'
-            // 2) a single expression
-            // 3) multiple expression, in which case it's wrapped in a tuple.
-            Expression yieldResult;
-
-            bool isYieldFrom = false;
+            Expression yieldExpression;
             if (MaybeEat(TokenKind.KeywordFrom)) {
-                yieldResult = ParseTest();
+                Expression yieldResult = ParseTest();
                 yieldResult.SetLoc(_globalParent, start, GetEnd());
-                isYieldFrom = true;
+                yieldExpression = new YieldFromExpression(yieldResult);
             } else {
+                // Parse expression list after yield. This can be:
+                // 1) empty
+                // 2) a single expression
+                // 3) multiple expression, in which case it's wrapped in a tuple.
+                Expression yieldResult;
+
                 bool trailingComma;
                 List<Expression> l = ParseTestList(out trailingComma);
                 if (l.Count == 0) {
-                    // Check empty expression and convert to 'none'
-                    yieldResult = new ConstantExpression(null);
-                    // location set to match yield location (consistent with cpython)
-                    yieldResult.SetLoc(_globalParent, start, GetEnd());
+                    yieldResult = null;
                 } else if (l.Count != 1) {
                     // make a tuple
                     yieldResult = MakeTupleOrExpr(l, trailingComma);
@@ -616,8 +613,8 @@ namespace IronPython.Compiler {
                     // just take the single expression
                     yieldResult = l[0];
                 }
+                yieldExpression = new YieldExpression(yieldResult);
             }
-            Expression yieldExpression = new YieldExpression(yieldResult, isYieldFrom);
 
             yieldExpression.SetLoc(_globalParent, start, GetEnd());
             return yieldExpression;

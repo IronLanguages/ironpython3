@@ -292,7 +292,8 @@ namespace IronPython.Modules {
                     ListComprehension x => new ListComp(x),
                     GeneratorExpression x => new GeneratorExp(x),
                     MemberExpression x => new Attribute(x, ctx),
-                    YieldExpression x => x.IsYieldFrom ? (expr)new YieldFrom(x) : new Yield(x),
+                    YieldExpression x => new Yield(x),
+                    YieldFromExpression x => new YieldFrom(x),
                     ConditionalExpression x => new IfExp(x),
                     IndexExpression x => new Subscript(x, ctx),
                     SetExpression x => new Set(x),
@@ -2832,13 +2833,12 @@ namespace IronPython.Modules {
 
             internal Yield(YieldExpression expr)
                 : this() {
-                // expr.Expression is never null
-                value = Convert(expr.Expression);
+                value = expr.Expression == null ? null : Convert(expr.Expression);
             }
 
             internal override AstExpression Revert() {
                 _containsYield = true;
-                return new YieldExpression(expr.Revert(value));
+                return new YieldExpression(value == null ? null : expr.Revert(value));
             }
 
             public expr value { get; set; }
@@ -2857,7 +2857,7 @@ namespace IronPython.Modules {
                 _col_offset = col_offset;
             }
 
-            internal YieldFrom(YieldExpression expr)
+            internal YieldFrom(YieldFromExpression expr)
                 : this() {
                 // expr.Expression is never null
                 value = Convert(expr.Expression);
@@ -2865,7 +2865,7 @@ namespace IronPython.Modules {
 
             internal override AstExpression Revert() {
                 _containsYield = true;
-                return new YieldExpression(expr.Revert(value), true);
+                return new YieldFromExpression(expr.Revert(value));
             }
 
             public expr value { get; set; }

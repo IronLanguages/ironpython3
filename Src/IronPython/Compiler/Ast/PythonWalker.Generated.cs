@@ -113,6 +113,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(YieldExpression node) { return true; }
         public virtual void PostWalk(YieldExpression node) { }
 
+        // YieldFromExpression
+        public virtual bool Walk(YieldFromExpression node) { return true; }
+        public virtual void PostWalk(YieldFromExpression node) { }
+
         // AssertStatement
         public virtual bool Walk(AssertStatement node) { return true; }
         public virtual void PostWalk(AssertStatement node) { }
@@ -355,6 +359,10 @@ namespace IronPython.Compiler.Ast {
         // YieldExpression
         public override bool Walk(YieldExpression node) { return false; }
         public override void PostWalk(YieldExpression node) { }
+
+        // YieldFromExpression
+        public override bool Walk(YieldFromExpression node) { return false; }
+        public override void PostWalk(YieldFromExpression node) { }
 
         // AssertStatement
         public override bool Walk(AssertStatement node) { return false; }

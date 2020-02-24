@@ -460,6 +460,7 @@ class CodecTest(IronPythonTestCase):
     def test_error_handlers(self):
         ude = UnicodeDecodeError('dummy', b"abcdefgh", 3, 5, "decoding testing purposes")
         uee = UnicodeEncodeError('dummy', "abcdefgh", 2, 6, "encoding testing purposes")
+        ute = UnicodeTranslateError("abcdefgh", 2, 6, "translating testing purposes")
         unicode_data = "ab\xff\u20ac\U0001f40d\0\t\r\nz"
         uee_unicode = UnicodeEncodeError('dummy', unicode_data, 2, len(unicode_data), "encoding testing purposes")
 
@@ -471,6 +472,9 @@ class CodecTest(IronPythonTestCase):
         with self.assertRaises(UnicodeEncodeError) as cm:
             strict(uee)
         self.assertEqual(cm.exception, uee)
+        with self.assertRaises(UnicodeTranslateError) as cm:
+            strict(ute)
+        self.assertEqual(cm.exception, ute)
         self.assertRaisesRegex(TypeError, "codec must pass exception instance", strict, None)
         self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(0 given\)", strict)
         self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(2 given\)", strict, ude, uee)
@@ -480,24 +484,28 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(ignore, codecs.ignore_errors)
         self.assertEqual(ignore(ude), ("", 5))
         self.assertEqual(ignore(uee), ("", 6))
+        self.assertEqual(ignore(ute), ("", 6))
         self.assertEqual(ignore(uee_unicode), ("", uee_unicode.end))
 
         replace = codecs.lookup_error('replace')
         self.assertEqual(replace, codecs.replace_errors)
         self.assertEqual(replace(ude), ("�", 5))
         self.assertEqual(replace(uee), ("????", 6))
+        self.assertEqual(replace(ute), ("����", 6))
         self.assertEqual(replace(uee_unicode), ("?" * (uee_unicode.end - uee_unicode.start), uee_unicode.end))
 
         backslashreplace = codecs.lookup_error('backslashreplace')
         self.assertEqual(backslashreplace, codecs.backslashreplace_errors)
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeDecodeError in error callback", backslashreplace, ude)
         self.assertEqual(backslashreplace(uee), (r"\x63\x64\x65\x66", 6))
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", backslashreplace, ute)
         self.assertEqual(backslashreplace(uee_unicode), (r"\xff\u20ac\U0001f40d\x00\x09\x0d\x0a\x7a", uee_unicode.end))
 
         xmlcharrefreplace = codecs.lookup_error('xmlcharrefreplace')
         self.assertEqual(xmlcharrefreplace, codecs.xmlcharrefreplace_errors)
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeDecodeError in error callback", xmlcharrefreplace, ude)
         self.assertEqual(xmlcharrefreplace(uee), ("&#99;&#100;&#101;&#102;", 6))
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", xmlcharrefreplace, ute)
         self.assertEqual(xmlcharrefreplace(uee_unicode), ("&#255;&#8364;&#128013;&#0;&#9;&#13;&#10;&#122;", uee_unicode.end))
 
     def test_error_handlers_surrogateescape(self):
@@ -559,6 +567,11 @@ class CodecTest(IronPythonTestCase):
 
         ude = UnicodeEncodeError('utf-16-le', "a\udcff\udcdcz", 1, 2, "one byte at a time for widechar encoding")
         self.assertEqual(surrogateescape(ude), (b"\xff", 2))
+
+        # Translating with surrogateescape
+
+        ute = UnicodeTranslateError("abcd", 1, 3, "UnicodeTranslateError not supported with surrogateescape")
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogateescape, ute)
 
     def test_error_handlers_surrogatepass(self):
         surrogatepass = codecs.lookup_error('surrogatepass')
@@ -675,6 +688,11 @@ class CodecTest(IronPythonTestCase):
             with self.assertRaises(UnicodeEncodeError) as cm:
                 surrogatepass(uee)
             self.assertEqual(cm.exception, uee)
+
+        # Translating with surrogatepass
+
+        ute = UnicodeTranslateError("abcd", 1, 3, "UnicodeTranslateError not supported with surrogatepass")
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogatepass, ute)
 
     #TODO: @skip("multiple_execute")
     def test_lookup_error(self):

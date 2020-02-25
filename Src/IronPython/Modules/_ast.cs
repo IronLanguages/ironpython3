@@ -2783,7 +2783,7 @@ namespace IronPython.Modules {
             internal With(WithStatement with)
                 : this() {
                 items = new PythonList(1);
-                items.AddNoLock(new withitem(Convert(with.ContextManager), with.Variable == null ? null : Convert(with.Variable)));
+                items.AddNoLock(new withitem(Convert(with.ContextManager), with.Variable == null ? null : Convert(with.Variable, Store.Instance)));
                 body = ConvertStatements(with.Body);
             }
 

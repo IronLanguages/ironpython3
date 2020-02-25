@@ -2644,6 +2644,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static object StrictErrors(object unicodeError) {
+            if (unicodeError is PythonExceptions._UnicodeTranslateError ute) {
+                throw ute.GetClrException();
+            }
             if (unicodeError is PythonExceptions.BaseException be) {
                 unicodeError = be.GetClrException();
             }
@@ -2660,6 +2663,8 @@ namespace IronPython.Runtime.Operations {
                     return PythonTuple.MakeTuple(string.Empty, ude.end);
                 case PythonExceptions._UnicodeEncodeError uee:
                     return PythonTuple.MakeTuple(string.Empty, uee.end);
+                case PythonExceptions._UnicodeTranslateError ute:
+                    return PythonTuple.MakeTuple(string.Empty, ute.end);
                 case DecoderFallbackException dfe: 
                     return PythonTuple.MakeTuple(string.Empty, dfe.Index + dfe.BytesUnknown?.Length ?? 0);
                 case EncoderFallbackException efe: 
@@ -2674,11 +2679,21 @@ namespace IronPython.Runtime.Operations {
                 case PythonExceptions._UnicodeDecodeError ude:
                     return PythonTuple.MakeTuple("\ufffd", ude.end);
 
-                case PythonExceptions._UnicodeEncodeError uee:
-                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
-                        start = Math.Max(0, Math.Min(start, text.Length - 1));
-                        end = Math.Max(start, Math.Min(end, text.Length));
-                        return PythonTuple.MakeTuple(new string('?', end - start), end);
+                case PythonExceptions._UnicodeEncodeError uee: {
+                        if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                            start = Math.Max(0, Math.Min(start, text.Length - 1));
+                            end = Math.Max(start, Math.Min(end, text.Length));
+                            return PythonTuple.MakeTuple(new string('?', end - start), end);
+                        }
+                    }
+                    goto default;
+
+                case PythonExceptions._UnicodeTranslateError ute: {
+                        if (ute.@object is string text && ute.start is int start && ute.end is int end) {
+                            start = Math.Max(0, Math.Min(start, text.Length - 1));
+                            end = Math.Max(start, Math.Min(end, text.Length));
+                            return PythonTuple.MakeTuple(new string('\ufffd', end - start), end);
+                        }
                     }
                     goto default;
 
@@ -2718,6 +2733,9 @@ namespace IronPython.Runtime.Operations {
                     }
                     goto default;
 
+                case PythonExceptions._UnicodeTranslateError ute:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeTranslateError in error callback");
+
                 case DecoderFallbackException dfe:
                     throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
 
@@ -2742,6 +2760,9 @@ namespace IronPython.Runtime.Operations {
                         return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(text, start, end - start, escapeAscii: true), end);
                     }
                     goto default;
+
+                case PythonExceptions._UnicodeTranslateError ute:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeTranslateError in error callback");
 
                 case DecoderFallbackException dfe:
                     throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
@@ -2906,6 +2927,9 @@ namespace IronPython.Runtime.Operations {
                         return PythonTuple.MakeTuple(res, tend);
                     }
                     goto default;
+
+                case PythonExceptions._UnicodeTranslateError ute:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeTranslateError in error callback");
 
                 case DecoderFallbackException dfe: {
                         if (dfe.BytesUnknown == null) throw dfe;

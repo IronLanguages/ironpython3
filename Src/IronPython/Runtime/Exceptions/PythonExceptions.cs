@@ -515,6 +515,19 @@ namespace IronPython.Runtime.Exceptions {
 
                 base.__init__(args);
             }
+
+            public override string ToString() {
+                string repr(int c) => c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
+
+                if (@object is string s && start is int startIdx && end is int endIdx) {
+                    if (0 <= startIdx && startIdx + 1 == endIdx && endIdx <= s.Length) {
+                        return $"can't translate character '{repr(s[startIdx])}' in position {start}: {reason}";
+                    } else {
+                        return $"can't translate characters in position {startIdx}-{endIdx - 1}: {reason}";
+                    }
+                }
+                return reason?.ToString() ?? GetType().Name;
+            }
         }
 
         public partial class _OSError {
@@ -1014,10 +1027,10 @@ for k, v in toError.items():
                     if (0 <= startIdx && endIdx <= s.Length) {
                         switch (endIdx - startIdx) {
                             case 1: return $"'{encoding}' codec can't encode character '{repr(s[startIdx])}' in position {start}: {reason}";
-                            case 2: return $"'{encoding}' codec can't encode surrogate pair '{repr(s[startIdx])}{repr(s[startIdx + 1])}' in position {start}: {reason}";
+                            case 2: return $"'{encoding}' codec can't encode character pair '{repr(s[startIdx])}{repr(s[startIdx + 1])}' in position {start}: {reason}";
                         }
                     }
-                    return $"'{encoding}' codec can't encode string in position {startIdx}-{endIdx - 1}: {reason}";
+                    return $"'{encoding}' codec can't encode characters in position {startIdx}-{endIdx - 1}: {reason}";
                 }
                 return reason?.ToString() ?? GetType().Name;
             }

@@ -1556,16 +1556,16 @@ namespace IronPython.Runtime.Operations {
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             int start = 0;
-            int count = s.Length;
+            int end = s.Length;
             int i = start;
-            while (i < s.Length) {
+            while (i < end) {
                 char ch = s[i++];
                 if (ch <= 0x1F || ch == 0x7F) {
                     StringBuilderInit(ref b, s, start, i - 1);
                     b.AppendFormat("\\x{0:x2}", (int)ch);
                 } else if (ch > 0x7F) {
                     StringBuilderInit(ref b, s, 0, i - 1);
-                    if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                    if ((ch & 0xFC00) == 0xD800 && i < end && (s[i] & 0xFC00) == 0xDC00) {
                         b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
                     } else if (ch > 0xFF) {
                         b.AppendFormat("\\u{0:x4}", (int)ch);
@@ -1606,7 +1606,7 @@ namespace IronPython.Runtime.Operations {
                             b.AppendFormat("\\x{0:x2}", (int)ch);
                         } else if (ch > 0x7F && (isUniEscape || !IsPrintable(ch))) {
                             StringBuilderInit(ref b, s, start, i - 1);
-                            if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                            if ((ch & 0xFC00) == 0xD800 && i < end && (s[i] & 0xFC00) == 0xDC00) {
                                 b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
                             } else if (ch > 0xFF) {
                                 b.AppendFormat("\\u{0:x4}", (int)ch);
@@ -1632,7 +1632,7 @@ namespace IronPython.Runtime.Operations {
             int end = start + count;
             while (i < end) {
                 char ch = s[i++];
-                if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                if ((ch & 0xFC00) == 0xD800 && i < end && (s[i] & 0xFC00) == 0xDC00) {
                     StringBuilderInit(ref b, s, start, i - 1);
                     b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
                 } else if (ch > 0xFF) {

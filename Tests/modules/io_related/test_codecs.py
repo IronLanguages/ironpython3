@@ -883,8 +883,47 @@ class CodecTest(IronPythonTestCase):
         codecs.register_error("blah garbage xyz", garbage_error1)
         self.assertEqual(codecs.lookup_error("blah garbage xyz"), garbage_error1)
         def garbage_error2(someError): pass
-        codecs.register_error("some other", garbage_error2)
-        self.assertEqual(codecs.lookup_error("some other"), garbage_error2)
+        codecs.register_error("some other dummy", garbage_error2)
+        self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error2)
+        return # TODO
+
+        # register under the same name, overriding the previous registration
+        def garbage_error3(someError): return ("<garbage>", someError.end)
+        codecs.register_error("some other dummy", garbage_error3)
+        self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error3)
+        self.assertEqual(codecs.utf_8_decode(b"a\xffz", "some other dummy"), ("a<garbage>z", 3))
+
+        # override default 'strict'
+        self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
+        try:
+            codecs.register_error('strict', garbage_error3)
+            self.assertEqual(codecs.lookup_error('strict'), garbage_error3)
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz"), ("a<garbage>z", 3))
+        finally:
+            codecs.register_error('strict', codecs.strict_errors)
+        self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
+
+        # override default 'ignore'
+        self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
+        def test_ignore(someError): return (" " * (someError.end - someError.start), someError.end)
+        try:
+            codecs.register_error('ignore', test_ignore)
+            self.assertEqual(codecs.lookup_error('ignore'), test_ignore)
+            self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("a  z", 4))
+        finally:
+            codecs.register_error('ignore', codecs.ignore_errors)
+        self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
+
+        # override default 'replace'
+        self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
+        def test_replace(someError): return ("<error>", someError.end)
+        try:
+            codecs.register_error('replace', test_replace)
+            self.assertEqual(codecs.lookup_error('replace'), test_replace)
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a<error>z", 3))
+        finally:
+            codecs.register_error('replace', codecs.replace_errors)
+        self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
 
         self.assertRaises(TypeError, codecs.lookup_error, None)
         self.assertRaises(TypeError, codecs.register_error, None, garbage_error1)
@@ -1881,5 +1920,18 @@ class CodecTest(IronPythonTestCase):
         codecs.register_error("test_unicode_error", handler)
         res = "\xac\u1234\u20ac\u8000".encode("ptcp154", "test_unicode_error")
         self.assertEqual(res, b"\xac")
+
+        def handler1(ex):
+            print()
+            print(ex)
+            return ("", ex.end + 1)
+
+        codecs.register_error("test_unicode_error1", handler1)
+        if is_cpython:
+            res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
+            self.assertEqual(res, b"+++\xac--")
+        else:
+            with self.assertRaises(NotImplementedError):
+                res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
 
 run_test(__name__)

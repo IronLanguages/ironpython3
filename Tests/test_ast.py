@@ -4,9 +4,7 @@
 
 import ast
 import sys
-import types
 import unittest
-import itertools
 
 from io import StringIO
 
@@ -1136,7 +1134,7 @@ for v in fNone():
         augassign2=ast.AugAssign(ast.Name('a', ast.Store()), ast.Add(), ast.Num(1), lineno=0, col_offset=0)
 
         # for i in l:
-        #   print i
+        #   assert i
         # else:
         #   pass
         for0 = ast.For()

@@ -283,7 +283,7 @@ namespace IronPython.Modules {
                     AndExpression x => new BoolOp(x),
                     OrExpression x => new BoolOp(x),
                     CallExpression x => new Call(x),
-                    ParenthesisExpression x => Convert((x).Expression),
+                    ParenthesisExpression x => Convert(x.Expression),
                     LambdaExpression x => new Lambda(x),
                     ListExpression x => new List(x, ctx),
                     TupleExpression x => new Tuple(x, ctx),

@@ -44,7 +44,7 @@ namespace IronPython.Compiler.Ast {
         public Statement Body { get; }
 
         /// <summary>
-        /// The body of the optional Else block for this try. NULL if there is no Else block.
+        /// The body of the optional else block for this try. NULL if there is no else block.
         /// </summary>
         public Statement? Else { get; }
 
@@ -54,9 +54,9 @@ namespace IronPython.Compiler.Ast {
         public Statement? Finally { get; }
 
         /// <summary>
-        /// Array of except (catch) blocks associated with this try. NULL if there are no except blocks.
+        /// Array of except (catch) blocks associated with this try.
         /// </summary>
-        public IList<TryStatementHandler> Handlers => _handlers;
+        public IReadOnlyList<TryStatementHandler> Handlers => _handlers;
 
         public override MSAst.Expression Reduce() {
             // allocated all variables here so they won't be shared w/ other 

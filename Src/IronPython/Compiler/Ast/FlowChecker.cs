@@ -484,21 +484,19 @@ namespace IronPython.Compiler.Ast {
             // Else is flown only after completion of Try with same bits
             node.Else?.Walk(this);
 
-            if (node.Handlers != null) {
-                foreach (TryStatementHandler tsh in node.Handlers) {
-                    // Restore to saved state
-                    _bits.SetAll(false);
-                    _bits.Or(save);
+            foreach (TryStatementHandler tsh in node.Handlers) {
+                // Restore to saved state
+                _bits.SetAll(false);
+                _bits.Or(save);
 
-                    // Flow the test
-                    tsh.Test?.Walk(this);
+                // Flow the test
+                tsh.Test?.Walk(this);
 
-                    // Define the target
-                    tsh.Target?.Walk(_fdef);
+                // Define the target
+                tsh.Target?.Walk(_fdef);
 
-                    // Flow the body
-                    tsh.Body.Walk(this);
-                }
+                // Flow the body
+                tsh.Body.Walk(this);
             }
 
             _bits = save;

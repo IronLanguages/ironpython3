@@ -2,30 +2,25 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class SliceExpression : Expression {
-        public SliceExpression(Expression start, Expression stop, Expression step, bool stepProvided) {
+        public SliceExpression(Expression? start, Expression? stop, Expression? step) {
             SliceStart = start;
             SliceStop = stop;
             SliceStep = step;
-            StepProvided = stepProvided;
         }
 
-        public Expression SliceStart { get; }
+        public Expression? SliceStart { get; }
 
-        public Expression SliceStop { get; }
+        public Expression? SliceStop { get; }
 
-        public Expression SliceStep { get; }
-
-        /// <summary>
-        /// True if the user provided a step parameter (either providing an explicit parameter
-        /// or providing an empty step parameter) false if only start and stop were provided.
-        /// </summary>
-        public bool StepProvided { get; }
+        public Expression? SliceStep { get; }
 
         public override MSAst.Expression Reduce() {
             return Call(

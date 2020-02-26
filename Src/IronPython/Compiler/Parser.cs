@@ -590,25 +590,22 @@ namespace IronPython.Compiler {
 
             var start = GetStart();
 
-            // Parse expression list after yield. This can be:
-            // 1) empty, in which case it becomes 'yield None'
-            // 2) a single expression
-            // 3) multiple expression, in which case it's wrapped in a tuple.
-            Expression yieldResult;
-
-            bool isYieldFrom = false;
+            Expression yieldExpression;
             if (MaybeEat(TokenKind.KeywordFrom)) {
-                yieldResult = ParseTest();
+                Expression yieldResult = ParseTest();
                 yieldResult.SetLoc(_globalParent, start, GetEnd());
-                isYieldFrom = true;
+                yieldExpression = new YieldFromExpression(yieldResult);
             } else {
+                // Parse expression list after yield. This can be:
+                // 1) empty
+                // 2) a single expression
+                // 3) multiple expression, in which case it's wrapped in a tuple.
+                Expression yieldResult;
+
                 bool trailingComma;
                 List<Expression> l = ParseTestList(out trailingComma);
                 if (l.Count == 0) {
-                    // Check empty expression and convert to 'none'
-                    yieldResult = new ConstantExpression(null);
-                    // location set to match yield location (consistent with cpython)
-                    yieldResult.SetLoc(_globalParent, start, GetEnd());
+                    yieldResult = null;
                 } else if (l.Count != 1) {
                     // make a tuple
                     yieldResult = MakeTupleOrExpr(l, trailingComma);
@@ -616,8 +613,8 @@ namespace IronPython.Compiler {
                     // just take the single expression
                     yieldResult = l[0];
                 }
+                yieldExpression = new YieldExpression(yieldResult);
             }
-            Expression yieldExpression = new YieldExpression(yieldResult, isYieldFrom);
 
             yieldExpression.SetLoc(_globalParent, start, GetEnd());
             return yieldExpression;
@@ -2155,7 +2152,6 @@ namespace IronPython.Compiler {
         private Expression FinishSlice(Expression e0, int start) {
             Expression e1 = null;
             Expression e2 = null;
-            bool stepProvided = false;
 
             switch (PeekToken().Kind) {
                 case TokenKind.Comma:
@@ -2163,7 +2159,6 @@ namespace IronPython.Compiler {
                     break;
                 case TokenKind.Colon:
                     // x[?::?]
-                    stepProvided = true;
                     NextToken();
                     e2 = ParseSliceEnd();
                     break;
@@ -2171,12 +2166,11 @@ namespace IronPython.Compiler {
                     // x[?:val:?]
                     e1 = ParseTest();
                     if (MaybeEat(TokenKind.Colon)) {
-                        stepProvided = true;
                         e2 = ParseSliceEnd();
                     }
                     break;
             }
-            SliceExpression ret = new SliceExpression(e0, e1, e2, stepProvided);
+            var ret = new SliceExpression(e0, e1, e2);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
@@ -2638,7 +2632,7 @@ namespace IronPython.Compiler {
                             return FinishDictComp(e1, e2, oStart, oEnd);
                         }
 
-                        SliceExpression se = new SliceExpression(e1, e2, null, false);
+                        SliceExpression se = new SliceExpression(e1, e2, null);
                         se.SetLoc(_globalParent, e1.StartIndex, e2.EndIndex);
                         dictMembers.Add(se);
                     } else { // set literal

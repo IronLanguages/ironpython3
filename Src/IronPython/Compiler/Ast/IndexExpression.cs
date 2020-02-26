@@ -36,19 +36,11 @@ namespace IronPython.Compiler.Ast {
             }
 
             if (Index is SliceExpression se) {
-                if (se.StepProvided) {
-                    return new[] {
-                        Target,
-                        GetSliceValue(se.SliceStart),
-                        GetSliceValue(se.SliceStop),
-                        GetSliceValue(se.SliceStep)
-                    };
-                }
-
                 return new[] {
                     Target,
                     GetSliceValue(se.SliceStart),
-                    GetSliceValue(se.SliceStop)
+                    GetSliceValue(se.SliceStop),
+                    GetSliceValue(se.SliceStep)
                 };
             }
 

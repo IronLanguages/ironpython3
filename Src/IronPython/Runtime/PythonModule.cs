@@ -142,7 +142,7 @@ namespace IronPython.Runtime {
             }
 
             switch (name) {
-                case "__dict__": throw PythonOps.TypeError("readonly attribute");
+                case "__dict__": throw PythonOps.AttributeError("readonly attribute");
                 case "__class__": throw PythonOps.TypeError("__class__ assignment: only for heap types");
             }
 
@@ -160,7 +160,7 @@ namespace IronPython.Runtime {
             }
 
             switch (name) {
-                case "__dict__": throw PythonOps.TypeError("readonly attribute");
+                case "__dict__": throw PythonOps.AttributeError("readonly attribute");
                 case "__class__": throw PythonOps.TypeError("can't delete __class__ attribute");
             }
 
@@ -206,13 +206,13 @@ namespace IronPython.Runtime {
         [SpecialName, PropertyMethod]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void Set__dict__(object value) {
-            throw PythonOps.TypeError("readonly attribute");
+            throw PythonOps.AttributeError("readonly attribute");
         }
 
         [SpecialName, PropertyMethod]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void Delete__dict__() {
-            throw PythonOps.TypeError("readonly attribute");
+            throw PythonOps.AttributeError("readonly attribute");
         }
 
         public Scope Scope {

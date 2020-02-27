@@ -2585,7 +2585,11 @@ namespace IronPython.Modules {
             #region ICodeFormattable Members
 
             public string __repr__(CodeContext/*!*/ context) {
-                return string.Format("<_io.TextIOWrapper encoding='{0}'>", _encoding);
+                if (PythonOps.TryGetBoundAttr(buffer, "name", out object nameObj)) {
+                    return $"<_io.TextIOWrapper name={PythonOps.Repr(context, nameObj)} encoding='{_encoding}'>";
+                }
+
+                return $"<_io.TextIOWrapper encoding='{_encoding}'>";
             }
 
             #endregion

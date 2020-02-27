@@ -147,8 +147,6 @@ class CodecTest(IronPythonTestCase):
         #Negative
         self.assertRaises(UnicodeDecodeError, codecs.charmap_decode, b"a", "strict", {})
         self.assertRaises(UnicodeDecodeError, codecs.charmap_decode, b"a", "strict", {'a': None})
-        self.assertRaises(UnicodeEncodeError, codecs.charmap_encode, "a", "strict", {'a': None})
-        self.assertRaises(UnicodeEncodeError, codecs.charmap_encode, "a", "replace", {'a': None})
 
         self.assertRaises(TypeError, codecs.charmap_decode, b"a", "strict", {ord('a'): 2.0})
 
@@ -1064,21 +1062,79 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(num_processed, 3)
 
     def test_charmap_encode(self):
-        #Sanity
-        self.assertEqual(codecs.charmap_encode("abc"),
-                (b'abc', 3))
-        self.assertEqual(codecs.charmap_encode("abc", "strict"),
-                (b'abc', 3))
+        # Sanity
+        self.assertEqual(codecs.charmap_encode("abc"), (b'abc', 3))
+        self.assertEqual(codecs.charmap_encode("abc", "strict"), (b'abc', 3))
+        self.assertEqual(codecs.charmap_encode("", "strict", {}), (b'', 0))
 
-        self.assertEqual(codecs.charmap_encode("", "strict", {}),
-                (b'', 0))
+        # Ignore errors
+        self.assertEqual(codecs.charmap_encode("abc", "ignore", {}), (b'', 3))
+        charmap = {ord(c): None for c in "abcdefgh"}
+        self.assertEqual(codecs.charmap_encode("abc", "ignore", charmap), (b'', 3))
 
-        charmap = dict([ (ord(c), ord(c.upper())) for c in "abcdefgh"])
-        self.assertEqual(codecs.charmap_encode("abc", "strict", charmap),
-                (b'ABC', 3))
+        # Dict[int, int]
+        charmap = {ord(c): ord(c.upper()) for c in "abcdefgh"}
+        self.assertEqual(codecs.charmap_encode("abc", "strict", charmap), (b'ABC', 3))
 
-        #Sanity Negative
-        self.assertRaises(UnicodeEncodeError, codecs.charmap_encode, "abc", "strict", {})
+        # Dict[int, bytes]
+        charmap = {ord(c): bytes(2*c.upper(), "ascii") for c in "abcdefgh"}
+        self.assertEqual(codecs.charmap_encode("abc", "strict", charmap), (b'AABBCC', 3))
+
+        # Fallback characters are charmapped again
+        charmap = {ord(c): ord(c.upper()) for c in "abcdefgh"}
+        charmap.update({ord('?'): ord('*')})
+        self.assertEqual(codecs.charmap_encode("abcxyz", "replace", charmap), (b'ABC***', 6))
+        charmap.update({ord('?'): b'+?-'})
+        self.assertEqual(codecs.charmap_encode("abcxyz", "replace", charmap), (b'ABC+?-+?-+?-', 6))
+
+        fallbacks = codecs.backslashreplace_errors(UnicodeEncodeError('dummy', "klm", 0, 3, "replace these chars"))[0]
+        charmap = {ord(c): ord(c.upper()) for c in "abcdefgh" + fallbacks}
+        charmap[ord('\\')] = ord('/')
+        self.assertEqual(codecs.charmap_encode("abcklm", "backslashreplace", charmap), (b'ABC/X6B/X6C/X6D', 6))
+
+        charmap = {ord(c): ord(c.upper()) for c in "abcdefgh0123456789"}
+        charmap.update({ord('&'): b'@', ord('#'): b'$:', ord(';'): b':'})
+        self.assertEqual(codecs.charmap_encode("abcklm", "xmlcharrefreplace", charmap), (b'ABC@$:107:@$:108:@$:109:', 6))
+
+        # However, if the error handler returns bytes, these are not remapped, but used as they are
+        if not is_cli: # TODO: IronPython does not support fallback bytes yet
+            def my_encode_replace(uee): return (b"?!" * (uee.end - uee.start), uee.end)
+            codecs.register_error('my_encode_replace', my_encode_replace)
+            charmap = {ord(c): ord(c.upper()) for c in "abcdefgh"}
+            self.assertEqual(codecs.charmap_encode("abcxyz", "my_encode_replace", charmap), (b'ABC?!?!?!', 6))
+
+        # Fallback characters are not charmapped recursively
+        for errors in ['strict', 'replace', 'backslashreplace', 'xmlcharrefreplace']:
+            # Missing key
+            self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            #self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode character",
+                codecs.charmap_encode, "abc", errors, {})
+
+            # Character key is not recognized, it must be an int (character ordinal)
+            self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            #self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode character",
+                codecs.charmap_encode, "abc", errors, {c: ord(c.upper()) for c in "abcdefgh"})
+
+            # Explict None as value mapping
+            self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            #self.assertRaisesRegex(UnicodeEncodeError, "'charmap' codec can't encode character",
+                codecs.charmap_encode, "abc", errors, {ord(c): None for c in "abcdefgh"})
+
+        self.assertRaisesRegex(LookupError, "unknown error handler name 'non-existent'",
+            codecs.charmap_encode, "abc", 'non-existent', {})
+
+        # Unsupported: Dict[int, str]
+        self.assertRaisesRegex(TypeError, "character mapping must return integer, bytes or None, not str",
+            codecs.charmap_encode, "abc", "strict", {ord(c): c.upper() for c in "abcdefgh"})
+
+        # Negative values
+        self.assertRaisesRegex(TypeError, r"character mapping must be in range\(256\)",
+            codecs.charmap_encode, "abc", "strict", {ord(c): -ord(c) for c in "abcdefgh"})
+
+        # Values outside of bytes range
+        self.assertRaisesRegex(TypeError, r"character mapping must be in range\(256\)",
+            codecs.charmap_encode, "abc", "strict", {ord(c): ord(c) + 0x100 for c in "abcdefgh"})
+
 
     @unittest.skipIf(is_posix, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
     def test_mbcs_decode(self):

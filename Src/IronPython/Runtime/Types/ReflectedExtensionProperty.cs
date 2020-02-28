@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Types {
 
         public void __set__(CodeContext context, object instance, object value) {
             if (!TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value)) {
-                throw PythonOps.TypeError("readonly attribute");
+                throw PythonOps.AttributeError("readonly attribute");
             }
         }
 

@@ -60,7 +60,7 @@ class AttrTest(IronPythonTestCase):
             del mod.__dict__[1]
 
             # Try to replace __dict__
-            self.assertRaisesMessage(TypeError, "readonly attribute", SetDictionary, mod, dict(mod.__dict__))
+            self.assertRaisesMessage(AttributeError, "readonly attribute", SetDictionary, mod, dict(mod.__dict__))
 
         # modules support object keys
         CheckModule(me)
@@ -124,8 +124,15 @@ class AttrTest(IronPythonTestCase):
         sm = staticmethod(f)
         p = property(f)
         self.assertEqual(f.__get__(1)(), 1)
-        self.assertEqual(str(f.__get__(2)), "<bound method ?.f of 2>")
-        self.assertEqual(str(f.__get__(2, list)), "<bound method list.f of 2>")
+        if is_cli:
+            self.assertEqual(str(f.__get__(2)), "<bound method ?.f of 2>")
+        else:
+            self.assertEqual(str(f.__get__(2)), "<bound method int.f of 2>")
+        
+        if is_cli:
+            self.assertEqual(str(f.__get__(2, list)), "<bound method list.f of 2>")
+        else:
+            self.assertEqual(str(f.__get__(2, list)), "<bound method int.f of 2>")
 
         self.assertEqual(cm.__get__(1)(), int)
         self.assertEqual(str(cm.__get__(2)), "<bound method type.f of <class 'int'>>")
@@ -263,7 +270,6 @@ class AttrTest(IronPythonTestCase):
                 import System
                 self.assertRaises(AttributeError, setattr, System, "name", "xyz")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test') # 2.6 feature
     def test_hasattr_sys_exit(self):
         # hasattr shouldn't swallow SystemExit exceptions.
         class x(object):

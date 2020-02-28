@@ -595,12 +595,6 @@ namespace IronPython.Modules {
 
             #region Private implementation details
 
-            private static Exception ToIoException(CodeContext context, string name, UnauthorizedAccessException e) {
-                Exception excp = new IOException(e.Message, e);
-                AddFilename(context, name, excp);
-                return excp;
-            }
-
             private static void AddFilename(CodeContext context, string name, Exception ioe) {
                 var pyExcep = PythonExceptions.ToPython(ioe);
                 PythonOps.SetAttr(context, pyExcep, "filename", name);
@@ -609,8 +603,8 @@ namespace IronPython.Modules {
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 try {
                     return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
-                } catch (UnauthorizedAccessException e) {
-                    throw ToIoException(context, name, e);
+                } catch (UnauthorizedAccessException) {
+                    throw PythonOps.OSError(13, "Permission denied", name);
                 } catch (IOException e) {
                     AddFilename(context, name, e);
                     throw;

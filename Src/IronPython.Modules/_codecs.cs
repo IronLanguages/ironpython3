@@ -133,7 +133,7 @@ namespace IronPython.Modules {
             }
 
             var res = StringOps.DoDecode(context, input, errors, encoding, e);
-            return PythonTuple.MakeTuple(res, res.Length);
+            return PythonTuple.MakeTuple(res, input.Count);
         }
 
         #endregion
@@ -695,7 +695,8 @@ namespace IronPython.Modules {
     internal class CharmapEncoding : Encoding {
         private readonly IDictionary<object, object> _map;
         private readonly string _errors;
-        private int _maxReplacementLength;
+        private int _maxEncodingReplacementLength;
+        private int _maxDecodingReplacementLength;
 
         public CharmapEncoding(IDictionary<object, object> map, string errors) {
             _map = map;
@@ -764,7 +765,7 @@ namespace IronPython.Modules {
                                     if (!_map.TryGetValue(fbCharObj, out val) || val == null) {
                                         throw new EncoderFallbackException();  // no recursive fallback
                                     }
-                                    byteIndex += ProcessReplacementValue(val, bytes, byteIndex);
+                                    byteIndex += ProcessEncodingReplacementValue(val, bytes, byteIndex);
                                 }
                             }
                         }
@@ -773,14 +774,14 @@ namespace IronPython.Modules {
                     }
                     charIndex = nextIndex;
                 } else {
-                    byteIndex += ProcessReplacementValue(val, bytes, byteIndex);
+                    byteIndex += ProcessEncodingReplacementValue(val, bytes, byteIndex);
                     charIndex++;
                 }
             }
             return byteIndex - byteStart;
         }
 
-        private static int ProcessReplacementValue(object replacement, byte[] bytes, int byteIndex) {
+        private static int ProcessEncodingReplacementValue(object replacement, byte[] bytes, int byteIndex) {
             Debug.Assert(replacement != null);
 
             switch (replacement) {
@@ -802,78 +803,100 @@ namespace IronPython.Modules {
 
         public override int GetCharCount(byte[] bytes, int index, int count) {
             int byteEnd = index + count;
-            int outputChars = 0;
+            int charCount = 0;
+            DecoderFallbackBuffer dfb = null;
+
             while (index < byteEnd) {
                 byte b = bytes[index];
+                object byteObj = ScriptingRuntimeHelpers.Int32ToObject(b);
 
-                object val;
-                object byteObj = ScriptingRuntimeHelpers.Int32ToObject((int)b);
-
-                if (!_map.TryGetValue(byteObj, out val) || val == null) {
-                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
-                    if (dfb.Fallback(new[] { b }, 0)) {
-                        outputChars += dfb.Remaining;
+                if (!_map.TryGetValue(byteObj, out object val) || val == null) {
+                    dfb ??= DecoderFallback.CreateFallbackBuffer();
+                    try {
+                        if (dfb.Fallback(new[] { b }, index)) {
+                            charCount += dfb.Remaining;
+                            while (dfb.Remaining != 0) dfb.GetNextChar(); // drain it
+                        }
+                    } catch (DecoderFallbackException) {
+                        return charCount; // decoding will stop at this point
                     }
-                } else if (val is string) {
-                    outputChars += ((string)val).Length;
-                } else if (val is int) {
-                    outputChars++;
+                } else if (val is string s) {
+                    charCount += s.Length;
+                } else if (val is int n) {
+                    charCount += n > 0xFFFF ? 2 : 1; // Non-BMP characters take 2 surrogate points
                 } else {
-                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                    throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
                 }
                 index++;
             }
-            return outputChars;
+            return charCount;
         }
 
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
             int byteEnd = byteIndex + byteCount;
-            int outputChars = 0;
+            int charStart = charIndex;
+            DecoderFallbackBuffer dfb = null;
+
             while (byteIndex < byteEnd) {
                 byte b = bytes[byteIndex];
-                object val;
-                object obj = ScriptingRuntimeHelpers.Int32ToObject((int)b);
+                object byteObj = ScriptingRuntimeHelpers.Int32ToObject(b);
 
-                if (!_map.TryGetValue(obj, out val) || val == null) {
-                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
-                    if (dfb.Fallback(new[] { b }, 0)) {
-                        while (dfb.Remaining != 0) {
-                            chars[charIndex++] = dfb.GetNextChar();
-                            outputChars++;
+                if (!_map.TryGetValue(byteObj, out object val) || val == null) {
+                    dfb ??= DecoderFallback.CreateFallbackBuffer();
+                    byte[] bytesUnknown = new[] { b };
+                    try {
+                        if (dfb.Fallback(bytesUnknown, byteIndex)) {
+                            while (dfb.Remaining != 0) {
+                                chars[charIndex++] = dfb.GetNextChar();
+                            }
                         }
+                    } catch (DecoderFallbackException) {
+                        throw PythonOps.UnicodeDecodeError("character maps to <undefined>", bytesUnknown, byteIndex);
                     }
-                } else if (val is string) {
-                    string v = val as string;
-                    for (int i = 0; i < v.Length; i++) {
-                        chars[charIndex++] = v[i];
-                        outputChars++;
+                } else if (val is string s) {
+                    for (int i = 0; i < s.Length; i++) {
+                        chars[charIndex++] = s[i];
                     }
-                } else if (val is int) {
-                    chars[charIndex++] = (char)(int)val;
-                    outputChars++;
+                } else if (val is int n) {
+                    if (n < 0 || n > 0x10FFFF) {
+                        throw PythonOps.TypeError("character mapping must be in range(0x110000)");
+                    } else if (n > 0xFFFF) {
+                        var sp = char.ConvertFromUtf32(n);
+                        chars[charIndex++] = sp[0];
+                        chars[charIndex++] = sp[1];
+                    } else {
+                        chars[charIndex++] = unchecked((char)n);
+                    }
                 } else {
-                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                    throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
                 }
                 byteIndex++;
             }
-            return outputChars;
+            return charIndex - charStart;
         }
 
         public override int GetMaxByteCount(int charCount) {
-            if (_maxReplacementLength == 0) {
-                _maxReplacementLength = 1;
+            if (_maxEncodingReplacementLength == 0) {
+                _maxEncodingReplacementLength = 1;
                 foreach (object val in _map.Values) {
-                    if (val is IList<byte> b && b.Count > _maxReplacementLength) {
-                        _maxReplacementLength = b.Count;
+                    if (val is IList<byte> b && b.Count > _maxEncodingReplacementLength) {
+                        _maxEncodingReplacementLength = b.Count;
                     }
                 }
             }
-            return charCount * _maxReplacementLength;
+            return charCount * _maxEncodingReplacementLength;
         }
 
         public override int GetMaxCharCount(int byteCount) {
-            // TODO: revisit
-            return byteCount;
+            if (_maxDecodingReplacementLength == 0) {
+                _maxDecodingReplacementLength = 2; // surrogate pair for codepoint
+                foreach (object val in _map.Values) {
+                    if (val is string s && s.Length > _maxDecodingReplacementLength) {
+                        _maxDecodingReplacementLength = s.Length;
+                    };
+                }
+            }
+            return byteCount * _maxDecodingReplacementLength;
         }
     }
 

@@ -6,7 +6,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, is_osx, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, is_mono, is_osx, is_posix, run_test, skipUnlessIronPython
 from shutil import copyfile
 
 @skipUnlessIronPython()
@@ -29,7 +29,7 @@ class ClrLoadTest(IronPythonTestCase):
         self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
         self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
         self.assertRaises(IOError, clr.AddReferenceByName, 'bad assembly name', 'WellFormed.But.Nonexistent, Version=9.9.9.9, Culture=neutral, PublicKeyToken=deadbeefdeadbeef, processorArchitecture=6502')
-        self.assertRaises(SystemError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
+        self.assertRaises(FileNotFoundError if is_netcoreapp21 else SystemError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
 
         self.assertRaises(TypeError, clr.AddReference, 35)
 

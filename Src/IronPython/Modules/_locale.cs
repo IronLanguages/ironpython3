@@ -230,7 +230,7 @@ Note: Return value differs from CPython - it is not a string.")]
                 locale = locale.Replace('_', '-');
 
                 try {
-                    return StringUtils.GetCultureInfo(locale);
+                    return CultureInfo.GetCultureInfo(locale);
                 } catch (ArgumentException) {
                     throw PythonExceptions.CreateThrowable(_localeerror(context), String.Format("unknown locale: {0}", locale));
                 }

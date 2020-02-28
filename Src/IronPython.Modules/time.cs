@@ -225,7 +225,7 @@ namespace IronPython.Modules {
                 var formats =
                     fIdx == -1 ? new [] { string.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
                 try {
-                    if (!StringUtils.TryParseDateTimeExact(@string,
+                    if (!DateTime.TryParseExact(@string,
                         formats,
                         PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat,
                         DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault,

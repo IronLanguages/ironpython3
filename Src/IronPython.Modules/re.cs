@@ -1112,7 +1112,7 @@ namespace IronPython.Modules {
                                             string grp = text.Substring(anglebrkStart + 1, lengrp);
                                             Group g;
 
-                                            if (StringUtils.TryParseInt32(grp, out int num)) {
+                                            if (int.TryParse(grp, out int num)) {
                                                 g = m.Groups[num];
                                                 if (string.IsNullOrEmpty(g.Value)) {
                                                     throw PythonOps.IndexError("unknown group reference");

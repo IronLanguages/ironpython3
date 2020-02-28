@@ -29,7 +29,7 @@ class ClrLoadTest(IronPythonTestCase):
         self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
         self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
         self.assertRaises(IOError, clr.AddReferenceByName, 'bad assembly name', 'WellFormed.But.Nonexistent, Version=9.9.9.9, Culture=neutral, PublicKeyToken=deadbeefdeadbeef, processorArchitecture=6502')
-        self.assertRaises(IOError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
+        self.assertRaises(SystemError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
 
         self.assertRaises(TypeError, clr.AddReference, 35)
 

@@ -100,7 +100,7 @@ class IndexerVbTest(IronPythonTestCase):
         self.assertEqual(x.PropertyName[6], 6)
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=3740
         self.assertEqual([y for y in x.PropertyName],
-                range(10)) #should be [2]?
+                list(range(10))) #should be [2]?
 
 
 run_test(__name__)

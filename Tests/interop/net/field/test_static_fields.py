@@ -176,7 +176,7 @@ class StaticFieldsTest(IronPythonTestCase):
         _test_verify(current_type)
         
         # set values which need conversion.
-        o.StaticInt32Field = 100L
+        o.StaticInt32Field = long(100)
         self.assertEqual(current_type.StaticInt32Field, 100)
 
         o.StaticInt32Field = 10.01
@@ -224,7 +224,7 @@ class StaticFieldsTest(IronPythonTestCase):
         self._test_verify(current_type)
 
         # set values which need conversion.
-        current_type.StaticInt16Field = 100L
+        current_type.StaticInt16Field = long(100)
         self.assertEqual(current_type.StaticInt16Field, 100)
 
         current_type.StaticBooleanField = 0

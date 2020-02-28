@@ -254,7 +254,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
         select = BindTest.Bind.Overloads[()]
         result = select()
-        self.assertEqual(BindResult.None, result)
+        self.assertEqual(getattr(BindResult, "None"), result)
 
 
     def test_enum(self):

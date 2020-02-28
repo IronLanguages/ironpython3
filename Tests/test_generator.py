@@ -24,10 +24,10 @@ def ifilterfalse(iterable):
 class GeneratorTest(IronPythonTestCase):
     def test_simple_generators(self):
         ll = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
-        x = filter(ll)
+        x = ifilter(ll)
         l = []
         for i in x: l.append(i)
-        x = filterfalse(ll)
+        x = ifilterfalse(ll)
         self.assertTrue(l == [1,2,4,5,7,8,10,11,13,14,16,17,19,20])
         l = []
         for i in x: l.append(i)
@@ -341,7 +341,7 @@ class GeneratorTest(IronPythonTestCase):
             func = """
 def fetest(%s):        
     ret = 0
-    for i in xrange(%i):
+    for i in range(%i):
         exec('a%%i = a%%i*a%%i' %% (i,i,i))
         exec('ret = a%%i' %% i)
         yield ret
@@ -425,7 +425,7 @@ def fetest(%s):
         
         
         # 3) Now test with exiting via throwing an unhandled exception
-        class MyError:
+        class MyError(Exception):
             pass
         
         l=[0, 0]
@@ -488,7 +488,8 @@ def fetest(%s):
         self.assertEqual(2 in f(), True)
 
     def test_generator_attrs(self):
-        expectedAttributes = ['gi_running', 'send', 'next', '__iter__', '__name__', 'close', 'throw', 'gi_frame', 'gi_code']
+        expectedAttributes = ['gi_running', 'send', '__next__', '__iter__', '__name__', 'close', 'throw', 'gi_frame', 'gi_code']
+        if not is_cli: expectedAttributes += ['__del__']
         expectedAttributes.sort()
         def f(): yield 2
         

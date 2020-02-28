@@ -24,8 +24,8 @@ A = %s
 
 def aFunc(b):
     global A
-    print "A=", A
-    print "b=", b
+    print("A=", A)
+    print("b=", b)
     return %s
 
 class Klass(object):
@@ -33,10 +33,10 @@ class Klass(object):
 K = Klass()
 
 if __name__=="__main__":
-    print "Should never be in __main__"
-    raise "in __main__"
+    print("Should never be in __main__")
+    raise Exception("in __main__")
 else:
-    print "OK..."
+    print("OK...")
     aFunc(42)
 '''
 

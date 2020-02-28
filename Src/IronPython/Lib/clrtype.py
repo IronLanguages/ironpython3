@@ -24,6 +24,9 @@ from Microsoft.Scripting.Utils import ReflectionUtils
 from IronPython.Runtime import NameType, PythonContext
 from IronPython.Runtime.Types import PythonType, ReflectedField, ReflectedProperty
 
+PropertyAttributes_None = getattr(PropertyAttributes, "None")
+ParameterAttributes_None = getattr(ParameterAttributes, "None")
+
 def validate_clr_types(signature_types, var_signature = False):
     if not isinstance(signature_types, tuple):
         signature_types = (signature_types,)
@@ -38,7 +41,7 @@ def validate_clr_types(signature_types, var_signature = False):
         # gets explicitly published as the underlying CLR type
         is_typed = is_typed or (hasattr(t, "__metaclass__") and t.__metaclass__ in [ClrInterface, ClrClass])
         if not is_typed:
-            raise Exception, "Invalid CLR type %s" % str(t)
+            raise Exception("Invalid CLR type %s" % str(t))
         if not var_signature:
             if clr_type.IsByRef:
                 raise TypeError("Byref can only be used as arguments and locals")
@@ -66,7 +69,7 @@ class ClrType(type):
 
     def is_typed_method(self, function):
         if hasattr(function, "arg_types") != hasattr(function, "return_type"):
-            raise TypeError("One of @accepts and @returns is missing for %s" % function.func_name)
+            raise TypeError("One of @accepts and @returns is missing for %s" % function.__name__)
 
         return hasattr(function, "arg_types")
 
@@ -88,12 +91,12 @@ class ClrType(type):
             self.emit_property(typebld, prop, prop_name, clr_prop_type)
 
     def emit_property(self, typebld, prop, name, clrtype):	
-        prpbld = typebld.DefineProperty(name, PropertyAttributes.None, clrtype, None)
+        prpbld = typebld.DefineProperty(name, PropertyAttributes_None, clrtype, None)
         if prop.fget:
-            getter = self.emitted_methods[(prop.fget.func_name, prop.fget.arg_types)]
+            getter = self.emitted_methods[(prop.fget.__name__, prop.fget.arg_types)]
             prpbld.SetGetMethod(getter)
         if prop.fset:
-            setter = self.emitted_methods[(prop.fset.func_name, prop.fset.arg_types)]
+            setter = self.emitted_methods[(prop.fset.__name__, prop.fset.arg_types)]
             prpbld.SetSetMethod(setter)
 
     def dummy_function(self): raise RuntimeError("this should not get called")
@@ -116,11 +119,11 @@ class ClrType(type):
                 function, is_static = getattr(self, item_name), True
             elif isinstance(item, property):
                 if item.fget and self.is_typed_method(item.fget):
-                    if item.fget.func_name == item_name:
+                    if item.fget.__name__ == item_name:
                         # The property hides the getter. So yield the getter
                         yield TypedFunction(item.fget, False, item_name, None)
                 if item.fset and self.is_typed_method(item.fset):
-                    if item.fset.func_name == item_name:
+                    if item.fset.__name__ == item_name:
                         # The property hides the setter. So yield the setter
                         yield TypedFunction(item.fset, False, None, item_name)
                 continue
@@ -134,14 +137,14 @@ class ClrType(type):
         # referring these methods. 
         # Also, the hash is indexed by name *and signature*. Even though Python does 
         # not have method overloading, property getter and setter functions can have 
-        # the same func_name attribute
+        # the same __name__ attribute
         self.emitted_methods = {}
         for function_info in self.get_typed_methods():
             method_builder = self.emit_method(typebld, function_info)
             function = function_info.function
-            if self.emitted_methods.has_key((function.func_name, function.arg_types)):
+            if (function.__name__, function.arg_types) in self.emitted_methods:
                 raise TypeError("methods with clashing names")
-            self.emitted_methods[(function.func_name, function.arg_types)] = method_builder
+            self.emitted_methods[(function.__name__, function.arg_types)] = method_builder
 
     def emit_classattribs(self, typebld):
         if hasattr(self, '_clrclassattribs'):
@@ -184,16 +187,16 @@ class ClrInterface(ClrType):
         function = function_info.function
         attributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract
         method_builder = typebld.DefineMethod(
-            function.func_name,
+            function.__name__,
             attributes,
             function.return_type,
             function.arg_types)
         
         instance_offset = 0 if function_info.is_static else 1
-        arg_names = function.func_code.co_varnames
-        for i in xrange(len(function.arg_types)):
+        arg_names = function.__code__.co_varnames
+        for i in range(len(function.arg_types)):
             # TODO - set non-trivial ParameterAttributes, default value and custom attributes
-            p = method_builder.DefineParameter(i + 1, ParameterAttributes.None, arg_names[i + instance_offset])
+            p = method_builder.DefineParameter(i + 1, ParameterAttributes_None, arg_names[i + instance_offset])
 
         if hasattr(function, "CustomAttributeBuilders"):
             for cab in function.CustomAttributeBuilders:
@@ -341,7 +344,7 @@ class ClrClass(ClrInterface):
 
         attributes = MethodAttributes.Public
         if function_info.is_static: attributes |= MethodAttributes.Static
-        if function.func_name == "__new__":
+        if function.__name__ == "__new__":
             if function_info.is_static: raise TypeError
             method_builder = typebld.DefineConstructor(
                 attributes,
@@ -350,16 +353,16 @@ class ClrClass(ClrInterface):
             raise NotImplementedError("Need to call self.baseType ctor passing in self.get_python_type_field()")
         else:
             method_builder = typebld.DefineMethod(
-                function.func_name,
+                function.__name__,
                 attributes,
                 function.return_type,
                 function.arg_types)
 
         instance_offset = 0 if function_info.is_static else 1
-        arg_names = function.func_code.co_varnames
-        for i in xrange(len(function.arg_types)):
+        arg_names = function.__code__.co_varnames
+        for i in range(len(function.arg_types)):
             # TODO - set non-trivial ParameterAttributes, default value and custom attributes
-            p = method_builder.DefineParameter(i + 1, ParameterAttributes.None, arg_names[i + instance_offset])
+            p = method_builder.DefineParameter(i + 1, ParameterAttributes_None, arg_names[i + instance_offset])
 
         ilgen = method_builder.GetILGenerator()
         
@@ -368,7 +371,7 @@ class ClrClass(ClrInterface):
         ilgen.Emit(OpCodes.Ldc_I4, args_count)
         ilgen.Emit(OpCodes.Newarr, object)
         ilgen.Emit(OpCodes.Stloc, args_array)            
-        for i in xrange(args_count):
+        for i in range(args_count):
             arg_type = function.arg_types[i]
             if clr.GetClrType(arg_type).IsByRef:
                 raise NotImplementedError("byref params not supported")
@@ -399,7 +402,7 @@ class ClrClass(ClrInterface):
             else:
                 ilgen.Emit(OpCodes.Ldarg, 0)
             
-            ilgen.Emit(OpCodes.Ldstr, function.func_name)
+            ilgen.Emit(OpCodes.Ldstr, function.__name__)
             ilgen.Emit(OpCodes.Ldloc, args_array)
             ilgen.Emit(OpCodes.Callvirt, invoke_member)
 
@@ -422,9 +425,9 @@ class ClrClass(ClrInterface):
         function = function_info.function
         if hasattr(function, "DllImportAttributeDecorator"):
             dllImportAttributeDecorator = function.DllImportAttributeDecorator
-            name = function.func_name
+            name = function.__name__
             dllName = dllImportAttributeDecorator.args[0]
-            entryName = function.func_name
+            entryName = function.__name__
             attributes = MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.PinvokeImpl
             callingConvention = CallingConventions.Standard
             returnType = function.return_type
@@ -464,8 +467,8 @@ class ClrClass(ClrInterface):
             function = function_info.function
             if hasattr(function, "DllImportAttributeDecorator"):
                 # Overwrite the Python function with the pinvoke_method
-                pinvoke_method = getattr(pythonType, function.func_name)
-                setattr(self, function.func_name, pinvoke_method)
+                pinvoke_method = getattr(pythonType, function.__name__)
+                setattr(self, function.__name__, pinvoke_method)
 	  
     def emit_python_type_field(self, typebld):
         return typebld.DefineField(
@@ -493,7 +496,7 @@ class ClrClass(ClrInterface):
             ilgen = ctorbld.GetILGenerator()
             ilgen.Emit(OpCodes.Ldarg, 0)
             ilgen.Emit(OpCodes.Ldsfld, python_type_field)
-            for index in xrange(len(ctorparams)):
+            for index in range(len(ctorparams)):
                 ilgen.Emit(OpCodes.Ldarg, index + 1)
             ilgen.Emit(OpCodes.Call, ctor)
             ilgen.Emit(OpCodes.Ret)
@@ -619,7 +622,7 @@ def propagate_attributes(old_function, new_function):
     new functions, and want it to work in conjunction with clrtype
     """
     if hasattr(old_function, "return_type"):
-        new_function.func_name = old_function.func_name
+        new_function.__name__ = old_function.__name__
         new_function.return_type = old_function.return_type
         new_function.arg_types = old_function.arg_types
     if hasattr(old_function, "CustomAttributeBuilders"):

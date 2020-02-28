@@ -40,8 +40,8 @@ class StdModulesTest(IronPythonTestCase):
             try:
                 temp_url = urllib.urlopen("http://www.microsoft.com")
                 break
-            except Exception, e:
-                print ".",
+            except Exception as e:
+                print(".", end="")
                 sleep(5)
                 continue
         if temp_url==None: raise e
@@ -87,24 +87,24 @@ class StdModulesTest(IronPythonTestCase):
         
         f_name = "fake_stdout.txt"
         test_list = [
-                        ("print 1",
+                        ("print(1)",
                             "single", ["1\n"]),
-                        ("print 1",
+                        ("print(1)",
                             "exec", ["1\n"]),
                         ("1",
                             "single", ["1\n"]),
                         ("1",
                             "exec", []),
-                        ("def f(n):\n    return n*n\nprint f(3)",
+                        ("def f(n):\n    return n*n\nprint(f(3))",
                             "exec", ["9\n"]),
-                        ("if 1:\n    print 1\n",
+                        ("if 1:\n    print(1)\n",
                             "single", ["1\n"]),
-                        ("if 1:\n    print 1\n",
+                        ("if 1:\n    print(1)\n",
                             "exec", ["1\n"]),
                     ]
 
         if is_cpython: #http://ironpython.codeplex.com/workitem/28221
-            test_list.append(("if 1:\n    print 1", "exec", ["1\n"]))
+            test_list.append(("if 1:\n    print(1)", "exec", ["1\n"]))
                     
         for test_case, kind, expected in test_list:
             
@@ -113,7 +113,7 @@ class StdModulesTest(IronPythonTestCase):
                 orig_stdout = sys.stdout
                 
                 sys.stdout = open(f_name, "w")
-                exec c
+                exec(c)
                 sys.stdout.close()
                 
                 t_file = open(f_name, "r")
@@ -131,13 +131,13 @@ class StdModulesTest(IronPythonTestCase):
                         ("def f(n):\n    return n*n\n\nf(3)\n", "single"),
                         ("def f(n):\n    return n*n\n\nf(3)",   "single"),
                         ("def f(n):\n    return n*n\n\nf(3)\n", "single"),
-                        ("if 1:\n    print 1",                  "single"),
+                        ("if 1:\n    print(1)",                  "single"),
                     ]
         if not is_cpython: #http://ironpython.codeplex.com/workitem/28221
-            bad_test_list.append(("if 1:\n    print 1",                  "exec"))
+            bad_test_list.append(("if 1:\n    print(1)",                  "exec"))
                     
         for test_case, kind in bad_test_list:
-            print test_case, kind
+            print(test_case, kind)
             self.assertRaises(SyntaxError, compile, test_case, "", kind, 0x200, 1)
 
     def test_cp12009(self):
@@ -171,11 +171,12 @@ class StdModulesTest(IronPythonTestCase):
         import copy
         
         #A few special cases
+        StringSplitOptions_None = getattr(System.StringSplitOptions, "None")
         self.assertEqual(System.Char.MinValue, copy.copy(System.Char.MinValue))
         self.assertTrue(System.Char.MinValue != copy.copy(System.Char.MaxValue))
-        self.assertEqual(System.StringSplitOptions.None, copy.copy(System.StringSplitOptions.None))
+        self.assertEqual(StringSplitOptions_None, copy.copy(StringSplitOptions_None))
         self.assertEqual(System.StringSplitOptions.RemoveEmptyEntries, copy.copy(System.StringSplitOptions.RemoveEmptyEntries))
-        self.assertTrue(System.StringSplitOptions.None != copy.copy(System.StringSplitOptions.RemoveEmptyEntries))
+        self.assertTrue(StringSplitOptions_None != copy.copy(System.StringSplitOptions.RemoveEmptyEntries))
         
         #Normal cases
         test_dict = {   System.Byte : [System.Byte.MinValue, System.Byte.MinValue+1, System.Byte.MaxValue, System.Byte.MaxValue-1],

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -25,47 +27,44 @@ namespace IronPython.Runtime {
 
     [PythonType("list"), Serializable, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [DebuggerTypeProxy(typeof(ObjectCollectionDebugProxy)), DebuggerDisplay("list, {Count} items")]
-    public class PythonList : IList, ICodeFormattable, IList<object>, IReversible, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object> {
+    public class PythonList : IList, ICodeFormattable, IList<object?>, IReversible, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object?> {
         private const int INITIAL_SIZE = 20;
 
         internal int _size;
-        internal volatile object[] _data;
+        internal volatile object?[] _data;
 
         public void __init__() {
             _data = new object[8];
             _size = 0;
         }
 
-        public void __init__([NotNull] IEnumerable enumerable) {
+        public void __init__([NotNull]IEnumerable enumerable) {
             __init__();
 
-            foreach (object o in enumerable) {
+            foreach (object? o in enumerable) {
                 AddNoLock(o);
             }
         }
 
-        public void __init__([NotNull] ICollection sequence) {
+        public void __init__([NotNull]ICollection sequence) {
             _data = new object[sequence.Count];
-            int i = 0;
-            foreach (object item in sequence) {
-                _data[i++] = item;
-            }
-            _size = i;
+            sequence.CopyTo(_data, 0);
+            _size = _data.Length;
         }
 
-        public void __init__([NotNull] SetCollection sequence) {
+        public void __init__([NotNull]SetCollection sequence) {
             PythonList list = sequence._items.GetItems();
             _size = list._size;
             _data = list._data;
         }
 
-        public void __init__([NotNull] FrozenSetCollection sequence) {
+        public void __init__([NotNull]FrozenSetCollection sequence) {
             PythonList list = sequence._items.GetItems();
             _size = list._size;
             _data = list._data;
         }
 
-        public void __init__([NotNull] PythonList sequence) {
+        public void __init__([NotNull]PythonList sequence) {
             if (this == sequence) {
                 // list.__init__(l, l) resets l
                 _size = 0;
@@ -79,15 +78,11 @@ namespace IronPython.Runtime {
             }
 
             _data = new object[sequence._size];
-
-            object[] data = sequence._data;
-            for (int i = 0; i < _data.Length; i++) {
-                _data[i] = data[i];
-            }
+            Array.Copy(sequence._data, 0, _data, 0, _data.Length);
             _size = _data.Length;
         }
 
-        public void __init__([NotNull] string sequence) {
+        public void __init__([NotNull]string sequence) {
             _data = new object[sequence.Length];
             _size = sequence.Length;
 
@@ -96,7 +91,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void __init__(CodeContext context, object sequence) {
+        public void __init__(CodeContext context, object? sequence) {
             int len;
             try {
                 if (!PythonOps.TryInvokeLengthHint(context, sequence, out len)) {
@@ -108,10 +103,10 @@ namespace IronPython.Runtime {
 
             _data = new object[len];
             _size = 0;
-            extend_no_length_check(sequence);
+            ExtendNoLengthCheck(sequence);
         }
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls) {
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls) {
             if (cls == TypeCache.PythonList) {
                 return new PythonList();
             }
@@ -119,17 +114,14 @@ namespace IronPython.Runtime {
             return cls.CreateInstance(context);
         }
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, object arg) {
-            return __new__(context, cls);
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, object? arg)
+            => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, params object[] args\u00F8) {
-            return __new__(context, cls);
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]params object[] args\u00F8)
+            => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs\u00F8, params object[] args\u00F8) {
-            return __new__(context, cls);
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [ParamDictionary, NotNull]IDictionary<object, object> kwArgs\u00F8, [NotNull]params object[] args\u00F8)
+            => __new__(context, cls);
 
         private PythonList(IEnumerator e)
             : this(10) {
@@ -144,7 +136,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private PythonList(params object[] items) {
+        private PythonList(params object?[] items) {
             _data = items;
             _size = _data.Length;
         }
@@ -169,7 +161,7 @@ namespace IronPython.Runtime {
             if (sequence is ICollection items) {
                 _data = new object[items.Count];
                 int i = 0;
-                foreach (object item in items) {
+                foreach (object? item in items) {
                     _data[i++] = item;
                 }
                 _size = i;
@@ -179,7 +171,7 @@ namespace IronPython.Runtime {
                 }
 
                 _data = new object[len];
-                extend_no_length_check(sequence);
+                ExtendNoLengthCheck(sequence);
             }
         }
 
@@ -187,7 +179,7 @@ namespace IronPython.Runtime {
             : this(items.Count) {
 
             int i = 0;
-            foreach (object item in items) {
+            foreach (object? item in items) {
                 _data[i++] = item;
             }
             _size = i;
@@ -199,9 +191,8 @@ namespace IronPython.Runtime {
         /// onto and may be mutated in the future by the list.
         /// </summary>
         /// <param name="data">params array to use for lists storage</param>
-        internal static PythonList FromArrayNoCopy(params object[] data) {
-            return new PythonList(data);
-        }
+        internal static PythonList FromArrayNoCopy(params object[] data)
+            => new PythonList(data);
 
         internal object[] GetObjectArray() {
             lock (this) {
@@ -212,7 +203,7 @@ namespace IronPython.Runtime {
         #region binary operators
 
         public static PythonList operator +([NotNull]PythonList l1, [NotNull]PythonList l2) {
-            object[] ret;
+            object?[] ret;
             int size;
             lock (l1) {
                 ret = ArrayOps.CopyArray(l1._data, GetAddSize(l1._size, l2._size));
@@ -250,34 +241,28 @@ namespace IronPython.Runtime {
             return length + (16 - 1) & ~(16 - 1);
         }
 
-        public static PythonList operator *([NotNull]PythonList l, int count) {
-            return MultiplyWorker(l, count);
-        }
+        public static PythonList operator *([NotNull]PythonList self, int count)
+            => MultiplyWorker(self, count);
 
-        public static PythonList operator *(int count, PythonList l) {
-            return MultiplyWorker(l, count);
-        }
+        public static PythonList operator *(int count, [NotNull]PythonList self)
+            => MultiplyWorker(self, count);
 
-        public static object operator *([NotNull]PythonList self, [NotNull]Index count) {
-            return PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, true);
-        }
+        public static object operator *([NotNull]PythonList self, [NotNull]Index count)
+            => PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, true);
 
-        public static object operator *([NotNull]Index count, [NotNull]PythonList self) {
-            return PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, false);
-        }
+        public static object operator *([NotNull]Index count, [NotNull]PythonList self)
+            => PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, false);
 
-        public static object operator *([NotNull]PythonList self, object count) {
-            int index;
-            if (Converter.TryConvertToIndex(count, out index)) {
+        public static object operator *([NotNull]PythonList self, object? count) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
                 return self * index;
             }
 
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        public static object operator *(object count, [NotNull]PythonList self) {
-            int index;
-            if (Converter.TryConvertToIndex(count, out index)) {
+        public static object operator *(object? count, [NotNull]PythonList self) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
                 return index * self;
             }
 
@@ -288,7 +273,7 @@ namespace IronPython.Runtime {
             if (count <= 0) return PythonOps.MakeEmptyList(0);
 
             int n, newCount;
-            object[] ret;
+            object?[] ret;
             lock (self) {
                 n = self._size;
                 //??? is this useful optimization
@@ -315,9 +300,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public virtual int __len__() {
-            return _size;
-        }
+        public virtual int __len__() => _size;
 
         public virtual IEnumerator __iter__() {
             // return type is strongly typed to IEnumerator so that
@@ -327,21 +310,19 @@ namespace IronPython.Runtime {
             return new PythonListIterator(this);
         }
 
-        public virtual IEnumerator __reversed__() {
-            return new PythonListReverseIterator(this);
-        }
+        public virtual IEnumerator __reversed__()
+            => new PythonListReverseIterator(this);
 
-        public virtual bool __contains__(object value) {
-            return ContainsWorker(value);
-        }
+        public virtual bool __contains__(object? value)
+            => ContainsWorker(value);
 
-        internal bool ContainsWorker(object value) {
+        internal bool ContainsWorker(object? value) {
             bool lockTaken = false;
             try {
                 MonitorUtils.Enter(this, ref lockTaken);
 
                 for (int i = 0; i < _size; i++) {
-                    object thisIndex = _data[i];
+                    object? thisIndex = _data[i];
 
                     // release the lock while we may call user code...
                     MonitorUtils.Exit(this, ref lockTaken);
@@ -363,20 +344,19 @@ namespace IronPython.Runtime {
         #region ISequence Members
 
         internal void AddRange<T>(ICollection<T> otherList) {
-            foreach (object o in otherList) append(o);
+            foreach (object? o in otherList) append(o);
         }
 
         [SpecialName]
-        public virtual object InPlaceAdd(object other) {
-            if (!Object.ReferenceEquals(this, other)) {
+        public virtual object InPlaceAdd(object? other) {
+            if (ReferenceEquals(this, other)) {
+                InPlaceMultiply(2);
+            } else {
                 IEnumerator e = PythonOps.GetEnumerator(other);
                 while (e.MoveNext()) {
                     append(e.Current);
                 }
-            } else {
-                InPlaceMultiply(2);
             }
-
             return this;
         }
 
@@ -405,12 +385,11 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public object InPlaceMultiply(Index count) {
-            return PythonOps.MultiplySequence<PythonList>(InPlaceMultiplyWorker, this, count, true);
-        }
+        public object InPlaceMultiply([NotNull]Index count)
+            => PythonOps.MultiplySequence<PythonList>(InPlaceMultiplyWorker, this, count, true);
 
         [SpecialName]
-        public object InPlaceMultiply(object count) {
+        public object InPlaceMultiply(object? count) {
             int index;
             if (Converter.TryConvertToIndex(count, out index)) {
                 return InPlaceMultiply(index);
@@ -419,9 +398,8 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        private static PythonList InPlaceMultiplyWorker(PythonList self, int count) {
-            return self.InPlaceMultiply(count);
-        }
+        private static PythonList InPlaceMultiplyWorker(PythonList self, int count)
+            => self.InPlaceMultiply(count);
 
         internal object[] GetSliceAsArray(int start, int stop) {
             if (start < 0) start = 0;
@@ -432,10 +410,9 @@ namespace IronPython.Runtime {
 
         private static readonly object _boxedOne = ScriptingRuntimeHelpers.Int32ToObject(1);
 
-        public virtual object this[Slice slice] {
+        [System.Diagnostics.CodeAnalysis.NotNull]
+        public virtual object? this[[NotNull]Slice slice] {
             get {
-                if (slice == null) throw PythonOps.TypeError("list indices must be integer or slice, not None");
-
                 int start, stop, step;
                 slice.indices(_size, out start, out stop, out step);
 
@@ -448,7 +425,7 @@ namespace IronPython.Runtime {
                 } else {
                     // start/stop/step could be near Int32.MaxValue, and simply addition could cause overflow
                     int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
-                    object[] ret = new object[n];
+                    object?[] ret = new object[n];
                     lock (this) {
                         int ri = 0;
                         for (int i = 0, index = start; i < n; i++, index += step) {
@@ -460,8 +437,6 @@ namespace IronPython.Runtime {
                 }
             }
             set {
-                if (slice == null) throw PythonOps.TypeError("list indices must be integer or slice, not None");
-
                 if (slice.step != null && (!(slice.step is int) || !slice.step.Equals(_boxedOne))) {
                     // try to assign back to self: make a copy first
                     if (this == value) value = new PythonList(value);
@@ -490,9 +465,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static bool ValueRequiresNoLocks(object value) {
-            return value is PythonTuple || value is Array || value is FrozenSetCollection;
-        }
+        private static bool ValueRequiresNoLocks(object? value)
+            => value is PythonTuple || value is Array || value is FrozenSetCollection;
 
         private void SliceNoStep(int start, int stop, PythonList other) {
             // We don't lock other here - instead we read it's object array
@@ -506,7 +480,7 @@ namespace IronPython.Runtime {
             // same as if our set was implemented on top of get/set item where
             // we'd take and release the locks repeatedly.
             int otherSize = other._size;
-            object[] otherData = other._data;
+            object?[] otherData = other._data;
 
             lock (this) {
                 if ((stop - start) == otherSize) {
@@ -520,7 +494,7 @@ namespace IronPython.Runtime {
                     stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + otherSize;
 
-                    object[] newData = new object[GetNewSize(newSize)];
+                    object?[] newData = new object[GetNewSize(newSize)];
                     for (int i = 0; i < start; i++) {
                         newData[i] = _data[i];
                     }
@@ -540,10 +514,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void SliceNoStep(int start, int stop, object value) {
+        private void SliceNoStep(int start, int stop, object? value) {
             // always copy from a List object, even if it's a copy of some user defined enumerator.  This
             // makes it easy to hold the lock for the duration fo the copy.
-            IList<object> other = value as IList<object> ?? new PythonList(PythonOps.GetEnumerator(value));
+            IList<object?> other = value as IList<object?> ?? new PythonList(PythonOps.GetEnumerator(value));
 
             lock (this) {
                 if ((stop - start) == other.Count) {
@@ -557,7 +531,7 @@ namespace IronPython.Runtime {
                     stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + other.Count;
 
-                    object[] newData = new object[GetNewSize(newSize)];
+                    object?[] newData = new object[GetNewSize(newSize)];
                     for (int i = 0; i < start; i++) {
                         newData[i] = _data[i];
                     }
@@ -577,25 +551,24 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void SliceAssign(int index, object value) {
-            this[index] = value;
-        }
+        private void SliceAssign(int index, object? value)
+            => this[index] = value;
 
-        private void SliceAssignNoLock(int index, object value) {
-            _data[index] = value;
-        }
+        private void SliceAssignNoLock(int index, object? value)
+            => _data[index] = value;
 
         public virtual void __delitem__(int index) {
             lock (this) RawDelete(PythonOps.FixIndex(index, _size));
         }
 
-        public virtual void __delitem__(object index) {
-            __delitem__(Converter.ConvertToIndex(index));
+        public virtual void __delitem__(object? index) {
+            if (Converter.TryConvertToIndex(index, out int idx))
+                __delitem__(idx);
+
+            throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
         }
 
-        public void __delitem__(Slice slice) {
-            if (slice == null) throw PythonOps.TypeError("list indices must be integers or slices");
-
+        public void __delitem__([NotNull]Slice slice) {
             lock (this) {
                 int start, stop, step;
                 // slice is sealed, indices can't be user code...
@@ -660,13 +633,12 @@ namespace IronPython.Runtime {
         private void RawDelete(int index) {
             int len = _size - 1;
             _size = len;
-            object[] tempData = _data;
+            object?[] tempData = _data;
             for (int i = index; i < len; i++) {
                 tempData[i] = tempData[i + 1];
             }
             tempData[len] = null;
         }
-
 
         internal void EnsureSize(int needed) {
             if (_data.Length >= needed) return;
@@ -687,7 +659,7 @@ namespace IronPython.Runtime {
             _data = ArrayOps.CopyArray(_data, newSize);
         }
 
-        public void append(object item) {
+        public void append(object? item) {
             lock (this) {
                 AddNoLock(item);
             }
@@ -697,13 +669,13 @@ namespace IronPython.Runtime {
         /// Non-thread safe adder, should only be used by internal callers that
         /// haven't yet exposed their list.
         /// </summary>
-        internal void AddNoLock(object item) {
+        internal void AddNoLock(object? item) {
             EnsureSize(_size + 1);
             _data[_size] = item;
             _size += 1;
         }
 
-        internal void AddNoLockNoDups(object item) {
+        internal void AddNoLockNoDups(object? item) {
             for (int i = 0; i < _size; i++) {
                 if (PythonOps.IsOrEqualsRetBool(_data[i], item)) {
                     return;
@@ -715,23 +687,21 @@ namespace IronPython.Runtime {
 
         internal void AppendListNoLockNoDups(PythonList list) {
             if (list != null) {
-                foreach (object item in list) {
+                foreach (object? item in list) {
                     AddNoLockNoDups(item);
                 }
             }
         }
 
-        public void clear() {
-            Clear();
-        }
+        public void clear() => Clear();
 
-        public int count(object item) {
+        public int count(object? item) {
             bool lockTaken = false;
             try {
                 MonitorUtils.Enter(this, ref lockTaken);
                 int cnt = 0;
                 for (int i = 0, len = _size; i < len; i++) {
-                    object val = _data[i];
+                    object? val = _data[i];
 
                     MonitorUtils.Exit(this, ref lockTaken);
                     try {
@@ -770,16 +740,16 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend(object seq) {
+        public void extend(object? seq) {
             if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
                 EnsureSize(len);
             }
 
-            extend_no_length_check(seq);
+            ExtendNoLengthCheck(seq);
         }
 
         [PythonHidden]
-        private void extend_no_length_check(object seq) {
+        private void ExtendNoLengthCheck(object? seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (seq == (object)this) {
                 PythonList other = new PythonList(i);
@@ -788,11 +758,13 @@ namespace IronPython.Runtime {
             while (i.MoveNext()) append(i.Current);
         }
 
-        public int index(object item, int start = 0) {
-            return index(item, start, _size);
-        }
+        public int index(object? item)
+            => index(item, 0, _size);
 
-        public int index(object item, int start, int stop) {
+        public int index(object? item, int start)
+            => index(item, start, _size);
+
+        public int index(object? item, int start, int stop) {
             // CPython behavior for index is to only look at the 
             // original items.  If new items are added they
             // are ignored, but if items are removed they
@@ -800,7 +772,7 @@ namespace IronPython.Runtime {
             // of our data, and then go with the minimum between
             // our starting size and ending size.
 
-            object[] locData;
+            object?[] locData;
             int locSize;
             lock (this) {
                 // get a stable view on size / data...
@@ -818,15 +790,13 @@ namespace IronPython.Runtime {
             throw PythonOps.ValueError("list.index(item): item not in list");
         }
 
-        public int index(object item, object start) {
-            return index(item, Converter.ConvertToIndex(start), _size);
-        }
+        public int index(object? item, object? start)
+            => index(item, Converter.ConvertToIndex(start), _size);
 
-        public int index(object item, object start, object stop) {
-            return index(item, Converter.ConvertToIndex(start), Converter.ConvertToIndex(stop));
-        }
+        public int index(object? item, object? start, object? stop)
+            => index(item, Converter.ConvertToIndex(start), Converter.ConvertToIndex(stop));
 
-        public void insert(int index, object value) {
+        public void insert(int index, object? value) {
             if (index >= _size) {
                 append(value);
                 return;
@@ -845,11 +815,9 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public void Insert(int index, object value) {
-            insert(index, value);
-        }
+        public void Insert(int index, object? value) => insert(index, value);
 
-        public object pop() {
+        public object? pop() {
             if (_size == 0) throw PythonOps.IndexError("pop off of empty list");
 
             lock (this) {
@@ -858,12 +826,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object pop(int index) {
+        public object? pop(int index) {
             lock (this) {
                 index = PythonOps.FixIndex(index, _size);
                 if (_size == 0) throw PythonOps.IndexError("pop off of empty list");
 
-                object ret = _data[index];
+                object? ret = _data[index];
                 _size -= 1;
                 for (int i = index; i < _size; i++) {
                     _data[i] = _data[i + 1];
@@ -872,13 +840,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void remove(object value) {
+        public void remove(object? value) {
             lock (this) RawDelete(index(value));
         }
 
-        void IList.Remove(object value) {
-            remove(value);
-        }
+        void IList.Remove(object? value) => remove(value);
 
         public void reverse() {
             lock (this) Array.Reverse(_data, 0, _size);
@@ -889,7 +855,7 @@ namespace IronPython.Runtime {
         }
 
         public void sort(CodeContext/*!*/ context,
-                         object key = null,
+                         object? key = null,
                          bool reverse = false) {
             // the empty list is already sorted
             if (_size != 0) {
@@ -899,7 +865,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private Type GetComparisonType() {
+        private Type? GetComparisonType() {
             if (_size >= 4000) {
                 // we're big, we can afford a custom comparison call site.
                 return null;
@@ -914,9 +880,9 @@ namespace IronPython.Runtime {
             return typeof(object);
         }
 
-        private void DoSort(CodeContext/*!*/ context, IComparer cmp, object key, bool reverse, int index, int count) {
+        private void DoSort(CodeContext/*!*/ context, IComparer cmp, object? key, bool reverse, int index, int count) {
             lock (this) {
-                object[] sortData = _data;
+                object?[] sortData = _data;
                 int sortSize = _size;
 
                 try {
@@ -941,11 +907,10 @@ namespace IronPython.Runtime {
                     _data = sortData;
                     _size = sortSize;
                 }
-
             }
         }
 
-        internal object[] ListMergeSort(object[] sortData, object[] keys, IComparer cmp, int index, int count, bool reverse) {
+        internal object?[] ListMergeSort(object?[] sortData, object?[]? keys, IComparer cmp, int index, int count, bool reverse) {
             if (count - index < 2) return sortData;  // 1 or less items, we're sorted, quit now...
 
             if (keys == null) keys = sortData;
@@ -1033,7 +998,7 @@ namespace IronPython.Runtime {
 
             // use the resulting indices to
             // extract the order.
-            object[] newData = new object[len];
+            object?[] newData = new object[len];
             int start = lists[0];
             int outIndex = 0;
             while (start != 0) {
@@ -1055,7 +1020,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Compares the two specified keys
         /// </summary>
-        private bool DoCompare(object[] keys, IComparer cmp, int p, int q, bool reverse) {
+        private bool DoCompare(object?[] keys, IComparer cmp, int p, int q, bool reverse) {
             Debug.Assert(_data.Length == 0);
 
             int result = reverse ? cmp.Compare(keys[p], keys[q]) : cmp.Compare(keys[q], keys[p]);
@@ -1069,7 +1034,7 @@ namespace IronPython.Runtime {
             lock (this) return Array.BinarySearch(_data, index, count, value, comparer);
         }
 
-        internal bool EqualsWorker(PythonList l, IEqualityComparer comparer) {
+        internal bool EqualsWorker(PythonList l, IEqualityComparer? comparer) {
             using (new OrderedLocker(this, l)) {
                 if (comparer == null) {
                     return PythonOps.ArraysEqual(_data, _size, l._data, l._size);
@@ -1079,11 +1044,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal int CompareToWorker(PythonList l) {
-            return CompareToWorker(l, null);
-        }
-
-        internal int CompareToWorker(PythonList l, IComparer comparer) {
+        internal int CompareToWorker(PythonList l, IComparer? comparer = null) {
             using (new OrderedLocker(this, l)) {
                 if (comparer == null) {
                     return PythonOps.CompareArrays(_data, _size, l._data, l._size);
@@ -1108,30 +1069,26 @@ namespace IronPython.Runtime {
                 return true;
             }
 
-            object temp = _data[i];
+            object? temp = _data[i];
             _data[i] = _data[j];
             _data[j] = temp;
             return true;
         }
 
-        public PythonList copy() {
-            return new PythonList(this);
-        }
+        public PythonList copy() => new PythonList(this);
 
         #region IList Members
 
-        bool IList.IsReadOnly {
-            get { return false; }
-        }
+        bool IList.IsReadOnly => false;
 
-        public virtual object this[int index] {
+        public virtual object? this[int index] {
             get {
                 // no locks works here, we either return an
                 // old item (as if we were called first) or return
                 // a current item...        
 
                 // force reading the array first, _size can change after
-                object[] data = GetData();
+                object?[] data = GetData();
 
                 return data[PythonOps.FixIndex(index, _size)];
             }
@@ -1142,21 +1099,20 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual object this[BigInteger index] {
-            get {
-                return this[(int)index];
-            }
-            set {
-                this[(int)index] = value;
-            }
+        public virtual object? this[BigInteger index] {
+            get => this[(int)index];
+            set => this[(int)index] = value;
         }
 
         /// <summary>
         /// Supports __index__ on arbitrary types, also prevents __float__
         /// </summary>
-        public virtual object this[object index] {
+        public virtual object? this[object? index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (Converter.TryConvertToIndex(index, out int idx))
+                    return this[idx];
+
+                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
             }
             set {
                 this[Converter.ConvertToIndex(index)] = value;
@@ -1164,9 +1120,7 @@ namespace IronPython.Runtime {
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private object[] GetData() {
-            return _data;
-        }
+        private object?[] GetData() => _data;
 
         [PythonHidden]
         public void RemoveAt(int index) {
@@ -1174,9 +1128,7 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public bool Contains(object value) {
-            return __contains__(value);
-        }
+        public bool Contains(object? value) => __contains__(value);
 
         [PythonHidden]
         public void Clear() {
@@ -1184,10 +1136,10 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public int IndexOf(object value) {
+        public int IndexOf(object? value) {
             // we get a stable view of the list, and if user code
             // clears it then we'll stop iterating.
-            object[] locData;
+            object?[] locData;
             int locSize;
             lock (this) {
                 locData = _data;
@@ -1201,53 +1153,39 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public int Add(object value) {
+        public int Add(object? value) {
             lock (this) {
                 AddNoLock(value);
                 return _size - 1;
             }
         }
 
-        bool IList.IsFixedSize {
-            get { return false; }
-        }
+        bool IList.IsFixedSize => false;
 
         #endregion
 
         #region ICollection Members
 
-        bool ICollection.IsSynchronized {
-            get { return false; }
-        }
-
-        public int Count {
-            [PythonHidden]
-            get { return _size; }
-        }
+        bool ICollection.IsSynchronized => false;
 
         [PythonHidden]
-        public void CopyTo(Array array, int index) {
-            Array.Copy(_data, 0, array, index, _size);
-        }
+        public int Count => _size;
 
-        internal void CopyTo(Array array, int index, int arrayIndex, int count) {
-            Array.Copy(_data, index, array, arrayIndex, count);
-        }
+        [PythonHidden]
+        public void CopyTo(Array array, int index)
+            => Array.Copy(_data, 0, array, index, _size);
 
-        object ICollection.SyncRoot {
-            get {
-                return this;
-            }
-        }
+        internal void CopyTo(Array array, int index, int arrayIndex, int count)
+            => Array.Copy(_data, index, array, arrayIndex, count);
+
+        object ICollection.SyncRoot => this;
 
         #endregion
 
         #region IEnumerable Members
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return __iter__();
-        }
+        public IEnumerator GetEnumerator() => __iter__();
 
         #endregion
 
@@ -1303,7 +1241,7 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) {
             if (Object.ReferenceEquals(this, other)) return true;
 
             if (other is PythonList l && l.Count == Count)
@@ -1315,23 +1253,19 @@ namespace IronPython.Runtime {
 
         #region ICollection<object> Members
 
-        void ICollection<object>.Add(object item) {
-            append(item);
-        }
+        void ICollection<object?>.Add(object? item) => append(item);
 
         [PythonHidden]
-        public void CopyTo(object[] array, int arrayIndex) {
+        public void CopyTo(object?[] array, int arrayIndex) {
             for (int i = 0; i < Count; i++) {
                 array[arrayIndex + i] = this[i];
             }
         }
 
-        bool ICollection<object>.IsReadOnly {
-            get { return ((IList)this).IsReadOnly; }
-        }
+        bool ICollection<object?>.IsReadOnly => ((IList)this).IsReadOnly;
 
         [PythonHidden]
-        public bool Remove(object item) {
+        public bool Remove(object? item) {
             if (__contains__(item)) {
                 remove(item);
                 return true;
@@ -1343,17 +1277,12 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return new IEnumeratorOfTWrapper<object>(((IEnumerable)this).GetEnumerator());
-        }
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+            => new IEnumeratorOfTWrapper<object>(((IEnumerable)this).GetEnumerator());
 
         #endregion
 
-        private bool Equals(PythonList other) {
-            return Equals(other, null);
-        }
-
-        private bool Equals(PythonList other, IEqualityComparer comparer) {
+        private bool Equals(PythonList other, IEqualityComparer? comparer = null) {
             CompareUtil.Push(this, other);
             try {
                 return EqualsWorker(other, comparer);
@@ -1362,11 +1291,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal int CompareTo(PythonList other) {
-            return CompareTo(other, null);
-        }
-
-        internal int CompareTo(PythonList other, IComparer comparer) {
+        internal int CompareTo(PythonList other, IComparer? comparer = null) {
             CompareUtil.Push(this, other);
             try {
                 return CompareToWorker(other, comparer);
@@ -1377,51 +1302,35 @@ namespace IronPython.Runtime {
 
         #region Rich Comparison Members
 
-        [return: MaybeNotImplemented]
-        public static object operator >(PythonList self, object other) {
-            if (!(other is PythonList l)) return NotImplementedType.Value;
+        public static object operator >([NotNull]PythonList self, [NotNull]PythonList other)
+            => self.CompareTo(other) > 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
 
-            return self.CompareTo(l) > 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
+        public static object operator <([NotNull]PythonList self, [NotNull]PythonList other)
+            => self.CompareTo(other) < 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
 
-        [return: MaybeNotImplemented]
-        public static object operator <(PythonList self, object other) {
-            if (!(other is PythonList l)) return NotImplementedType.Value;
+        public static object operator >=([NotNull]PythonList self, [NotNull]PythonList other)
+            => self.CompareTo(other) >= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
 
-            return self.CompareTo(l) < 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        [return: MaybeNotImplemented]
-        public static object operator >=(PythonList self, object other) {
-            if (!(other is PythonList l)) return NotImplementedType.Value;
-
-            return self.CompareTo(l) >= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        [return: MaybeNotImplemented]
-        public static object operator <=(PythonList self, object other) {
-            if (!(other is PythonList l)) return NotImplementedType.Value;
-
-            return self.CompareTo(l) <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
+        public static object operator <=([NotNull]PythonList self, [NotNull]PythonList other)
+            => self.CompareTo(other) <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
 
         #endregion
 
         #region IStructuralComparable Members
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer) {
-            if (!(other is PythonList l)) {
-                throw new ValueErrorException("expected List");
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer) {
+            if (other is PythonList l) {
+                return CompareTo(l, comparer);
             }
 
-            return CompareTo(l, comparer);
+            throw new ValueErrorException("expected List");
         }
 
         #endregion
     }
 
     [PythonType("list_iterator")]
-    public sealed class PythonListIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    public sealed class PythonListIterator : IEnumerator, IEnumerable, IEnumerable<object?>, IEnumerator<object?> {
         private int _index;
         private readonly PythonList _list;
         private bool _iterating;
@@ -1458,11 +1367,7 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public object Current {
-            get {
-                return _list._data[_index];
-            }
-        }
+        public object? Current => _list._data[_index];
 
         [PythonHidden]
         public bool MoveNext() {
@@ -1478,9 +1383,7 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return this;
-        }
+        public IEnumerator GetEnumerator() => this;
 
         #endregion
 
@@ -1493,19 +1396,15 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return this;
-        }
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this;
 
         #endregion
 
-        public int __length_hint__() {
-            return _iterating ? _list._size - _index - 1 : 0;
-        }
+        public int __length_hint__() => _iterating ? _list._size - _index - 1 : 0;
     }
 
     [PythonType("list_reverseiterator")]
-    public sealed class PythonListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    public sealed class PythonListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object?>, IEnumerator<object?> {
         private int _index;
         private readonly PythonList _list;
         private bool _iterating;
@@ -1542,11 +1441,7 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public object Current {
-            get {
-                return _list._data[_list._size - _index];
-            }
-        }
+        public object? Current => _list._data[_list._size - _index];
 
         [PythonHidden]
         public bool MoveNext() {
@@ -1577,7 +1472,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() {
             return this;
         }
 
@@ -1598,8 +1493,6 @@ namespace IronPython.Runtime {
         private bool _oneLocked, _twoLocked;
 
         public OrderedLocker(object/*!*/ one, object/*!*/ two) {
-            Debug.Assert(one != null); Debug.Assert(two != null);
-
             _one = one;
             _two = two;
             _oneLocked = false;

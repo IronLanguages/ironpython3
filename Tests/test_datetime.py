@@ -112,8 +112,8 @@ class TestDatetime(unittest.TestCase):
 
     def test_time_replace(self):
         # cp35075
-        d = datetime.date.today().replace(year=long(1000))
-        self.assertEqual(d.year, 1000)
+        d = datetime.date.today().replace(year=long(2000))
+        self.assertEqual(d.year, 2000)
         self.assertRaises(ValueError, datetime.date.today().replace, year=long(10000000))
         self.assertRaises(OverflowError, datetime.date.today().replace, year=long(1000000000000))
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)

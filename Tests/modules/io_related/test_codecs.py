@@ -156,6 +156,12 @@ class CodecTest(IronPythonTestCase):
         charmap = {ord(c): 2*c.upper() for c in "abcdefgh"}
         self.assertEqual(codecs.charmap_decode(b"abc", 'strict', charmap), ("AABBCC", 3))
 
+        # Non-BMP character
+        charmap = {ord('p'): "\U0001F40D"}
+        self.assertEqual(codecs.charmap_decode(b"p", 'strict', charmap), ("🐍", 1))
+        charmap = {ord('p'): 0x1F40D}
+        self.assertEqual(codecs.charmap_decode(b"p", 'strict', charmap), ("🐍", 1))
+
         # using a string mapping
         self.assertEqual(codecs.charmap_decode(b'\x02\x01\x00', 'strict', "abc"), ('cba', 3))
 
@@ -1125,6 +1131,10 @@ class CodecTest(IronPythonTestCase):
         charmap = {ord(c): bytes(2*c.upper(), "ascii") for c in "abcdefgh"}
         self.assertEqual(codecs.charmap_encode("abc", "strict", charmap), (b'AABBCC', 3))
 
+        # Non-BMP character
+        charmap = {0x1F40D: ord('p')}
+        self.assertEqual(codecs.charmap_encode("🐍", 'strict', charmap), (b"p", len("🐍")))
+
         # Fallback characters are charmapped again
         charmap = {ord(c): ord(c.upper()) for c in "abcdefgh"}
         charmap.update({ord('?'): ord('*')})
@@ -1141,6 +1151,12 @@ class CodecTest(IronPythonTestCase):
         charmap.update({ord('&'): b'@', ord('#'): b'$:', ord(';'): b':'})
         self.assertEqual(codecs.charmap_encode("abcklm", "xmlcharrefreplace", charmap), (b'ABC@$:107:@$:108:@$:109:', 6))
 
+        def test_python_replace(uee):
+            return ("🐍" * (uee.end - uee.start), uee.end)
+        codecs.register_error(test_python_replace.__name__, test_python_replace)
+        charmap = {0x1F40D: ord('p')}
+        self.assertEqual(codecs.charmap_encode("abc", 'test_python_replace', charmap), (b"ppp", 3))
+
         # However, if the error handler returns bytes, these are not remapped, but used as they are
         if not is_cli: # TODO: IronPython does not support fallback bytes yet
             def my_encode_replace(uee): return (b"?!" * (uee.end - uee.start), uee.end)
@@ -1149,17 +1165,17 @@ class CodecTest(IronPythonTestCase):
             self.assertEqual(codecs.charmap_encode("abcxyz", "my_encode_replace", charmap), (b'ABC?!?!?!', 6))
 
         # Fallback characters are not charmapped recursively
-        for errors in ['strict', 'replace', 'backslashreplace', 'xmlcharrefreplace']:
+        for errors in ['strict', 'replace', 'backslashreplace', 'xmlcharrefreplace']: # TODO: + ['surrogateescape', 'surrogatepass']
             # Missing key
-            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode character.+ in position .+: character maps to <undefined>",
                 codecs.charmap_encode, "abc", errors, {})
 
             # Character key is not recognized, it must be an int (character ordinal)
-            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode character.+ in position .+: character maps to <undefined>",
                 codecs.charmap_encode, "abc", errors, {c: ord(c.upper()) for c in "abcdefgh"})
 
             # Explict None as value mapping
-            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode characters in position 0-2: character maps to <undefined>",
+            self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode character.+ in position .+: character maps to <undefined>",
                 codecs.charmap_encode, "abc", errors, {ord(c): None for c in "abcdefgh"})
 
         self.assertRaisesRegex(LookupError, "^unknown error handler name 'non-existent'$",

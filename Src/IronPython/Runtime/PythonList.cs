@@ -48,8 +48,11 @@ namespace IronPython.Runtime {
 
         public void __init__([NotNull]ICollection sequence) {
             _data = new object[sequence.Count];
-            sequence.CopyTo(_data, 0);
-            _size = _data.Length;
+            int i = 0;
+            foreach (object? item in sequence) {
+                _data[i++] = item;
+            }
+            _size = i;
         }
 
         public void __init__([NotNull]SetCollection sequence) {
@@ -562,10 +565,10 @@ namespace IronPython.Runtime {
         }
 
         public virtual void __delitem__(object? index) {
-            if (Converter.TryConvertToIndex(index, out int idx))
-                __delitem__(idx);
+            if (!Converter.TryConvertToIndex(index, out int idx))
+                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
 
-            throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
+            __delitem__(idx);
         }
 
         public void __delitem__([NotNull]Slice slice) {

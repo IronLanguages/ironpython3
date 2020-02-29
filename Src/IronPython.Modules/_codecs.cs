@@ -703,44 +703,7 @@ namespace IronPython.Modules {
             _errors = errors;
         }
 
-        public override int GetByteCount(char[] chars, int index, int count) {
-            int byteCount = 0;
-            int charEnd = index + count;
-            EncoderFallbackBuffer efb = null;
-
-            while (index < charEnd) {
-                char c = chars[index];
-                object charObj = (int)c;
-
-                if (!_map.TryGetValue(charObj, out object val) || val == null) {
-                    efb ??= EncoderFallback.CreateFallbackBuffer();
-                    try {
-                        if (efb.Fallback(c, index)) {
-                            while (efb.Remaining != 0) {
-                                object fbCharObj = (int)efb.GetNextChar(); // TODO: support fallback in byte form
-                                if (_map.TryGetValue(fbCharObj, out val)) {
-                                    if (val is IList<byte> b) {
-                                        byteCount += b.Count;
-                                    } else if (val is int) {
-                                        byteCount++;
-                                    }
-                                }
-                            }
-                        }
-                    } catch (EncoderFallbackException) {
-                        return byteCount; // encoding will stop at this point
-                    }
-                } else if (val is IList<byte> b) {
-                    byteCount += b.Count;
-                } else if (val is int) {
-                    byteCount++;
-                } else {
-                    throw PythonOps.TypeError("character mapping must return integer, bytes or None, not {0}", PythonTypeOps.GetName(val));
-                }
-                index++;
-            }
-            return byteCount;
-        }
+        public override int GetByteCount(char[] chars, int index, int count) => GetBytes(chars, index, count, null, 0);
 
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
             int charEnd = charIndex + charCount;
@@ -748,26 +711,39 @@ namespace IronPython.Modules {
             EncoderFallbackBuffer efb = null;
 
             while (charIndex < charEnd) {
+                object charObj;
                 char c = chars[charIndex];
-                object charObj = (int)c;
+                int nextIndex = charIndex + 1;
+                if (char.IsHighSurrogate(c) && nextIndex < charEnd && char.IsLowSurrogate(chars[nextIndex])) {
+                    charObj = char.ConvertToUtf32(c, chars[nextIndex++]);
+                } else {
+                    charObj = (int)c;
+                }
 
                 if (!_map.TryGetValue(charObj, out object val) || val == null) {
-                    int nextIndex = charIndex + 1;
-                    while (nextIndex < charEnd && (!_map.TryGetValue((int)chars[nextIndex], out val) || val == null)) {
-                        nextIndex++;
-                    }
                     efb ??= EncoderFallback.CreateFallbackBuffer();
                     try {
                         for (int idx = charIndex; idx < nextIndex; idx++) {
                             if (efb.Fallback(chars[idx], idx)) {
                                 while (efb.Remaining != 0) {
-                                    object fbCharObj = (int)efb.GetNextChar(); // TODO: support fallback in byte form
+                                    c = efb.GetNextChar();
+                                    object fbCharObj = (int)c;
+                                    if (char.IsHighSurrogate(c) && efb.Remaining != 0) {
+                                        char d = efb.GetNextChar();
+                                        if (char.IsLowSurrogate(d)) {
+                                            fbCharObj = char.ConvertToUtf32(c, d);
+                                        } else {
+                                            efb.MovePrevious();
+                                        }
+                                    }
+                                    // TODO: support fallback in byte form
                                     if (!_map.TryGetValue(fbCharObj, out val) || val == null) {
                                         throw new EncoderFallbackException();  // no recursive fallback
                                     }
                                     byteIndex += ProcessEncodingReplacementValue(val, bytes, byteIndex);
                                 }
                             }
+
                         }
                     } catch (EncoderFallbackException) {
                         throw PythonOps.UnicodeEncodeError("charmap", new string(chars), charIndex, nextIndex, "character maps to <undefined>");
@@ -775,7 +751,7 @@ namespace IronPython.Modules {
                     charIndex = nextIndex;
                 } else {
                     byteIndex += ProcessEncodingReplacementValue(val, bytes, byteIndex);
-                    charIndex++;
+                    charIndex = nextIndex;
                 }
             }
             return byteIndex - byteStart;
@@ -786,14 +762,18 @@ namespace IronPython.Modules {
 
             switch (replacement) {
                 case IList<byte> b:
-                    for (int i = 0; i < b.Count; i++, byteIndex++) {
-                        bytes[byteIndex] = b[i];
+                    if (bytes != null) {
+                        for (int i = 0; i < b.Count; i++, byteIndex++) {
+                            bytes[byteIndex] = b[i];
+                        } 
                     }
                     return b.Count;
 
                 case int n:
                     if (n < 0 || n > 0xFF) throw PythonOps.TypeError("character mapping must be in range(256)");
-                    bytes[byteIndex] = unchecked((byte)n);
+                    if (bytes != null) {
+                        bytes[byteIndex] = unchecked((byte)n);
+                    }
                     return 1;
 
                 default:

@@ -751,7 +751,6 @@ namespace IronPython.Runtime {
             ExtendNoLengthCheck(seq);
         }
 
-        [PythonHidden]
         private void ExtendNoLengthCheck(object? seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (seq == (object)this) {
@@ -1403,7 +1402,8 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public int __length_hint__() => _iterating ? _list._size - _index - 1 : 0;
+        public int __length_hint__()
+            => _iterating ? _list._size - _index - 1 : 0;
     }
 
     [PythonType("list_reverseiterator")]

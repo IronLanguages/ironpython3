@@ -104,8 +104,8 @@ namespace IronPython.Runtime {
             int n = Math.Max(0, (step > 0 ? (stop - start + step - 1) : (stop - start + step + 1)) / step);
             // fast paths, if we know the size then we can
             // do this quickly.
-            if (value is IList) {
-                ListSliceAssign(assign, start, n, step, (IList)value);
+            if (value is IList list) {
+                ListSliceAssign(assign, start, n, step, list);
             } else {
                 OtherSliceAssign(assign, start, stop, step, value);
             }

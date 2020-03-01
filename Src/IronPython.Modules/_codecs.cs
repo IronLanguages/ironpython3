@@ -590,7 +590,9 @@ namespace IronPython.Modules {
             if (_emap == null) {
                 _emap = new Dictionary<char, byte>(Math.Min(_dmap.Length, 256));
                 for (int i = 0; i < _dmap.Length && i < 256; i++) {
-                    _emap[_dmap[i]] = unchecked((byte)i);
+                    if (_dmap[i] != '\uFFFE') {
+                        _emap[_dmap[i]] = unchecked((byte)i);
+                    }
                 }
             }
         }
@@ -598,7 +600,7 @@ namespace IronPython.Modules {
         public bool TryGetCharValue(byte b, out char val) {
             if (b < _dmap.Length) {
                 val = _dmap[b];
-                return true;
+                return val != '\uFFFE';
             } else {
                 val = '\0';
                 return false;
@@ -799,36 +801,8 @@ namespace IronPython.Modules {
             }
         }
 
-        public override int GetCharCount(byte[] bytes, int index, int count) {
-            int byteEnd = index + count;
-            int charCount = 0;
-            DecoderFallbackBuffer dfb = null;
-
-            while (index < byteEnd) {
-                byte b = bytes[index];
-                object byteObj = ScriptingRuntimeHelpers.Int32ToObject(b);
-
-                if (!_map.TryGetValue(byteObj, out object val) || val == null) {
-                    dfb ??= DecoderFallback.CreateFallbackBuffer();
-                    try {
-                        if (dfb.Fallback(new[] { b }, index)) {
-                            charCount += dfb.Remaining;
-                            while (dfb.Remaining != 0) dfb.GetNextChar(); // drain it
-                        }
-                    } catch (DecoderFallbackException) {
-                        return charCount; // decoding will stop at this point
-                    }
-                } else if (val is string s) {
-                    charCount += s.Length;
-                } else if (val is int n) {
-                    charCount += n > 0xFFFF ? 2 : 1; // Non-BMP characters take 2 surrogate points
-                } else {
-                    throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
-                }
-                index++;
-            }
-            return charCount;
-        }
+        public override int GetCharCount(byte[] bytes, int index, int count)
+            => GetChars(bytes, index, count, null, 0);
 
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
             int byteEnd = byteIndex + byteCount;
@@ -836,39 +810,52 @@ namespace IronPython.Modules {
             DecoderFallbackBuffer dfb = null;
 
             while (byteIndex < byteEnd) {
-                byte b = bytes[byteIndex];
+                byte b = bytes[byteIndex++];
                 object byteObj = ScriptingRuntimeHelpers.Int32ToObject(b);
 
-                if (!_map.TryGetValue(byteObj, out object val) || val == null) {
-                    dfb ??= DecoderFallback.CreateFallbackBuffer();
-                    byte[] bytesUnknown = new[] { b };
-                    try {
-                        if (dfb.Fallback(bytesUnknown, byteIndex)) {
-                            while (dfb.Remaining != 0) {
-                                chars[charIndex++] = dfb.GetNextChar();
+                if (_map.TryGetValue(byteObj, out object val) && val != null) {
+                    if (val is string s) {
+                        if (s.Length == 0 || s[0] != '\uFFFE') {
+                            for (int i = 0; i < s.Length; i++) {
+                                if (chars != null) chars[charIndex] = s[i];
+                                charIndex++;
                             }
+                            continue;
                         }
-                    } catch (DecoderFallbackException) {
-                        throw PythonOps.UnicodeDecodeError("character maps to <undefined>", bytesUnknown, byteIndex);
-                    }
-                } else if (val is string s) {
-                    for (int i = 0; i < s.Length; i++) {
-                        chars[charIndex++] = s[i];
-                    }
-                } else if (val is int n) {
-                    if (n < 0 || n > 0x10FFFF) {
-                        throw PythonOps.TypeError("character mapping must be in range(0x110000)");
-                    } else if (n > 0xFFFF) {
-                        var sp = char.ConvertFromUtf32(n);
-                        chars[charIndex++] = sp[0];
-                        chars[charIndex++] = sp[1];
+                    } else if (val is int n) {
+                        if (n < 0 || n > 0x10FFFF) {
+                            throw PythonOps.TypeError("character mapping must be in range(0x110000)");
+                        } else if (n > 0xFFFF) {
+                            var sp = char.ConvertFromUtf32(n);
+                            if (chars != null) chars[charIndex] = sp[0];
+                            charIndex++;
+                            if (chars != null) chars[charIndex] = sp[1];
+                            charIndex++;
+                            continue;
+                        } else if (n != 0xFFFE) {
+                            if (chars != null) chars[charIndex] = unchecked((char)n);
+                            charIndex++;
+                            continue;
+                        }
                     } else {
-                        chars[charIndex++] = unchecked((char)n);
+                        throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
                     }
-                } else {
-                    throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
                 }
-                byteIndex++;
+
+                // byte unhandled, try fallback
+                dfb ??= DecoderFallback.CreateFallbackBuffer();
+                byte[] bytesUnknown = new[] { b };
+                try {
+                    if (dfb.Fallback(bytesUnknown, byteIndex - 1)) {
+                        while (dfb.Remaining != 0) {
+                            char c = dfb.GetNextChar();
+                            if (chars != null) chars[charIndex] = c;
+                            charIndex++;
+                        }
+                    }
+                } catch (DecoderFallbackException) {
+                    throw PythonOps.UnicodeDecodeError("character maps to <undefined>", bytesUnknown, byteIndex - 1);
+                }
             }
             return charIndex - charStart;
         }

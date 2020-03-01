@@ -206,6 +206,12 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(TypeError, "^character mapping must return integer, None or str",
             codecs.charmap_decode, b"a", "strict", {ord('a'): 2.0})
 
+        # Invalid character in dict
+        self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x01 in position 0: character maps to <undefined>",
+            codecs.charmap_decode, b"\x01", 'strict', {1: "\uFFFE"})
+        self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x01 in position 0: character maps to <undefined>",
+            codecs.charmap_decode, b"\x01", 'strict', {1: 0xFFFE})
+
         # Too short charmap
         self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x01 in position 0: character maps to <undefined>",
             codecs.charmap_decode, b"\x01", 'strict', "x")
@@ -213,6 +219,10 @@ class CodecTest(IronPythonTestCase):
         # Empty charmap
         self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x00 in position 0: character maps to <undefined>",
             codecs.charmap_decode, b"\0", 'strict', "")
+
+        # Invalid character in charmap string
+        self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x01 in position 0: character maps to <undefined>",
+            codecs.charmap_decode, b"\x01", 'strict', "x\uFFFEz")
 
     def test_decode(self):
         #sanity
@@ -1223,6 +1233,12 @@ class CodecTest(IronPythonTestCase):
         em = codecs.charmap_build(charmap)
         self.assertEqual(codecs.charmap_encode("ABC", 'strict', em), (b"\xbe\xbd\xbc", 3))
         self.assertEqual(str(type(em)), "<class 'EncodingMap'>")
+
+        # Handling of invaid character U+FFFE
+        self.assertEqual(codecs.charmap_encode("\uFFFE", "strict", {0xFFFE: ord('A')}), (b'A', 1))
+        em = codecs.charmap_build("\0\uFFFE")
+        self.assertRaisesRegex(UnicodeEncodeError, r"^'charmap' codec can't encode character '\\ufffe' in position 0: character maps to <undefined>",
+            codecs.charmap_encode, "\uFFFE", 'strict', em)
 
         # EncodingMap and error handlers
         charmap = "".join(chr(c).lower() for c in range(0x60)) # short map, no capital letters

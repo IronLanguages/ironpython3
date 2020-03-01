@@ -35,7 +35,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.CP65001Test('test_readline')) # skipped
         #suite.addTest(test.test_codecs.CP65001Test('test_readlinequeue')) # cp65001 encoding is only available on Windows
         #suite.addTest(test.test_codecs.CP65001Test('test_surrogatepass_handler')) # unknown error handler name 'surrogatepass'
-        #suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2int_map')) # ('\uffffbc', 3) != ('\udbff\udfffbc', 3)
+        suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2int_map')) # ('\uffffbc', 3) != ('\udbff\udfffbc', 3)
         #suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2str_map')) # ('AaBbCc', 6) != ('AaBbCc', 3)
         #suite.addTest(test.test_codecs.CharmapTest('test_decode_with_string_map')) # ('\udbff\udfffb', 3) != ('\udbff\udfffbc', 3)
         #suite.addTest(test.test_codecs.CodePageTest('test_code_page_name')) # 'module' object has no attribute 'code_page_encode'

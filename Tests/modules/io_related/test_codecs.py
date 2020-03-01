@@ -133,6 +133,7 @@ class CodecTest(IronPythonTestCase):
     def test_charmap_decode(self):
         self.assertEqual(codecs.charmap_decode(b""), ("", 0))
         self.assertEqual(codecs.charmap_decode(b"", 'strict', {}), ("", 0))
+        self.assertEqual(codecs.charmap_decode(b"", 'strict', ""), ("", 0))
 
         # Default map is Latin-1
         self.assertEqual(codecs.charmap_decode(b"abc\xff"), ("abcÿ", 4))
@@ -165,6 +166,14 @@ class CodecTest(IronPythonTestCase):
         # using a string mapping
         self.assertEqual(codecs.charmap_decode(b'\x02\x01\x00', 'strict', "abc"), ('cba', 3))
 
+        # Full-size string mapping
+        charmap = "".join(chr(c) for c in range(255, -1, -1))
+        self.assertEqual(codecs.charmap_decode(b"ABC", 'strict', charmap), ('¾½¼', 3))
+
+        # Oversize string mapping
+        charmap = "".join(chr(c) for c in range(255, -1, -1)) + "abc"
+        self.assertEqual(codecs.charmap_decode(b"ABC", 'strict', charmap), ('¾½¼', 3))
+
         # Missing key
         self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x61 in position 0: character maps to <undefined>",
             codecs.charmap_decode, b"abc", 'strict', {})
@@ -193,11 +202,17 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(TypeError, r"character mapping must be in range\(0x.*\)",
             codecs.charmap_decode, b"abc", 'strict', {ord(c): ord(c) + 0x110000 for c in "abcdefgh"})
 
-        #Negative
-        self.assertRaises(UnicodeDecodeError, codecs.charmap_decode, b"a", "strict", {})
-        self.assertRaises(UnicodeDecodeError, codecs.charmap_decode, b"a", "strict", {'a': None})
+        # Wrong number type format
+        self.assertRaisesRegex(TypeError, "^character mapping must return integer, None or str",
+            codecs.charmap_decode, b"a", "strict", {ord('a'): 2.0})
 
-        self.assertRaises(TypeError, codecs.charmap_decode, b"a", "strict", {ord('a'): 2.0})
+        # Too short charmap
+        self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x01 in position 0: character maps to <undefined>",
+            codecs.charmap_decode, b"\x01", 'strict', "x")
+
+        # Empty charmap
+        self.assertRaisesRegex(UnicodeDecodeError, "^'charmap' codec can't decode byte 0x00 in position 0: character maps to <undefined>",
+            codecs.charmap_decode, b"\0", 'strict', "")
 
     def test_decode(self):
         #sanity
@@ -1192,6 +1207,44 @@ class CodecTest(IronPythonTestCase):
         # Values outside of bytes range
         self.assertRaisesRegex(TypeError, r"^character mapping must be in range\(256\)",
             codecs.charmap_encode, "abc", 'strict', {ord(c): ord(c) + 0x100 for c in "abcdefgh"})
+
+        # Invalid charmap_build calls
+        self.assertRaises(TypeError, codecs.charmap_build)
+        self.assertRaises(TypeError, codecs.charmap_build, None)
+        self.assertRaises(TypeError, codecs.charmap_build, 1)
+        self.assertRaises(TypeError, codecs.charmap_build, "")
+        self.assertRaises(TypeError, codecs.charmap_build, "", "")
+
+        # Using EncodingMap
+        charmap = "".join(chr(c) for c in range(255, -1, -1))
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("ABC", 'strict', em), (b"\xbe\xbd\xbc", 3))
+        charmap = "\0" + "".join(chr(c) for c in range(254, 0, -1)) + "\xff"
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("ABC", 'strict', em), (b"\xbe\xbd\xbc", 3))
+        self.assertEqual(str(type(em)), "<class 'EncodingMap'>")
+
+        # EncodingMap and error handlers
+        charmap = "".join(chr(c).lower() for c in range(0x60)) # short map, no capital letters
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("abcABC", 'ignore', em), (b"ABC", 6))
+
+        charmap = "".join(chr(c).lower() for c in range(0x60)) # short map, no capital letters
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("abcABC", 'replace', em), (b"ABC???", 6))
+        charmap = charmap.replace('?', '`').replace('!', '?')
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("abcABC", 'replace', em), (b"ABC!!!", 6))
+
+        charmap = "".join(chr(c).lower() for c in range(0x60)) # short map, no capital letters
+        charmap = charmap.replace('\\', '`').replace('/', '\\')
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("abcABC", 'backslashreplace', em), (b"ABC/X41/X42/X43", 6))
+
+        charmap = "".join(chr(c).lower() for c in range(0x60)) # short map, no capital letters
+        charmap = charmap.replace('#', '`').replace('=', '#')
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("abcABC", 'xmlcharrefreplace', em), (b"ABC&=65;&=66;&=67;", 6))
 
     @unittest.skipIf(is_posix, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
     def test_mbcs_decode(self):

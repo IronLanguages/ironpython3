@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
-    public static class EnumOps {        
+    public static class EnumOps {
         [SpecialName]
         public static object BitwiseOr(object self, object other) {
             object result = EnumUtils.BitwiseOr(self, other);
@@ -38,7 +41,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object OnesComplement(object self) {
+         public static object OnesComplement(object self) {
             object result = EnumUtils.OnesComplement(self);
             if (result != null) {
                 return result;
@@ -69,11 +72,11 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(object self) {
             if (Enum.IsDefined(self.GetType(), self)) {
-                string name = Enum.GetName(self.GetType(), self);
+                string? name = Enum.GetName(self.GetType(), self);
                 return self.GetType().FullName + "." + name;
             }
 
-            return String.Format("<enum {0}: {1}>", self.GetType().FullName, self.ToString());
+            return $"<enum {self.GetType().FullName}: {self.ToString()}>";
         }
     }
 }

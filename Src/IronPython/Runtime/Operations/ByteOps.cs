@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
@@ -21,11 +24,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static byte ToByteChecked(this BigInteger item) {
-            int val;
-            if (item.AsInt32(out val)) {
-                return ToByteChecked(val);
+            try {
+                return checked((byte)item);
+            } catch (OverflowException) {
+                throw PythonOps.ValueError("byte must be in range(0, 256)");
             }
-            throw PythonOps.ValueError("byte must be in range(0, 256)");
         }
 
         internal static byte ToByteChecked(this double item) {
@@ -79,7 +82,7 @@ namespace IronPython.Runtime.Operations {
                     b == 11;
         }
 
-        internal static void AppendJoin(object value, int index, List<byte> byteList) {
+        internal static void AppendJoin(object? value, int index, List<byte> byteList) {
             if (value is IList<byte> bytesValue) {
                 byteList.AddRange(bytesValue);
             } else {
@@ -87,95 +90,46 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static IList<byte> CoerceBytes(object obj) {
-            if (!(obj is IList<byte> ret)) {
-                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
+        internal static IList<byte> CoerceBytes(object? obj) {
+            if (obj is IList<byte> ret) {
+                return ret;
             }
-            return ret;
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
         }
 
         internal static List<byte> GetBytes(ICollection bytes) {
-            return GetBytes(bytes, GetByte);
+            return bytes.Select(GetByte).ToList();
         }
 
-        internal static List<byte> GetBytes(ICollection bytes, Func<object, byte> conversion) {
-            List<byte> res = new List<byte>(bytes.Count);
-            foreach (object o in bytes) {
-                res.Add(conversion.Invoke(o));
-            }
-            return res;
-        }
-
-        internal static byte GetByteStringOk(object o) {
-            string s;
-            Extensible<string> es;
-            if (!Object.ReferenceEquals(s = o as string, null)) {
-                if (s.Length == 1) {
-                    return ((int)s[0]).ToByteChecked();
-                } else {
-                    throw PythonOps.TypeError("an integer or string of size 1 is required");
-                }
-            } else if (!Object.ReferenceEquals(es = o as Extensible<string>, null)) {
-                if (es.Value.Length == 1) {
-                    return ((int)es.Value[0]).ToByteChecked();
-                } else {
-                    throw PythonOps.TypeError("an integer or string of size 1 is required");
-                }
-            } else {
-                return GetByteListOk(o);
-            }
-        }
-
-        internal static byte GetByteListOk(object o) {
-            if (o is IList<byte> lbval) {
-                if (lbval.Count == 1) {
-                    return lbval[0];
-                }
-                throw PythonOps.ValueError("an integer or string of size 1 is required");
+        private static byte GetByte(object? o) {
+            // TODO: move fast paths to TryConvertToIndex?
+            switch (o) {
+                case int ii:
+                    return ii.ToByteChecked();
+                case BigInteger bi:
+                    return bi.ToByteChecked();
+                case Extensible<int> ei:
+                    return ei.Value.ToByteChecked();
+                case Extensible<BigInteger> ebi:
+                    return ebi.Value.ToByteChecked();
+                case byte b:
+                    return b;
+                case sbyte sb:
+                    return ((int)sb).ToByteChecked();
+                case char c:
+                    return ((int)c).ToByteChecked();
+                case short s:
+                    return ((int)s).ToByteChecked();
+                case ushort us:
+                    return ((int)us).ToByteChecked();
+                case uint ui:
+                    return ((BigInteger)ui).ToByteChecked();
             }
 
-            return GetByte(o);
-        }
-
-        internal static byte GetByte(object o) {
-            // TODO: verify usage and clean up
-            Extensible<int> ei;
-            Extensible<BigInteger> ebi;
-            Extensible<double> ed;
-            int i;
-            if (o is int) {
-                return ((int)o).ToByteChecked();
-            } else if (o is BigInteger) {
-                return ((BigInteger)o).ToByteChecked();
-            } else if (o is double) {
-                return ((double)o).ToByteChecked();
-            } else if ((ei = o as Extensible<int>) != null) {
-                return ei.Value.ToByteChecked();
-            } else if (!Object.ReferenceEquals(ebi = o as Extensible<BigInteger>, null)) {
-                return ebi.Value.ToByteChecked();
-            } else if (!Object.ReferenceEquals(ed = o as Extensible<double>, null)) {
-                return ed.Value.ToByteChecked();
-            } else if (o is byte) {
-                return (byte)o;
-            } else if (o is sbyte) {
-                return ((int)(sbyte)o).ToByteChecked();
-            } else if (o is char) {
-                return ((int)(char)o).ToByteChecked();
-            } else if (o is short) {
-                return ((int)(short)o).ToByteChecked();
-            } else if (o is ushort) {
-                return ((int)(ushort)o).ToByteChecked();
-            } else if (o is uint) {
-                return ((BigInteger)(uint)o).ToByteChecked();
-            } else if (o is float) {
-                return ((double)(float)o).ToByteChecked();
-            } else if (Converter.TryConvertToIndex(o, out i)) {
+            if (Converter.TryConvertToIndex(o, out int i))
                 return i.ToByteChecked();
-            } else if (o is string str && str.Length == 1) {
-                return ((int)str[0]).ToByteChecked();
-            } else {
-                throw PythonOps.TypeError("an integer or string of size 1 is required");
-            }
+
+            throw PythonOps.TypeError($"'{PythonTypeOps.GetName(o)}' object cannot be interpreted as an integer");
         }
     }
 }

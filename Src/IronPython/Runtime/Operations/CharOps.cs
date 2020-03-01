@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+#nullable enable
+
 using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
@@ -17,7 +19,7 @@ namespace IronPython.Runtime.Operations {
 
     public static class CharOps {
         public static string/*!*/ __repr__(char self) {
-            return self.ToString(CultureInfo.InvariantCulture);
+            return char.ToString(self);
         }
 
         public static bool __eq__(char self, char other) {
@@ -30,21 +32,19 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(char self) {
-            return new String(self, 1).GetHashCode();
+            return char.ToString(self).GetHashCode();
         }
 
         public static int __index__(char self) {
-            return unchecked((int)self);
+            return self;
         }
 
         [return: MaybeNotImplemented]
         public static object __cmp__(char self, object other) {
-            string strOther;
-
-            if (other is char) {
-                int diff = self - (char)other;
+            if (other is char c) {
+                int diff = self - c;
                 return diff > 0 ? 1 : diff < 0 ? -1 : 0;
-            } else if ((strOther = other as string) != null && strOther.Length == 1) {
+            } else if (other is string strOther && strOther.Length == 1) {
                 int diff = self - strOther[0];
                 return diff > 0 ? 1 : diff < 0 ? -1 : 0;
             }
@@ -62,14 +62,12 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName, ImplicitConversionMethod]
         public static string ConvertToString(char self) {
-            return new string(self, 1);
+            return char.ToString(self);
         }
 
         [SpecialName, ExplicitConversionMethod]
         public static char ConvertToChar(int value) {
-            if (value < 0 || value > Char.MaxValue) throw new OverflowException();
-
-            return (char)value;
+            return checked((char)value);
         }
     }
 }

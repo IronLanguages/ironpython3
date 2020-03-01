@@ -41,7 +41,7 @@ namespace IronPython.Runtime {
         }
 
         public Bytes([NotNull]PythonList bytes) {
-            _bytes = ByteOps.GetBytes(bytes, ByteOps.GetByteListOk).ToArray();
+            _bytes = ByteOps.GetBytes(bytes).ToArray();
         }
 
         public Bytes(int size) {

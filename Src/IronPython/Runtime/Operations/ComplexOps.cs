@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -27,12 +29,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(
-            CodeContext context, 
-            PythonType cls,
-            object real=null,
-            object imag=null
-           ) {
+        public static object __new__(CodeContext context, PythonType cls, object? real = null, object? imag = null) {
             var real2 = new Complex();
             var imag2 = new Complex();
             if (real == null && imag == null && cls == TypeCache.Complex) throw PythonOps.TypeError("argument must be a string or a number");
@@ -64,7 +61,7 @@ namespace IronPython.Runtime.Operations {
                 return cls.CreateInstance(context, real3, imag3);
             }
         }
-        
+
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, double real) {
             if (cls == TypeCache.Complex) {
@@ -141,9 +138,9 @@ namespace IronPython.Runtime.Operations {
                     Complex factor = x;
                     while (power != 0) {
                         if ((power & 1) != 0) {
-                            res = res * factor;
+                            res *= factor;
                         }
-                        factor = factor * factor;
+                        factor *= factor;
                         power >>= 1;
                     }
                     return res;
@@ -198,10 +195,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __getnewargs__(CodeContext context, Complex self) {
-                return PythonTuple.MakeTuple(
-                    PythonOps.GetBoundAttr(context, self, "real"),
-                    PythonOps.GetBoundAttr(context, self, "imag")
-                );
+            return PythonTuple.MakeTuple(
+                PythonOps.GetBoundAttr(context, self, "real"),
+                PythonOps.GetBoundAttr(context, self, "imag")
+            );
         }
 
         public static object __pos__(Complex x) {
@@ -243,7 +240,7 @@ namespace IronPython.Runtime.Operations {
             StringFormatter sf = new StringFormatter(context, "%.6g", x);
             return sf.Format();
         }
-        
+
         // Unary Operations
         [SpecialName]
         public static double Abs(Complex x) {
@@ -274,6 +271,5 @@ namespace IronPython.Runtime.Operations {
         public static bool GreaterThanOrEqual(Complex x, Complex y) {
             throw PythonOps.TypeError("complex is not an ordered type");
         }
-
     }
 }

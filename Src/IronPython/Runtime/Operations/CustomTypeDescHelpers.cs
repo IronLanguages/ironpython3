@@ -4,11 +4,14 @@
 
 #if FEATURE_CUSTOM_TYPE_DESCRIPTOR
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Actions.Calls;
 
 namespace IronPython.Runtime.Operations {
@@ -24,16 +27,15 @@ namespace IronPython.Runtime.Operations {
             return AttributeCollection.Empty;
         }
 
-        public static string GetClassName(object self) {
-            object cls;
-            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, "__class__", out cls)) {
+        public static string? GetClassName(object self) {
+            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, "__class__", out object cls)) {
                 return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, cls, "__name__").ToString();
             }
             return null;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self")]
-        public static string GetComponentName(object self) {
+        public static string? GetComponentName(object self) {
             return null;
         }
 
@@ -42,17 +44,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self")]
-        public static EventDescriptor GetDefaultEvent(object self) {
+        public static EventDescriptor? GetDefaultEvent(object self) {
             return null;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self")]
-        public static PropertyDescriptor GetDefaultProperty(object self) {
+        public static PropertyDescriptor? GetDefaultProperty(object self) {
             return null;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "editorBaseType")]
-        public static object GetEditor(object self, Type editorBaseType) {
+        public static object? GetEditor(object self, Type editorBaseType) {
             return null;
         }
 
@@ -84,9 +86,8 @@ namespace IronPython.Runtime.Operations {
                 foreach (object o in attrNames) {
                     if (!(o is string s)) continue;
 
-                    PythonTypeSlot attrSlot;
                     PythonType dt = DynamicHelpers.GetPythonType(self);
-                    dt.TryResolveSlot(DefaultContext.DefaultCLS, s, out attrSlot);
+                    dt.TryResolveSlot(DefaultContext.DefaultCLS, s, out PythonTypeSlot attrSlot);
                     object attrVal = ObjectOps.__getattribute__(DefaultContext.DefaultCLS, self, s);
 
                     Type attrType = (attrVal == null) ? typeof(NoneTypeOps) : attrVal.GetType();
@@ -120,9 +121,7 @@ namespace IronPython.Runtime.Operations {
         private static bool ShouldIncludeProperty(PythonTypeSlot attrSlot, Attribute[] attributes) {
             bool include = true;
             foreach (Attribute attr in attributes) {
-                ReflectedProperty rp;
-
-                if ((rp = attrSlot as ReflectedProperty) != null && rp.Info != null) {
+                if (attrSlot is ReflectedProperty rp && rp.Info != null) {
                     include &= rp.Info.IsDefined(attr.GetType(), true);
                 } else if (attr.GetType() == typeof(BrowsableAttribute)) {
                     if (!(attrSlot is PythonTypeUserDescriptorSlot userSlot)) {
@@ -149,9 +148,10 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         private class SuperDynamicObjectPropertyDescriptor : PropertyDescriptor {
-            private string _name;
-            private Type _propertyType;
-            private Type _componentType;
+            private readonly string _name;
+            private readonly Type _propertyType;
+            private readonly Type _componentType;
+
             internal SuperDynamicObjectPropertyDescriptor(
                 string name,
                 Type propertyType,
@@ -190,13 +190,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             public override bool ShouldSerializeValue(object component) {
-                object o;
-                return PythonOps.TryGetBoundAttr(component, _name, out o);
+                return PythonOps.TryGetBoundAttr(component, _name, out _);
             }
         }
 
         private class TypeConv : TypeConverter {
-            private object convObj;
+            private readonly object convObj;
 
             public TypeConv(object self) {
                 convObj = self;
@@ -204,8 +203,7 @@ namespace IronPython.Runtime.Operations {
 
             #region TypeConverter overrides
             public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) {
-                object result;
-                return Converter.TryConvert(convObj, destinationType, out result);
+                return Converter.TryConvert(convObj, destinationType, out _);
             }
 
             public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) {
@@ -233,8 +231,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             public override bool IsValid(ITypeDescriptorContext context, object value) {
-                object result;
-                return Converter.TryConvert(value, convObj.GetType(), out result);
+                return Converter.TryConvert(value, convObj.GetType(), out _);
             }
             #endregion
         }

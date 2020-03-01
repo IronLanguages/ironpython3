@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Globalization;
 using System.Numerics;
@@ -71,7 +73,7 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         internal static object __cmp__(decimal x, object y) {
-            if (object.ReferenceEquals(y, null)) {
+            if (y is null) {
                 return ScriptingRuntimeHelpers.Int32ToObject(+1);
             }
             return PythonOps.NotImplemented;
@@ -145,11 +147,11 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > spec.Precision.Value && digitCnt != 1) {
                             // first round off the decimal value
-                            self = Decimal.Round(self, 0, MidpointRounding.AwayFromZero);
+                            self = decimal.Round(self, 0, MidpointRounding.AwayFromZero);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
-                            self = self - (self % (decimal)pow);
+                            self -= (self % (decimal)pow);
 
                             // finally format w/ the requested precision
                             string fmt = "0.0" + new string('#', spec.Precision.Value);
@@ -160,7 +162,7 @@ namespace IronPython.Runtime.Operations {
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
-                            self = Decimal.Round(self, decimalPoints, MidpointRounding.AwayFromZero);
+                            self = decimal.Round(self, decimalPoints, MidpointRounding.AwayFromZero);
                             digits = self.ToString("0.0" + new string('#', decimalPoints));
                         }
                     } else {
@@ -190,12 +192,12 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > precision && digitCnt != 1) {
                             // first round off the decimal value
-                            self = Decimal.Round(self, 0, MidpointRounding.AwayFromZero);
+                            self = decimal.Round(self, 0, MidpointRounding.AwayFromZero);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
                             decimal rest = self / (decimal)pow;
-                            self = self - self % (decimal)pow;
+                            self -= self % (decimal)pow;
                             if ((rest % 1) >= (decimal).5) {
                                 // round up
                                 self += (decimal)pow;
@@ -226,7 +228,7 @@ namespace IronPython.Runtime.Operations {
                             }
                             int decimalPoints = Math.Max(precision - digitCnt, 0);
 
-                            self = Decimal.Round(self, decimalPoints, MidpointRounding.AwayFromZero);
+                            self = decimal.Round(self, decimalPoints, MidpointRounding.AwayFromZero);
 
                             if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {

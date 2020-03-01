@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 
@@ -15,38 +17,30 @@ using IronPython.Runtime.Exceptions;
 namespace IronPython.Runtime {
     [PythonType("slice")]
     public sealed class Slice : ICodeFormattable, IComparable, ISlice {
-        private readonly object _start, _stop, _step;
+        public Slice(object? stop) : this(null, stop, null) { }
 
-        public Slice(object stop) : this(null, stop, null) { }
+        public Slice(object? start, object? stop) : this(start, stop, null) { }
 
-        public Slice(object start, object stop) : this(start, stop, null) { }
-
-        public Slice(object start, object stop, object step) {
-            _start = start;
-            _stop = stop;
-            _step = step;
+        public Slice(object? start, object? stop, object? step) {
+            this.start = start;
+            this.stop = stop;
+            this.step = step;
         }
 
         #region Python Public API Surface
 
-        public object start {
-            get { return _start; }
-        }
+        public object? start { get; }
 
-        public object stop {
-            get { return _stop; }
-        }
+        public object? stop { get; }
 
-        public object step {
-            get { return _step; }
-        }
+        public object? step { get; }
 
         public void indices(int length, out int ostart, out int ostop, out int ostep) {
             if (length < 0) throw PythonOps.ValueError("length should not be negative");
-            PythonOps.FixSlice(length, _start, _stop, _step, out ostart, out ostop, out ostep);
+            PythonOps.FixSlice(length, start, stop, step, out ostart, out ostop, out ostep);
         }
 
-        public void indices(object length, out int ostart, out int ostop, out int ostep) {
+        public void indices(object? length, out int ostart, out int ostop, out int ostep) {
             indices(Converter.ConvertToIndex(length), out ostart, out ostop, out ostep);
         }
 
@@ -54,9 +48,9 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(
                 DynamicHelpers.GetPythonTypeFromType(typeof(Slice)),
                 PythonTuple.MakeTuple(
-                    _start,
-                    _stop,
-                    _step
+                    start,
+                    stop,
+                    step
                 )
             );
         }
@@ -65,9 +59,9 @@ namespace IronPython.Runtime {
 
         #region IComparable Members
 
-        int IComparable.CompareTo(object obj) {
-            if (!(obj is Slice other)) throw new ValueErrorException("expected slice");
-            return Compare(other);
+        int IComparable.CompareTo(object? obj) {
+            if (obj is Slice other) return Compare(other);
+            throw new ValueErrorException("expected slice");
         }
 
         #endregion
@@ -79,45 +73,39 @@ namespace IronPython.Runtime {
 
         #region ISlice Members
 
-        object ISlice.Start {
-            get { return start; }
-        }
+        object? ISlice.Start => start;
 
-        object ISlice.Stop {
-            get { return stop; }
-        }
+        object? ISlice.Stop => stop;
 
-        object ISlice.Step {
-            get { return step; }
-        }
+        object? ISlice.Step => step;
 
         #endregion
 
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return string.Format("slice({0}, {1}, {2})", PythonOps.Repr(context, _start), PythonOps.Repr(context, _stop), PythonOps.Repr(context, _step));
+            return string.Format("slice({0}, {1}, {2})", PythonOps.Repr(context, start), PythonOps.Repr(context, stop), PythonOps.Repr(context, step));
         }
 
         #endregion
-        
+
         #region Internal Implementation details
 
-        internal delegate void SliceAssign(int index, object value);
+        internal delegate void SliceAssign(int index, object? value);
 
-        internal void DoSliceAssign(SliceAssign assign, int size, object value) {
+        internal void DoSliceAssign(SliceAssign assign, int size, object? value) {
             int ostart, ostop, ostep;
             indices(size, out ostart, out ostop, out ostep);
             DoSliceAssign(assign, ostart, ostop, ostep, value);
         }
 
-        private static void DoSliceAssign(SliceAssign assign, int start, int stop, int step, object value) {
+        private static void DoSliceAssign(SliceAssign assign, int start, int stop, int step, object? value) {
             stop = step > 0 ? Math.Max(stop, start) : Math.Min(stop, start);
             int n = Math.Max(0, (step > 0 ? (stop - start + step - 1) : (stop - start + step + 1)) / step);
             // fast paths, if we know the size then we can
             // do this quickly.
-            if (value is IList) {
-                ListSliceAssign(assign, start, n, step, value as IList);
+            if (value is IList list) {
+                ListSliceAssign(assign, start, n, step, list);
             } else {
                 OtherSliceAssign(assign, start, stop, step, value);
             }
@@ -132,7 +120,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static void OtherSliceAssign(SliceAssign assign, int start, int stop, int step, object value) {
+        private static void OtherSliceAssign(SliceAssign assign, int start, int stop, int step, object? value) {
             // get enumerable data into a list, and then
             // do the slice.
             IEnumerator enumerator = PythonOps.GetEnumerator(value);
@@ -143,8 +131,8 @@ namespace IronPython.Runtime {
         }
 
         private int Compare(Slice obj) {
-            return PythonOps.CompareArrays(new object[] { _start, _stop, _step }, 3,
-                new object[] { obj._start, obj._stop, obj._step }, 3);
+            return PythonOps.CompareArrays(new object?[] { start, stop, step }, 3,
+                new object?[] { obj.start, obj.stop, obj.step }, 3);
         }
 
         #endregion

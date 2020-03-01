@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using System.Numerics;
-using Microsoft.Scripting.Ast;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -23,6 +22,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
@@ -1915,7 +1915,9 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonTypeOps.GetName(enumerable));
         }
 
-        internal static bool TryGetEnumerator(CodeContext/*!*/ context, object enumerable, out IEnumerator enumerator) {
+#nullable enable
+
+        internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
             enumerator = null;
 
             if (enumerable is PythonType ptEnumerable && !ptEnumerable.IsIterable(context)) {
@@ -1929,6 +1931,8 @@ namespace IronPython.Runtime.Operations {
 
             return false;
         }
+
+#nullable disable
 
         public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) => iteratorInfo.Value?.Dispose();
 

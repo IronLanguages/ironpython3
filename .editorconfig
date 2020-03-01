@@ -33,3 +33,6 @@ dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 # enforce some code styles
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
 csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:error
+
+# IPY01: Parameter which is marked not nullable does not have the NotNullAttribute
+dotnet_diagnostic.IPY01.severity = warning

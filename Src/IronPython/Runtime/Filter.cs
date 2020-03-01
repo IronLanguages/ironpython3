@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections;
 
 using Microsoft.Scripting.Runtime;
@@ -18,17 +20,17 @@ Return an iterator yielding those items of iterable for which function(item)
 is true. If function is None, return the items that are true.")]
     public class Filter : IEnumerable {
         private readonly CodeContext _context;
-        private readonly object _function;
+        private readonly object? _function;
         private readonly object _iterable;
 
-        public Filter(CodeContext context, object function, object iterable) {
-            _context = context;
-            _function = function;
-            _iterable = iterable;
-
+        public Filter(CodeContext context, object? function, object? iterable) {
             if (!PythonOps.TryGetEnumerator(context, iterable, out _)) {
                 throw PythonOps.TypeErrorForNotIterable(iterable);
             }
+
+            _context = context;
+            _function = function;
+            _iterable = iterable;
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
@@ -38,8 +40,8 @@ is true. If function is None, return the items that are true.")]
 
             IEnumerator e = PythonOps.GetEnumerator(_context, _iterable);
             while (e.MoveNext()) {
-                object o = e.Current;
-                object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
+                object? o = e.Current;
+                object? t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
 
                 if (PythonOps.IsTrue(t)) {
                     yield return o;

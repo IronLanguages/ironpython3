@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
 using System;
 using System.Collections;
@@ -23,20 +23,20 @@ using IronPython.Runtime.Types;
 using Utils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime {
-    using Ast = MSAst.Expression;
+    using Ast = System.Linq.Expressions.Expression;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
-    public class PythonTuple : IList, IList<object>, ICodeFormattable, IExpressionSerializable, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object> {
-        internal readonly object[] _data;
-        
+    public class PythonTuple : IList, IList<object?>, ICodeFormattable, IExpressionSerializable, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object?> {
+        internal readonly object?[] _data;
+
         internal static readonly PythonTuple EMPTY = new PythonTuple();
 
-        public PythonTuple(object o) {
+        public PythonTuple([NotNull]object o) {
             _data = MakeItems(o);
         }
 
-        protected PythonTuple(object[] items) {
+        protected PythonTuple(object?[] items) {
             _data = items;
         }
 
@@ -54,7 +54,7 @@ namespace IronPython.Runtime {
         // They also explicitly implement __new__ so they can perform the
         // appropriate caching.  
 
-        public static PythonTuple __new__(CodeContext context, PythonType cls) {
+        public static PythonTuple __new__(CodeContext context, [NotNull]PythonType cls) {
             if (cls == TypeCache.PythonTuple) {
                 return EMPTY;
             } else {
@@ -63,7 +63,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static PythonTuple __new__(CodeContext context, PythonType cls, object sequence) {
+        public static PythonTuple __new__(CodeContext context, [NotNull]PythonType cls, object? sequence) {
             if (sequence == null) throw PythonOps.TypeError("iteration over a non-sequence");
 
             if (cls == TypeCache.PythonTuple) {
@@ -78,19 +78,19 @@ namespace IronPython.Runtime {
 
         #region Python 2.6 Methods
 
-        public int index(object obj, object start) {
+        public int index(object? obj, object? start) {
             return index(obj, Converter.ConvertToIndex(start), _data.Length);
         }
 
-        public int index(object obj, int start = 0) {
+        public int index(object? obj, int start = 0) {
             return index(obj, start, _data.Length);
         }
 
-        public int index(object obj, object start, object end) {
+        public int index(object? obj, object? start, object? end) {
             return index(obj, Converter.ConvertToIndex(start), Converter.ConvertToIndex(end));
         }
 
-        public int index(object obj, int start, int end) {
+        public int index(object? obj, int start, int end) {
             start = PythonOps.FixSliceIndex(start, _data.Length);
             end = PythonOps.FixSliceIndex(end, _data.Length);
 
@@ -103,9 +103,9 @@ namespace IronPython.Runtime {
             throw PythonOps.ValueError("tuple.index(x): x not in list");
         }
 
-        public int count(object obj) {
+        public int count(object? obj) {
             int cnt = 0;
-            foreach (object elem in _data) {
+            foreach (object? elem in _data) {
                 if (PythonOps.IsOrEqualsRetBool(obj, elem)) {
                     cnt++;
                 }
@@ -116,24 +116,23 @@ namespace IronPython.Runtime {
         #endregion
 
         internal static PythonTuple Make(object o) {
-            if (o is PythonTuple) return (PythonTuple)o;
+            if (o is PythonTuple t) return t;
             return new PythonTuple(MakeItems(o));
         }
 
-        internal static PythonTuple MakeTuple(params object[] items) {
+        internal static PythonTuple MakeTuple(params object?[] items) {
             if (items.Length == 0) return EMPTY;
             return new PythonTuple(items);
         }
 
-        private static object[] MakeItems(object o) {
+        private static object?[] MakeItems(object o) {
             var t = o.GetType();
             // Only use fast paths if we have an exact tuple/list, otherwise use iter
             if (t == typeof(PythonTuple)) {
                 return ((PythonTuple)o)._data;
             } else if (t == typeof(PythonList)) {
                 return ((PythonList)o).GetObjectArray();
-            } else if (o is string) {
-                string s = (string)o;
+            } else if (o is string s) {
                 object[] res = new object[s.Length];
                 for (int i = 0; i < res.Length; i++) {
                     res[i] = ScriptingRuntimeHelpers.CharToString(s[i]);
@@ -144,7 +143,7 @@ namespace IronPython.Runtime {
             } else {
                 PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonTypeOps.GetName(o));
 
-                List<object> l = new List<object>();
+                var l = new List<object?>();
                 IEnumerator i = PythonOps.GetEnumerator(o);
                 while (i.MoveNext()) {
                     l.Add(i.Current);
@@ -153,11 +152,11 @@ namespace IronPython.Runtime {
                 return l.ToArray();
             }
         }
-        
+
         /// <summary>
         /// Return a copy of this tuple's data array.
         /// </summary>
-        internal object[] ToArray() {
+        internal object?[] ToArray() {
             return ArrayOps.CopyArray(_data, _data.Length);
         }
 
@@ -167,25 +166,25 @@ namespace IronPython.Runtime {
             return _data.Length;
         }
 
-        public virtual object this[int index] {
+        public virtual object? this[int index] {
             get {
                 return _data[PythonOps.FixIndex(index, _data.Length)];
             }
         }
-        
-        public virtual object this[object index] {
+
+        public virtual object? this[object? index] {
             get {
                 return this[Converter.ConvertToIndex(index)];
             }
         }
 
-        public virtual object this[BigInteger index] {
+        public virtual object? this[BigInteger index] {
             get {
                 return this[(int)index];
             }
         }
 
-        public virtual object this[Slice slice] {
+        public virtual object this[[NotNull]Slice slice] {
             get {
                 int start, stop, step;
                 slice.indices(_data.Length, out start, out stop, out step);
@@ -202,7 +201,7 @@ namespace IronPython.Runtime {
 
         #region binary operators
 
-        public static PythonTuple operator +([NotNull]PythonTuple x, object y) {
+        public static PythonTuple operator +([NotNull]PythonTuple x, object? y) {
             if (y is PythonTuple t) return x + t;
             throw PythonOps.TypeError($"can only concatenate tuple (not \"{PythonTypeOps.GetName(y)}\") to tuple");
         }
@@ -221,33 +220,31 @@ namespace IronPython.Runtime {
             return MakeTuple(ArrayOps.Multiply(self._data, self._data.Length, count));
         }
 
-        public static PythonTuple operator *(PythonTuple x, int n) {
+        public static PythonTuple operator *([NotNull]PythonTuple x, int n) {
             return MultiplyWorker(x, n);
         }
 
-        public static PythonTuple operator *(int n, PythonTuple x) {
+        public static PythonTuple operator *(int n, [NotNull]PythonTuple x) {
             return MultiplyWorker(x, n);
         }
 
         public static object operator *([NotNull]PythonTuple self, [NotNull]Index count) {
-            return PythonOps.MultiplySequence<PythonTuple>(MultiplyWorker, self, count, true);
+            return PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
         }
 
         public static object operator *([NotNull]Index count, [NotNull]PythonTuple self) {
-            return PythonOps.MultiplySequence<PythonTuple>(MultiplyWorker, self, count, false);
+            return PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
         }
 
-        public static object operator *([NotNull]PythonTuple self, object count) {
-            int index;
-            if (Converter.TryConvertToIndex(count, out index)) {
+        public static object operator *([NotNull]PythonTuple self, object? count) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
                 return self * index;
             }
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        public static object operator *(object count, [NotNull]PythonTuple self) {
-            int index;
-            if (Converter.TryConvertToIndex(count, out index)) {
+        public static object operator *(object? count, [NotNull]PythonTuple self) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
                 return index * self;
             }
 
@@ -293,8 +290,8 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        private object[] Expand(object value) {
-            object[] args;
+        private object?[] Expand(object? value) {
+            object?[] args;
             int length = _data.Length;
             if (value == null)
                 args = new object[length];
@@ -319,7 +316,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() {
             return new PythonTupleEnumerator(this);
         }
 
@@ -328,22 +325,22 @@ namespace IronPython.Runtime {
         #region IList<object> Members
 
         [PythonHidden]
-        public int IndexOf(object item) {
+        public int IndexOf(object? item) {
             for (int i = 0; i < Count; i++) {
                 if (PythonOps.IsOrEqualsRetBool(this[i], item)) return i;
             }
             return -1;
         }
 
-        void IList<object>.Insert(int index, object item) {
+        void IList<object?>.Insert(int index, object? item) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
-        void IList<object>.RemoveAt(int index) {
+        void IList<object?>.RemoveAt(int index) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
-        object IList<object>.this[int index] {
+        object? IList<object?>.this[int index] {
             get {
                 return this[index];
             }
@@ -356,16 +353,16 @@ namespace IronPython.Runtime {
 
         #region ICollection<object> Members
 
-        void ICollection<object>.Add(object item) {
+        void ICollection<object?>.Add(object? item) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
-        void ICollection<object>.Clear() {
+        void ICollection<object?>.Clear() {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
         [PythonHidden]
-        public bool Contains(object item) {
+        public bool Contains(object? item) {
             for (int i = 0; i < _data.Length; i++) {
                 if (PythonOps.IsOrEqualsRetBool(_data[i], item)) {
                     return true;
@@ -376,17 +373,17 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public void CopyTo(object[] array, int arrayIndex) {
+        public void CopyTo(object?[] array, int arrayIndex) {
             for (int i = 0; i < Count; i++) {
                 array[arrayIndex + i] = this[i];
             }
         }
 
-        bool ICollection<object>.IsReadOnly {
+        bool ICollection<object?>.IsReadOnly {
             get { return true; }
         }
 
-        bool ICollection<object>.Remove(object item) {
+        bool ICollection<object?>.Remove(object? item) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
@@ -418,7 +415,7 @@ namespace IronPython.Runtime {
 
         #region IStructuralComparable Members
 
-        int IStructuralComparable.CompareTo(object obj, IComparer comparer) {
+        int IStructuralComparable.CompareTo(object? obj, IComparer comparer) {
             if (!(obj is PythonTuple other)) {
                 throw new ValueErrorException("expected tuple");
             }
@@ -428,14 +425,14 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!Object.ReferenceEquals(this, obj)) {
                 if (!(obj is PythonTuple other) || _data.Length != other._data.Length) {
                     return false;
                 }
 
                 for (int i = 0; i < _data.Length; i++) {
-                    object obj1 = this[i], obj2 = other[i];
+                    object? obj1 = this[i], obj2 = other[i];
 
                     if (Object.ReferenceEquals(obj1, obj2)) {
                         continue;
@@ -456,12 +453,12 @@ namespace IronPython.Runtime {
             int hash2 = hash1;
 
             for (int i = 0; i < _data.Length; i += 2) {
-                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ (_data[i] == null ? NoneTypeOps.NoneHashCode : _data[i].GetHashCode());
+                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ (_data[i]?.GetHashCode() ?? NoneTypeOps.NoneHashCode);
 
                 if (i == _data.Length - 1) {
                     break;
                 }
-                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ (_data[i + 1] == null ? NoneTypeOps.NoneHashCode : _data[i + 1].GetHashCode());
+                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ (_data[i + 1]?.GetHashCode() ?? NoneTypeOps.NoneHashCode);
             }
             return hash1 + (hash2 * 1566083941);
         }
@@ -486,12 +483,12 @@ namespace IronPython.Runtime {
             int hash2 = hash1;
 
             for (int i = 0; i < _data.Length; i += 2) {
-                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ comparer.GetHashCode(_data[i]);
+                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ comparer.GetHashCode(_data[i]!);
 
                 if (i == _data.Length - 1) {
                     break;
                 }
-                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ comparer.GetHashCode(_data[i + 1]);
+                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ comparer.GetHashCode(_data[i + 1]!);
             }
             return hash1 + (hash2 * 1566083941);
         }
@@ -511,14 +508,14 @@ namespace IronPython.Runtime {
             return GetHashCode(comparer);
         }
 
-        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) {
             if (!Object.ReferenceEquals(other, this)) {
                 if (!(other is PythonTuple l) || _data.Length != l._data.Length) {
                     return false;
                 }
 
                 for (int i = 0; i < _data.Length; i++) {
-                    object obj1 = _data[i], obj2 = l._data[i];
+                    object? obj1 = _data[i], obj2 = l._data[i];
 
                     if (Object.ReferenceEquals(obj1, obj2)) {
                         continue;
@@ -550,7 +547,7 @@ namespace IronPython.Runtime {
 
         #region IList Members
 
-        int IList.Add(object value) {
+        int IList.Add(object? value) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
@@ -558,7 +555,7 @@ namespace IronPython.Runtime {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
-        void IList.Insert(int index, object value) {
+        void IList.Insert(int index, object? value) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
@@ -570,7 +567,7 @@ namespace IronPython.Runtime {
             get { return true; }
         }
 
-        void IList.Remove(object value) {
+        void IList.Remove(object? value) {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
@@ -578,7 +575,7 @@ namespace IronPython.Runtime {
             throw new InvalidOperationException("Tuple is readonly");
         }
 
-        object IList.this[int index] {
+        object? IList.this[int index] {
             get {
                 return this[index];
             }
@@ -591,7 +588,8 @@ namespace IronPython.Runtime {
 
         #region IExpressionSerializable Members
 
-        public MSAst.Expression CreateExpression() {
+        [PythonHidden]
+        public Ast CreateExpression() {
             Ast[] items = new Ast[Count];
             for (int i = 0; i < items.Length; i++) {
                 items[i] = Expression.Convert(Utils.Constant(this[i]), typeof(object));
@@ -614,9 +612,9 @@ namespace IronPython.Runtime {
     /// public class to get optimized
     /// </summary>
     [PythonType("tuple_iterator")]
-    public sealed class PythonTupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object> {
+    public sealed class PythonTupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object?> {
         private int _curIndex;
-        private PythonTuple _tuple;
+        private readonly PythonTuple _tuple;
 
         internal PythonTupleEnumerator(PythonTuple t) {
             _tuple = t;
@@ -626,7 +624,7 @@ namespace IronPython.Runtime {
         #region IEnumerator Members
 
         [PythonHidden]
-        public object Current {
+        public object? Current {
             get {
                 // access _data directly because this is what CPython does:
                 // class T(tuple):

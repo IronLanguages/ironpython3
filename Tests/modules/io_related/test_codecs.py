@@ -1190,7 +1190,7 @@ class CodecTest(IronPythonTestCase):
             self.assertEqual(codecs.charmap_encode("abcxyz", "my_encode_replace", charmap), (b'ABC?!?!?!', 6))
 
         # Fallback characters are not charmapped recursively
-        for errors in ['strict', 'replace', 'backslashreplace', 'xmlcharrefreplace']: # TODO: + ['surrogateescape', 'surrogatepass']
+        for errors in ['strict', 'replace', 'backslashreplace', 'xmlcharrefreplace']:
             # Missing key
             self.assertRaisesRegex(UnicodeEncodeError, "^'charmap' codec can't encode character.+ in position .+: character maps to <undefined>",
                 codecs.charmap_encode, "abc", errors, {})
@@ -1261,6 +1261,10 @@ class CodecTest(IronPythonTestCase):
         charmap = charmap.replace('#', '`').replace('=', '#')
         em = codecs.charmap_build(charmap)
         self.assertEqual(codecs.charmap_encode("abcABC", 'xmlcharrefreplace', em), (b"ABC&=65;&=66;&=67;", 6))
+
+        charmap = "".join(chr(c) for c in range(ord('p'))) + '\U0001F40D';
+        em = codecs.charmap_build(charmap)
+        self.assertEqual(codecs.charmap_encode("axc", 'test_python_replace', em), (b"apc", 3))
 
     @unittest.skipIf(is_posix, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
     def test_mbcs_decode(self):
@@ -1517,6 +1521,13 @@ class CodecTest(IronPythonTestCase):
         encodemap = codecs.charmap_build(decodemap)
         self.assertEqual(codecs.charmap_decode(b'Hello World', 'strict', decodemap), ('hELLO wORLD', 11))
         self.assertEqual(codecs.charmap_encode('Hello World', 'strict', encodemap), (b'hELLO wORLD', 11))
+
+        decodemap = ''.join(chr(i) for i in range(254)) + "\U0001F40D" +"\xFF"
+        encodemap = codecs.charmap_build(decodemap)
+        s = '\xFF\U0001F40D\xFF'
+        b = b'\xFF\xFE\xFF'
+        self.assertEqual(codecs.charmap_decode(b, 'strict', decodemap), (s, len(b)))
+        self.assertEqual(codecs.charmap_encode(s, 'strict', encodemap), (b, len(s)))
 
     def test_gh16(self):
         """

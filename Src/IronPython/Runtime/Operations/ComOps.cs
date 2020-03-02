@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using System.ComponentModel;
 
 namespace IronPython.Runtime.Operations {
     public static class ComOps {
-        public static string __str__(object/*!*/ self) {
+        public static string? __str__(object/*!*/ self) {
             return self.ToString();
         }
 
         public static string/*!*/ __repr__(object/*!*/ self) {
-            return String.Format("<{0}({1}) object at {2}>",
-                self.ToString(),
-                TypeDescriptor.GetClassName(self),
-                PythonOps.HexId(self)
-            );
+            return $"<{self.ToString()}({TypeDescriptor.GetClassName(self)}) object at {PythonOps.HexId(self)}>";
         }
 
         [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("00020400-0000-0000-C000-000000000046")]

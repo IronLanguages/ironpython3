@@ -377,15 +377,14 @@ namespace IronPython.Runtime {
             if (value is Extensible<int>) return ((Extensible<int>)value).Value;
 
             BigInteger bi;
-            Extensible<BigInteger> ebi;
             if (value is BigInteger) {
                 bi = (BigInteger)value;
-            } else if ((ebi = value as Extensible<BigInteger>) != null) {
+            } else if (value is Extensible<BigInteger> ebi) {
                 bi = ebi.Value;
             } else {
                 return null;
             }
-            
+
             int res;
             if (bi.AsInt32(out res)) return res;
 

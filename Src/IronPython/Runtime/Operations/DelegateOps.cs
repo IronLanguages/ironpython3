@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 
@@ -32,10 +34,10 @@ namespace IronPython.Runtime.Operations {
             ContractUtils.RequiresNotNull(self, nameof(self));
             ContractUtils.RequiresNotNull(other, nameof(other));
 
-            return Delegate.Combine(self, other);            
+            return Delegate.Combine(self, other);
         }
 
-        public static Delegate/*!*/ InPlaceSubtract(Delegate/*!*/ self, Delegate/*!*/ other) {
+        public static Delegate? InPlaceSubtract(Delegate/*!*/ self, Delegate/*!*/ other) {
             ContractUtils.RequiresNotNull(self, nameof(self));
             ContractUtils.RequiresNotNull(other, nameof(other));
 

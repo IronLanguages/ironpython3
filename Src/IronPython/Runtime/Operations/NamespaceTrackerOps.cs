@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -16,7 +18,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime.Operations {
     public static class NamespaceTrackerOps {
         [SpecialName, PropertyMethod]
-        public static object Get__file__(NamespaceTracker self) {
+        public static object? Get__file__(NamespaceTracker self) {
             if (self.PackageAssemblies.Count == 1) {
                 return self.PackageAssemblies[0].FullName;
             }
@@ -37,9 +39,9 @@ namespace IronPython.Runtime.Operations {
 
         public static string __str__(NamespaceTracker self) {
             if (self.PackageAssemblies.Count != 1) {
-                return String.Format("<module '{0}' (CLS module, {1} assemblies loaded)>", Get__name__(self.Name), self.PackageAssemblies.Count);
+                return string.Format("<module '{0}' (CLS module, {1} assemblies loaded)>", Get__name__(self.Name), self.PackageAssemblies.Count);
             }
-            return String.Format("<module '{0}' (CLS module from {1})>", Get__name__(self.Name), self.PackageAssemblies[0].FullName);
+            return string.Format("<module '{0}' (CLS module from {1})>", Get__name__(self.Name), self.PackageAssemblies[0].FullName);
         }
 
         [SpecialName, PropertyMethod]
@@ -69,15 +71,13 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object GetCustomMember(CodeContext/*!*/ context, NamespaceTracker/*!*/ self, string name) {
-            MemberTracker mt;
-            if (self.TryGetValue(name, out mt)) {
+            if (self.TryGetValue(name, out MemberTracker mt)) {
                 if (mt.MemberType == TrackerTypes.Namespace || mt.MemberType == TrackerTypes.TypeGroup) {
                     return mt;
                 }
 
                 PythonTypeSlot pts = PythonTypeOps.GetSlot(new MemberGroup(mt), name, context.LanguageContext.Binder.PrivateBinding);
-                object value;
-                if (pts != null && pts.TryGetValue(context, null, TypeCache.PythonType, out value)) {
+                if (pts != null && pts.TryGetValue(context, null, TypeCache.PythonType, out object value)) {
                     return value;
                 }
             }

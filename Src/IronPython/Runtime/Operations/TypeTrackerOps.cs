@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections;
 using System.Runtime.CompilerServices;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
     public static class TypeTrackerOps {

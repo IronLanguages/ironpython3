@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
@@ -43,7 +47,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, params object[] args) {
+        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, params object?[] args) {
             return PythonCalls.Call(
                 context,
                 DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
@@ -52,7 +56,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object[] args) {
+        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object?[] args) {
             return PythonCalls.CallWithKeywordArgs(
                 context, 
                 DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
@@ -62,17 +66,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static PythonType GetItem(TypeGroup self, params object[] types) {
+        public static PythonType GetItem(TypeGroup self, params object?[] types) {
             PythonType[] pythonTypes = new PythonType[types.Length];
             for(int i = 0; i < types.Length; i++) {
-                object t = types[i];
+                object? t = types[i];
                 if (t is PythonType) {
                     pythonTypes[i] = (PythonType)t;
                     continue;
-                } else if (t is TypeGroup) {
-                    TypeGroup typeGroup = t as TypeGroup;
-                    Type nonGenericType;
-                    if (!typeGroup.TryGetNonGenericType(out nonGenericType)) {
+                } else if (t is TypeGroup typeGroup) {
+                    if (!typeGroup.TryGetNonGenericType(out Type nonGenericType)) {
                         throw PythonOps.TypeError("cannot use open generic type {0} as type argument", typeGroup.Name);
                     }
                     pythonTypes[i] = DynamicHelpers.GetPythonTypeFromType(nonGenericType);

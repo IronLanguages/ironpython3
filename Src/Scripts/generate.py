@@ -254,7 +254,7 @@ class BlockReplacer:
         return res
 
 def save_file(name, text):
-    f = open(name, 'w')
+    f = open(name, 'w', encoding='latin-1')
     f.write(text)
     f.close()
 
@@ -278,7 +278,7 @@ class FileGenerator:
         self.generator = generator
         self.replacer = replacer
 
-        with open(filename) as thefile:
+        with open(filename, encoding='latin-1') as thefile:
             self.text = thefile.read()
         self.indent = self.replacer.match(self.text)
         self.has_match = self.indent is not None

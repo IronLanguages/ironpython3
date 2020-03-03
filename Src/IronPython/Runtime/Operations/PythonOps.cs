@@ -109,7 +109,7 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
-        public static bool IsCallable(CodeContext/*!*/ context, object o) {
+        public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)]object o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
             // in favor of dynamic sites. 

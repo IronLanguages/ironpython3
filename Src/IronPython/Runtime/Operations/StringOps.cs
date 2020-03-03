@@ -1749,6 +1749,7 @@ namespace IronPython.Runtime.Operations {
                 return enc;
             }
             switch (errors) {
+                case null:
                 case "backslashreplace":
                 case "xmlcharrefreplace":
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
@@ -1815,6 +1816,7 @@ namespace IronPython.Runtime.Operations {
                 return enc;
             }
             switch (errors) {
+                case null:
                 case "strict": e = setFallback(e, EncoderFallback.ExceptionFallback); break;
                 case "replace": e = setFallback(e, EncoderFallback.ReplacementFallback); break;
                 case "backslashreplace": e = setFallback(e, new BackslashEncoderReplaceFallback()); break;
@@ -1859,7 +1861,7 @@ namespace IronPython.Runtime.Operations {
                 return t;
             }
 
-            throw PythonOps.TypeError("encoder must return a tuple (object, integer)");
+            throw PythonOps.TypeError("encoder/decoder must return a tuple (object, integer)");
         }
 
         private static Bytes UserEncode(string encoding, PythonTuple codecInfo, string data, string errors) {

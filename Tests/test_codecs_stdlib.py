@@ -20,31 +20,31 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_codecs.BasicUnicodeTest('test_bad_decode_args')) # unknown encoding: big5
         #suite.addTest(test.test_codecs.BasicUnicodeTest('test_bad_encode_args')) # unknown encoding: big5
         #suite.addTest(test.test_codecs.BasicUnicodeTest('test_basics')) # unknown encoding: big5
-        suite.addTest(test.test_codecs.BasicUnicodeTest('test_basics_capi')) # skipped
+        suite.addTest(test.test_codecs.BasicUnicodeTest('test_basics_capi'))
         #suite.addTest(test.test_codecs.BasicUnicodeTest('test_decoder_state')) # unknown encoding: big5
         suite.addTest(test.test_codecs.BasicUnicodeTest('test_encoding_map_type_initialized'))
         #suite.addTest(test.test_codecs.BasicUnicodeTest('test_seek')) # unknown encoding: big5
-        #suite.addTest(test.test_codecs.BomTest('test_seek0')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_a')) # cp65001 encoding is only available on Windows
-        #suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_b')) # cp65001 encoding is only available on Windows
-        #suite.addTest(test.test_codecs.CP65001Test('test_bug1175396')) # cp65001 encoding is only available on Windows
+        suite.addTest(test.test_codecs.BomTest('test_seek0'))
+        suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_a'))
+        suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_b'))
+        suite.addTest(test.test_codecs.CP65001Test('test_bug1175396'))
         #suite.addTest(test.test_codecs.CP65001Test('test_decode')) # '[��]' != '[���]' (bug in .NET: dotnet/corefx#36163, fixed in .NET Core 3.x)
         suite.addTest(test.test_codecs.CP65001Test('test_encode'))
         suite.addTest(test.test_codecs.CP65001Test('test_lone_surrogates'))
-        #suite.addTest(test.test_codecs.CP65001Test('test_mixed_readline_and_read')) # cp65001 encoding is only available on Windows
-        suite.addTest(test.test_codecs.CP65001Test('test_readline')) # skipped
-        #suite.addTest(test.test_codecs.CP65001Test('test_readlinequeue')) # cp65001 encoding is only available on Windows
-        #suite.addTest(test.test_codecs.CP65001Test('test_surrogatepass_handler')) # unknown error handler name 'surrogatepass'
+        suite.addTest(test.test_codecs.CP65001Test('test_mixed_readline_and_read'))
+        suite.addTest(test.test_codecs.CP65001Test('test_readline'))
+        suite.addTest(test.test_codecs.CP65001Test('test_readlinequeue'))
+        suite.addTest(test.test_codecs.CP65001Test('test_surrogatepass_handler'))
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2int_map'))
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2str_map'))
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_string_map'))
-        #suite.addTest(test.test_codecs.CodePageTest('test_code_page_name')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp1252')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp932')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp_utf7')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_incremental')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_invalid_code_page')) # 'module' object has no attribute 'code_page_encode'
-        #suite.addTest(test.test_codecs.CodePageTest('test_multibyte_encoding')) # 'module' object has no attribute 'code_page_encode'
+        #suite.addTest(test.test_codecs.CodePageTest('test_code_page_name')) # "CP_UTF8" does not match "'cp65001'""
+        #suite.addTest(test.test_codecs.CodePageTest('test_cp1252')) # b'?' != b'L' for "Ł" with 'replace'
+        #suite.addTest(test.test_codecs.CodePageTest('test_cp932')) # b'[?]' != b'[y]' for "ÿ" with 'replace'
+        #suite.addTest(test.test_codecs.CodePageTest('test_cp_utf7')) # Unable to decode b'[+/]' from "cp65000"
+        #suite.addTest(test.test_codecs.CodePageTest('test_incremental')) # incremental codepage decoding not implemented yet
+        #suite.addTest(test.test_codecs.CodePageTest('test_invalid_code_page')) # SystemError raised iso OSError
+        #suite.addTest(test.test_codecs.CodePageTest('test_multibyte_encoding')) # .NET cp932 does not resynchronize cursor after '\x84' in '\x84\xe9\x80'
         suite.addTest(test.test_codecs.CodecsModuleTest('test_all'))
         suite.addTest(test.test_codecs.CodecsModuleTest('test_decode'))
         suite.addTest(test.test_codecs.CodecsModuleTest('test_encode'))
@@ -93,7 +93,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_codecs.RecodingTest('test_recoding')) # expected IList[Byte], got str
         suite.addTest(test.test_codecs.StreamReaderTest('test_readlines'))
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_ascii'))
-        #suite.addTest(test.test_codecs.SurrogateEscapeTest('test_charmap')) # 'foobar' != 'foo\udca5bar'
+        #suite.addTest(test.test_codecs.SurrogateEscapeTest('test_charmap')) # .NET iso-8859-3 decodes b'\xa5' to 'uf7f5' rather than undefined
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_latin1'))
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_utf8'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_aliases'))
@@ -207,7 +207,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8SigTest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_stream_bare'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_stream_bom'))
-        #suite.addTest(test.test_codecs.UTF8SigTest('test_surrogatepass_handler')) # LookupError: unknown error handler name 'surrogatepass'
+        suite.addTest(test.test_codecs.UTF8SigTest('test_surrogatepass_handler'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1175396'))
@@ -217,7 +217,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8Test('test_partial'))
         suite.addTest(test.test_codecs.UTF8Test('test_readline'))
         suite.addTest(test.test_codecs.UTF8Test('test_readlinequeue'))
-        #suite.addTest(test.test_codecs.UTF8Test('test_surrogatepass_handler')) # LookupError: unknown error handler name 'surrogatepass'
+        suite.addTest(test.test_codecs.UTF8Test('test_surrogatepass_handler'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_decode_errors'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_empty'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_decode'))

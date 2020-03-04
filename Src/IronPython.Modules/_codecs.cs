@@ -225,6 +225,28 @@ namespace IronPython.Modules {
 #endif
         #endregion
 
+        #region Code Page Functions
+#if FEATURE_ENCODING
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple code_page_decode(CodeContext context, int codepage, [BytesConversion, NotNull]IList<byte> input, string? errors = null, bool final = false) {
+            // TODO: Use Win32 API MultiByteToWideChar https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-multibytetowidechar
+            string encodingName = $"cp{codepage}";
+            Encoding encoding = Encoding.GetEncoding(codepage);
+            return DoDecode(context, encodingName, encoding, input, errors, input.Count).ToPythonTuple();
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple code_page_encode(CodeContext context, int codepage, [NotNull]string input, string? errors = null) {
+            // TODO: Use Win32 API WideCharToMultiByte https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte
+            string encodingName = $"cp{codepage}";
+            Encoding encoding = Encoding.GetEncoding(codepage);
+            return DoEncode(context, encodingName, encoding, input, errors, includePreamble: true).ToPythonTuple();
+        }
+
+#endif
+        #endregion
+
         #region Raw Unicode Escape Encoding Functions
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {

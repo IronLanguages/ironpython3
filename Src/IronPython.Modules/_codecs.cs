@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
         #region Generic Encoding
 
-        public static object decode(CodeContext/*!*/ context, object obj, [NotNull]string? encoding = null, [NotNull]string errors = "strict") {
+        public static object decode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null, [NotNull]string errors = "strict") {
             if (encoding == null) {
                 if (obj is IList<byte> bytesLikeObj) {
                     PythonContext lc = context.LanguageContext;
@@ -129,7 +129,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object encode(CodeContext/*!*/ context, object obj, [NotNull]string? encoding = null, [NotNull]string errors = "strict") {
+        public static object encode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null, [NotNull]string errors = "strict") {
             if (encoding == null) {
                 if (obj is string str) {
                     PythonContext lc = context.LanguageContext;

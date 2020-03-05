@@ -181,6 +181,8 @@ namespace IronPython.Runtime.Binding {
                                         typeof(string)
                                     )
                                 );
+                            } else if (type.GenericTypeArguments[0] == typeof(byte) && self.Value is IBufferProtocol) {
+                                res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()));
                             } else {
                                 res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
                             }
@@ -720,6 +722,21 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     ),
                     ReturnType
+                ),
+                self.Restrictions
+            );
+        }
+
+        private DynamicMetaObject ConvertFromBufferProtocolToByteList(DynamicMetaObject self) {
+            return new DynamicMetaObject(
+                AstUtils.Convert(
+                    Ast.Call(
+                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
+                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToBytes)),
+                        AstUtils.Constant(0, typeof(int)),
+                        AstUtils.Constant(null, typeof(Nullable<int>))
+                    ),
+                    typeof(IList<byte>)
                 ),
                 self.Restrictions
             );

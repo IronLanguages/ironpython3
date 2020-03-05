@@ -87,10 +87,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_decode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_encode'))
-        #suite.addTest(test.test_codecs.ReadBufferTest('test_array')) # TypeError: Specified cast is not valid
+        suite.addTest(test.test_codecs.ReadBufferTest('test_array'))
         suite.addTest(test.test_codecs.ReadBufferTest('test_bad_args'))
         suite.addTest(test.test_codecs.ReadBufferTest('test_empty'))
-        #suite.addTest(test.test_codecs.RecodingTest('test_recoding')) # expected IList[Byte], got str
+        suite.addTest(test.test_codecs.RecodingTest('test_recoding'))
         suite.addTest(test.test_codecs.StreamReaderTest('test_readlines'))
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_ascii'))
         #suite.addTest(test.test_codecs.SurrogateEscapeTest('test_charmap')) # .NET iso-8859-3 decodes b'\xa5' to 'uf7f5' rather than undefined

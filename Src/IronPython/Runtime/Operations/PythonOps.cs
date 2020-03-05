@@ -164,7 +164,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#nullable disable
+#nullable restore
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
             if (encoding.IndexOf('\0') != -1) {
@@ -213,7 +213,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#nullable disable
+#nullable restore
 
         internal static string GetPythonTypeName(object obj) {
             return PythonTypeOps.GetName(obj);
@@ -1940,7 +1940,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-#nullable disable
+#nullable restore
 
         public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) => iteratorInfo.Value?.Dispose();
 

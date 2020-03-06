@@ -5,6 +5,8 @@
 #nullable enable
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -14,17 +16,16 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Modules {
     internal interface ArrayData {
-        void SetData(int index, object value);
-        object GetData(int index);
-        void Append(object value);
-        int Count(object value);
+        object this[int index] { get; set; }
+        void Add(object value);
+        int CountValues(object value);
         bool CanStore(object value);
         Type StorageType { get; }
-        int Index(object value);
+        int IndexOf(object value);
         void Insert(int index, object value);
-        void Remove(object value);
+        bool Remove(object value);
         void RemoveAt(int index);
-        int Length { get; set; }
+        int Count { get; }
         void Swap(int x, int y);
         void Clear();
         IntPtr GetAddress();
@@ -52,21 +53,11 @@ namespace IronPython.Modules {
             _dataHandle!.Value.Free();
         }
 
-        public T[] Data {
-            get {
-                return _data;
-            }
-            set {
-                _data = value;
-            }
-        }
+        public T[] Data => _data;
 
-        public object GetData(int index) {
-            return _data[index];
-        }
-
-        public void SetData(int index, object value) {
-            _data[index] = GetValue(value);
+        public object this[int index] {
+            get => _data[index];
+            set => _data[index] = GetValue(value);
         }
 
         private static T GetValue(object value) {
@@ -86,9 +77,15 @@ namespace IronPython.Modules {
             return (T)value;
         }
 
-        public void Append(object value) {
+        public void Add(object value) {
             EnsureSize(_count + 1);
             _data[_count++] = GetValue(value);
+        }
+
+        public void AddRange(ICollection<T> data) {
+            EnsureSize(_count + data.Count);
+            data.CopyTo(_data, _count);
+            _count += data.Count;
         }
 
         public void EnsureSize(int size) {
@@ -106,7 +103,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public int Count(object value) {
+        public int CountValues(object value) {
             T other = GetValue(value);
 
             int count = 0;
@@ -127,7 +124,7 @@ namespace IronPython.Modules {
             _count++;
         }
 
-        public int Index(object value) {
+        public int IndexOf(object value) {
             T other = GetValue(value);
 
             for (int i = 0; i < _count; i++) {
@@ -136,16 +133,16 @@ namespace IronPython.Modules {
             return -1;
         }
 
-        public void Remove(object value) {
+        public bool Remove(object value) {
             T other = GetValue(value);
 
             for (int i = 0; i < _count; i++) {
                 if (_data[i].Equals(other)) {
                     RemoveAt(i);
-                    return;
+                    return true;
                 }
             }
-            throw PythonOps.ValueError("couldn't find value to remove");
+            return false;
         }
 
         public void RemoveAt(int index) {
@@ -161,14 +158,7 @@ namespace IronPython.Modules {
             _data[y] = temp;
         }
 
-        public int Length {
-            get {
-                return _count;
-            }
-            set {
-                _count = value;
-            }
-        }
+        public int Count => _count;
 
         public void Clear() {
             _count = 0;

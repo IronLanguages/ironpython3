@@ -86,7 +86,7 @@ namespace IronPython.Modules {
             public array InPlaceAdd(array other) {
                 if (typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
-                if (other._data.Length != 0) {
+                if (other._data.Count != 0) {
                     extend(other);
                 }
 
@@ -154,7 +154,7 @@ namespace IronPython.Modules {
             }
 
             public void append(object iterable) {
-                _data.Append(iterable);
+                _data.Add(iterable);
             }
 
             internal IntPtr GetArrayAddress() {
@@ -164,7 +164,7 @@ namespace IronPython.Modules {
             public PythonTuple buffer_info() {
                 return PythonTuple.MakeTuple(
                     _data.GetAddress().ToPython(),
-                    _data.Length
+                    _data.Count
                 );
             }
 
@@ -190,7 +190,7 @@ namespace IronPython.Modules {
             public int count(object x) {
                 if (x == null) return 0;
 
-                return _data.Count(x);
+                return _data.CountValues(x);
             }
 
             public void extend(object iterable) {
@@ -198,9 +198,9 @@ namespace IronPython.Modules {
                     if (typecode != pa.typecode) {
                         throw PythonOps.TypeError("cannot extend with different typecode");
                     }
-                    int l = pa._data.Length;
+                    int l = pa._data.Count;
                     for (int i = 0; i < l; i++) {
-                        _data.Append(pa._data.GetData(i));
+                        _data.Add(pa._data[i]);
                     }
                     return;
                 }
@@ -290,24 +290,20 @@ namespace IronPython.Modules {
 
             private void FromUnicode(string s) {
                 ArrayData<char> data = (ArrayData<char>)_data;
-                data.EnsureSize(data.Length + s.Length);
-                for (int i = 0; i < s.Length; i++) {
-                    data.Data[i + data.Length] = s[i];
-                }
-                data.Length += s.Length;
+                data.AddRange(s.ToArray());
             }
 
             public int index(object x) {
                 if (x == null) throw PythonOps.ValueError("got None, expected value");
 
-                int res = _data.Index(x);
+                int res = _data.IndexOf(x);
                 if (res == -1) throw PythonOps.ValueError("x not found");
                 return res;
             }
 
             public void insert(int i, object x) {
-                if (i > _data.Length) i = _data.Length;
-                if (i < 0) i = _data.Length + i;
+                if (i > _data.Count) i = _data.Count;
+                if (i < 0) i = _data.Count + i;
                 if (i < 0) i = 0;
 
                 _data.Insert(i, x);
@@ -344,8 +340,8 @@ namespace IronPython.Modules {
             }
 
             public object pop(int i) {
-                i = PythonOps.FixIndex(i, _data.Length);
-                object res = _data.GetData(i);
+                i = PythonOps.FixIndex(i, _data.Count);
+                object res = _data[i];
                 _data.RemoveAt(i);
                 return res;
             }
@@ -353,12 +349,12 @@ namespace IronPython.Modules {
             public void remove(object value) {
                 if (value == null) throw PythonOps.ValueError("got None, expected value");
 
-                _data.Remove(value);
+                if(!_data.Remove(value)) throw PythonOps.ValueError("couldn't find value to remove");
             }
 
             public void reverse() {
-                for (int index = 0; index < _data.Length / 2; index++) {
-                    int left = index, right = _data.Length - (index + 1);
+                for (int index = 0; index < _data.Count / 2; index++) {
+                    int left = index, right = _data.Count - (index + 1);
 
                     Debug.Assert(left != right);
                     _data.Swap(left, right);
@@ -367,7 +363,7 @@ namespace IronPython.Modules {
 
             public virtual object this[int index] {
                 get {
-                    object val = _data.GetData(PythonOps.FixIndex(index, _data.Length));
+                    object val = _data[PythonOps.FixIndex(index, _data.Count)];
                     switch (_typeCode) {
                         case 'b': return (int)(sbyte)val;
                         case 'B': return (int)(byte)val;
@@ -387,7 +383,7 @@ namespace IronPython.Modules {
                     }
                 }
                 set {
-                    _data.SetData(PythonOps.FixIndex(index, _data.Length), value);
+                    _data[PythonOps.FixIndex(index, _data.Count)] = value;
                 }
             }
 
@@ -395,24 +391,24 @@ namespace IronPython.Modules {
                 MemoryStream ms = new MemoryStream();
                 BinaryWriter bw = new BinaryWriter(ms);
                 switch (_typeCode) {
-                    case 'c': bw.Write((byte)(char)_data.GetData(index)); break;
-                    case 'b': bw.Write((sbyte)_data.GetData(index)); break;
-                    case 'B': bw.Write((byte)_data.GetData(index)); break;
-                    case 'u': bw.Write((char)_data.GetData(index)); break;
-                    case 'h': bw.Write((short)_data.GetData(index)); break;
-                    case 'H': bw.Write((ushort)_data.GetData(index)); break;
+                    case 'c': bw.Write((byte)(char)_data[index]); break;
+                    case 'b': bw.Write((sbyte)_data[index]); break;
+                    case 'B': bw.Write((byte)_data[index]); break;
+                    case 'u': bw.Write((char)_data[index]); break;
+                    case 'h': bw.Write((short)_data[index]); break;
+                    case 'H': bw.Write((ushort)_data[index]); break;
                     case 'l':
-                    case 'i': bw.Write((int)_data.GetData(index)); break;
+                    case 'i': bw.Write((int)_data[index]); break;
                     case 'L':
-                    case 'I': bw.Write((uint)_data.GetData(index)); break;
-                    case 'f': bw.Write((float)_data.GetData(index)); break;
-                    case 'd': bw.Write((double)_data.GetData(index)); break;
+                    case 'I': bw.Write((uint)_data[index]); break;
+                    case 'f': bw.Write((float)_data[index]); break;
+                    case 'd': bw.Write((double)_data[index]); break;
                 }
                 return ms.ToArray();
             }
 
             public void __delitem__(int index) {
-                _data.RemoveAt(PythonOps.FixIndex(index, _data.Length));
+                _data.RemoveAt(PythonOps.FixIndex(index, _data.Count));
             }
 
             public void __delitem__(Slice slice) {
@@ -420,28 +416,28 @@ namespace IronPython.Modules {
 
                 int start, stop, step;
                 // slice is sealed, indices can't be user code...
-                slice.indices(_data.Length, out start, out stop, out step);
+                slice.indices(_data.Count, out start, out stop, out step);
 
                 if (step > 0 && (start >= stop)) return;
                 if (step < 0 && (start <= stop)) return;
 
                 if (step == 1) {
                     int i = start;
-                    for (int j = stop; j < _data.Length; j++, i++) {
-                        _data.SetData(i, _data.GetData(j));
+                    for (int j = stop; j < _data.Count; j++, i++) {
+                        _data[i] = _data[j];
                     }
                     for (i = 0; i < stop - start; i++) {
-                        _data.RemoveAt(_data.Length - 1);
+                        _data.RemoveAt(_data.Count - 1);
                     }
                     return;
                 }
                 if (step == -1) {
                     int i = stop + 1;
-                    for (int j = start + 1; j < _data.Length; j++, i++) {
-                        _data.SetData(i, _data.GetData(j));
+                    for (int j = start + 1; j < _data.Count; j++, i++) {
+                        _data[i] = _data[j];
                     }
                     for (i = 0; i < stop - start; i++) {
-                        _data.RemoveAt(_data.Length - 1);
+                        _data.RemoveAt(_data.Count - 1);
                     }
                     return;
                 }
@@ -468,16 +464,16 @@ namespace IronPython.Modules {
 
                 while (curr < stop && move < stop) {
                     if (move != skip) {
-                        _data.SetData(curr++, _data.GetData(move));
+                        _data[curr++] = _data[move];
                     } else
                         skip += step;
                     move++;
                 }
-                while (stop < _data.Length) {
-                    _data.SetData(curr++, _data.GetData(stop++));
+                while (stop < _data.Count) {
+                    _data[curr++] = _data[stop++];
                 }
-                while (_data.Length > curr) {
-                    _data.RemoveAt(_data.Length - 1);
+                while (_data.Count > curr) {
+                    _data.RemoveAt(_data.Count - 1);
                 }
             }
 
@@ -486,16 +482,16 @@ namespace IronPython.Modules {
                     if (index == null) throw PythonOps.TypeError("expected Slice, got None");
 
                     int start, stop, step;
-                    index.indices(_data.Length, out start, out stop, out step);
+                    index.indices(_data.Count, out start, out stop, out step);
 
                     array pa = new array(new string(_typeCode, 1), Missing.Value);
                     if (step < 0) {
                         for (int i = start; i > stop; i += step) {
-                            pa._data.Append(_data.GetData(i));
+                            pa._data.Add(_data[i]);
                         }
                     } else {
                         for (int i = start; i < stop; i += step) {
-                            pa._data.Append(_data.GetData(i));
+                            pa._data.Add(_data[i]);
                         }
                     }
                     return pa;
@@ -508,10 +504,10 @@ namespace IronPython.Modules {
                     if (index.step != null) {
                         if (Object.ReferenceEquals(value, this)) value = this.tolist();
 
-                        index.DoSliceAssign(SliceAssign, _data.Length, value);
+                        index.DoSliceAssign(SliceAssign, _data.Count, value);
                     } else {
                         int start, stop, step;
-                        index.indices(_data.Length, out start, out stop, out step);
+                        index.indices(_data.Count, out start, out stop, out step);
                         if (stop < start) {
                             stop = start;
                         }
@@ -535,15 +531,15 @@ namespace IronPython.Modules {
 
                 ArrayData newData = CreateData(_typeCode);
                 for (int i = 0; i < start; i++) {
-                    newData.Append(_data.GetData(i));
+                    newData.Add(_data[i]);
                 }
 
                 while (ie.MoveNext()) {
-                    newData.Append(ie.Current);
+                    newData.Add(ie.Current);
                 }
 
-                for (int i = Math.Max(stop, start); i < _data.Length; i++) {
-                    newData.Append(_data.GetData(i));
+                for (int i = Math.Max(stop, start); i < _data.Count; i++) {
+                    newData.Add(_data[i]);
                 }
 
                 _data = newData;
@@ -578,7 +574,7 @@ namespace IronPython.Modules {
             }
 
             private void SliceAssign(int index, object value) {
-                _data.SetData(index, value);
+                _data[index] = value;
             }
 
             public void tofile(CodeContext context, PythonIOModule._IOBase f) {
@@ -587,7 +583,7 @@ namespace IronPython.Modules {
 
             public PythonList tolist() {
                 PythonList res = new PythonList();
-                for (int i = 0; i < _data.Length; i++) {
+                for (int i = 0; i < _data.Count; i++) {
                     res.AddNoLock(this[i]);
                 }
                 return res;
@@ -608,7 +604,7 @@ namespace IronPython.Modules {
             public string tounicode(CodeContext/*!*/ context) {
                 if (_typeCode != 'u') throw PythonOps.ValueError("only 'u' arrays can be converted to unicode");
 
-                return new string(((ArrayData<char>)_data).Data, 0, _data.Length);
+                return new string(((ArrayData<char>)_data).Data, 0, _data.Count);
             }
 
             public string/*!*/ typecode {
@@ -624,20 +620,20 @@ namespace IronPython.Modules {
 
             internal void ToStream(Stream ms) {
                 BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode);
-                for (int i = 0; i < _data.Length; i++) {
+                for (int i = 0; i < _data.Count; i++) {
                     switch (_typeCode) {
-                        case 'c': bw.Write((byte)(char)_data.GetData(i)); break;
-                        case 'b': bw.Write((sbyte)_data.GetData(i)); break;
-                        case 'B': bw.Write((byte)_data.GetData(i)); break;
-                        case 'u': bw.Write((char)_data.GetData(i)); break;
-                        case 'h': bw.Write((short)_data.GetData(i)); break;
-                        case 'H': bw.Write((ushort)_data.GetData(i)); break;
+                        case 'c': bw.Write((byte)(char)_data[i]); break;
+                        case 'b': bw.Write((sbyte)_data[i]); break;
+                        case 'B': bw.Write((byte)_data[i]); break;
+                        case 'u': bw.Write((char)_data[i]); break;
+                        case 'h': bw.Write((short)_data[i]); break;
+                        case 'H': bw.Write((ushort)_data[i]); break;
                         case 'l':
-                        case 'i': bw.Write((int)_data.GetData(i)); break;
+                        case 'i': bw.Write((int)_data[i]); break;
                         case 'L':
-                        case 'I': bw.Write((uint)_data.GetData(i)); break;
-                        case 'f': bw.Write((float)_data.GetData(i)); break;
-                        case 'd': bw.Write((double)_data.GetData(i)); break;
+                        case 'I': bw.Write((uint)_data[i]); break;
+                        case 'f': bw.Write((float)_data[i]); break;
+                        case 'd': bw.Write((double)_data[i]); break;
                     }
                 }
             }
@@ -645,8 +641,8 @@ namespace IronPython.Modules {
             internal byte[] ToByteArray() {
                 if (_data is ArrayData<byte> data) {
                     Debug.Assert(_typeCode == 'B');
-                    var res = new byte[data.Length];
-                    Array.Copy(data.Data, res, data.Length);
+                    var res = new byte[data.Count];
+                    Array.Copy(data.Data, res, data.Count);
                     return res;
                 }
 
@@ -663,9 +659,7 @@ namespace IronPython.Modules {
                 if (_data is ArrayData<byte> data) {
                     Debug.Assert(_typeCode == 'B');
                     var length = (int)ms.Length;
-                    data.EnsureSize(data.Length + length);
-                    Array.Copy(br.ReadBytes(length), 0, data.Data, data.Length, length);
-                    data.Length += length;
+                    data.AddRange(br.ReadBytes(length));
                     return;
                 }
 
@@ -686,7 +680,7 @@ namespace IronPython.Modules {
                         case 'd': value = br.ReadDouble(); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data.Append(value);
+                    _data.Add(value);
                 }
             }
 
@@ -711,7 +705,7 @@ namespace IronPython.Modules {
                         case 'd': value = br.ReadDouble(); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data.SetData(i, value);
+                    _data[i] = value;
                 }
             }
 
@@ -744,7 +738,7 @@ namespace IronPython.Modules {
                         case 'd': value = br.ReadDouble(); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data.SetData(i, value);
+                    _data[i] = value;
                 }
 
                 if (len % itemsize > 0) {
@@ -754,7 +748,7 @@ namespace IronPython.Modules {
                         curBytes[i] = br.ReadByte();
                     }
 
-                    _data.SetData(len / itemsize + index, FromBytes(curBytes));
+                    _data[len / itemsize + index] = FromBytes(curBytes);
                 }
 
                 return len;
@@ -769,19 +763,19 @@ namespace IronPython.Modules {
 
             private byte[] ToBytes(int index) {
                 switch(_typeCode) {
-                    case 'b': return new[] { (byte)(sbyte)_data.GetData(index) };
-                    case 'B': return new[] { (byte)_data.GetData(index) };
-                    case 'u': return BitConverter.GetBytes((char)_data.GetData(index));
-                    case 'h': return BitConverter.GetBytes((short)_data.GetData(index));
-                    case 'H': return BitConverter.GetBytes((ushort)_data.GetData(index));
-                    case 'i': return BitConverter.GetBytes((int)_data.GetData(index));
-                    case 'I': return BitConverter.GetBytes((uint)_data.GetData(index));
-                    case 'l': return BitConverter.GetBytes((int)_data.GetData(index));
-                    case 'L': return BitConverter.GetBytes((uint)_data.GetData(index));
-                    case 'q': return BitConverter.GetBytes((long)_data.GetData(index));
-                    case 'Q': return BitConverter.GetBytes((ulong)_data.GetData(index));
-                    case 'f': return BitConverter.GetBytes((float)_data.GetData(index)); 
-                    case 'd': return BitConverter.GetBytes((double)_data.GetData(index)); 
+                    case 'b': return new[] { (byte)(sbyte)_data[index] };
+                    case 'B': return new[] { (byte)_data[index] };
+                    case 'u': return BitConverter.GetBytes((char)_data[index]);
+                    case 'h': return BitConverter.GetBytes((short)_data[index]);
+                    case 'H': return BitConverter.GetBytes((ushort)_data[index]);
+                    case 'i': return BitConverter.GetBytes((int)_data[index]);
+                    case 'I': return BitConverter.GetBytes((uint)_data[index]);
+                    case 'l': return BitConverter.GetBytes((int)_data[index]);
+                    case 'L': return BitConverter.GetBytes((uint)_data[index]);
+                    case 'q': return BitConverter.GetBytes((long)_data[index]);
+                    case 'Q': return BitConverter.GetBytes((ulong)_data[index]);
+                    case 'f': return BitConverter.GetBytes((float)_data[index]); 
+                    case 'd': return BitConverter.GetBytes((double)_data[index]); 
                     default:
                         throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
@@ -838,10 +832,10 @@ namespace IronPython.Modules {
             bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
                 if (!(other is array pa)) return false;
 
-                if (_data.Length != pa._data.Length) return false;
+                if (_data.Count != pa._data.Count) return false;
 
-                for (int i = 0; i < _data.Length; i++) {
-                    if (!comparer.Equals(_data.GetData(i), pa._data.GetData(i))) {
+                for (int i = 0; i < _data.Count; i++) {
+                    if (!comparer.Equals(_data[i], pa._data[i])) {
                         return false;
                     }
                 }
@@ -854,8 +848,8 @@ namespace IronPython.Modules {
             #region IEnumerable Members
 
             IEnumerator IEnumerable.GetEnumerator() {
-                for (int i = 0; i < _data.Length; i++) {
-                    yield return _data.GetData(i);
+                for (int i = 0; i < _data.Count; i++) {
+                    yield return _data[i];
                 }
             }
 
@@ -865,14 +859,14 @@ namespace IronPython.Modules {
 
             public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
                 string res = "array('" + typecode.ToString() + "'";
-                if (_data.Length == 0) {
+                if (_data.Count == 0) {
                     return res + ")";
                 }
 
                 StringBuilder sb = new StringBuilder(res);
                 if (_typeCode == 'c' || _typeCode == 'u') {
                     char quote = '\'';
-                    string s = new string(((ArrayData<char>)_data).Data, 0, _data.Length);
+                    string s = new string(((ArrayData<char>)_data).Data, 0, _data.Count);
                     if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
                         quote = '\"';
                     }
@@ -889,7 +883,7 @@ namespace IronPython.Modules {
                     sb.Append(")");
                 } else {
                     sb.Append(", [");
-                    for (int i = 0; i < _data.Length; i++) {
+                    for (int i = 0; i < _data.Count; i++) {
                         if (i > 0) {
                             sb.Append(", ");
                         }
@@ -924,11 +918,11 @@ namespace IronPython.Modules {
             #region IPythonContainer Members
 
             public int __len__() {
-                return _data.Length;
+                return _data.Count;
             }
 
             public bool __contains__(object value) {
-                return _data.Index(value) != -1;
+                return _data.IndexOf(value) != -1;
             }
 
             #endregion
@@ -941,12 +935,12 @@ namespace IronPython.Modules {
                     return false;
                 }
 
-                if (pa._data.Length != _data.Length) {
-                    res = _data.Length - pa._data.Length;
+                if (pa._data.Count != _data.Count) {
+                    res = _data.Count - pa._data.Count;
                 } else {
                     res = 0;
-                    for (int i = 0; i < pa._data.Length && res == 0; i++) {
-                        res = PythonOps.Compare(_data.GetData(i), pa._data.GetData(i));
+                    for (int i = 0; i < pa._data.Count && res == 0; i++) {
+                        res = PythonOps.Compare(_data[i], pa._data[i]);
                     }
                 }
 
@@ -1018,7 +1012,7 @@ namespace IronPython.Modules {
             #region IList<object> Members
 
             int IList<object>.IndexOf(object item) {
-                return _data.Index(item);
+                return _data.IndexOf(item);
             }
 
             void IList<object>.Insert(int index, object item) {
@@ -1071,8 +1065,8 @@ namespace IronPython.Modules {
             #region IEnumerable<object> Members
 
             IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-                for (int i = 0; i < _data.Length; i++) {
-                    yield return _data.GetData(i);
+                for (int i = 0; i < _data.Count; i++) {
+                    yield return _data[i];
                 }
             }
 
@@ -1090,7 +1084,7 @@ namespace IronPython.Modules {
                 this[index] = value;
             }
 
-            int IBufferProtocol.ItemCount => _data.Length;
+            int IBufferProtocol.ItemCount => _data.Count;
 
             string IBufferProtocol.Format => _typeCode.ToString();
 
@@ -1100,7 +1094,7 @@ namespace IronPython.Modules {
 
             bool IBufferProtocol.ReadOnly => false;
 
-            IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Length) - start };
+            IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Count) - start };
 
             PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(itemsize);
 

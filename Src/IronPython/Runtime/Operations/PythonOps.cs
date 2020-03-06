@@ -151,7 +151,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static void RegisterEncodingError(CodeContext/*!*/ context, string name, object handler) {
+#nullable enable
+
+        internal static void RegisterEncodingError(CodeContext/*!*/ context, string name, object? handler) {
             Dictionary<string, object> errorHandlers = context.LanguageContext.ErrorHandlers;
 
             lock (errorHandlers) {
@@ -161,6 +163,8 @@ namespace IronPython.Runtime.Operations {
                 errorHandlers[name] = handler;
             }
         }
+
+#nullable restore
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
             if (encoding.IndexOf('\0') != -1) {
@@ -196,7 +200,9 @@ namespace IronPython.Runtime.Operations {
             return tuple;
         }
 
-        internal static void RegisterEncoding(CodeContext/*!*/ context, object search_function) {
+#nullable enable
+
+        internal static void RegisterEncoding(CodeContext/*!*/ context, object? search_function) {
             if (!PythonOps.IsCallable(context, search_function))
                 throw PythonOps.TypeError("search_function must be callable");
 
@@ -206,6 +212,8 @@ namespace IronPython.Runtime.Operations {
                 searchFunctions.Add(search_function);
             }
         }
+
+#nullable restore
 
         internal static string GetPythonTypeName(object obj) {
             return PythonTypeOps.GetName(obj);
@@ -1932,7 +1940,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-#nullable disable
+#nullable restore
 
         public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) => iteratorInfo.Value?.Dispose();
 

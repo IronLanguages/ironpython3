@@ -8,6 +8,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
@@ -16,12 +18,13 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Modules {
     internal interface ArrayData {
-        object this[int index] { get; set; }
-        void Add(object value);
+        [NotNull]object? this[int index] { get; set; }
+        void Add(object? value);
         int CountValues(object value);
-        bool CanStore(object value);
+        bool CanStore([NotNullWhen(true)]object? value);
+        bool Contains(object? value);
         Type StorageType { get; }
-        int IndexOf(object value);
+        int IndexOf(object? value);
         void Insert(int index, object value);
         bool Remove(object value);
         void RemoveAt(int index);
@@ -32,7 +35,7 @@ namespace IronPython.Modules {
         ArrayData Multiply(int count);
     }
 
-    internal class ArrayData<T> : ArrayData where T : struct {
+    internal class ArrayData<T> : ArrayData, IList<T> where T : struct {
         private T[] _data;
         private int _count;
         private GCHandle? _dataHandle;
@@ -55,31 +58,41 @@ namespace IronPython.Modules {
 
         public T[] Data => _data;
 
-        public object this[int index] {
+        public T this[int index] {
+            get => _data[index];
+            set => _data[index] = value;
+        }
+
+        [NotNull]
+        object? ArrayData.this[int index] {
             get => _data[index];
             set => _data[index] = GetValue(value);
         }
 
-        private static T GetValue(object value) {
-            if (!(value is T)) {
-                object newVal;
-                if (!Converter.TryConvert(value, typeof(T), out newVal)) {
-                    if (value != null && typeof(T).IsPrimitive && typeof(T) != typeof(char))
-                        throw PythonOps.OverflowError("couldn't convert {1} to {0}",
-                            DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
-                            DynamicHelpers.GetPythonType(value).Name);
-                    throw PythonOps.TypeError("expected {0}, got {1}",
+        private static T GetValue(object? value) {
+            if (value is T v) {
+                return v;
+            }
+
+            object? newVal;
+            if (!Converter.TryConvert(value, typeof(T), out newVal)) {
+                if (value != null && typeof(T).IsPrimitive && typeof(T) != typeof(char))
+                    throw PythonOps.OverflowError("couldn't convert {1} to {0}",
                         DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
                         DynamicHelpers.GetPythonType(value).Name);
-                }
-                value = newVal;
+                throw PythonOps.TypeError("expected {0}, got {1}",
+                    DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
+                    DynamicHelpers.GetPythonType(value).Name);
             }
+            value = newVal;
             return (T)value;
         }
 
-        public void Add(object value) {
+        void ArrayData.Add(object? item) => Add(GetValue(item));
+
+        public void Add(T item) {
             EnsureSize(_count + 1);
-            _data[_count++] = GetValue(value);
+            _data[_count++] = item;
         }
 
         public void AddRange(ICollection<T> data) {
@@ -88,7 +101,7 @@ namespace IronPython.Modules {
             _count += data.Count;
         }
 
-        public void EnsureSize(int size) {
+        private void EnsureSize(int size) {
             if (_data.Length < size) {
                 var length = _data.Length;
                 while (length < size) {
@@ -105,39 +118,34 @@ namespace IronPython.Modules {
 
         public int CountValues(object value) {
             T other = GetValue(value);
-
-            int count = 0;
-            for (int i = 0; i < _count; i++) {
-                if (_data[i].Equals(other)) {
-                    count++;
-                }
-            }
-            return count;
+            return _data.Count(x => x.Equals(other));
         }
 
-        public void Insert(int index, object value) {
+        void ArrayData.Insert(int index, object item) => Insert(index, GetValue(item));
+
+        public void Insert(int index, T item) {
             EnsureSize(_count + 1);
             if (index < _count) {
                 Array.Copy(_data, index, _data, index + 1, _count - index);
             }
-            _data[index] = GetValue(value);
+            _data[index] = item;
             _count++;
         }
 
-        public int IndexOf(object value) {
-            T other = GetValue(value);
+        int ArrayData.IndexOf(object? item) => IndexOf(GetValue(item));
 
+        public int IndexOf(T item) {
             for (int i = 0; i < _count; i++) {
-                if (_data[i].Equals(other)) return i;
+                if (_data[i].Equals(item)) return i;
             }
             return -1;
         }
 
-        public bool Remove(object value) {
-            T other = GetValue(value);
+        bool ArrayData.Remove(object value) => Remove(GetValue(value));
 
+        public bool Remove(T item) {
             for (int i = 0; i < _count; i++) {
-                if (_data[i].Equals(other)) {
+                if (_data[i].Equals(item)) {
                     RemoveAt(i);
                     return true;
                 }
@@ -158,22 +166,22 @@ namespace IronPython.Modules {
             _data[y] = temp;
         }
 
-        public int Count => _count;
-
         public void Clear() {
             _count = 0;
         }
 
-        public bool CanStore(object value) {
+        public bool CanStore([NotNullWhen(true)]object? value) {
             if (!(value is T) && !Converter.TryConvert(value, typeof(T), out _))
                 return false;
 
             return true;
         }
 
-        public Type StorageType {
-            get { return typeof(T); }
-        }
+        public Type StorageType => typeof(T);
+
+        public bool IsReadOnly => false;
+
+        public int Count => _count;
 
         public IntPtr GetAddress() {
             // slightly evil to pin our data array but it's only used in rare
@@ -204,5 +212,19 @@ namespace IronPython.Modules {
 
             return res;
         }
+
+        bool ArrayData.Contains(object? value) => Contains(GetValue(value));
+
+        public bool Contains(T item) {
+            return IndexOf(item) != -1;
+        }
+
+        public void CopyTo(T[] array, int arrayIndex) {
+            Array.Copy(_data, 0, array, arrayIndex, _data.Length);
+        }
+
+        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_data).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

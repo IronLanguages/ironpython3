@@ -13,22 +13,22 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Modules {
-    internal abstract class ArrayData {
-        public abstract void SetData(int index, object value);
-        public abstract object GetData(int index);
-        public abstract void Append(object value);
-        public abstract int Count(object value);
-        public abstract bool CanStore(object value);
-        public abstract Type StorageType { get; }
-        public abstract int Index(object value);
-        public abstract void Insert(int index, object value);
-        public abstract void Remove(object value);
-        public abstract void RemoveAt(int index);
-        public abstract int Length { get; set; }
-        public abstract void Swap(int x, int y);
-        public abstract void Clear();
-        public abstract IntPtr GetAddress();
-        public abstract ArrayData Multiply(int count);
+    internal interface ArrayData {
+        void SetData(int index, object value);
+        object GetData(int index);
+        void Append(object value);
+        int Count(object value);
+        bool CanStore(object value);
+        Type StorageType { get; }
+        int Index(object value);
+        void Insert(int index, object value);
+        void Remove(object value);
+        void RemoveAt(int index);
+        int Length { get; set; }
+        void Swap(int x, int y);
+        void Clear();
+        IntPtr GetAddress();
+        ArrayData Multiply(int count);
     }
 
     internal class ArrayData<T> : ArrayData where T : struct {
@@ -61,11 +61,11 @@ namespace IronPython.Modules {
             }
         }
 
-        public override object GetData(int index) {
+        public object GetData(int index) {
             return _data[index];
         }
 
-        public override void SetData(int index, object value) {
+        public void SetData(int index, object value) {
             _data[index] = GetValue(value);
         }
 
@@ -86,7 +86,7 @@ namespace IronPython.Modules {
             return (T)value;
         }
 
-        public override void Append(object value) {
+        public void Append(object value) {
             EnsureSize(_count + 1);
             _data[_count++] = GetValue(value);
         }
@@ -106,7 +106,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public override int Count(object value) {
+        public int Count(object value) {
             T other = GetValue(value);
 
             int count = 0;
@@ -118,7 +118,7 @@ namespace IronPython.Modules {
             return count;
         }
 
-        public override void Insert(int index, object value) {
+        public void Insert(int index, object value) {
             EnsureSize(_count + 1);
             if (index < _count) {
                 Array.Copy(_data, index, _data, index + 1, _count - index);
@@ -127,7 +127,7 @@ namespace IronPython.Modules {
             _count++;
         }
 
-        public override int Index(object value) {
+        public int Index(object value) {
             T other = GetValue(value);
 
             for (int i = 0; i < _count; i++) {
@@ -136,7 +136,7 @@ namespace IronPython.Modules {
             return -1;
         }
 
-        public override void Remove(object value) {
+        public void Remove(object value) {
             T other = GetValue(value);
 
             for (int i = 0; i < _count; i++) {
@@ -148,20 +148,20 @@ namespace IronPython.Modules {
             throw PythonOps.ValueError("couldn't find value to remove");
         }
 
-        public override void RemoveAt(int index) {
+        public void RemoveAt(int index) {
             _count--;
             if (index < _count) {
                 Array.Copy(_data, index + 1, _data, index, _count - index);
             }
         }
 
-        public override void Swap(int x, int y) {
+        public void Swap(int x, int y) {
             T temp = _data[x];
             _data[x] = _data[y];
             _data[y] = temp;
         }
 
-        public override int Length {
+        public int Length {
             get {
                 return _count;
             }
@@ -170,22 +170,22 @@ namespace IronPython.Modules {
             }
         }
 
-        public override void Clear() {
+        public void Clear() {
             _count = 0;
         }
 
-        public override bool CanStore(object value) {
+        public bool CanStore(object value) {
             if (!(value is T) && !Converter.TryConvert(value, typeof(T), out _))
                 return false;
 
             return true;
         }
 
-        public override Type StorageType {
+        public Type StorageType {
             get { return typeof(T); }
         }
 
-        public override IntPtr GetAddress() {
+        public IntPtr GetAddress() {
             // slightly evil to pin our data array but it's only used in rare
             // interop cases.  If this becomes a problem we can move the allocation
             // onto the unmanaged heap if we have full trust via a different subclass
@@ -197,7 +197,7 @@ namespace IronPython.Modules {
             return _dataHandle.Value.AddrOfPinnedObject();
         }
 
-        public override ArrayData Multiply(int count) {
+        public ArrayData Multiply(int count) {
             var res = new ArrayData<T>(count * _count);
             if (count != 0) {
                 Array.Copy(_data, res._data, _count);

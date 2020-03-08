@@ -12,43 +12,34 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-namespace IronPython.Modules {
-    internal interface ArrayData {
-        [NotNull]object? this[int index] { get; set; }
-        void Add(object? value);
-        int CountValues(object value);
-        bool CanStore([NotNullWhen(true)]object? value);
-        bool Contains(object? value);
+namespace IronPython.Runtime {
+    internal interface ArrayData : IList {
         Type StorageType { get; }
-        int IndexOf(object? value);
-        void Insert(int index, object value);
-        bool Remove(object value);
-        void RemoveAt(int index);
-        int Count { get; }
-        void Swap(int x, int y);
-        void Clear();
+        bool CanStore([NotNullWhen(true)]object? item);
+        int CountItems(object item);
         IntPtr GetAddress();
         ArrayData Multiply(int count);
+        new bool Remove(object item);
+        void Reverse();
     }
 
-    internal class ArrayData<T> : ArrayData, IList<T> where T : struct {
-        private T[] _data;
-        private int _count;
+    internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
+        private T[] _items;
+        private int _size;
         private GCHandle? _dataHandle;
 
-        public ArrayData() {
+        public ArrayData() : this(8) { }
+
+        public ArrayData(int capacity) {
             GC.SuppressFinalize(this);
-            _data = new T[8];
+            _items = new T[capacity];
         }
 
-        private ArrayData(int size) {
-            GC.SuppressFinalize(this);
-            _data = new T[size];
-            _count = size;
+        public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : 0) {
+            AddRange(collection);
         }
 
         ~ArrayData() {
@@ -56,18 +47,113 @@ namespace IronPython.Modules {
             _dataHandle!.Value.Free();
         }
 
-        public T[] Data => _data;
+        public int Count => _size;
+
+        public T[] Data => _items;
+
+        bool IList.IsFixedSize => false;
+
+        bool ICollection<T>.IsReadOnly => false;
+
+        bool IList.IsReadOnly => false;
+
+        bool ICollection.IsSynchronized => false;
+
+        Type ArrayData.StorageType { get; } = typeof(T);
+
+        object ICollection.SyncRoot => this;
 
         public T this[int index] {
-            get => _data[index];
-            set => _data[index] = value;
+            get => _items[index];
+            set => _items[index] = value;
         }
 
         [NotNull]
-        object? ArrayData.this[int index] {
-            get => _data[index];
-            set => _data[index] = GetValue(value);
+        object? IList.this[int index] {
+            get => _items[index];
+            set => _items[index] = GetValue(value);
         }
+
+        public void Add(T item) {
+            EnsureSize(_size + 1);
+            _items[_size++] = item;
+        }
+
+        int IList.Add(object? item) {
+            Add(GetValue(item));
+            return _size - 1;
+        }
+
+        public void AddRange(IEnumerable<T> collection) {
+            if (collection is ICollection<T> c) {
+                EnsureSize(_size + c.Count);
+                c.CopyTo(_items, _size);
+                _size += c.Count;
+            } else {
+                foreach (var x in collection) {
+                    Add(x);
+                }
+            }
+        }
+
+        bool ArrayData.CanStore([NotNullWhen(true)]object? item) {
+            if (!(item is T) && !Converter.TryConvert(item, typeof(T), out _))
+                return false;
+
+            return true;
+        }
+
+        public void Clear() {
+            _size = 0;
+        }
+
+        public bool Contains(T item)
+            => _size != 0 && IndexOf(item) != -1;
+
+        bool IList.Contains(object? item)
+            => Contains(GetValue(item));
+
+        public void CopyTo(T[] array, int arrayIndex)
+            => Array.Copy(_items, 0, array, arrayIndex, _items.Length);
+
+        void ICollection.CopyTo(Array array, int index)
+            => Array.Copy(_items, 0, array, index, _items.Length);
+
+        int ArrayData.CountItems(object item) {
+            T other = GetValue(item);
+            return _items.Count(x => x.Equals(other));
+        }
+
+        private void EnsureSize(int size) {
+            if (_items.Length < size) {
+                var length = _items.Length;
+                while (length < size) {
+                    length *= 2;
+                }
+                Array.Resize(ref _items, length);
+                if (_dataHandle != null) {
+                    _dataHandle.Value.Free();
+                    _dataHandle = null;
+                    GC.SuppressFinalize(this);
+                }
+            }
+        }
+
+        IntPtr ArrayData.GetAddress() {
+            // slightly evil to pin our data array but it's only used in rare
+            // interop cases.  If this becomes a problem we can move the allocation
+            // onto the unmanaged heap if we have full trust via a different subclass
+            // of ArrayData.
+            if (!_dataHandle.HasValue) {
+                _dataHandle = GCHandle.Alloc(_items, GCHandleType.Pinned);
+                GC.ReRegisterForFinalize(this);
+            }
+            return _dataHandle.Value.AddrOfPinnedObject();
+        }
+
+        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_items).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         private static T GetValue(object? value) {
             if (value is T v) {
@@ -88,143 +174,73 @@ namespace IronPython.Modules {
             return (T)value;
         }
 
-        void ArrayData.Add(object? item) => Add(GetValue(item));
+        public int IndexOf(T item)
+            => Array.IndexOf(_items, item, 0, _size);
 
-        public void Add(T item) {
-            EnsureSize(_count + 1);
-            _data[_count++] = item;
-        }
-
-        public void AddRange(ICollection<T> data) {
-            EnsureSize(_count + data.Count);
-            data.CopyTo(_data, _count);
-            _count += data.Count;
-        }
-
-        private void EnsureSize(int size) {
-            if (_data.Length < size) {
-                var length = _data.Length;
-                while (length < size) {
-                    length *= 2;
-                }
-                Array.Resize(ref _data, length);
-                if (_dataHandle != null) {
-                    _dataHandle.Value.Free();
-                    _dataHandle = null;
-                    GC.SuppressFinalize(this);
-                }
-            }
-        }
-
-        public int CountValues(object value) {
-            T other = GetValue(value);
-            return _data.Count(x => x.Equals(other));
-        }
-
-        void ArrayData.Insert(int index, object item) => Insert(index, GetValue(item));
+        int IList.IndexOf(object? item) => IndexOf(GetValue(item));
 
         public void Insert(int index, T item) {
-            EnsureSize(_count + 1);
-            if (index < _count) {
-                Array.Copy(_data, index, _data, index + 1, _count - index);
+            EnsureSize(_size + 1);
+            if (index < _size) {
+                Array.Copy(_items, index, _items, index + 1, _size - index);
             }
-            _data[index] = item;
-            _count++;
+            _items[index] = item;
+            _size++;
         }
 
-        int ArrayData.IndexOf(object? item) => IndexOf(GetValue(item));
+        void IList.Insert(int index, object? item) => Insert(index, GetValue(item));
 
-        public int IndexOf(T item) {
-            for (int i = 0; i < _count; i++) {
-                if (_data[i].Equals(item)) return i;
-            }
-            return -1;
-        }
-
-        bool ArrayData.Remove(object value) => Remove(GetValue(value));
-
-        public bool Remove(T item) {
-            for (int i = 0; i < _count; i++) {
-                if (_data[i].Equals(item)) {
-                    RemoveAt(i);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void RemoveAt(int index) {
-            _count--;
-            if (index < _count) {
-                Array.Copy(_data, index + 1, _data, index, _count - index);
-            }
-        }
-
-        public void Swap(int x, int y) {
-            T temp = _data[x];
-            _data[x] = _data[y];
-            _data[y] = temp;
-        }
-
-        public void Clear() {
-            _count = 0;
-        }
-
-        public bool CanStore([NotNullWhen(true)]object? value) {
-            if (!(value is T) && !Converter.TryConvert(value, typeof(T), out _))
-                return false;
-
-            return true;
-        }
-
-        public Type StorageType => typeof(T);
-
-        public bool IsReadOnly => false;
-
-        public int Count => _count;
-
-        public IntPtr GetAddress() {
-            // slightly evil to pin our data array but it's only used in rare
-            // interop cases.  If this becomes a problem we can move the allocation
-            // onto the unmanaged heap if we have full trust via a different subclass
-            // of ArrayData.
-            if (!_dataHandle.HasValue) {
-                _dataHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
-                GC.ReRegisterForFinalize(this);
-            }
-            return _dataHandle.Value.AddrOfPinnedObject();
-        }
-
-        public ArrayData Multiply(int count) {
-            var res = new ArrayData<T>(count * _count);
+        ArrayData ArrayData.Multiply(int count) {
+            count *= _size;
+            var res = new ArrayData<T>(count * _size);
             if (count != 0) {
-                Array.Copy(_data, res._data, _count);
+                Array.Copy(_items, res._items, _size);
 
-                int newCount = count * _count;
-                int block = _count;
-                int pos = _count;
-                while (pos < newCount) {
-                    Array.Copy(res._data, 0, res._data, pos, Math.Min(block, newCount - pos));
+                int block = _size;
+                int pos = _size;
+                while (pos < count) {
+                    Array.Copy(res._items, 0, res._items, pos, Math.Min(block, count - pos));
                     pos += block;
                     block *= 2;
                 }
+                res._size = count;
             }
 
             return res;
         }
 
-        bool ArrayData.Contains(object? value) => Contains(GetValue(value));
+        public bool Remove(T item) {
+            int index = IndexOf(item);
+            if (index >= 0) {
+                RemoveAt(index);
+                return true;
+            }
 
-        public bool Contains(T item) {
-            return IndexOf(item) != -1;
+            return false;
         }
 
-        public void CopyTo(T[] array, int arrayIndex) {
-            Array.Copy(_data, 0, array, arrayIndex, _data.Length);
+        bool ArrayData.Remove(object? item) => Remove(GetValue(item));
+
+        void IList.Remove(object? item) => Remove(GetValue(item));
+
+        public void RemoveAt(int index) {
+            _size--;
+            if (index < _size) {
+                Array.Copy(_items, index + 1, _items, index, _size - index);
+            }
         }
 
-        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_data).GetEnumerator();
+        public void RemoveRange(int index, int count) {
+            if (count > 0) {
+                _size -= count;
+                if (index < _size) {
+                    Array.Copy(_items, index + count, _items, index, _size - index);
+                }
+            }
+        }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public void Reverse() {
+            Array.Reverse(_items, 0, _size);
+        }
     }
 }

@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -24,7 +25,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
-using DisallowNull = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
+using NotNull = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -36,53 +37,51 @@ namespace IronPython.Modules {
         public static readonly string typecodes = "bBuhHiIlLqQfd";
 
         [PythonType]
-        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol
-        {
+        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
             private ArrayData _data;
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
 
-            public array([NotNull]string type, [NotNull, DisallowNull]object? initializer = null) {
+            public array([NotNull]string type) {
                 if (type == null || type.Length != 1) {
                     throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(type));
                 }
 
                 _typeCode = type[0];
+                _data = CreateData(_typeCode);
+            }
 
+            public array([NotNull]string type, object? initializer) : this(type) {
                 if (_typeCode != 'u' && (initializer is string || initializer is Extensible<string>)) {
                     throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
                 }
 
-                _data = CreateData(_typeCode);
-
-                if (initializer != Missing.Value) extend(initializer);
+                extend(initializer);
             }
 
-            private array(char typeCode, ArrayData data) {                
+            private array(char typeCode, ArrayData data) {
                 _typeCode = typeCode;
                 _data = data;
             }
 
             private static ArrayData CreateData(char typecode) {
-                ArrayData data;
-                switch (typecode) {
-                    case 'b': data = new ArrayData<sbyte>(); break;
-                    case 'B': data = new ArrayData<byte>(); break;
-                    case 'u': data = new ArrayData<char>(); break;
-                    case 'h': data = new ArrayData<short>(); break;
-                    case 'H': data = new ArrayData<ushort>(); break;
-                    case 'i': data = new ArrayData<int>(); break;
-                    case 'I': data = new ArrayData<uint>(); break;
-                    case 'l': data = new ArrayData<int>(); break;
-                    case 'L': data = new ArrayData<uint>(); break;
-                    case 'q': data = new ArrayData<long>(); break;
-                    case 'Q': data = new ArrayData<ulong>(); break;
-                    case 'f': data = new ArrayData<float>(); break;
-                    case 'd': data = new ArrayData<double>(); break;
-                    default:
-                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
-                }
-                return data;
+                return (typecode) switch
+                {
+                    'b' => new ArrayData<sbyte>(),
+                    'B' => new ArrayData<byte>(),
+                    'u' => new ArrayData<char>(),
+                    'h' => new ArrayData<short>(),
+                    'H' => new ArrayData<ushort>(),
+                    'i' => new ArrayData<int>(),
+                    'I' => new ArrayData<uint>(),
+                    'l' => new ArrayData<int>(),
+                    'L' => new ArrayData<uint>(),
+                    'q' => new ArrayData<long>(),
+                    'Q' => new ArrayData<ulong>(),
+                    'f' => new ArrayData<float>(),
+                    'd' => new ArrayData<double>(),
+                    _ => throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)"),
+                };
             }
 
             [SpecialName]
@@ -99,7 +98,7 @@ namespace IronPython.Modules {
             public static array operator +([NotNull]array self, [NotNull]array other) {
                 if (self.typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
-                array res = new array(self.typecode, Missing.Value);
+                array res = new array(self.typecode);
                 foreach (object o in self) {
                     res.append(o);
                 }
@@ -131,9 +130,9 @@ namespace IronPython.Modules {
                 }
 
                 if (value <= 0) {
-                    return new array(array.typecode, Missing.Value);
+                    return new array(array.typecode);
                 }
-                
+
                 return new array(array._typeCode, array._data.Multiply(value));
             }
 
@@ -193,7 +192,7 @@ namespace IronPython.Modules {
             public int count(object? x) {
                 if (x == null) return 0;
 
-                return _data.CountValues(x);
+                return _data.CountItems(x);
             }
 
             public void extend(object? iterable) {
@@ -340,66 +339,63 @@ namespace IronPython.Modules {
 
             public object pop(int i) {
                 i = PythonOps.FixIndex(i, _data.Count);
-                object res = _data[i];
+                object res = _data[i]!;
                 _data.RemoveAt(i);
                 return res;
             }
 
             public void remove([NotNull]object value) {
-                if(!_data.Remove(value)) throw PythonOps.ValueError("couldn't find value to remove");
+                if (!_data.Remove(value)) throw PythonOps.ValueError("couldn't find value to remove");
             }
 
-            public void reverse() {
-                for (int index = 0; index < _data.Count / 2; index++) {
-                    int left = index, right = _data.Count - (index + 1);
-
-                    Debug.Assert(left != right);
-                    _data.Swap(left, right);
-                }
-            }
+            public void reverse()
+                => _data.Reverse();
 
             public virtual object this[int index] {
                 get {
-                    object val = _data[PythonOps.FixIndex(index, _data.Count)];
+                    index = PythonOps.FixIndex(index, _data.Count);
                     switch (_typeCode) {
-                        case 'b': return (int)(sbyte)val;
-                        case 'B': return (int)(byte)val;
-                        case 'u': return new string((char)val, 1);
-                        case 'h': return (int)(short)val;
-                        case 'H': return (int)(ushort)val;
-                        case 'i': return val;
-                        case 'I': return (BigInteger)(uint)val;
-                        case 'l': return val;
-                        case 'L': return (BigInteger)(uint)val;
-                        case 'q': return (BigInteger)(long)val;
-                        case 'Q': return (BigInteger)(ulong)val;
-                        case 'f': return (double)(float)val;
-                        case 'd': return val;
+                        case 'b': return (int)((ArrayData<sbyte>)_data)[index];
+                        case 'B': return (int)((ArrayData<byte>)_data)[index];
+                        case 'u': return char.ToString(((ArrayData<char>)_data)[index]);
+                        case 'h': return (int)((ArrayData<short>)_data)[index];
+                        case 'H': return (int)((ArrayData<ushort>)_data)[index];
+                        case 'i': return ((ArrayData<int>)_data)[index];
+                        case 'I': return (BigInteger)((ArrayData<uint>)_data)[index];
+                        case 'l': return ((ArrayData<int>)_data)[index];
+                        case 'L': return (BigInteger)((ArrayData<uint>)_data)[index];
+                        case 'q': return (BigInteger)((ArrayData<long>)_data)[index];
+                        case 'Q': return (BigInteger)((ArrayData<ulong>)_data)[index];
+                        case 'f': return (double)((ArrayData<float>)_data)[index];
+                        case 'd': return ((ArrayData<double>)_data)[index];
                         default:
                             throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                     }
                 }
+                [param: AllowNull]
                 set {
-                    _data[PythonOps.FixIndex(index, _data.Count)] = value;
+                    index = PythonOps.FixIndex(index, _data.Count);
+                    _data[index] = value;
                 }
             }
 
             internal byte[] RawGetItem(int index) {
                 MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms);
+                BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode);
                 switch (_typeCode) {
-                    case 'c': bw.Write((byte)(char)_data[index]); break;
-                    case 'b': bw.Write((sbyte)_data[index]); break;
-                    case 'B': bw.Write((byte)_data[index]); break;
-                    case 'u': bw.Write((char)_data[index]); break;
-                    case 'h': bw.Write((short)_data[index]); break;
-                    case 'H': bw.Write((ushort)_data[index]); break;
-                    case 'l':
-                    case 'i': bw.Write((int)_data[index]); break;
-                    case 'L':
-                    case 'I': bw.Write((uint)_data[index]); break;
-                    case 'f': bw.Write((float)_data[index]); break;
-                    case 'd': bw.Write((double)_data[index]); break;
+                    case 'b': bw.Write(((ArrayData<sbyte>)_data)[index]); break;
+                    case 'B': bw.Write(((ArrayData<byte>)_data)[index]); break;
+                    case 'u': bw.Write(((ArrayData<char>)_data)[index]); break;
+                    case 'h': bw.Write(((ArrayData<short>)_data)[index]); break;
+                    case 'H': bw.Write(((ArrayData<ushort>)_data)[index]); break;
+                    case 'i': bw.Write(((ArrayData<int>)_data)[index]); break;
+                    case 'I': bw.Write(((ArrayData<uint>)_data)[index]); break;
+                    case 'l': bw.Write(((ArrayData<int>)_data)[index]); break;
+                    case 'L': bw.Write(((ArrayData<uint>)_data)[index]); break;
+                    case 'q': bw.Write(((ArrayData<long>)_data)[index]); break;
+                    case 'Q': bw.Write(((ArrayData<ulong>)_data)[index]); break;
+                    case 'f': bw.Write(((ArrayData<float>)_data)[index]); break;
+                    case 'd': bw.Write(((ArrayData<double>)_data)[index]); break;
                 }
                 return ms.ToArray();
             }
@@ -475,12 +471,10 @@ namespace IronPython.Modules {
             [System.Diagnostics.CodeAnalysis.NotNull]
             public object? this[[NotNull]Slice index] {
                 get {
-                    if (index == null) throw PythonOps.TypeError("expected Slice, got None");
-
                     int start, stop, step;
                     index.indices(_data.Count, out start, out stop, out step);
 
-                    array pa = new array(new string(_typeCode, 1), Missing.Value);
+                    array pa = new array(char.ToString(_typeCode));
                     if (step < 0) {
                         for (int i = start; i > stop; i += step) {
                             pa._data.Add(_data[i]);
@@ -493,8 +487,6 @@ namespace IronPython.Modules {
                     return pa;
                 }
                 set {
-                    if (index == null) throw PythonOps.TypeError("expected Slice, got None");
-
                     CheckSliceAssignType(value);
 
                     if (index.step != null) {
@@ -618,18 +610,17 @@ namespace IronPython.Modules {
                 BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode);
                 for (int i = 0; i < _data.Count; i++) {
                     switch (_typeCode) {
-                        case 'c': bw.Write((byte)(char)_data[i]); break;
-                        case 'b': bw.Write((sbyte)_data[i]); break;
-                        case 'B': bw.Write((byte)_data[i]); break;
-                        case 'u': bw.Write((char)_data[i]); break;
-                        case 'h': bw.Write((short)_data[i]); break;
-                        case 'H': bw.Write((ushort)_data[i]); break;
-                        case 'l':
-                        case 'i': bw.Write((int)_data[i]); break;
-                        case 'L':
-                        case 'I': bw.Write((uint)_data[i]); break;
-                        case 'f': bw.Write((float)_data[i]); break;
-                        case 'd': bw.Write((double)_data[i]); break;
+                        case 'b': bw.Write(((ArrayData<sbyte>)_data)[i]); break;
+                        case 'B': bw.Write(((ArrayData<byte>)_data)[i]); break;
+                        case 'u': bw.Write(((ArrayData<char>)_data)[i]); break;
+                        case 'h': bw.Write(((ArrayData<short>)_data)[i]); break;
+                        case 'H': bw.Write(((ArrayData<ushort>)_data)[i]); break;
+                        case 'i': bw.Write(((ArrayData<int>)_data)[i]); break;
+                        case 'I': bw.Write(((ArrayData<uint>)_data)[i]); break;
+                        case 'l': bw.Write(((ArrayData<int>)_data)[i]); break;
+                        case 'L': bw.Write(((ArrayData<uint>)_data)[i]); break;
+                        case 'f': bw.Write(((ArrayData<float>)_data)[i]); break;
+                        case 'd': bw.Write(((ArrayData<double>)_data)[i]); break;
                     }
                 }
             }
@@ -638,7 +629,7 @@ namespace IronPython.Modules {
                 if (_data is ArrayData<byte> data) {
                     Debug.Assert(_typeCode == 'B');
                     var res = new byte[data.Count];
-                    Array.Copy(data.Data, res, data.Count);
+                    data.CopyTo(res, 0);
                     return res;
                 }
 
@@ -660,23 +651,22 @@ namespace IronPython.Modules {
                 }
 
                 for (int i = 0; i < ms.Length / itemsize; i++) {
-                    object value;
                     switch (_typeCode) {
-                        case 'c': value = (char)br.ReadByte(); break;
-                        case 'b': value = (sbyte)br.ReadByte(); break;
-                        case 'B': value = br.ReadByte(); break;
-                        case 'u': value = ReadBinaryChar(br); break;
-                        case 'h': value = br.ReadInt16(); break;
-                        case 'H': value = br.ReadUInt16(); break;
-                        case 'i': value = br.ReadInt32(); break;
-                        case 'I': value = br.ReadUInt32(); break;
-                        case 'l': value = br.ReadInt32(); break;
-                        case 'L': value = br.ReadUInt32(); break;
-                        case 'f': value = br.ReadSingle(); break;
-                        case 'd': value = br.ReadDouble(); break;
+                        case 'b': ((ArrayData<sbyte>)_data).Add((sbyte)br.ReadByte()); break;
+                        case 'B': ((ArrayData<byte>)_data).Add(br.ReadByte()); break;
+                        case 'u': ((ArrayData<char>)_data).Add(ReadBinaryChar(br)); break;
+                        case 'h': ((ArrayData<short>)_data).Add(br.ReadInt16()); break;
+                        case 'H': ((ArrayData<ushort>)_data).Add(br.ReadUInt16()); break;
+                        case 'i': ((ArrayData<int>)_data).Add(br.ReadInt32()); break;
+                        case 'I': ((ArrayData<uint>)_data).Add(br.ReadUInt32()); break;
+                        case 'l': ((ArrayData<int>)_data).Add(br.ReadInt32()); break;
+                        case 'L': ((ArrayData<uint>)_data).Add(br.ReadUInt32()); break;
+                        case 'q': ((ArrayData<long>)_data).Add(br.ReadInt64()); break;
+                        case 'Q': ((ArrayData<ulong>)_data).Add(br.ReadUInt64()); break;
+                        case 'f': ((ArrayData<float>)_data).Add(br.ReadSingle()); break;
+                        case 'd': ((ArrayData<double>)_data).Add(br.ReadDouble()); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data.Add(value);
                 }
             }
 
@@ -685,23 +675,22 @@ namespace IronPython.Modules {
                 BinaryReader br = new BinaryReader(ms);
 
                 for (int i = index; i < ms.Length / itemsize + index; i++) {
-                    object value;
                     switch (_typeCode) {
-                        case 'c': value = (char)br.ReadByte(); break;
-                        case 'b': value = (sbyte)br.ReadByte(); break;
-                        case 'B': value = br.ReadByte(); break;
-                        case 'u': value = ReadBinaryChar(br); break;
-                        case 'h': value = br.ReadInt16(); break;
-                        case 'H': value = br.ReadUInt16(); break;
-                        case 'i': value = br.ReadInt32(); break;
-                        case 'I': value = br.ReadUInt32(); break;
-                        case 'l': value = br.ReadInt32(); break;
-                        case 'L': value = br.ReadUInt32(); break;
-                        case 'f': value = br.ReadSingle(); break;
-                        case 'd': value = br.ReadDouble(); break;
+                        case 'b': ((ArrayData<sbyte>)_data)[i] = (sbyte)br.ReadByte(); break;
+                        case 'B': ((ArrayData<byte>)_data)[i] = br.ReadByte(); break;
+                        case 'u': ((ArrayData<char>)_data)[i] = ReadBinaryChar(br); break;
+                        case 'h': ((ArrayData<short>)_data)[i] = br.ReadInt16(); break;
+                        case 'H': ((ArrayData<ushort>)_data)[i] = br.ReadUInt16(); break;
+                        case 'i': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
+                        case 'I': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'l': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
+                        case 'L': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'q': ((ArrayData<long>)_data)[i] = br.ReadInt64(); break;
+                        case 'Q': ((ArrayData<ulong>)_data)[i] = br.ReadUInt64(); break;
+                        case 'f': ((ArrayData<float>)_data)[i] = br.ReadSingle(); break;
+                        case 'd': ((ArrayData<double>)_data)[i] = br.ReadDouble(); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data[i] = value;
                 }
             }
 
@@ -716,25 +705,22 @@ namespace IronPython.Modules {
 
                 int len = Math.Min((int)(ms.Length - ms.Position), nbytes);
                 for (int i = index; i < len / itemsize + index; i++) {
-                    object value;
                     switch (_typeCode) {
-                        case 'c': value = (char)br.ReadByte(); break;
-                        case 'b': value = (sbyte)br.ReadByte(); break;
-                        case 'B': value = br.ReadByte(); break;
-                        case 'u':
-                            value = ReadBinaryChar(br);
-                            break;
-                        case 'h': value = br.ReadInt16(); break;
-                        case 'H': value = br.ReadUInt16(); break;
-                        case 'i': value = br.ReadInt32(); break;
-                        case 'I': value = br.ReadUInt32(); break;
-                        case 'l': value = br.ReadInt32(); break;
-                        case 'L': value = br.ReadUInt32(); break;
-                        case 'f': value = br.ReadSingle(); break;
-                        case 'd': value = br.ReadDouble(); break;
+                        case 'b': ((ArrayData<sbyte>)_data)[i] = (sbyte)br.ReadByte(); break;
+                        case 'B': ((ArrayData<byte>)_data)[i] = br.ReadByte(); break;
+                        case 'u': ((ArrayData<char>)_data)[i] = ReadBinaryChar(br); break;
+                        case 'h': ((ArrayData<short>)_data)[i] = br.ReadInt16(); break;
+                        case 'H': ((ArrayData<ushort>)_data)[i] = br.ReadUInt16(); break;
+                        case 'i': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
+                        case 'I': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'l': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
+                        case 'L': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'q': ((ArrayData<long>)_data)[i] = br.ReadInt64(); break;
+                        case 'Q': ((ArrayData<ulong>)_data)[i] = br.ReadUInt64(); break;
+                        case 'f': ((ArrayData<float>)_data)[i] = br.ReadSingle(); break;
+                        case 'd': ((ArrayData<double>)_data)[i] = br.ReadDouble(); break;
                         default: throw new InvalidOperationException(); // should never happen
                     }
-                    _data[i] = value;
                 }
 
                 if (len % itemsize > 0) {
@@ -751,27 +737,26 @@ namespace IronPython.Modules {
             }
 
             // br.ReadChar() doesn't read 16-bit chars, it reads 8-bit chars.
-            private static object ReadBinaryChar(BinaryReader br) {
+            private static char ReadBinaryChar(BinaryReader br) {
                 byte byteVal = br.ReadByte();
-                object value = (char)((br.ReadByte() << 8) | byteVal);
-                return value;
+                return (char)((br.ReadByte() << 8) | byteVal);
             }
 
             private byte[] ToBytes(int index) {
-                switch(_typeCode) {
-                    case 'b': return new[] { (byte)(sbyte)_data[index] };
-                    case 'B': return new[] { (byte)_data[index] };
-                    case 'u': return BitConverter.GetBytes((char)_data[index]);
-                    case 'h': return BitConverter.GetBytes((short)_data[index]);
-                    case 'H': return BitConverter.GetBytes((ushort)_data[index]);
-                    case 'i': return BitConverter.GetBytes((int)_data[index]);
-                    case 'I': return BitConverter.GetBytes((uint)_data[index]);
-                    case 'l': return BitConverter.GetBytes((int)_data[index]);
-                    case 'L': return BitConverter.GetBytes((uint)_data[index]);
-                    case 'q': return BitConverter.GetBytes((long)_data[index]);
-                    case 'Q': return BitConverter.GetBytes((ulong)_data[index]);
-                    case 'f': return BitConverter.GetBytes((float)_data[index]); 
-                    case 'd': return BitConverter.GetBytes((double)_data[index]); 
+                switch (_typeCode) {
+                    case 'b': return new[] { (byte)((ArrayData<sbyte>)_data)[index] };
+                    case 'B': return new[] { ((ArrayData<byte>)_data)[index] };
+                    case 'u': return BitConverter.GetBytes(((ArrayData<char>)_data)[index]);
+                    case 'h': return BitConverter.GetBytes(((ArrayData<short>)_data)[index]);
+                    case 'H': return BitConverter.GetBytes(((ArrayData<ushort>)_data)[index]);
+                    case 'i': return BitConverter.GetBytes(((ArrayData<int>)_data)[index]);
+                    case 'I': return BitConverter.GetBytes(((ArrayData<uint>)_data)[index]);
+                    case 'l': return BitConverter.GetBytes(((ArrayData<int>)_data)[index]);
+                    case 'L': return BitConverter.GetBytes(((ArrayData<uint>)_data)[index]);
+                    case 'q': return BitConverter.GetBytes(((ArrayData<long>)_data)[index]);
+                    case 'Q': return BitConverter.GetBytes(((ArrayData<ulong>)_data)[index]);
+                    case 'f': return BitConverter.GetBytes(((ArrayData<float>)_data)[index]);
+                    case 'd': return BitConverter.GetBytes(((ArrayData<double>)_data)[index]);
                     default:
                         throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
@@ -804,7 +789,7 @@ namespace IronPython.Modules {
             int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
                 IStructuralEquatable dataTuple;
 
-                switch(_typeCode) {
+                switch (_typeCode) {
                     case 'b': dataTuple = PythonTuple.MakeTuple(((ArrayData<sbyte>)_data).Data); break;
                     case 'B': dataTuple = PythonTuple.MakeTuple(((ArrayData<byte>)_data).Data); break;
                     case 'u': dataTuple = PythonTuple.MakeTuple(((ArrayData<char>)_data).Data); break;
@@ -860,7 +845,7 @@ namespace IronPython.Modules {
                 }
 
                 StringBuilder sb = new StringBuilder(res);
-                if (_typeCode == 'c' || _typeCode == 'u') {
+                if (_typeCode == 'u') {
                     char quote = '\'';
                     string s = new string(((ArrayData<char>)_data).Data, 0, _data.Count);
                     if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
@@ -873,7 +858,7 @@ namespace IronPython.Modules {
                         sb.Append(", ");
                     }
                     sb.Append(quote);
-                    
+
                     sb.Append(StringOps.ReprEncode(s, quote));
                     sb.Append(quote);
                     sb.Append(")");
@@ -1062,7 +1047,7 @@ namespace IronPython.Modules {
 
             IEnumerator<object> IEnumerable<object>.GetEnumerator() {
                 for (int i = 0; i < _data.Count; i++) {
-                    yield return _data[i];
+                    yield return _data[i]!;
                 }
             }
 

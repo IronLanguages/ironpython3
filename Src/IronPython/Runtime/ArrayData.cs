@@ -31,11 +31,13 @@ namespace IronPython.Runtime {
         private int _size;
         private GCHandle? _dataHandle;
 
-        public ArrayData() : this(8) { }
+        private static readonly T[] empty = new T[0];
+
+        public ArrayData() : this(0) { }
 
         public ArrayData(int capacity) {
             GC.SuppressFinalize(this);
-            _items = new T[capacity];
+            _items = capacity == 0 ? empty : new T[capacity];
         }
 
         public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : 0) {
@@ -127,6 +129,7 @@ namespace IronPython.Runtime {
         private void EnsureSize(int size) {
             if (_items.Length < size) {
                 var length = _items.Length;
+                if (length == 0) length = 8;
                 while (length < size) {
                     length *= 2;
                 }

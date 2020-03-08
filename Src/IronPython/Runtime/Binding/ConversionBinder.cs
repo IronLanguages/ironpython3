@@ -170,20 +170,7 @@ namespace IronPython.Runtime.Binding {
 
                         // Interface conversion helpers...
                         if (genTo == typeof(IList<>)) {
-                            if (self.LimitType == typeof(string)) {
-                                res = new DynamicMetaObject(
-                                    Ast.Call(
-                                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeByteArray)),
-                                        AstUtils.Convert(self.Expression, typeof(string))
-                                    ),
-                                    BindingRestrictions.GetTypeRestriction(
-                                        self.Expression,
-                                        typeof(string)
-                                    )
-                                );
-                            } else {
-                                res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
-                            }
+                            res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
                         } else if (genTo == typeof(IDictionary<,>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IDictionary<object, object>), typeof(DictionaryGenericWrapper<,>));
                         } else if (genTo == typeof(IEnumerable<>)) {

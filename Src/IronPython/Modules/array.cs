@@ -242,9 +242,8 @@ namespace IronPython.Modules {
             public void fromfile(CodeContext/*!*/ context, [NotNull]PythonIOModule._IOBase f, int n) {
                 int bytesNeeded = n * itemsize;
                 Bytes bytes = (Bytes)f.read(context, bytesNeeded);
-                if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
-
                 frombytes(bytes);
+                if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
             }
 
             public void frombytes([BytesConversion, NotNull]IList<byte> s) {
@@ -294,6 +293,7 @@ namespace IronPython.Modules {
             }
 
             public int index(object? x) {
+                if (x == null) throw PythonOps.ValueError("got None, expected value");
                 int res = _data.IndexOf(x);
                 if (res == -1) throw PythonOps.ValueError("x not found");
                 return res;
@@ -328,7 +328,7 @@ namespace IronPython.Modules {
                         case 'd': // double
                             return 8;
                         default:
-                            return 0;
+                            throw new InvalidOperationException(); // should never happen
                     }
                 }
             }
@@ -344,7 +344,8 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public void remove([NotNull]object value) {
+            public void remove(object? value) {
+                if (value == null) throw PythonOps.ValueError("got None, expected value");
                 if (!_data.Remove(value)) throw PythonOps.ValueError("couldn't find value to remove");
             }
 
@@ -368,8 +369,7 @@ namespace IronPython.Modules {
                         case 'Q': return (BigInteger)((ArrayData<ulong>)_data)[index];
                         case 'f': return (double)((ArrayData<float>)_data)[index];
                         case 'd': return ((ArrayData<double>)_data)[index];
-                        default:
-                            throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                        default: throw new InvalidOperationException(); // should never happen
                     }
                 }
                 [param: AllowNull]
@@ -396,6 +396,7 @@ namespace IronPython.Modules {
                     case 'Q': bw.Write(((ArrayData<ulong>)_data)[index]); break;
                     case 'f': bw.Write(((ArrayData<float>)_data)[index]); break;
                     case 'd': bw.Write(((ArrayData<double>)_data)[index]); break;
+                    default: throw new InvalidOperationException(); // should never happen
                 }
                 return ms.ToArray();
             }
@@ -619,8 +620,11 @@ namespace IronPython.Modules {
                         case 'I': bw.Write(((ArrayData<uint>)_data)[i]); break;
                         case 'l': bw.Write(((ArrayData<int>)_data)[i]); break;
                         case 'L': bw.Write(((ArrayData<uint>)_data)[i]); break;
+                        case 'q': bw.Write(((ArrayData<long>)_data)[i]); break;
+                        case 'Q': bw.Write(((ArrayData<ulong>)_data)[i]); break;
                         case 'f': bw.Write(((ArrayData<float>)_data)[i]); break;
                         case 'd': bw.Write(((ArrayData<double>)_data)[i]); break;
+                        default: throw new InvalidOperationException(); // should never happen
                     }
                 }
             }
@@ -757,8 +761,7 @@ namespace IronPython.Modules {
                     case 'Q': return BitConverter.GetBytes(((ArrayData<ulong>)_data)[index]);
                     case 'f': return BitConverter.GetBytes(((ArrayData<float>)_data)[index]);
                     case 'd': return BitConverter.GetBytes(((ArrayData<double>)_data)[index]);
-                    default:
-                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                    default: throw new InvalidOperationException(); // should never happen
                 }
             }
 
@@ -777,8 +780,7 @@ namespace IronPython.Modules {
                     case 'Q': return BitConverter.ToInt64(bytes, 0);
                     case 'f': return BitConverter.ToSingle(bytes, 0);
                     case 'd': return BitConverter.ToDouble(bytes, 0);
-                    default:
-                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                    default: throw new InvalidOperationException(); // should never happen
                 }
             }
 
@@ -803,8 +805,7 @@ namespace IronPython.Modules {
                     case 'Q': dataTuple = PythonTuple.MakeTuple(((ArrayData<ulong>)_data).Data); break;
                     case 'f': dataTuple = PythonTuple.MakeTuple(((ArrayData<float>)_data).Data); break;
                     case 'd': dataTuple = PythonTuple.MakeTuple(((ArrayData<double>)_data).Data); break;
-                    default:
-                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                    default: throw new InvalidOperationException(); // should never happen
                 }
 
                 return dataTuple.GetHashCode(comparer);

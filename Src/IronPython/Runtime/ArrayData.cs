@@ -116,14 +116,14 @@ namespace IronPython.Runtime {
             => Contains(GetValue(item));
 
         public void CopyTo(T[] array, int arrayIndex)
-            => Array.Copy(_items, 0, array, arrayIndex, _items.Length);
+            => Array.Copy(_items, 0, array, arrayIndex, _size);
 
         void ICollection.CopyTo(Array array, int index)
-            => Array.Copy(_items, 0, array, index, _items.Length);
+            => Array.Copy(_items, 0, array, index, _size);
 
         int ArrayData.CountItems(object item) {
             T other = GetValue(item);
-            return _items.Count(x => x.Equals(other));
+            return _items.Take(_size).Count(x => x.Equals(other));
         }
 
         private void EnsureSize(int size) {

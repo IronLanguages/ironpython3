@@ -154,7 +154,8 @@ namespace IronPython.Modules {
             => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
         public static PythonTuple escape_decode([BytesConversion,NotNull]IList<byte> data, string? errors = null) {
-            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
+            var span = data.ToArray().AsSpan(); // TODO: remove when signature changed
+            var res = LiteralParser.ParseBytes(span, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
 
             return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
 
@@ -163,7 +164,7 @@ namespace IronPython.Modules {
 
                 Func<int, IReadOnlyList<byte>>? eh = null;
 
-                return delegate (IList<byte> data, int start, int end) {
+                return delegate (in ReadOnlySpan<byte> data, int start, int end, string message) {
                     eh ??= errors switch
                     {
                         "strict" => idx => throw PythonOps.ValueError(@"invalid \x escape at position {0}", idx),

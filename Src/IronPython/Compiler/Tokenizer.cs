@@ -682,7 +682,7 @@ namespace IronPython.Compiler {
                     var contents = LiteralParser.ParseString(_buffer, start, length, isRaw, !isRaw, !_disableLineFeedLineSeparator);
                     return new ConstantValueToken(contents);
                 } else {
-                    List<byte> data = LiteralParser.ParseBytes(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);
+                    List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, !_disableLineFeedLineSeparator);
                     if (data.Count == 0) {
                         return new ConstantValueToken(Bytes.Empty);
                     }

@@ -1764,9 +1764,24 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            string decoded;
+            string decoded = string.Empty;
             try {
-                decoded = e.GetString(bytes, start, length);
+                unsafe {
+                    ReadOnlySpan<byte> data = s.ToArray();
+                    fixed (byte* bp = data.Slice(start)) {
+                        if (bp != null) {
+                            //decoded = e.GetString(bp, 0, length); // TODO: enable after upgrade to .NET 4.6
+                            int charCount = e.GetCharCount(bp, length);
+                            char[] arrChar = new char[charCount];
+                            fixed (char* cp = arrChar) {
+                                if (cp != null) {
+                                    e.GetChars(bp, length, cp, charCount); 
+                                }
+                            }
+                            decoded = new string(arrChar);
+                        }
+                    }
+                }
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
@@ -2222,6 +2237,25 @@ namespace IronPython.Runtime.Operations {
             public override string GetString(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler());
 
+            public override unsafe int GetCharCount(byte* bytes, int count) {
+                return GetChars(bytes, count, null, 0);
+            }
+
+            public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount) {
+                var span = new Span<byte>(bytes, byteCount);
+                var res = LiteralParser.ParseString(span, _raw, GetErrorHandler());
+
+                if (chars != null) {
+                    int i;
+                    for (i = 0; i < res.Length && i < charCount; i++) {
+                        chars[i] = res[i];
+                    }
+                    return i;
+                } else {
+                    return res.Length;
+                }
+            }
+
             public override int GetCharCount(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler()).Length;
 
@@ -2245,7 +2279,7 @@ namespace IronPython.Runtime.Operations {
 
                 DecoderFallbackBuffer fbuf = null;
 
-                return delegate (IList<byte> data, int start, int end) {
+                return delegate (in ReadOnlySpan<byte> data, int start, int end, string reason) {
                     fbuf ??= DecoderFallback.CreateFallbackBuffer();
 
                     byte[] bytesUnknown = new byte[end - start];

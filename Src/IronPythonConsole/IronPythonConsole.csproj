@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonConsole</RootNamespace>
     <AssemblyName>ipy</AssemblyName>

@@ -42,27 +42,32 @@ namespace IronPython.Modules {
             if (!typecodes.Contains(typecode))
                 throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
 
-            char actualTypeCode = MachineFormatToTypeCode(mformat_code, out bool isBigEndian, out string? encoding);
-
-            if (encoding != null) {
-                return new array("u", StringOps.RawDecode(context, items, encoding, null));
-            }
+            var actualTypeCode = MachineFormatToTypeCode(mformat_code, out bool isBigEndian, out string? encoding);
 
             var arrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
 
+            if (!cls.IsSubclassOf(arrayType)) {
+                throw PythonOps.TypeError($"{cls} is not a subtype of array.array");
+            }
+
             array res;
             if (cls == arrayType) {
-                res = new array(ScriptingRuntimeHelpers.CharToString(actualTypeCode));
-            } else if (cls.CreateInstance(context) is array arr) {
+                res = new array(actualTypeCode);
+            } else if (cls.CreateInstance(context, actualTypeCode) is array arr) {
                 res = arr;
             } else {
-                throw PythonOps.TypeError($"{cls} is not a subclass of tuple");
+                throw PythonOps.TypeError($"{cls} is not a subtype of array.array");
             }
-            res.frombytes(items);
-            if (isBigEndian) res.byteswap();
+
+            if (encoding == null) {
+                res.frombytes(items);
+                if (isBigEndian) res.byteswap();
+            } else {
+                res.fromunicode(context, StringOps.RawDecode(context, items, encoding, null));
+            }
             return res;
 
-            static char MachineFormatToTypeCode(int machineFormat, out bool isBigEndian, out string? encoding) {
+            static string MachineFormatToTypeCode(int machineFormat, out bool isBigEndian, out string? encoding) {
                 isBigEndian = machineFormat % 2 == 1;
                 encoding = machineFormat switch
                 {
@@ -74,28 +79,28 @@ namespace IronPython.Modules {
                 };
                 return machineFormat switch
                 {
-                    0 => 'B',
-                    1 => 'b',
-                    2 => 'H',
-                    3 => 'H',
-                    4 => 'h',
-                    5 => 'h',
-                    6 => 'I',
-                    7 => 'I',
-                    8 => 'i',
-                    9 => 'i',
-                    10 => 'Q',
-                    11 => 'Q',
-                    12 => 'q',
-                    13 => 'q',
-                    14 => 'f',
-                    15 => 'f',
-                    16 => 'd',
-                    17 => 'd',
-                    18 => 'u',
-                    19 => 'u',
-                    20 => 'u',
-                    21 => 'u',
+                    0 => "B",
+                    1 => "b",
+                    2 => "H",
+                    3 => "H",
+                    4 => "h",
+                    5 => "h",
+                    6 => "I",
+                    7 => "I",
+                    8 => "i",
+                    9 => "i",
+                    10 => "Q",
+                    11 => "Q",
+                    12 => "q",
+                    13 => "q",
+                    14 => "f",
+                    15 => "f",
+                    16 => "d",
+                    17 => "d",
+                    18 => "u",
+                    19 => "u",
+                    20 => "u",
+                    21 => "u",
                     _ => throw PythonOps.ValueError("invalid machine code format"),
                 };
             }
@@ -258,7 +263,7 @@ namespace IronPython.Modules {
                 return _data.CountItems(x);
             }
 
-            private ArrayData<T> GetData<T>() where T: struct { return (ArrayData<T>)_data; }
+            private ArrayData<T> GetData<T>() where T : struct { return (ArrayData<T>)_data; }
 
             private void ExtendArray(array pa) {
                 if (_typeCode != pa._typeCode) {
@@ -305,8 +310,7 @@ namespace IronPython.Modules {
             public void extend(object? iterable) {
                 if (iterable is array pa) {
                     ExtendArray(pa);
-                }
-                else {
+                } else {
                     ExtendIter(iterable);
                 }
             }
@@ -947,11 +951,7 @@ namespace IronPython.Modules {
 
             #region IEnumerable Members
 
-            IEnumerator IEnumerable.GetEnumerator() {
-                for (int i = 0; i < _data.Count; i++) {
-                    yield return _data[i];
-                }
-            }
+            IEnumerator IEnumerable.GetEnumerator() => new arrayiterator(this);
 
             #endregion
 
@@ -1160,11 +1160,7 @@ namespace IronPython.Modules {
 
             #region IEnumerable<object> Members
 
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-                for (int i = 0; i < _data.Count; i++) {
-                    yield return _data[i]!;
-                }
-            }
+            IEnumerator<object> IEnumerable<object>.GetEnumerator() => new arrayiterator(this);
 
             #endregion
 
@@ -1213,6 +1209,54 @@ namespace IronPython.Modules {
             }
 
             #endregion
+        }
+
+        [PythonType]
+        public sealed class arrayiterator : IEnumerator<object> {
+            private int _index;
+            private readonly IList<object> _array;
+            private bool _iterating;
+
+            internal arrayiterator(array a) {
+                _array = a;
+                Reset();
+            }
+
+            [PythonHidden]
+            public object Current => _array[_index];
+
+            public object __iter__() => this;
+
+            public object __reduce__(CodeContext context) {
+                object iter;
+                context.TryLookupBuiltin("iter", out iter);
+                if (_iterating) {
+                    return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_array), _index + 1);
+                }
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonTuple.EMPTY));
+            }
+
+            public void __setstate__(int state) {
+                _index = state - 1;
+                _iterating = _index < _array.Count;
+            }
+
+            void IDisposable.Dispose() { }
+
+            [PythonHidden]
+            public bool MoveNext() {
+                if (_iterating) {
+                    _index++;
+                    _iterating = (_index < _array.Count);
+                }
+                return _iterating;
+            }
+
+            [PythonHidden]
+            public void Reset() {
+                _index = -1;
+                _iterating = true;
+            }
         }
     }
 }

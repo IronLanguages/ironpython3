@@ -22,7 +22,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
-    public class Bytes : IList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
+    public class Bytes : IList<byte>, IReadOnlyList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
         private readonly byte[] _bytes;
         internal static readonly Bytes Empty = new Bytes();
 
@@ -744,6 +744,12 @@ namespace IronPython.Runtime {
                 throw new InvalidOperationException();
             }
         }
+
+        #endregion
+
+        #region IReadOnlyList<byte> Members
+
+        byte IReadOnlyList<byte>.this[int index] => _bytes[index];
 
         #endregion
 

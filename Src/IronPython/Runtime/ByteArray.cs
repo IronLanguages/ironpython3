@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
     /// (default=0)
     /// </summary>
     [PythonType("bytearray")]
-    public class ByteArray : IList<byte>, ICodeFormattable, IBufferProtocol {
+    public class ByteArray : IList<byte>, IReadOnlyList<byte>, ICodeFormattable, IBufferProtocol {
         private ArrayData<byte> _bytes;
 
         public ByteArray() {
@@ -1275,6 +1275,12 @@ namespace IronPython.Runtime {
                 _bytes[index] = value;
             }
         }
+
+        #endregion
+
+        #region IReadOnlyList<byte> Members
+
+        byte IReadOnlyList<byte>.this[int index] => _bytes[index];
 
         #endregion
 

@@ -36,6 +36,73 @@ namespace IronPython.Modules {
 
         public static readonly string typecodes = "bBuhHiIlLqQfd";
 
+        private static array ArrayReconstructor(CodeContext context, [NotNull]PythonType cls, [NotNull]string typecode, int mformat_code, [NotNull]Bytes items) {
+            if (typecode.Length != 1)
+                throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(typecode));
+            if (!typecodes.Contains(typecode))
+                throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+
+            char actualTypeCode = MachineFormatToTypeCode(mformat_code, out bool isBigEndian, out string? encoding);
+
+            if (encoding != null) {
+                return new array("u", StringOps.RawDecode(context, items, encoding, null));
+            }
+
+            var arrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
+
+            array res;
+            if (cls == arrayType) {
+                res = new array(ScriptingRuntimeHelpers.CharToString(actualTypeCode));
+            } else if (cls.CreateInstance(context) is array arr) {
+                res = arr;
+            } else {
+                throw PythonOps.TypeError($"{cls} is not a subclass of tuple");
+            }
+            res.frombytes(items);
+            if (isBigEndian) res.byteswap();
+            return res;
+
+            static char MachineFormatToTypeCode(int machineFormat, out bool isBigEndian, out string? encoding) {
+                isBigEndian = machineFormat % 2 == 1;
+                encoding = machineFormat switch
+                {
+                    18 => "UTF-16-LE",
+                    19 => "UTF-16-BE",
+                    20 => "UTF-32-LE",
+                    21 => "UTF-32-BE",
+                    _ => null,
+                };
+                return machineFormat switch
+                {
+                    0 => 'B',
+                    1 => 'b',
+                    2 => 'H',
+                    3 => 'H',
+                    4 => 'h',
+                    5 => 'h',
+                    6 => 'I',
+                    7 => 'I',
+                    8 => 'i',
+                    9 => 'i',
+                    10 => 'Q',
+                    11 => 'Q',
+                    12 => 'q',
+                    13 => 'q',
+                    14 => 'f',
+                    15 => 'f',
+                    16 => 'd',
+                    17 => 'd',
+                    18 => 'u',
+                    19 => 'u',
+                    20 => 'u',
+                    21 => 'u',
+                    _ => throw PythonOps.ValueError("invalid machine code format"),
+                };
+            }
+        }
+
+        public static readonly BuiltinFunction _array_reconstructor = BuiltinFunction.MakeFunction(nameof(_array_reconstructor), ArrayUtils.ConvertAll(typeof(ArrayModule).GetMember(nameof(ArrayReconstructor), BindingFlags.NonPublic | BindingFlags.Static), x => (MethodBase)x), typeof(ArrayModule));
+
         [PythonType]
         public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
             private ArrayData _data;
@@ -51,12 +118,19 @@ namespace IronPython.Modules {
                 _data = CreateData(_typeCode);
             }
 
+            public array([NotNull]string type, [BytesConversion, NotNull]IList<byte> initializer) : this(type) {
+                frombytes(initializer);
+            }
+
             public array([NotNull]string type, object? initializer) : this(type) {
-                if (_typeCode != 'u' && (initializer is string || initializer is Extensible<string>)) {
-                    throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
+                if (_typeCode != 'u') {
+                    if (initializer is string || initializer is Extensible<string>)
+                        throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
+                    if (initializer is array arr && arr._typeCode == 'u')
+                        throw PythonOps.TypeError("cannot use a unicode array to initialize an array with typecode '{0}'", _typeCode);
                 }
 
-                extend(initializer);
+                ExtendIter(initializer);
             }
 
             private array(char typeCode, ArrayData data) {
@@ -86,12 +160,7 @@ namespace IronPython.Modules {
 
             [SpecialName]
             public array InPlaceAdd([NotNull]array other) {
-                if (typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
-
-                if (other._data.Count != 0) {
-                    extend(other);
-                }
-
+                ExtendArray(other);
                 return this;
             }
 
@@ -99,14 +168,8 @@ namespace IronPython.Modules {
                 if (self.typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
                 array res = new array(self.typecode);
-                foreach (object o in self) {
-                    res.append(o);
-                }
-
-                foreach (object o in other) {
-                    res.append(o);
-                }
-
+                res.ExtendArray(self);
+                res.ExtendArray(other);
                 return res;
             }
 
@@ -115,10 +178,10 @@ namespace IronPython.Modules {
                 if (value <= 0) {
                     _data.Clear();
                 } else {
-                    PythonList myData = tolist();
+                    var myData = __copy__();
 
                     for (int i = 0; i < (value - 1); i++) {
-                        extend(myData);
+                        ExtendArray(myData);
                     }
                 }
                 return this;
@@ -195,19 +258,35 @@ namespace IronPython.Modules {
                 return _data.CountItems(x);
             }
 
-            public void extend(object? iterable) {
-                if (iterable is array pa) {
-                    if (typecode != pa.typecode) {
-                        throw PythonOps.TypeError("cannot extend with different typecode");
-                    }
-                    int l = pa._data.Count;
-                    for (int i = 0; i < l; i++) {
-                        _data.Add(pa._data[i]);
-                    }
-                    return;
+            private ArrayData<T> GetData<T>() where T: struct { return (ArrayData<T>)_data; }
+
+            private void ExtendArray(array pa) {
+                if (_typeCode != pa._typeCode) {
+                    throw PythonOps.TypeError("can only extend with array of same kind");
                 }
 
-                if (iterable is Bytes bytes) {
+                if (pa._data.Count == 0) return;
+
+                switch (_typeCode) {
+                    case 'b': GetData<sbyte>().AddRange(pa.GetData<sbyte>()); break;
+                    case 'B': GetData<byte>().AddRange(pa.GetData<byte>()); break;
+                    case 'u': GetData<char>().AddRange(pa.GetData<char>()); break;
+                    case 'h': GetData<short>().AddRange(pa.GetData<short>()); break;
+                    case 'H': GetData<ushort>().AddRange(pa.GetData<ushort>()); break;
+                    case 'i': GetData<int>().AddRange(pa.GetData<int>()); break;
+                    case 'I': GetData<uint>().AddRange(pa.GetData<uint>()); break;
+                    case 'l': GetData<int>().AddRange(pa.GetData<int>()); break;
+                    case 'L': GetData<uint>().AddRange(pa.GetData<uint>()); break;
+                    case 'q': GetData<long>().AddRange(pa.GetData<long>()); break;
+                    case 'Q': GetData<ulong>().AddRange(pa.GetData<ulong>()); break;
+                    case 'f': GetData<float>().AddRange(pa.GetData<float>()); break;
+                    case 'd': GetData<double>().AddRange(pa.GetData<double>()); break;
+                    default: throw new InvalidOperationException(); // should never happen
+                }
+            }
+
+            private void ExtendIter(object? iterable) {
+                if (_typeCode == 'B' && iterable is Bytes bytes) {
                     FromBytes(bytes);
                     return;
                 }
@@ -220,6 +299,15 @@ namespace IronPython.Modules {
                 IEnumerator ie = PythonOps.GetEnumerator(iterable);
                 while (ie.MoveNext()) {
                     append(ie.Current);
+                }
+            }
+
+            public void extend(object? iterable) {
+                if (iterable is array pa) {
+                    ExtendArray(pa);
+                }
+                else {
+                    ExtendIter(iterable);
                 }
             }
 
@@ -236,7 +324,7 @@ namespace IronPython.Modules {
                     items.Add(ie.Current);
                 }
 
-                extend(items);
+                ExtendIter(items);
             }
 
             public void fromfile(CodeContext/*!*/ context, [NotNull]PythonIOModule._IOBase f, int n) {
@@ -358,7 +446,7 @@ namespace IronPython.Modules {
                     switch (_typeCode) {
                         case 'b': return (int)((ArrayData<sbyte>)_data)[index];
                         case 'B': return (int)((ArrayData<byte>)_data)[index];
-                        case 'u': return char.ToString(((ArrayData<char>)_data)[index]);
+                        case 'u': return ScriptingRuntimeHelpers.CharToString(((ArrayData<char>)_data)[index]);
                         case 'h': return (int)((ArrayData<short>)_data)[index];
                         case 'H': return (int)((ArrayData<ushort>)_data)[index];
                         case 'i': return ((ArrayData<int>)_data)[index];
@@ -381,11 +469,11 @@ namespace IronPython.Modules {
 
             internal byte[] RawGetItem(int index) {
                 MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode);
+                BinaryWriter bw = new BinaryWriter(ms);
                 switch (_typeCode) {
                     case 'b': bw.Write(((ArrayData<sbyte>)_data)[index]); break;
                     case 'B': bw.Write(((ArrayData<byte>)_data)[index]); break;
-                    case 'u': bw.Write(((ArrayData<char>)_data)[index]); break;
+                    case 'u': WriteBinaryChar(bw, ((ArrayData<char>)_data)[index]); break;
                     case 'h': bw.Write(((ArrayData<short>)_data)[index]); break;
                     case 'H': bw.Write(((ArrayData<ushort>)_data)[index]); break;
                     case 'i': bw.Write(((ArrayData<int>)_data)[index]); break;
@@ -428,7 +516,7 @@ namespace IronPython.Modules {
                     for (int j = start + 1; j < _data.Count; j++, i++) {
                         _data[i] = _data[j];
                     }
-                    for (i = 0; i < stop - start; i++) {
+                    for (i = 0; i < start - stop; i++) {
                         _data.RemoveAt(_data.Count - 1);
                     }
                     return;
@@ -475,7 +563,7 @@ namespace IronPython.Modules {
                     int start, stop, step;
                     index.indices(_data.Count, out start, out stop, out step);
 
-                    array pa = new array(char.ToString(_typeCode));
+                    array pa = new array(ScriptingRuntimeHelpers.CharToString(_typeCode));
                     if (step < 0) {
                         for (int i = start; i > stop; i += step) {
                             pa._data.Add(_data[i]);
@@ -534,32 +622,58 @@ namespace IronPython.Modules {
                 _data = newData;
             }
 
-            public PythonTuple __reduce__() {
-                return PythonOps.MakeTuple(
-                    DynamicHelpers.GetPythonType(this),
-                    PythonOps.MakeTuple(
-                        typecode,
-                        tolist()
-                    ),
-                    null
-                );
-            }
-
             public array __copy__() {
                 return new array(typecode, this);
             }
 
-            public array __deepcopy__([NotNull]array arg) {
-                // we only have simple data so this is the same as a copy
-                return arg.__copy__();
+            public array __deepcopy__(object? memo) {
+                return __copy__();
             }
 
-            public PythonTuple __reduce_ex__(int version) {
-                return __reduce__();
-            }
+            public PythonTuple __reduce_ex__(CodeContext context, int version) {
+                PythonOps.TryGetBoundAttr(context, this, "__dict__", out object dictObject);
+                var dict = dictObject as PythonDictionary;
 
-            public PythonTuple __reduce_ex__() {
-                return __reduce__();
+                if (version < 3) {
+                    return PythonOps.MakeTuple(
+                        DynamicHelpers.GetPythonType(this),
+                        PythonOps.MakeTuple(
+                            typecode,
+                            tolist()
+                        ),
+                        dict
+                    );
+                }
+
+                return PythonOps.MakeTuple(
+                    _array_reconstructor,
+                    PythonOps.MakeTuple(
+                        DynamicHelpers.GetPythonType(this),
+                        typecode,
+                        TypeCodeToMachineFormat(_typeCode),
+                        tobytes()
+                    ),
+                    dict);
+
+                static int TypeCodeToMachineFormat(char typeCode) {
+                    return typeCode switch
+                    {
+                        'b' => 1,
+                        'B' => 0,
+                        'u' => 18,
+                        'h' => 4,
+                        'H' => 2,
+                        'i' => 8,
+                        'I' => 6,
+                        'l' => 8,
+                        'L' => 6,
+                        'q' => 12,
+                        'Q' => 10,
+                        'f' => 14,
+                        'd' => 16,
+                        _ => throw new InvalidOperationException(),// should never happen
+                    };
+                }
             }
 
             private void SliceAssign(int index, object? value) {
@@ -608,12 +722,12 @@ namespace IronPython.Modules {
             }
 
             internal void ToStream(Stream ms) {
-                BinaryWriter bw = new BinaryWriter(ms, Encoding.Unicode);
+                BinaryWriter bw = new BinaryWriter(ms);
                 for (int i = 0; i < _data.Count; i++) {
                     switch (_typeCode) {
                         case 'b': bw.Write(((ArrayData<sbyte>)_data)[i]); break;
                         case 'B': bw.Write(((ArrayData<byte>)_data)[i]); break;
-                        case 'u': bw.Write(((ArrayData<char>)_data)[i]); break;
+                        case 'u': WriteBinaryChar(bw, ((ArrayData<char>)_data)[i]); break;
                         case 'h': bw.Write(((ArrayData<short>)_data)[i]); break;
                         case 'H': bw.Write(((ArrayData<ushort>)_data)[i]); break;
                         case 'i': bw.Write(((ArrayData<int>)_data)[i]); break;
@@ -627,6 +741,10 @@ namespace IronPython.Modules {
                         default: throw new InvalidOperationException(); // should never happen
                     }
                 }
+            }
+
+            private static void WriteBinaryChar(BinaryWriter bw, char c) {
+                bw.Write((ushort)c);
             }
 
             internal byte[] ToByteArray() {
@@ -853,11 +971,7 @@ namespace IronPython.Modules {
                         quote = '\"';
                     }
 
-                    if (_typeCode == 'u') {
-                        sb.Append(", u");
-                    } else {
-                        sb.Append(", ");
-                    }
+                    sb.Append(", ");
                     sb.Append(quote);
 
                     sb.Append(StringOps.ReprEncode(s, quote));

@@ -4,6 +4,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -30,6 +31,8 @@ namespace IronPython.Runtime {
         PythonTuple? SubOffsets { get; }
 
         Bytes ToBytes(int start, int? end);
+
+        Span<byte> ToSpan(int start, int? end);
 
         PythonList ToList(int start, int? end);
     }

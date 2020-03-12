@@ -110,7 +110,7 @@ namespace IronPython.Runtime {
             => _bytes.CountOf(new[] { @byte.ToByteChecked() }, start ?? 0, end ?? Count);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
-            return StringOps.RawDecode(context, _bytes, encoding, errors);
+            return StringOps.RawDecode(context, this, encoding, errors);
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
@@ -898,6 +898,10 @@ namespace IronPython.Runtime {
             }
 
             return this[new Slice(start, end)];
+        }
+
+        Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
+            return _bytes.AsSpan(start, end ?? _bytes.Length);
         }
 
         PythonList IBufferProtocol.ToList(int start, int? end) {

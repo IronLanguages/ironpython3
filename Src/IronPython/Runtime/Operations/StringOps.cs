@@ -1714,15 +1714,15 @@ namespace IronPython.Runtime.Operations {
         internal static string NormalizeEncodingName(string name) =>
             name?.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
 
-        internal static string RawDecode(CodeContext/*!*/ context, IList<byte> s, string encoding, string errors) {
+        internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string errors) {
             if (TryGetEncoding(encoding, out Encoding e)) {
-                return DoDecode(context, s, errors, encoding, e);
+                return DoDecode(context, data.ToSpan(0, null), errors, encoding, e);
             }
 
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupTextEncoding(context, encoding, "codecs.decode()");
             if (codecTuple != null) {
-                return UserDecode(codecTuple, s, errors);
+                return UserDecode(codecTuple, data, errors);  // TODO: UserDecode should be given MemoryView
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
@@ -1732,13 +1732,9 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 #endif
 
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
-            => DoDecode(context, s, errors, encoding, e, s.Count, out _);
-
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, int numBytes, out int numConsumed) {
-            byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.UnsafeByteArray : s.ToArray());
-            int start = GetStartingOffset(e, bytes);
-            int length = numBytes - start;
+        internal static string DoDecode(CodeContext context, ReadOnlySpan<byte> data, string errors, string encoding, Encoding e) {
+            int start = GetStartingOffset(e, data);
+            int length = data.Length - start;
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1758,7 +1754,9 @@ namespace IronPython.Runtime.Operations {
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
-                    e = setFallback(e, new PythonDecoderFallback(encoding, s,
+                    e = setFallback(e, new PythonDecoderFallback(encoding,
+                        //data.Slice(start),          // COMPILE ERROR: fallback should be given non-ref srtuct or object
+                        data.Slice(start).ToArray(),  // data copy
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
@@ -1767,7 +1765,6 @@ namespace IronPython.Runtime.Operations {
             string decoded = string.Empty;
             try {
                 unsafe {
-                    ReadOnlySpan<byte> data = s.ToArray();
                     fixed (byte* bp = data.Slice(start)) {
                         if (bp != null) {
                             //decoded = e.GetString(bp, 0, length); // TODO: enable after upgrade to .NET 4.6
@@ -1785,13 +1782,9 @@ namespace IronPython.Runtime.Operations {
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                byte[] inputBytes = new byte[length];
-                Array.Copy(bytes, start, inputBytes, 0, length);
-                ex.Data["object"] = Bytes.Make(inputBytes);
+                ex.Data["object"] = Bytes.Make(data.Slice(start).ToArray());
                 throw;
             }
-
-            numConsumed = start + length;
 
             return decoded;
         }
@@ -1799,7 +1792,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Gets the starting offset checking to see if the incoming bytes already include a preamble.
         /// </summary>
-        private static int GetStartingOffset(Encoding e, byte[] bytes) {
+        private static int GetStartingOffset(Encoding e, in ReadOnlySpan<byte> bytes) {
             byte[] preamble = e.GetPreamble();
             return bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
@@ -1885,8 +1878,9 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("'{0}' encoder returned '{1}' instead of 'bytes'; use codecs.encode() to encode to arbitrary types", encoding, DynamicHelpers.GetPythonType(res[0]).Name);
         }
 
-        private static string UserDecode(PythonTuple codecInfo, IList<byte> data, string errors) {
-            var res = CallUserDecodeOrEncode(codecInfo[1], data, errors);
+        private static string UserDecode(PythonTuple codecInfo, IBufferProtocol data, string errors) {
+            // TODO: Convert to MemoryView once MemoryView implements IBufferProtocol and decoding functions in _codecs use proper signature
+            var res = CallUserDecodeOrEncode(codecInfo[1], data.ToBytes(0, null), errors);
             return Converter.ConvertToString(res[0]);
         }
 

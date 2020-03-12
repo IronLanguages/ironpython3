@@ -269,13 +269,13 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, _bytes, encoding, errors);
+                return StringOps.RawDecode(context, this, encoding, errors);
             }
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+                return StringOps.DoDecode(context, ((IBufferProtocol)this).ToSpan(0, null), errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
             }
         }
 
@@ -1471,6 +1471,10 @@ namespace IronPython.Runtime {
             }
 
             return new Bytes((ByteArray)this[new Slice(start, end)]);
+        }
+
+        Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
+            return ((IBufferProtocol)this).ToBytes(start, end).UnsafeByteArray.AsSpan();
         }
 
         PythonList IBufferProtocol.ToList(int start, int? end) {

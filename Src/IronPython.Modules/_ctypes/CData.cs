@@ -148,6 +148,10 @@ namespace IronPython.Modules {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
+            Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
+                return GetBytes(start, NativeType.Size);
+            }
+
             PythonList IBufferProtocol.ToList(int start, int? end) {
                 return new PythonList(((IBufferProtocol)this).ToBytes(start, end));
             }

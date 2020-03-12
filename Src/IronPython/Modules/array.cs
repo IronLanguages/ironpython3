@@ -1318,6 +1318,10 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tobytes();
             }
 
+            Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
+                return ((IBufferProtocol)this).ToBytes(start, end).UnsafeByteArray.AsSpan();
+            }
+
             PythonList IBufferProtocol.ToList(int start, int? end) {
                 if (start == 0 && end == null) {
                     return tolist();

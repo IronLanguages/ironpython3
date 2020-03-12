@@ -114,9 +114,10 @@ namespace IronPython.Modules {
 
         public static object decode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null, [NotNull]string errors = "strict") {
             if (encoding == null) {
-                if (obj is IList<byte> bytesLikeObj) {
+                if (obj is IList<byte> bytesLikeObj) { // TODO: replace IList with IBufferProtocol
+                    var span = bytesLikeObj.ToArray().AsSpan(); // TODO: use IBufferProtocol.ToSpan
                     PythonContext lc = context.LanguageContext;
-                    return StringOps.DoDecode(context, bytesLikeObj, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
+                    return StringOps.DoDecode(context, span, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
                 } else {
                     throw PythonOps.TypeError("expected bytes-like object, got {0}", PythonTypeOps.GetName(obj));
                 }
@@ -257,15 +258,18 @@ namespace IronPython.Modules {
         }
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+            var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
+            var encoding = StringOps.CodecsInfo.Codecs["raw_unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.RawDecode(context, input, "raw-unicode-escape", errors),
+                StringOps.DoDecode(context, span, errors, "raw-unicode-escape", encoding),
                 input.Count
             );
         }
 
         public static PythonTuple raw_unicode_escape_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
+            var encoding = StringOps.CodecsInfo.Codecs["raw_unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.RawEncode(context, input, "raw-unicode-escape", errors),
+                StringOps.DoEncode(context, input, errors, "raw-unicode-escape", encoding, includePreamble: false),
                 input.Length
             );
         }
@@ -281,15 +285,18 @@ namespace IronPython.Modules {
         }
 
         public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+            var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
+            var encoding = StringOps.CodecsInfo.Codecs["unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.RawDecode(context, input, "unicode-escape", errors),
+                StringOps.DoDecode(context, span, errors, "unicode-escape", encoding),
                 input.Count
             );
         }
 
         public static PythonTuple unicode_escape_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
+            var encoding = StringOps.CodecsInfo.Codecs["unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.RawEncode(context, input, "unicode-escape", errors),
+                StringOps.DoEncode(context, input, errors, "unicode-escape", encoding, includePreamble: false),
                 input.Length
             );
         }
@@ -575,8 +582,9 @@ namespace IronPython.Modules {
         #region Private implementation
 
         private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesConversion]IList<byte> input, string? errors, int numBytes) {
-            var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, numBytes, out int numConsumed);
-            return Tuple.Create(decoded, numConsumed);
+            ReadOnlySpan<byte> data = input.ToArray().AsSpan(0, numBytes); // TODO: remove when signature changed
+            var decoded = StringOps.DoDecode(context, data, errors, encodingName, encoding);
+            return Tuple.Create(decoded, data.Length);
         }
 
         private static Tuple<Bytes, int> DoEncode(CodeContext context, string encodingName, Encoding encoding, string input, string? errors, bool includePreamble = false) {

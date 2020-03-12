@@ -35,7 +35,7 @@
 
   <Target Name="CopyRowanTestFiles" AfterTargets="AfterBuild">
     <ItemGroup>
-      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\$(TargetFramework)\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net46' " />
+      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\net45\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net46' " />
       <RowanTestFiles Include="..\DLR\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net46' " />
     </ItemGroup>
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />

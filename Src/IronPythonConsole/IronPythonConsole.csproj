@@ -34,6 +34,9 @@
 
   <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) ">
     <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <LateStageitem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
   </ItemGroup>
 

@@ -5,7 +5,7 @@
   <metadata>
     <id>ironpython3</id>
     <version>3.4.0</version>
-    <packageSourceUrl>https://github.com/IronLanguages/ironpython2/blob/master/Package/choco/IronPython.Choco.nuspec</packageSourceUrl>
+    <packageSourceUrl>https://github.com/IronLanguages/ironpython3/blob/master/Package/choco/IronPython.Choco.nuspec</packageSourceUrl>
     <title>IronPython3</title>
     <authors>IronPython Contributors,Microsoft</authors>
     <owners>IronPython Community</owners>
@@ -19,8 +19,8 @@
     <mailingListUrl>https://ironpython.groups.io/g/users</mailingListUrl>
   </metadata>
   <files>
-    <file src="$STAGEDIR$\net45\*.dll;$STAGEDIR$\net45\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
-    <file src="$STAGEDIR$\net45\DLLs\**" target="DLLs" exclude="**\*.xml" />
+    <file src="$STAGEDIR$\net46\*.dll;$STAGEDIR$\net46\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
+    <file src="$STAGEDIR$\net46\DLLs\**" target="DLLs" exclude="**\*.xml" />
     <file src="$STAGEDIR$\Lib\**" target="Lib" />
     <file src="$STAGEDIR$\LICENSE;$STAGEDIR$\README.md" />
     <file src="tools\*" target="tools" />

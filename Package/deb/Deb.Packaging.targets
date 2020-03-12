@@ -12,8 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ApplicationFiles Include="$(StageDir)/net45/*.exe" />
-      <ApplicationFiles Include="$(StageDir)/net45/**/*.dll" Exclude="IronPythonTest.dll" />
+      <ApplicationFiles Include="$(StageDir)/net46/*.exe" />
+      <ApplicationFiles Include="$(StageDir)/net46/**/*.dll" Exclude="IronPythonTest.dll" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <!-- Build the application deb -->
-    <Exec Command="chmod 777 $(StageDir)/net45/*.exe" />
+    <Exec Command="chmod 777 $(StageDir)/net46/*.exe" />
     <Exec Command="rm -rf $(PackageTempFolder)" />
     <Exec Command="mkdir -p $(PackageTempFolder)/DEBIAN" />
     <Exec Command="cp $(PackageDebFolder)/DEBIAN/* $(PackageTempFolder)/DEBIAN"/>
@@ -37,8 +37,8 @@
     <Exec Command="dos2unix $(PackageTempFolder)/DEBIAN/control"/>
 
     <Copy SourceFiles="@(ScriptFiles)" DestinationFolder="$(PackageTempFolder)/usr/bin/"/>
-    <Copy SourceFiles="@(ApplicationFiles)" DestinationFolder="$(PackageTempFolder)/usr/share/ironpython2.7/%(ApplicationFiles.RecursiveDir)"/>
-    <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(PackageTempFolder)/usr/lib/ironpython2.7/%(StdLibFiles.RecursiveDir)"/>
+    <Copy SourceFiles="@(ApplicationFiles)" DestinationFolder="$(PackageTempFolder)/usr/share/ironpython3.4/%(ApplicationFiles.RecursiveDir)"/>
+    <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(PackageTempFolder)/usr/lib/ironpython3.4/%(StdLibFiles.RecursiveDir)"/>
 
     <Exec Command="fakeroot dpkg-deb -v --build $(PackageTempFolder)"/>
     <Copy 

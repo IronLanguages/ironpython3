@@ -22,7 +22,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Build.proj = Build.proj
 		CurrentVersion.props = CurrentVersion.props
 		Directory.Build.props = Directory.Build.props
-		global.json = global.json
 		IronPython.ruleset = IronPython.ruleset
 		LICENSE = LICENSE
 		make.ps1 = make.ps1
@@ -35,7 +34,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB-40C6-41A6-83DA-3203A4DCEC19}"
 	ProjectSection(SolutionItems) = preProject
 		Build\After.targets = Build\After.targets
-		Build\net45.props = Build\net45.props
+		Build\net46.props = Build\net46.props
 		Build\netcoreapp2.1.props = Build\netcoreapp2.1.props
 		Build\netcoreapp3.1.props = Build\netcoreapp3.1.props
 		Build\netstandard2.0.props = Build\netstandard2.0.props
@@ -67,6 +66,37 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonConsole32", "Src\IronPythonConsole32\IronPythonConsole32.csproj", "{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonAnalyzer", "IronPythonAnalyzer\IronPythonAnalyzer\IronPythonAnalyzer.csproj", "{DA3415F3-6922-42D0-93D7-BEE2E8603A18}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{EA550FD8-2241-4131-8292-619D009E0199}"
+	ProjectSection(SolutionItems) = preProject
+		Package\choco\Choco.Packaging.targets = Package\choco\Choco.Packaging.targets
+		Package\choco\IronPython.nuspec = Package\choco\IronPython.nuspec
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{01CE1AE6-CD7F-491B-8150-58CD738B20AC}"
+	ProjectSection(SolutionItems) = preProject
+		Package\pkg\Pkg.Packaging.targets = Package\pkg\Pkg.Packaging.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deb", "deb", "{676093FF-CB44-4BD5-B83C-A28FE88D5017}"
+	ProjectSection(SolutionItems) = preProject
+		Package\deb\Deb.Packaging.targets = Package\deb\Deb.Packaging.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "zip", "zip", "{8FC07B92-D2AC-4921-9E97-A92A84D2B461}"
+	ProjectSection(SolutionItems) = preProject
+		Package\zip\Zip.Packaging.targets = Package\zip\Zip.Packaging.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msi", "msi", "{450F93D5-DF02-4C04-960B-AE7E454668AA}"
+	ProjectSection(SolutionItems) = preProject
+		Package\msi\Dlr.wxs = Package\msi\Dlr.wxs
+		Package\msi\IronPython.Installer.wixproj = Package\msi\IronPython.Installer.wixproj
+		Package\msi\IronPython.wxs = Package\msi\IronPython.wxs
+		Package\msi\Msi.Packaging.targets = Package\msi\Msi.Packaging.targets
+		Package\msi\Product.wxs = Package\msi\Product.wxs
+		Package\msi\Version.wxi = Package\msi\Version.wxi
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -143,6 +173,11 @@ Global
 		{BEE737B9-18D5-48D9-8672-9A896213C98B} = {60836ADE-CAB7-4587-B6FB-8C4FEB872752}
 		{CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
 		{EE77D917-27F7-4E54-B72F-C8CEE4AEDCAA} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
+		{EA550FD8-2241-4131-8292-619D009E0199} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
+		{01CE1AE6-CD7F-491B-8150-58CD738B20AC} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
+		{676093FF-CB44-4BD5-B83C-A28FE88D5017} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
+		{8FC07B92-D2AC-4921-9E97-A92A84D2B461} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
+		{450F93D5-DF02-4C04-960B-AE7E454668AA} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {981EA700-AB4F-462F-96D7-F35FAAAA7E89}

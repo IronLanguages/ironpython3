@@ -152,11 +152,12 @@ class DynamicRegressionTest(IronPythonTestCase):
         f.close()
 
         cp20519_vb_exename  = os.path.join(self.temporary_dir, "cp20519_vb.exe")
-        compile_cmd = "/target:exe /out:%s %s /reference:%s /reference:%s /reference:%s" % (cp20519_vb_exename,
+        compile_cmd = "/target:exe /out:%s %s /reference:%s /reference:%s /reference:%s /reference:%s" % (cp20519_vb_exename,
                                                                             cp20519_vb_filename,
                                                                             os.path.join(sys.exec_prefix, "IronPython.dll"),
                                                                             os.path.join(sys.exec_prefix, "Microsoft.Scripting.dll"),
-                                                                            os.path.join(sys.exec_prefix, "Microsoft.Dynamic.dll"))
+                                                                            os.path.join(sys.exec_prefix, "Microsoft.Dynamic.dll"),
+                                                                            os.path.join(sys.exec_prefix, "System.Memory.dll"))
         self.assertEqual(self.run_vbc(compile_cmd), 0)
         for x in ["IronPython.dll", "Microsoft.Scripting.dll", "Microsoft.Dynamic.dll", "System.Memory.dll"]:
             System.IO.File.Copy(os.path.join(sys.exec_prefix, x), os.path.join(self.temporary_dir, x), True)

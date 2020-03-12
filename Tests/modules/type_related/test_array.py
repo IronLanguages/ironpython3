@@ -11,6 +11,9 @@ import unittest
 
 from iptest import is_cli, is_mono, run_test
 
+if not is_cli:
+    long = int
+
 class ArrayTest(unittest.TestCase):
     def test_ArrayType(self):
         self.assertEqual(array.ArrayType,
@@ -222,7 +225,8 @@ class ArrayTest(unittest.TestCase):
         TODO: revisit
         '''
         x = array.array('i', [1,2,3])
-        self.assertEqual(repr(x.__reduce__()), "(<class 'array.array'>, ('i', [1, 2, 3]), None)")
+        with self.assertRaises(TypeError):
+            x.__reduce__()
 
     def test_array___reduce_ex__(self):
         '''
@@ -230,7 +234,8 @@ class ArrayTest(unittest.TestCase):
         '''
         x = array.array('i', [1,2,3])
         self.assertEqual(repr(x.__reduce_ex__(1)), "(<class 'array.array'>, ('i', [1, 2, 3]), None)")
-        self.assertEqual(repr(x.__reduce_ex__()), "(<class 'array.array'>, ('i', [1, 2, 3]), None)")
+        with self.assertRaises(TypeError):
+            x.__reduce_ex__()
 
     def test_array___repr__(self):
         '''
@@ -419,7 +424,7 @@ class ArrayTest(unittest.TestCase):
         test_cases = {
                         ('b', b"a") : "array('b', [97])",
                         ('B', b"a") : "array('B', [97])",
-                        ('u', u"a") : "array('u', u'a')",
+                        ('u', u"a") : "array('u', 'a')",
                         ('h', b"\x12\x34") : "array('h', [13330])",
                         ('H', b"\x12\x34") : "array('H', [13330])",
                         ('i', b"\x12\x34\x45\x67") : "array('i', [1732588562])",
@@ -524,6 +529,5 @@ class ArrayTest(unittest.TestCase):
         a = array.array('b', b'abc')
         del a[0:1]
         self.assertEqual(a, array.array('b', b'bc'))
-
 
 run_test(__name__)

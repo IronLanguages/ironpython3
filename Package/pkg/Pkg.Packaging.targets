@@ -15,15 +15,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ApplicationFiles Include="$(StageDir)/net45/*.exe" />
-      <ApplicationFiles Include="$(StageDir)/net45/*.dll" Exclude="IronPythonTest.dll" />      
+      <ApplicationFiles Include="$(StageDir)/net46/*.exe" />
+      <ApplicationFiles Include="$(StageDir)/net46/*.dll" Exclude="IronPythonTest.dll" />
     </ItemGroup>
 
     <ItemGroup>
-      <DLLFiles Include="$(StageDir)/net45/DLLs/*.dll" />
+      <DLLFiles Include="$(StageDir)/net46/DLLs/*.dll" />
     </ItemGroup>
 
-    <Exec Command="chmod 777 $(StageDir)/net45/*.exe" />
+    <Exec Command="chmod 777 $(StageDir)/net46/*.exe" />
     <Exec Command="rm -rf $(PackageTempFolder)" />
     <Exec Command="mkdir -p $(PackageTempFolder)" />
 
@@ -38,7 +38,7 @@
     <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(PackageLayoutRootDir)/lib/%(StdLibFiles.RecursiveDir)"/>
     <Copy SourceFiles="@(DLLFiles)" DestinationFolder="$(PackageLayoutRootDir)/DLLs" />
 
-    <Exec Command="pkgbuild --root $(PackageTempFolder) --identifier 'org.dotnet.ironpython27' --version '$(PackageVersion)' $(PackageDir)/IronPython-$(PackageVersion).pkg" />
+    <Exec Command="pkgbuild --root $(PackageTempFolder) --identifier 'org.dotnet.ironpython34' --version '$(PackageVersion)' $(PackageDir)/IronPython-$(PackageVersion).pkg" />
 
     <!-- cleanup the directory -->
     <Exec Command="rm -rf $(PackageTempFolder)" />

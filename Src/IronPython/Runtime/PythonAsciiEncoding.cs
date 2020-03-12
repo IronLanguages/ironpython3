@@ -26,16 +26,7 @@ namespace IronPython.Runtime {
         }
 
         internal PythonAsciiEncoding(EncoderFallback encoderFallback, DecoderFallback decoderFallback)
-#if !NET45
-            // base(0, encoderFallback, decoderFallback) publicly accessible only in .NET Framework 4.6 and up
-            : base(0, encoderFallback, decoderFallback) {
-#else
-            : base() {
-            // workaround for lack of proper base constructor access - implementation dependent
-            typeof(Encoding).GetField("encoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(this, encoderFallback);
-            typeof(Encoding).GetField("decoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(this, decoderFallback);
-#endif
-        }
+            : base(0, encoderFallback, decoderFallback) { }
 
         internal static Encoding MakeNonThrowing() {
             Encoding enc;

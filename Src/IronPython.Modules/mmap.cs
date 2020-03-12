@@ -910,11 +910,7 @@ namespace IronPython.Modules {
         #endregion
 
         private static MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) {
-#if NET45
-            return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, null, inheritability, leaveOpen);
-#else
             return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, inheritability, leaveOpen);
-#endif
         }
     }
 }

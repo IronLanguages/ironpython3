@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net46</TargetFrameworks>
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonConsole</RootNamespace>

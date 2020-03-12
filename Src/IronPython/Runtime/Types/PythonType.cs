@@ -2371,7 +2371,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
             
             foreach (Type iface in interfaces) {
-#if NET45
+#if NET46
                 // causes failures on Mono: https://github.com/mono/mono/issues/14712
                 if (iface == typeof(System.Runtime.InteropServices._Type) || iface == typeof(System.Runtime.InteropServices._MethodInfo)) {
                     nonCollidingInterfaces.Remove(iface);

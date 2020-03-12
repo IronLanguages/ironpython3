@@ -44,6 +44,16 @@
         <File Id="README.md" />
       </Component>
 
+      <Component>
+        <File Id="System.Buffers.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Buffers.dll" />
+      </Component>
+      <Component>
+        <File Id="System.Memory.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Memory.dll" />
+      </Component>
+      <Component>
+        <File Id="System.Runtime.CompilerServices.Unsafe.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
+      </Component>
+
       <Component Guid="{B5D964A4-37EB-4A59-9D63-726DB1F84E5E}">
         <File Id="LICENSE" KeyPath="yes" />
       </Component>
@@ -97,6 +107,9 @@
       <ComponentRef Id="ipyw.exe"/>
       <ComponentRef Id="ipyc.exe"/>
       <ComponentRef Id="README.md"/>
+      <ComponentRef Id="System.Buffers.dll" />
+      <ComponentRef Id="System.Memory.dll" />
+      <ComponentRef Id="System.Runtime.CompilerServices.Unsafe.dll" />
       <ComponentRef Id="LICENSE"/>
       <ComponentRef Id="InstallationKey"/>
       <ComponentRef Id="VSNet45ReferenceAssemblyKey"/>

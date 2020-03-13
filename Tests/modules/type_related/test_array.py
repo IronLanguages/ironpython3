@@ -32,10 +32,9 @@ class ArrayTest(unittest.TestCase):
         pass
 
     def test_array___contains__(self):
-        '''
-        TODO
-        '''
-        pass
+        a = array.array('b', (1,))
+        self.assertNotIn(object(), a)
+        self.assertIn(1, a)
 
     def test_array___copy__(self):
         '''
@@ -304,10 +303,9 @@ class ArrayTest(unittest.TestCase):
         pass
 
     def test_array_count(self):
-        '''
-        TODO
-        '''
-        pass
+        a = array.array('b', (1,)*4)
+        self.assertEqual(a.count(1), 4)
+        self.assertEqual(a.count(object()), 0)
 
     def test_array_extend(self):
         '''
@@ -343,10 +341,11 @@ class ArrayTest(unittest.TestCase):
         self.assertEqual(a.tolist(), [u"a"]*20 + [u"b"]*100)
 
     def test_array_index(self):
-        '''
-        TODO
-        '''
-        pass
+        a = array.array('b', (1,))
+        with self.assertRaises(ValueError):
+            a.remove(object())
+        self.assertEqual(a.index(1), 0)
+
 
     def test_array_insert(self):
         '''
@@ -373,10 +372,11 @@ class ArrayTest(unittest.TestCase):
         pass
 
     def test_array_remove(self):
-        '''
-        TODO
-        '''
-        pass
+        a = array.array('b', (1,))
+        with self.assertRaises(ValueError):
+            a.remove(object())
+        a.remove(1)
+        self.assertEqual(len(a), 0)
 
     def test_array_reverse(self):
         '''
@@ -397,7 +397,6 @@ class ArrayTest(unittest.TestCase):
         pass
 
     def test_array_tostring(self):
-        import array
         self.assertEqual(array.array('u', u'abc').tostring(), b'a\x00b\x00c\x00')
 
     def test_array_tounicode(self):

@@ -26,6 +26,7 @@ except struct.error:
 
 sizeof_wchar = array.array('u').itemsize
 
+
 class ArraySubclass(array.array):
     pass
 
@@ -822,6 +823,7 @@ class BaseTest:
                     L[start:stop:step] = data
                     a[start:stop:step] = array.array(self.typecode, data)
                     self.assertEqual(a, array.array(self.typecode, L))
+
                     del L[start:stop:step]
                     del a[start:stop:step]
                     self.assertEqual(a, array.array(self.typecode, L))

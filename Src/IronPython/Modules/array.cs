@@ -257,13 +257,7 @@ namespace IronPython.Modules {
                 FromStream(ms);
             }
 
-            public int count(object? x) {
-                if (x == null) return 0;
-
-                return _data.CountItems(x);
-            }
-
-            private ArrayData<T> GetData<T>() where T : struct { return (ArrayData<T>)_data; }
+            public int count(object? x) => _data.CountItems(x);
 
             private void ExtendArray(array pa) {
                 if (_typeCode != pa._typeCode) {
@@ -273,19 +267,19 @@ namespace IronPython.Modules {
                 if (pa._data.Count == 0) return;
 
                 switch (_typeCode) {
-                    case 'b': GetData<sbyte>().AddRange(pa.GetData<sbyte>()); break;
-                    case 'B': GetData<byte>().AddRange(pa.GetData<byte>()); break;
-                    case 'u': GetData<char>().AddRange(pa.GetData<char>()); break;
-                    case 'h': GetData<short>().AddRange(pa.GetData<short>()); break;
-                    case 'H': GetData<ushort>().AddRange(pa.GetData<ushort>()); break;
-                    case 'i': GetData<int>().AddRange(pa.GetData<int>()); break;
-                    case 'I': GetData<uint>().AddRange(pa.GetData<uint>()); break;
-                    case 'l': GetData<int>().AddRange(pa.GetData<int>()); break;
-                    case 'L': GetData<uint>().AddRange(pa.GetData<uint>()); break;
-                    case 'q': GetData<long>().AddRange(pa.GetData<long>()); break;
-                    case 'Q': GetData<ulong>().AddRange(pa.GetData<ulong>()); break;
-                    case 'f': GetData<float>().AddRange(pa.GetData<float>()); break;
-                    case 'd': GetData<double>().AddRange(pa.GetData<double>()); break;
+                    case 'b': ((ArrayData<sbyte>)_data).AddRange((ArrayData<sbyte>)pa._data); break;
+                    case 'B': ((ArrayData<byte>)_data).AddRange((ArrayData<byte>)pa._data); break;
+                    case 'u': ((ArrayData<char>)_data).AddRange((ArrayData<char>)pa._data); break;
+                    case 'h': ((ArrayData<short>)_data).AddRange((ArrayData<short>)pa._data); break;
+                    case 'H': ((ArrayData<ushort>)_data).AddRange((ArrayData<ushort>)pa._data); break;
+                    case 'i': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
+                    case 'I': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
+                    case 'l': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
+                    case 'L': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
+                    case 'q': ((ArrayData<long>)_data).AddRange((ArrayData<long>)pa._data); break;
+                    case 'Q': ((ArrayData<ulong>)_data).AddRange((ArrayData<ulong>)pa._data); break;
+                    case 'f': ((ArrayData<float>)_data).AddRange((ArrayData<float>)pa._data); break;
+                    case 'd': ((ArrayData<double>)_data).AddRange((ArrayData<double>)pa._data); break;
                     default: throw new InvalidOperationException(); // should never happen
                 }
             }
@@ -437,7 +431,6 @@ namespace IronPython.Modules {
             }
 
             public void remove(object? value) {
-                if (value == null) throw PythonOps.ValueError("got None, expected value");
                 if (!_data.Remove(value)) throw PythonOps.ValueError("couldn't find value to remove");
             }
 

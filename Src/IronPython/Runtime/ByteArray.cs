@@ -35,27 +35,27 @@ namespace IronPython.Runtime {
     /// (default=0)
     /// </summary>
     [PythonType("bytearray")]
-    public class ByteArray : IList<byte>, ICodeFormattable, IBufferProtocol {
-        private List<byte> _bytes;
+    public class ByteArray : IList<byte>, IReadOnlyList<byte>, ICodeFormattable, IBufferProtocol {
+        private ArrayData<byte> _bytes;
 
         public ByteArray() {
-            _bytes = new List<byte>(0);
+            _bytes = new ArrayData<byte>(0);
         }
 
-        private ByteArray(List<byte> bytes) {
+        private ByteArray(ArrayData<byte> bytes) {
             _bytes = bytes;
         }
 
         internal ByteArray(IEnumerable<byte> bytes) {
-            _bytes = new List<byte>(bytes);
+            _bytes = new ArrayData<byte>(bytes);
         }
 
         public void __init__() {
-            _bytes = new List<byte>();
+            _bytes = new ArrayData<byte>();
         }
 
         public void __init__(int source) {
-            _bytes = new List<byte>(source);
+            _bytes = new ArrayData<byte>(source);
             for (int i = 0; i < source; i++) {
                 _bytes.Add(0);
             }
@@ -66,7 +66,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]IList<byte> source) {
-            _bytes = new List<byte>(source);
+            _bytes = new ArrayData<byte>(source);
         }
 
         public void __init__(object? source) {
@@ -78,14 +78,14 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, [NotNull]string source, [NotNull]string encoding, [NotNull]string errors = "strict") {
-            _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
+            _bytes = new ArrayData<byte>(StringOps.encode(context, source, encoding, errors));
         }
 
         internal static ByteArray Make(List<byte> bytes) {
             return new ByteArray(bytes);
         }
 
-        internal List<byte> UnsafeByteList {
+        internal ArrayData<byte> UnsafeByteList {
             [PythonHidden]
             get => _bytes;
         }
@@ -185,7 +185,7 @@ namespace IronPython.Runtime {
 
         public void reverse() {
             lock (this) {
-                List<byte> reversed = new List<byte>();
+                var reversed = new ArrayData<byte>();
                 for (int i = _bytes.Count - 1; i >= 0; i--) {
                     reversed.Add(_bytes[i]);
                 }
@@ -1175,7 +1175,7 @@ namespace IronPython.Runtime {
                 if (start > stop) {
                     int newSize = Count + other.Count;
 
-                    List<byte> newData = new List<byte>(newSize);
+                    var newData = new ArrayData<byte>(newSize);
                     int reading = 0;
                     for (reading = 0; reading < start; reading++) {
                         newData.Add(_bytes[reading]);
@@ -1200,7 +1200,7 @@ namespace IronPython.Runtime {
                     // will copy the data array and replace it all at once.
                     int newSize = Count - (stop - start) + other.Count;
 
-                    List<byte> newData = new List<byte>(newSize);
+                    var newData = new ArrayData<byte>(newSize);
                     for (int i = 0; i < start; i++) {
                         newData.Add(_bytes[i]);
                     }
@@ -1275,6 +1275,12 @@ namespace IronPython.Runtime {
                 _bytes[index] = value;
             }
         }
+
+        #endregion
+
+        #region IReadOnlyList<byte> Members
+
+        byte IReadOnlyList<byte>.this[int index] => _bytes[index];
 
         #endregion
 

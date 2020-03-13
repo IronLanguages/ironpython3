@@ -211,7 +211,7 @@ class BaseTest:
         bi = a.buffer_info()
         self.assertIsInstance(bi, tuple)
         self.assertEqual(len(bi), 2)
-        self.assertIsInstance(bi[0], int)
+        self.assertIsInstance(bi[0], (int, long) if sys.implementation.name == "ironpython" else int)
         self.assertIsInstance(bi[1], int)
         self.assertEqual(bi[1], len(a))
 
@@ -394,7 +394,7 @@ class BaseTest:
         self.assertEqual(a, b)
 
     def test_tofromstring(self):
-        nb_warnings = 4
+        nb_warnings = 2 if sys.implementation.name == "ironpython" else 4 # https://github.com/IronLanguages/ironpython3/issues/767
         with warnings.catch_warnings(record=True) as r:
             warnings.filterwarnings("always",
                                     message=r"(to|from)string\(\) is deprecated",
@@ -952,6 +952,7 @@ class BaseTest:
         l.append(l)
         gc.collect()
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: https://github.com/IronLanguages/ironpython3/issues/767")
     def test_buffer(self):
         a = array.array(self.typecode, self.example)
         m = memoryview(a)
@@ -992,6 +993,7 @@ class BaseTest:
         p = weakref.proxy(s)
         self.assertEqual(p.tobytes(), s.tobytes())
         s = None
+        import gc; gc.collect() # ironpython requires a GC to release the reference
         self.assertRaises(ReferenceError, len, p)
 
     @unittest.skipUnless(hasattr(sys, 'getrefcount'),
@@ -1004,6 +1006,7 @@ class BaseTest:
             b = array.array('B', range(64))
         self.assertEqual(rc, sys.getrefcount(10))
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: https://github.com/IronLanguages/ironpython3/issues/767")
     def test_subclass_with_kwargs(self):
         # SF bug #1486663 -- this used to erroneously raise a TypeError
         ArraySubclassWithKwargs('b', newarg=1)
@@ -1302,6 +1305,7 @@ class DoubleTest(FPTest, unittest.TestCase):
     typecode = 'd'
     minitemsize = 8
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: https://github.com/IronLanguages/ironpython3/issues/767")
     def test_alloc_overflow(self):
         from sys import maxsize
         a = array.array('d', [-1]*65536)

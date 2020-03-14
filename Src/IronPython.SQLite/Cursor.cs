@@ -5,6 +5,7 @@
 // Copyright (c) Jeff Hardy 2010-2012.
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -352,7 +353,7 @@ namespace IronPython.SQLite
 
                             case Sqlite3.SQLITE_BLOB:
                             default:
-                                converted = new Bytes(Sqlite3.sqlite3_column_blob(this.statement.st, i) ?? new byte[0]); // TODO: avoid creating a copy
+                                converted = new Bytes((Sqlite3.sqlite3_column_blob(this.statement.st, i) ?? new byte[0]).AsSpan()); // TODO: avoid creating a copy
                                 break;
                         }
                     }

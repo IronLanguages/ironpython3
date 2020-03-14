@@ -3357,36 +3357,17 @@ namespace IronPython.Runtime.Operations {
             return DoubleOps.Compare(self, other);
         }
 
-        [Obsolete("Use Bytes(IList<byte>) instead.")]
+        [Obsolete("Use Bytes(IList<byte>) or Bytes(ReadOnlySpan<byte>) instead.")]
         public static Bytes MakeBytes(byte[] bytes) {
-            return new Bytes(bytes);
+            return new Bytes(bytes.AsSpan());
         }
 
         public static byte[] MakeByteArray(this string s) {
-            byte[] ret = new byte[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x100) {
-                    ret[i] = (byte)s[i];
-                } else {
-                    throw PythonOps.UnicodeEncodeError("latin-1", s, i, i + 1, "ordinal not in range(256)");
-                }
-            }
-            return ret;
+            return StringOps.Latin1Encoding.GetBytes(s);
         }
 
         public static string MakeString(this IList<byte> bytes) {
             return MakeString(bytes, bytes.Count);
-        }
-
-        internal static string MakeString(this byte[] preamble, IList<byte> bytes) {
-            char[] chars = new char[preamble.Length + bytes.Count];
-            for (int i = 0; i < preamble.Length; i++) {
-                chars[i] = (char)preamble[i];
-            }
-            for (int i = 0; i < bytes.Count; i++) {
-                chars[i + preamble.Length] = (char)bytes[i];
-            }
-            return new String(chars);
         }
 
         internal static string MakeString(this IList<byte> bytes, int maxBytes) {
@@ -3403,6 +3384,20 @@ namespace IronPython.Runtime.Operations {
                 b.Append((char)bytes[i]);
             }
             return b.ToString();
+        }
+
+        internal static string MakeString(this Span<byte> bytes) {
+            return MakeString((ReadOnlySpan<byte>)bytes);
+        }
+
+        internal static string MakeString(this ReadOnlySpan<byte> bytes) {
+            if (bytes.IsEmpty) {
+                return string.Empty;
+            } else unsafe {
+                fixed (byte* bp = bytes) {
+                    return StringOps.Latin1Encoding.GetString(bp, bytes.Length);
+                }
+            }
         }
 
         /// <summary>

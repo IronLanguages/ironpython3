@@ -37,25 +37,18 @@ namespace IronPython.Runtime {
 
             string result = DoParseString(bytes.AsSpan(start, length), isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler);
 
-            return result ?? bytes.MakeString(start, length);
+            return result ?? bytes.AsSpan(start, length).MakeString();
         }
 
         internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler) {
             string result = DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler);
 
-            if (result == null) {
-                if (bytes.IsEmpty) {
-                    result = string.Empty;
-                } else unsafe {
-                    fixed (byte* bp = bytes) {
-                        result = new string((sbyte*)bp, 0, bytes.Length, Encoding.GetEncoding("iso-8859-1")); // TODO: use Encoding.GetString(byte*, ...)
-                    }
-                }
-            }
-            return result;
+            return result ?? bytes.MakeString();
         }
 
-        private static string DoParseString<T>(ReadOnlySpan<T> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default) where T : IConvertible {
+        private static string DoParseString<T>(ReadOnlySpan<T> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default)
+            where T : unmanaged, IConvertible {
+
             StringBuilder buf = null;
             int i = 0;
             int length = data.Length;
@@ -216,12 +209,22 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static void StringBuilderInit<T>(ref StringBuilder sb, in ReadOnlySpan<T> data, int toCopy) where T : IConvertible {
+        private static void StringBuilderInit<T>(ref StringBuilder sb, in ReadOnlySpan<T> data, int toCopy) where T : unmanaged, IConvertible {
             Debug.Assert(toCopy <= data.Length);
 
             if (sb != null) return;
 
             sb = new StringBuilder(data.Length);
+            unsafe {
+                if (sizeof(T) == sizeof(char)) {
+                    fixed (T* cp = data) {
+                        sb.Append((char*)cp, toCopy);
+                    }
+                    return;
+                }
+            }
+
+            // T is not char
             for (int i = 0; i < toCopy; i++) {
                 sb.Append(data[i].ToChar(null));
             }

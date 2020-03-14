@@ -332,7 +332,7 @@ namespace IronPython.SQLite
                             break;
 
                         case Sqlite3.SQLITE_BLOB:
-                            cur_py_value = new Bytes(Sqlite3.sqlite3_value_blob(cur_value)); // TODO: avoid creating a copy
+                            cur_py_value = new Bytes(Sqlite3.sqlite3_value_blob(cur_value).AsSpan()); // TODO: avoid creating a copy
                             break;
 
                         case Sqlite3.SQLITE_NULL:

@@ -10,13 +10,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
-
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
 
 [assembly: PythonModule("_codecs", typeof(IronPython.Modules.PythonCodecs))]
 namespace IronPython.Modules {

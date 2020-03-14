@@ -671,7 +671,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public PythonTuple __reduce__(CodeContext/*!*/ context) {
-            object iter;
+            object? iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_tuple), _curIndex + 1);
         }

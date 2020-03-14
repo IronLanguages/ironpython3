@@ -3365,8 +3365,8 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Called from generated code, helper to do name lookup
         /// </summary>
-        public static object LookupName(CodeContext/*!*/ context, string name) {
-            object value;
+        public static object? LookupName(CodeContext/*!*/ context, string name) {
+            object? value;
             if (context.TryLookupName(name, out value)) {
                 return value;
             } else if (context.TryLookupBuiltin(name, out value)) {
@@ -3439,16 +3439,16 @@ namespace IronPython.Runtime.Operations {
             return generator.Context;
         }
 
-        public static object GetGlobal(CodeContext/*!*/ context, string name) {
+        public static object? GetGlobal(CodeContext/*!*/ context, string name) {
             return GetVariable(context, name, true, false);
         }
 
-        public static object GetLocal(CodeContext/*!*/ context, string name) {
+        public static object? GetLocal(CodeContext/*!*/ context, string name) {
             return GetVariable(context, name, false, false);
         }
 
-        internal static object GetVariable(CodeContext/*!*/ context, string name, bool isGlobal, bool lightThrow) {
-            object res;
+        internal static object? GetVariable(CodeContext/*!*/ context, string name, bool isGlobal, bool lightThrow) {
+            object? res;
             if (isGlobal) {
                 if (context.TryGetGlobalVariable(name, out res)) {
                     return res;
@@ -3459,7 +3459,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            PythonDictionary builtins = context.GetBuiltinsDict();
+            var builtins = context.GetBuiltinsDict();
             if (builtins != null && builtins.TryGetValue(name, out res)) {
                 return res;
             }
@@ -3471,16 +3471,16 @@ namespace IronPython.Runtime.Operations {
             throw ex;
         }
 
-        public static object RawGetGlobal(CodeContext/*!*/ context, string name) {
-            if (context.TryGetGlobalVariable(name, out object res)) {
+        public static object? RawGetGlobal(CodeContext/*!*/ context, string name) {
+            if (context.TryGetGlobalVariable(name, out object? res)) {
                 return res;
             }
 
             return Uninitialized.Instance;
         }
 
-        public static object RawGetLocal(CodeContext/*!*/ context, string name) {
-            if (context.TryLookupName(name, out object res)) {
+        public static object? RawGetLocal(CodeContext/*!*/ context, string name) {
+            if (context.TryLookupName(name, out object? res)) {
                 return res;
             }
 

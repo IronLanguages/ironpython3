@@ -47,7 +47,7 @@ compressed data whenever possible. When you've finished providing data
 to compress, call the flush() method to finish the compression process,
 and return what is left in the internal buffers.
 ")]
-            public Bytes compress([BytesConversion]IList<byte> data) {
+            public Bytes compress([BytesLike]IList<byte> data) {
                 byte[] bytes = data.ToArrayNoCopy();
 
                 this.bz2Output.Write(bytes, 0, bytes.Length);

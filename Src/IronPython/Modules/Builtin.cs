@@ -214,7 +214,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [BytesLike]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
             var sourceCodeKind = ValidateCompileMode(mode);
 
@@ -338,7 +338,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
+        public static object eval(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
@@ -415,7 +415,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
+        public static void exec(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
             byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.UnsafeByteArray : code.ToArray());
             SourceUnit source = context.LanguageContext.CreateSourceUnit(
                 new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),

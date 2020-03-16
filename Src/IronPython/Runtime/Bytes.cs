@@ -40,10 +40,6 @@ namespace IronPython.Runtime {
             _bytes = bytes.ToArray();
         }
 
-        public Bytes(in ReadOnlySpan<byte> bytes) {
-            _bytes = bytes.ToArray();
-        }
-
         public Bytes([NotNull]PythonList bytes) {
             _bytes = ByteOps.GetBytes(bytes).ToArray();
         }
@@ -64,17 +60,7 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
 
-        private static readonly IReadOnlyList<Bytes> oneByteBytes;
-
-        static Bytes() {
-            var barr256 = new Bytes[256];
-            Span<byte> oneByte = stackalloc byte[1];
-            for (int i = 0; i < 256; i++) {
-                oneByte[0] = unchecked((byte)i);
-                barr256[i] = new Bytes(oneByte);
-            }
-            oneByteBytes = barr256;
-        }
+        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
 
         internal static Bytes FromByte(byte b) {
             return oneByteBytes[b];
@@ -914,8 +900,8 @@ namespace IronPython.Runtime {
             return this[new Slice(start, end)];
         }
 
-        Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
-            return _bytes.AsSpan(start, end ?? _bytes.Length);
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            return _bytes.AsMemory();
         }
 
         PythonList IBufferProtocol.ToList(int start, int? end) {

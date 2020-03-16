@@ -3357,9 +3357,9 @@ namespace IronPython.Runtime.Operations {
             return DoubleOps.Compare(self, other);
         }
 
-        [Obsolete("Use Bytes(IList<byte>) or Bytes(ReadOnlySpan<byte>) instead.")]
+        [Obsolete("Use Bytes(IList<byte>) instead.")]
         public static Bytes MakeBytes(byte[] bytes) {
-            return new Bytes(bytes.AsSpan());
+            return Bytes.Make(bytes.ToArray());
         }
 
         public static byte[] MakeByteArray(this string s) {
@@ -3377,13 +3377,11 @@ namespace IronPython.Runtime.Operations {
         internal static string MakeString(this IList<byte> bytes, int startIdx, int maxBytes) {
             Debug.Assert(startIdx >= 0);
 
-            int bytesToCopy = Math.Min(bytes.Count, maxBytes);
-            StringBuilder b = new StringBuilder(bytesToCopy);
-            int endIdx = startIdx + bytesToCopy;
-            for (int i = startIdx; i < endIdx; i++) {
-                b.Append((char)bytes[i]);
-            }
-            return b.ToString();
+            if (bytes.Count < maxBytes) maxBytes = bytes.Count;
+            if (maxBytes <= 0 || startIdx >= bytes.Count) return string.Empty;
+
+            byte[] byteArr = (bytes is byte[] arr) ? arr : bytes.ToArray();
+            return StringOps.Latin1Encoding.GetString(byteArr, startIdx, maxBytes);
         }
 
         internal static string MakeString(this Span<byte> bytes) {

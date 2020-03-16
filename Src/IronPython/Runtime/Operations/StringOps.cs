@@ -1719,7 +1719,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string errors) {
             if (TryGetEncoding(encoding, out Encoding e)) {
-                return DoDecode(context, data.ToSpan(0, null), errors, encoding, e);
+                return DoDecode(context, data.ToMemory().Span, errors, encoding, e);
             }
 
             // look for user-registered codecs
@@ -1782,7 +1782,7 @@ namespace IronPython.Runtime.Operations {
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                ex.Data["object"] = new Bytes(data.Slice(start));
+                ex.Data["object"] = Bytes.Make(data.Slice(start).ToArray());
                 throw;
             }
 
@@ -1886,6 +1886,8 @@ namespace IronPython.Runtime.Operations {
 
 #if FEATURE_ENCODING
         internal static class CodecsInfo {
+            internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
+            internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
             internal static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, Lazy<Encoding>> MakeCodecsDict() {
@@ -1943,8 +1945,8 @@ namespace IronPython.Runtime.Operations {
                         d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
                 }
 
-                d["raw_unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(true));
-                d["unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(false));
+                d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);
+                d["unicode_escape"] = makeEncodingProxy(() => UnicodeEscapeEncoding);
 
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding>> kvp in d) {

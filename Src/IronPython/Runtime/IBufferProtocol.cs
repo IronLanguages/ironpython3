@@ -32,7 +32,7 @@ namespace IronPython.Runtime {
 
         Bytes ToBytes(int start, int? end);
 
-        Span<byte> ToSpan(int start, int? end);
+        ReadOnlyMemory<byte> ToMemory();
 
         PythonList ToList(int start, int? end);
     }

@@ -130,7 +130,7 @@ namespace IronPython.Modules {
             bool IBufferProtocol.ReadOnly {
                 get { return false; }
             }
-            
+
             [PythonHidden]
             public virtual IList<BigInteger> GetShape(int start, int? end) {
                 return null;
@@ -148,8 +148,8 @@ namespace IronPython.Modules {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
-            Span<byte> IBufferProtocol.ToSpan(int start, int? end) {
-                return GetBytes(start, NativeType.Size);
+            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+                return GetBytes(0, NativeType.Size);
             }
 
             PythonList IBufferProtocol.ToList(int start, int? end) {

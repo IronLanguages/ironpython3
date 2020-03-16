@@ -250,45 +250,45 @@ namespace IronPython.Modules {
         #endregion
 
         #region Raw Unicode Escape Encoding Functions
+#if FEATURE_ENCODING
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
             // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
             // but this is what CPython does. Probably encoding with "raw-unicode-escape" would be more reasonable.
-            return raw_unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
+            return raw_unicode_escape_decode(context, StringOps.DoEncodeUtf8(context, input), errors);
         }
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
             var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
-            var encoding = StringOps.CodecsInfo.Codecs["raw_unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.DoDecode(context, span, errors, "raw-unicode-escape", encoding),
+                StringOps.DoDecode(context, span, errors, "raw-unicode-escape", StringOps.CodecsInfo.RawUnicodeEscapeEncoding),
                 input.Count
             );
         }
 
         public static PythonTuple raw_unicode_escape_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
-            var encoding = StringOps.CodecsInfo.Codecs["raw_unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.DoEncode(context, input, errors, "raw-unicode-escape", encoding, includePreamble: false),
+                StringOps.DoEncode(context, input, errors, "raw-unicode-escape", StringOps.CodecsInfo.RawUnicodeEscapeEncoding, includePreamble: false),
                 input.Length
             );
         }
 
+#endif
         #endregion
 
         #region Unicode Escape Encoding Functions
+#if FEATURE_ENCODING
 
         public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
             // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
             // but this is what CPython does. Probably encoding with "unicode-escape" would be more reasonable.
-            return unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
+            return unicode_escape_decode(context, StringOps.DoEncodeUtf8(context, input), errors);
         }
 
         public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
             var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
-            var encoding = StringOps.CodecsInfo.Codecs["unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.DoDecode(context, span, errors, "unicode-escape", encoding),
+                StringOps.DoDecode(context, span, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding),
                 input.Count
             );
         }
@@ -296,11 +296,12 @@ namespace IronPython.Modules {
         public static PythonTuple unicode_escape_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
             var encoding = StringOps.CodecsInfo.Codecs["unicode_escape"].Value;
             return PythonTuple.MakeTuple(
-                StringOps.DoEncode(context, input, errors, "unicode-escape", encoding, includePreamble: false),
+                StringOps.DoEncode(context, input, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding, includePreamble: false),
                 input.Length
             );
         }
 
+#endif
         #endregion
 
         #region Readbuffer Functions

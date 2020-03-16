@@ -45,11 +45,13 @@ namespace IronPythonAnalyzer {
                 var codeContextSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.CodeContext");
                 var notNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
                 var disallowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.DisallowNullAttribute");
+                var allowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.AllowNullAttribute");
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
                     if (parameterSymbol.Type.IsValueType) continue;
                     if (parameterSymbol.Type.Equals(codeContextSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
-                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))) {
+                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
+                            && !parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(allowNullAttributeSymbol))) {
                             var diagnostic = Diagnostic.Create(Rule1, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }

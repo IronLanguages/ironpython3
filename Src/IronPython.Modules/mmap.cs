@@ -724,7 +724,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void write([BytesConversion]IList<byte> s) {
+            public void write([BytesLike]IList<byte> s) {
                 using (new MmapLocker(this)) {
                     EnsureWritable();
 

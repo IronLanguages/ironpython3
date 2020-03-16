@@ -598,7 +598,7 @@ namespace IronPython.Modules {
                 Parse(context, bytes, isfinal);
             }
 
-            public void Parse(CodeContext context, [BytesConversion]IList<byte> data, bool isfinal = false) {
+            public void Parse(CodeContext context, [BytesLike]IList<byte> data, bool isfinal = false) {
                 CheckParsingDone(context);
 
                 if (data.Any()) {

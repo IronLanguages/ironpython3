@@ -291,7 +291,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesLike]IList<byte> @object) {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
@@ -300,7 +300,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object, string encoding = "utf-8", string errors = "strict") {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesLike]IList<byte> @object, string encoding = "utf-8", string errors = "strict") {
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
                 return new Bytes(@object).decode(context, encoding, errors);

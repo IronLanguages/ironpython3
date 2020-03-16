@@ -36,7 +36,7 @@ namespace IronPython.Runtime {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
-        public Bytes([BytesConversion, NotNull]IList<byte> bytes) {
+        public Bytes([BytesLike, NotNull]IList<byte> bytes) {
             _bytes = bytes.ToArray();
         }
 
@@ -87,7 +87,7 @@ namespace IronPython.Runtime {
 
         public Bytes center(int width) => center(width, (byte)' ');
 
-        public Bytes center(int width, [BytesConversion, NotNull]IList<byte> fillchar)
+        public Bytes center(int width, [BytesLike, NotNull]IList<byte> fillchar)
             => center(width, fillchar.ToByte("center", 2));
 
         private Bytes center(int width, byte fillchar) {
@@ -95,11 +95,11 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public int count([BytesConversion, NotNull]IList<byte> sub) => count(sub, null, null);
+        public int count([BytesLike, NotNull]IList<byte> sub) => count(sub, null, null);
 
-        public int count([BytesConversion, NotNull]IList<byte> sub, int? start) => count(sub, start, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, int? start) => count(sub, start, null);
 
-        public int count([BytesConversion, NotNull]IList<byte> sub, int? start, int? end)
+        public int count([BytesLike, NotNull]IList<byte> sub, int? start, int? end)
             => _bytes.CountOf(sub, start ?? 0, end ?? Count);
 
         public int count(int @byte) => count(@byte, null, null);
@@ -117,15 +117,15 @@ namespace IronPython.Runtime {
             return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
         }
 
-        public bool endswith([BytesConversion, NotNull]IList<byte> suffix) {
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix) {
             return _bytes.EndsWith(suffix);
         }
 
-        public bool endswith([BytesConversion, NotNull]IList<byte> suffix, int start) {
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start) {
             return _bytes.EndsWith(suffix, start);
         }
 
-        public bool endswith([BytesConversion, NotNull]IList<byte> suffix, int start, int end) {
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start, int end) {
             return _bytes.EndsWith(suffix, start, end);
         }
 
@@ -149,11 +149,11 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.ExpandTabs(tabsize));
         }
 
-        public int find([BytesConversion, NotNull]IList<byte> sub) => find(sub, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub) => find(sub, null, null);
 
-        public int find([BytesConversion, NotNull]IList<byte> sub, int? start) => find(sub, start, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, int? start) => find(sub, start, null);
 
-        public int find([BytesConversion, NotNull]IList<byte> sub, int? start, int? end)
+        public int find([BytesLike, NotNull]IList<byte> sub, int? start, int? end)
             => _bytes.Find(sub, start, end);
 
         public int find(int @byte) => find(@byte, null, null);
@@ -167,11 +167,11 @@ namespace IronPython.Runtime {
             return new Bytes(IListOfByteOps.FromHex(@string));
         }
 
-        public int index([BytesConversion, NotNull]IList<byte> sub) => index(sub, null, null);
+        public int index([BytesLike, NotNull]IList<byte> sub) => index(sub, null, null);
 
-        public int index([BytesConversion, NotNull]IList<byte> sub, int? start) => index(sub, start, null);
+        public int index([BytesLike, NotNull]IList<byte> sub, int? start) => index(sub, start, null);
 
-        public int index([BytesConversion, NotNull]IList<byte> sub, int? start, int? end) {
+        public int index([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
             int res = find(sub, start, end);
             if (res == -1) {
                 throw PythonOps.ValueError("subsection not found");
@@ -267,7 +267,7 @@ namespace IronPython.Runtime {
             return ljust(width, (byte)' ');
         }
 
-        public Bytes ljust(int width, [BytesConversion, NotNull]IList<byte> fillchar) {
+        public Bytes ljust(int width, [BytesLike, NotNull]IList<byte> fillchar) {
             return ljust(width, fillchar.ToByte("ljust", 2));
         }
 
@@ -294,13 +294,13 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public Bytes lstrip([BytesConversion]IList<byte>? chars) {
+        public Bytes lstrip([BytesLike]IList<byte>? chars) {
             if (chars == null) return lstrip();
             var res = _bytes.LeftStrip(chars);
             return res == null ? this : new Bytes(res);
         }
 
-        public static Bytes maketrans([BytesConversion, NotNull]IList<byte> from, [BytesConversion, NotNull]IList<byte> to) {
+        public static Bytes maketrans([BytesLike, NotNull]IList<byte> from, [BytesLike, NotNull]IList<byte> to) {
             if (from.Count != to.Count) throw PythonOps.ValueError("maketrans arguments must have same length");
 
             var bytes = new byte[256];
@@ -313,7 +313,7 @@ namespace IronPython.Runtime {
             return Make(bytes);
         }
 
-        public PythonTuple partition([BytesConversion, NotNull]IList<byte> sep) {
+        public PythonTuple partition([BytesLike, NotNull]IList<byte> sep) {
             if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
@@ -334,7 +334,7 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public Bytes replace([BytesConversion, NotNull]IList<byte> old, [BytesConversion, NotNull]IList<byte> @new, int count = -1) {
+        public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
             if (count == 0) {
                 return this;
             }
@@ -342,11 +342,11 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.Replace(old, @new, count));
         }
 
-        public int rfind([BytesConversion, NotNull]IList<byte> sub) => rfind(sub, null, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub) => rfind(sub, null, null);
 
-        public int rfind([BytesConversion, NotNull]IList<byte> sub, int? start) => rfind(sub, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start) => rfind(sub, start, null);
 
-        public int rfind([BytesConversion, NotNull]IList<byte> sub, int? start, int? end)
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start, int? end)
             => _bytes.ReverseFind(sub, start, end);
 
         public int rfind(int @byte) => rfind(@byte, null, null);
@@ -356,11 +356,11 @@ namespace IronPython.Runtime {
         public int rfind(int @byte, int? start, int? end)
             => rfind(new[] { @byte.ToByteChecked() }, start, end);
 
-        public int rindex([BytesConversion, NotNull]IList<byte> sub) => rindex(sub, null, null);
+        public int rindex([BytesLike, NotNull]IList<byte> sub) => rindex(sub, null, null);
 
-        public int rindex([BytesConversion, NotNull]IList<byte> sub, int? start) => rindex(sub, start, null);
+        public int rindex([BytesLike, NotNull]IList<byte> sub, int? start) => rindex(sub, start, null);
 
-        public int rindex([BytesConversion, NotNull]IList<byte> sub, int? start, int? end) {
+        public int rindex([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
             int ret = rfind(sub, start, end);
             if (ret == -1) {
                 throw PythonOps.ValueError("subsection not found");
@@ -379,7 +379,7 @@ namespace IronPython.Runtime {
             return rjust(width, (byte)' ');
         }
 
-        public Bytes rjust(int width, [BytesConversion, NotNull]IList<byte> fillchar) {
+        public Bytes rjust(int width, [BytesLike, NotNull]IList<byte> fillchar) {
             return rjust(width, fillchar.ToByte("rjust", 2));
         }
 
@@ -397,7 +397,7 @@ namespace IronPython.Runtime {
             return new Bytes(ret);
         }
 
-        public PythonTuple rpartition([BytesConversion, NotNull]IList<byte> sep) {
+        public PythonTuple rpartition([BytesLike, NotNull]IList<byte> sep) {
             if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
@@ -420,11 +420,11 @@ namespace IronPython.Runtime {
             return _bytes.SplitInternal(null, -1, x => new Bytes(x));
         }
 
-        public PythonList rsplit([BytesConversion]IList<byte>? sep) {
+        public PythonList rsplit([BytesLike]IList<byte>? sep) {
             return rsplit(sep, -1);
         }
 
-        public PythonList rsplit([BytesConversion]IList<byte>? sep, int maxsplit) {
+        public PythonList rsplit([BytesLike]IList<byte>? sep, int maxsplit) {
             return _bytes.RightSplit(sep, maxsplit, x => new Bytes(new List<byte>(x)));
         }
 
@@ -433,7 +433,7 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public Bytes rstrip([BytesConversion]IList<byte>? chars) {
+        public Bytes rstrip([BytesLike]IList<byte>? chars) {
             if (chars == null) return rstrip();
             var res = _bytes.RightStrip(chars);
             return res == null ? this : new Bytes(res);
@@ -443,11 +443,11 @@ namespace IronPython.Runtime {
             return _bytes.SplitInternal(null, -1, x => new Bytes(x));
         }
 
-        public PythonList split([BytesConversion]IList<byte>? sep) {
+        public PythonList split([BytesLike]IList<byte>? sep) {
             return split(sep, -1);
         }
 
-        public PythonList split([BytesConversion]IList<byte>? sep, int maxsplit) {
+        public PythonList split([BytesLike]IList<byte>? sep, int maxsplit) {
             return _bytes.Split(sep, maxsplit, x => new Bytes(x));
         }
 
@@ -459,11 +459,11 @@ namespace IronPython.Runtime {
             return _bytes.SplitLines(keepends, x => new Bytes(x));
         }
 
-        public bool startswith([BytesConversion, NotNull]IList<byte> prefix) {
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix) {
             return _bytes.StartsWith(prefix);
         }
 
-        public bool startswith([BytesConversion, NotNull]IList<byte> prefix, int start) {
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start) {
             int len = Count;
             if (start > len) return false;
             if (start < 0) {
@@ -473,7 +473,7 @@ namespace IronPython.Runtime {
             return _bytes.Substring(start).StartsWith(prefix);
         }
 
-        public bool startswith([BytesConversion, NotNull]IList<byte> prefix, int start, int end) {
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start, int end) {
             return _bytes.StartsWith(prefix, start, end);
         }
 
@@ -494,7 +494,7 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public Bytes strip([BytesConversion]IList<byte>? chars) {
+        public Bytes strip([BytesLike]IList<byte>? chars) {
             if (chars == null) return strip();
             var res = _bytes.Strip(chars);
             return res == null ? this : new Bytes(res);
@@ -509,7 +509,7 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public Bytes translate([BytesConversion]IList<byte>? table) {
+        public Bytes translate([BytesLike]IList<byte>? table) {
             if (table == null) {
                 return this;
             } else if (table.Count != 256) {
@@ -521,7 +521,7 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.Translate(table, null));
         }
 
-        public Bytes translate([BytesConversion]IList<byte>? table, [BytesConversion, NotNull]IList<byte> delete) {
+        public Bytes translate([BytesLike]IList<byte>? table, [BytesLike, NotNull]IList<byte> delete) {
             if (Count == 0) {
                 return this;
             }
@@ -542,7 +542,7 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.ZeroFill(width, spaces));
         }
 
-        public bool __contains__([BytesConversion, NotNull]IList<byte> bytes) {
+        public bool __contains__([BytesLike, NotNull]IList<byte> bytes) {
             return this.IndexOf(bytes, 0) != -1;
         }
 

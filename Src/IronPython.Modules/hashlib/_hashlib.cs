@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         protected abstract void CreateHasher();
 
         [Documentation("update(string) -> None (update digest with string data)")]
-        public void update([BytesConversion]IList<byte> newBytes) {
+        public void update([BytesLike]IList<byte> newBytes) {
             byte[] bytes = newBytes.ToArray();
             lock (_hasher) {
                 _hasher.TransformBlock(bytes, 0, bytes.Length, bytes, 0);

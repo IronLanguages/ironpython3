@@ -69,7 +69,7 @@ namespace IronPython.Runtime.Binding {
             if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
                 if (toParameter.Type.IsGenericType &&
                     toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
-                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
+                    toParameter.ParameterInfo.IsDefined(typeof(BytesLikeAttribute), false)) {
                     return false;
                 }
             }

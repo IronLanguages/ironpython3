@@ -49,7 +49,7 @@ namespace IronPython.Zlib
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public Bytes compress([BytesConversion]IList<byte> data)
+        public Bytes compress([BytesLike]IList<byte> data)
         {
             byte[] input = data.ToArray();
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];

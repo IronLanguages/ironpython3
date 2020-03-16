@@ -54,7 +54,7 @@ namespace IronPython.Modules {
 
         #region ASCII Encoding
 
-        public static PythonTuple ascii_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null)
+        public static PythonTuple ascii_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null)
             => DoDecode(context, "ascii", PythonAsciiEncoding.Instance, input, errors, input.Count).ToPythonTuple();
 
         public static PythonTuple ascii_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -94,12 +94,12 @@ namespace IronPython.Modules {
         /// <summary>
         /// Decodes the input string using the provided string mapping.
         /// </summary>
-        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors, [NotNull]string map) {
+        public static PythonTuple charmap_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors, [NotNull]string map) {
             EncodingMap em = new EncodingMap(map, compileForDecoding: true, compileForEncoding: false);
             return DoDecode(context, "charmap", new EncodingMapEncoding(em), input, errors, input.Count).ToPythonTuple();
         }
 
-        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, IDictionary<object, object>? map = null) {
+        public static PythonTuple charmap_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, IDictionary<object, object>? map = null) {
             if (map != null) {
                 return DoDecode(context, "charmap", new CharmapEncoding(map), input, errors, input.Count).ToPythonTuple();
             } else {
@@ -154,7 +154,7 @@ namespace IronPython.Modules {
         public static PythonTuple escape_decode(CodeContext/*!*/ context, [NotNull]string data, string? errors = null)
             => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
-        public static PythonTuple escape_decode([BytesConversion,NotNull]IList<byte> data, string? errors = null) {
+        public static PythonTuple escape_decode([BytesLike,NotNull]IList<byte> data, string? errors = null) {
             var span = data.ToArray().AsSpan(); // TODO: remove when signature changed
             var res = LiteralParser.ParseBytes(span, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
 
@@ -180,7 +180,7 @@ namespace IronPython.Modules {
         [DisallowNull]
         private static byte[]? _replacementMarker;
 
-        public static PythonTuple/*!*/ escape_encode([BytesConversion,NotNull]IList<byte> data, string? errors = null) {
+        public static PythonTuple/*!*/ escape_encode([BytesLike,NotNull]IList<byte> data, string? errors = null) {
             List<byte> buf = new List<byte>(data.Count);
             foreach (byte b in data) {
                 switch (b) {
@@ -205,7 +205,7 @@ namespace IronPython.Modules {
 
         #region Latin-1 Functions
 
-        public static PythonTuple latin_1_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null)
+        public static PythonTuple latin_1_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null)
             => DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors, input.Count).ToPythonTuple();
 
         public static PythonTuple latin_1_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -217,7 +217,7 @@ namespace IronPython.Modules {
 #if FEATURE_ENCODING
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "mbcs", MbcsEncoding, input, errors, input.Count).ToPythonTuple();
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
@@ -231,7 +231,7 @@ namespace IronPython.Modules {
 #if FEATURE_ENCODING
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static PythonTuple code_page_decode(CodeContext context, int codepage, [BytesConversion, NotNull]IList<byte> input, string? errors = null, bool final = false) {
+        public static PythonTuple code_page_decode(CodeContext context, int codepage, [BytesLike, NotNull]IList<byte> input, string? errors = null, bool final = false) {
             // TODO: Use Win32 API MultiByteToWideChar https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-multibytetowidechar
             string encodingName = $"cp{codepage}";
             Encoding encoding = Encoding.GetEncoding(codepage);
@@ -258,7 +258,7 @@ namespace IronPython.Modules {
             return raw_unicode_escape_decode(context, StringOps.DoEncodeUtf8(context, input), errors);
         }
 
-        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesLike,NotNull]IList<byte> input, string? errors = null) {
             var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, span, errors, "raw-unicode-escape", StringOps.CodecsInfo.RawUnicodeEscapeEncoding),
@@ -285,7 +285,7 @@ namespace IronPython.Modules {
             return unicode_escape_decode(context, StringOps.DoEncodeUtf8(context, input), errors);
         }
 
-        public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+        public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [BytesLike,NotNull]IList<byte> input, string? errors = null) {
             var span = input.ToArray().AsSpan(); // TODO: remove when signature changed
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, span, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding),
@@ -309,7 +309,7 @@ namespace IronPython.Modules {
         public static PythonTuple readbuffer_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null)
             => readbuffer_encode(DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
 
-        public static PythonTuple readbuffer_encode([BytesConversion,NotNull]IList<byte> input, string? errors = null)
+        public static PythonTuple readbuffer_encode([BytesLike,NotNull]IList<byte> input, string? errors = null)
             => PythonTuple.MakeTuple(new Bytes(input), input.Count);
 
         #endregion
@@ -321,7 +321,7 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(input, input.Length);
         }
 
-        public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+        public static PythonTuple unicode_internal_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
             return DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, input.Count).ToPythonTuple();
         }
@@ -331,7 +331,7 @@ namespace IronPython.Modules {
             return DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
         }
 
-        public static PythonTuple unicode_internal_encode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null) {
+        public static PythonTuple unicode_internal_encode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
             return PythonTuple.MakeTuple(new Bytes(input), input.Count);
         }
@@ -340,7 +340,7 @@ namespace IronPython.Modules {
 
         #region Utf-16 Functions
 
-        public static PythonTuple utf_16_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false) {
+        public static PythonTuple utf_16_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false) {
             PythonTuple res = utf_16_ex_decode(context, input, errors, 0, final);
             return PythonTuple.MakeTuple(res[0], res[1]);
         }
@@ -348,7 +348,7 @@ namespace IronPython.Modules {
         public static PythonTuple utf_16_encode(CodeContext context, [NotNull]string input, string? errors = null)
             => DoEncode(context, "utf-16", Utf16LeBomEncoding, input, errors, true).ToPythonTuple();
 
-        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, int byteorder = 0, bool final = false) {
+        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, int byteorder = 0, bool final = false) {
 
             Tuple<string, int> res;
 
@@ -398,7 +398,7 @@ namespace IronPython.Modules {
         private static byte[] BOM_UTF16_LE => _bom_utf16_le ??= Utf16LeBomEncoding.GetPreamble();
         [DisallowNull] private static byte[]? _bom_utf16_le;
 
-        public static PythonTuple utf_16_le_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_16_le_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-16-le", Utf16LeEncoding, input, errors, NumEligibleUtf16Bytes(input, final, isLE: true)).ToPythonTuple();
 
         public static PythonTuple utf_16_le_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -416,7 +416,7 @@ namespace IronPython.Modules {
         private static byte[] BOM_UTF16_BE => _bom_utf16_be ??= Utf16BeBomEncoding.GetPreamble();
         [DisallowNull] private static byte[]? _bom_utf16_be;
 
-        public static PythonTuple utf_16_be_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_16_be_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-16-be", Utf16BeEncoding, input, errors, NumEligibleUtf16Bytes(input, final, isLE: false)).ToPythonTuple();
 
         public static PythonTuple utf_16_be_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -428,7 +428,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_ENCODING
 
-        public static PythonTuple utf_7_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_7_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-7", Encoding.UTF7, input, errors, NumEligibleUtf7Bytes(input, final)).ToPythonTuple();
 
         public static PythonTuple utf_7_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -460,7 +460,7 @@ namespace IronPython.Modules {
         private static Encoding Utf8Encoding => _utf8Encoding ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         [DisallowNull] private static Encoding? _utf8Encoding;
 
-        public static PythonTuple utf_8_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_8_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-8", Utf8Encoding, input, errors, NumEligibleUtf8Bytes(input, final)).ToPythonTuple();
 
         public static PythonTuple utf_8_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -497,7 +497,7 @@ namespace IronPython.Modules {
 
         #region Utf-32 Functions
 
-        public static PythonTuple utf_32_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false) {
+        public static PythonTuple utf_32_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false) {
             PythonTuple res = utf_32_ex_decode(context, input, errors, 0, final);
             return PythonTuple.MakeTuple(res[0], res[1]);
         }
@@ -505,7 +505,7 @@ namespace IronPython.Modules {
         public static PythonTuple utf_32_encode(CodeContext context, [NotNull]string input, string? errors = null)
             => DoEncode(context, "utf-32", Utf32LeBomEncoding, input, errors, includePreamble: true).ToPythonTuple();
 
-        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, int byteorder = 0, bool final = false) {
+        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, int byteorder = 0, bool final = false) {
 
             int numBytes = NumEligibleUtf32Bytes(input, final);
             Tuple<string, int> res;
@@ -551,7 +551,7 @@ namespace IronPython.Modules {
         private static byte[] BOM_UTF32_LE => _bom_utf32_le ??= Utf32LeBomEncoding.GetPreamble();
         [DisallowNull] private static byte[]? _bom_utf32_le;
 
-        public static PythonTuple utf_32_le_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_32_le_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-32-le", Utf32LeEncoding, input, errors, NumEligibleUtf32Bytes(input, final)).ToPythonTuple();
 
         public static PythonTuple utf_32_le_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -570,7 +570,7 @@ namespace IronPython.Modules {
         private static byte[] BOM_UTF32_BE => _bom_utf32_be ??= Utf32BeBomEncoding.GetPreamble();
         [DisallowNull] private static byte[]? _bom_utf32_be;
 
-        public static PythonTuple utf_32_be_decode(CodeContext context, [BytesConversion,NotNull]IList<byte> input, string? errors = null, bool final = false)
+        public static PythonTuple utf_32_be_decode(CodeContext context, [BytesLike,NotNull]IList<byte> input, string? errors = null, bool final = false)
             => DoDecode(context, "utf-32-be", Utf32BeEncoding, input, errors, NumEligibleUtf32Bytes(input, final)).ToPythonTuple();
 
         public static PythonTuple utf_32_be_encode(CodeContext context, [NotNull]string input, string? errors = null)
@@ -582,7 +582,7 @@ namespace IronPython.Modules {
 
         #region Private implementation
 
-        private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesConversion]IList<byte> input, string? errors, int numBytes) {
+        private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesLike]IList<byte> input, string? errors, int numBytes) {
             ReadOnlySpan<byte> data = input.ToArray().AsSpan(0, numBytes); // TODO: remove when signature changed
             var decoded = StringOps.DoDecode(context, data, errors, encodingName, encoding);
             return Tuple.Create(decoded, data.Length);

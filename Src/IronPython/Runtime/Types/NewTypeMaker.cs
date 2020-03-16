@@ -410,17 +410,16 @@ namespace IronPython.Runtime.Types {
                     ParameterInfo pi = pis[origIndex];
 
                     // Defines attributes that might be used in .net methods for overload detection and other
-                    // parameter based attribute logic. E.g. [BytesConversionAttribute] to make
-                    // enable automatic cast between .net IList<byte> and string
+                    // parameter based attribute logic
                     if (pi.IsDefined(typeof(ParamArrayAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
                             typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     } else if (pi.IsDefined(typeof(ParamDictionaryAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
                             typeof(ParamDictionaryAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
-                    } else if (pi.IsDefined(typeof(BytesConversionAttribute), false)) {
+                    } else if (pi.IsDefined(typeof(BytesLikeAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(BytesConversionAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(BytesLikeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     }
 
                     if ((pi.Attributes & ParameterAttributes.HasDefault) != 0) {

@@ -34,7 +34,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5([BytesConversion]IList<byte> data) {
+        public static MD5Object md5([BytesLike]IList<byte> data) {
             return new MD5Object(data);
         }
 

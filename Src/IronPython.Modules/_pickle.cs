@@ -98,7 +98,7 @@ namespace IronPython.Modules {
             + "reconstructed object. Characters in the string beyond the end of the first\n"
             + "pickle are ignored."
             )]
-        public static object loads(CodeContext/*!*/ context, [BytesConversion]IList<byte> @string) {
+        public static object loads(CodeContext/*!*/ context, [BytesLike]IList<byte> @string) {
             return new UnpicklerObject(context, new PythonStringInput(PythonOps.MakeString(@string))).load(context);
         }
 

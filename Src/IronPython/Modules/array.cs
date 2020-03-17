@@ -123,7 +123,7 @@ namespace IronPython.Modules {
                 _data = CreateData(_typeCode);
             }
 
-            public array([NotNull]string type, [BytesConversion, NotNull]IList<byte> initializer) : this(type) {
+            public array([NotNull]string type, [BytesLike, NotNull]IList<byte> initializer) : this(type) {
                 frombytes(initializer);
             }
 
@@ -332,7 +332,7 @@ namespace IronPython.Modules {
                 if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
             }
 
-            public void frombytes([BytesConversion, NotNull]IList<byte> s) {
+            public void frombytes([BytesLike, NotNull]IList<byte> s) {
                 if ((s.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
 
                 if (s is Bytes b) {

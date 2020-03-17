@@ -388,7 +388,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static PythonList listdir(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> path)
+        public static PythonList listdir(CodeContext/*!*/ context, [BytesLike][NotNull]IList<byte> path)
             => listdir(context, PythonOps.MakeString(path));
 
         public static PythonList listdir(CodeContext/*!*/ context, string path = null) {
@@ -426,7 +426,7 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing]
-        public static object lstat([BytesConversion]IList<byte> path)
+        public static object lstat([BytesLike]IList<byte> path)
             => lstat(PythonOps.MakeString(path));
 
 
@@ -1052,7 +1052,7 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing]
-        public static object stat([BytesConversion]IList<byte> path, [ParamDictionary]IDictionary<string, object> dict)
+        public static object stat([BytesLike]IList<byte> path, [ParamDictionary]IDictionary<string, object> dict)
             => stat(PythonOps.MakeString(path), dict);
 
         public static string strerror(int code) {
@@ -1305,7 +1305,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]IList<byte> text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesLike]IList<byte> text) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);

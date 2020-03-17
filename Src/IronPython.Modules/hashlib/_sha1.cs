@@ -44,7 +44,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1([BytesConversion]IList<byte> data) {
+        public static sha sha1([BytesLike]IList<byte> data) {
             return new sha(data);
         }
 

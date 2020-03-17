@@ -73,7 +73,7 @@ objects support decompress() and flush().";
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int adler32([BytesConversion]IList<byte> data, long baseValue=1L)
+        public static int adler32([BytesLike]IList<byte> data, long baseValue=1L)
         {
             return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count);
         }
@@ -82,7 +82,7 @@ a signed integer.")]
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static BigInteger crc32([BytesConversion]IList<byte> data, long baseValue=0L)
+        public static BigInteger crc32([BytesLike]IList<byte> data, long baseValue=0L)
         {
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(baseValue));
@@ -93,7 +93,7 @@ a signed integer.")]
         [Documentation(@"compress(string[, level]) -- Returned compressed string.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static Bytes compress([BytesConversion]IList<byte> data,
+        public static Bytes compress([BytesLike]IList<byte> data,
             int level=Z_DEFAULT_COMPRESSION)
         {
             byte[] input = data.ToArray();
@@ -158,7 +158,7 @@ Optional arg level is the compression level, in 1-9.")]
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static Bytes decompress([BytesConversion]IList<byte> data,
+        public static Bytes decompress([BytesLike]IList<byte> data,
             int wbits=MAX_WBITS,
             int bufsize=DEFAULTALLOC)
         {

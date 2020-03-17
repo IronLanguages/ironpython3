@@ -48,7 +48,7 @@ namespace IronPython.Modules {
                                          );
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static int send(int handle, [BytesConversion]IList<byte> buf) {
+        public static int send(int handle, [BytesLike]IList<byte> buf) {
             return send(new IntPtr(handle), buf.ToArray(), buf.Count, 0);
         }
     }

@@ -28,7 +28,7 @@ namespace IronPython.Modules {
             return new Sha512Object(data.ToByteArray());
         }
 
-        public static Sha512Object sha512([BytesConversion]IList<byte> data) {
+        public static Sha512Object sha512([BytesLike]IList<byte> data) {
             return new Sha512Object(data);
         }
         
@@ -44,7 +44,7 @@ namespace IronPython.Modules {
             return new Sha384Object(data.ToByteArray());
         }
 
-        public static Sha384Object sha384([BytesConversion]IList<byte> data) {
+        public static Sha384Object sha384([BytesLike]IList<byte> data) {
             return new Sha384Object(data);
         }
         

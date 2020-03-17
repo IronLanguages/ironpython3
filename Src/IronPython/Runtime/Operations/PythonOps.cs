@@ -3358,8 +3358,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [Obsolete("Use Bytes(IList<byte>) instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Bytes MakeBytes(byte[] bytes) {
-            return Bytes.Make(bytes.ToArray());
+            return Bytes.Make(bytes);
         }
 
         public static byte[] MakeByteArray(this string s) {

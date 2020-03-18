@@ -1193,16 +1193,16 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tobytes();
             }
 
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-                return ((IBufferProtocol)tobytes()).ToMemory();
-            }
-
             PythonList IBufferProtocol.ToList(int start, int? end) {
                 if (start == 0 && end == null) {
                     return tolist();
                 }
 
                 return ((array)this[new Slice(start, end)]).tolist();
+            }
+
+            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+                return ((IBufferProtocol)tobytes()).ToMemory();
             }
 
             #endregion

@@ -32,8 +32,8 @@ namespace IronPython.Runtime {
 
         Bytes ToBytes(int start, int? end);
 
-        ReadOnlyMemory<byte> ToMemory();
-
         PythonList ToList(int start, int? end);
+
+        ReadOnlyMemory<byte> ToMemory();
     }
 }

@@ -148,12 +148,12 @@ namespace IronPython.Modules {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-                return GetBytes(0, NativeType.Size);
-            }
-
             PythonList IBufferProtocol.ToList(int start, int? end) {
                 return new PythonList(((IBufferProtocol)this).ToBytes(start, end));
+            }
+
+            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+                return GetBytes(0, NativeType.Size);
             }
 
             #endregion

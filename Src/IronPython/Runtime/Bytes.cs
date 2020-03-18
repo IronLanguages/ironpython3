@@ -110,7 +110,7 @@ namespace IronPython.Runtime {
             => _bytes.CountOf(new[] { @byte.ToByteChecked() }, start ?? 0, end ?? Count);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
-            return StringOps.RawDecode(context, this, encoding, errors);
+            return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
@@ -906,13 +906,13 @@ namespace IronPython.Runtime {
             return this[new Slice(start, end)];
         }
 
-        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-            return _bytes.AsMemory();
-        }
-
         PythonList IBufferProtocol.ToList(int start, int? end) {
             var res = _bytes.Slice(new Slice(start, end));
             return res == null ? new PythonList() : new PythonList(res);
+        }
+
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            return _bytes.AsMemory();
         }
 
         #endregion

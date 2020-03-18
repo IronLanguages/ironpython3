@@ -269,7 +269,13 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, this, encoding, errors);
+                var mv = new MemoryView(this);
+                // TODO: Move the rest outside lock when wrapping bytearray in memoryview turns byttearray readonly
+                try {
+                    return StringOps.RawDecode(context, mv, encoding, errors);
+                } finally {
+                    mv.release(context);
+                }
             }
         }
 
@@ -1479,13 +1485,13 @@ namespace IronPython.Runtime {
             return new Bytes((ByteArray)this[new Slice(start, end)]);
         }
 
-        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-            return ((IBufferProtocol)new Bytes(this)).ToMemory();
-        }
-
         PythonList IBufferProtocol.ToList(int start, int? end) {
             var res = _bytes.Slice(new Slice(start, end));
             return res == null ? new PythonList() : new PythonList(res);
+        }
+
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            return _bytes.Data.AsMemory(0, _bytes.Count);
         }
 
         #endregion

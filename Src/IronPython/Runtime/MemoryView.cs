@@ -11,10 +11,11 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
-    public sealed class MemoryView : ICodeFormattable, IWeakReferenceable {
+    public sealed class MemoryView : ICodeFormattable, IWeakReferenceable, IBufferProtocol {
         private const int MaximumDimensions = 64;
 
         private IBufferProtocol _buffer;
@@ -34,7 +35,7 @@ namespace IronPython.Runtime {
         // of having to convert to and from bytes.
         private readonly bool _matchesBuffer;
 
-        public MemoryView(IBufferProtocol @object) {
+        public MemoryView([NotNull]IBufferProtocol @object) {
             _buffer = @object;
             _step = 1;
             _format = _buffer.Format;
@@ -42,17 +43,20 @@ namespace IronPython.Runtime {
             _matchesBuffer = true;
 
             var shape = _buffer.GetShape(_start, _end);
-            if (shape == null) {
-                _shape = null;
+            if (shape != null) {
+                _shape = new PythonTuple(shape);
+            } else {
+                _shape = PythonTuple.MakeTuple(_buffer.ItemCount);
             }
-            _shape = new PythonTuple(shape);
         }
 
-        public MemoryView(MemoryView @object) :
+        public MemoryView([NotNull]MemoryView @object) :
             this(@object._buffer, @object._start, @object._end, @object._step, @object._format, @object._shape) { }
 
         internal MemoryView(IBufferProtocol @object, int start, int? end, int step, string format, PythonTuple shape) {
             _buffer = @object;
+            CheckBuffer();
+
             _format = format;
             _shape = shape;
             _start = start;
@@ -719,6 +723,63 @@ namespace IronPython.Runtime {
 
         void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
             _tracker = value;
+        }
+
+        #endregion
+
+        #region IBufferProtocol Members
+
+        object IBufferProtocol.GetItem(int index) => this[index];
+
+        void IBufferProtocol.SetItem(int index, object value) => this[index] = value;
+
+        void IBufferProtocol.SetSlice(Slice index, object value) => this[index] = value;
+
+        int IBufferProtocol.ItemCount => numberOfElements();
+
+        string IBufferProtocol.Format => format;
+
+        BigInteger IBufferProtocol.ItemSize => itemsize;
+
+        BigInteger IBufferProtocol.NumberDimensions => ndim;
+
+        bool IBufferProtocol.ReadOnly => @readonly;
+
+        IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) {
+            if (start == 0 && end == null) {
+                return _shape.Select(n => Converter.ConvertToBigInteger(n)).ToList();
+            } else {
+                return ((IBufferProtocol)this[new Slice(start, end)]).GetShape(0, null);
+            }
+        }
+
+        PythonTuple IBufferProtocol.Strides => strides;
+
+        PythonTuple IBufferProtocol.SubOffsets => suboffsets;
+
+        Bytes IBufferProtocol.ToBytes(int start, int? end) {
+            if (start == 0 && end == null) {
+                return tobytes();
+            } else {
+                return ((MemoryView)this[new Slice(start, end)]).tobytes();
+            }
+        }
+
+        PythonList IBufferProtocol.ToList(int start, int? end) {
+            if (start == 0 && end == null) {
+                return tolist();
+            } else {
+                return ((MemoryView)this[new Slice(start, end)]).tolist();
+            }
+        }
+
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            if (_step == 1) {
+                CheckBuffer();
+                return _end.HasValue ? _buffer.ToMemory().Slice(_start, _end.Value) : _buffer.ToMemory().Slice(_start);
+            } else {
+                return ((IBufferProtocol)tobytes()).ToMemory();
+            }
         }
 
         #endregion

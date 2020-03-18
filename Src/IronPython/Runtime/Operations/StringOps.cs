@@ -1725,7 +1725,7 @@ namespace IronPython.Runtime.Operations {
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupTextEncoding(context, encoding, "codecs.decode()");
             if (codecTuple != null) {
-                return UserDecode(codecTuple, data, errors);  // TODO: UserDecode should be given MemoryView
+                return UserDecode(codecTuple, data, errors);
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
@@ -1770,10 +1770,13 @@ namespace IronPython.Runtime.Operations {
                 unsafe {
                     fixed (byte* bp = data.Slice(start)) {
                         if (bp != null) {
+#if FEATURE_ENCODING
                             if (e is UnicodeEscapeEncoding ue) {
                                 // This overload is not virtual, but the base implementation is inefficient for this encoding
                                 decoded = ue.GetString(bp, length);
-                            } else {
+                            } else
+#endif
+                            {
                                 decoded = e.GetString(bp, length);
                             }
                         }
@@ -1878,9 +1881,8 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("'{0}' encoder returned '{1}' instead of 'bytes'; use codecs.encode() to encode to arbitrary types", encoding, DynamicHelpers.GetPythonType(res[0]).Name);
         }
 
-        private static string UserDecode(PythonTuple codecInfo, IBufferProtocol data, string errors) {
-            // TODO: Convert to MemoryView once MemoryView implements IBufferProtocol and decoding functions in _codecs use proper signature
-            var res = CallUserDecodeOrEncode(codecInfo[1], data.ToBytes(0, null), errors);
+        private static string UserDecode(PythonTuple codecInfo, object data, string errors) {
+            var res = CallUserDecodeOrEncode(codecInfo[1], data, errors);
             return Converter.ConvertToString(res[0]);
         }
 

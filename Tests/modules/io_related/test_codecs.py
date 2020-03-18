@@ -855,9 +855,6 @@ class CodecTest(IronPythonTestCase):
 
     #TODO: @skip("multiple_execute")
     def test_register(self):
-        '''
-        TODO: test that functions passed in are actually used
-        '''
         #sanity check - basically just ensure that functions can be registered
         def garbage_func1(param1): pass
         codecs.register(garbage_func1)
@@ -870,6 +867,48 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.register, 1)
         self.assertRaises(TypeError, codecs.register, "abc")
         self.assertRaises(TypeError, codecs.register, 3.14)
+
+        def my_test_decode(b, errors = None):
+            nonlocal decode_input
+            decode_input = b
+            return ('*' * len(b), len(b))
+
+        def my_search_function(name):
+            if name == 'ironpython_test_codecs_test_register':
+                return codecs.CodecInfo(None, my_test_decode)
+
+        codecs.register(my_search_function)
+
+        # When 'codecs.decode' is used, the decode input is passed to the decoding function as is
+        b = b"abc"
+        decode_input = None
+        self.assertEqual(codecs.decode(b, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(decode_input, b)
+
+        ba = bytearray(b)
+        decode_input = None
+        self.assertEqual(codecs.decode(ba, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(decode_input, ba)
+
+        mv = memoryview(ba)
+        decode_input = None
+        self.assertEqual(codecs.decode(mv, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(decode_input, mv)
+
+        import array
+        arr = array.array('B', b)
+        decode_input = None
+        self.assertEqual(codecs.decode(arr, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(decode_input, arr)
+
+        # When 'decode' method is used on 'bytes' or 'bytearray', the object is being wrapped in 'memoryview'
+        decode_input = None
+        self.assertEqual(b.decode('ironpython_test_codecs_test_register'), "***")
+        self.assertIs(type(decode_input), memoryview)
+
+        decode_input = None
+        self.assertEqual(ba.decode('ironpython_test_codecs_test_register'), "***")
+        self.assertIs(type(decode_input), memoryview)
 
     def test_unicode_internal_encode(self):
         # takes one or two parameters, not zero or three

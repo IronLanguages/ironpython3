@@ -170,7 +170,15 @@ namespace IronPython.Runtime.Binding {
 
                         // Interface conversion helpers...
                         if (genTo == typeof(IList<>)) {
-                            res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            if (type.GenericTypeArguments[0] == typeof(byte) && self.Value is IBufferProtocol) {
+                                res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IList<byte>));
+                            } else {
+                                res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            }
+                        } else if (genTo == typeof(IReadOnlyList<>)) {
+                            if (type.GenericTypeArguments[0] == typeof(byte) && self.Value is IBufferProtocol) {
+                                res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IReadOnlyList<byte>));
+                            }
                         } else if (genTo == typeof(IDictionary<,>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IDictionary<object, object>), typeof(DictionaryGenericWrapper<,>));
                         } else if (genTo == typeof(IEnumerable<>)) {
@@ -707,6 +715,21 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     ),
                     ReturnType
+                ),
+                self.Restrictions
+            );
+        }
+
+        private DynamicMetaObject ConvertFromBufferProtocolToByteList(DynamicMetaObject self, Type toType) {
+            return new DynamicMetaObject(
+                AstUtils.Convert(
+                    Ast.Call(
+                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
+                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToBytes)),
+                        AstUtils.Constant(0, typeof(int)),
+                        AstUtils.Constant(null, typeof(Nullable<int>))
+                    ),
+                    toType
                 ),
                 self.Restrictions
             );

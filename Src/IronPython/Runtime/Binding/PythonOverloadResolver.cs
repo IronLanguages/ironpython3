@@ -69,12 +69,26 @@ namespace IronPython.Runtime.Binding {
             if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
                 if (toParameter.Type.IsGenericType &&
                     toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
-                    toParameter.ParameterInfo.IsDefined(typeof(BytesLikeAttribute), false)) {
+                    (toParameter.ParameterInfo?.IsDefined(typeof(BytesLikeAttribute), inherit: false) ?? false)) {
                     return false;
                 }
             }
 
-            return base.CanConvertFrom(fromType, fromArg, toParameter, level);
+            if (base.CanConvertFrom(fromType, fromArg, toParameter, level)) {
+                return true;
+            }
+
+            if (toParameter.ParameterInfo?.IsDefined(typeof(BytesLikeAttribute), inherit: false) ?? false) {
+                if (typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
+                    if (toParameter.Type.IsGenericType &&
+                        (toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) || toParameter.Type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>)) &&
+                        toParameter.Type.GenericTypeArguments[0] == typeof(byte)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {

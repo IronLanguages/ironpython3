@@ -36,6 +36,20 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType pythonType, int length) {
+            Type type = pythonType.UnderlyingSystemType.GetElementType();
+
+            return Array.CreateInstance(type, length);
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType pythonType, params int[] lengths) {
+            Type type = pythonType.UnderlyingSystemType.GetElementType();
+
+            return Array.CreateInstance(type, lengths);
+        }
+
+        [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType pythonType, ICollection items) {
             Type type = pythonType.UnderlyingSystemType.GetElementType();
 
@@ -173,7 +187,7 @@ namespace IronPython.Runtime.Operations {
             Type elm = a.GetType().GetElementType();
 
             index.DoSliceAssign(
-                delegate(int idx, object val) {
+                delegate (int idx, object val) {
                     a.SetValue(Converter.Convert(val, elm), idx + a.GetLowerBound(0));
                 },
                 a.Length,
@@ -333,7 +347,7 @@ namespace IronPython.Runtime.Operations {
         private static int GetSliceSize(int start, int stop, int step) {
             // could cause overflow (?)
             return step > 0 ? (stop - start + step - 1) / step : (stop - start + step + 1) / step;
-        }        
+        }
 
         internal static object[] CopyArray(object[] data, int newSize) {
             if (newSize == 0) return ArrayUtils.EmptyObjects;

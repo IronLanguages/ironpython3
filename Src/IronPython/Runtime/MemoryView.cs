@@ -24,6 +24,7 @@ namespace IronPython.Runtime {
         private readonly int _step;
         private readonly string _format;
         private readonly PythonTuple _shape;
+        private readonly bool _readonlyView;
         private readonly int _itemsize;
 
         private int? _storedHash;
@@ -39,6 +40,7 @@ namespace IronPython.Runtime {
             _buffer = @object;
             _step = 1;
             _format = _buffer.Format;
+            _readonlyView = false;
             _itemsize = (int)_buffer.ItemSize;
             _matchesBuffer = true;
 
@@ -51,14 +53,15 @@ namespace IronPython.Runtime {
         }
 
         public MemoryView([NotNull]MemoryView @object) :
-            this(@object._buffer, @object._start, @object._end, @object._step, @object._format, @object._shape) { }
+            this(@object._buffer, @object._start, @object._end, @object._step, @object._format, @object._shape, @object._readonlyView) { }
 
-        internal MemoryView(IBufferProtocol @object, int start, int? end, int step, string format, PythonTuple shape) {
+        internal MemoryView(IBufferProtocol @object, int start, int? end, int step, string format, PythonTuple shape, bool readonlyView) {
             _buffer = @object;
             CheckBuffer();
 
             _format = format;
             _shape = shape;
+            _readonlyView = readonlyView;
             _start = start;
             _end = end;
             _step = step;
@@ -130,7 +133,7 @@ namespace IronPython.Runtime {
         public bool @readonly {
             get {
                 CheckBuffer();
-                return _buffer.ReadOnly;
+                return _readonlyView || _buffer.ReadOnly;
             }
         }
 
@@ -267,7 +270,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            return new MemoryView(_buffer, _start, _end, _step, formatAsString, shapeAsTuple ?? PythonOps.MakeTuple(newLength));
+            return new MemoryView(_buffer, _start, _end, _step, formatAsString, shapeAsTuple ?? PythonOps.MakeTuple(newLength), _readonlyView);
         }
 
         private byte[] unpackBytes(string format, object o) {
@@ -457,7 +460,7 @@ namespace IronPython.Runtime {
             }
             set {
                 CheckBuffer();
-                if (_buffer.ReadOnly) {
+                if (@readonly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
                 index = PythonOps.FixIndex(index, __len__());
@@ -471,7 +474,7 @@ namespace IronPython.Runtime {
 
         public void __delitem__(int index) {
             CheckBuffer();
-            if (_buffer.ReadOnly) {
+            if (@readonly) {
                 throw PythonOps.TypeError("cannot modify read-only memory");
             }
             throw PythonOps.TypeError("cannot delete memory");
@@ -479,7 +482,7 @@ namespace IronPython.Runtime {
 
         public void __delitem__([NotNull]Slice slice) {
             CheckBuffer();
-            if (_buffer.ReadOnly) {
+            if (@readonly) {
                 throw PythonOps.TypeError("cannot modify read-only memory");
             }
             throw PythonOps.TypeError("cannot delete memory");
@@ -517,11 +520,11 @@ namespace IronPython.Runtime {
 
                 PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
 
-                return new MemoryView(_buffer, newStart, newEnd, newStep, format, newShape);
+                return new MemoryView(_buffer, newStart, newEnd, newStep, format, newShape, _readonlyView);
             }
             set {
                 CheckBuffer();
-                if (_buffer.ReadOnly) {
+                if (@readonly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
 

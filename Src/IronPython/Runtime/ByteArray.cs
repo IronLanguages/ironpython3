@@ -269,13 +269,7 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                var mv = new MemoryView(this);
-                // TODO: Move the rest outside lock when wrapping bytearray in memoryview turns byttearray readonly
-                try {
-                    return StringOps.RawDecode(context, mv, encoding, errors);
-                } finally {
-                    mv.release(context);
-                }
+                return StringOps.RawDecode(context, new MemoryView(this, 0, null, 1, "B", PythonTuple.MakeTuple(_bytes.Count), readonlyView: true), encoding, errors);
             }
         }
 

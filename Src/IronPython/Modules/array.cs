@@ -136,8 +136,11 @@ namespace IronPython.Modules {
             }
 
             public array([NotNull]string type, object? initializer) : this(type) {
-                if (_typeCode != 'u' && (initializer is string || initializer is Extensible<string>)) {
-                    throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
+                if (_typeCode != 'u') {
+                    if (initializer is string || initializer is Extensible<string>)
+                        throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
+                    if (initializer is array arr && arr._typeCode == 'u')
+                        throw PythonOps.TypeError("cannot use a unicode array to initialize an array with typecode '{0}'", _typeCode);
                 }
 
                 ExtendIter(initializer);

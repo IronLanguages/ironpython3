@@ -294,7 +294,6 @@ namespace IronPython.Modules {
         }
 
         public static PythonTuple unicode_escape_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
-            var encoding = StringOps.CodecsInfo.Codecs["unicode_escape"].Value;
             return PythonTuple.MakeTuple(
                 StringOps.DoEncode(context, input, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding, includePreamble: false),
                 input.Length

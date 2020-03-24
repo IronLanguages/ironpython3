@@ -65,30 +65,51 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public override bool CanConvertFrom(Type fromType, DynamicMetaObject fromArg, ParameterWrapper toParameter, NarrowingLevel level) {
-            if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
-                if (toParameter.Type.IsGenericType &&
-                    toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
-                    (toParameter.ParameterInfo?.IsDefined(typeof(BytesLikeAttribute), inherit: false) ?? false)) {
-                    return false;
+        public override Candidate SelectBestConversionFor(DynamicMetaObject arg, ParameterWrapper candidateOne, ParameterWrapper candidateTwo, NarrowingLevel level) {
+            Candidate basePreferred = base.SelectBestConversionFor(arg, candidateOne, candidateTwo, level);
+            if (basePreferred == Candidate.One || basePreferred == Candidate.Two) {
+                return basePreferred;
+            }
+
+            bool isBytesLikeOne = IsBytesLikeParameter(candidateOne);
+            bool isBytesLikeTwo = IsBytesLikeParameter(candidateTwo);
+
+            if (isBytesLikeOne) {
+                if (isBytesLikeTwo) {
+                    return basePreferred;
+                }
+                if (candidateTwo.Type.IsInterface) {
+                    return Candidate.One;
+                }
+            } else if (isBytesLikeTwo) {
+                if (candidateOne.Type.IsInterface) {
+                    return Candidate.Two;
                 }
             }
 
-            if (base.CanConvertFrom(fromType, fromArg, toParameter, level)) {
-                return true;
-            }
+            return basePreferred;
+        }
 
-            if (toParameter.ParameterInfo?.IsDefined(typeof(BytesLikeAttribute), inherit: false) ?? false) {
+        public override bool CanConvertFrom(Type fromType, DynamicMetaObject fromArg, ParameterWrapper toParameter, NarrowingLevel level) {
+            Type toType = toParameter.Type;
+
+            if (IsBytesLikeParameter(toParameter)) {
+
+                if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
+                    if (toType.IsGenericType &&
+                        toType.GetGenericTypeDefinition() == typeof(IList<>)) {
+                        return false;
+                    }
+                }
+
                 if (typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
-                    if (toParameter.Type.IsGenericType &&
-                        (toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) || toParameter.Type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>)) &&
-                        toParameter.Type.GenericTypeArguments[0] == typeof(byte)) {
+                    if (toType == typeof(IList<byte>) || toType == typeof(IReadOnlyList<byte>)) {
                         return true;
                     }
                 }
             }
 
-            return false;
+            return base.CanConvertFrom(fromType, fromArg, toParameter, level);
         }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
@@ -146,6 +167,10 @@ namespace IronPython.Runtime.Binding {
             }
 
             return res;
+        }
+
+        private bool IsBytesLikeParameter(ParameterWrapper parameter) {
+            return parameter.ParameterInfo?.IsDefined(typeof(BytesLikeAttribute), inherit: false) ?? false;
         }
     }
 }

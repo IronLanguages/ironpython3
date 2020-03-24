@@ -23,7 +23,6 @@ class ShutilTest(unittest.TestCase):
         pass
 
     def test_copyfile(self):
-        return
         from_filename = os.path.join(self.test_dir, "test_copyfile_from")
         with open(from_filename, "wb") as f: f.write(self.test_data)
 
@@ -43,7 +42,6 @@ class ShutilTest(unittest.TestCase):
             self.assertEqual(f.read(), self.test_data)
 
     def test_copymode(self):
-        return
         from_filename = os.path.join(self.test_dir, "test_copymode_from")
         with open(from_filename, "wb"): pass
         os.chmod(from_filename, 0o642)

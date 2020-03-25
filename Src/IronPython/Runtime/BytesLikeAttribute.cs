@@ -8,7 +8,7 @@ using System;
 
 namespace IronPython.Runtime {
     /// <summary>
-    /// For <c>IList〈byte〉</c>, <c>IReadOnlyList〈byte〉</c> parameters:
+    /// For <c>IList〈byte〉</c>, <c>IReadOnlyList〈byte〉</c>, and <c>ReadOnlyMemory〈byte〉</c> parameters:
     /// Marks that the parameter is typed to accept a bytes-like object.
     /// <br/>
     /// If applied on a IList〈byte〉 parameter, this attribute disallows passing

@@ -103,7 +103,10 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 if (typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
-                    if (toType == typeof(IList<byte>) || toType == typeof(IReadOnlyList<byte>)) {
+                    if (toParameter.Type == typeof(ReadOnlyMemory<byte>)) {
+                        return true;
+                    }
+                    if (toParameter.Type == typeof(IList<byte>) || toParameter.Type == typeof(IReadOnlyList<byte>)) {
                         return true;
                     }
                 }

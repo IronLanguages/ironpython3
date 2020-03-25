@@ -1265,7 +1265,7 @@ class CodecTest(IronPythonTestCase):
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac\x0a', 6 + bom_len))
             sample1 = sample1[:-1] # 12<euro>
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac', 5 + bom_len))
-            sample1 = sample1[:-1] # 12<uncomplete euro>
+            sample1 = sample1[:-1] # 12<incomplete euro>
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12', 2 + bom_len))
 
             sample1 = sample1 + b'x7f' # makes it invalid

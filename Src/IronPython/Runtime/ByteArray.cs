@@ -275,7 +275,7 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.DoDecode(context, ((IBufferProtocol)this).ToMemory().Span, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+                return StringOps.DoDecode(context, ((IBufferProtocol)this).ToMemory(), errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
             }
         }
 

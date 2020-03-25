@@ -2,10 +2,11 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import array
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, run_test, skipUnlessIronPython
 
 if not is_cli:
     long = int
@@ -25,6 +26,35 @@ class Indexable(object):
         return self.value
 
 class BytesTest(IronPythonTestCase):
+
+    def test_init(self):
+        b = bytes(b'abc')
+
+        for testType in types:
+            self.assertEqual(testType(b), b)
+            self.assertEqual(testType(bytearray(b)), b)
+            self.assertEqual(testType(memoryview(b)), b)
+            self.assertEqual(testType(array.array(b)), b)
+
+    @unittest.skipUnless(is_cli, "Interop with CLI")
+    def test_init_interop(self):
+        import System
+        from System import Byte, Array, ArraySegment
+
+        arr = Array[Byte](b"abc")
+        ars = ArraySegment[Byte](arr)
+        if is_netcoreapp:
+            from System import Memory, ReadOnlyMemory
+            mem = Memory[Byte](arr)
+            rom = ReadOnlyMemory[Byte](arr)
+
+        for testType in types:
+            self.assertEqual(testType(arr), b"abc")
+            self.assertEqual(testType(ars), b"abc")
+            if is_netcoreapp:
+                #self.assertEqual(testType(mem), b"abc") # TODO
+                if testType != bytearray: # TODO
+                    self.assertEqual(testType(rom), b"abc")
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

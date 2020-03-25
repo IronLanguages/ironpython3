@@ -169,16 +169,14 @@ namespace IronPython.Runtime.Binding {
                         Type genTo = type.GetGenericTypeDefinition();
 
                         // Interface conversion helpers...
-                        if (genTo == typeof(IList<>)) {
-                            if (type.GenericTypeArguments[0] == typeof(byte) && self.Value is IBufferProtocol) {
-                                res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IList<byte>));
-                            } else {
-                                res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
-                            }
-                        } else if (genTo == typeof(IReadOnlyList<>)) {
-                            if (type.GenericTypeArguments[0] == typeof(byte) && self.Value is IBufferProtocol) {
-                                res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IReadOnlyList<byte>));
-                            }
+                        if (type == typeof(ReadOnlyMemory<byte>) && self.Value is IBufferProtocol) {
+                            res = ConvertFromBufferProtocolToMemory(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
+                        } else if (type == typeof(IReadOnlyList<byte>) && self.Value is IBufferProtocol) {
+                            res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IReadOnlyList<byte>));
+                        } else if (type == typeof(IList<byte>) && self.Value is IBufferProtocol) {
+                            res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IList<byte>));
+                        } else if (genTo == typeof(IList<>)) {
+                            res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
                         } else if (genTo == typeof(IDictionary<,>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IDictionary<object, object>), typeof(DictionaryGenericWrapper<,>));
                         } else if (genTo == typeof(IEnumerable<>)) {
@@ -715,6 +713,19 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     ),
                     ReturnType
+                ),
+                self.Restrictions
+            );
+        }
+
+        private DynamicMetaObject ConvertFromBufferProtocolToMemory(DynamicMetaObject self, Type toType) {
+            return new DynamicMetaObject(
+                AstUtils.Convert(
+                    Ast.Call(
+                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
+                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToMemory))
+                    ),
+                    toType
                 ),
                 self.Restrictions
             );

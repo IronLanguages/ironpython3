@@ -36,7 +36,11 @@ namespace IronPython.Runtime {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
-        public Bytes([BytesLike, NotNull]IList<byte> bytes) {
+        public Bytes([NotNull]IList<byte> bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
             _bytes = bytes.ToArray();
         }
 
@@ -48,8 +52,16 @@ namespace IronPython.Runtime {
             _bytes = new byte[size];
         }
 
-        private Bytes(byte[] bytes) {
-            _bytes = bytes;
+        public Bytes([NotNull]byte[] bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        public Bytes([NotNull]ArraySegment<byte> bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        private Bytes(byte[] bytes, bool copyData) {
+            _bytes = copyData ? _bytes.ToArray() : bytes;
         }
 
         public Bytes([NotNull]string @string) {
@@ -60,14 +72,14 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
 
-        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
+        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
 
         internal static Bytes FromByte(byte b) {
             return oneByteBytes[b];
         }
 
         internal static Bytes Make(byte[] bytes) {
-            return new Bytes(bytes);
+            return new Bytes(bytes, copyData: false);
         }
 
         internal byte[] UnsafeByteArray {
@@ -689,6 +701,10 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Implementation Details
+
+        internal ReadOnlyMemory<byte> AsMemory() {
+            return _bytes.AsMemory();
+        }
 
         private static Bytes JoinOne(object? curVal) {
             if (curVal?.GetType() == typeof(Bytes)) {

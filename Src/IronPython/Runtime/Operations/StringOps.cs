@@ -1705,7 +1705,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string errors) {
             if (TryGetEncoding(encoding, out Encoding e)) {
-                return DoDecode(context, data.ToMemory().Span, errors, encoding, e);
+                return DoDecode(context, data.ToMemory(), errors, encoding, e);
             }
 
             // look for user-registered codecs
@@ -1721,9 +1721,11 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 #endif
 
-        internal static string DoDecode(CodeContext context, ReadOnlySpan<byte> data, string errors, string encoding, Encoding e) {
-            int start = GetStartingOffset(e, data);
-            int length = data.Length - start;
+        internal static string DoDecode(CodeContext context, ReadOnlyMemory<byte> data, string errors, string encoding, Encoding e) {
+            int start = GetStartingOffset(e, data.Span);
+            if (start > 0) {
+                data = data.Slice(start);
+            }
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1744,8 +1746,7 @@ namespace IronPython.Runtime.Operations {
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
                     e = setFallback(e, new PythonDecoderFallback(encoding,
-                        //data.Slice(start),          // COMPILE ERROR: fallback should be given non-ref srtuct or object
-                        data.Slice(start).ToArray(),  // data copy
+                        data,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
@@ -1754,16 +1755,16 @@ namespace IronPython.Runtime.Operations {
             string decoded = string.Empty;
             try {
                 unsafe {
-                    fixed (byte* bp = data.Slice(start)) {
+                    fixed (byte* bp = data.Span) {
                         if (bp != null) {
 #if FEATURE_ENCODING
                             if (e is UnicodeEscapeEncoding ue) {
                                 // This overload is not virtual, but the base implementation is inefficient for this encoding
-                                decoded = ue.GetString(bp, length);
+                                decoded = ue.GetString(bp, data.Length);
                             } else
 #endif
                             {
-                                decoded = e.GetString(bp, length);
+                                decoded = e.GetString(bp, data.Length);
                             }
                         }
                     }
@@ -1771,7 +1772,7 @@ namespace IronPython.Runtime.Operations {
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                ex.Data["object"] = Bytes.Make(data.Slice(start).ToArray());
+                ex.Data["object"] = new Bytes(data);
                 throw;
             }
 
@@ -1783,7 +1784,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         private static int GetStartingOffset(Encoding e, in ReadOnlySpan<byte> bytes) {
             byte[] preamble = e.GetPreamble();
-            return bytes.StartsWith(preamble) ? preamble.Length : 0;
+            return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {
@@ -2404,13 +2405,14 @@ namespace IronPython.Runtime.Operations {
         private class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly object _function;
             private readonly string _encoding;
-            private readonly IList<byte> _strData;
+            private readonly ReadOnlyMemory<byte> _data;
+            private Bytes _byteData;
             private string _buffer;
             private int _bufferIndex;
 
-            public PythonDecoderFallbackBuffer(string encoding, IList<byte> str, object callable) {
+            public PythonDecoderFallbackBuffer(string encoding, ReadOnlyMemory<byte> data, object callable) {
                 _encoding = encoding;
-                _strData = str;
+                _data = data;
                 _function = callable;
             }
 
@@ -2444,7 +2446,8 @@ namespace IronPython.Runtime.Operations {
             public override bool Fallback(byte[] bytesUnknown, int index) {
                 if (_function != null) {
                     // create the exception object to hand to the user-function...
-                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _strData, index, index + bytesUnknown.Length, "unexpected code byte");
+                    _byteData ??= new Bytes(_data);
+                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _byteData, index, index + bytesUnknown.Length, "unexpected code byte");
 
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
@@ -2464,13 +2467,13 @@ namespace IronPython.Runtime.Operations {
 
         private class PythonDecoderFallback : DecoderFallback {
             private readonly string encoding;
-            private readonly IList<byte> data;
+            private readonly ReadOnlyMemory<byte> data;
             private readonly Func<object> lookup;
             private object function;
 
             public PythonDecoderFallback() { }
 
-            public PythonDecoderFallback(string encoding, IList<byte> data, Func<object> lookup) {
+            public PythonDecoderFallback(string encoding, ReadOnlyMemory<byte> data, Func<object> lookup) {
                 this.encoding = encoding;
                 this.data = data;
                 this.lookup = lookup;

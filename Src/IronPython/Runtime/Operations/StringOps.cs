@@ -1722,10 +1722,7 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         internal static string DoDecode(CodeContext context, ReadOnlyMemory<byte> data, string errors, string encoding, Encoding e) {
-            int start = GetStartingOffset(e, data.Span);
-            if (start > 0) {
-                data = data.Slice(start);
-            }
+            data = RemovePreamble(data, e);
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1782,9 +1779,9 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Gets the starting offset checking to see if the incoming bytes already include a preamble.
         /// </summary>
-        private static int GetStartingOffset(Encoding e, in ReadOnlySpan<byte> bytes) {
+        private static ReadOnlyMemory<byte> RemovePreamble(ReadOnlyMemory<byte> bytes, Encoding e) {
             byte[] preamble = e.GetPreamble();
-            return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
+            return preamble.Length > 0 && bytes.Span.StartsWith(preamble) ? bytes.Slice(preamble.Length) : bytes;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {

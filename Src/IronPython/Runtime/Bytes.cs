@@ -36,7 +36,7 @@ namespace IronPython.Runtime {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
-        public Bytes([NotNull]IList<byte> bytes) {
+        public Bytes([NotNull]IEnumerable<byte> bytes) {
             _bytes = bytes.ToArray();
         }
 
@@ -53,10 +53,6 @@ namespace IronPython.Runtime {
         }
 
         public Bytes([NotNull]byte[] bytes) {
-            _bytes = bytes.ToArray();
-        }
-
-        public Bytes([NotNull]ArraySegment<byte> bytes) {
             _bytes = bytes.ToArray();
         }
 

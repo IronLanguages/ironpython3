@@ -112,6 +112,14 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
+            if (fromType.IsGenericType &&
+                fromType.GetGenericTypeDefinition() == typeof(Memory<>) &&
+                toType.IsGenericType &&
+                toType.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>) &&
+                fromType.GetGenericArguments()[0] == toType.GetGenericArguments()[0]) {
+                return true;
+            }
+
             return base.CanConvertFrom(fromType, fromArg, toParameter, level);
         }
 

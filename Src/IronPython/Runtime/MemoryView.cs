@@ -780,7 +780,7 @@ namespace IronPython.Runtime {
         ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
             if (_step == 1) {
                 CheckBuffer();
-                return _end.HasValue ? _buffer.ToMemory().Slice(_start, _end.Value) : _buffer.ToMemory().Slice(_start);
+                return _end.HasValue ? _buffer.ToMemory().Slice(_start, _end.Value - _start) : _buffer.ToMemory().Slice(_start);
             } else {
                 return ((IBufferProtocol)tobytes()).ToMemory();
             }

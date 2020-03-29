@@ -1210,7 +1210,7 @@ namespace IronPython.Modules {
             }
 
             ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-                return ((IBufferProtocol)tobytes()).ToMemory();
+                return ToByteArray().AsMemory();
             }
 
             #endregion

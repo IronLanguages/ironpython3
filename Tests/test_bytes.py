@@ -52,9 +52,8 @@ class BytesTest(IronPythonTestCase):
         for testType in types:
             self.assertEqual(testType(arr), b"abc")
             self.assertEqual(testType(ars), b"abc")
-            if testType != bytearray: # TODO
-                self.assertEqual(testType(rom), b"abc")
-                self.assertEqual(testType(mem), b"abc")
+            self.assertEqual(testType(rom), b"abc")
+            self.assertEqual(testType(mem), b"abc")
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

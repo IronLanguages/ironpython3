@@ -69,6 +69,10 @@ namespace IronPython.Runtime {
             _bytes = new ArrayData<byte>(source);
         }
 
+        public void __init__([BytesLike, NotNull]ReadOnlyMemory<byte> source) {
+            _bytes = new ArrayData<byte>(source);
+        }
+
         public void __init__(object? source) {
             __init__(GetBytes(source));
         }
@@ -1230,20 +1234,23 @@ namespace IronPython.Runtime {
         }
 
         internal static IList<byte> GetBytes(object? value) {
-            if (!(value is ListGenericWrapper<byte>) && value is IList<byte>) {
-                return (IList<byte>)value;
+            switch (value) {
+                case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
+                    return lob;
+                case IBufferProtocol buffer:
+                    return buffer.ToBytes(0, null);
+                case ReadOnlyMemory<byte> rom:
+                    return rom.ToArray();
+                case Memory<byte> mem:
+                    return mem.ToArray();
+                default:
+                    List<byte> ret = new List<byte>();
+                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    while (ie.MoveNext()) {
+                        ret.Add(GetByte(ie.Current));
+                    }
+                    return ret;
             }
-
-            if (value is IBufferProtocol buffer) {
-                return buffer.ToBytes(0, null);
-            }
-
-            List<byte> ret = new List<byte>();
-            IEnumerator ie = PythonOps.GetEnumerator(value);
-            while (ie.MoveNext()) {
-                ret.Add(GetByte(ie.Current));
-            }
-            return ret;
         }
 
         #endregion

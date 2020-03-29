@@ -154,7 +154,7 @@ namespace IronPython.Modules {
             => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
         public static PythonTuple escape_decode([BytesLike,NotNull]IList<byte> data, string? errors = null) {
-            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
+            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, isAscii: false, normalizeLineEndings: false, getErrorHandler(errors));
 
             return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
 

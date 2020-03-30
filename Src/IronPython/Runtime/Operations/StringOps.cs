@@ -971,16 +971,11 @@ namespace IronPython.Runtime.Operations {
             return new PythonTuple(obj);
         }
 
-        //  when no maxsplit arg is given then just use split
-        public static PythonList rsplit(this string self) {
-            return SplitInternal(self, (char[])null, -1);
-        }
-
-        public static PythonList rsplit(this string self, string sep) {
-            return rsplit(self, sep, -1);
-        }
-
-        public static PythonList rsplit(this string self, string sep, int maxsplit) {
+        public static PythonList rsplit(this string self, string sep = null, int maxsplit = -1) {
+            if (sep == null && maxsplit < 0) {
+                // in this case rsplit becomes equivalent of split
+                return SplitInternal(self, (char[])null, -1);
+            }
             //  rsplit works like split but needs to split from the right;
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
@@ -1009,15 +1004,7 @@ namespace IronPython.Runtime.Operations {
             return self.TrimEnd(chars.ToCharArray());
         }
 
-        public static PythonList split(this string self) {
-            return SplitInternal(self, (char[])null, -1);
-        }
-
-        public static PythonList split(this string self, string sep) {
-            return split(self, sep, -1);
-        }
-
-        public static PythonList split(this string self, string sep, int maxsplit) {
+        public static PythonList split(this string self, string sep = null, int maxsplit = -1) {
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility

@@ -286,35 +286,28 @@ namespace IronPython.Runtime.Operations {
             return -1;
         }
 
-        internal static List<byte>[] Split(this IList<byte> str, IList<byte>? separators, int maxComponents, StringSplitOptions options) {
+        internal static List<byte>[] Split(this IList<byte> str, IList<byte>? separator, int maxComponents, StringSplitOptions options) {
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
 
-            if (separators == null) {
+            if (separator == null) {
                 Debug.Assert(!keep_empty);
                 return SplitOnWhiteSpace(str, maxComponents);
             }
 
-            List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
+            List<List<byte>> result = new List<List<byte>>(maxComponents + 1);
 
             int i = 0;
             int next;
-            while (maxComponents > 1 && i < str.Count && (next = IndexOfAny(str, separators, i)) != -1) {
+            while (maxComponents > 1 && i < str.Count && (next = str.IndexOf(separator, i)) != -1) {
                 if (next > i || keep_empty) {
                     result.Add(Substring(str, i, next - i));
                     maxComponents--;
                 }
 
-                i = next + separators.Count;
+                i = next + separator.Count;
             }
 
             if (i < str.Count || keep_empty) {
-                /*while (i < str.Count) {
-                    if (!separators.Contains(str[i])) {
-                        break;
-                    }
-
-                    i++;
-                }*/
                 result.Add(Substring(str, i));
             }
 
@@ -322,7 +315,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>[] SplitOnWhiteSpace(this IList<byte> str, int maxComponents) {
-            var result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
+            var result = new List<List<byte>>(maxComponents + 1);
 
             int i = 0;
             int next;
@@ -450,6 +443,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static PythonList RightSplit(this IList<byte> bytes, IList<byte>? sep, int maxsplit, Func<IList<byte>, IList<byte>> ctor) {
+            if (sep == null && maxsplit < 0) {
+                // in this case RightSplit becomes equivalent of Split
+                return SplitInternal(bytes, null, -1, ctor);
+            }
             //  rsplit works like split but needs to split from the right;
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
@@ -811,8 +808,6 @@ namespace IronPython.Runtime.Operations {
 
             if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
-            } else if (sep.Count == 1) {
-                return SplitInternal(bytes, new byte[] { sep[0] }, maxsplit, ctor);
             } else {
                 return SplitInternal(bytes, sep, maxsplit, ctor);
             }
@@ -830,7 +825,7 @@ namespace IronPython.Runtime.Operations {
             //  If the optional second argument sep is absent or None, the words are separated 
             //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
 
-            List<byte>[] r = bytes.Split(separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, GetStringSplitOptions(separator));
+            List<byte>[] r = bytes.Split(separator, (maxsplit < 0 || maxsplit > bytes.Count) ? bytes.Count + 1 : maxsplit + 1, GetStringSplitOptions(separator));
 
             PythonList ret = PythonOps.MakeEmptyList(r.Length);
             foreach (List<byte> s in r) {

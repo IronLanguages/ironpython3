@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace IronPython.Runtime.Operations {
@@ -608,9 +609,14 @@ namespace IronPython.Runtime.Operations {
             return -1;
         }
 
-        internal static string BytesRepr(this IList<byte> bytes) {
+        internal static string BytesRepr(this IReadOnlyList<byte> bytes) {
             StringBuilder res = new StringBuilder();
-            res.Append("b'");
+            res.Append('b');
+            char quote = '\'';
+            if (bytes.Any(b => b == '\'') && bytes.All(b => b != '\"')) {
+                quote = '\"';
+            }
+            res.Append(quote);
             for (int i = 0; i < bytes.Count; i++) {
                 byte ch = bytes[i];
 
@@ -619,12 +625,11 @@ namespace IronPython.Runtime.Operations {
                     case (byte)'\t': res.Append("\\t"); break;
                     case (byte)'\n': res.Append("\\n"); break;
                     case (byte)'\r': res.Append("\\r"); break;
-                    case (byte)'\'':
-                        res.Append('\\');
-                        res.Append('\'');
-                        break;
                     default:
-                        if (ch < ' ' || (ch >= 0x7f && ch <= 0xff)) {
+                        if (ch == quote) {
+                            res.Append('\\');
+                            res.Append((char)ch);
+                        } else if (ch < ' ' || (ch >= 0x7f && ch <= 0xff)) {
                             res.AppendFormat("\\x{0:x2}", ch);
                         } else {
                             res.Append((char)ch);
@@ -632,7 +637,7 @@ namespace IronPython.Runtime.Operations {
                         break;
                 }
             }
-            res.Append("'");
+            res.Append(quote);
             return res.ToString();
         }
 

@@ -1426,4 +1426,11 @@ class BytesTest(IronPythonTestCase):
     def test_add(self):
         self.assertEqual(bytearray(b"abc") + memoryview(b"def"), b"abcdef")
 
+    def test_literals(self):
+        s = "'ÿ'"
+        for prefix in ["b", "rb"]:
+            self.assertRaises(SyntaxError, eval, prefix + s)
+            self.assertRaises(SyntaxError, eval, prefix + "\\" + s)
+            self.assertRaises(SyntaxError, eval, prefix + "\\\\" + s)
+
 run_test(__name__)

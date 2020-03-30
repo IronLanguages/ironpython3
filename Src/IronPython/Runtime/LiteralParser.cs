@@ -226,7 +226,7 @@ namespace IronPython.Runtime {
 
         internal delegate IReadOnlyList<byte> ParseBytesErrorHandler<T>(IList<T> data, int start, int end);
 
-        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = default) where T : IConvertible {
+        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool isAscii, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = default) where T : IConvertible {
             Debug.Assert(data != null);
             Debug.Assert(start + length <= data.Count);
 
@@ -298,6 +298,9 @@ namespace IronPython.Runtime {
                             buf.Add((byte)val);
                             continue;
                         default:
+                            if (isAscii && ch >= 0x80) {
+                                throw PythonOps.SyntaxError("bytes can only contain ASCII literal characters.");
+                            }
                             buf.Add((byte)'\\');
                             buf.Add((byte)ch);
                             continue;
@@ -308,10 +311,12 @@ namespace IronPython.Runtime {
                         i++;
                     }
                     buf.Add((byte)'\n');
+                } else if (isAscii && ch >= 0x80) {
+                    throw PythonOps.SyntaxError("bytes can only contain ASCII literal characters.");
                 } else {
                     buf.Add((byte)ch);
                 }
-            }            
+            }
 
             return buf;
         }

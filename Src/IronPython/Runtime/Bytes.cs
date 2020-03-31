@@ -424,15 +424,7 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public PythonList rsplit() {
-            return _bytes.SplitInternal(null, -1, x => new Bytes(x));
-        }
-
-        public PythonList rsplit([BytesLike]IList<byte>? sep) {
-            return rsplit(sep, -1);
-        }
-
-        public PythonList rsplit([BytesLike]IList<byte>? sep, int maxsplit) {
+        public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             return _bytes.RightSplit(sep, maxsplit, x => new Bytes(new List<byte>(x)));
         }
 
@@ -447,15 +439,7 @@ namespace IronPython.Runtime {
             return res == null ? this : new Bytes(res);
         }
 
-        public PythonList split() {
-            return _bytes.SplitInternal(null, -1, x => new Bytes(x));
-        }
-
-        public PythonList split([BytesLike]IList<byte>? sep) {
-            return split(sep, -1);
-        }
-
-        public PythonList split([BytesLike]IList<byte>? sep, int maxsplit) {
+        public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             return _bytes.Split(sep, maxsplit, x => new Bytes(x));
         }
 

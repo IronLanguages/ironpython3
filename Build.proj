@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
-    <MacOS Condition="'$(OS)' == 'Unix' AND Exists('/Applications') AND Exists('/Library') AND Exists('/System') AND Exists('/Volumes')">true</MacOS>
+    <MacOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">true</MacOS>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)IronPython.sln</Solution>

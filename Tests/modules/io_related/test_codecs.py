@@ -64,6 +64,10 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.escape_decode(b"ab\\\rc"), (b"ab\\\rc", 5))
         self.assertEqual(codecs.escape_decode(b"ab\\\r\\\nc"), (b"ab\\\rc", 7))
 
+        self.assertEqual(codecs.escape_decode("ÿ".encode('latin-1')), (b'\xff', 1))
+        self.assertEqual(codecs.escape_decode("\\ÿ".encode('latin-1')), (b'\\\xff', 2))
+        self.assertEqual(codecs.escape_decode("\\\\ÿ".encode('latin-1')), (b'\\\xff', 3))
+
     def test_escape_decode_errors(self):
         self.assertEqual(codecs.escape_decode("abc", None), (b"abc", 3))
 

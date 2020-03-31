@@ -1170,11 +1170,7 @@ namespace IronPython.Runtime {
             return new ByteArray(new List<byte>(_bytes));
         }
 
-        private void SliceNoStep(int start, int stop, IList<byte> value) {
-            // always copy from a List object, even if it's a copy of some user defined enumerator.  This
-            // makes it easy to hold the lock for the duration fo the copy.
-            IList<byte> other = GetBytes(value);
-
+        private void SliceNoStep(int start, int stop, IList<byte> other) {
             lock (this) {
                 if (start > stop) {
                     int newSize = Count + other.Count;

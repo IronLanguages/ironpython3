@@ -637,18 +637,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonList rsplit() {
+        public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
-                return _bytes.SplitInternal(null, -1, x => new ByteArray(x));
+                return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
             }
-        }
-
-        public PythonList rsplit([BytesLike]IList<byte>? sep) {
-            return rsplit(sep, -1);
-        }
-
-        public PythonList rsplit([BytesLike]IList<byte>? sep, int maxsplit) {
-            return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
         }
 
         public ByteArray rstrip() {
@@ -666,17 +658,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonList split() {
-            lock (this) {
-                return _bytes.SplitInternal(null, -1, x => new ByteArray(x));
-            }
-        }
-
-        public PythonList split([BytesLike]IList<byte>? sep) {
-            return split(sep, -1);
-        }
-
-        public PythonList split([BytesLike]IList<byte>? sep, int maxsplit) {
+        public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }

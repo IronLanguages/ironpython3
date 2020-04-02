@@ -44,6 +44,12 @@ namespace IronPython.Runtime {
             AddRange(collection);
         }
 
+        public ArrayData(ReadOnlyMemory<T> data) {
+            GC.SuppressFinalize(this);
+            _items = data.ToArray();
+            _size = _items.Length;
+        }
+
         ~ArrayData() {
             Debug.Assert(_dataHandle.HasValue);
             _dataHandle?.Free();

@@ -2,6 +2,8 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import array
+import ctypes
 import sys
 import unittest
 
@@ -25,6 +27,33 @@ class Indexable(object):
         return self.value
 
 class BytesTest(IronPythonTestCase):
+
+    def test_init(self):
+        b = bytes(b'abc')
+
+        for testType in types:
+            self.assertEqual(testType(b), b)
+            self.assertEqual(testType(bytearray(b)), b)
+            self.assertEqual(testType(memoryview(b)), b)
+            self.assertEqual(testType(array.array(b)), b)
+            self.assertEqual(testType(ctypes.c_int32(0x636261)), b"abc\0")
+
+    @unittest.skipUnless(is_cli, "Interop with CLI")
+    def test_init_interop(self):
+        import clr
+        clr.AddReference("System.Memory")
+        from System import Byte, Array, ArraySegment, ReadOnlyMemory, Memory
+
+        arr = Array[Byte](b"abc")
+        ars = ArraySegment[Byte](arr)
+        rom = ReadOnlyMemory[Byte](arr)
+        mem = Memory[Byte](arr)
+
+        for testType in types:
+            self.assertEqual(testType(arr), b"abc")
+            self.assertEqual(testType(ars), b"abc")
+            self.assertEqual(testType(rom), b"abc")
+            self.assertEqual(testType(mem), b"abc")
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

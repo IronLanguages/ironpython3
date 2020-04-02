@@ -3358,35 +3358,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         [Obsolete("Use Bytes(IList<byte>) instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Bytes MakeBytes(byte[] bytes) {
-            return new Bytes(bytes);
+            return Bytes.Make(bytes);
         }
 
         public static byte[] MakeByteArray(this string s) {
-            byte[] ret = new byte[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x100) {
-                    ret[i] = (byte)s[i];
-                } else {
-                    throw PythonOps.UnicodeEncodeError("latin-1", s, i, i + 1, "ordinal not in range(256)");
-                }
-            }
-            return ret;
+            return StringOps.Latin1Encoding.GetBytes(s);
         }
 
         public static string MakeString(this IList<byte> bytes) {
             return MakeString(bytes, bytes.Count);
-        }
-
-        internal static string MakeString(this byte[] preamble, IList<byte> bytes) {
-            char[] chars = new char[preamble.Length + bytes.Count];
-            for (int i = 0; i < preamble.Length; i++) {
-                chars[i] = (char)preamble[i];
-            }
-            for (int i = 0; i < bytes.Count; i++) {
-                chars[i + preamble.Length] = (char)bytes[i];
-            }
-            return new String(chars);
         }
 
         internal static string MakeString(this IList<byte> bytes, int maxBytes) {
@@ -3396,13 +3378,25 @@ namespace IronPython.Runtime.Operations {
         internal static string MakeString(this IList<byte> bytes, int startIdx, int maxBytes) {
             Debug.Assert(startIdx >= 0);
 
-            int bytesToCopy = Math.Min(bytes.Count, maxBytes);
-            StringBuilder b = new StringBuilder(bytesToCopy);
-            int endIdx = startIdx + bytesToCopy;
-            for (int i = startIdx; i < endIdx; i++) {
-                b.Append((char)bytes[i]);
+            if (bytes.Count < maxBytes) maxBytes = bytes.Count;
+            if (maxBytes <= 0 || startIdx >= bytes.Count) return string.Empty;
+
+            byte[] byteArr = (bytes is byte[] arr) ? arr : bytes.ToArray();
+            return StringOps.Latin1Encoding.GetString(byteArr, startIdx, maxBytes);
+        }
+
+        internal static string MakeString(this Span<byte> bytes) {
+            return MakeString((ReadOnlySpan<byte>)bytes);
+        }
+
+        internal static string MakeString(this ReadOnlySpan<byte> bytes) {
+            if (bytes.IsEmpty) {
+                return string.Empty;
+            } else unsafe {
+                fixed (byte* bp = bytes) {
+                    return StringOps.Latin1Encoding.GetString(bp, bytes.Length);
+                }
             }
-            return b.ToString();
         }
 
         /// <summary>

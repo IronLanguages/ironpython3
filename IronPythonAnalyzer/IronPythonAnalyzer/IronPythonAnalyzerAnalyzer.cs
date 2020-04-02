@@ -15,8 +15,9 @@ namespace IronPythonAnalyzer {
 
         private static readonly DiagnosticDescriptor Rule1 = new DiagnosticDescriptor("IPY01", title: "Parameter which is marked not nullable does not have the NotNullAttribute", messageFormat: "Parameter '{0}' does not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Non-nullable reference type parameters should have the NotNullAttribute.");
         private static readonly DiagnosticDescriptor Rule2 = new DiagnosticDescriptor("IPY02", title: "Parameter which is marked nullable has the NotNullAttribute", messageFormat: "Parameter '{0}' should not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Nullable reference type parameters should not have the NotNullAttribute.");
+        private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type ReadOnlyMemory<byte>, IReadOnlyList<byte>, or IList<byte>.");
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3); } }
 
         public override void Initialize(AnalysisContext context) {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
@@ -46,7 +47,24 @@ namespace IronPythonAnalyzer {
                 var notNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
                 var disallowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.DisallowNullAttribute");
                 var allowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.AllowNullAttribute");
+                var bytesLikeAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.BytesLikeAttribute");
+
+                var byteType = context.Compilation.GetTypeByMetadataName("System.Byte");
+                var readOnlyMemoryType = context.Compilation.GetTypeByMetadataName("System.ReadOnlyMemory`1");
+                var ireadOnlyListType = context.Compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyList`1");
+                var ilistType = context.Compilation.GetTypeByMetadataName("System.Collections.Generic.IList`1");
+                var readOnlyMemoryOfByteType = readOnlyMemoryType.Construct(byteType);
+                var ireadOnlyListOfByteType = ireadOnlyListType.Construct(byteType);
+                var ilistOfByteType = ilistType.Construct(byteType);
+
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
+                    if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol))
+                        && !parameterSymbol.Type.Equals(readOnlyMemoryOfByteType)
+                        && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType) && !parameterSymbol.Type.Equals(ilistOfByteType)) {
+                        var diagnostic = Diagnostic.Create(Rule3, parameterSymbol.Locations[0], parameterSymbol.Name, parameterSymbol.Type.MetadataName);
+                        context.ReportDiagnostic(diagnostic);
+                        continue;
+                    }
                     if (parameterSymbol.Type.IsValueType) continue;
                     if (parameterSymbol.Type.Equals(codeContextSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {

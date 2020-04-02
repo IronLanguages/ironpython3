@@ -69,6 +69,10 @@ namespace IronPython.Runtime {
             _bytes = new ArrayData<byte>(source);
         }
 
+        public void __init__([BytesLike, NotNull]ReadOnlyMemory<byte> source) {
+            _bytes = new ArrayData<byte>(source);
+        }
+
         public void __init__(object? source) {
             __init__(GetBytes(source));
         }
@@ -269,13 +273,13 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, _bytes, encoding, errors);
+                return StringOps.RawDecode(context, new MemoryView(this, 0, null, 1, "B", PythonTuple.MakeTuple(_bytes.Count), readonlyView: true), encoding, errors);
             }
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+                return StringOps.DoDecode(context, ((IBufferProtocol)this).ToMemory(), errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
             }
         }
 
@@ -1148,11 +1152,7 @@ namespace IronPython.Runtime {
             return new ByteArray(new List<byte>(_bytes));
         }
 
-        private void SliceNoStep(int start, int stop, IList<byte> value) {
-            // always copy from a List object, even if it's a copy of some user defined enumerator.  This
-            // makes it easy to hold the lock for the duration fo the copy.
-            IList<byte> other = GetBytes(value);
-
+        private void SliceNoStep(int start, int stop, IList<byte> other) {
             lock (this) {
                 if (start > stop) {
                     int newSize = Count + other.Count;
@@ -1212,20 +1212,23 @@ namespace IronPython.Runtime {
         }
 
         internal static IList<byte> GetBytes(object? value) {
-            if (!(value is ListGenericWrapper<byte>) && value is IList<byte>) {
-                return (IList<byte>)value;
+            switch (value) {
+                case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
+                    return lob;
+                case IBufferProtocol buffer:
+                    return buffer.ToBytes(0, null);
+                case ReadOnlyMemory<byte> rom:
+                    return rom.ToArray();
+                case Memory<byte> mem:
+                    return mem.ToArray();
+                default:
+                    List<byte> ret = new List<byte>();
+                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    while (ie.MoveNext()) {
+                        ret.Add(GetByte(ie.Current));
+                    }
+                    return ret;
             }
-
-            if (value is IBufferProtocol buffer) {
-                return buffer.ToBytes(0, null);
-            }
-
-            List<byte> ret = new List<byte>();
-            IEnumerator ie = PythonOps.GetEnumerator(value);
-            while (ie.MoveNext()) {
-                ret.Add(GetByte(ie.Current));
-            }
-            return ret;
         }
 
         #endregion
@@ -1464,6 +1467,10 @@ namespace IronPython.Runtime {
         PythonList IBufferProtocol.ToList(int start, int? end) {
             var res = _bytes.Slice(new Slice(start, end));
             return res == null ? new PythonList() : new PythonList(res);
+        }
+
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            return _bytes.Data.AsMemory(0, _bytes.Count);
         }
 
         #endregion

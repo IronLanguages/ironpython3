@@ -340,7 +340,7 @@ namespace IronPython.Modules {
                     for (int i = 0; i < length; i++) {
                         tight_fit_data[i] = data[i];
                     }
-                    value = length == 0 ? null : new Bytes(tight_fit_data);
+                    value = length == 0 ? null : Bytes.Make(tight_fit_data);
                     break;
                 case REG_EXPAND_SZ:
                 case REG_SZ:

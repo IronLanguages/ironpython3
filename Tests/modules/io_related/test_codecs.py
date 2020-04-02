@@ -859,9 +859,6 @@ class CodecTest(IronPythonTestCase):
 
     #TODO: @skip("multiple_execute")
     def test_register(self):
-        '''
-        TODO: test that functions passed in are actually used
-        '''
         #sanity check - basically just ensure that functions can be registered
         def garbage_func1(param1): pass
         codecs.register(garbage_func1)
@@ -874,6 +871,61 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.register, 1)
         self.assertRaises(TypeError, codecs.register, "abc")
         self.assertRaises(TypeError, codecs.register, 3.14)
+
+        global ironpython_test_codecs_test_register_decode_input
+
+        def my_test_decode(b, errors = None):
+            global ironpython_test_codecs_test_register_decode_input
+            ironpython_test_codecs_test_register_decode_input = b
+            return ('*' * len(b), len(b))
+
+        def my_search_function(name):
+            if name == 'ironpython_test_codecs_test_register':
+                return codecs.CodecInfo(None, my_test_decode)
+
+        codecs.register(my_search_function)
+
+        # When 'codecs.decode' is used, the decode input is passed to the decoding function as is
+        b = b"abc"
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(codecs.decode(b, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(ironpython_test_codecs_test_register_decode_input, b)
+
+        ba = bytearray(b)
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(codecs.decode(ba, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(ironpython_test_codecs_test_register_decode_input, ba)
+
+        mv = memoryview(ba)
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(codecs.decode(mv, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(ironpython_test_codecs_test_register_decode_input, mv)
+
+        import array
+        arr = array.array('B', b)
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(codecs.decode(arr, 'ironpython_test_codecs_test_register'), "***")
+        self.assertIs(ironpython_test_codecs_test_register_decode_input, arr)
+
+        # When 'decode' method is used on 'bytes' or 'bytearray', the object is being wrapped in a readonly 'memoryview'
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(b.decode('ironpython_test_codecs_test_register'), "***")
+        self.assertIs(type(ironpython_test_codecs_test_register_decode_input), memoryview)
+        self.assertTrue(ironpython_test_codecs_test_register_decode_input.readonly)
+        self.assertRaises(TypeError, memoryview.__setitem__, ironpython_test_codecs_test_register_decode_input, 0, 120)
+
+        ironpython_test_codecs_test_register_decode_input = None
+        self.assertEqual(ba.decode('ironpython_test_codecs_test_register'), "***")
+        self.assertIs(type(ironpython_test_codecs_test_register_decode_input), memoryview)
+        self.assertTrue(ironpython_test_codecs_test_register_decode_input.readonly)
+        self.assertRaises(TypeError, memoryview.__setitem__, ironpython_test_codecs_test_register_decode_input, 0, 120)
+        numBytes = len(ba)
+        self.assertEqual(len(ironpython_test_codecs_test_register_decode_input), numBytes)
+        self.assertEqual(ironpython_test_codecs_test_register_decode_input.shape, (numBytes,))
+        ba[1] = ord('x')
+        self.assertEqual(ironpython_test_codecs_test_register_decode_input[1], ord('x'))
+
+        del ironpython_test_codecs_test_register_decode_input
 
     def test_unicode_internal_encode(self):
         # takes one or two parameters, not zero or three
@@ -1217,7 +1269,7 @@ class CodecTest(IronPythonTestCase):
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac\x0a', 6 + bom_len))
             sample1 = sample1[:-1] # 12<euro>
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac', 5 + bom_len))
-            sample1 = sample1[:-1] # 12<uncomplete euro>
+            sample1 = sample1[:-1] # 12<incomplete euro>
             self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12', 2 + bom_len))
 
             sample1 = sample1 + b'x7f' # makes it invalid

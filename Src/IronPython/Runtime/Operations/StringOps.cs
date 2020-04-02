@@ -22,6 +22,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -151,7 +152,9 @@ namespace IronPython.Runtime.Operations {
     /// defined in the CLS System.String type.
     /// </summary>
     public static class StringOps {
-        internal const int LowestUnicodeValue = 0x7f;
+        internal static Encoding Latin1Encoding => _latin1 ??= Encoding.GetEncoding(28591, new EncoderExceptionFallback(), new DecoderExceptionFallback()); // ISO-8859-1
+        [DisallowNull] private static Encoding _latin1;
+
 
         internal static object FastNew(CodeContext/*!*/ context, object x) {
             if (x == null) {
@@ -283,21 +286,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]MemoryView @object, [NotNull]string encoding, string errors = "strict") {
-            return __new__(context, cls, @object.tobytes(), encoding, errors);
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesLike]IList<byte> @object) {
-            if (cls == TypeCache.String) {
-                return FastNew(context, @object);
-            } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
-            }
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesLike]IList<byte> @object, string encoding = "utf-8", string errors = "strict") {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [BytesLike, NotNull]IList<byte> @object, [NotNull]string encoding, [NotNull, DisallowNull]string errors = null) {
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
                 return new Bytes(@object).decode(context, encoding, errors);
@@ -1701,15 +1690,15 @@ namespace IronPython.Runtime.Operations {
         internal static string NormalizeEncodingName(string name) =>
             name?.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
 
-        internal static string RawDecode(CodeContext/*!*/ context, IList<byte> s, string encoding, string errors) {
+        internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string errors) {
             if (TryGetEncoding(encoding, out Encoding e)) {
-                return DoDecode(context, s, errors, encoding, e);
+                return DoDecode(context, data.ToMemory(), errors, encoding, e);
             }
 
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupTextEncoding(context, encoding, "codecs.decode()");
             if (codecTuple != null) {
-                return UserDecode(codecTuple, s, errors);
+                return UserDecode(codecTuple, data, errors);
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
@@ -1719,13 +1708,8 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 #endif
 
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
-            => DoDecode(context, s, errors, encoding, e, s.Count, out _);
-
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, int numBytes, out int numConsumed) {
-            byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.UnsafeByteArray : s.ToArray());
-            int start = GetStartingOffset(e, bytes);
-            int length = numBytes - start;
+        internal static string DoDecode(CodeContext context, ReadOnlyMemory<byte> data, string errors, string encoding, Encoding e) {
+            data = RemovePreamble(data, e);
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1745,25 +1729,36 @@ namespace IronPython.Runtime.Operations {
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
-                    e = setFallback(e, new PythonDecoderFallback(encoding, s,
+                    e = setFallback(e, new PythonDecoderFallback(encoding,
+                        data,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
 #endif
 
-            string decoded;
+            string decoded = string.Empty;
             try {
-                decoded = e.GetString(bytes, start, length);
+                unsafe {
+                    fixed (byte* bp = data.Span) {
+                        if (bp != null) {
+#if FEATURE_ENCODING
+                            if (e is UnicodeEscapeEncoding ue) {
+                                // This overload is not virtual, but the base implementation is inefficient for this encoding
+                                decoded = ue.GetString(bp, data.Length);
+                            } else
+#endif
+                            {
+                                decoded = e.GetString(bp, data.Length);
+                            }
+                        }
+                    }
+                }
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                byte[] inputBytes = new byte[length];
-                Array.Copy(bytes, start, inputBytes, 0, length);
-                ex.Data["object"] = Bytes.Make(inputBytes);
+                ex.Data["object"] = new Bytes(data);
                 throw;
             }
-
-            numConsumed = start + length;
 
             return decoded;
         }
@@ -1771,9 +1766,9 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Gets the starting offset checking to see if the incoming bytes already include a preamble.
         /// </summary>
-        private static int GetStartingOffset(Encoding e, byte[] bytes) {
+        private static ReadOnlyMemory<byte> RemovePreamble(ReadOnlyMemory<byte> bytes, Encoding e) {
             byte[] preamble = e.GetPreamble();
-            return bytes.StartsWith(preamble) ? preamble.Length : 0;
+            return preamble.Length > 0 && bytes.Span.StartsWith(preamble) ? bytes.Slice(preamble.Length) : bytes;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {
@@ -1857,13 +1852,15 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("'{0}' encoder returned '{1}' instead of 'bytes'; use codecs.encode() to encode to arbitrary types", encoding, DynamicHelpers.GetPythonType(res[0]).Name);
         }
 
-        private static string UserDecode(PythonTuple codecInfo, IList<byte> data, string errors) {
+        private static string UserDecode(PythonTuple codecInfo, object data, string errors) {
             var res = CallUserDecodeOrEncode(codecInfo[1], data, errors);
             return Converter.ConvertToString(res[0]);
         }
 
 #if FEATURE_ENCODING
         internal static class CodecsInfo {
+            internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
+            internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
             internal static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, Lazy<Encoding>> MakeCodecsDict() {
@@ -1910,18 +1907,19 @@ namespace IronPython.Runtime.Operations {
                             continue;
 
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = makeEncodingProxy(encInfo.GetEncoding);
-                            break;
+                            d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["cp28591"] = d["28591"] =
+                                d["latin_1"] = d["latin1"] = d["latin"] = d["l1"] = d["cp819"] = d["819"] = makeEncodingProxy(() => Latin1Encoding);
+                            continue;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
                     d[normalizedName] = //...
-                    // publish under code page number as well...
-                    d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
+                        // publish under code page number as well...
+                        d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
                 }
 
-                d["raw_unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(true));
-                d["unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(false));
+                d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);
+                d["unicode_escape"] = makeEncodingProxy(() => UnicodeEscapeEncoding);
 
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding>> kvp in d) {
@@ -2209,15 +2207,31 @@ namespace IronPython.Runtime.Operations {
             public override string GetString(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler());
 
+            public new unsafe string GetString(byte* bytes, int byteCount) {
+                var data = new ReadOnlySpan<byte>(bytes, byteCount);
+                return LiteralParser.ParseString(data, _raw, GetErrorHandler());
+            }
+
+            public override unsafe int GetCharCount(byte* bytes, int count)
+                => LiteralParser.ParseString(new ReadOnlySpan<byte>(bytes, count), _raw, GetErrorHandler()).Length;
+
+            public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount) {
+                var data = new ReadOnlySpan<byte>(bytes, byteCount);
+                var dest = new Span<char>(chars, charCount);
+
+                string res = LiteralParser.ParseString(data, _raw, GetErrorHandler());
+
+                if (res.Length < charCount) charCount = res.Length; 
+                res.AsSpan().Slice(0, charCount).CopyTo(dest);
+                return charCount;
+            }
+
             public override int GetCharCount(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler()).Length;
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
                 string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw, GetErrorHandler());
-
-                for (int i = 0; i < res.Length; i++) {
-                    chars[i + charIndex] = res[i];
-                }
+                res.AsSpan().CopyTo(chars.AsSpan(charIndex));
                 return res.Length;
             }
 
@@ -2232,7 +2246,7 @@ namespace IronPython.Runtime.Operations {
 
                 DecoderFallbackBuffer fbuf = null;
 
-                return delegate (IList<byte> data, int start, int end) {
+                return delegate (in ReadOnlySpan<byte> data, int start, int end, string reason) {
                     fbuf ??= DecoderFallback.CreateFallbackBuffer();
 
                     byte[] bytesUnknown = new byte[end - start];
@@ -2375,13 +2389,14 @@ namespace IronPython.Runtime.Operations {
         private class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly object _function;
             private readonly string _encoding;
-            private readonly IList<byte> _strData;
+            private readonly ReadOnlyMemory<byte> _data;
+            private Bytes _byteData;
             private string _buffer;
             private int _bufferIndex;
 
-            public PythonDecoderFallbackBuffer(string encoding, IList<byte> str, object callable) {
+            public PythonDecoderFallbackBuffer(string encoding, ReadOnlyMemory<byte> data, object callable) {
                 _encoding = encoding;
-                _strData = str;
+                _data = data;
                 _function = callable;
             }
 
@@ -2415,7 +2430,8 @@ namespace IronPython.Runtime.Operations {
             public override bool Fallback(byte[] bytesUnknown, int index) {
                 if (_function != null) {
                     // create the exception object to hand to the user-function...
-                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _strData, index, index + bytesUnknown.Length, "unexpected code byte");
+                    _byteData ??= new Bytes(_data);
+                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _byteData, index, index + bytesUnknown.Length, "unexpected code byte");
 
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
@@ -2435,13 +2451,13 @@ namespace IronPython.Runtime.Operations {
 
         private class PythonDecoderFallback : DecoderFallback {
             private readonly string encoding;
-            private readonly IList<byte> data;
+            private readonly ReadOnlyMemory<byte> data;
             private readonly Func<object> lookup;
             private object function;
 
             public PythonDecoderFallback() { }
 
-            public PythonDecoderFallback(string encoding, IList<byte> data, Func<object> lookup) {
+            public PythonDecoderFallback(string encoding, ReadOnlyMemory<byte> data, Func<object> lookup) {
                 this.encoding = encoding;
                 this.data = data;
                 this.lookup = lookup;

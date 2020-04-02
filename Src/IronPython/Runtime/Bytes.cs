@@ -36,7 +36,11 @@ namespace IronPython.Runtime {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
-        public Bytes([BytesLike, NotNull]IList<byte> bytes) {
+        public Bytes([NotNull]IEnumerable<byte> bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
             _bytes = bytes.ToArray();
         }
 
@@ -48,8 +52,12 @@ namespace IronPython.Runtime {
             _bytes = new byte[size];
         }
 
-        private Bytes(byte[] bytes) {
-            _bytes = bytes;
+        public Bytes([NotNull]byte[] bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        private Bytes(byte[] bytes, bool copyData) {
+            _bytes = copyData ? _bytes.ToArray() : bytes;
         }
 
         public Bytes([NotNull]string @string) {
@@ -60,14 +68,14 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
 
-        private static readonly Bytes[] oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
+        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
 
         internal static Bytes FromByte(byte b) {
             return oneByteBytes[b];
         }
 
         internal static Bytes Make(byte[] bytes) {
-            return new Bytes(bytes);
+            return new Bytes(bytes, copyData: false);
         }
 
         internal byte[] UnsafeByteArray {
@@ -110,7 +118,7 @@ namespace IronPython.Runtime {
             => _bytes.CountOf(new[] { @byte.ToByteChecked() }, start ?? 0, end ?? Count);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
-            return StringOps.RawDecode(context, _bytes, encoding, errors);
+            return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
@@ -674,6 +682,10 @@ namespace IronPython.Runtime {
 
         #region Implementation Details
 
+        internal ReadOnlyMemory<byte> AsMemory() {
+            return _bytes.AsMemory();
+        }
+
         private static Bytes JoinOne(object? curVal) {
             if (curVal?.GetType() == typeof(Bytes)) {
                 return (Bytes)curVal;
@@ -693,7 +705,7 @@ namespace IronPython.Runtime {
                 count += list[i]._bytes.Length;
             }
 
-            return new Bytes(res);
+            return Bytes.Make(res);
         }
 
         #endregion
@@ -893,6 +905,10 @@ namespace IronPython.Runtime {
         PythonList IBufferProtocol.ToList(int start, int? end) {
             var res = _bytes.Slice(new Slice(start, end));
             return res == null ? new PythonList() : new PythonList(res);
+        }
+
+        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            return _bytes.AsMemory();
         }
 
         #endregion

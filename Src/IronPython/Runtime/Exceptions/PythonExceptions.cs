@@ -949,8 +949,8 @@ for k, v in toError.items():
                     object inputData = ex.BytesUnknown;
                     int startIdx = 0;
                     int endIdx = ex.BytesUnknown?.Length ?? 0;
-                    if (ex.Data.Contains("object") && ex.Data["object"] is IList<byte> s) {
-                        inputData = s;
+                    if (ex.Data.Contains("object") && ex.Data["object"] is Bytes b) {
+                        inputData = b;
                         startIdx = ex.Index;
                         endIdx += startIdx;
                     }

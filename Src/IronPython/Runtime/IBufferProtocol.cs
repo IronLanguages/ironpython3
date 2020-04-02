@@ -4,6 +4,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -32,5 +33,7 @@ namespace IronPython.Runtime {
         Bytes ToBytes(int start, int? end);
 
         PythonList ToList(int start, int? end);
+
+        ReadOnlyMemory<byte> ToMemory();
     }
 }

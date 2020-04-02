@@ -5,6 +5,7 @@
 // Copyright (c) Jeff Hardy 2010-2012.
 //
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

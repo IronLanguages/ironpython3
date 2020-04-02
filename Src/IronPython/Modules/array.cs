@@ -127,6 +127,14 @@ namespace IronPython.Modules {
                 frombytes(initializer);
             }
 
+            public array([NotNull]string type, [NotNull]array initializer) : this(type) {
+                if (_typeCode != 'u' && initializer._typeCode == 'u') {
+                    throw PythonOps.TypeError("cannot use a unicode array to initialize an array with typecode '{0}'", _typeCode);
+                }
+
+                ExtendIter(initializer);
+            }
+
             public array([NotNull]string type, object? initializer) : this(type) {
                 if (_typeCode != 'u') {
                     if (initializer is string || initializer is Extensible<string>)
@@ -1199,6 +1207,10 @@ namespace IronPython.Modules {
                 }
 
                 return ((array)this[new Slice(start, end)]).tolist();
+            }
+
+            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+                return ToByteArray().AsMemory();
             }
 
             #endregion

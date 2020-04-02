@@ -1185,6 +1185,8 @@ namespace IronPython.Runtime.Operations {
             int length, object start, object stop, object step,
             out int ostart, out int ostop, out int ostep
         ) {
+            Debug.Assert(length >= 0);
+
             if (step == null) {
                 ostep = 1;
             } else {
@@ -1201,7 +1203,7 @@ namespace IronPython.Runtime.Operations {
                 if (ostart < 0) {
                     ostart += length;
                     if (ostart < 0) {
-                        ostart = ostep > 0 ? Math.Min(length, 0) : Math.Min(length - 1, -1);
+                        ostart = ostep > 0 ? 0 : -1;
                     }
                 } else if (ostart >= length) {
                     ostart = ostep > 0 ? length : length - 1;
@@ -1215,7 +1217,7 @@ namespace IronPython.Runtime.Operations {
                 if (ostop < 0) {
                     ostop += length;
                     if (ostop < 0) {
-                        ostop = ostep > 0 ? Math.Min(length, 0) : Math.Min(length - 1, -1);
+                        ostop = ostep > 0 ? 0 : -1;
                     }
                 } else if (ostop >= length) {
                     ostop = ostep > 0 ? length : length - 1;
@@ -1227,6 +1229,8 @@ namespace IronPython.Runtime.Operations {
             long length, long? start, long? stop, long? step,
             out long ostart, out long ostop, out long ostep, out long ocount
         ) {
+            Debug.Assert(length >= 0);
+
             if (step == null) {
                 ostep = 1;
             } else if (step == 0) {
@@ -1242,7 +1246,7 @@ namespace IronPython.Runtime.Operations {
                 if (ostart < 0) {
                     ostart += length;
                     if (ostart < 0) {
-                        ostart = ostep > 0 ? Math.Min(length, 0) : Math.Min(length - 1, -1);
+                        ostart = ostep > 0 ? 0 : -1;
                     }
                 } else if (ostart >= length) {
                     ostart = ostep > 0 ? length : length - 1;
@@ -1256,15 +1260,16 @@ namespace IronPython.Runtime.Operations {
                 if (ostop < 0) {
                     ostop += length;
                     if (ostop < 0) {
-                        ostop = ostep > 0 ? Math.Min(length, 0) : Math.Min(length - 1, -1);
+                        ostop = ostep > 0 ? 0 : -1;
                     }
                 } else if (ostop >= length) {
                     ostop = ostep > 0 ? length : length - 1;
                 }
             }
 
-            ocount = Math.Max(0, ostep > 0 ? (ostop - ostart + ostep - 1) / ostep
-                                           : (ostop - ostart + ostep + 1) / ostep);
+            // ostep can be close long.MaxValue or long.MinValue so unconditional (ostop - ostart + ostep) could overflow
+            ocount = ostep > 0 ? (ostop <= ostart ? 0 : ostep >= (ostop - ostart) ? 1 : checked(ostop - ostart + ostep - 1) / ostep)
+                               : (ostop >= ostart ? 0 : ostep <= (ostop - ostart) ? 1 : checked(ostop - ostart + ostep + 1) / ostep);
         }
 
         public static int FixIndex(int v, int len) {

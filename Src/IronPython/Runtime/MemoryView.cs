@@ -79,9 +79,9 @@ namespace IronPython.Runtime {
 
         private int numberOfElements() {
             if (_end != null) {
-                return (_end.Value - _start) / (_itemsize * _step);
+                return GetSliceLength(_start, _end.Value, CoalesceToInt32((long)_step * _itemsize));
             }
-            return _buffer.ItemCount * (int)_buffer.ItemSize / (_itemsize * _step);
+            return GetSliceLength(0, _buffer.ItemCount * (int)_buffer.ItemSize, CoalesceToInt32((long)_step * _itemsize));
         }
 
         public int __len__() {
@@ -499,7 +499,7 @@ namespace IronPython.Runtime {
                 // When a multidimensional memoryview is sliced, the slice
                 // applies to only the first dimension. Therefore, other
                 // dimensions are inherited.
-                dimensions.Add((stop - start) / step);
+                dimensions.Add(GetSliceLength(start, stop, step));
 
                 // In a 1-dimensional memoryview, the difference in bytes
                 // between the position of mv[x] and mv[x + 1] is guaranteed
@@ -516,7 +516,7 @@ namespace IronPython.Runtime {
 
                 int newStart = _start + start * firstIndexWidth;
                 int newEnd = _start + stop * firstIndexWidth;
-                int newStep = _step * step;
+                int newStep = CoalesceToInt32((long)_step * step);
 
                 PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
 
@@ -528,13 +528,18 @@ namespace IronPython.Runtime {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
 
+                if (ndim != 1) {
+                    throw PythonOps.NotImplementedError("memoryview assignments are restricted to ndim = 1");
+                }
+
                 int start, stop, step;
                 FixSlice(slice, __len__(), out start, out stop, out step);
 
                 slice = new Slice(start, stop, step);
 
+                int sliceLen = GetSliceLength(start, stop, step);
                 int newLen = PythonOps.Length(value);
-                if (stop - start != newLen) {
+                if (sliceLen != newLen) {
                     throw PythonOps.ValueError("cannot resize memory view");
                 }
 
@@ -556,7 +561,18 @@ namespace IronPython.Runtime {
             if (stop < start && step >= 0) {
                 // wrapped iteration is interpreted as empty slice
                 stop = start;
+            } else if (stop > start && step < 0) {
+                stop = start;
             }
+        }
+
+        private static int GetSliceLength(int start, int stop, int step) {
+            // calculations in int could cause overflow, so using long instead
+            return (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
+        }
+
+        private static int CoalesceToInt32(long value) {
+            return (int)Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
         }
 
         public object this[[NotNull]PythonTuple index] {

@@ -345,8 +345,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static int GetSliceSize(int start, int stop, int step) {
-            // could cause overflow (?)
-            return step > 0 ? (stop - start + step - 1) / step : (stop - start + step + 1) / step;
+            // calculations in int could cause overflow, so using long instead
+            return (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
         }
 
         internal static object[] CopyArray(object[] data, int newSize) {

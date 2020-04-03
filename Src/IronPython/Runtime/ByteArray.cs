@@ -1030,7 +1030,7 @@ namespace IronPython.Runtime {
                         int start, stop, step;
                         slice.indices(_bytes.Count, out start, out stop, out step);
 
-                        int n = (step > 0 ? (stop - start + step - 1) : (stop - start + step + 1)) / step;
+                        int n = (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
 
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
 

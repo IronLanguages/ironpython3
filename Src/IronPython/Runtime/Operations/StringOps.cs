@@ -333,23 +333,22 @@ namespace IronPython.Runtime.Operations {
             if (step == 1) {
                 return stop > start ? s.Substring(start, stop - start) : String.Empty;
             } else {
-                int index = 0;
                 char[] newData;
                 if (step > 0) {
-                    if (start > stop) return String.Empty;
+                    if (start >= stop) return String.Empty;
 
-                    int icnt = (stop - start + step - 1) / step;
+                    int icnt = (int)(((long)stop - start + step - 1) / step);
                     newData = new char[icnt];
-                    for (int i = start; i < stop; i += step) {
-                        newData[index++] = s[i];
+                    for (int i = 0, index = start; i < icnt; i++, index += step) {
+                        newData[i] = s[index];
                     }
                 } else {
-                    if (start < stop) return String.Empty;
+                    if (start <= stop) return String.Empty;
 
-                    int icnt = (stop - start + step + 1) / step;
+                    int icnt = (int)(((long)stop - start + step + 1) / step);
                     newData = new char[icnt];
-                    for (int i = start; i > stop; i += step) {
-                        newData[index++] = s[i];
+                    for (int i = 0, index = start; i < icnt; i++, index += step) {
+                        newData[i] = s[index];
                     }
                 }
                 return new string(newData);

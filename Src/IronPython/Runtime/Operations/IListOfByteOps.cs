@@ -913,20 +913,20 @@ namespace IronPython.Runtime.Operations {
                     return null;
                 }
 
-                int icnt = (stop - start + step - 1) / step;
+                int icnt = (int)(((long)stop - start + step - 1) / step);
                 newData = new List<byte>(icnt);
-                for (int i = start; i < stop; i += step) {
-                    newData.Add(bytes[i]);
+                for (long i = start; i < stop; i += step) {
+                    newData.Add(bytes[(int)i]);
                 }
             } else {
                 if (start < stop) {
                     return null;
                 }
 
-                int icnt = (stop - start + step + 1) / step;
+                int icnt = (int)(((long)stop - start + step + 1) / step);
                 newData = new List<byte>(icnt);
-                for (int i = start; i > stop; i += step) {
-                    newData.Add(bytes[i]);
+                for (long i = start; i > stop; i += step) {
+                    newData.Add(bytes[(int)i]);
                 }
             }
 

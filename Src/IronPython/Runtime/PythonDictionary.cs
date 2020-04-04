@@ -59,7 +59,7 @@ namespace IronPython.Runtime {
         }
 
         internal PythonDictionary(int size) {
-            _storage = new CommonDictionaryStorage(size);
+            _storage = size == 0 ? (DictionaryStorage)EmptyDictionaryStorage.Instance : new CommonDictionaryStorage(size);
         }
 
         internal static PythonDictionary FromIAC(CodeContext context, PythonDictionary iac) {

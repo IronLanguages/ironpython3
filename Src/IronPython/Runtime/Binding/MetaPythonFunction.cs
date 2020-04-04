@@ -983,8 +983,7 @@ namespace IronPython.Runtime.Binding {
                     dictCreator = Ast.Assign(
                         _dict,
                         Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeDict)),
-                            AstUtils.Constant(0)
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeEmptyDict))
                         )
                     );
                 }

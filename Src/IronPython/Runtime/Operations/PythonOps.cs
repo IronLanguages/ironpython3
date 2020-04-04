@@ -67,12 +67,9 @@ namespace IronPython.Runtime.Operations {
             return LiteralParser.ParseBigInteger(s, 16);
         }
 
-        public static PythonDictionary MakeDict(int size) {
-            return new PythonDictionary(size);
-        }
-
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonDictionary MakeEmptyDict() {
-            return new PythonDictionary(EmptyDictionaryStorage.Instance);
+            return new PythonDictionary();
         }
 
         /// <summary>

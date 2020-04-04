@@ -400,7 +400,7 @@ namespace IronPython.Modules {
                 throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
 
-            PythonList ret = PythonOps.MakeList();
+            PythonList ret = new PythonList();
             try {
                 addBase(context.LanguageContext.DomainManager.Platform.GetFileSystemEntries(path, "*"), ret);
                 return ret;

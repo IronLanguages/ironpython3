@@ -798,7 +798,7 @@ namespace IronPython.Runtime.Operations {
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility
-                    PythonList result = PythonOps.MakeEmptyList(1);
+                    PythonList result = new PythonList(1);
                     result.AddNoLock(ctor(bytes.LeftStrip() ?? bytes as List<byte> ?? new List<byte>(bytes)));
                     return result;
                 }
@@ -827,14 +827,14 @@ namespace IronPython.Runtime.Operations {
 
             List<byte>[] r = bytes.Split(separator, (maxsplit < 0 || maxsplit > bytes.Count) ? bytes.Count + 1 : maxsplit + 1, GetStringSplitOptions(separator));
 
-            PythonList ret = PythonOps.MakeEmptyList(r.Length);
+            PythonList ret = new PythonList(r.Length);
             foreach (List<byte> s in r) {
                 ret.AddNoLock(ctor(s));
             }
             return ret;
 
             static PythonList SplitEmptyString(bool separators, Func<List<byte>, object> ctor) {
-                PythonList ret = PythonOps.MakeEmptyList(1);
+                PythonList ret = new PythonList(1);
                 if (separators) {
                     ret.AddNoLock(ctor(new List<byte>(0)));
                 }

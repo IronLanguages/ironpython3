@@ -124,7 +124,7 @@ module, or raises ResourceImportError if it wasn't found."
                 //    subname);
 
                 //var pkgpath = PythonOps.MakeList(fullpath);
-                var pkgpath = IronPython.Runtime.Operations.PythonOps.MakeList();
+                var pkgpath = new PythonList();
                 dict.Add("__path__", pkgpath);
             }
 

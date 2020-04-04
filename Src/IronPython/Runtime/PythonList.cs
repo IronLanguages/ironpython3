@@ -273,7 +273,7 @@ namespace IronPython.Runtime {
         }
 
         private static PythonList MultiplyWorker(PythonList self, int count) {
-            if (count <= 0) return PythonOps.MakeEmptyList(0);
+            if (count <= 0) return new PythonList(0);
 
             int n, newCount;
             object?[] ret;

@@ -862,7 +862,7 @@ namespace IronPython.Runtime.Operations {
                 return CallWithContext(context, func, nargs);
             }
 
-            PythonList allArgs = PythonOps.MakeEmptyList(args.Length + 10);
+            PythonList allArgs = new PythonList(args.Length + 10);
             allArgs.AddRange(args);
             IEnumerator e = PythonOps.GetEnumerator(argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
@@ -923,7 +923,7 @@ namespace IronPython.Runtime.Operations {
                 return PythonCalls.Call(func, nargs);
             }
 
-            PythonList allArgs = PythonOps.MakeEmptyList(args.Length + 10);
+            PythonList allArgs = new PythonList(args.Length + 10);
             allArgs.AddRange(args);
             IEnumerator e = PythonOps.GetEnumerator(argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
@@ -1417,17 +1417,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Python runtime helper to create instance of Python List object.
-        /// </summary>
-        /// <returns>New instance of List</returns>
-        public static PythonList MakeList() {
-            return new PythonList();
-        }
-
-        /// <summary>
         /// Python runtime helper to create a populated instance of Python List object.
         /// </summary>
-        public static PythonList MakeList(params object[] items) {
+        internal static PythonList MakeList(params object[] items) {
             return new PythonList(items);
         }
 
@@ -1436,17 +1428,9 @@ namespace IronPython.Runtime.Operations {
         /// copying the array contents.
         /// </summary>
         [NoSideEffects]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonList MakeListNoCopy(params object[] items) {
             return PythonList.FromArrayNoCopy(items);
-        }
-
-        /// <summary>
-        /// Python runtime helper to create a populated instance of Python List object.
-        /// 
-        /// List is populated by arbitrary user defined object.
-        /// </summary>
-        public static PythonList MakeListFromSequence(object sequence) {
-            return new PythonList(sequence);
         }
 
         /// <summary>
@@ -1455,13 +1439,9 @@ namespace IronPython.Runtime.Operations {
         /// List has the initial provided capacity.
         /// </summary>
         [NoSideEffects]
-        public static PythonList MakeEmptyList(int capacity) {
-            return new PythonList(capacity);
-        }
-
-        [NoSideEffects]
-        public static PythonList MakeEmptyListFromCode() {
-            return PythonList.FromArrayNoCopy(ArrayUtils.EmptyObjects);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonList MakeEmptyList() {
+            return new PythonList();
         }
 
         /// <summary>

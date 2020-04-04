@@ -406,9 +406,9 @@ namespace IronPython.Runtime {
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             PythonList list;
             if (_dict == null) {
-                list = PythonOps.MakeList();
+                list = new PythonList();
             } else {
-                list = PythonOps.MakeListFromSequence(_dict);
+                list = new PythonList(_dict);
             }
             list.AddNoLock("__module__");
 

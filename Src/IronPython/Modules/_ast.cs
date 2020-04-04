@@ -188,13 +188,13 @@ namespace IronPython.Modules {
             internal static PythonList ConvertStatements(Statement stmt, bool allowNull) {
                 if (stmt == null)
                     if (allowNull)
-                        return PythonOps.MakeEmptyList(0);
+                        return new PythonList(0);
                     else
                         throw new ArgumentNullException(nameof(stmt));
 
                 if (stmt is SuiteStatement) {
                     SuiteStatement suite = (SuiteStatement)stmt;
-                    PythonList list = PythonOps.MakeEmptyList(suite.Statements.Count);
+                    PythonList list = new PythonList(suite.Statements.Count);
                     foreach (Statement s in suite.Statements)
                         if (s is SuiteStatement)  // multiple stmt in a line
                             foreach (Statement s2 in ((SuiteStatement)s).Statements)
@@ -205,7 +205,7 @@ namespace IronPython.Modules {
                     return list;
                 }
 
-                return PythonOps.MakeListNoCopy(Convert(stmt));
+                return PythonList.FromArrayNoCopy(Convert(stmt));
             }
 
             internal static stmt Convert(Statement stmt) {
@@ -238,7 +238,7 @@ namespace IronPython.Modules {
             }
 
             internal static PythonList ConvertAliases(IList<DottedName> names, IList<string> asnames) {
-                PythonList list = PythonOps.MakeEmptyList(names.Count);
+                PythonList list = new PythonList(names.Count);
 
                 if (names == FromImportStatement.Star) // does it ever happen?
                     list.Add(new alias("*", null));
@@ -250,7 +250,7 @@ namespace IronPython.Modules {
             }
 
             internal static PythonList ConvertAliases(IList<string> names, IList<string> asnames) {
-                PythonList list = PythonOps.MakeEmptyList(names.Count);
+                PythonList list = new PythonList(names.Count);
 
                 if (names == FromImportStatement.Star)
                     list.Add(new alias("*", null));
@@ -491,8 +491,8 @@ namespace IronPython.Modules {
 
             internal arguments(IList<Parameter> parameters)
                 : this() {
-                args = PythonOps.MakeEmptyList(parameters.Count);
-                defaults = PythonOps.MakeEmptyList(parameters.Count);
+                args = new PythonList(parameters.Count);
+                defaults = new PythonList(parameters.Count);
                 kwonlyargs = new PythonList();
                 kw_defaults = new PythonList();
                 foreach (Parameter param in parameters) {
@@ -586,7 +586,7 @@ namespace IronPython.Modules {
                 : this() {
                 target = Convert(listFor.Left, Store.Instance);
                 iter = Convert(listFor.List);
-                ifs = PythonOps.MakeEmptyList(listIfs.Length);
+                ifs = new PythonList(listIfs.Length);
                 foreach (ComprehensionIf listIf in listIfs)
                     ifs.Add(Convert(listIf.Test));
             }
@@ -771,7 +771,7 @@ namespace IronPython.Modules {
 
             internal Assign(AssignmentStatement stmt)
                 : this() {
-                targets = PythonOps.MakeEmptyList(stmt.Left.Count);
+                targets = new PythonList(stmt.Left.Count);
                 foreach (AstExpression expr in stmt.Left)
                     targets.Add(Convert(expr, Store.Instance));
 
@@ -936,13 +936,13 @@ namespace IronPython.Modules {
 
             internal BoolOp(AndExpression and)
                 : this() {
-                values = PythonOps.MakeListNoCopy(Convert(and.Left), Convert(and.Right));
+                values = PythonList.FromArrayNoCopy(Convert(and.Left), Convert(and.Right));
                 op = And.Instance;
             }
 
             internal BoolOp(OrExpression or)
                 : this() {
-                values = PythonOps.MakeListNoCopy(Convert(or.Left), Convert(or.Right));
+                values = PythonList.FromArrayNoCopy(Convert(or.Left), Convert(or.Right));
                 op = Or.Instance;
             }
 
@@ -1028,7 +1028,7 @@ namespace IronPython.Modules {
 
             internal Call(CallExpression call)
                 : this() {
-                args = PythonOps.MakeEmptyList(call.Args.Length);
+                args = new PythonList(call.Args.Length);
                 keywords = new PythonList();
                 func = Convert(call.Target);
                 foreach (Arg arg in call.Args) {
@@ -1092,16 +1092,16 @@ namespace IronPython.Modules {
             internal ClassDef(ClassDefinition def)
                 : this() {
                 name = def.Name;
-                bases = PythonOps.MakeEmptyList(def.Bases.Count);
+                bases = new PythonList(def.Bases.Count);
                 foreach (AstExpression expr in def.Bases)
                     bases.Add(Convert(expr));
                 body = ConvertStatements(def.Body);
                 if (def.Decorators != null) {
-                    decorator_list = PythonOps.MakeEmptyList(def.Decorators.Count);
+                    decorator_list = new PythonList(def.Decorators.Count);
                     foreach (AstExpression expr in def.Decorators)
                         decorator_list.Add(Convert(expr));
                 } else {
-                    decorator_list = PythonOps.MakeEmptyList(0);
+                    decorator_list = new PythonList(0);
                 }
                 if (def.Keywords != null) {
                     keywords = new PythonList(def.Keywords.Count);
@@ -1153,8 +1153,8 @@ namespace IronPython.Modules {
             internal Compare(BinaryExpression expr)
                 : this() {
                 left = Convert(expr.Left);
-                ops = PythonOps.MakeList();
-                comparators = PythonOps.MakeList();
+                ops = new PythonList();
+                comparators = new PythonList();
                 while (BinaryExpression.IsComparison(expr.Right)) {
                     BinaryExpression right = (BinaryExpression)expr.Right;
                     // start accumulating ops and comparators
@@ -1240,7 +1240,7 @@ namespace IronPython.Modules {
 
             internal Delete(DelStatement stmt)
                 : this() {
-                targets = PythonOps.MakeEmptyList(stmt.Expressions.Count);
+                targets = new PythonList(stmt.Expressions.Count);
                 foreach (AstExpression expr in stmt.Expressions)
                     targets.Add(Convert(expr, Del.Instance));
             }
@@ -1268,8 +1268,8 @@ namespace IronPython.Modules {
 
             internal Dict(DictionaryExpression expr)
                 : this() {
-                keys = PythonOps.MakeEmptyList(expr.Items.Count);
-                values = PythonOps.MakeEmptyList(expr.Items.Count);
+                keys = new PythonList(expr.Items.Count);
+                values = new PythonList(expr.Items.Count);
                 foreach (SliceExpression item in expr.Items) {
                     keys.Add(Convert(item.SliceStart));
                     values.Add(Convert(item.SliceStop));
@@ -1423,7 +1423,7 @@ namespace IronPython.Modules {
             }
 
             internal override PythonList GetStatements() {
-                return PythonOps.MakeListNoCopy(body);
+                return PythonList.FromArrayNoCopy(body);
             }
 
             public expr body { get; set; }
@@ -1522,11 +1522,11 @@ namespace IronPython.Modules {
                 body = ConvertStatements(def.Body);
 
                 if (def.Decorators != null) {
-                    decorator_list = PythonOps.MakeEmptyList(def.Decorators.Count);
+                    decorator_list = new PythonList(def.Decorators.Count);
                     foreach (AstExpression expr in def.Decorators)
                         decorator_list.Add(Convert(expr));
                 } else {
-                    decorator_list = PythonOps.MakeEmptyList(0);
+                    decorator_list = new PythonList(0);
                 }
 
                 if (def.ReturnAnnotation != null)
@@ -1735,7 +1735,7 @@ namespace IronPython.Modules {
                 foreach (IfStatementTest ifTest in stmt.Tests) {
                     if (parent != null) {
                         current = new If();
-                        parent.orelse = PythonOps.MakeListNoCopy(current);
+                        parent.orelse = PythonList.FromArrayNoCopy(current);
                     }
 
                     current.Initialize(ifTest);
@@ -2031,7 +2031,7 @@ namespace IronPython.Modules {
 
             internal List(ListExpression list, expr_context ctx)
                 : this() {
-                elts = PythonOps.MakeEmptyList(list.Items.Count);
+                elts = new PythonList(list.Items.Count);
                 foreach (AstExpression expr in list.Items)
                     elts.Add(Convert(expr, ctx));
 
@@ -2594,7 +2594,7 @@ namespace IronPython.Modules {
                 : this() {
                 body = ConvertStatements(stmt.Body);
 
-                handlers = PythonOps.MakeEmptyList(stmt.Handlers.Count);
+                handlers = new PythonList(stmt.Handlers.Count);
                 foreach (TryStatementHandler tryStmt in stmt.Handlers)
                     handlers.Add(Convert(tryStmt));
 
@@ -2635,7 +2635,7 @@ namespace IronPython.Modules {
 
             internal Tuple(TupleExpression list, expr_context ctx)
                 : this() {
-                elts = PythonOps.MakeEmptyList(list.Items.Count);
+                elts = new PythonList(list.Items.Count);
                 foreach (AstExpression expr in list.Items)
                     elts.Add(Convert(expr, ctx));
 

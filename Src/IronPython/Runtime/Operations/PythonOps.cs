@@ -1470,6 +1470,7 @@ namespace IronPython.Runtime.Operations {
         /// <param name="items"></param>
         /// <returns></returns>
         [NoSideEffects]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonTuple MakeTuple(params object[] items) {
             return PythonTuple.MakeTuple(items);
         }
@@ -1479,6 +1480,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         /// <param name="items"></param>
         [NoSideEffects]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonTuple MakeTupleFromSequence(object items) {
             return PythonTuple.Make(items);
         }

@@ -315,12 +315,12 @@ namespace IronPython.Modules {
             public PythonTuple __reduce__() {
                 PythonTuple args;
                 if (StepIsOne()) {
-                    args = PythonOps.MakeTuple(_cur == null ? _curInt : _cur);
+                    args = PythonTuple.MakeTuple(_cur == null ? _curInt : _cur);
                 } else {
-                    args = PythonOps.MakeTuple(_cur == null ? _curInt : _cur, _step);
+                    args = PythonTuple.MakeTuple(_cur == null ? _curInt : _cur, _step);
                 }
 
-                return PythonOps.MakeTuple(DynamicHelpers.GetPythonType(this), args);
+                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
             }
 
             public PythonTuple __reduce_ex__([Optional]int protocol) {

@@ -957,9 +957,9 @@ namespace IronPython.Runtime {
             _pos = -1;
         }
 
-        object IEnumerator<object>.Current => PythonOps.MakeTuple(_keys[_pos], _values[_pos]);
+        object IEnumerator<object>.Current => PythonTuple.MakeTuple(_keys[_pos], _values[_pos]);
 
-        object IEnumerator.Current => PythonOps.MakeTuple(_keys[_pos], _values[_pos]);
+        object IEnumerator.Current => PythonTuple.MakeTuple(_keys[_pos], _values[_pos]);
 
         void IDisposable.Dispose() { }
 

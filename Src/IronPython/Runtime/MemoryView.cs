@@ -227,7 +227,7 @@ namespace IronPython.Runtime {
                     throw PythonOps.TypeError("shape must be a list or a tuple");
                 }
 
-                shapeAsTuple = PythonOps.MakeTupleFromSequence(shape);
+                shapeAsTuple = PythonTuple.Make(shape);
                 int newNDim = shapeAsTuple.Count;
 
                 if (newNDim > MaximumDimensions) {
@@ -270,7 +270,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            return new MemoryView(_buffer, _start, _end, _step, formatAsString, shapeAsTuple ?? PythonOps.MakeTuple(newLength), _isReadOnly);
+            return new MemoryView(_buffer, _start, _end, _step, formatAsString, shapeAsTuple ?? PythonTuple.MakeTuple(newLength), _isReadOnly);
         }
 
         private byte[] unpackBytes(string format, object o) {
@@ -518,7 +518,7 @@ namespace IronPython.Runtime {
                 int newEnd = _start + stop * firstIndexWidth;
                 int newStep = _step * step;
 
-                PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
+                PythonTuple newShape = PythonTuple.Make(dimensions);
 
                 return new MemoryView(_buffer, newStart, newEnd, newStep, format, newShape, _isReadOnly);
             }

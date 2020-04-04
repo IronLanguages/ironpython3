@@ -1027,19 +1027,17 @@ namespace IronPython.Runtime {
 
                         IList<byte> castedVal = GetBytes(value);
 
-                        int start, stop, step;
-                        slice.indices(_bytes.Count, out start, out stop, out step);
-
-                        int n = (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
+                        int start, stop, step, count;
+                        slice.GetIndicesAndCount(_bytes.Count, out start, out stop, out step, out count);
 
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
 
-                        if (list.Count < n) {
-                            throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", n, castedVal.Count);
+                        if (list.Count < count) {
+                            throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", count, castedVal.Count);
                         }
 
                         for (int i = 0, index = start; i < castedVal.Count; i++, index += step) {
-                            if (i >= n) {
+                            if (i >= count) {
                                 if (index == _bytes.Count) {
                                     _bytes.Add(castedVal[i]);
                                 } else {

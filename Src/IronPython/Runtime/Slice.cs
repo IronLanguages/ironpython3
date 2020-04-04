@@ -100,13 +100,11 @@ namespace IronPython.Runtime {
         }
 
         private static void DoSliceAssign(SliceAssign assign, int start, int stop, int step, object? value) {
-            stop = step > 0 ? Math.Max(stop, start) : Math.Min(stop, start);
-            // start, stop, or step may be near int.MaxValue so perform calculations in long
-            int n = (int)Math.Max(0, (step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
             // fast paths, if we know the size then we can
             // do this quickly.
             if (value is IList list) {
-                ListSliceAssign(assign, start, n, step, list);
+                int count = PythonOps.GetSliceCount(start, stop, step);
+                ListSliceAssign(assign, start, count, step, list);
             } else {
                 OtherSliceAssign(assign, start, stop, step, value);
             }
@@ -129,6 +127,11 @@ namespace IronPython.Runtime {
             while (enumerator.MoveNext()) sliceData.AddNoLock(enumerator.Current);
 
             DoSliceAssign(assign, start, stop, step, sliceData);
+        }
+
+        internal void GetIndicesAndCount(int length, out int ostart, out int ostop, out int ostep, out int count) {
+            indices(length, out ostart, out ostop, out ostep);
+            count = PythonOps.GetSliceCount(ostart, ostop, ostep);
         }
 
         private int Compare(Slice obj) {

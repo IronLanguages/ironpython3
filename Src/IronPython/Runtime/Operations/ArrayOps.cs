@@ -298,7 +298,7 @@ namespace IronPython.Runtime.Operations {
                 return GetSlice(data, start, stop);
             }
 
-            int size = GetSliceSize(start, stop, step);
+            int size = PythonOps.GetSliceCount(start, stop, step);
             if (size <= 0) return ArrayUtils.EmptyObjects;
 
             object[] res = new object[size];
@@ -334,7 +334,7 @@ namespace IronPython.Runtime.Operations {
                 Array.Copy(data, start + data.GetLowerBound(0), ret, 0, n);
                 return ret;
             } else {
-                int n = GetSliceSize(start, stop, step);
+                int n = PythonOps.GetSliceCount(start, stop, step);
                 Array ret = Array.CreateInstance(data.GetType().GetElementType(), n);
                 int ri = 0;
                 for (int i = 0, index = start; i < n; i++, index += step) {
@@ -342,11 +342,6 @@ namespace IronPython.Runtime.Operations {
                 }
                 return ret;
             }
-        }
-
-        private static int GetSliceSize(int start, int stop, int step) {
-            // calculations in int could cause overflow, so using long instead
-            return (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
         }
 
         internal static object[] CopyArray(object[] data, int newSize) {

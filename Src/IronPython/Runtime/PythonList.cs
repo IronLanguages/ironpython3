@@ -416,8 +416,8 @@ namespace IronPython.Runtime {
         [System.Diagnostics.CodeAnalysis.NotNull]
         public virtual object? this[[NotNull]Slice slice] {
             get {
-                int start, stop, step;
-                slice.indices(_size, out start, out stop, out step);
+                int start, stop, step, count;
+                slice.GetIndicesAndCount(_size, out start, out stop, out step, out count);
 
                 if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) return new PythonList();
 
@@ -426,12 +426,10 @@ namespace IronPython.Runtime {
                     lock (this) ret = ArrayOps.GetSlice(_data, start, stop);
                     return new PythonList(ret);
                 } else {
-                    // start/stop/step could be near Int32.MaxValue, and simply addition could cause overflow
-                    int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
-                    object?[] ret = new object[n];
+                    object?[] ret = new object[count];
                     lock (this) {
                         int ri = 0;
-                        for (int i = 0, index = start; i < n; i++, index += step) {
+                        for (int i = 0, index = start; i < count; i++, index += step) {
                             ret[ri++] = _data[index];
                         }
                     }

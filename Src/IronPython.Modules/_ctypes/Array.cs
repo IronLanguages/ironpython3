@@ -65,11 +65,11 @@ namespace IronPython.Modules {
 
             public object this[[NotNull]Slice slice] {
                 get {
-                    int start, stop, step;
+                    int start, stop, step, count;
                     int size = ((ArrayType)NativeType).Length;
                     SimpleType elemType = ((ArrayType)NativeType).ElementType as SimpleType;
 
-                    slice.indices(size, out start, out stop, out step);
+                    slice.GetIndicesAndCount(size, out start, out stop, out step, out count);
                     if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
                         if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
                             return String.Empty;
@@ -77,21 +77,20 @@ namespace IronPython.Modules {
                         return new PythonList();
                     }
 
-                    int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
                     if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
                         int elmSize = ((INativeType)elemType).Size;
-                        StringBuilder res = new StringBuilder(n);
+                        StringBuilder res = new StringBuilder(count);
 
-                        for (int i = 0, index = start; i < n; i++, index += step) {
+                        for (int i = 0, index = start; i < count; i++, index += step) {
                             char c = elemType.ReadChar(_memHolder, checked(index * elmSize));
                             res.Append(c);
                         }
 
                         return res.ToString();
                     } else {
-                        object[] ret = new object[n];
+                        object[] ret = new object[count];
                         int ri = 0;
-                        for (int i = 0, index = start; i < n; i++, index += step) {
+                        for (int i = 0, index = start; i < count; i++, index += step) {
                             ret[ri++] = this[index];
                         }
 
@@ -99,14 +98,13 @@ namespace IronPython.Modules {
                     }
                 }
                 set {
-                    int start, stop, step;
+                    int start, stop, step, count;
                     int size = ((ArrayType)NativeType).Length;
 
-                    slice.indices(size, out start, out stop, out step);
+                    slice.GetIndicesAndCount(size, out start, out stop, out step, out count);
 
-                    int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
                     IEnumerator ie = PythonOps.GetEnumerator(value);
-                    for (int i = 0, index = start; i < n; i++, index += step) {
+                    for (int i = 0, index = start; i < count; i++, index += step) {
                         if (!ie.MoveNext()) {
                             throw PythonOps.ValueError("sequence not long enough");
                         }

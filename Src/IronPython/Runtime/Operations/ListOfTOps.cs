@@ -123,8 +123,8 @@ namespace IronPython.Runtime.Operations {
 
         public static List<T> __getitem__(List<T> l, Slice slice) {
             if (slice == null) throw PythonOps.TypeError("List<T> indices must be slices or integers");
-            int start, stop, step;
-            slice.indices(l.Count, out start, out stop, out step);
+            int start, stop, step, icnt;
+            slice.GetIndicesAndCount(l.Count, out start, out stop, out step, out icnt);
             if (step == 1) {
                 return stop > start ? l.Skip(start).Take(stop - start).ToList() : new List<T>();
             } else {
@@ -132,7 +132,6 @@ namespace IronPython.Runtime.Operations {
                 if (step > 0) {
                     if (start >= stop) return new List<T>();
 
-                    int icnt = (int)(((long)stop - start + step - 1) / step);
                     newData = new List<T>(icnt);
                     for (long i = start; i < stop; i += step) {
                         newData.Add(l[(int)i]);
@@ -140,7 +139,6 @@ namespace IronPython.Runtime.Operations {
                 } else {
                     if (start <= stop) return new List<T>();
 
-                    int icnt = (int)(((long)stop - start + step + 1) / step);
                     newData = new List<T>(icnt);
                     for (long i = start; i > stop; i += step) {
                         newData.Add(l[(int)i]);

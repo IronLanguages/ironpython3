@@ -1628,44 +1628,45 @@ namespace IronPython.Runtime.Operations {
         }
 
         // Must stay here for now because libs depend on it.
-        public static void Print(CodeContext/*!*/ context, object o) {
+        internal static void Print(CodeContext/*!*/ context, object o) {
             PrintWithDest(context, context.LanguageContext.SystemStandardOut, o);
         }
 
-        public static void PrintNoNewline(CodeContext/*!*/ context, object o) {
+        internal static void PrintNoNewline(CodeContext/*!*/ context, object o) {
             PrintWithDestNoNewline(context, context.LanguageContext.SystemStandardOut, o);
         }
 
-        public static void PrintWithDest(CodeContext/*!*/ context, object dest, object o) {
+        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o) {
             PrintWithDestNoNewline(context, dest, o);
             Write(context, dest, "\n");
         }
 
-        public static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o) {
+        internal static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o) {
             Write(context, dest, ToString(context, o));
         }
 
-        public static object ReadLineFromSrc(CodeContext/*!*/ context, object src) {
+        internal static object ReadLineFromSrc(CodeContext/*!*/ context, object src) {
             return ReadLine(context, src);
         }
 
         /// <summary>
         /// Prints newline into default standard output
         /// </summary>
-        public static void PrintNewline(CodeContext/*!*/ context) {
+        internal static void PrintNewline(CodeContext/*!*/ context) {
             PrintNewlineWithDest(context, context.LanguageContext.SystemStandardOut);
         }
 
         /// <summary>
         /// Prints newline into specified destination
         /// </summary>
-        public static void PrintNewlineWithDest(CodeContext/*!*/ context, object dest) {
+        internal static void PrintNewlineWithDest(CodeContext/*!*/ context, object dest) {
             PythonOps.Write(context, dest, "\n");
         }
 
         /// <summary>
         /// Called from generated code when we are supposed to print an expression value
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void PrintExpressionValue(CodeContext/*!*/ context, object value) {
             PythonContext pc = context.LanguageContext;
             object dispHook = pc.GetSystemStateValue("displayhook");
@@ -1673,7 +1674,7 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if FEATURE_FULL_CONSOLE
-        public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, object console=null) {
+        internal static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, object console=null) {
             PythonContext pc = context.LanguageContext;
             PythonTuple exInfo = GetExceptionInfoLocal(context, exception);
             pc.SetSystemStateValue("last_type", exInfo[0]);

@@ -96,7 +96,7 @@ namespace IronPython.Hosting {
 
                 // call it with the name of the module to run
                 try {
-                    PythonOps.CallWithKeywordArgs(
+                    PythonCalls.CallWithKeywordArgs(
                         PythonContext.SharedContext,
                         runMod,
                         new object[] { Options.ModuleToRun, "__main__", ScriptingRuntimeHelpers.True },

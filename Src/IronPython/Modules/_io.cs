@@ -2415,7 +2415,7 @@ namespace IronPython.Modules {
                         _bufferTyped.read(context, -1) :
                         PythonOps.Invoke(context, _buffer, "read", -1);
                     object decodeFunc = PythonOps.GetBoundAttr(context, decoder, "decode");
-                    string decoded = (string)PythonOps.CallWithKeywordArgs(
+                    string decoded = (string)PythonCalls.CallWithKeywordArgs(
                         context,
                         decodeFunc,
                         new object[] { next, true },
@@ -2890,7 +2890,7 @@ namespace IronPython.Modules {
                 if (_decoder == null) {
                     output = input.MakeString();
                 } else {
-                    output = PythonOps.CallWithKeywordArgs(
+                    output = PythonCalls.CallWithKeywordArgs(
                         context,
                         PythonOps.GetBoundAttr(context, _decoder, "decode"),
                         new object[] { input, final },

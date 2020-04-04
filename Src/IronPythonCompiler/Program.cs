@@ -220,7 +220,7 @@ namespace IronPythonCompiler {
             // call InitializeModuleEx
             // (this will also run the script)
             // and put the return code on the stack
-            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod("InitializeModuleEx",
+            gen.EmitCall(OpCodes.Call, u.Import(typeof(PythonOps)).GetMethod(nameof(PythonOps.InitializeModuleEx),
                 new IKVM.Reflection.Type[] { u.Import(typeof(System.Reflection.Assembly)), u.Import(typeof(string)), u.Import(typeof(string[])), u.Import(typeof(bool)), u.Import(typeof(Dictionary<string, object>)) }),
                 Type.EmptyTypes);
             gen.Emit(OpCodes.Stloc, intVar);

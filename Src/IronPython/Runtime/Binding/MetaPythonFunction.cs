@@ -329,7 +329,7 @@ namespace IronPython.Runtime.Binding {
                     res = new DynamicMetaObject(
                         _call.Throw(
                             Ast.Call(
-                                typeof(PythonOps).GetMethod(Signature.HasKeywordArgument() ? "BadKeywordArgumentError" : "FunctionBadArgumentError"),
+                                typeof(PythonOps).GetMethod(Signature.HasKeywordArgument() ? nameof(PythonOps.BadKeywordArgumentError) : nameof(PythonOps.FunctionBadArgumentError)),
                                 AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                                 AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
                             ),
@@ -900,11 +900,11 @@ namespace IronPython.Runtime.Binding {
 
                 string methodName;
                 if (typeof(PythonDictionary).IsAssignableFrom(userDict.GetLimitType())) {
-                    methodName = "CopyAndVerifyPythonDictionary";
+                    methodName = nameof(PythonOps.CopyAndVerifyPythonDictionary);
                 } else if (typeof(IDictionary).IsAssignableFrom(userDict.GetLimitType())) {
-                    methodName = "CopyAndVerifyDictionary";
+                    methodName = nameof(PythonOps.CopyAndVerifyDictionary);
                 } else {
-                    methodName = "CopyAndVerifyUserMapping";
+                    methodName = nameof(PythonOps.CopyAndVerifyUserMapping);
                 }
 
                 _init.Add(

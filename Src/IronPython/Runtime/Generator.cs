@@ -358,9 +358,8 @@ namespace IronPython.Runtime {
                 var stack = PythonOps.GetFunctionStack();
                 var functionStack = stack[stack.Count - 1];
                 Debug.Assert(functionStack.Context != null);
-                functionStack.Frame = null; // don't keep the frame since f_back may be invalid
                 stack.RemoveAt(stack.Count - 1);
-                fnStack = functionStack;
+                fnStack = new FunctionStack(functionStack.Context, functionStack.Code); // don't keep the frame since f_back may be invalid
             }
             else {
                 fnStack = null;
@@ -370,7 +369,7 @@ namespace IronPython.Runtime {
         private void RestoreFunctionStack() {
             if (!Context.LanguageContext.PythonOptions.Frames) return;
             if (fnStack != null) {
-                List<FunctionStack> stack = PythonOps.GetFunctionStack();
+                var stack = PythonOps.GetFunctionStack();
                 stack.Add(fnStack.Value);
             }
         }

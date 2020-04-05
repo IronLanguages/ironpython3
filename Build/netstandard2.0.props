@@ -6,7 +6,6 @@
 
   <PropertyGroup>
     <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
-    <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
     <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>

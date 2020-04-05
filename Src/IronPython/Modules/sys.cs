@@ -35,7 +35,6 @@ namespace IronPython.Modules {
 
         private static string GetPrefix() {
             string prefix;
-#if FEATURE_ASSEMBLY_LOCATION
             try {
                 prefix = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             } catch (SecurityException) {
@@ -45,9 +44,6 @@ namespace IronPython.Modules {
             } catch (MethodAccessException) {
                 prefix = String.Empty;
             }
-#else
-            prefix = String.Empty;
-#endif
             return prefix;
         }
 

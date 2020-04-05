@@ -24,7 +24,6 @@
     <Features>$(Features);FEATURE_FULL_CONSOLE</Features>
     <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
     <Features>$(Features);FEATURE_FULL_NET</Features>
-    <Features>$(Features);FEATURE_ICLONEABLE</Features>
     <Features>$(Features);FEATURE_LCG</Features>
     <Features>$(Features);FEATURE_LOADWITHPARTIALNAME</Features>
     <Features>$(Features);FEATURE_METADATA_READER</Features>

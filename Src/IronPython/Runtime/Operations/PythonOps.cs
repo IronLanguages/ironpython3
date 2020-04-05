@@ -1150,7 +1150,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static int ClampToInt32(this long value) {
+        internal static int ClampToInt32(this long value) {
             return (int)Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
         }
 

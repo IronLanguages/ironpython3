@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
 using System;
-using IronPython.Runtime.Binding;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
+    using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class OrExpression : Expression {
@@ -25,22 +24,23 @@ namespace IronPython.Compiler.Ast {
         }
 
         public Expression Left { get; }
+
         public Expression Right { get; }
 
-        public override MSAst.Expression Reduce() {
-            MSAst.Expression left = Left;
-            MSAst.Expression right = Right;
+        public override Ast Reduce() {
+            var left = Left;
+            var right = Right;
 
             Type t = Type;
-            MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
+            var tmp = Variable(t, "__all__");
 
-            return Ast.Block(
+            return Block(
                 new[] { tmp },
-                Ast.Condition(
+                Condition(
                     GlobalParent.Convert(
                         typeof(bool),
                         ConversionResultKind.ExplicitCast,
-                        Ast.Assign(
+                        Assign(
                             tmp,
                             AstUtils.Convert(
                                 left,

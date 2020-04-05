@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
 using System;
-using IronPython.Runtime.Binding;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
+    using Ast = System.Linq.Expressions.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class AndExpression : Expression {
         public AndExpression(Expression left, Expression right) {
@@ -28,15 +27,15 @@ namespace IronPython.Compiler.Ast {
 
         public Expression Right { get; }
 
-        public override MSAst.Expression Reduce() {
-            MSAst.Expression left = Left;
-            MSAst.Expression right = Right;
+        public override Ast Reduce() {
+            var left = Left;
+            var right = Right;
 
             Type t = Type;
-            MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
+            var tmp = Variable(t, "__all__");
 
             return Block(
-                new [] { tmp },
+                new[] { tmp },
                 Condition(
                     GlobalParent.Convert(
                         typeof(bool),
@@ -60,7 +59,8 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type {
             get {
-                return Left.Type == Right.Type ? Left.Type : typeof(object);
+                Type leftType = Left.Type;
+                return leftType == Right.Type ? leftType : typeof(object);
             }
         }
 
@@ -72,10 +72,6 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return Left.CanThrow || Right.CanThrow;
-            }
-        }
+        internal override bool CanThrow => Left.CanThrow || Right.CanThrow;
     }
 }

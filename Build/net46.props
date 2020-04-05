@@ -16,7 +16,6 @@
     <Features>$(Features);FEATURE_CONFIGURATION</Features>
     <Features>$(Features);FEATURE_CTYPES</Features>
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
-    <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
     <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
     <Features>$(Features);FEATURE_ENCODING</Features>
     <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
@@ -42,10 +41,7 @@
     <Features>$(Features);FEATURE_STACK_TRACE</Features>
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
     <Features>$(Features);FEATURE_THREAD</Features>
-    <Features>$(Features);FEATURE_TYPE_EQUIVALENCE</Features>
-    <Features>$(Features);FEATURE_TYPECONVERTER</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
-    <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
     <Features Condition=" '$(Mono)' != 'true' ">$(Features);FEATURE_WPF</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>
   </PropertyGroup>

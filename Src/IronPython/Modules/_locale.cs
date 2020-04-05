@@ -95,11 +95,7 @@ If locale is None then the current setting is returned.
 
 Note: Return value differs from CPython - it is not a string.")]
         public static object strxfrm(CodeContext/*!*/ context, string @string) {
-#if FEATURE_SORTKEY
             return GetLocaleInfo(context).Collate.CompareInfo.GetSortKey(@string);
-#else
-            return @string;
-#endif
         }
 
         private enum LocaleCategories {

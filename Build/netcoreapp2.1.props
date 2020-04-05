@@ -36,7 +36,6 @@
     <Features>$(Features);FEATURE_RUNTIMEINFORMATION</Features>
     <Features>$(Features);FEATURE_SECURITY_RULES</Features>
     <Features>$(Features);FEATURE_SERIALIZATION</Features>
-    <Features>$(Features);FEATURE_SORTKEY</Features>
     <Features>$(Features);FEATURE_STACK_TRACE</Features>
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
     <Features>$(Features);FEATURE_THREAD</Features>

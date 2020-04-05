@@ -386,7 +386,7 @@ namespace IronPython.Compiler.Ast {
                         Parent.GetSaveLineNumberExpression(exception, true),
                         Ast.Throw(
                             Ast.Call(
-                                typeof(ExceptionHelpers).GetMethod("UpdateForRethrow"),
+                                typeof(ExceptionHelpers).GetMethod(nameof(ExceptionHelpers.UpdateForRethrow)),
                                 exception
                             )
                         )

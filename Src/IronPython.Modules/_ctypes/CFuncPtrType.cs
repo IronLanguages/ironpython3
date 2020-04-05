@@ -135,7 +135,7 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("GetFunctionPointerValue"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetFunctionPointerValue)));
                 return null;
             }
 
@@ -150,7 +150,7 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
 
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CreateCFunction"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CreateCFunction)));
             }
 
             string INativeType.TypeFormat {
@@ -263,7 +263,7 @@ namespace IronPython.Modules {
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
                 ilGen.Emit(OpCodes.Ldelem_Ref);
-                ilGen.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CallbackException"));
+                ilGen.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CallbackException)));
 
                 ilGen.EndExceptionBlock();
 

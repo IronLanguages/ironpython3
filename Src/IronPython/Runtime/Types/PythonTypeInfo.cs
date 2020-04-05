@@ -1054,7 +1054,7 @@ namespace IronPython.Runtime.Types {
         private static MemberGroup/*!*/ AllResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             // static types are like modules and define __all__.
             if (type.IsAbstract && type.IsSealed) {
-                return new MemberGroup(new ExtensionPropertyTracker("__all__", typeof(InstanceOps).GetMethod("Get__all__").MakeGenericMethod(type), null, null, type));
+                return new MemberGroup(new ExtensionPropertyTracker("__all__", typeof(InstanceOps).GetMethod(nameof(InstanceOps.Get__all__)).MakeGenericMethod(type), null, null, type));
             }
 
             return MemberGroup.EmptyGroup;
@@ -1210,10 +1210,10 @@ namespace IronPython.Runtime.Types {
                     containsMembers.Add(MethodTracker.FromMemberInfo(typeof(IDictionary).GetMethod("Contains")));
                 } else if (containsMembers == null) {
                     // see if we can produce a contains for IEnumerable
-                    GetEnumeratorContains(type, intf, ref containsMembers, ref hasObjectContains, typeof(IEnumerable<>), typeof(IEnumerable), String.Empty);
+                    GetEnumeratorContains(type, intf, ref containsMembers, ref hasObjectContains, typeof(IEnumerable<>), typeof(IEnumerable));
 
                     if (containsMembers == null) {
-                        GetEnumeratorContains(type, intf, ref containsMembers, ref hasObjectContains, typeof(IEnumerator<>), typeof(IEnumerator), "IEnumerator");
+                        GetEnumeratorContains(type, intf, ref containsMembers, ref hasObjectContains, typeof(IEnumerator<>), typeof(IEnumerator));
                     }
                 }
             }
@@ -1228,7 +1228,9 @@ namespace IronPython.Runtime.Types {
         /// <summary>
         /// Helper for IEnumerable/IEnumerator __contains__ 
         /// </summary>
-        private static void GetEnumeratorContains(Type type, IList<Type> intf, ref List<MemberTracker> containsMembers, ref bool hasObjectContains, Type ienumOfT, Type ienum, string name) {
+        private static void GetEnumeratorContains(Type type, IList<Type> intf, ref List<MemberTracker> containsMembers, ref bool hasObjectContains, Type ienumOfT, Type ienum) {
+            bool isIEnumerator = ienum == typeof(IEnumerator);
+
             foreach (Type t in intf) {
                 if (t.IsGenericType && t.GetGenericTypeDefinition() == ienumOfT) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
@@ -1241,7 +1243,7 @@ namespace IronPython.Runtime.Types {
 
                     containsMembers.Add(
                         (MethodTracker)MethodTracker.FromMemberInfo(
-                            typeof(InstanceOps).GetMethod("ContainsGenericMethod" + name).MakeGenericMethod(t.GetGenericArguments()[0]),
+                            typeof(InstanceOps).GetMethod(isIEnumerator ? nameof(InstanceOps.ContainsGenericMethodIEnumerator) : nameof(InstanceOps.ContainsGenericMethod)).MakeGenericMethod(t.GetGenericArguments()[0]),
                             t
                         )
                     );
@@ -1253,7 +1255,7 @@ namespace IronPython.Runtime.Types {
                     containsMembers = new List<MemberTracker>();
                 }
 
-                containsMembers.Add(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("ContainsMethod" + name), ienum));
+                containsMembers.Add(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod(isIEnumerator ? nameof(InstanceOps.ContainsMethodIEnumerator) : nameof(InstanceOps.ContainsMethod)), ienum));
             }
         }
 

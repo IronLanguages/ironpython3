@@ -285,7 +285,7 @@ namespace IronPython.Runtime {
                     Expression.Block(
                         Expression.Call(
                             Utils.Convert(Expression, typeof(PythonModule)),
-                            typeof(PythonModule).GetMethod("__setattr__"),
+                            typeof(PythonModule).GetMethod(nameof(PythonModule.__setattr__)),
                             PythonContext.GetCodeContext(binder),
                             Expression.Constant(binder.Name),
                             Expression.Convert(value.Expression, typeof(object))
@@ -300,7 +300,7 @@ namespace IronPython.Runtime {
                 return new DynamicMetaObject(
                     Expression.Call(
                         Utils.Convert(Expression, typeof(PythonModule)),
-                        typeof(PythonModule).GetMethod("__delattr__"),
+                        typeof(PythonModule).GetMethod(nameof(PythonModule.__delattr__)),
                         PythonContext.GetCodeContext(binder),
                         Expression.Constant(binder.Name)
                     ),

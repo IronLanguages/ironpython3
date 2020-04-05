@@ -297,7 +297,7 @@ namespace IronPython.Modules {
                     ).Merge(
                         BindingRestrictions.GetExpressionRestriction(
                             Expression.Call(
-                                typeof(ModuleOps).GetMethod("CheckFunctionId"),
+                                typeof(ModuleOps).GetMethod(nameof(ModuleOps.CheckFunctionId)),
                                 Expression.Convert(Expression, typeof(_CFuncPtr)),
                                 Expression.Constant(Value.Id)
                             )
@@ -466,9 +466,9 @@ namespace IronPython.Modules {
                         Debug.Assert(args.Length != 0); // checked earlier
 
                         address = Expression.Call(
-                            typeof(ModuleOps).GetMethod("GetInterfacePointer"),
+                            typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetInterfacePointer)),
                             Expression.Call(
-                                typeof(ModuleOps).GetMethod("GetPointer"),
+                                typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetPointer)),
                                 args[0].Expression
                             ),
                             Expression.Constant(Value._comInterfaceIndex)
@@ -787,7 +787,7 @@ namespace IronPython.Modules {
                             generator.Emit(OpCodes.Add);
                         } else if (_type == typeof(Bytes)) {
                             LocalBuilder lb = generator.DeclareLocal(typeof(byte).MakeByRefType(), true);
-                            generator.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("GetBytes"));
+                            generator.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetBytes)));
                             generator.Emit(OpCodes.Ldc_I4_0);
                             generator.Emit(OpCodes.Ldelema, typeof(Byte));
                             generator.Emit(OpCodes.Stloc, lb);
@@ -795,7 +795,7 @@ namespace IronPython.Modules {
                         } else if (_type == typeof(BigInteger)) {
                             generator.Emit(OpCodes.Call, BigIntToInt32);
                         } else if (!_type.IsValueType) {
-                            generator.Emit(OpCodes.Call, typeof(CTypes).GetMethod("PyObj_ToPtr"));
+                            generator.Emit(OpCodes.Call, typeof(CTypes).GetMethod(nameof(CTypes.PyObj_ToPtr)));
                         }
 
                         return null;
@@ -891,8 +891,8 @@ namespace IronPython.Modules {
                         // alive via the expression returned in GetKeepAlive.
                         generator.Emit(OpCodes.Ldarg, argIndex);
                         generator.Emit(OpCodes.Castclass, typeof(NativeArgument));
-                        generator.Emit(OpCodes.Call, typeof(NativeArgument).GetMethod("get__obj"));
-                        generator.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                        generator.Emit(OpCodes.Call, typeof(NativeArgument).GetProperty(nameof(NativeArgument._obj)).GetGetMethod());
+                        generator.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                         return null;
                     }
 

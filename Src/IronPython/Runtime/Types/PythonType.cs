@@ -2444,7 +2444,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 SetConstructor(
                     BuiltinFunction.MakeFunction(
                         _underlyingSystemType.Name,
-                        new[] { typeof(DelegateOps).GetMethod("__new__") },
+                        new[] { typeof(DelegateOps).GetMethod(nameof(DelegateOps.__new__)) },
                         _underlyingSystemType
                     )
                 );

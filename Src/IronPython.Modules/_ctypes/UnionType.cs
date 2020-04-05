@@ -141,8 +141,8 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckCDataType"));
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CheckCDataType)));
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Ldobj, ((INativeType)this).GetNativeType());
                 return null;
             }

@@ -360,12 +360,12 @@ namespace IronPython.Modules {
                     method.Emit(OpCodes.Ldarg, constantPoolArgument);
                     method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                     method.Emit(OpCodes.Ldelem_Ref);
-                    method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckSimpleCDataType"));
+                    method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CheckSimpleCDataType)));
                     method.Emit(OpCodes.Brfalse, primitive);
 
                     argIndex.Emit(method);
                     method.Emit(OpCodes.Castclass, typeof(CData));
-                    method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                    method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                     method.Emit(OpCodes.Ldobj, ((INativeType)this).GetNativeType());
                     method.Emit(OpCodes.Br, marshalled);
 
@@ -431,13 +431,13 @@ namespace IronPython.Modules {
                             method.Emit(OpCodes.Box, argumentType);
                         }
 
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("GetPointer"));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetPointer)));
 
                         method.MarkLabel(done);
                         break;
                     case SimpleTypeKind.Object:
                         // TODO: Need cleanup here
-                        method.Emit(OpCodes.Call, typeof(CTypes).GetMethod("PyObj_ToPtr"));
+                        method.Emit(OpCodes.Call, typeof(CTypes).GetMethod(nameof(CTypes.PyObj_ToPtr)));
                         break;
                     case SimpleTypeKind.CharPointer:
                         done = method.DefineLabel();
@@ -467,7 +467,7 @@ namespace IronPython.Modules {
                 Label nextTry = method.DefineLabel();
                 LocalBuilder lb = method.DeclareLocal(typeof(byte).MakeByRefType(), true);
 
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckBytes"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.TryCheckBytes)));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
                 method.Emit(OpCodes.Ldc_I4_0);
@@ -481,10 +481,10 @@ namespace IronPython.Modules {
 
             internal static void TryArrayToWCharPtrConversion(ILGenerator method, LocalOrArg argIndex, Type argumentType, Label done) {
                 Label nextTry = method.DefineLabel();
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckWCharArray"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.TryCheckWCharArray)));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Br, done);
 
                 method.MarkLabel(nextTry);
@@ -500,10 +500,10 @@ namespace IronPython.Modules {
 
                 Label nextTry = method.DefineLabel();
                 argIndex.Emit(method);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckCharArray"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.TryCheckCharArray)));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Br, done);
 
                 method.MarkLabel(nextTry);
@@ -556,7 +556,7 @@ namespace IronPython.Modules {
                 }
 
                 lb = method.DeclareLocal(typeof(IntPtr));
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("StringToHGlobalAnsi"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.StringToHGlobalAnsi)));
                 method.Emit(OpCodes.Stloc, lb);
                 method.Emit(OpCodes.Ldloc, lb);
                 method.Emit(OpCodes.Br, done);
@@ -637,7 +637,7 @@ namespace IronPython.Modules {
                         EmitInt64ToObject(method, value);
                         break;
                     case SimpleTypeKind.Object:
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("IntPtrToObject"));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.IntPtrToObject)));
                         break;
                     case SimpleTypeKind.WCharPointer:
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", new[] { typeof(IntPtr) }));
@@ -649,10 +649,10 @@ namespace IronPython.Modules {
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.Char:
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CharToString"));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToString)));
                         break;
                     case SimpleTypeKind.WChar:
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("WCharToString"));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.WCharToString)));
                         break;
                     case SimpleTypeKind.Pointer:
                         Label done, notNull;
@@ -709,7 +709,7 @@ namespace IronPython.Modules {
 
                     method.Emit(OpCodes.Ldloc, tmp);
 
-                    method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CreateSubclassInstance"));
+                    method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CreateSubclassInstance)));
                 }
             }
 

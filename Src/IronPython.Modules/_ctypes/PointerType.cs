@@ -207,10 +207,10 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckNativeArgument"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CheckNativeArgument)));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Br, done);
 
                 // lone cdata being passed
@@ -224,10 +224,10 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("TryCheckCDataPointerType"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.TryCheckCDataPointerType)));
                 method.Emit(OpCodes.Dup);
                 method.Emit(OpCodes.Brfalse, nextTry);
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));                
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Br, done);
 
                 // pointer object being passed
@@ -240,8 +240,8 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ldarg, constantPoolArgument);
                 method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
                 method.Emit(OpCodes.Ldelem_Ref);
-                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CheckCDataType"));
-                method.Emit(OpCodes.Call, typeof(CData).GetMethod("get_UnsafeAddress"));
+                method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CheckCDataType)));
+                method.Emit(OpCodes.Call, typeof(CData).GetProperty(nameof(CData.UnsafeAddress)).GetGetMethod());
                 method.Emit(OpCodes.Ldind_I);
 
                 method.MarkLabel(done);

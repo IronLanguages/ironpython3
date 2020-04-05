@@ -763,7 +763,7 @@ namespace IronPython.Modules {
             method.Emit(OpCodes.Ldc_I4, constantPool.Count - 1);
             method.Emit(OpCodes.Ldelem_Ref);
 
-            method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod("CreateCData"));
+            method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CreateCData)));
         }
 
         private static void EnsureRefCountTable() {

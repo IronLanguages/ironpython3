@@ -37,7 +37,6 @@
     <Features>$(Features);FEATURE_STACK_TRACE</Features>
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
     <Features>$(Features);FEATURE_THREAD</Features>
-    <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>
   </PropertyGroup>
 </Project>

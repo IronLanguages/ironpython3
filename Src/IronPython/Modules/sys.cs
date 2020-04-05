@@ -210,12 +210,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 osVer.Version.Major,
                 osVer.Version.Minor,
                 osVer.Version.Build,
-                (int)osVer.Platform
-#if FEATURE_OS_SERVICEPACK
-                , osVer.ServicePack
-#else
-                , ""
-#endif      
+                (int)osVer.Platform,
+                osVer.ServicePack
                 );
         }
 

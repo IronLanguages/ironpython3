@@ -95,7 +95,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private int Compute(int index) {
+        private long Compute(long index) {
             return index * step + start;
         }
 
@@ -104,7 +104,7 @@ namespace IronPython.Runtime {
             get {
                 int ostart, ostop, ostep;
                 slice.indices(_length, out ostart, out ostop, out ostep);
-                return new PythonRange(Compute(ostart), Compute(ostop), step * ostep);
+                return new PythonRange(Compute(ostart), Compute(ostop), (long)step * ostep);
             }
         }
 

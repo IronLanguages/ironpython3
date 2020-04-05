@@ -1150,6 +1150,10 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        internal static int ClampToInt32(this long value) {
+            return (int)Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
+        }
+
         public static bool IsMappingType(CodeContext/*!*/ context, object o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
                 return true;
@@ -1181,7 +1185,19 @@ namespace IronPython.Runtime.Operations {
             return v;
         }
 
-        public static void FixSlice(
+        internal static int GetSliceCount(int start, int stop, int step) {
+            stop = step > 0 ? Math.Max(stop, start) : Math.Min(stop, start);
+            // calculations on int could cause overflow, so using long instead
+            return (int)((step > 0 ? ((long)stop - start + step - 1) : ((long)stop - start + step + 1)) / step);
+        }
+
+        private static long GetSliceCount(long start, long stop, long step) {
+            // ostep can be close long.MaxValue or long.MinValue so unconditional (ostop - ostart + ostep) could overflow
+            return step > 0 ? (stop <= start ? 0 : step >= (stop - start) ? 1 : checked(stop - start + step - 1) / step)
+                             : (stop >= start ? 0 : step <= (stop - start) ? 1 : checked(stop - start + step + 1) / step);
+        }
+
+        internal static void FixSlice(
             int length, object start, object stop, object step,
             out int ostart, out int ostop, out int ostep
         ) {
@@ -1225,7 +1241,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static void FixSlice(
+        internal static void FixSlice(
             long length, long? start, long? stop, long? step,
             out long ostart, out long ostop, out long ostep, out long ocount
         ) {
@@ -1267,9 +1283,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            // ostep can be close long.MaxValue or long.MinValue so unconditional (ostop - ostart + ostep) could overflow
-            ocount = ostep > 0 ? (ostop <= ostart ? 0 : ostep >= (ostop - ostart) ? 1 : checked(ostop - ostart + ostep - 1) / ostep)
-                               : (ostop >= ostart ? 0 : ostep <= (ostop - ostart) ? 1 : checked(ostop - ostart + ostep + 1) / ostep);
+            ocount = GetSliceCount(ostart, ostop, ostep);
         }
 
         public static int FixIndex(int v, int len) {

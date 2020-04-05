@@ -328,28 +328,25 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static string GetItem(string s, Slice slice) {
             if (slice == null) throw PythonOps.TypeError("string indices must be slices or integers");
-            int start, stop, step;
-            slice.indices(s.Length, out start, out stop, out step);
+            int start, stop, step, icnt;
+            slice.GetIndicesAndCount(s.Length, out start, out stop, out step, out icnt);
             if (step == 1) {
                 return stop > start ? s.Substring(start, stop - start) : String.Empty;
             } else {
-                int index = 0;
                 char[] newData;
                 if (step > 0) {
-                    if (start > stop) return String.Empty;
+                    if (start >= stop) return String.Empty;
 
-                    int icnt = (stop - start + step - 1) / step;
                     newData = new char[icnt];
-                    for (int i = start; i < stop; i += step) {
-                        newData[index++] = s[i];
+                    for (int i = 0, index = start; i < icnt; i++, index += step) {
+                        newData[i] = s[index];
                     }
                 } else {
-                    if (start < stop) return String.Empty;
+                    if (start <= stop) return String.Empty;
 
-                    int icnt = (stop - start + step + 1) / step;
                     newData = new char[icnt];
-                    for (int i = start; i > stop; i += step) {
-                        newData[index++] = s[i];
+                    for (int i = 0, index = start; i < icnt; i++, index += step) {
+                        newData[i] = s[index];
                     }
                 }
                 return new string(newData);

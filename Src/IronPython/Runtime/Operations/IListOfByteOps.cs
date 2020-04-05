@@ -901,8 +901,8 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("indices must be slices or integers");
             }
 
-            int start, stop, step;
-            slice.indices(bytes.Count, out start, out stop, out step);
+            int start, stop, step, icnt;
+            slice.GetIndicesAndCount(bytes.Count, out start, out stop, out step, out icnt);
             if (step == 1) {
                 return stop > start ? bytes.Substring(start, stop - start) : null;
             }
@@ -913,20 +913,18 @@ namespace IronPython.Runtime.Operations {
                     return null;
                 }
 
-                int icnt = (stop - start + step - 1) / step;
                 newData = new List<byte>(icnt);
-                for (int i = start; i < stop; i += step) {
-                    newData.Add(bytes[i]);
+                for (long i = start; i < stop; i += step) {
+                    newData.Add(bytes[(int)i]);
                 }
             } else {
                 if (start < stop) {
                     return null;
                 }
 
-                int icnt = (stop - start + step + 1) / step;
                 newData = new List<byte>(icnt);
-                for (int i = start; i > stop; i += step) {
-                    newData.Add(bytes[i]);
+                for (long i = start; i > stop; i += step) {
+                    newData.Add(bytes[(int)i]);
                 }
             }
 

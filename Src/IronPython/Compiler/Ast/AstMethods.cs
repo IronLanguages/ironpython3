@@ -20,11 +20,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo IsTrue = GetMethod((Func<object, bool>)PythonOps.IsTrue);
         public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<CodeContext, object>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo RaiseAssertionErrorNoMessage = GetMethod((Action<CodeContext>)PythonOps.RaiseAssertionError);
-        public static readonly MethodInfo Repr = GetMethod((Func<CodeContext, object, string>)PythonOps.Repr);
         public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, object[], string, object>)PythonOps.MakeClass);
         public static readonly MethodInfo PrintExpressionValue = GetMethod((Action<CodeContext, object>)PythonOps.PrintExpressionValue);
-        public static readonly MethodInfo PrintWithDest = GetMethod((Action<CodeContext, object, object>)PythonOps.PrintWithDest);
-        public static readonly MethodInfo Print = GetMethod((Action<CodeContext, object>)PythonOps.Print);
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);
         public static readonly MethodInfo ImportStar = GetMethod((Action<CodeContext, string, int>)PythonOps.ImportStar);
@@ -34,10 +31,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
         public static readonly MethodInfo DictAddForComprehension = GetMethod((Action<PythonDictionary, object, object>)PythonOps.DictAddForComprehension);
-        public static readonly MethodInfo MakeEmptyListFromCode = GetMethod((Func<PythonList>)PythonOps.MakeEmptyListFromCode);
         public static readonly MethodInfo CheckUninitialized = GetMethod((Func<object, string, object>)PythonOps.CheckUninitialized);
-        public static readonly MethodInfo PrintNewlineWithDest = GetMethod((Action<CodeContext, object>)PythonOps.PrintNewlineWithDest);
-        public static readonly MethodInfo PrintNewline = GetMethod((Action<CodeContext>)PythonOps.PrintNewline);
         public static readonly MethodInfo PublishModule = GetMethod((Func<CodeContext, string, object>)PythonOps.PublishModule);
         public static readonly MethodInfo RemoveModule = GetMethod((Action<CodeContext, string, object>)PythonOps.RemoveModule);
         public static readonly MethodInfo ModuleStarted = GetMethod((Action<CodeContext, ModuleOptions>)PythonOps.ModuleStarted);
@@ -53,7 +47,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo Is = GetMethod((Func<object, object, object>)PythonOps.Is);
         public static readonly MethodInfo ImportTop = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportTop);
         public static readonly MethodInfo ImportBottom = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportBottom);
-        public static readonly MethodInfo MakeList = GetMethod((Func<PythonList>)PythonOps.MakeList);
+        public static readonly MethodInfo MakeEmptyList = GetMethod((Func<PythonList>)PythonOps.MakeEmptyList);
         public static readonly MethodInfo MakeListNoCopy = GetMethod((Func<object[], PythonList>)PythonOps.MakeListNoCopy);
         public static readonly MethodInfo GetEnumeratorValues = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValues);
         public static readonly MethodInfo GetEnumeratorValuesNoComplexSets = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValuesNoComplexSets);
@@ -68,7 +62,6 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo RemoveName = GetMethod((Action<CodeContext, string>)PythonOps.RemoveName);
         public static readonly MethodInfo SetName = GetMethod((Func<CodeContext, string, object, object>)PythonOps.SetName);
         public static readonly MethodInfo KeepAlive = GetMethod((Action<object>)GC.KeepAlive);
-        public static readonly MethodInfo MakeDict = GetMethod((Func<int, PythonDictionary>)PythonOps.MakeDict);
         public static readonly MethodInfo MakeEmptyDict = GetMethod((Func<PythonDictionary>)PythonOps.MakeEmptyDict);
         public static readonly MethodInfo MakeDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeDictFromItems);
         public static readonly MethodInfo MakeConstantDict = GetMethod((Func<object, PythonDictionary>)PythonOps.MakeConstantDict);

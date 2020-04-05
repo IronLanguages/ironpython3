@@ -640,9 +640,9 @@ namespace IronPython.Modules {
                 var dict = dictObject as PythonDictionary;
 
                 if (version < 3) {
-                    return PythonOps.MakeTuple(
+                    return PythonTuple.MakeTuple(
                         DynamicHelpers.GetPythonType(this),
-                        PythonOps.MakeTuple(
+                        PythonTuple.MakeTuple(
                             typecode,
                             tolist()
                         ),
@@ -650,9 +650,9 @@ namespace IronPython.Modules {
                     );
                 }
 
-                return PythonOps.MakeTuple(
+                return PythonTuple.MakeTuple(
                     _array_reconstructor,
-                    PythonOps.MakeTuple(
+                    PythonTuple.MakeTuple(
                         DynamicHelpers.GetPythonType(this),
                         typecode,
                         TypeCodeToMachineFormat(_typeCode),

@@ -551,7 +551,7 @@ contain the module, but has no source for it.")]
                         }
                         header_offset += header_size;
 
-                        PythonTuple t = PythonOps.MakeTuple(path + name, compress, data_size, file_size, file_offset, time, date, crc);
+                        PythonTuple t = PythonTuple.MakeTuple(path + name, compress, data_size, file_size, file_offset, time, date, crc);
                         files.Add(name, t);
                         count++;
                     }

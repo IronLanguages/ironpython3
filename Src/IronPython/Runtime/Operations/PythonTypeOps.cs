@@ -88,7 +88,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static object CallWorker(CodeContext/*!*/ context, PythonType dt, KwCallInfo args) {
             object[] clsArgs = ArrayUtils.Insert<object>(dt, args.Arguments);
-            object newObject = PythonOps.CallWithKeywordArgs(context,
+            object newObject = PythonCalls.CallWithKeywordArgs(context,
                 GetTypeNew(context, dt),
                 clsArgs,
                 args.Names);
@@ -96,7 +96,7 @@ namespace IronPython.Runtime.Operations {
             if (newObject == null) return null;
 
             if (ShouldInvokeInit(dt, DynamicHelpers.GetPythonType(newObject), args.Arguments.Length)) {
-                PythonOps.CallWithKeywordArgs(context, GetInitMethod(context, dt, newObject), args.Arguments, args.Names);
+                PythonCalls.CallWithKeywordArgs(context, GetInitMethod(context, dt, newObject), args.Arguments, args.Names);
 
                 AddFinalizer(context, dt, newObject);
             }

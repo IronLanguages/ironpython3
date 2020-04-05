@@ -28,7 +28,7 @@ namespace IronPython.Runtime {
         }            
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            value = __get__(instance, PythonOps.ToPythonType(owner));
+            value = __get__(instance, owner);
             return true;
         }
 
@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            value = __get__(instance, PythonOps.ToPythonType(owner));
+            value = __get__(instance, owner);
             return true;
         }
 
@@ -135,7 +135,7 @@ namespace IronPython.Runtime {
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            value = __get__(context, instance, PythonOps.ToPythonType(owner));
+            value = __get__(context, instance, owner);
             return true;
         }
 

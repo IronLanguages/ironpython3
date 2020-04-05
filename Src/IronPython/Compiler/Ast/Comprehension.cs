@@ -78,7 +78,7 @@ namespace IronPython.Compiler.Ast {
         protected override MSAst.ParameterExpression MakeParameter()
             => Ast.Parameter(typeof(PythonList), "list_comprehension_list");
 
-        protected override MethodInfo Factory() => AstMethods.MakeList;
+        protected override MethodInfo Factory() => AstMethods.MakeEmptyList;
 
         public override Ast Reduce() => Scope.AddVariables(base.Reduce());
 

@@ -96,7 +96,7 @@ namespace IronPython.Compiler.Ast {
                 items[i] = Items[i].GetConstantValue();
             }
 
-            return PythonOps.MakeTuple(items);
+            return PythonTuple.MakeTuple(items);
         }
     }
 }

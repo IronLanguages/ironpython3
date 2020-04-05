@@ -291,7 +291,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static PythonList dir(CodeContext/*!*/ context) {
-            PythonList res = PythonOps.MakeListFromSequence(context.Dict.Keys);
+            PythonList res = new PythonList(context.Dict.Keys);
 
             res.sort(context);
             return res;
@@ -1481,7 +1481,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             bool reverse=false) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
-            PythonList l = PythonOps.MakeEmptyList(10);
+            PythonList l = new PythonList(10);
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
             }

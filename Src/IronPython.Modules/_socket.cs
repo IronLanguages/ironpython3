@@ -1244,13 +1244,13 @@ namespace IronPython.Modules {
         public static PythonTuple gethostbyname_ex(CodeContext/*!*/ context, string host) {
             string hostname;
             PythonList aliases;
-            PythonList ips = PythonOps.MakeList();
+            PythonList ips = new PythonList();
 
             IPAddress addr;
             if (IPAddress.TryParse(host, out addr)) {
                 if (AddressFamily.InterNetwork == addr.AddressFamily) {
                     hostname = host;
-                    aliases = PythonOps.MakeEmptyList(0);
+                    aliases = new PythonList(0);
                     ips.append(host);
                 } else {
                     throw PythonExceptions.CreateThrowable(gaierror(context), (int)SocketError.HostNotFound, "no IPv4 addresses associated with host");
@@ -1300,7 +1300,7 @@ namespace IronPython.Modules {
                 throw MakeException(context, e);
             }
 
-            PythonList ipStrings = PythonOps.MakeList();
+            PythonList ipStrings = new PythonList();
             foreach (IPAddress ip in ips) {
                 ipStrings.append(ip.ToString());
             }

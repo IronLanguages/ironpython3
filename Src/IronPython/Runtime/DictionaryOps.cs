@@ -66,7 +66,7 @@ namespace IronPython.Runtime {
         }
 
         private static PythonList ToList(IDictionary<object, object> self) {
-            PythonList ret = PythonOps.MakeEmptyList(self.Count);
+            PythonList ret = new PythonList(self.Count);
             foreach (KeyValuePair<object, object> kv in self) {
                 ret.AddNoLock(PythonTuple.MakeTuple(kv.Key, kv.Value));
             }

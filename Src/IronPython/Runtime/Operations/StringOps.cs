@@ -994,7 +994,7 @@ namespace IronPython.Runtime.Operations {
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility
-                    PythonList result = PythonOps.MakeEmptyList(1);
+                    PythonList result = new PythonList(1);
                     result.AddNoLock(self.TrimStart());
                     return result;
 
@@ -1973,7 +1973,7 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         private static PythonList SplitEmptyString(bool separators) {
-            PythonList ret = PythonOps.MakeEmptyList(1);
+            PythonList ret = new PythonList(1);
             if (separators) {
                 ret.AddNoLock(String.Empty);
             }
@@ -1993,7 +1993,7 @@ namespace IronPython.Runtime.Operations {
                 (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
                 (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
 
-            PythonList ret = PythonOps.MakeEmptyList(r.Length);
+            PythonList ret = new PythonList(r.Length);
             foreach (string s in r) ret.AddNoLock(s);
             return ret;
         }
@@ -2004,7 +2004,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 string[] r = StringUtils.Split(self, separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, StringSplitOptions.None);
 
-                PythonList ret = PythonOps.MakeEmptyList(r.Length);
+                PythonList ret = new PythonList(r.Length);
                 foreach (string s in r) ret.AddNoLock(s);
                 return ret;
             }

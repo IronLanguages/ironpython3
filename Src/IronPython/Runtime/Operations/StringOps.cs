@@ -443,7 +443,7 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        public static bool endswith(this string self, object suffix) {
+        public static bool endswith([NotNull]this string self, object suffix) {
             TryStringOrTuple(suffix);
             if (suffix is PythonTuple)
                 return endswith(self, (PythonTuple)suffix);
@@ -451,20 +451,34 @@ namespace IronPython.Runtime.Operations {
                 return endswith(self, CastString(suffix));
         }
 
-        public static bool endswith(this string self, object suffix, int start) {
+        public static bool endswith([NotNull]this string self, object suffix, int start) {
             TryStringOrTuple(suffix);
             if (suffix is PythonTuple)
-                return endswith(self, (PythonTuple)suffix, start);
+                return endswith(self, (PythonTuple)suffix, start, self.Length);
             else
-                return endswith(self, CastString(suffix), start);
+                return endswith(self, CastString(suffix), start, self.Length);
         }
 
-        public static bool endswith(this string self, object suffix, int start, int end) {
+        public static bool endswith([NotNull]this string self, object suffix, int start, int end) {
             TryStringOrTuple(suffix);
             if (suffix is PythonTuple)
                 return endswith(self, (PythonTuple)suffix, start, end);
             else
                 return endswith(self, CastString(suffix), start, end);
+        }
+
+        public static bool endswith([NotNull]this string self, object suffix, object start = null, object end = null) {
+            TryStringOrTuple(suffix);
+            if (suffix is PythonTuple pt) {
+                int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+                int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+                return endswith(self, pt, istart, iend);
+            } else {
+                string ssuffix = CastString(suffix);
+                int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+                int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+                return endswith(self, ssuffix, istart, iend);
+            }
         }
 
         public static string expandtabs(string self) {
@@ -1043,28 +1057,42 @@ namespace IronPython.Runtime.Operations {
                 ret.AddNoLock(self.Substring(linestart, i - linestart));
             return ret;
         }
-        public static bool startswith(this string self, object prefix) {
+        public static bool startswith([NotNull]this string self, object prefix) {
             TryStringOrTuple(prefix);
-            if (prefix is PythonTuple)
-                return startswith(self, (PythonTuple)prefix);
+            if (prefix is PythonTuple pt)
+                return startswith(self, pt);
             else
                 return startswith(self, CastString(prefix));
         }
 
-        public static bool startswith(this string self, object prefix, int start) {
+        public static bool startswith([NotNull]this string self, object prefix, int start) {
             TryStringOrTuple(prefix);
-            if (prefix is PythonTuple)
-                return startswith(self, (PythonTuple)prefix, start);
+            if (prefix is PythonTuple pt)
+                return startswith(self, pt, start, self.Length);
             else
-                return startswith(self, CastString(prefix), start);
+                return startswith(self, CastString(prefix), start, self.Length);
         }
 
-        public static bool startswith(this string self, object prefix, int start, int end) {
+        public static bool startswith([NotNull]this string self, object prefix, int start, int end) {
             TryStringOrTuple(prefix);
-            if (prefix is PythonTuple)
-                return startswith(self, (PythonTuple)prefix, start, end);
+            if (prefix is PythonTuple pt)
+                return startswith(self, pt, start, end);
             else
                 return startswith(self, CastString(prefix), start, end);
+        }
+
+        public static bool startswith([NotNull]this string self, object prefix, object start = null, object end = null) {
+            TryStringOrTuple(prefix);
+            if (prefix is PythonTuple pt) {
+                int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+                int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+                return startswith(self, pt, istart, iend);
+            } else {
+                string sprefix = CastString(prefix);
+                int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+                int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+                return startswith(self, sprefix, istart, iend);
+            }
         }
 
         public static string strip(this string self) {
@@ -2027,61 +2055,27 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        public static bool endswith(string self, string suffix) {
+        public static bool endswith([NotNull]string self, [NotNull]string suffix) {
             return self.EndsWith(suffix, StringComparison.Ordinal);
         }
 
-        //  Indexing is 0-based. Need to deal with negative indices
-        //  (which mean count backwards from end of sequence)
-        //  +---+---+---+---+---+
-        //  | a | b | c | d | e |
-        //  +---+---+---+---+---+
-        //    0   1   2   3   4
-        //   -5  -4  -3  -2  -1
-
-        public static bool endswith(string self, string suffix, int start) {
-            int len = self.Length;
-            if (start > len) return false;
-            // map the negative indice to its positive counterpart
-            if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
+        public static bool endswith([NotNull]string self, [NotNull]string suffix, int start) {
+            return endswith(self, suffix, start, self.Length);
         }
 
         //  With optional start, test beginning at that position (the char at that index is
         //  included in the test). With optional end, stop comparing at that position (the
         //  char at that index is not included in the test)
-        public static bool endswith(string self, string suffix, int start, int end) {
-            int len = self.Length;
-            if (start > len) return false;
-            // map the negative indices to their positive counterparts
-            else if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
+        public static bool endswith([NotNull]string self, [NotNull]string suffix, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(self.Length, ref start, ref end)) {
+                return false;
             }
-            if (end >= len) return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
-            else if (end < 0) {
-                end += len;
-                if (end < 0) return false;
-            }
-            if (end < start) return false;
-            return self.Substring(start, end - start).EndsWith(suffix, StringComparison.Ordinal);
+            return self.AsSpan().Slice(start, end - start).EndsWith(suffix.AsSpan(), StringComparison.Ordinal);
         }
 
         private static bool endswith(string self, PythonTuple suffix) {
             foreach (object obj in suffix) {
                 if (self.EndsWith(GetString(obj), StringComparison.Ordinal)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static bool endswith(string self, PythonTuple suffix, int start) {
-            foreach (object obj in suffix) {
-                if (endswith(self, GetString(obj), start)) {
                     return true;
                 }
             }
@@ -2097,49 +2091,24 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static bool startswith(string self, string prefix) {
+        public static bool startswith([NotNull]string self, [NotNull]string prefix) {
             return self.StartsWith(prefix, StringComparison.Ordinal);
         }
 
-        public static bool startswith(string self, string prefix, int start) {
-            int len = self.Length;
-            if (start > len) return false;
-            if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
+        public static bool startswith([NotNull]string self, [NotNull]string prefix, int start) {
+            return startswith(self, prefix, start, self.Length);
         }
 
-        public static bool startswith(string self, string prefix, int start, int end) {
-            int len = self.Length;
-            if (start > len) return false;
-            // map the negative indices to their positive counterparts
-            else if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
+        public static bool startswith([NotNull]string self, [NotNull]string prefix, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(self.Length, ref start, ref end)) {
+                return false;
             }
-            if (end >= len) return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
-            else if (end < 0) {
-                end += len;
-                if (end < 0) return false;
-            }
-            if (end < start) return false;
-            return self.Substring(start, end - start).StartsWith(prefix, StringComparison.Ordinal);
+            return self.AsSpan().Slice(start, end - start).StartsWith(prefix.AsSpan(), StringComparison.Ordinal);
         }
 
         private static bool startswith(string self, PythonTuple prefix) {
             foreach (object obj in prefix) {
                 if (self.StartsWith(GetString(obj), StringComparison.Ordinal)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static bool startswith(string self, PythonTuple prefix, int start) {
-            foreach (object obj in prefix) {
-                if (startswith(self, GetString(obj), start)) {
                     return true;
                 }
             }

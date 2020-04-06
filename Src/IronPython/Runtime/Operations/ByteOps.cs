@@ -94,6 +94,9 @@ namespace IronPython.Runtime.Operations {
             if (obj is IList<byte> ret) {
                 return ret;
             }
+            if (obj is IBufferProtocol bp) {
+                return bp.ToBytes(0, null);
+            }
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
         }
 

@@ -291,13 +291,21 @@ namespace IronPython.Runtime {
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start) {
             lock (this) {
-                return _bytes.EndsWith(suffix, start);
+                return _bytes.EndsWith(suffix, start, _bytes.Count);
             }
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start, int end) {
             lock (this) {
                 return _bytes.EndsWith(suffix, start, end);
+            }
+        }
+
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.StartsWith(suffix, istart, iend);
             }
         }
 
@@ -309,7 +317,7 @@ namespace IronPython.Runtime {
 
         public bool endswith([NotNull]PythonTuple suffix, int start) {
             lock (this) {
-                return _bytes.EndsWith(suffix, start);
+                return _bytes.EndsWith(suffix, start, _bytes.Count);
             }
         }
 
@@ -317,6 +325,18 @@ namespace IronPython.Runtime {
             lock (this) {
                 return _bytes.EndsWith(suffix, start, end);
             }
+        }
+
+        public bool endswith([NotNull]PythonTuple suffix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.StartsWith(suffix, istart, iend);
+            }
+        }
+
+        public bool endswith(object? arg1, object? arg2 = null, object? arg3 = null) {
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(endswith), PythonOps.GetPythonTypeName(arg1));
         }
 
         public ByteArray expandtabs() {
@@ -686,14 +706,7 @@ namespace IronPython.Runtime {
 
         public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start) {
             lock (this) {
-                int len = Count;
-                if (start > len) {
-                    return false;
-                } else if (start < 0) {
-                    start += len;
-                    if (start < 0) start = 0;
-                }
-                return _bytes.Substring(start).StartsWith(prefix);
+                return _bytes.StartsWith(prefix, start, _bytes.Count);
             }
         }
 
@@ -701,6 +714,12 @@ namespace IronPython.Runtime {
             lock (this) {
                 return _bytes.StartsWith(prefix, start, end);
             }
+        }
+
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+            return _bytes.StartsWith(prefix, istart, iend);
         }
 
         public bool startswith([NotNull]PythonTuple prefix) {
@@ -711,7 +730,7 @@ namespace IronPython.Runtime {
 
         public bool startswith([NotNull]PythonTuple prefix, int start) {
             lock (this) {
-                return _bytes.StartsWith(prefix, start);
+                return _bytes.StartsWith(prefix, start, _bytes.Count);
             }
         }
 
@@ -719,6 +738,16 @@ namespace IronPython.Runtime {
             lock (this) {
                 return _bytes.StartsWith(prefix, start, end);
             }
+        }
+
+        public bool startswith([NotNull]PythonTuple prefix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+            return _bytes.StartsWith(prefix, istart, iend);
+        }
+
+        public bool startswith(object? arg1, object? arg2 = null, object? arg3 = null) {
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(startswith), PythonOps.GetPythonTypeName(arg1));
         }
 
         public ByteArray strip() {

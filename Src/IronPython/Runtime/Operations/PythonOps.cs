@@ -1261,6 +1261,35 @@ namespace IronPython.Runtime.Operations {
             ocount = GetSliceCount(ostart, ostop, ostep);
         }
 
+        /// <summary>
+        /// Maps negative indices to their positive counterparts.
+        /// </summary>
+        internal static bool TryFixSubsequenceIndices(int len, ref int start, ref int end) {
+            if (start > len) {
+                return false;
+            } else if (start < 0) {
+                start += len;
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+
+            if (end > len) {
+                end = len;
+            } else if (end < 0) {
+                end += len;
+                if (end < 0) {
+                    return false;
+                }
+            }
+
+            if (end < start) {
+                return false;
+            }
+
+            return true;
+        }
+
         public static int FixIndex(int v, int len) {
             if (!TryFixIndex(v, len, out int fixedIndex)) {
                 throw PythonOps.IndexError("index out of range: {0}", v);

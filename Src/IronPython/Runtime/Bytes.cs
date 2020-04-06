@@ -130,11 +130,17 @@ namespace IronPython.Runtime {
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start) {
-            return _bytes.EndsWith(suffix, start);
+            return _bytes.EndsWith(suffix, start, _bytes.Length);
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start, int end) {
             return _bytes.EndsWith(suffix, start, end);
+        }
+
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(suffix, istart, iend);
         }
 
         public bool endswith([NotNull]PythonTuple suffix) {
@@ -142,11 +148,21 @@ namespace IronPython.Runtime {
         }
 
         public bool endswith([NotNull]PythonTuple suffix, int start) {
-            return _bytes.EndsWith(suffix, start);
+            return _bytes.EndsWith(suffix, start, _bytes.Length);
         }
 
         public bool endswith([NotNull]PythonTuple suffix, int start, int end) {
             return _bytes.EndsWith(suffix, start, end);
+        }
+
+        public bool endswith([NotNull]PythonTuple suffix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(suffix, istart, iend);
+        }
+
+        public bool endswith(object? arg1, object? arg2 = null, object? arg3 = null) {
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(endswith), PythonOps.GetPythonTypeName(arg1));
         }
 
         public Bytes expandtabs() {
@@ -456,17 +472,17 @@ namespace IronPython.Runtime {
         }
 
         public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start) {
-            int len = Count;
-            if (start > len) return false;
-            if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            return _bytes.Substring(start).StartsWith(prefix);
+            return _bytes.StartsWith(prefix, start, _bytes.Length);
         }
 
         public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start, int end) {
             return _bytes.StartsWith(prefix, start, end);
+        }
+
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(prefix, istart, iend);
         }
 
         public bool startswith([NotNull]PythonTuple prefix) {
@@ -474,11 +490,21 @@ namespace IronPython.Runtime {
         }
 
         public bool startswith([NotNull]PythonTuple prefix, int start) {
-            return _bytes.StartsWith(prefix, start);
+            return _bytes.StartsWith(prefix, start, _bytes.Length);
         }
 
         public bool startswith([NotNull]PythonTuple prefix, int start, int end) {
             return _bytes.StartsWith(prefix, start, end);
+        }
+
+        public bool startswith([NotNull]PythonTuple prefix, object? start = null, object? end = null) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(prefix, istart, iend);
+        }
+
+        public bool startswith(object? arg1, object? arg2 = null, object? arg3 = null) {
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(startswith), PythonOps.GetPythonTypeName(arg1));
         }
 
         public Bytes strip() {

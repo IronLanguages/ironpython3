@@ -1786,7 +1786,6 @@ namespace IronPython.Runtime {
         }
 
         private static string GetInitialPrefix() {
-#if FEATURE_ASSEMBLY_CODEBASE
             try {
                 return typeof(PythonContext).Assembly.CodeBase;
             } catch (SecurityException) {
@@ -1795,9 +1794,6 @@ namespace IronPython.Runtime {
             } catch (MethodAccessException) {
                 return string.Empty;
             }
-#else
-            return string.Empty;
-#endif
         }
 
         /// <summary>

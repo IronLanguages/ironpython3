@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,16 +14,11 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-
 //[assembly: PythonModule("_hashlib", typeof(IronPython.Modules.PythonHashlib))]
 namespace IronPython.Modules {
-    
+
     [PythonHidden]
-    public abstract class HashBase<T>
-#if FEATURE_ICLONEABLE
-            : ICloneable
-#endif
-            where T : HashAlgorithm {
+    public abstract class HashBase<T> : ICloneable where T : HashAlgorithm {
 
         protected T _hasher;
         private static MethodInfo _memberwiseClone;
@@ -69,11 +68,9 @@ namespace IronPython.Modules {
 
         public abstract HashBase<T> copy();
 
-#if FEATURE_ICLONEABLE
         object ICloneable.Clone() {
             return copy();
         }
-#endif
 
         protected T CloneHasher() {
             T clone = default(T);
@@ -88,9 +85,9 @@ namespace IronPython.Modules {
             }
 
             FieldInfo[] fields = _hasher.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            if(fields != null) {
-                foreach(FieldInfo field in fields) {
-                    if(field.FieldType.IsArray) {
+            if (fields != null) {
+                foreach (FieldInfo field in fields) {
+                    if (field.FieldType.IsArray) {
                         lock (_hasher) {
                             Array orig = field.GetValue(_hasher) as Array;
                             if (orig != null) {

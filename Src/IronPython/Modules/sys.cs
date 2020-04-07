@@ -35,7 +35,6 @@ namespace IronPython.Modules {
 
         private static string GetPrefix() {
             string prefix;
-#if FEATURE_ASSEMBLY_LOCATION
             try {
                 prefix = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             } catch (SecurityException) {
@@ -45,9 +44,6 @@ namespace IronPython.Modules {
             } catch (MethodAccessException) {
                 prefix = String.Empty;
             }
-#else
-            prefix = String.Empty;
-#endif
             return prefix;
         }
 
@@ -210,12 +206,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 osVer.Version.Major,
                 osVer.Version.Minor,
                 osVer.Version.Build,
-                (int)osVer.Platform
-#if FEATURE_OS_SERVICEPACK
-                , osVer.ServicePack
-#else
-                , ""
-#endif      
+                (int)osVer.Platform,
+                osVer.ServicePack
                 );
         }
 

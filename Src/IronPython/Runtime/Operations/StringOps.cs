@@ -467,7 +467,11 @@ namespace IronPython.Runtime.Operations {
                 return endswith(self, CastString(suffix), start, end);
         }
 
-        public static bool endswith([NotNull]this string self, object suffix, object start = null, object end = null) {
+        public static bool endswith([NotNull]this string self, object suffix, object start) {
+            return endswith(self, suffix, start, null);
+        }
+
+        public static bool endswith([NotNull]this string self, object suffix, object start, object end) {
             TryStringOrTuple(suffix);
             if (suffix is PythonTuple pt) {
                 int istart = start != null ? Converter.ConvertToIndex(start) : 0;
@@ -1057,6 +1061,7 @@ namespace IronPython.Runtime.Operations {
                 ret.AddNoLock(self.Substring(linestart, i - linestart));
             return ret;
         }
+
         public static bool startswith([NotNull]this string self, object prefix) {
             TryStringOrTuple(prefix);
             if (prefix is PythonTuple pt)
@@ -1081,7 +1086,11 @@ namespace IronPython.Runtime.Operations {
                 return startswith(self, CastString(prefix), start, end);
         }
 
-        public static bool startswith([NotNull]this string self, object prefix, object start = null, object end = null) {
+        public static bool startswith([NotNull]this string self, object prefix, object start) {
+            return startswith(self, prefix, start, null);
+        }
+
+        public static bool startswith([NotNull]this string self, object prefix, object start, object end) {
             TryStringOrTuple(prefix);
             if (prefix is PythonTuple pt) {
                 int istart = start != null ? Converter.ConvertToIndex(start) : 0;

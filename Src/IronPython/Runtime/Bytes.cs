@@ -532,8 +532,8 @@ namespace IronPython.Runtime {
             "With optional end, stop comparing self at that position.\n" +
             "prefix can also be a tuple of bytes-like objects to try.")]
         public bool startswith(object? prefix, object? start = null, object? end = null) {
-            if (prefix is IList<byte> blist) return endswith(blist, start, end);
-            if (prefix is PythonTuple tuple) return endswith(tuple, start, end);
+            if (prefix is IList<byte> blist) return startswith(blist, start, end);
+            if (prefix is PythonTuple tuple) return startswith(tuple, start, end);
             throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(startswith), PythonOps.GetPythonTypeName(prefix));
         }
 

@@ -130,11 +130,21 @@ namespace IronPython.Runtime {
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start) {
-            return _bytes.EndsWith(suffix, start);
+            return _bytes.EndsWith(suffix, start, _bytes.Length);
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix, int start, int end) {
             return _bytes.EndsWith(suffix, start, end);
+        }
+
+        public bool endswith([NotNull]IList<byte> suffix, object? start) {
+            return endswith(suffix, start, null);
+        }
+
+        public bool endswith([BytesLike, NotNull]IList<byte> suffix, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.EndsWith(suffix, istart, iend);
         }
 
         public bool endswith([NotNull]PythonTuple suffix) {
@@ -142,11 +152,32 @@ namespace IronPython.Runtime {
         }
 
         public bool endswith([NotNull]PythonTuple suffix, int start) {
-            return _bytes.EndsWith(suffix, start);
+            return _bytes.EndsWith(suffix, start, _bytes.Length);
         }
 
         public bool endswith([NotNull]PythonTuple suffix, int start, int end) {
             return _bytes.EndsWith(suffix, start, end);
+        }
+
+        public bool endswith([NotNull]PythonTuple suffix, object? start) {
+            return endswith(suffix, start, null);
+        }
+
+        public bool endswith([NotNull]PythonTuple suffix, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.EndsWith(suffix, istart, iend);
+        }
+
+        [Documentation("\n" + // hidden overload
+            "Return True if self ends with the specified suffix, False otherwise.\n" +
+            "With optional start, test self beginning at that position.\n" +
+            "With optional end, stop comparing self at that position.\n" +
+            "suffix can also be a tuple of bytes-like objects to try.")]
+        public bool endswith(object? suffix, object? start = null, object? end = null) {
+            if (suffix is IList<byte> blist) return endswith(blist, start, end);
+            if (suffix is PythonTuple tuple) return endswith(tuple, start, end);
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(endswith), PythonOps.GetPythonTypeName(suffix));
         }
 
         public Bytes expandtabs() {
@@ -456,17 +487,21 @@ namespace IronPython.Runtime {
         }
 
         public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start) {
-            int len = Count;
-            if (start > len) return false;
-            if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            return _bytes.Substring(start).StartsWith(prefix);
+            return _bytes.StartsWith(prefix, start, _bytes.Length);
         }
 
         public bool startswith([BytesLike, NotNull]IList<byte> prefix, int start, int end) {
             return _bytes.StartsWith(prefix, start, end);
+        }
+
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, object? start) {
+            return startswith(prefix, start, null);
+        }
+
+        public bool startswith([BytesLike, NotNull]IList<byte> prefix, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(prefix, istart, iend);
         }
 
         public bool startswith([NotNull]PythonTuple prefix) {
@@ -474,11 +509,32 @@ namespace IronPython.Runtime {
         }
 
         public bool startswith([NotNull]PythonTuple prefix, int start) {
-            return _bytes.StartsWith(prefix, start);
+            return _bytes.StartsWith(prefix, start, _bytes.Length);
         }
 
         public bool startswith([NotNull]PythonTuple prefix, int start, int end) {
             return _bytes.StartsWith(prefix, start, end);
+        }
+
+        public bool startswith([NotNull]PythonTuple prefix, object? start) {
+            return startswith(prefix, start, null);
+        }
+
+        public bool startswith([NotNull]PythonTuple prefix, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.StartsWith(prefix, istart, iend);
+        }
+
+        [Documentation("\n" + // hidden overload
+            "Return True if self starts with the specified prefix, False otherwise.\n" +
+            "With optional start, test self beginning at that position.\n" +
+            "With optional end, stop comparing self at that position.\n" +
+            "prefix can also be a tuple of bytes-like objects to try.")]
+        public bool startswith(object? prefix, object? start = null, object? end = null) {
+            if (prefix is IList<byte> blist) return startswith(blist, start, end);
+            if (prefix is PythonTuple tuple) return startswith(tuple, start, end);
+            throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(startswith), PythonOps.GetPythonTypeName(prefix));
         }
 
         public Bytes strip() {

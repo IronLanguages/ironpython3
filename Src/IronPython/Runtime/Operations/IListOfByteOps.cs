@@ -46,40 +46,27 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        internal static bool EndsWith(this IList<byte> bytes, IList<byte> suffix, int start) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            // map the negative indice to its positive counterpart
-            if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            return bytes.Substring(start).EndsWith(suffix);
-        }
-
         //  With optional start, test beginning at that position (the char at that index is
         //  included in the test). With optional end, stop comparing at that position (the 
         //  char at that index is not included in the test)
-        internal static bool EndsWith(this IList<byte> bytes, IList<byte> suffix, int start, int end) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            // map the negative indices to their positive counterparts
-            else if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
+        internal static bool EndsWith(this IList<byte> self, IList<byte> suffix, int start, int end) {
+            int len = self.Count;
+
+            if(!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
+                return false;
             }
-            if (end >= len) {
-                return bytes.Substring(start).EndsWith(suffix);
-            } else if (end < 0) {
-                end += len;
-                if (end < 0) {
+
+            if (end - start < suffix.Count) {
+                return false;
+            }
+
+            for (int i = suffix.Count - 1, j = end - 1; i >= 0; i--, j--) {
+                if (suffix[i] != self[j]) {
                     return false;
                 }
             }
-            if (end < start) {
-                return false;
-            }
-            return bytes.Substring(start, end - start).EndsWith(suffix);
+
+            return true;
         }
 
         internal static bool EndsWith(this IList<byte> bytes, PythonTuple suffix) {
@@ -91,66 +78,13 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static bool EndsWith(this IList<byte> bytes, PythonTuple suffix, int start) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            // map the negative indice to its positive counterpart
-            if (start < 0) {
-                start += len;
-                if (start < 0) {
-                    start = 0;
-                }
-            }
-            foreach (object? obj in suffix) {
-                if (bytes.Substring(start).EndsWith(ByteOps.CoerceBytes(obj))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         internal static bool EndsWith(this IList<byte> bytes, PythonTuple suffix, int start, int end) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            // map the negative indices to their positive counterparts
-            else if (start < 0) {
-                start += len;
-                if (start < 0) {
-                    start = 0;
-                }
-            }
-            if (end >= len) {
-                end = len;
-            } else if (end < 0) {
-                end += len;
-                if (end < 0) {
-                    return false;
-                }
-            }
-            if (end < start) {
-                return false;
-            }
-
             foreach (object? obj in suffix) {
-                if (bytes.Substring(start, end - start).EndsWith(ByteOps.CoerceBytes(obj))) {
+                if (bytes.EndsWith(ByteOps.CoerceBytes(obj), start, end)) {
                     return true;
                 }
             }
             return false;
-        }
-
-        internal static bool StartsWith(this IList<byte> self, IList<byte> prefix) {
-            if (self.Count < prefix.Count) {
-                return false;
-            }
-
-            for (int i = 0; i < prefix.Count; i++) {
-                if (prefix[i] != self[i]) {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         internal static int IndexOfAny(this IList<byte> str, IList<byte> separators, int i) {
@@ -346,30 +280,38 @@ namespace IronPython.Runtime.Operations {
             return result.ToArray();
         }
 
-        internal static bool StartsWith(this IList<byte> bytes, IList<byte> prefix, int start, int end) {
-            int len = bytes.Count;
-            if (start > len) {
-                return false;
-            } else if (start < 0) {
-                // map the negative indices to their positive counterparts
-                start += len;
-                if (start < 0) {
-                    start = 0;
-                }
-            }
-            if (end >= len) {
-                return bytes.Substring(start).StartsWith(prefix);
-            } else if (end < 0) {
-                end += len;
-                if (end < 0) {
-                    return false;
-                }
-            }
-            if (end < start) {
+        internal static bool StartsWith(this IList<byte> self, IList<byte> prefix) {
+            if (self.Count < prefix.Count) {
                 return false;
             }
 
-            return bytes.Substring(start, end - start).StartsWith(prefix);
+            for (int i = 0; i < prefix.Count; i++) {
+                if (prefix[i] != self[i]) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        internal static bool StartsWith(this IList<byte> self, IList<byte> prefix, int start, int end) {
+            int len = self.Count;
+
+            if(!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
+                return false;
+            }
+
+            if (end - start < prefix.Count) {
+                return false;
+            }
+
+            for (int i = 0, j = start; i < prefix.Count; i++, j++) {
+                if (prefix[i] != self[j]) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal static List<byte> Replace(this IList<byte> bytes, IList<byte> old, IList<byte> @new, int count) {
@@ -944,49 +886,18 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        internal static bool StartsWith(this IList<byte> bytes, PythonTuple prefix, int start, int end) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            // map the negative indices to their positive counterparts
-            else if (start < 0) {
-                start += len;
-                if (start < 0) start = 0;
-            }
-            if (end >= len) end = len;
-            else if (end < 0) {
-                end += len;
-                if (end < 0) return false;
-            }
-            if (end < start) return false;
-
-            foreach (object? obj in prefix) {
-                if (bytes.Substring(start, end - start).StartsWith(ByteOps.CoerceBytes(obj))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        internal static bool StartsWith(this IList<byte> bytes, PythonTuple prefix, int start) {
-            int len = bytes.Count;
-            if (start > len) return false;
-            if (start < 0) {
-                start += len;
-                if (start < 0) {
-                    start = 0;
-                }
-            }
-            foreach (object? obj in prefix) {
-                if (bytes.Substring(start).StartsWith(ByteOps.CoerceBytes(obj))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         internal static bool StartsWith(this IList<byte> bytes, PythonTuple prefix) {
             foreach (object? obj in prefix) {
                 if (bytes.StartsWith(ByteOps.CoerceBytes(obj))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool StartsWith(this IList<byte> bytes, PythonTuple prefix, int start, int end) {
+            foreach (object? obj in prefix) {
+                if (bytes.StartsWith(ByteOps.CoerceBytes(obj), start, end)) {
                     return true;
                 }
             }

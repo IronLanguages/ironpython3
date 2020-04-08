@@ -11,6 +11,12 @@ from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 long = type(sys.maxsize + 1)
 
+class Indexable:
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
+
 class StrTest(IronPythonTestCase):
 
     def test_none(self):
@@ -81,6 +87,24 @@ class StrTest(IronPythonTestCase):
         self.assertEqual("abc".startswith('c', 4, 6), False)
         self.assertEqual("abcde".startswith('cde', 2, 9), True)
 
+        self.assertTrue('abc'.startswith('abc', -2<<222))
+        self.assertFalse('abc'.startswith('abc', 2<<222))
+        self.assertFalse('abc'.startswith('abc', None, -2<<222))
+        self.assertTrue('abc'.startswith('abc', None, 2<<222))
+        self.assertTrue('abc'.startswith('abc', None, None))
+
+        self.assertTrue('abc'.startswith(('xyz', 'abc'), -2<<222))
+        self.assertFalse('abc'.startswith(('xyz', 'abc'), 2<<222))
+        self.assertFalse('abc'.startswith(('xyz', 'abc'), None, -2<<222))
+        self.assertTrue('abc'.startswith(('xyz', 'abc'), None, 2<<222))
+        self.assertTrue('abc'.startswith(('xyz', 'abc'), None, None))
+
+        self.assertTrue('abc'.startswith(('xyz', 'abc'), Indexable(-2<<222)))
+        self.assertFalse('abc'.startswith(('xyz', 'abc'), Indexable(2<<222)))
+        self.assertFalse('abc'.startswith(('xyz', 'abc'), None, Indexable(-2<<222)))
+        self.assertTrue('abc'.startswith(('xyz', 'abc'), None, (2<<222)))
+        self.assertTrue('abc'.startswith(('xyz', 'b'), Indexable(1), Indexable(2)))
+
         hw = "hello world"
         self.assertTrue(hw.startswith("hello"))
         self.assertTrue(not hw.startswith("heloo"))
@@ -102,6 +126,24 @@ class StrTest(IronPythonTestCase):
             self.assertEqual("abcdef".endswith("def", x), False)
             self.assertEqual("abcdef".endswith("de", x, 5), False)
             self.assertEqual("abcdef".endswith("de", x, -1), False)
+
+        self.assertTrue('abc'.endswith('abc', -2<<222))
+        self.assertFalse('abc'.endswith('abc', 2<<222))
+        self.assertFalse('abc'.endswith('abc', None, -2<<222))
+        self.assertTrue('abc'.endswith('abc', None, 2<<222))
+        self.assertTrue('abc'.endswith('abc', None, None))
+
+        self.assertTrue('abc'.endswith(('xyz', 'abc'), -2<<222))
+        self.assertFalse('abc'.endswith(('xyz', 'abc'), 2<<222))
+        self.assertFalse('abc'.endswith(('xyz', 'abc'), None, -2<<222))
+        self.assertTrue('abc'.endswith(('xyz', 'abc'), None, 2<<222))
+        self.assertTrue('abc'.endswith(('xyz', 'abc'), None, None))
+
+        self.assertTrue('abc'.endswith(('xyz', 'abc'), Indexable(-2<<222)))
+        self.assertFalse('abc'.endswith(('xyz', 'abc'), Indexable(2<<222)))
+        self.assertFalse('abc'.endswith(('xyz', 'abc'), None, Indexable(-2<<222)))
+        self.assertTrue('abc'.endswith(('xyz', 'abc'), None, (2<<222)))
+        self.assertTrue('abc'.endswith(('xyz', 'b'), Indexable(1), Indexable(2)))
 
     def test_rfind(self):
         self.assertEqual("abcdbcda".rfind("cd", 1), 5)

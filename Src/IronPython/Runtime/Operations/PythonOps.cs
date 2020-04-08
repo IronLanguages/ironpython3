@@ -1261,6 +1261,44 @@ namespace IronPython.Runtime.Operations {
             ocount = GetSliceCount(ostart, ostop, ostep);
         }
 
+        //  Indexing is 0-based. Need to deal with negative indices
+        //  (which mean count backwards from end of sequence)
+        //  +---+---+---+---+---+
+        //  | a | b | c | d | e |
+        //  +---+---+---+---+---+
+        //    0   1   2   3   4
+        //   -5  -4  -3  -2  -1
+        /// <summary>
+        /// Maps negative indices to their positive counterparts.
+        /// If true is returned, then both start and end are mapped to 0 and len range
+        /// (inclusive) and end is not less than start.
+        /// </summary>
+        internal static bool TryFixSubsequenceIndices(int len, ref int start, ref int end) {
+            if (start > len) {
+                return false;
+            } else if (start < 0) {
+                start += len;
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+
+            if (end > len) {
+                end = len;
+            } else if (end < 0) {
+                end += len;
+                if (end < 0) {
+                    return false;
+                }
+            }
+
+            if (end < start) {
+                return false;
+            }
+
+            return true;
+        }
+
         public static int FixIndex(int v, int len) {
             if (!TryFixIndex(v, len, out int fixedIndex)) {
                 throw PythonOps.IndexError("index out of range: {0}", v);

@@ -119,7 +119,7 @@ namespace IronPython.Runtime.Types {
         /// <param name="sig">Passed signature which should be used</param>
         /// <param name="targets">Given targets, which does not fit to the signature</param>
         /// <example>
-        /// <code language="cs" title="Cause overload exceptiob"><![CDATA[
+        /// <code language="cs" title="Cause overload exception"><![CDATA[
         /// # Will cause an exception:
         /// from System import Convert, Double
         /// Convert.ToInt32.Overloads[Double, Double](24)
@@ -130,7 +130,7 @@ namespace IronPython.Runtime.Types {
             System.Text.StringBuilder sigInfo = new System.Text.StringBuilder();
             sigInfo.Append((targets.Count > 0 ? targets[0].Name : "") + "[");
             foreach (var type in sig) {
-                if (!sigInfo.ToString().endswith("[")) {
+                if (!sigInfo.ToString().EndsWith("[")) {
                     sigInfo.Append(", ");
                 }
 
@@ -148,7 +148,7 @@ namespace IronPython.Runtime.Types {
 
                 possibleOverloads.Append("[");
                 foreach (var param in overload.GetParameters()) {
-                    if (!possibleOverloads.ToString().endswith("[")) {
+                    if (!possibleOverloads.ToString().EndsWith("[")) {
                         possibleOverloads.Append(", ");
                     }
                     possibleOverloads.Append(param.ParameterType.Name);

@@ -102,20 +102,21 @@ namespace IronPython.Runtime.Operations {
             return IndexOf(bytes, sub, start, bytes.Count - start);
         }
 
-        internal static int IndexOf(this IList<byte> self, IList<byte> ssub, int start, int length) {
-            if (ssub == null) {
-                throw PythonOps.TypeError("cannot do None in bytes or bytearray");
-            } else if (ssub.Count == 0) {
-                return start;
-            }
+        internal static int IndexOf(this IList<byte> self, IList<byte> sub, int start, int count) {
+            // same preconditions as for System.String.IndexOf
+            Debug.Assert(0 <= start && start <= self.Count);
+            Debug.Assert(0 <= count && start + count <= self.Count);
 
-            byte firstByte = ssub[0];
-            for (int i = start; i < start + length; i++) {
+            if (sub.Count == 0) return start;
+
+            byte firstByte = sub[0];
+            int end = start + count - (sub.Count - 1);
+            for (int i = start; i < end; i++) {
                 if (self[i] == firstByte) {
                     bool differ = false;
 
-                    for (int j = 1; j < ssub.Count; j++) {
-                        if (j + i == start + length || ssub[j] != self[i + j]) {
+                    for (int j = 1, ij = i + j; j < sub.Count; j++, ij++) {
+                        if (sub[j] != self[ij]) {
                             differ = true;
                             break;
                         }
@@ -967,51 +968,11 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        internal static int Find(this IList<byte> bytes, IList<byte> sub) {
-            if (sub == null) {
-                throw PythonOps.TypeError("expected byte or byte array, got NoneType");
-            }
-
-            return bytes.IndexOf(sub, 0);
-        }
-
-
-        internal static int Find(this IList<byte> bytes, IList<byte> sub, int? start) {
-            if (sub == null) {
-                throw PythonOps.TypeError("expected byte or byte array, got NoneType");
-            } else if (start > bytes.Count) {
+        internal static int Find(this IList<byte> bytes, IList<byte> sub, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(bytes.Count, ref start, ref end)) {
                 return -1;
             }
-
-
-            int iStart;
-            if (start != null) {
-                iStart = PythonOps.FixSliceIndex(start.Value, bytes.Count);
-            } else {
-                iStart = 0;
-            }
-
-            return bytes.IndexOf(sub, iStart);
-        }
-
-
-        internal static int Find(this IList<byte> bytes, IList<byte> sub, int? start, int? end) {
-            if (sub == null) {
-                throw PythonOps.TypeError("expected byte or byte array, got NoneType");
-            }
-
-            if (start > bytes.Count) {
-                return -1;
-            }
-
-            int iStart = FixStart(bytes, start);
-            int iEnd = FixEnd(bytes, end);
-
-            if (iEnd < iStart) {
-                return -1;
-            }
-
-            return bytes.IndexOf(sub, iStart, iEnd - iStart);
+            return bytes.IndexOf(sub, start, end - start);
         }
 
         private static int FixEnd(IList<byte> bytes, int? end) {

@@ -364,23 +364,60 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int find([BytesLike, NotNull]IList<byte> sub) => find(sub, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return _bytes.Find(sub, 0, _bytes.Count);
+            }
+        }
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int start) => find(sub, start, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return _bytes.Find(sub, start, _bytes.Count);
+            }
+        }
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int find([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
                 return _bytes.Find(sub, start, end);
             }
         }
 
-        public int find(int @byte) => find(@byte, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start)
+            => find(sub, start, null);
 
-        public int find(int @byte, int start) => find(@byte, start, null);
-
-        public int find(int @byte, int? start, int? end) {
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
             lock (this) {
-                return _bytes.IndexOfByte(@byte.ToByteChecked(), start ?? 0, end ?? _bytes.Count);
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.Find(sub, istart, iend);
+            }
+        }
+
+        public int find(BigInteger @byte) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), 0, _bytes.Count);
+            }
+        }
+        public int find(BigInteger @byte, int start) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), start, _bytes.Count);
+            }
+        }
+
+        public int find(BigInteger @byte, int start, int end) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), start, end);
+            }
+        }
+
+        public int find(BigInteger @byte, object? start)
+            => find(@byte, start, null);
+
+        public int find(BigInteger @byte, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), istart, iend);
             }
         }
 
@@ -594,11 +631,13 @@ namespace IronPython.Runtime {
             return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub) => rfind(sub, null, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub)
+            => rfind(sub, 0, _bytes.Count);
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start) => rfind(sub, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int start)
+            => rfind(sub, start, null);
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
                 return _bytes.ReverseFind(sub, start, end);
             }

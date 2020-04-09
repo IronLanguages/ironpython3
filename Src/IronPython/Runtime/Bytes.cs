@@ -188,19 +188,41 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.ExpandTabs(tabsize));
         }
 
-        public int find([BytesLike, NotNull]IList<byte> sub) => find(sub, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub)
+            => _bytes.Find(sub, 0, _bytes.Length);
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int? start) => find(sub, start, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, int start)
+            => _bytes.Find(sub, start, _bytes.Length);
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int? start, int? end)
+        public int find([BytesLike, NotNull]IList<byte> sub, int start, int end)
             => _bytes.Find(sub, start, end);
 
-        public int find(int @byte) => find(@byte, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start)
+            => find(sub, start, null);
 
-        public int find(int @byte, int? start) => find(@byte, start, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.Find(sub, istart, iend);
+        }
 
-        public int find(int @byte, int? start, int? end)
-            => _bytes.IndexOfByte(@byte.ToByteChecked(), start ?? 0, end ?? Count);
+        public int find(BigInteger @byte)
+            => _bytes.IndexOfByte(@byte.ToByteChecked(), 0, _bytes.Length);
+
+        public int find(BigInteger @byte, int start)
+            => _bytes.IndexOfByte(@byte.ToByteChecked(), start, _bytes.Length);
+
+        public int find(BigInteger @byte, int start, int end)
+            => _bytes.IndexOfByte(@byte.ToByteChecked(), start, end);
+
+        public int find(BigInteger @byte, object? start)
+            => find(@byte, start, null);
+
+        public int find(BigInteger @byte, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.IndexOfByte(@byte.ToByteChecked(), istart, iend);
+        }
 
         public static Bytes fromhex([NotNull]string @string) {
             return new Bytes(IListOfByteOps.FromHex(@string));

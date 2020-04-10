@@ -196,9 +196,14 @@ namespace IronPython.Runtime.Operations {
             return retchars;
         }
 
-        internal static int LastIndexOf(this IList<byte> self, IList<byte> sub, int start, int length) {
+        internal static int LastIndexOf(this IList<byte> self, IList<byte> sub, int start, int count) {
+            Debug.Assert(0 <= start && start <= self.Count);
+            Debug.Assert(0 <= count && count <= start);
+
+            if (sub.Count == 0) return start;
+
             byte firstByte = sub[sub.Count - 1];
-            var end = start - length + sub.Count - 1;
+            var end = start - count + sub.Count - 1;
             for (int i = start - 1; i >= end; i--) {
                 if (self[i] == firstByte) {
                     bool differ = false;
@@ -361,28 +366,11 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        internal static int ReverseFind(this IList<byte> bytes, IList<byte> sub, int? start, int? end) {
-            if (sub == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (start > bytes.Count) {
+        internal static int ReverseFind(this IList<byte> bytes, IList<byte> sub, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(bytes.Count, ref start, ref end)) {
                 return -1;
             }
-
-            int iStart = FixStart(bytes, start);
-            int iEnd = FixEnd(bytes, end);
-
-            if (iStart > iEnd) {
-                // can't possibly match anything, not even an empty string
-                return -1;
-            } else if (sub.Count == 0) {
-                // match at the end
-                return iEnd;
-            } else if (end == 0) {
-                // can't possibly find anything
-                return -1;
-            }
-
-            return bytes.LastIndexOf(sub, iEnd, iEnd - iStart);
+            return bytes.LastIndexOf(sub, end, end - start);
         }
 
         internal static PythonList RightSplit(this IList<byte> bytes, IList<byte>? sep, int maxsplit, Func<IList<byte>, IList<byte>> ctor) {
@@ -973,20 +961,6 @@ namespace IronPython.Runtime.Operations {
                 return -1;
             }
             return bytes.IndexOf(sub, start, end - start);
-        }
-
-        private static int FixEnd(IList<byte> bytes, int? end) {
-            int iEnd;
-            if (end != null) {
-                iEnd = PythonOps.FixSliceIndex(end.Value, bytes.Count);
-            } else {
-                iEnd = bytes.Count;
-            }
-            return iEnd;
-        }
-
-        private static int FixStart(IList<byte> bytes, int? start) {
-            return start != null ? PythonOps.FixSliceIndex(start.Value, bytes.Count) : 0;
         }
 
         internal static byte ToByte(this string self, string name, int pos) {

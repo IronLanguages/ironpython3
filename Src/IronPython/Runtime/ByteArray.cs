@@ -631,11 +631,17 @@ namespace IronPython.Runtime {
             return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub)
-            => rfind(sub, 0, _bytes.Count);
+        public int rfind([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return _bytes.ReverseFind(sub, 0, _bytes.Count);
+            }
+        }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub, int start)
-            => rfind(sub, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return _bytes.ReverseFind(sub, start, _bytes.Count);
+            }
+        }
 
         public int rfind([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
@@ -643,11 +649,31 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int rfind(int @byte) => rfind(@byte, null, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, object? start)
+            => rfind(sub, start, null);
 
-        public int rfind(int @byte, int? start) => rfind(@byte, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.ReverseFind(sub, istart, iend);
+            }
+        }
 
-        public int rfind(int @byte, int? start, int? end) => rfind(new[] { @byte.ToByteChecked() }, start, end);
+        public int rfind(BigInteger @byte)
+            => rfind(new[] { @byte.ToByteChecked() });
+
+        public int rfind(BigInteger @byte, int start)
+            => rfind(new[] { @byte.ToByteChecked() }, start);
+
+        public int rfind(BigInteger @byte, int start, int end)
+            => rfind(new[] { @byte.ToByteChecked() }, start, end);
+
+        public int rfind(BigInteger @byte, object? start)
+            => rfind(new[] { @byte.ToByteChecked() }, start, null);
+
+        public int rfind(BigInteger @byte, object? start, object? end)
+            => rfind(new[] { @byte.ToByteChecked() }, start, end);
 
         public int rindex([BytesLike, NotNull]IList<byte> sub) => rindex(sub, null, null);
 

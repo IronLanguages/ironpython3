@@ -752,10 +752,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return ScriptingRuntimeHelpers.False;
             }
 
-            object bases;
-            PythonTuple tupleBases;
 
-            if (!PythonOps.TryGetBoundAttr(o, "__bases__", out bases) || (tupleBases = bases as PythonTuple) == null) {
+            if (!PythonOps.TryGetBoundAttr(o, "__bases__", out object bases) || !(bases is PythonTuple tupleBases)) {
                 return LightExceptions.Throw(PythonOps.TypeError("issubclass() arg 1 must be a class"));
             }
 
@@ -763,11 +761,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return ScriptingRuntimeHelpers.True;
             }
             foreach (object baseCls in tupleBases) {
-                PythonType pyType;
-
                 if (baseCls == typeinfo) {
                     return ScriptingRuntimeHelpers.True;
-                } else if ((pyType = baseCls as PythonType) != null) {
+                } else if (baseCls is PythonType pyType) {
                     if (issubclass(context, pyType, typeinfo)) {
                         return ScriptingRuntimeHelpers.True;
                     }

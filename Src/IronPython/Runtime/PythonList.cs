@@ -1192,7 +1192,7 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
-            List<object> infinite = PythonOps.GetAndCheckInfinite(this);
+            List<object>? infinite = PythonOps.GetAndCheckInfinite(this);
             if (infinite == null) {
                 return "[...]";
             }

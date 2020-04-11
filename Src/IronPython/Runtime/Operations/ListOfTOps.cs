@@ -14,7 +14,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime.Operations {
     public static class ListOfTOps<T> {
         public static string __repr__(CodeContext/*!*/ context, List<T> self) {
-            List<object> infinite = PythonOps.GetAndCheckInfinite(self);
+            List<object>? infinite = PythonOps.GetAndCheckInfinite(self);
             if (infinite == null) {
                 return "[...]";
             }

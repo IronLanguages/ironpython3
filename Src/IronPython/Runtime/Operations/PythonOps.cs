@@ -3820,7 +3820,7 @@ namespace IronPython.Runtime.Operations {
             return TypeError("'{0}' object cannot be interpreted as an integer", DynamicHelpers.GetPythonType(o).Name);
         }
 
-        public static void TypeErrorForBadEnumConversion<T>(object? value) {
+        public static T TypeErrorForBadEnumConversion<T>(object? value) {
             throw TypeError("Cannot convert numeric value {0} to {1}.  The value must be zero.", value, NameConverter.GetTypeName(typeof(T)));
         }
 

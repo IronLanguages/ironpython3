@@ -115,7 +115,7 @@ namespace IronPython.Runtime {
         public int count(int @byte, int? start) => count(@byte, start, null);
 
         public int count(int @byte, int? start, int? end)
-            => _bytes.CountOf(new[] { @byte.ToByteChecked() }, start ?? 0, end ?? Count);
+            => _bytes.CountOf(Bytes.FromByte(@byte.ToByteChecked()), start ?? 0, end ?? Count);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
@@ -422,19 +422,19 @@ namespace IronPython.Runtime {
         }
 
         public int rfind(BigInteger @byte)
-            => rfind(new[] { @byte.ToByteChecked() });
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()));
 
         public int rfind(BigInteger @byte, int start)
-            => rfind(new[] { @byte.ToByteChecked() }, start);
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start);
 
         public int rfind(BigInteger @byte, int start, int end)
-            => rfind(new[] { @byte.ToByteChecked() }, start, end);
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public int rfind(BigInteger @byte, object? start)
-            => rfind(new[] { @byte.ToByteChecked() }, start, null);
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, null);
 
         public int rfind(BigInteger @byte, object? start, object? end)
-            => rfind(new[] { @byte.ToByteChecked() }, start, end);
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public int rindex([BytesLike, NotNull]IList<byte> sub) => rindex(sub, null, null);
 
@@ -453,7 +453,7 @@ namespace IronPython.Runtime {
 
         public int rindex(int @byte, int? start) => rindex(@byte, start, null);
 
-        public int rindex(int @byte, int? start, int? end) => rindex(new[] { @byte.ToByteChecked() }, start, end);
+        public int rindex(int @byte, int? start, int? end) => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public Bytes rjust(int width) {
             return rjust(width, (byte)' ');

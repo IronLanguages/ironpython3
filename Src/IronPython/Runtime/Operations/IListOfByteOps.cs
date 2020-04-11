@@ -524,7 +524,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        internal static int IndexOfByte(this IList<byte> bytes, int item, int start, int stop) {
+        internal static int IndexOfByte(this IList<byte> bytes, byte item, int start, int stop) {
             start = PythonOps.FixSliceIndex(start, bytes.Count);
             stop = PythonOps.FixSliceIndex(stop, bytes.Count);
 

@@ -159,6 +159,23 @@ class BytesTest(IronPythonTestCase):
                 self.assertEqual(testType(b"abcdef").endswith((b"de", ), x, 5), False)
                 self.assertEqual(testType(b"abcdef").endswith((b"de", ), x, -1), False)
 
+            ans = [
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -5
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -4
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -3
+                [False, False, False, False, True, True, False, True, True, True, True, True], # start = -2
+                [False, False, False, False, False, True, False, False, True, True, True, True], # start = -1
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = 0
+                [False, False, False, False, True, True, False, True, True, True, True, True], # start = 1
+                [False, False, False, False, False, True, False, False, True, True, True, True], # start = 2
+                [False, False, False, False, False, False, False, False, False, True, True, True], # start = 3
+                [False, False, False, False, False, False, False, False, False, False, False, False], # start = 4
+            ]
+            seq = testType(b"abc")
+            for start in range(-5, 5):
+                for end in range(-6, 6):
+                    self.assertEqual(seq.endswith(b"", start, end), ans[start+5][end+6], "for start={0}, end={1}".format(start,end))
+
     def test_expandtabs(self):
         for testType in types:
             self.assertTrue(testType(b"\ttext\t").expandtabs(0) == b"text")
@@ -192,27 +209,41 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(b'abc').find(b'abc', -1, 1), -1)
             self.assertEqual(testType(b'abc').find(b'abc', 25), -1)
             self.assertEqual(testType(b'abc').find(b'add', 0, 3), -1)
-            if testType == bytes:
-                self.assertEqual(testType(b'abc').find(b'add', 0, None), -1)
-                self.assertEqual(testType(b'abc').find(b'add', None, None), -1)
-                self.assertEqual(testType(b'abc').find(b'', None, 0), 0)
-                self.assertEqual(testType(b'x').find(b'x', None, 0), -1)
 
-            self.assertEqual(testType(b'abc').find(b'', 0, 0), 0)
-            self.assertEqual(testType(b'abc').find(b'', 0, 1), 0)
-            self.assertEqual(testType(b'abc').find(b'', 0, 2), 0)
-            self.assertEqual(testType(b'abc').find(b'', 0, 3), 0)
-            self.assertEqual(testType(b'abc').find(b'', 0, 4), 0)
+            self.assertEqual(testType(b'abc').find(b'add', 0, None), -1)
+            self.assertEqual(testType(b'abc').find(b'add', None, None), -1)
+            self.assertEqual(testType(b'abc').find(b'', None, 0), 0)
+            self.assertEqual(testType(b'x').find(b'x', None, 0), -1)
+
             self.assertEqual(testType(b'').find(b'', 0, 4), 0)
 
+            self.assertEqual(testType(b'x').find(b'x', -2, -1), -1)
+            self.assertEqual(testType(b'x').find(b'x', -2, 1), 0)
+            self.assertEqual(testType(b'x').find(b'x', -1, 1), 0)
             self.assertEqual(testType(b'x').find(b'x', 0, 0), -1)
-
             self.assertEqual(testType(b'x').find(b'x', 3, 0), -1)
             self.assertEqual(testType(b'x').find(b'', 3, 0), -1)
 
             self.assertRaises(TypeError, testType(b'x').find, [1])
             self.assertRaises(TypeError, testType(b'x').find, [1], 0)
             self.assertRaises(TypeError, testType(b'x').find, [1], 0, 1)
+
+            ans = [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # start = -5
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # start = -4
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # start = -3
+                [-1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, 1], # start = -2
+                [-1, -1, -1, -1, -1, 2, -1, -1, 2, 2, 2, 2], # start = -1
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], # start = 0
+                [-1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, 1], # start = 1
+                [-1, -1, -1, -1, -1, 2, -1, -1, 2, 2, 2, 2], # start = 2
+                [-1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3], # start = 3
+                [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # start = 4                
+            ]
+            seq = testType(b"abc")
+            for start in range(-5, 5):
+                for end in range(-6, 6):
+                    self.assertEqual(seq.find(b"", start, end), ans[start+5][end+6], "for start={0}, end={1}".format(start,end))
 
     def test_fromhex(self):
         for testType in types:
@@ -486,21 +517,32 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(TypeError, testType(b'abc').rfind, [1], 1)
             self.assertRaises(TypeError, testType(b'abc').rfind, [1], 1, 2)
 
-            if testType == bytes:
-                self.assertEqual(testType(b"abc").rfind(b"add", None, 0), -1)
-                self.assertEqual(testType(b"abc").rfind(b"add", 3, None), -1)
-                self.assertEqual(testType(b"abc").rfind(b"add", None, None), -1)
+            self.assertEqual(testType(b"abc").rfind(b"add", None, 0), -1)
+            self.assertEqual(testType(b"abc").rfind(b"add", 3, None), -1)
+            self.assertEqual(testType(b"abc").rfind(b"add", None, None), -1)
 
-            self.assertEqual(testType(b'abc').rfind(b'', 0, 0), 0)
-            self.assertEqual(testType(b'abc').rfind(b'', 0, 1), 1)
-            self.assertEqual(testType(b'abc').rfind(b'', 0, 2), 2)
-            self.assertEqual(testType(b'abc').rfind(b'', 0, 3), 3)
-            self.assertEqual(testType(b'abc').rfind(b'', 0, 4), 3)
-
+            self.assertEqual(testType(b'x').rfind(b'x', -2, -1), -1)
+            self.assertEqual(testType(b'x').rfind(b'x', -2, 1), 0)
+            self.assertEqual(testType(b'x').rfind(b'x', -1, 1), 0)
             self.assertEqual(testType(b'x').rfind(b'x', 0, 0), -1)
-
             self.assertEqual(testType(b'x').rfind(b'x', 3, 0), -1)
-            self.assertEqual(testType(b'x').rfind(b'', 3, 0), -1)
+
+            ans = [
+                [0, 0, 0, 0, 1, 2, 0, 1, 2, 3, 3, 3], # start = -5
+                [0, 0, 0, 0, 1, 2, 0, 1, 2, 3, 3, 3], # start = -4
+                [0, 0, 0, 0, 1, 2, 0, 1, 2, 3, 3, 3], # start = -3
+                [-1, -1, -1, -1, 1, 2, -1, 1, 2, 3, 3, 3], # start = -2
+                [-1, -1, -1, -1, -1, 2, -1, -1, 2, 3, 3, 3], # start = -1
+                [0, 0, 0, 0, 1, 2, 0, 1, 2, 3, 3, 3], # start = 0
+                [-1, -1, -1, -1, 1, 2, -1, 1, 2, 3, 3, 3], # start = 1
+                [-1, -1, -1, -1, -1, 2, -1, -1, 2, 3, 3, 3], # start = 2
+                [-1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3], # start = 3
+                [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # start = 4
+            ]
+            seq = testType(b"abc")
+            for start in range(-5, 5):
+                for end in range(-6, 6):
+                    self.assertEqual(seq.rfind(b"", start, end), ans[start+5][end+6], "for start={0}, end={1}".format(start,end))
 
     def test_rindex(self):
         for testType in types:
@@ -716,6 +758,23 @@ class BytesTest(IronPythonTestCase):
             self.assertTrue(not hw.startswith(b"wor", 6, 7))
             self.assertTrue(not hw.startswith(b"wox", 6, 10))
             self.assertTrue(not hw.startswith(b"wor", 6, 2))
+
+            ans = [
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -5
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -4
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = -3
+                [False, False, False, False, True, True, False, True, True, True, True, True], # start = -2
+                [False, False, False, False, False, True, False, False, True, True, True, True], # start = -1
+                [True, True, True, True, True, True, True, True, True, True, True, True], # start = 0
+                [False, False, False, False, True, True, False, True, True, True, True, True], # start = 1
+                [False, False, False, False, False, True, False, False, True, True, True, True], # start = 2
+                [False, False, False, False, False, False, False, False, False, True, True, True], # start = 3
+                [False, False, False, False, False, False, False, False, False, False, False, False], # start = 4
+            ]
+            seq = testType(b"abc")
+            for start in range(-5, 5):
+                for end in range(-6, 6):
+                    self.assertEqual(seq.startswith(b"", start, end), ans[start+5][end+6], "for start={0}, end={1}".format(start,end))
 
     def test_strip(self):
         for testType in types:

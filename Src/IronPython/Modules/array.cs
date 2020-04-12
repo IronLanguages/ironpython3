@@ -636,7 +636,7 @@ namespace IronPython.Modules {
             }
 
             public PythonTuple __reduce_ex__(CodeContext context, int version) {
-                PythonOps.TryGetBoundAttr(context, this, "__dict__", out object dictObject);
+                PythonOps.TryGetBoundAttr(context, this, "__dict__", out object? dictObject);
                 var dict = dictObject as PythonDictionary;
 
                 if (version < 3) {

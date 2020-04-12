@@ -196,6 +196,8 @@ namespace IronPython.Runtime.Operations {
             return retchars;
         }
 
+        // NOTE: The start parameter is exclusive, unlike
+        // in System.Globalization.CompareInfo.LastIndexOf
         internal static int LastIndexOf(this IList<byte> self, IList<byte> sub, int start, int count) {
             Debug.Assert(0 <= start && start <= self.Count);
             Debug.Assert(0 <= count && count <= start);

@@ -6,30 +6,31 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IronPython.Runtime.Operations {
     public static partial class PythonCalls {
-        public static object Call(object func, params object?[] args) {
+        public static object? Call([NotNull]object? func, params object?[] args) {
             return DefaultContext.DefaultPythonContext.CallSplat(func, args);
         }
 
-        public static object Call(CodeContext context, object func) {
+        public static object? Call(CodeContext context, [NotNull]object? func) {
             return context.LanguageContext.Call(context, func);
         }
 
-        public static object Call(CodeContext/*!*/ context, object func, object? arg0) {
+        public static object? Call(CodeContext/*!*/ context, [NotNull]object? func, object? arg0) {
             return context.LanguageContext.Call(context, func, arg0);
         }
 
-        public static object Call(CodeContext/*!*/ context, object func, object? arg0, object? arg1) {
+        public static object? Call(CodeContext/*!*/ context, [NotNull]object? func, object? arg0, object? arg1) {
             return context.LanguageContext.Call(context, func, arg0, arg1);
         }
 
-        public static object Call(CodeContext/*!*/ context, object func, params object?[] args) {
+        public static object? Call(CodeContext/*!*/ context, [NotNull]object? func, params object?[] args) {
             return context.LanguageContext.CallSplat(context, func, args);
         }
 
-        public static object CallWithKeywordArgs(CodeContext/*!*/ context, object func, object?[] args, string[] names) {
+        public static object? CallWithKeywordArgs(CodeContext/*!*/ context, [NotNull]object? func, object?[] args, string[] names) {
             PythonDictionary dict = new PythonDictionary();
             for (int i = 0; i < names.Length; i++) {
                 dict[names[i]] = args[args.Length - names.Length + i];
@@ -42,7 +43,7 @@ namespace IronPython.Runtime.Operations {
             return CallWithKeywordArgs(context, func, newargs, dict);
         }
 
-        public static object CallWithKeywordArgs(CodeContext context, object func, object?[] args, IDictionary<object, object> dict) {
+        public static object? CallWithKeywordArgs(CodeContext context, [NotNull]object? func, object?[] args, IDictionary<object, object> dict) {
             return context.LanguageContext.CallWithKeywords(func, args, dict);
         }        
     }

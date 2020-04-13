@@ -174,7 +174,7 @@ namespace IronPython.Runtime.Operations {
             List<object> searchFunctions = context.LanguageContext.SearchFunctions;
             lock (searchFunctions) {
                 for (int i = 0; i < searchFunctions.Count; i++) {
-                    object res = PythonCalls.Call(context, searchFunctions[i], normalized);
+                    object? res = PythonCalls.Call(context, searchFunctions[i], normalized);
                     if (res != null) return (PythonTuple)res;
                 }
             }
@@ -696,7 +696,7 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        public static object PowerMod(CodeContext/*!*/ context, object x, object y, object? z) {
+        public static object PowerMod(CodeContext/*!*/ context, object? x, object? y, object? z) {
             object ret;
             if (z == null) {
                 return context.LanguageContext.Operation(PythonOperationKind.Power, x, y);
@@ -725,7 +725,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeErrorForBinaryOp("power with modulus", x, y);
         }
 
-        public static long Id(object o) {
+        public static long Id(object? o) {
             return IdDispenser.GetId(o);
         }
 
@@ -784,7 +784,7 @@ namespace IronPython.Runtime.Operations {
             throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
         }
 
-        public static int Length(object o) {
+        public static int Length(object? o) {
             if (o is string s) {
                 return s.Length;
             }
@@ -821,7 +821,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object CallWithContext(CodeContext/*!*/ context, object func, params object?[] args) {
+        public static object? CallWithContext(CodeContext/*!*/ context, [NotNull]object? func, params object?[] args) {
             return PythonCalls.Call(context, func, args);
         }
 
@@ -831,13 +831,13 @@ namespace IronPython.Runtime.Operations {
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
-        public static object CallWithContextAndThis(CodeContext/*!*/ context, object func, object instance, params object?[] args) {
+        public static object? CallWithContextAndThis(CodeContext/*!*/ context, [NotNull]object? func, object? instance, params object?[] args) {
             // drop the 'this' and make the call
             return CallWithContext(context, func, args);
         }
 
         [Obsolete("Use ObjectOpertaions instead")]
-        public static object CallWithArgsTupleAndKeywordDictAndContext(CodeContext/*!*/ context, object func, object[] args, string[] names, object argsTuple, object kwDict) {
+        public static object? CallWithArgsTupleAndKeywordDictAndContext(CodeContext/*!*/ context, object func, object[] args, string[] names, object argsTuple, object kwDict) {
             IDictionary? kws = kwDict as IDictionary;
             if (kws == null && kwDict != null) throw PythonOps.TypeError("argument after ** must be a dictionary");
 
@@ -877,7 +877,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object CallWithArgsTuple(object func, object?[] args, object argsTuple) {
+        public static object? CallWithArgsTuple(object func, object?[] args, object argsTuple) {
             if (argsTuple is PythonTuple tp) {
                 object?[] nargs = new object[args.Length + tp.__len__()];
                 for (int i = 0; i < args.Length; i++) nargs[i] = args[i];
@@ -893,7 +893,7 @@ namespace IronPython.Runtime.Operations {
             return PythonCalls.Call(func, allArgs.GetObjectArray());
         }
 
-        public static object GetIndex(CodeContext/*!*/ context, object o, object index) {
+        public static object GetIndex(CodeContext/*!*/ context, object? o, object index) {
             PythonContext pc = context.LanguageContext;
             return pc.GetIndexSite.Target(pc.GetIndexSite, o, index);
         }
@@ -902,7 +902,7 @@ namespace IronPython.Runtime.Operations {
             return TryGetBoundAttr(DefaultContext.Default, o, name, out ret);
         }
 
-        public static void SetAttr(CodeContext/*!*/ context, object? o, string name, object value) {
+        public static void SetAttr(CodeContext/*!*/ context, object? o, string name, object? value) {
             context.LanguageContext.SetAttr(context, o, name, value);
         }
 
@@ -1046,11 +1046,11 @@ namespace IronPython.Runtime.Operations {
                 out _);
         }
 
-        public static object Invoke(CodeContext/*!*/ context, object target, string name, object arg0) {
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name, object? arg0) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0);
         }
 
-        public static object Invoke(CodeContext/*!*/ context, object target, string name, params object[] args) {
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name, params object?[] args) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), args);
         }
 
@@ -1280,8 +1280,8 @@ namespace IronPython.Runtime.Operations {
             return dict.TryGetValue("__metaclass__", out metaclass) && metaclass != null;
         }
 
-        internal static object CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
-            object classdict = dict;
+        internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
+            object? classdict = dict;
 
             // if available, call the __prepare__ method to get the classdict (PEP 3115)
             if (meta.TryLookupSlot(context, "__prepare__", out PythonTypeSlot pts)) {
@@ -1352,7 +1352,7 @@ namespace IronPython.Runtime.Operations {
                 return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars, selfNames);
             }
 
-            object classdict = vars;
+            object? classdict = vars;
 
             if (metaclass is PythonType) {
                 classdict = CallPrepare(context, (PythonType)metaclass, name, tupleBases, vars);
@@ -1616,7 +1616,7 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        private static object ReadLine(CodeContext/*!*/ context, object f) {
+        private static object? ReadLine(CodeContext/*!*/ context, object f) {
             if (f == null || f == Uninitialized.Instance) throw PythonOps.RuntimeError("lost sys.std_in");
             return PythonOps.Invoke(context, f, "readline");
         }
@@ -1639,7 +1639,7 @@ namespace IronPython.Runtime.Operations {
             Write(context, dest, ToString(context, o));
         }
 
-        internal static object ReadLineFromSrc(CodeContext/*!*/ context, object src) {
+        internal static object? ReadLineFromSrc(CodeContext/*!*/ context, object src) {
             return ReadLine(context, src);
         }
 
@@ -1848,7 +1848,7 @@ namespace IronPython.Runtime.Operations {
                 if (!PythonOps.TryGetBoundAttr(context, iter, "__next__", out _)) {
                     throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
                 }
-                return iter;
+                return iter!;
             }
 
             return GetEnumerator(context, o);
@@ -2504,7 +2504,7 @@ namespace IronPython.Runtime.Operations {
         /// Helper to determine if the value is a simple numeric type (int or big int or bool) - used for OldInstance
         /// deprecated form of slicing.
         /// </summary>
-        public static bool IsNumericObject(object value) {
+        public static bool IsNumericObject([NotNullWhen(true)]object? value) {
             return value is int || value is Extensible<int> || value is BigInteger || value is Extensible<BigInteger> || value is bool;
         }
 

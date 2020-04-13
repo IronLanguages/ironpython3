@@ -55,6 +55,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(int source) {
+            if (source < 0) throw PythonOps.ValueError("negative count");
             _bytes = new ArrayData<byte>(source);
             for (int i = 0; i < source; i++) {
                 _bytes.Add(0);

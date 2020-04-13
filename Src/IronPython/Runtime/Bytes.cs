@@ -49,8 +49,11 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(int size) {
+            if (size < 0) throw PythonOps.ValueError("negative count");
             _bytes = new byte[size];
         }
+
+        public Bytes(BigInteger size) : this((int)size) { }
 
         public Bytes([NotNull]byte[] bytes) {
             _bytes = bytes.ToArray();

@@ -269,7 +269,7 @@ namespace IronPython.Runtime {
 
         public int count(int @byte, int? start) => count(@byte, start, null);
 
-        public int count(int @byte, int? start, int? end) => count(new[] { @byte.ToByteChecked() }, start, end);
+        public int count(int @byte, int? start, int? end) => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
@@ -364,23 +364,60 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int find([BytesLike, NotNull]IList<byte> sub) => find(sub, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return _bytes.Find(sub, 0, _bytes.Count);
+            }
+        }
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int start) => find(sub, start, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return _bytes.Find(sub, start, _bytes.Count);
+            }
+        }
 
-        public int find([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int find([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
                 return _bytes.Find(sub, start, end);
             }
         }
 
-        public int find(int @byte) => find(@byte, null, null);
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start)
+            => find(sub, start, null);
 
-        public int find(int @byte, int start) => find(@byte, start, null);
-
-        public int find(int @byte, int? start, int? end) {
+        public int find([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
             lock (this) {
-                return _bytes.IndexOfByte(@byte.ToByteChecked(), start ?? 0, end ?? _bytes.Count);
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.Find(sub, istart, iend);
+            }
+        }
+
+        public int find(BigInteger @byte) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), 0, _bytes.Count);
+            }
+        }
+        public int find(BigInteger @byte, int start) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), start, _bytes.Count);
+            }
+        }
+
+        public int find(BigInteger @byte, int start, int end) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), start, end);
+            }
+        }
+
+        public int find(BigInteger @byte, object? start)
+            => find(@byte, start, null);
+
+        public int find(BigInteger @byte, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), istart, iend);
             }
         }
 
@@ -388,11 +425,19 @@ namespace IronPython.Runtime {
             return new ByteArray(IListOfByteOps.FromHex(@string));
         }
 
-        public int index([BytesLike, NotNull]IList<byte> sub) => index(sub, null, null);
+        public int index([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return index(sub, 0, _bytes.Count);
+            }
+        }
 
-        public int index([BytesLike, NotNull]IList<byte> sub, int? start) => index(sub, start, null);
+        public int index([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return index(sub, start, _bytes.Count);
+            }
+        }
 
-        public int index([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int index([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
                 int res = find(sub, start, end);
                 if (res == -1) {
@@ -403,20 +448,31 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int index(int @byte) => index(@byte, null, null);
+        public int index([BytesLike, NotNull]IList<byte> sub, object? start)
+            => index(sub, start, null);
 
-        public int index(int @byte, int? start) => index(@byte, start, null);
-
-        public int index(int @byte, int? start, int? end) {
+        public int index([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
             lock (this) {
-                int res = find(@byte.ToByteChecked(), start, end);
-                if (res == -1) {
-                    throw PythonOps.ValueError("subsection not found");
-                }
-
-                return res;
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return index(sub, istart, iend);
             }
         }
+
+        public int index(BigInteger @byte)
+            => index(Bytes.FromByte(@byte.ToByteChecked()));
+
+        public int index(BigInteger @byte, int start)
+            => index(Bytes.FromByte(@byte.ToByteChecked()), start);
+
+        public int index(BigInteger @byte, int start, int end)
+            => index(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+
+        public int index(BigInteger @byte, object? start)
+            => index(Bytes.FromByte(@byte.ToByteChecked()), start, null);
+
+        public int index(BigInteger @byte, object? start, object? end)
+            => index(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public bool isalnum() {
             lock (this) {
@@ -594,27 +650,63 @@ namespace IronPython.Runtime {
             return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub) => rfind(sub, null, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return _bytes.ReverseFind(sub, 0, _bytes.Count);
+            }
+        }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start) => rfind(sub, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return _bytes.ReverseFind(sub, start, _bytes.Count);
+            }
+        }
 
-        public int rfind([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int rfind([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             lock (this) {
                 return _bytes.ReverseFind(sub, start, end);
             }
         }
 
-        public int rfind(int @byte) => rfind(@byte, null, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, object? start)
+            => rfind(sub, start, null);
 
-        public int rfind(int @byte, int? start) => rfind(@byte, start, null);
+        public int rfind([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.ReverseFind(sub, istart, iend);
+            }
+        }
 
-        public int rfind(int @byte, int? start, int? end) => rfind(new[] { @byte.ToByteChecked() }, start, end);
+        public int rfind(BigInteger @byte)
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()));
 
-        public int rindex([BytesLike, NotNull]IList<byte> sub) => rindex(sub, null, null);
+        public int rfind(BigInteger @byte, int start)
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start);
 
-        public int rindex([BytesLike, NotNull]IList<byte> sub, int? start) => rindex(sub, start, null);
+        public int rfind(BigInteger @byte, int start, int end)
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
-        public int rindex([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int rfind(BigInteger @byte, object? start)
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, null);
+
+        public int rfind(BigInteger @byte, object? start, object? end)
+            => rfind(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+
+        public int rindex([BytesLike, NotNull]IList<byte> sub) {
+            lock (this) {
+                return rindex(sub, 0, _bytes.Count);
+            }
+        }
+
+        public int rindex([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return rindex(sub, start, _bytes.Count);
+            }
+        }
+
+        public int rindex([BytesLike, NotNull]IList<byte> sub, int start, int end) {
             int ret = rfind(sub, start, end);
             if (ret == -1) {
                 throw PythonOps.ValueError("subsection not found");
@@ -623,11 +715,31 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public int rindex(int @byte) => rindex(@byte, null, null);
+        public int rindex([BytesLike, NotNull]IList<byte> sub, object? start)
+            => rindex(sub, start, null);
 
-        public int rindex(int @byte, int? start) => rindex(@byte, start, null);
+        public int rindex([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return rindex(sub, istart, iend);
+            }
+        }
 
-        public int rindex(int @byte, int? start, int? end) => rindex(new[] { @byte.ToByteChecked() }, start, end);
+        public int rindex(BigInteger @byte)
+            => rindex(Bytes.FromByte(@byte.ToByteChecked()));
+
+        public int rindex(BigInteger @byte, int start)
+            => rindex(Bytes.FromByte(@byte.ToByteChecked()), start);
+
+        public int rindex(BigInteger @byte, int start, int end)
+            => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+
+        public int rindex(BigInteger @byte, object? start)
+            => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, null);
+
+        public int rindex(BigInteger @byte, object? start, object? end)
+            => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public ByteArray rjust(int width) {
             return rjust(width, (byte)' ');

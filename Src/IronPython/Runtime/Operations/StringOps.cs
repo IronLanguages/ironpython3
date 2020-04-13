@@ -516,69 +516,54 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
-        public static int find(this string self, string sub) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+        public static int find([NotNull]this string self, [NotNull]string sub) {
             if (sub.Length == 1) return self.IndexOf(sub[0]);
 
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, CompareOptions.Ordinal);
         }
 
-        public static int find(this string self, string sub, int start) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            start = PythonOps.FixSliceIndex(start, self.Length);
+        public static int find([NotNull]this string self, [NotNull]string sub, int start)
+            => find(self, sub, start, self.Length);
 
-            CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
-            return c.IndexOf(self, sub, start, CompareOptions.Ordinal);
-        }
-
-        public static int find(this string self, string sub, BigInteger start) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            return find(self, sub, (int)start);
-        }
-
-        public static int find(this string self, string sub, int start, int end) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            start = PythonOps.FixSliceIndex(start, self.Length);
-            end = PythonOps.FixSliceIndex(end, self.Length);
-            if (end < start) return -1;
-
+        public static int find([NotNull]this string self, [NotNull]string sub, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(self.Length, ref start, ref end)) {
+                return -1;
+            }
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, start, end - start, CompareOptions.Ordinal);
         }
 
-        public static int find(this string self, string sub, BigInteger start, BigInteger end) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            return find(self, sub, (int)start, (int)end);
+        public static int find([NotNull]this string self, [NotNull]string sub, object start)
+            => find(self, sub, start, null);
+
+        public static int find([NotNull]this string self, [NotNull]string sub, object start, object end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+            return find(self, sub, istart, iend);
         }
 
-        public static int find(this string self, string sub, object start, object end = null) {
-            return find(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
-        }
-
-        public static int index(this string self, string sub) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+        public static int index([NotNull]this string self, [NotNull]string sub) {
             return index(self, sub, 0, self.Length);
         }
 
-        public static int index(this string self, string sub, int start) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+        public static int index([NotNull]this string self, [NotNull]string sub, int start) {
             return index(self, sub, start, self.Length);
         }
 
-        public static int index(this string self, string sub, int start, int end) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
+        public static int index([NotNull]this string self, [NotNull]string sub, int start, int end) {
             int ret = find(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
         }
 
-        public static int index(this string self, string sub, object start, object end = null) {
-            return index(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
+        public static int index([NotNull]this string self, [NotNull]string sub, object start)
+            => index(self, sub, start, null);
+
+        public static int index([NotNull]this string self, [NotNull]string sub, object start, object end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+            return index(self, sub, istart, iend);
         }
 
         public static bool isalnum(this string self) {
@@ -880,31 +865,16 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
-        public static int rfind(this string self, string sub) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            return rfind(self, sub, 0, self.Length);
-        }
+        public static int rfind([NotNull]this string self, [NotNull]string sub)
+            => rfind(self, sub, 0, self.Length);
 
-        public static int rfind(this string self, string sub, int start) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            return rfind(self, sub, start, self.Length);
-        }
+        public static int rfind([NotNull]this string self, [NotNull]string sub, int start)
+            => rfind(self, sub, start, self.Length);
 
-        public static int rfind(this string self, string sub, BigInteger start) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            return rfind(self, sub, (int)start, self.Length);
-        }
-
-        public static int rfind(this string self, string sub, int start, int end) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-
-            start = PythonOps.FixSliceIndex(start, self.Length);
-            end = PythonOps.FixSliceIndex(end, self.Length);
-
-            if (start > end) return -1;     // can't possibly match anything, not even an empty string
+        public static int rfind([NotNull]this string self, [NotNull]string sub, int start, int end) {
+            if (!PythonOps.TryFixSubsequenceIndices(self.Length, ref start, ref end)) {
+                return -1;
+            }
             if (sub.Length == 0) return end;    // match at the end
             if (end == 0) return -1;    // can't possibly find anything
 
@@ -912,32 +882,34 @@ namespace IronPython.Runtime.Operations {
             return c.LastIndexOf(self, sub, end - 1, end - start, CompareOptions.Ordinal);
         }
 
-        public static int rfind(this string self, string sub, BigInteger start, BigInteger end) {
-            if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (start > self.Length) return -1;
-            return rfind(self, sub, (int)start, (int)end);
+        public static int rfind([NotNull]this string self, [NotNull]string sub, object start)
+            => rfind(self, sub, start, null);
+
+        public static int rfind([NotNull]this string self, [NotNull]string sub, object start, object end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+            return rfind(self, sub, istart, iend);
         }
 
-        public static int rfind(this string self, string sub, object start, object end = null) {
-            return rfind(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
-        }
+        public static int rindex([NotNull]this string self, [NotNull]string sub)
+            => rindex(self, sub, 0, self.Length);
 
-        public static int rindex(this string self, string sub) {
-            return rindex(self, sub, 0, self.Length);
-        }
+        public static int rindex([NotNull]this string self, [NotNull]string sub, int start)
+            => rindex(self, sub, start, self.Length);
 
-        public static int rindex(this string self, string sub, int start) {
-            return rindex(self, sub, start, self.Length);
-        }
-
-        public static int rindex(this string self, string sub, int start, int end) {
+        public static int rindex([NotNull]this string self, [NotNull]string sub, int start, int end) {
             int ret = rfind(self, sub, start, end);
             if (ret == -1) throw PythonOps.ValueError("substring {0} not found in {1}", sub, self);
             return ret;
         }
 
-        public static int rindex(this string self, string sub, object start, object end = null) {
-            return rindex(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
+        public static int rindex([NotNull]this string self, [NotNull]string sub, object start)
+            => rindex(self, sub, start, null);
+
+        public static int rindex([NotNull]this string self, [NotNull]string sub, object start, object end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+            return rindex(self, sub, istart, iend);
         }
 
         public static string rjust(this string self, int width) {
@@ -1504,18 +1476,6 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region Private implementation details
-
-        private static int CheckIndex(object index, int defaultValue) {
-            int res;
-
-            if (index == null) {
-                res = defaultValue;
-            } else if (!Converter.TryConvertToIndex(index, out res)) {
-                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
-            }
-
-            return res;
-        }
 
         private static void AppendJoin(object value, int index, StringBuilder sb) {
             string strVal;

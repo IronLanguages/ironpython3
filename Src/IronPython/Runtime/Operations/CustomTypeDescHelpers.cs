@@ -28,7 +28,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string? GetClassName(object self) {
-            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, "__class__", out object cls)) {
+            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, "__class__", out object? cls)) {
                 return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, cls, "__name__").ToString();
             }
             return null;
@@ -80,10 +80,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static PropertyDescriptor[] GetPropertiesImpl(object self, Attribute[] attributes) {
-            IList<object> attrNames = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, self);
+            IList<object?> attrNames = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, self);
             List<PropertyDescriptor> descrs = new List<PropertyDescriptor>();
             if (attrNames != null) {
-                foreach (object o in attrNames) {
+                foreach (object? o in attrNames) {
                     if (!(o is string s)) continue;
 
                     PythonType dt = DynamicHelpers.GetPythonType(self);

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace IronPython.Runtime.Operations {
     public static partial class PythonCalls {
-        public static object Call(object func, params object[] args) {
+        public static object Call(object func, params object?[] args) {
             return DefaultContext.DefaultPythonContext.CallSplat(func, args);
         }
 

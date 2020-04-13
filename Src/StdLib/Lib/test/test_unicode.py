@@ -216,14 +216,22 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertRaises(TypeError, 'hello'.find, 42)
         # test mixed kinds
         self.checkequal(100, '\u0102' * 100 + 'a', 'find', 'a')
-        self.checkequal(100, '\U00100304' * 100 + 'a', 'find', 'a')
-        self.checkequal(100, '\U00100304' * 100 + '\u0102', 'find', '\u0102')
+        if sys.implementation.name == 'ironpython': # UTF-16 strings, https://github.com/IronLanguages/ironpython3/issues/252
+            self.checkequal(200, '\U00100304' * 100 + 'a', 'find', 'a')
+            self.checkequal(200, '\U00100304' * 100 + '\u0102', 'find', '\u0102')
+        else:
+            self.checkequal(100, '\U00100304' * 100 + 'a', 'find', 'a')
+            self.checkequal(100, '\U00100304' * 100 + '\u0102', 'find', '\u0102')
         self.checkequal(-1, 'a' * 100, 'find', '\u0102')
         self.checkequal(-1, 'a' * 100, 'find', '\U00100304')
         self.checkequal(-1, '\u0102' * 100, 'find', '\U00100304')
         self.checkequal(100, '\u0102' * 100 + 'a_', 'find', 'a_')
-        self.checkequal(100, '\U00100304' * 100 + 'a_', 'find', 'a_')
-        self.checkequal(100, '\U00100304' * 100 + '\u0102_', 'find', '\u0102_')
+        if sys.implementation.name == 'ironpython': # UTF-16 strings, https://github.com/IronLanguages/ironpython3/issues/252
+            self.checkequal(200, '\U00100304' * 100 + 'a_', 'find', 'a_')
+            self.checkequal(200, '\U00100304' * 100 + '\u0102_', 'find', '\u0102_')
+        else:
+            self.checkequal(100, '\U00100304' * 100 + 'a_', 'find', 'a_')
+            self.checkequal(100, '\U00100304' * 100 + '\u0102_', 'find', '\u0102_')
         self.checkequal(-1, 'a' * 100, 'find', 'a\u0102')
         self.checkequal(-1, 'a' * 100, 'find', 'a\U00100304')
         self.checkequal(-1, '\u0102' * 100, 'find', '\u0102\U00100304')
@@ -268,14 +276,22 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertRaises(ValueError, 'abcdefghi'.index,  'ghi', -1)
         # test mixed kinds
         self.checkequal(100, '\u0102' * 100 + 'a', 'index', 'a')
-        self.checkequal(100, '\U00100304' * 100 + 'a', 'index', 'a')
-        self.checkequal(100, '\U00100304' * 100 + '\u0102', 'index', '\u0102')
+        if sys.implementation.name == 'ironpython': # UTF-16 strings, https://github.com/IronLanguages/ironpython3/issues/252
+            self.checkequal(200, '\U00100304' * 100 + 'a', 'index', 'a')
+            self.checkequal(200, '\U00100304' * 100 + '\u0102', 'index', '\u0102')
+        else:
+            self.checkequal(100, '\U00100304' * 100 + 'a', 'index', 'a')
+            self.checkequal(100, '\U00100304' * 100 + '\u0102', 'index', '\u0102')
         self.assertRaises(ValueError, ('a' * 100).index, '\u0102')
         self.assertRaises(ValueError, ('a' * 100).index, '\U00100304')
         self.assertRaises(ValueError, ('\u0102' * 100).index, '\U00100304')
         self.checkequal(100, '\u0102' * 100 + 'a_', 'index', 'a_')
-        self.checkequal(100, '\U00100304' * 100 + 'a_', 'index', 'a_')
-        self.checkequal(100, '\U00100304' * 100 + '\u0102_', 'index', '\u0102_')
+        if sys.implementation.name == 'ironpython': # UTF-16 strings, https://github.com/IronLanguages/ironpython3/issues/252
+            self.checkequal(200, '\U00100304' * 100 + 'a_', 'index', 'a_')
+            self.checkequal(200, '\U00100304' * 100 + '\u0102_', 'index', '\u0102_')
+        else:
+            self.checkequal(100, '\U00100304' * 100 + 'a_', 'index', 'a_')
+            self.checkequal(100, '\U00100304' * 100 + '\u0102_', 'index', '\u0102_')
         self.assertRaises(ValueError, ('a' * 100).index, 'a\u0102')
         self.assertRaises(ValueError, ('a' * 100).index, 'a\U00100304')
         self.assertRaises(ValueError, ('\u0102' * 100).index, '\u0102\U00100304')

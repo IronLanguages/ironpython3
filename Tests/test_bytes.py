@@ -1386,7 +1386,7 @@ class BytesTest(IronPythonTestCase):
             with self.assertRaises(TypeError):
                 x[0:3] = setval
 
-        for setval in [b'bar', bytearray(b'bar'), [98, 97, 114], (98, 97, 114), (Indexable(98), 97, 114), (IndexableOC(98), 97, 114)]:
+        for setval in [b'bar', bytearray(b'bar'), [98, 97, 114], (98, 97, 114), (Indexable(98), 97, 114), (IndexableOC(98), 97, 114), memoryview(b'bar')]:
             x = bytearray(b'abc')
             x[0:3] = setval
             self.assertEqual(x, b'bar')
@@ -1456,6 +1456,45 @@ class BytesTest(IronPythonTestCase):
 
         self.assertEqual(bytearray(b'abc').__alloc__(), 4)
         self.assertEqual(bytearray().__alloc__(), 0)
+
+        #copying over itself
+        x = bytearray(b'abc')
+        x[1:4:1] = x
+        self.assertEqual(x, b'aabc')
+
+        x = bytearray(b'abcd')
+        x[-2:3:1] = x
+        self.assertEqual(x, b'ababcdd')
+
+        x = bytearray(b'xyz')
+        mv = memoryview(x)
+        mv0 = mv[:2]
+        mv1 = mv[1:]
+        self.assertEqual(bytes(mv0), b'xy')
+        self.assertEqual(bytes(mv1), b'yz')
+        x[:] = b'abc'
+        self.assertEqual(bytes(mv0), b'ab')
+        self.assertEqual(bytes(mv1), b'bc')
+
+        x[0:2:1] = mv0
+        self.assertEqual(x, b'abc')
+        x[1:3:1] = mv0
+        self.assertEqual(x, b'aab')
+        x[:] = b'abc'
+        self.assertEqual(bytes(mv0), b'ab')
+        self.assertEqual(bytes(mv1), b'bc')
+
+        x[1:3:1] = mv1
+        self.assertEqual(x, b'abc')
+        x[0:2:1] = mv1
+        self.assertEqual(x, b'bcc')
+        x[:] = b'abc'
+        self.assertEqual(bytes(mv0), b'ab')
+        self.assertEqual(bytes(mv1), b'bc')
+
+        mv.release()
+        mv0.release()
+        mv1.release()
 
     def test_bytes(self):
         self.assertEqual(hash(b'abc'), hash(b'abc'))

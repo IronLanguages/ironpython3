@@ -243,7 +243,7 @@ for documentation."""
         response = b''
         while len(response) < max_response_length:
             r = ssl_s.read(max_response_length - len(response))
-            if not r: break;
+            if not r: break
             response += r
         self.assertIn(SSL_RESPONSE, response)
 

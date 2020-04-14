@@ -239,7 +239,12 @@ for documentation."""
         #Read
         self.assertEqual(ssl_s.read(4).lower(), b"http")
 
-        response = ssl_s.read(5000)
+        max_response_length = 5000
+        response = b''
+        while len(response) < max_response_length:
+            r = ssl_s.read(max_response_length - len(response))
+            if not r: break
+            response += r
         self.assertIn(SSL_RESPONSE, response)
 
         #Cleanup

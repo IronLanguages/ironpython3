@@ -4,6 +4,7 @@
 
 import array
 import ctypes
+import itertools
 import sys
 import unittest
 
@@ -37,6 +38,32 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(memoryview(b)), b)
             self.assertEqual(testType(array.array(b)), b)
             self.assertEqual(testType(ctypes.c_int32(0x636261)), b"abc\0")
+
+        ba = bytearray()
+        def gen():
+            for i in range(251, 256):
+                yield IndexableOC(i)
+                # modify the array being initialized
+                ba.append(100)
+            for i in range(1, 6):
+                # yield some plain good bytes
+                yield i
+                # modify the array being initialized
+                ba.append(101)
+
+        expected = list(itertools.chain(
+            itertools.chain.from_iterable(zip(range(251, 256), [100] * 5)),
+            itertools.chain.from_iterable(zip(range(1, 6), [101] * 5))
+        ))
+
+        ba.__init__(gen())
+        self.assertEqual(list(ba), expected)
+        ba.__init__(gen())
+        self.assertEqual(list(ba), expected)
+
+        self.assertRaises(TypeError, ba.__init__, 1.0)
+        self.assertEqual(ba, bytearray())
+
 
     @unittest.skipUnless(is_cli, "Interop with CLI")
     def test_init_interop(self):

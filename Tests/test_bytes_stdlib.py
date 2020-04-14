@@ -81,7 +81,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bytes.ByteArrayTest('test_getslice'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_iconcat'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_index'))
-        #suite.addTest(test.test_bytes.ByteArrayTest('test_init_alloc'))
+        suite.addTest(test.test_bytes.ByteArrayTest('test_init_alloc'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_insert'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_integer_arguments_out_of_byte_range'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_irepeat'))

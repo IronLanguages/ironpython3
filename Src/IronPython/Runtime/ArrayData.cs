@@ -40,7 +40,7 @@ namespace IronPython.Runtime {
             _items = capacity == 0 ? empty : new T[capacity];
         }
 
-        public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : 0) {
+        public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : collection is IReadOnlyCollection<T> rc ? rc.Count : 0) {
             AddRange(collection);
         }
 

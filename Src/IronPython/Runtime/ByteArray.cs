@@ -66,7 +66,7 @@ namespace IronPython.Runtime {
             __init__((int)source);
         }
 
-        public void __init__([NotNull]IList<byte> source) {
+        public void __init__([NotNull]IEnumerable<byte> source) {
             _bytes = new ArrayData<byte>(source);
         }
 
@@ -74,8 +74,12 @@ namespace IronPython.Runtime {
             _bytes = new ArrayData<byte>(source);
         }
 
-        public void __init__(object? source) {
-            __init__(GetBytes(source));
+        public void __init__(CodeContext context, object? source) {
+            _bytes = new ArrayData<byte>();
+            IEnumerator ie = PythonOps.GetEnumerator(context, source);
+            while (ie.MoveNext()) {
+                Add(GetByte(ie.Current));
+            }
         }
 
         public void __init__([NotNull]string @string) {

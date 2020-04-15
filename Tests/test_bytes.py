@@ -36,8 +36,24 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(b), b)
             self.assertEqual(testType(bytearray(b)), b)
             self.assertEqual(testType(memoryview(b)), b)
-            self.assertEqual(testType(array.array(b)), b)
+            self.assertEqual(testType(array.array('B', b)), b)
             self.assertEqual(testType(ctypes.c_int32(0x636261)), b"abc\0")
+
+            self.assertRaises(TypeError, testType, None, 'ascii')
+            self.assertRaises(TypeError, testType, 'abc', None)
+            self.assertRaises(TypeError, testType, [None])
+            self.assertEqual(testType('abc', 'ascii'), b'abc')
+            self.assertEqual(testType(0), b'')
+            self.assertEqual(testType(5), b'\x00\x00\x00\x00\x00')
+            self.assertRaises(ValueError, testType, [256])
+            self.assertRaises(ValueError, testType, [257])
+
+            self.assertEqual(list(testType(list(range(256)))), list(range(256)))
+
+        def f():
+            yield 42
+
+        self.assertEqual(bytearray(f()), b'*')
 
         ba = bytearray()
         def gen():
@@ -64,6 +80,43 @@ class BytesTest(IronPythonTestCase):
         self.assertRaises(TypeError, ba.__init__, 1.0)
         self.assertEqual(ba, bytearray())
 
+    def test_hints(self):
+        global test_hint_called
+        
+        class BadHint:
+            def __length_hint__(self):
+                global test_hint_called
+                test_hint_called = True
+                return "abc"
+            def __iter__(self):
+                self.x = 0
+                return self
+            def __next__(self):
+                self.x += 1
+                if self.x > 4: raise StopIteration()
+                return self.x
+
+        test_hint_called = False
+        ba = bytearray(BadHint())
+        self.assertEqual(ba, bytearray(b'\x01\x02\x03\x04'))
+        self.assertFalse(test_hint_called)
+
+        test_hint_called = False
+        self.assertRaises(TypeError, bytes, BadHint())
+        self.assertTrue(test_hint_called)
+
+        test_hint_called = False
+        self.assertRaises(TypeError, ba.extend, BadHint())
+        self.assertTrue(test_hint_called)
+        self.assertEqual(ba, bytearray(b'\x01\x02\x03\x04'))
+
+        ba[:] = b"abcd"
+        test_hint_called = False
+        ba[0:4:1] = BadHint()
+        self.assertEqual(ba, bytearray(b'\x01\x02\x03\x04'))
+        self.assertFalse(test_hint_called)
+
+        del test_hint_called
 
     @unittest.skipUnless(is_cli, "Interop with CLI")
     def test_init_interop(self):
@@ -1447,25 +1500,6 @@ class BytesTest(IronPythonTestCase):
         self.assertEqual(1 * x, x)
         self.assertTrue(id(x) != id(x * 1))
         self.assertTrue(id(x) != id(1 * x))
-
-    def test_init(self):
-        for testType in types:
-            if testType != str:  # skip on Cpy 2.6 for str type
-                self.assertRaises(TypeError, testType, None, 'ascii')
-                self.assertRaises(TypeError, testType, 'abc', None)
-                self.assertRaises(TypeError, testType, [None])
-                self.assertEqual(testType('abc', 'ascii'), b'abc')
-                self.assertEqual(testType(0), b'')
-                self.assertEqual(testType(5), b'\x00\x00\x00\x00\x00')
-                self.assertRaises(ValueError, testType, [256])
-                self.assertRaises(ValueError, testType, [257])
-
-            testType(list(range(256)))
-
-        def f():
-            yield 42
-
-        self.assertEqual(bytearray(f()), b'*')
 
     def test_slicing(self):
         for testType in types:

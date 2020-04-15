@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(object? source) : this(ByteArray.GetBytes(source)) { }
+        public Bytes(object? source) : this(ByteArray.GetBytes(source, useHint: true)) { }
 
         public Bytes([NotNull]IEnumerable<object?> source) {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();

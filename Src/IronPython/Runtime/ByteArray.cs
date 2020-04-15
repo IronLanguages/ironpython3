@@ -125,9 +125,8 @@ namespace IronPython.Runtime {
             // However, in order to match CPython behavior with invalid length hints we
             // we need to go through the motions and get the length hint and attempt
             // to convert it to an int.
-            PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len);
 
-            extend(GetBytes(seq));
+            extend(GetBytes(seq, useHint: true));
         }
 
         public void insert(int index, int value) {
@@ -1389,7 +1388,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("an integer is required");
         }
 
-        internal static IList<byte> GetBytes(object? value) {
+        internal static IList<byte> GetBytes(object? value, bool useHint = false) {
             switch (value) {
                 case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
                     return lob;
@@ -1400,7 +1399,9 @@ namespace IronPython.Runtime {
                 case Memory<byte> mem:
                     return mem.ToArray();
                 default:
-                    List<byte> ret = new List<byte>();
+                    int len = 0;
+                    if (useHint) PythonOps.TryInvokeLengthHint(DefaultContext.Default, value, out len);
+                    List<byte> ret = new List<byte>(len);
                     IEnumerator ie = PythonOps.GetEnumerator(value);
                     while (ie.MoveNext()) {
                         ret.Add(GetByte(ie.Current));

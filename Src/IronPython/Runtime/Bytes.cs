@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(object? source) : this(ByteArray.GetBytes(source)) { }
+        public Bytes(object? source) : this(ByteArray.GetBytes(source, useHint: true)) { }
 
         public Bytes([NotNull]IEnumerable<object?> source) {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
@@ -49,8 +49,11 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(int size) {
+            if (size < 0) throw PythonOps.ValueError("negative count");
             _bytes = new byte[size];
         }
+
+        public Bytes(BigInteger size) : this((int)size) { }
 
         public Bytes([NotNull]byte[] bytes) {
             _bytes = bytes.ToArray();

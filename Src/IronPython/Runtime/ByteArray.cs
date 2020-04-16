@@ -55,6 +55,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(int source) {
+            if (source < 0) throw PythonOps.ValueError("negative count");
             _bytes = new ArrayData<byte>(source);
             for (int i = 0; i < source; i++) {
                 _bytes.Add(0);
@@ -65,7 +66,7 @@ namespace IronPython.Runtime {
             __init__((int)source);
         }
 
-        public void __init__([NotNull]IList<byte> source) {
+        public void __init__([NotNull]IEnumerable<byte> source) {
             _bytes = new ArrayData<byte>(source);
         }
 
@@ -73,8 +74,12 @@ namespace IronPython.Runtime {
             _bytes = new ArrayData<byte>(source);
         }
 
-        public void __init__(object? source) {
-            __init__(GetBytes(source));
+        public void __init__(CodeContext context, object? source) {
+            _bytes = new ArrayData<byte>();
+            IEnumerator ie = PythonOps.GetEnumerator(context, source);
+            while (ie.MoveNext()) {
+                Add(GetByte(ie.Current));
+            }
         }
 
         public void __init__([NotNull]string @string) {
@@ -120,9 +125,8 @@ namespace IronPython.Runtime {
             // However, in order to match CPython behavior with invalid length hints we
             // we need to go through the motions and get the length hint and attempt
             // to convert it to an int.
-            PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len);
 
-            extend(GetBytes(seq));
+            extend(GetBytes(seq, useHint: true));
         }
 
         public void insert(int index, int value) {
@@ -1384,7 +1388,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("an integer is required");
         }
 
-        internal static IList<byte> GetBytes(object? value) {
+        internal static IList<byte> GetBytes(object? value, bool useHint = false) {
             switch (value) {
                 case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
                     return lob;
@@ -1395,7 +1399,9 @@ namespace IronPython.Runtime {
                 case Memory<byte> mem:
                     return mem.ToArray();
                 default:
-                    List<byte> ret = new List<byte>();
+                    int len = 0;
+                    if (useHint) PythonOps.TryInvokeLengthHint(DefaultContext.Default, value, out len);
+                    List<byte> ret = new List<byte>(len);
                     IEnumerator ie = PythonOps.GetEnumerator(value);
                     while (ie.MoveNext()) {
                         ret.Add(GetByte(ie.Current));

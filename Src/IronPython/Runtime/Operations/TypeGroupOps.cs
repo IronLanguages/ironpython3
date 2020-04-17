@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, params object?[] args) {
+        public static object? Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, params object?[] args) {
             return PythonCalls.Call(
                 context,
                 DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object?[] args) {
+        public static object? Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object?[] args) {
             return PythonCalls.CallWithKeywordArgs(
                 context, 
                 DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),

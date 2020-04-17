@@ -891,7 +891,7 @@ namespace IronPython.Runtime {
                     _size = 0;
 
                     if (key != null) {
-                        object[] keys = new object[sortSize];
+                        object?[] keys = new object[sortSize];
                         for (int i = 0; i < sortSize; i++) {
                             Debug.Assert(_data.Length == 0);
                             keys[i] = PythonCalls.Call(context, key, sortData[i]);

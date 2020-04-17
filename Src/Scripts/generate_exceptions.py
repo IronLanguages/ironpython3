@@ -409,12 +409,7 @@ def module_gen(cw):
         gen_one_exception_module_entry(cw, child, exceptionHierarchy)
 
 def gen_one_exception_builtin_entry(cw, exception, parent):
-    cw.enter_block("public static PythonType %s" % (exception.name, ))
-    if exception.fields:
-        cw.write('get { return %s; }' % (exception.InternalPythonType, ))
-    else:
-        cw.write('get { return %s; }' % (exception.InternalPythonType, ))
-    cw.exit_block()
+    cw.writeline("public static PythonType %s => %s;" % (exception.name, exception.InternalPythonType))
 
     for child in exception.subclasses:
         gen_one_exception_builtin_entry(cw, child, exception)

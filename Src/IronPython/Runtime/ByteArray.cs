@@ -1186,25 +1186,17 @@ namespace IronPython.Runtime {
                 //      integers, longs, etc... - fill in an array of 0 bytes
                 //      list of bytes, indexables, etc...
 
-                if (!(value is IList<byte> list)) {
-                    IEnumerator ie = PythonOps.GetEnumerator(value);
-                    list = new List<byte>();
-                    while (ie.MoveNext()) {
-                        list.Add(GetByte(ie.Current));
-                    }
-                }
+                IList<byte> list = GetBytes(value, useHint: false);
 
                 lock (this) {
                     if (slice.step != null) {
                         // try to assign back to self: make a copy first
-                        if (this == list) {
-                            value = CopyThis();
+                        if (ReferenceEquals(this, list)) {
+                            list = CopyThis();
                         } else if (list.Count == 0) {
                             DeleteItem(slice);
                             return;
                         }
-
-                        IList<byte> castedVal = GetBytes(value);
 
                         int start, stop, step, count;
                         slice.GetIndicesAndCount(_bytes.Count, out start, out stop, out step, out count);
@@ -1212,18 +1204,18 @@ namespace IronPython.Runtime {
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
 
                         if (list.Count < count) {
-                            throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", count, castedVal.Count);
+                            throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", count, list.Count);
                         }
 
-                        for (int i = 0, index = start; i < castedVal.Count; i++, index += step) {
+                        for (int i = 0, index = start; i < list.Count; i++, index += step) {
                             if (i >= count) {
                                 if (index == _bytes.Count) {
-                                    _bytes.Add(castedVal[i]);
+                                    _bytes.Add(list[i]);
                                 } else {
-                                    _bytes.Insert(index, castedVal[i]);
+                                    _bytes.Insert(index, list[i]);
                                 }
                             } else {
-                                _bytes[index] = castedVal[i];
+                                _bytes[index] = list[i];
                             }
                         }
                     } else {
@@ -1388,7 +1380,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("an integer is required");
         }
 
-        internal static IList<byte> GetBytes(object? value, bool useHint = false) {
+        internal static IList<byte> GetBytes(object? value, bool useHint) {
             switch (value) {
                 case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
                     return lob;

@@ -724,14 +724,14 @@ namespace IronPython.Runtime.Operations {
             return x != y;
         }
 
-        public static string __repr__(CodeContext/*!*/ context, double self) {
-            if (Double.IsNaN(self)) {
+        internal static string Repr(CodeContext/*!*/ context, double self, bool trailingZeroAfterWholeFloat) {
+            if (double.IsNaN(self)) {
                 return "nan";
             }
 
             // first format using Python's specific formatting rules...
             StringFormatter sf = new StringFormatter(context, "%.17g", self);
-            sf._TrailingZeroAfterWholeFloat = true;
+            sf._TrailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat;
             string res = sf.Format();
             if (LiteralParser.ParseFloat(res) == self) {
                 return res;
@@ -740,6 +740,9 @@ namespace IronPython.Runtime.Operations {
             // if it's not round trippable though use .NET's round-trip format
             return self.ToString("R", CultureInfo.InvariantCulture);
         }
+
+        public static string __repr__(CodeContext/*!*/ context, double self)
+            => Repr(context, self, trailingZeroAfterWholeFloat: true);
 
         public static BigInteger/*!*/ __long__(double self) {
             if (double.IsInfinity(self)) {

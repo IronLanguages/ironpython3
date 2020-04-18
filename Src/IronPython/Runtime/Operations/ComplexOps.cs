@@ -53,8 +53,8 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            double real3 = real2.Real - imag2.Imaginary();
-            double imag3 = real2.Imaginary() + imag2.Real;
+            double real3 = real2.Real - imag2.Imaginary;
+            double imag3 = real2.Imaginary + imag2.Real;
             if (cls == TypeCache.Complex) {
                 return new Complex(real3, imag3);
             } else {
@@ -87,7 +87,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName, PropertyMethod]
         public static double Getimag(Complex self) {
-            return self.Imaginary();
+            return self.Imaginary;
         }
 
         #region Binary operators
@@ -119,7 +119,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static Complex op_Power(Complex x, Complex y) {
             if (x.IsZero()) {
-                if (y.Real < 0.0 || y.Imaginary() != 0.0) {
+                if (y.Real < 0.0 || y.Imaginary != 0.0) {
                     throw PythonOps.ZeroDivisionError("0.0 to a negative or complex power");
                 }
                 return y.IsZero() ? Complex.One : Complex.Zero;
@@ -175,7 +175,7 @@ namespace IronPython.Runtime.Operations {
         #region Unary operators
 
         public static int __hash__(Complex x) {
-            if (x.Imaginary() == 0) {
+            if (x.Imaginary == 0) {
                 return DoubleOps.__hash__(x.Real);
             }
 
@@ -212,15 +212,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __repr__(CodeContext/*!*/ context, Complex x) {
-            if (x.Real != 0) {
-                if (x.Imaginary() < 0 || DoubleOps.IsNegativeZero(x.Imaginary())) {
-                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imaginary()) + "j)";
-                } else /* x.Imaginary() is NaN or >= +0.0 */ {
-                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imaginary()) + "j)";
+            if (x.Real != 0 || DoubleOps.IsNegativeZero(x.Real)) {
+                if (x.Imaginary < 0 || DoubleOps.IsNegativeZero(x.Imaginary)) {
+                    return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imaginary) + "j)";
+                } else /* x.Imaginary is NaN or >= +0.0 */ {
+                    return "(" + FormatComplexValue(context, x.Real) + "+" + FormatComplexValue(context, x.Imaginary) + "j)";
                 }
             }
 
-            return FormatComplexValue(context, x.Imaginary()) + "j";
+            return FormatComplexValue(context, x.Imaginary) + "j";
         }
 
         // report the same errors as CPython for these invalid conversions
@@ -236,17 +236,19 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
         }
 
-        private static string FormatComplexValue(CodeContext/*!*/ context, double x) {
-            StringFormatter sf = new StringFormatter(context, "%.6g", x);
-            return sf.Format();
-        }
+        private static string FormatComplexValue(CodeContext/*!*/ context, double x)
+            => DoubleOps.Repr(context, x, trailingZeroAfterWholeFloat: false);
+
 
         // Unary Operations
         [SpecialName]
         public static double Abs(Complex x) {
+            // CPython returns inf even if one of the values is NaN
+            if (double.IsInfinity(x.Real) || double.IsInfinity(x.Imaginary)) return double.PositiveInfinity;
+
             double res = x.Abs();
 
-            if (double.IsInfinity(res) && !double.IsInfinity(x.Real) && !double.IsInfinity(x.Imaginary())) {
+            if (double.IsInfinity(res) && !double.IsInfinity(x.Real) && !double.IsInfinity(x.Imaginary)) {
                 throw PythonOps.OverflowError("absolute value too large");
             }
 

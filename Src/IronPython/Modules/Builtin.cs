@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
 using IronPython.Compiler.Ast;
@@ -21,12 +24,6 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("builtins", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
     [Documentation("")]  // Documentation suppresses XML Doc on startup.
@@ -34,28 +31,44 @@ namespace IronPython.Modules {
         public const string __doc__ = @"Built-in functions, exceptions, and other objects.
 
 Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
-        public const object? __package__ = null;
+        public const object __package__ = null;
         public const string __name__ = "builtins";
 
-        public static object True => ScriptingRuntimeHelpers.True;
+        public static object True {
+            get {
+                return ScriptingRuntimeHelpers.True;
+            }
+        }
 
-        public static object False => ScriptingRuntimeHelpers.False;
+        public static object False {
+            get {
+                return ScriptingRuntimeHelpers.False;
+            }
+        }
 
         // This will always stay null
-        public static readonly object? None;
+        public static readonly object None;
 
-        public static Ellipsis Ellipsis => Ellipsis.Value;
+        public static IronPython.Runtime.Types.Ellipsis Ellipsis {
+            get {
+                return IronPython.Runtime.Types.Ellipsis.Value;
+            }
+        }
 
-        public static NotImplementedType NotImplemented => NotImplementedType.Value;
+        public static NotImplementedType NotImplemented {
+            get {
+                return NotImplementedType.Value;
+            }
+        }
 
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
-        public static object __import__(CodeContext/*!*/ context, [NotNull]string name, object? globals = null, object? locals = null, object? fromlist = null, int level = 0) {
+        public static object __import__(CodeContext/*!*/ context, string name, object globals=null, object locals=null, object fromlist=null, int level=0) {
             if (fromlist is string || fromlist is Extensible<string>) {
                 fromlist = new List<object> { fromlist };
             }
 
-            IList? from = fromlist as IList;
+            IList from = fromlist as IList;
             PythonContext pc = context.LanguageContext;
 
             object ret = Importer.ImportModule(context, globals, name, from != null && from.Count > 0, level);
@@ -66,10 +79,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (ret is PythonModule mod && from != null) {
                 string strAttrName;
                 for (int i = 0; i < from.Count; i++) {
-                    object? attrName = from[i];
+                    object attrName = from[i];
 
                     if (pc.TryConvertToString(attrName, out strAttrName) &&
-                        !string.IsNullOrEmpty(strAttrName) &&
+                        !String.IsNullOrEmpty(strAttrName) &&
                         strAttrName != "*") {
                         try {
                             Importer.ImportFrom(context, mod, strAttrName);
@@ -84,7 +97,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("abs(number) -> number\n\nReturn the absolute value of the argument.")]
-        public static object abs(CodeContext/*!*/ context, object? o) {
+        public static object abs(CodeContext/*!*/ context, object o) {
             if (o is int) return Int32Ops.Abs((int)o);
             if (o is long) return Int64Ops.Abs((long)o);
             if (o is double) return DoubleOps.Abs((double)o);
@@ -101,7 +114,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonTypeOps.GetName(o));
         }
 
-        public static bool all(CodeContext context, object? x) {
+        public static bool all(CodeContext context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(context, x);
             while (i.MoveNext()) {
                 if (!PythonOps.IsTrue(i.Current)) return false;
@@ -109,7 +122,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return true;
         }
 
-        public static bool any(CodeContext context, object? x) {
+        public static bool any(CodeContext context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(context, x);
             while (i.MoveNext()) {
                 if (PythonOps.IsTrue(i.Current)) return true;
@@ -117,11 +130,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return false;
         }
 
-        public static string ascii(CodeContext/*!*/ context, object? @object) {
+        public static string ascii(CodeContext/*!*/ context, object @object) {
             return PythonOps.Ascii(context, @object);
         }
 
-        public static string bin(object? obj) {
+        public static string bin(object obj) {
             if (obj is int) return Int32Ops.ToBinary((int)obj);
             if (obj is Runtime.Index) return Int32Ops.ToBinary(Converter.ConvertToIndex((Runtime.Index)obj));
             if (obj is BigInteger) return BigIntegerOps.ToBinary((BigInteger)obj);
@@ -136,14 +149,26 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(res));
         }
 
-        public static PythonType @bool => DynamicHelpers.GetPythonTypeFromType(typeof(bool));
+        public static PythonType @bool {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(bool));
+            }
+        }
 
-        public static PythonType bytes => DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
+        public static PythonType bytes {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
+            }
+        }
 
-        public static PythonType bytearray => DynamicHelpers.GetPythonTypeFromType(typeof(ByteArray));
+        public static PythonType bytearray {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(ByteArray));
+            }
+        }
 
         [Documentation("callable(object) -> bool\n\nReturn whether the object is callable (i.e., some kind of function).")]
-        public static bool callable(CodeContext/*!*/ context, object? o) {
+        public static bool callable(CodeContext/*!*/ context, object o) {
             return PythonOps.IsCallable(context, o);
         }
 
@@ -158,7 +183,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ScriptingRuntimeHelpers.CharToString((char)value);
         }
 
-        public static PythonType classmethod => DynamicHelpers.GetPythonTypeFromType(typeof(classmethod));
+        public static PythonType classmethod {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(classmethod));
+            }
+        }
 
         [Documentation("compile(source, filename, mode[, flags[, dont_inherit]]) -> code object\n\n" +
             "Compile a unit of source code.\n\n" +
@@ -167,7 +196,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "eval compiles the code as if were an expression\n" +
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
-        public static object compile(CodeContext/*!*/ context, [NotNull]_ast.AST source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
 
             ValidateCompileMode(mode);
@@ -185,7 +214,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [BytesLike]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
             var sourceCodeKind = ValidateCompileMode(mode);
 
@@ -196,11 +225,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
 
-        public static object compile(CodeContext/*!*/ context, [NotNull]MemoryView source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1)
+        public static object compile(CodeContext/*!*/ context, MemoryView source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1)
             => compile(context, source.tobytes(), filename, mode, flags, dont_inherit, optimize);
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNull]string source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
 
             var sourceCodeKind = ValidateCompileMode(mode);
@@ -224,7 +253,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static object CompileHelper(CodeContext/*!*/ context, SourceUnit sourceUnit, string mode, object? flags, bool dont_inherit) {
+        private static object CompileHelper(CodeContext/*!*/ context, SourceUnit sourceUnit, string mode, object flags, object dont_inherit) {
             bool astOnly = false;
             int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
             if ((iflags & _ast.PyCF_ONLY_AST) != 0) {
@@ -244,14 +273,23 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 (object)_ast.BuildAst(context, sourceUnit, opts, mode);
         }
 
-        public static PythonType complex => DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
+        public static PythonType complex {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
+            }
+        }
 
-        public static void delattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static void delattr(CodeContext/*!*/ context, object o, string name) {
             PythonOps.DeleteAttr(context, o, name);
         }
 
-        public static PythonType dict => DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary));
+        public static PythonType dict {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary));
+            }
+        }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static PythonList dir(CodeContext/*!*/ context) {
             PythonList res = new PythonList(context.Dict.Keys);
 
@@ -259,21 +297,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return res;
         }
 
-        public static PythonList dir(CodeContext/*!*/ context, object? o) {
-            IList<object?> ret = PythonOps.GetAttrNames(context, o);
+        public static PythonList dir(CodeContext/*!*/ context, object o) {
+            IList<object> ret = PythonOps.GetAttrNames(context, o);
             PythonList lret = new PythonList(ret);
             lret.sort(context);
             return lret;
         }
 
-        public static object divmod(CodeContext/*!*/ context, object? x, object? y) {
+        public static object divmod(CodeContext/*!*/ context, object x, object y) {
+            Debug.Assert(NotImplementedType.Value != null);
+
             return context.LanguageContext.DivMod(x, y);
         }
 
-        public static PythonType enumerate => DynamicHelpers.GetPythonTypeFromType(typeof(Enumerate));
+        public static PythonType enumerate {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Enumerate));
+            }
+        }
 
-        internal static PythonDictionary? GetAttrLocals(CodeContext/*!*/ context, object? locals) {
-            PythonDictionary? attrLocals = null;
+        internal static PythonDictionary GetAttrLocals(CodeContext/*!*/ context, object locals) {
+            PythonDictionary attrLocals = null;
             if (locals == null) {
                 if (context.IsTopLevel) {
                     attrLocals = context.Dict;
@@ -289,12 +333,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "The expression can be either be a string, bytes\n" +
             "or a code object returned by compile()")]
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary? globals = null, object? locals = null)
+        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null)
             => code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> expression, PythonDictionary? globals = null, object? locals = null) {
+        public static object eval(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
@@ -321,7 +365,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary? globals = null, object? locals = null) {
+        public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
@@ -340,7 +384,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [Documentation("exec(object[, globals[, locals]])\n\n" +
             "Read and execute code from an object, which can be a string, bytes or a code object.\n" +
             "The globals and locals are dictionaries providing the context.")]
-        public static void exec(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null) {
             if (locals == null) locals = globals;
             if (globals == null) globals = context.GlobalDict;
 
@@ -362,7 +406,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [NotNull]string code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [NotNull]string code, PythonDictionary globals = null, object locals = null) {
             SourceUnit source = context.LanguageContext.CreateSourceUnit(new NoLineFeedSourceContentProvider(code), "<string>", SourceCodeKind.Statements);
             PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
@@ -371,7 +415,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
             byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.UnsafeByteArray : code.ToArray());
             SourceUnit source = context.LanguageContext.CreateSourceUnit(
                 new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),
@@ -383,12 +427,20 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             exec(context, funcCode, globals, locals);
         }
 
-        public static PythonType filter => DynamicHelpers.GetPythonTypeFromType(typeof(Filter));
+        public static PythonType filter {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Filter));
+            }
+        }
 
-        public static PythonType @float => DynamicHelpers.GetPythonTypeFromType(typeof(double));
+        public static PythonType @float {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(double));
+            }
+        }
 
-        public static string format(CodeContext/*!*/ context, object? argValue, [NotNull]string formatSpec = "") {
-            object? res;
+        public static string format(CodeContext/*!*/ context, object argValue, string formatSpec="") {
+            object res;
             // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
             PythonTypeOps.TryInvokeBinaryOperator(
                 context,
@@ -404,25 +456,32 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return strRes;
         }
 
-        public static PythonType frozenset => DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
+        public static PythonType frozenset {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
+            }
+        }
 
-        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static object getattr(CodeContext/*!*/ context, object o, string name) {
             return PythonOps.GetBoundAttr(context, o, name);
         }
 
-        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? def) {
-            return PythonOps.TryGetBoundAttr(context, o, name, out object? ret) ? ret : def;
+        public static object getattr(CodeContext/*!*/ context, object o, string name, object def) {
+            object ret;
+            if (PythonOps.TryGetBoundAttr(context, o, name, out ret)) return ret;
+            else return def;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static PythonDictionary globals(CodeContext/*!*/ context) {
             return context.ModuleContext.Globals;
         }
 
-        public static bool hasattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static bool hasattr(CodeContext/*!*/ context, object o, string name) {
             return PythonOps.HasAttr(context, o, name);
         }
 
-        public static int hash(CodeContext/*!*/ context, object? o) {
+        public static int hash(CodeContext/*!*/ context, object o) {
             return PythonContext.Hash(o);
         }
 
@@ -439,7 +498,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return Int32Ops.__hash__(o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]Extensible<int> o) {
+        public static int hash(CodeContext/*!*/ context, Extensible<int> o) {
             return PythonContext.Hash(o);
         }
 
@@ -464,9 +523,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return DoubleOps.__hash__(o);
         }
 
-        public static void help(CodeContext/*!*/ context, object? o) {
+        public static void help(CodeContext/*!*/ context, object o) {
             StringBuilder doc = new StringBuilder();
-            List<object?> doced = new List<object?>();  // document things only once
+            List<object> doced = new List<object>();  // document things only once
 
             help(context, doced, doc, 0, o);
 
@@ -491,7 +550,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static void help(CodeContext/*!*/ context, List<object?>/*!*/ doced, StringBuilder/*!*/ doc, int indent, object? obj) {
+        private static void help(CodeContext/*!*/ context, List<object>/*!*/ doced, StringBuilder/*!*/ doc, int indent, object obj) {
             if (doced.Contains(obj)) return;  // document things only once
             doced.Add(obj);
 
@@ -501,11 +560,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 // try and find things that string could refer to,
                 // then call help on them.
                 foreach (object module in context.LanguageContext.SystemStateModules.Values) {
-                    IList<object?> attrs = PythonOps.GetAttrNames(context, module);
+                    IList<object> attrs = PythonOps.GetAttrNames(context, module);
                     PythonList candidates = new PythonList();
-                    foreach (string? s in attrs) {
+                    foreach (string s in attrs) {
                         if (s == strVal) {
-                            object? modVal;
+                            object modVal;
                             if (!PythonOps.TryGetBoundAttr(context, module, strVal, out modVal))
                                 continue;
 
@@ -515,9 +574,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                     // favor types, then built-in functions, then python functions,
                     // and then only display help for one.
-                    PythonType? type = null;
-                    BuiltinFunction? builtinFunction = null;
-                    PythonFunction? function = null;
+                    PythonType type = null;
+                    BuiltinFunction builtinFunction = null;
+                    PythonFunction function = null;
                     for (int i = 0; i < candidates.__len__(); i++) {
                         if ((type = candidates[i] as PythonType) != null) {
                             break;
@@ -553,7 +612,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 PythonList names = type.GetMemberNames(context);
                 names.sort(context);
 
-                foreach (string? name in names) {
+                foreach (string name in names) {
                     if (name == "__class__") continue;
 
                     if (type.TryLookupSlot(context, name, out PythonTypeSlot value) &&
@@ -620,7 +679,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             for (int i = 0; i < indent; i++) doc.Append("    ");
         }
 
-        public static string hex(object? o) {
+        //??? type this to string
+        public static object hex(object o) {
             object res = PythonOps.Index(o);
             if (res is BigInteger b) {
                 if (b < 0) {
@@ -638,29 +698,33 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object id(object? o) {
+        public static object id(object o) {
             long res = PythonOps.Id(o);
-            if (PythonOps.Id(o) <= int.MaxValue) {
+            if (PythonOps.Id(o) <= Int32.MaxValue) {
                 return (int)res;
             }
             return (BigInteger)res;
         }
 
-        public static PythonType @int => DynamicHelpers.GetPythonTypeFromType(typeof(int));
+        public static PythonType @int {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(int));
+            }
+        }
 
-        public static bool isinstance(object? o, [NotNull]PythonType typeinfo) {
+        public static bool isinstance(object o, [NotNull]PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);
         }
 
-        public static bool isinstance(CodeContext context, object? o, [NotNull]PythonTuple typeinfo) {
+        public static bool isinstance(CodeContext context, object o, [NotNull]PythonTuple typeinfo) {
             return PythonOps.IsInstance(context, o, typeinfo);
         }
 
-        public static bool isinstance(CodeContext context, object? o, object? typeinfo) {
+        public static bool isinstance(CodeContext context, object o, object typeinfo) {
             return PythonOps.IsInstance(context, o, typeinfo);
         }
 
-        public static bool issubclass(CodeContext context, [NotNull]PythonType c, object? typeinfo) {
+        public static bool issubclass(CodeContext context, [NotNull]PythonType c, object typeinfo) {
             return PythonOps.IsSubClass(context, c, typeinfo);
         }
 
@@ -669,10 +733,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object issubclass(CodeContext/*!*/ context, object? o, object? typeinfo) {
+        public static object issubclass(CodeContext/*!*/ context, object o, object typeinfo) {
             if (typeinfo is PythonTuple pt) {
                 // Recursively inspect nested tuple(s)
-                foreach (object? subTypeInfo in pt) {
+                foreach (object subTypeInfo in pt) {
                     try {
                         PythonOps.FunctionPushFrame(context.LanguageContext);
                         var res = issubclass(context, o, subTypeInfo);
@@ -689,14 +753,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
 
-            if (!PythonOps.TryGetBoundAttr(o, "__bases__", out object? bases) || !(bases is PythonTuple tupleBases)) {
+            if (!PythonOps.TryGetBoundAttr(o, "__bases__", out object bases) || !(bases is PythonTuple tupleBases)) {
                 return LightExceptions.Throw(PythonOps.TypeError("issubclass() arg 1 must be a class"));
             }
 
             if (o == typeinfo) {
                 return ScriptingRuntimeHelpers.True;
             }
-            foreach (object? baseCls in tupleBases) {
+            foreach (object baseCls in tupleBases) {
                 if (baseCls == typeinfo) {
                     return ScriptingRuntimeHelpers.True;
                 } else if (baseCls is PythonType pyType) {
@@ -716,11 +780,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ScriptingRuntimeHelpers.False;
         }
 
-        public static object iter(CodeContext/*!*/ context, object? o) {
+        public static object iter(CodeContext/*!*/ context, object o) {
             return PythonOps.GetEnumeratorObject(context, o);
         }
 
-        public static object iter(CodeContext/*!*/ context, object? func, object? sentinel) {
+        public static object iter(CodeContext/*!*/ context, object func, object sentinel) {
             if (!PythonOps.IsCallable(context, func)) {
                 throw PythonOps.TypeError("iter(v, w): v must be callable");
             }
@@ -751,14 +815,23 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return collection.Count;
         }
 
-        public static int len(object? o) {
+        public static int len(object o) {
             return PythonOps.Length(o);
         }
 
-        public static PythonType set => DynamicHelpers.GetPythonTypeFromType(typeof(SetCollection));
+        public static PythonType set {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(SetCollection));
+            }
+        }
 
-        public static PythonType list => DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
+        public static PythonType list {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
+            }
+        }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static object locals(CodeContext/*!*/ context) {
             PythonDictionary dict = context.Dict;
             if (dict._storage is ObjectAttributesAdapter adapter) {
@@ -770,19 +843,37 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.Dict;
         }
 
-        public static PythonType @long => TypeCache.BigInteger;
+        public static PythonType @long {
+            get {
+                return TypeCache.BigInteger;
+            }
+        }
 
-        public static PythonType memoryview => DynamicHelpers.GetPythonTypeFromType(typeof(MemoryView));
+        public static PythonType memoryview {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(MemoryView));
+            }
+        }
 
-        public static PythonType map => DynamicHelpers.GetPythonTypeFromType(typeof(Map));
+        private static CallSite<Func<CallSite, CodeContext, T, T1, object>> MakeMapSite<T, T1>(CodeContext/*!*/ context) {
+            return CallSite<Func<CallSite, CodeContext, T, T1, object>>.Create(
+                context.LanguageContext.InvokeOne
+            );
+        }
+
+        public static PythonType map {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Map));
+            }
+        }
 
         private static object UndefinedKeywordArgument = new object();
 
-        public static object? max(CodeContext/*!*/ context, object? x) {
+        public static object max(CodeContext/*!*/ context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError("max() arg is an empty sequence");
-            object? ret = i.Current;
+            object ret = i.Current;
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 if (pc.GreaterThan(i.Current, ret)) ret = i.Current;
@@ -790,13 +881,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, object? y) {
+        public static object max(CodeContext/*!*/ context, object x, object y) {
             return context.LanguageContext.GreaterThan(x, y) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static object max(CodeContext/*!*/ context, params object[] args) {
             if (args.Length > 0) {
-                object? ret = args[0];
+                object ret = args[0];
                 if (args.Length == 1) {
                     return max(context, ret);
                 }
@@ -814,27 +905,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
-
-            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: true);
-            object? method = kwargTuple.Item1;
-            object? def = kwargTuple.Item2;
+            
+            var kwargTuple = GetMaxKwArg(dict,isDefaultAllowed:true);
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
 
             if (!i.MoveNext()) {
                 if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("max() arg is an empty sequence");
             }
 
-            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
+            if (method == UndefinedKeywordArgument) {
                 return max(context, x);
             }
 
-            object? ret = i.Current;
-            object? retValue = PythonCalls.Call(context, method, i.Current);
+            object ret = i.Current;
+            object retValue = PythonCalls.Call(context, method, i.Current);
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
-                object? tmpRetValue = PythonCalls.Call(context, method, i.Current);
+                object tmpRetValue = PythonCalls.Call(context, method, i.Current);
                 if (pc.GreaterThan(tmpRetValue, retValue)) {
                     ret = i.Current;
                     retValue = tmpRetValue;
@@ -843,32 +934,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
-
-            if (method == null) return max(context, x, y); // null key is allowed since CPython 3.8
+            object method = kwargTuple.Item1;
 
             PythonContext pc = context.LanguageContext;
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> dict, [NotNull]params object?[] args) {
+        public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
-
-            if (method == null) return max(context, args); // null key is allowed since CPython 3.8
-
+            object method = kwargTuple.Item1;
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
                     return max(context, args[retIndex], dict);
                 }
-
-                object? retValue = PythonCalls.Call(context, method, args[retIndex]);
+                
+                object retValue = PythonCalls.Call(context, method, args[retIndex]);
                 PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
-                    object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
+                    object tmpRetValue = PythonCalls.Call(context, method, args[i]);
 
                     if (pc.GreaterThan(tmpRetValue, retValue)) {
                         retIndex = i;
@@ -881,7 +967,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static Tuple<object?, object?> GetMaxKwArg(IDictionary<string, object?> dict, bool isDefaultAllowed) {
+        private static Tuple<object, object> GetMaxKwArg(IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError("max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
             if (dict.Keys.Contains("default") && !isDefaultAllowed) {
@@ -891,12 +977,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return VerifyKeys("max", dict);
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x) {
+        public static object min(CodeContext/*!*/ context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext()) {
                 throw PythonOps.ValueError("empty sequence");
             }
-            object? ret = i.Current;
+            object ret = i.Current;
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 if (pc.LessThan(i.Current, ret)) ret = i.Current;
@@ -904,13 +990,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, object? y) {
+        public static object min(CodeContext/*!*/ context, object x, object y) {
             return context.LanguageContext.LessThan(x, y) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static object min(CodeContext/*!*/ context, params object[] args) {
             if (args.Length > 0) {
-                object? ret = args[0];
+                object ret = args[0];
                 if (args.Length == 1) {
                     return min(context, ret);
                 }
@@ -925,25 +1011,25 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
-            object? method = kwargTuple.Item1;
-            object? def = kwargTuple.Item2;
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
             if (!i.MoveNext()) {
                 if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("min() arg is an empty sequence");
             }
-
-            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
+            
+            if (method == UndefinedKeywordArgument) {
                 return min(context, x);
             }
 
-            object? ret = i.Current;
-            object? retValue = PythonCalls.Call(context, method, i.Current);
+            object ret = i.Current;
+            object retValue = PythonCalls.Call(context, method, i.Current);
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
-                object? tmpRetValue = PythonCalls.Call(context, method, i.Current);
+                object tmpRetValue = PythonCalls.Call(context, method, i.Current);
                 if (pc.LessThan(tmpRetValue, retValue)) {
                     ret = i.Current;
                     retValue = tmpRetValue;
@@ -952,33 +1038,29 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
-
-            if (method == null) return min(context, x, y); // null key is allowed since CPython 3.8
-
+            object method = kwargTuple.Item1;
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> dict, [NotNull]params object?[] args) {
-            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
-
-            if (method == null) return min(context, args); // null key is allowed since CPython 3.8
+        public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
 
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
                     return min(context, args[retIndex], dict);
                 }
-
-                object? retValue = PythonCalls.Call(context, method, args[retIndex]);
+                
+                object retValue = PythonCalls.Call(context, method, args[retIndex]);
                 PythonContext pc = context.LanguageContext;
 
                 for (int i = 1; i < args.Length; i++) {
-                    object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
-
+                    object tmpRetValue = PythonCalls.Call(context, method, args[i]);
+                    
                     if (pc.LessThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
@@ -990,30 +1072,30 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static Tuple<object?, object?> GetMinKwArg(IDictionary<string, object?> dict, bool isDefaultAllowed) {
+        private static Tuple<object,object> GetMinKwArg([ParamDictionary]IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError("min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
 
             if (dict.Keys.Contains("default") && !isDefaultAllowed)
                 throw PythonOps.TypeError("Cannot specify a default for min() with multiple positional arguments");
-
+            
             return VerifyKeys("min", dict);
         }
 
-        private static Tuple<object?, object?> VerifyKeys(string name, IDictionary<string, object?> dict) {
-            object? method;
-            object? def;
+        private static Tuple<object, object> VerifyKeys(string name, IDictionary<object, object> dict) {
+            object method;
+            object def;
 
             int cnt = 0;
             if (dict.TryGetValue("key", out method)) {
                 cnt++;
-            } else {
+            }else {
                 method = UndefinedKeywordArgument;
             }
 
             if (dict.TryGetValue("default", out def)) {
                 cnt++;
-            } else {
+            }else {
                 def = UndefinedKeywordArgument;
             }
 
@@ -1025,7 +1107,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 var key = dict.Keys.Cast<string>().Where(x => x != "default" && x != "key").First();
                 throw PythonOps.TypeError("{1}() got an unexpected keyword argument ({0})", key, name);
             }
-
+ 
             var result = Tuple.Create(method, def);
 
             return result;
@@ -1036,7 +1118,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// </summary>
         /// <param name="iter">Iterable instance</param>
         /// <returns>Next object or throws an StopIterator exception</returns>
-        public static object? next([NotNull]IEnumerator iter) {
+        public static object next(IEnumerator iter) {
             if (iter.MoveNext()) {
                 return iter.Current;
             } else {
@@ -1050,7 +1132,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// <param name="iter">Iterable instance</param>
         /// <param name="defaultVal">Default operation value</param>
         /// <returns>Next object or throws an StopIterator exception</returns>
-        public static object? next([NotNull]IEnumerator iter, object? defaultVal) {
+        public static object next(IEnumerator iter, object defaultVal) {
             if (iter.MoveNext()) {
                 return iter.Current;
             } else {
@@ -1059,15 +1141,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object? next([NotNull]PythonGenerator gen) {
+        public static object next(PythonGenerator gen) {
             return gen.__next__();
         }
 
         [LightThrowing]
-        public static object? next([NotNull]PythonGenerator gen, object? defaultVal) {
+        public static object next(PythonGenerator gen, object defaultVal) {
             object res = gen.__next__();
             Exception exc = LightExceptions.GetLightException(res);
-
+            
             if (exc != null && exc is StopIterationException) {
                 return defaultVal;
             }
@@ -1075,23 +1157,25 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return res;
         }
 
-        public static object? next(CodeContext/*!*/ context, object? iter) {
-            // TODO: throw TypeError is not an iterator
+        public static object next(CodeContext/*!*/ context, object iter) {
             return PythonOps.Invoke(context, iter, "__next__");
         }
 
-        public static object? next(CodeContext/*!*/ context, object? iter, object? defaultVal) {
-            // TODO: throw TypeError is not an iterator
-            try {
+        public static object next(CodeContext/*!*/ context, object iter, object defaultVal) {
+            try {                
                 return PythonOps.Invoke(context, iter, "__next__");
             } catch (StopIterationException) {
                 return defaultVal;
             }
         }
 
-        public static PythonType @object => DynamicHelpers.GetPythonTypeFromType(typeof(object));
+        public static PythonType @object {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(object));
+            }
+        }
 
-        public static string oct(object? o) {
+        public static object oct(object o) {
             object res = PythonOps.Index(o);
             if (res is BigInteger) {
                 BigInteger b = (BigInteger)res;
@@ -1101,26 +1185,26 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     return "0o" + b.ToString(8);
                 }
             }
-
+            
             int x = (int)res;
             if (x < 0) {
                 return "-0o" + Convert.ToString(-x, 8);
             } else {
                 return "0o" + Convert.ToString(x, 8);
-            }
+            }            
         }
 
         /// <summary>
         /// Open file and return a corresponding file object.
         /// </summary>
-        public static PythonIOModule._IOBase open(CodeContext context, [NotNull]object file,
-            [NotNull]string mode = "r",
-            int buffering = -1,
-            string? encoding = null,
-            string? errors = null,
-            string? newline = null,
-            bool closefd = true,
-            object? opener = null) {
+        public static PythonIOModule._IOBase open(CodeContext context, object file,
+            string mode="r",
+            int buffering=-1,
+            string encoding=null,
+            string errors=null,
+            string newline=null,
+            bool closefd=true,
+            object opener=null) {
             return PythonIOModule.open(context, file, mode, buffering, encoding, errors, newline, closefd, opener);
         }
 
@@ -1133,16 +1217,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return new PythonIOModule.FileIO(context, stream);
         }
 
-        public static int ord(object? value) {
+        public static int ord(object value) {
             if (value is char) {
                 return (char)value;
-            }
+            } 
 
-            string? stringValue = value as string;
+            string stringValue = value as string;
             if (stringValue == null) {
                 if (value is ExtensibleString es) stringValue = es.Value;
             }
-
+            
             if (stringValue != null) {
                 if (stringValue.Length != 1) {
                     throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
@@ -1157,15 +1241,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 return bytes[0];
             }
-
+                
             throw PythonOps.TypeError("expected a character, but {0} found", PythonTypeOps.GetName(value));
         }
 
-        public static object pow(CodeContext/*!*/ context, object? x, object? y) {
+        public static object pow(CodeContext/*!*/ context, object x, object y) {
             return context.LanguageContext.Operation(PythonOperationKind.Power, x, y);
         }
 
-        public static object pow(CodeContext/*!*/ context, object? x, object? y, object? z) {
+        public static object pow(CodeContext/*!*/ context, object x, object y, object z) {
             try {
                 return PythonOps.PowerMod(context, x, y, z);
             } catch (DivideByZeroException) {
@@ -1173,35 +1257,35 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static void print(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static void print(CodeContext/*!*/ context, params object[] args) {
             print(context, " ", "\n", null, args);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> kwargs, [NotNull]params object?[] args) {
-            object? sep = AttrCollectionPop(kwargs, "sep", " ");
+        public static void print(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+            object sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
             }
 
-            object? end = AttrCollectionPop(kwargs, "end", "\n");
+            object end = AttrCollectionPop(kwargs, "end", "\n");
             if (end != null && !(end is string)) {
                 throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
             }
 
-            object? file = AttrCollectionPop(kwargs, "file", null);
+            object file = AttrCollectionPop(kwargs, "file", null);
 
             if (kwargs.Count != 0) {
                 throw PythonOps.TypeError(
-                    "'{0}' is an invalid keyword argument for this function",
+                    "'{0}' is an invalid keyword argument for this function", 
                     new List<object>(kwargs.Keys)[0]
                 );
             }
 
-            print(context, (string?)sep ?? " ", (string?)end ?? "\n", file, args);
+            print(context, (string)sep ?? " ", (string)end ?? "\n", file, args);
         }
 
-        private static object? AttrCollectionPop(IDictionary<string, object?> kwargs, string name, object? defaultValue) {
-            object? res;
+        private static object AttrCollectionPop(IDictionary<object, object> kwargs, string name, object defaultValue) {
+            object res;
             if (kwargs.TryGetValue(name, out res)) {
                 kwargs.Remove(name);
             } else {
@@ -1210,7 +1294,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return res;
         }
 
-        private static void print(CodeContext/*!*/ context, string/*!*/ sep, string/*!*/ end, object? file, object?[]/*!*/ args) {
+        private static void print(CodeContext/*!*/ context, string/*!*/ sep, string/*!*/ end, object file, object[]/*!*/ args) {
             PythonContext pc = context.LanguageContext;
 
             if (file == null) {
@@ -1267,21 +1351,29 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static PythonType property => DynamicHelpers.GetPythonTypeFromType(typeof(PythonProperty));
+        public static PythonType property {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonProperty));
+            }
+        }
 
-        public static PythonType range => DynamicHelpers.GetPythonTypeFromType(typeof(Runtime.PythonRange));
+        public static PythonType range {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Runtime.PythonRange));
+            }
+        }
 
-        public static string? input(CodeContext/*!*/ context) {
+        public static string input(CodeContext/*!*/ context) {
             return input(context, null);
         }
 
-        public static string? input(CodeContext/*!*/ context, object? prompt) {
+        public static string input(CodeContext/*!*/ context, object prompt) {
             var pc = context.LanguageContext;
             var readlineModule = pc.GetModuleByName("readline");
-            string? line;
+            string line;
             if (readlineModule != null) {
                 var rl = readlineModule.GetAttributeNoThrow(context, "rl");
-                line = PythonOps.Invoke(context, rl, "readline", new[] { prompt }) as string;
+                line = PythonOps.Invoke(context, rl, "readline", new [] {prompt}) as string;
             } else {
                 if (prompt != null) {
                     PythonOps.PrintNoNewline(context, prompt);
@@ -1293,20 +1385,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return line;
         }
 
-        public static object repr(CodeContext/*!*/ context, object? o) {
-            object? res = PythonOps.Repr(context, o);
+        public static object repr(CodeContext/*!*/ context, object o)
+            => PythonOps.Repr(context, o);
 
-            // TODO: this check should probably be done in PythonOps...
-            if (!(res is string) && !(res is ExtensibleString)) {
-                throw PythonOps.TypeError("__repr__ returned non-string (type {0})", PythonOps.GetPythonTypeName(o));
+        public static PythonType reversed {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
             }
-
-            return res;
         }
 
-        public static PythonType reversed => DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
-
-        public static object? round(CodeContext/*!*/ context, object? number) {
+        public static object round(CodeContext/*!*/ context, object number) {
             // performance optimization for common cases
             if (number is double d) {
                 return DoubleOps.__round__(d);
@@ -1328,19 +1416,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.CallWithContextAndThis(context, func, number);
         }
 
-        public static object? round(CodeContext/*!*/ context, object? number, object? ndigits) {
-            if (ndigits is null) { // new in Python 3.5
-                return round(context, number);
-            }
-
+        public static object round(CodeContext/*!*/ context, object number, object ndigits) {
             // performance optimization for common cases
             if (ndigits is int ndi) {
                 if (number is double d) {
                     return DoubleOps.__round__(d, ndi);
                 }
+
                 if (number is int i) {
                     return Int32Ops.__round__(i, ndi);
                 }
+
                 if (number is BigInteger bi) {
                     return BigIntegerOps.__round__(bi, ndi);
                 }
@@ -1350,9 +1436,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (number is double d) {
                     return DoubleOps.__round__(d, ndbi);
                 }
+
                 if (number is int i) {
                     return Int32Ops.__round__(i, ndbi);
                 }
+
                 if (number is BigInteger bi) {
                     return BigIntegerOps.__round__(bi, ndbi);
                 }
@@ -1366,16 +1454,20 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.CallWithContextAndThis(context, func, number, ndigits);
         }
 
-        public static void setattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? val) {
+        public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {
             PythonOps.SetAttr(context, o, name, val);
         }
 
-        public static PythonType slice => DynamicHelpers.GetPythonTypeFromType(typeof(Slice));
+        public static PythonType slice {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Slice));
+            }
+        }
 
         public static PythonList sorted(CodeContext/*!*/ context,
-            object? iterable = null,
-            object? key = null,
-            bool reverse = false) {
+            object iterable=null,
+            object key=null,
+            bool reverse=false) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
             PythonList l = new PythonList(10);
@@ -1386,21 +1478,25 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return l;
         }
 
-        public static PythonType staticmethod => DynamicHelpers.GetPythonTypeFromType(typeof(staticmethod));
+        public static PythonType staticmethod {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(staticmethod));
+            }
+        }
 
-        public static object? sum(CodeContext/*!*/ context, object? sequence) {
+        public static object sum(CodeContext/*!*/ context, object sequence) {
             return sum(context, sequence, 0);
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonList sequence) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonList sequence) {
             return sum(context, sequence, 0);
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence) {
             return sum(context, sequence, 0);
         }
 
-        public static object? sum(CodeContext/*!*/ context, object? sequence, object? start) {
+        public static object sum(CodeContext/*!*/ context, object sequence, object start) {
             IEnumerator i = PythonOps.GetEnumerator(sequence);
 
             if (start is string) {
@@ -1415,7 +1511,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sumState.CurrentValue;
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonList sequence, object? start) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonList sequence, object start) {
             if (start is string) {
                 throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
             }
@@ -1428,7 +1524,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sumState.CurrentValue;
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence, object? start) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence, object start) {
             if (start is string) {
                 throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
             }
@@ -1444,7 +1540,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         #region Optimized sum
 
-        private static void SumOne(ref SumState state, object? current) {
+        private static void SumOne(ref SumState state, object current) {
             if (current != null) {
                 if (state.CurType == SumVariantType.Int) {
                     if (current.GetType() == typeof(int)) {
@@ -1491,8 +1587,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static BigInteger MaxDouble = new BigInteger(double.MaxValue);
-        private static BigInteger MinDouble = new BigInteger(double.MinValue);
+        private static BigInteger MaxDouble = new BigInteger(Double.MaxValue);
+        private static BigInteger MinDouble = new BigInteger(Double.MinValue);
 
         private static void SumBigIntAndDouble(ref SumState state, BigInteger bigInt, double dbl) {
             if (bigInt <= MaxDouble && bigInt >= MinDouble) {
@@ -1504,7 +1600,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static void SumObject(ref SumState state, object value, object? current) {
+        private static void SumObject(ref SumState state, object value, object current) {
             state.ObjectVal = state.AddSite.Target(state.AddSite, value, current);
             state.CurType = SumVariantType.Object;
         }
@@ -1519,12 +1615,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         private struct SumState {
             public double DoubleVal;
             public int IntVal;
-            public object? ObjectVal;
+            public object ObjectVal;
             public BigInteger BigIntVal;
             public SumVariantType CurType;
-            public CallSite<Func<CallSite, object?, object?, object>> AddSite;
+            public CallSite<Func<CallSite, object, object, object>> AddSite;
 
-            public SumState(PythonContext context, object? start) {
+            public SumState(PythonContext context, object start) {
                 DoubleVal = 0;
                 IntVal = 0;
                 ObjectVal = start;
@@ -1549,7 +1645,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
             }
 
-            public object? CurrentValue {
+            public object CurrentValue {
                 get {
                     switch (CurType) {
                         case SumVariantType.BigInt: return BigIntVal;
@@ -1564,30 +1660,55 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         #endregion
 
-        public static PythonType super => DynamicHelpers.GetPythonTypeFromType(typeof(Super));
+        public static PythonType super {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Super));
+            }
+        }
 
-        public static PythonType str => DynamicHelpers.GetPythonTypeFromType(typeof(string));
+        public static PythonType str {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(string));
+            }
+        }
 
-        public static PythonType tuple => DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple));
+        public static PythonType tuple {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple));
+            }
+        }
 
-        public static PythonType type => DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
+        public static PythonType type {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
+            }
+        }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         [Documentation("vars([object]) -> dictionary\n\nWithout arguments, equivalent to locals().\nWith an argument, equivalent to object.__dict__.")]
         public static object vars(CodeContext/*!*/ context) {
             return locals(context);
         }
 
-        public static object? vars(CodeContext/*!*/ context, object? @object) {
-            object? value;
+        public static object vars(CodeContext/*!*/ context, object @object) {
+            object value;
             if (!PythonOps.TryGetBoundAttr(context, @object, "__dict__", out value)) {
                 throw PythonOps.TypeError("vars() argument must have __dict__ attribute");
             }
             return value;
         }
 
-        public static PythonType zip => DynamicHelpers.GetPythonTypeFromType(typeof(Zip));
+        public static PythonType zip {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Zip));
+            }
+        }
 
-        public static PythonType BaseException => DynamicHelpers.GetPythonTypeFromType(typeof(PythonExceptions.BaseException));
+        public static PythonType BaseException {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonExceptions.BaseException));
+            }
+        }
 
         // OSError aliases
         public static PythonType EnvironmentError => PythonExceptions.OSError;
@@ -1604,7 +1725,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             } else {
                 pco = DefaultContext.DefaultPythonContext.GetPythonCompilerOptions();
             }
-
+            
             ModuleOptions langFeat = ModuleOptions.None;
             if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
                 // Ignored since Python 3
@@ -1632,15 +1753,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         /// <summary> Returns true if we should inherit our callers context (true division, etc...), false otherwise </summary>
-        private static bool GetCompilerInheritance(object? dontInherit) {
+        private static bool GetCompilerInheritance(object dontInherit) {
             return dontInherit == null || Converter.ConvertToInt32(dontInherit) == 0;
         }
 
         /// <summary> Returns the default compiler flags or the flags the user specified. </summary>
         private static CompileFlags GetCompilerFlags(int flags) {
             CompileFlags cflags = (CompileFlags)flags;
-            if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_DONT_IMPLY_DEDENT |
-                CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT | CompileFlags.CO_FUTURE_PRINT_FUNCTION |
+            if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_DONT_IMPLY_DEDENT | 
+                CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT | CompileFlags.CO_FUTURE_PRINT_FUNCTION | 
                 CompileFlags.CO_FUTURE_UNICODE_LITERALS | CompileFlags.CO_FUTURE_BARRY_AS_BDFL)) != 0) {
                 throw PythonOps.ValueError("unrecognized flags");
             }
@@ -1651,7 +1772,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// <summary>
         /// Gets a scope used for executing new code in optionally replacing the globals and locals dictionaries.
         /// </summary>
-        private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, PythonDictionary? globals, object? localsDict, bool copyModule) {
+        private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, PythonDictionary globals, object localsDict, bool copyModule) {
             Assert.NotNull(context);
 
             if (localsDict == null) localsDict = globals;
@@ -1662,7 +1783,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         internal static CodeContext/*!*/ GetExecEvalScope(CodeContext/*!*/ context, PythonDictionary/*!*/ globals,
-            PythonDictionary? locals, bool copyModule, bool setBuiltinsToModule) {
+            PythonDictionary locals, bool copyModule, bool setBuiltinsToModule) {
 
             Assert.NotNull(context, globals);
             PythonContext python = context.LanguageContext;
@@ -1686,11 +1807,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return localContext;
         }
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             dict["__debug__"] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -221,7 +222,8 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static bool TryConvertToString(object value, out String result) {
+#nullable enable
+        internal static bool TryConvertToString(object? value, [NotNullWhen(true)]out String? result) {
             object res = _tryStringSite.Target(_tryStringSite, value);
             if (res != null) {
                 result = (String)res;
@@ -230,6 +232,7 @@ namespace IronPython.Runtime {
             result = default(String);
             return false;
         }
+#nullable restore
 
         internal static bool TryConvertToChar(object value, out char result) {
             object res = _tryCharSite.Target(_tryCharSite, value);

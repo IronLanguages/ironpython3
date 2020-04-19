@@ -242,7 +242,9 @@ namespace IronPython.Runtime.Operations {
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "Repr " + o.GetType().FullName);
 
             object? repr = PythonContext.InvokeUnaryOperator(context, UnaryOperators.Repr, o);
+
             if (repr is string strRepr) return strRepr;
+            if (repr is Extensible<string> esRepr) return esRepr;
 
             throw PythonOps.TypeError("__repr__ returned non-string (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(repr), PythonOps.GetPythonTypeName(o));
         }

@@ -8,12 +8,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -24,11 +22,8 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
-using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
 using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-using NotNullIfNotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute;
-using IronPython.Hosting;
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>

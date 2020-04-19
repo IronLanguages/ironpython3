@@ -60,6 +60,6 @@ class ComplexTest(unittest.TestCase):
 
     def test_infinite(self):
         self.assertEqual(repr(1.0e340j),  'infj')
-        self.assertEqual(repr(-1.0e340j),'-infj')
+        self.assertEqual(repr(-1.0e340j),'(-0-infj)')
 
 run_test(__name__)

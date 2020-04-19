@@ -161,7 +161,7 @@ namespace IronPython.Runtime.Operations {
             private void WriteComplex (Complex val) {
                 _bytes.Add ((byte)'x');
                 WriteDoubleString (val.Real);
-                WriteDoubleString (val.Imaginary ());
+                WriteDoubleString (val.Imaginary);
             }
 
             private void WriteStopIteration () {

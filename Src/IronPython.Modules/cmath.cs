@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Numerics;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Utils;
+
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 [assembly: PythonModule("cmath", typeof(IronPython.Modules.ComplexMath))]
 namespace IronPython.Modules {
@@ -17,11 +22,11 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides access to functions for operating on complex numbers";
 
         //cos(a+ ib) = cosa*coshb - i*sina*sinhb
-        public static Complex cos(object x) {
+        public static Complex cos([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
-            if (double.IsNaN(num.Imaginary())) {
+            if (double.IsNaN(num.Imaginary)) {
                 return new Complex(double.NaN, double.NaN);
             }
 
@@ -31,18 +36,18 @@ namespace IronPython.Modules {
             }
 
             double real, imag;
-            real = Math.Cos(num.Real) * Math.Cosh(num.Imaginary());
-            imag = -(Math.Sin(num.Real) * Math.Sinh(num.Imaginary()));
+            real = Math.Cos(num.Real) * Math.Cosh(num.Imaginary);
+            imag = -(Math.Sin(num.Real) * Math.Sinh(num.Imaginary));
 
             return new Complex(real, imag);
         }
 
         //sin(a+ ib) = sina*coshb + i*cosa*sinhb
-        public static Complex sin(object x) {
+        public static Complex sin([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
-            if (double.IsNaN(num.Imaginary())) {
+            if (double.IsNaN(num.Imaginary)) {
                 return new Complex(double.NaN, double.NaN);
             }
 
@@ -52,22 +57,22 @@ namespace IronPython.Modules {
             }
 
             double real, imag;
-            real = Math.Sin(num.Real) * Math.Cosh(num.Imaginary());
-            imag = Math.Cos(num.Real) * Math.Sinh(num.Imaginary());
+            real = Math.Sin(num.Real) * Math.Cosh(num.Imaginary);
+            imag = Math.Cos(num.Real) * Math.Sinh(num.Imaginary);
 
             return new Complex(real, imag);
         }
 
-        public static Complex tan(object x) {
+        public static Complex tan([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            // limit as num.Imaginary() -> Infinity
-            if (double.IsPositiveInfinity(num.Imaginary())) {
+            // limit as num.Imaginary -> Infinity
+            if (double.IsPositiveInfinity(num.Imaginary)) {
                 return Complex.ImaginaryOne;
             }
 
-            // limit as num.Imaginary() -> -Infinity
-            if (double.IsNegativeInfinity(num.Imaginary())) {
+            // limit as num.Imaginary -> -Infinity
+            if (double.IsNegativeInfinity(num.Imaginary)) {
                 return new Complex(0.0, -1.0);
             }
 
@@ -75,7 +80,7 @@ namespace IronPython.Modules {
         }
 
         //cosh(a+ ib) = cosha*cosb + i*sinha*sinb
-        public static Complex cosh(object x) {
+        public static Complex cosh([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -84,19 +89,19 @@ namespace IronPython.Modules {
             }
 
             // can't take sin or cos of +/-Infinity
-            if (double.IsInfinity(num.Imaginary())) {
+            if (double.IsInfinity(num.Imaginary)) {
                 throw PythonOps.ValueError("math domain error");
             }
 
             double real, imag;
-            real = Math.Cosh(num.Real) * Math.Cos(num.Imaginary());
-            imag = Math.Sinh(num.Real) * Math.Sin(num.Imaginary());
+            real = Math.Cosh(num.Real) * Math.Cos(num.Imaginary);
+            imag = Math.Sinh(num.Real) * Math.Sin(num.Imaginary);
 
             return new Complex(real, imag);
         }
 
         //sin(a+ ib) = sinha*cosb + i*cosha*sinb
-        public static Complex sinh(object x) {
+        public static Complex sinh([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -105,19 +110,20 @@ namespace IronPython.Modules {
             }
 
             // can't take sin or cos of +/-Infinity
-            if (double.IsInfinity(num.Imaginary())) {
+            if (double.IsInfinity(num.Imaginary)) {
                 throw PythonOps.ValueError("math domain error");
             }
 
             double real, imag;
-            real = Math.Sinh(num.Real) * Math.Cos(num.Imaginary());
-            imag = Math.Cosh(num.Real) * Math.Sin(num.Imaginary());
+            real = Math.Sinh(num.Real) * Math.Cos(num.Imaginary);
+            imag = Math.Cosh(num.Real) * Math.Sin(num.Imaginary);
 
             return new Complex(real, imag);
         }
 
-        public static Complex tanh(object x) {
+        public static Complex tanh([NotNull]object x) {
             Complex num = GetComplexNum(x);
+            if (num.IsZero()) return num;
 
             // limit as num.Real -> Infinity
             if (double.IsPositiveInfinity(num.Real)) {
@@ -131,55 +137,56 @@ namespace IronPython.Modules {
 
             return sinh(num) / cosh(num);
         }
-        
+
         //acos(x) = -i*ln( x + i*(1-x*x)^1/2)
-        public static Complex acos(object x) {
+        public static Complex acos([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary());
-            double b = MathUtils.Hypot(num.Real - 1.0, num.Imaginary());
+            double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary);
+            double b = MathUtils.Hypot(num.Real - 1.0, num.Imaginary);
             double c = 0.5 * (a + b);
             double real = Math.Acos(0.5 * (a - b));
             double imag = Math.Log(c + Math.Sqrt(c + 1) * Math.Sqrt(c - 1));
 
-            return new Complex(real, num.Imaginary() >= 0 ? imag : -imag);
+            return new Complex(real, num.Imaginary >= 0 ? imag : -imag);
         }
 
         //asin(x) = -i*ln( i*x + (1-x*x)^1/2)
-        public static Complex asin(object x) {
+        public static Complex asin([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary());
-            double b = MathUtils.Hypot(num.Real - 1.0, num.Imaginary());
+            double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary);
+            double b = MathUtils.Hypot(num.Real - 1.0, num.Imaginary);
             double c = 0.5 * (a + b);
             double real = Math.Asin(0.5 * (a - b));
             double imag = Math.Log(c + Math.Sqrt(c + 1) * Math.Sqrt(c - 1));
 
-            return new Complex(real, num.Imaginary() >= 0 ? imag : -imag);
+            return new Complex(real, num.Imaginary >= 0 ? imag : -imag);
         }
 
         //atan(x) = i/2*ln( (i+x)/ (i-x))
-        public static Complex atan(object x) {
+        public static Complex atan([NotNull]object x) {
             Complex num = GetComplexNum(x);
+            if (num.IsZero()) return num;
             Complex i = Complex.ImaginaryOne;
 
             return i * 0.5 * (log(i + num) - log(i - num));
         }
 
         //acosh(x) = ln( x + (x*x -1)^1/2)
-        public static Complex acosh(object x) {
+        public static Complex acosh([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             return log(num + sqrt(num + 1) * sqrt(num - 1));
         }
 
         //asin(x) = ln( x + (x*x +1)^1/2)
-        public static Complex asinh(object x) {
+        public static Complex asinh([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             if (num.IsZero()) {
                 // preserve -0.0 imag component
-                return MathUtils.MakeImaginary(num.Imaginary());
+                return MathUtils.MakeImaginary(num.Imaginary);
             }
 
             Complex recip = 1 / num;
@@ -187,14 +194,15 @@ namespace IronPython.Modules {
         }
 
         //atanh(x) = (ln(1 +x) - ln(1-x))/2
-        public static Complex atanh(object x) {
+        public static Complex atanh([NotNull]object x) {
             Complex num = GetComplexNum(x);
+            if (num.IsZero()) return num;
 
             return (log(1 + num) - log(1 - num)) * 0.5;
         }
 
         //ln(re^iO) = ln(r) + iO 
-        public static Complex log(object x) {
+        public static Complex log([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             if (num.IsZero()) {
@@ -209,19 +217,19 @@ namespace IronPython.Modules {
         }
 
         //log b to base a = ln b / ln a
-        public static Complex log(object x, object logBase) {
+        public static Complex log([NotNull]object x, [NotNull]object logBase) {
             return log(x) / log(logBase);
         }
 
-        public static Complex log10(object x) {
+        public static Complex log10([NotNull]object x) {
             return log(x, 10);
         }
 
-        public static Complex exp(object x) {
+        public static Complex exp([NotNull]object x) {
             Complex num = GetComplexNum(x);
-            
+
             // degenerate case: num is real
-            if (num.Imaginary() == 0.0) {
+            if (num.Imaginary == 0.0) {
                 if (double.IsPositiveInfinity(num.Real)) {
                     return new Complex(double.PositiveInfinity, 0.0);
                 }
@@ -245,18 +253,18 @@ namespace IronPython.Modules {
             }
 
             // angle is always NaN
-            if (double.IsNaN(num.Imaginary())) {
+            if (double.IsNaN(num.Imaginary)) {
                 return new Complex(double.IsInfinity(num.Real) ? double.PositiveInfinity : double.NaN, double.NaN);
             }
 
             // can't take sin or cos of +/-infinity
-            if (double.IsInfinity(num.Imaginary())) {
+            if (double.IsInfinity(num.Imaginary)) {
                 throw PythonOps.ValueError("math domain error");
             }
-            
+
             // use c*(e^x) = (sign(c))*e^(x+log(abs(c))) for fewer overflows in corner cases
             double real;
-            double cosImag = Math.Cos(num.Imaginary());
+            double cosImag = Math.Cos(num.Imaginary);
             if (cosImag > 0.0) {
                 real = Math.Exp(num.Real + Math.Log(cosImag));
             } else if (cosImag < 0.0) {
@@ -267,7 +275,7 @@ namespace IronPython.Modules {
 
             // use c*(e^x) = (sign(c))*e^(x+log(abs(c))) for fewer overflows in corner cases
             double imag;
-            double sinImag = Math.Sin(num.Imaginary());
+            double sinImag = Math.Sin(num.Imaginary);
             if (sinImag > 0.0) {
                 imag = Math.Exp(num.Real + Math.Log(sinImag));
             } else if (sinImag < 0.0) {
@@ -284,10 +292,10 @@ namespace IronPython.Modules {
             return new Complex(real, imag);
         }
 
-        public static Complex sqrt(object x) {
+        public static Complex sqrt([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            if (num.Imaginary() == 0.0) {
+            if (num.Imaginary == 0.0) {
                 if (num.Real >= 0.0) {
                     return MathUtils.MakeReal(Math.Sqrt(num.Real));
                 } else {
@@ -297,21 +305,21 @@ namespace IronPython.Modules {
 
             double c = num.Abs() + num.Real;
             double real = Math.Sqrt(0.5 * c);
-            double imag = num.Imaginary() / Math.Sqrt(2 * c);
+            double imag = num.Imaginary / Math.Sqrt(2 * c);
 
             return new Complex(real, imag);
         }
 
-        public static double phase(object x) {
+        public static double phase([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             return GetAngle(num);
         }
 
-        public static PythonTuple polar(object x) {
+        public static PythonTuple polar([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            double[] res = new double[] { num.Abs(), GetAngle(num) };
+            double[] res = new double[] { ComplexOps.Abs(num), GetAngle(num) };
 
             // check for overflow
             if (double.IsInfinity(res[0]) && !IsInfinity(num)) {
@@ -350,19 +358,19 @@ namespace IronPython.Modules {
             return new Complex(r * Math.Cos(theta), r * Math.Sin(theta));
         }
 
-        public static bool isinf(object x) {
+        public static bool isinf([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             return IsInfinity(num);
         }
 
-        public static bool isnan(object x) {
+        public static bool isnan([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             return IsNaN(num);
         }
 
-        public static bool isfinite(object x) {
+        public static bool isfinite([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
             return IsFinite(num);
@@ -371,11 +379,11 @@ namespace IronPython.Modules {
         #region Helpers
 
         private static bool IsInfinity(Complex num) {
-            return double.IsInfinity(num.Real) || double.IsInfinity(num.Imaginary());
+            return double.IsInfinity(num.Real) || double.IsInfinity(num.Imaginary);
         }
 
         private static bool IsNaN(Complex num) {
-            return double.IsNaN(num.Real) || double.IsNaN(num.Imaginary());
+            return double.IsNaN(num.Real) || double.IsNaN(num.Imaginary);
         }
 
         private static bool IsFinite(Complex num) {
@@ -390,9 +398,9 @@ namespace IronPython.Modules {
             }
 
             if (double.IsPositiveInfinity(num.Real)) {
-                if (double.IsPositiveInfinity(num.Imaginary())) {
+                if (double.IsPositiveInfinity(num.Imaginary)) {
                     return Math.PI * 0.25;
-                } else if (double.IsNegativeInfinity(num.Imaginary())) {
+                } else if (double.IsNegativeInfinity(num.Imaginary)) {
                     return Math.PI * -0.25;
                 } else {
                     return 0.0;
@@ -400,36 +408,28 @@ namespace IronPython.Modules {
             }
 
             if (double.IsNegativeInfinity(num.Real)) {
-                if (double.IsPositiveInfinity(num.Imaginary())) {
+                if (double.IsPositiveInfinity(num.Imaginary)) {
                     return Math.PI * 0.75;
-                } else if (double.IsNegativeInfinity(num.Imaginary())) {
+                } else if (double.IsNegativeInfinity(num.Imaginary)) {
                     return Math.PI * -0.75;
                 } else {
-                    return DoubleOps.Sign(num.Imaginary()) * Math.PI;
+                    return DoubleOps.Sign(num.Imaginary) * Math.PI;
                 }
             }
 
             if (num.Real == 0.0) {
-                if (num.Imaginary() != 0.0) {
-                    return Math.PI * 0.5 * Math.Sign(num.Imaginary());
+                if (num.Imaginary != 0.0) {
+                    return Math.PI * 0.5 * Math.Sign(num.Imaginary);
                 } else {
-                    return (DoubleOps.IsPositiveZero(num.Real) ? 0.0 : Math.PI) * DoubleOps.Sign(num.Imaginary());
+                    return (DoubleOps.IsPositiveZero(num.Real) ? 0.0 : Math.PI) * DoubleOps.Sign(num.Imaginary);
                 }
             }
 
-            return Math.Atan2(num.Imaginary(), num.Real);
+            return Math.Atan2(num.Imaginary, num.Real);
         }
 
-        private static Complex GetComplexNum(object num) {
-            Complex complexNum;
-            if (num != null) {
-                complexNum = Converter.ConvertToComplex(num);
-            } else {
-                throw new NullReferenceException("The input was null");
-            }
+        private static Complex GetComplexNum(object num) => Converter.ConvertToComplex(num);
 
-            return complexNum;
-        }
         #endregion
     }
 }

@@ -290,7 +290,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [BytesLike, NotNull]IList<byte> @object, [NotNull]string encoding, [NotNull, DisallowNull]string? errors = null) {
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [BytesLike, NotNull]IList<byte> @object, [NotNull]string encoding, [NotNull]string errors = "strict") {
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
                 return new Bytes(@object).decode(context, encoding, errors);

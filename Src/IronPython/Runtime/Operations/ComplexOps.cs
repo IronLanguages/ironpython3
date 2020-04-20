@@ -6,13 +6,15 @@
 
 using System;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using IronPython.Modules;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
-using IronPython.Modules;
 
 namespace IronPython.Runtime.Operations {
     public class ExtensibleComplex : Extensible<Complex> {
@@ -29,28 +31,33 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object? real = null, object? imag = null) {
-            var real2 = new Complex();
-            var imag2 = new Complex();
-            if (real == null && imag == null && cls == TypeCache.Complex) throw PythonOps.TypeError("argument must be a string or a number");
+        public static object __new__(CodeContext context, PythonType cls, [Optional]object? real, [Optional]object? imag) {
+            if (real == null) throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonTypeOps.GetName(real)}'");
+            if (imag == null) throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonTypeOps.GetName(real)}'");
 
-            if (imag != null) {
+            Complex imag2;
+            if (imag is Missing) {
+                imag2 = Complex.Zero;
+            } else {
                 if (real is string) throw PythonOps.TypeError("complex() can't take second arg if first is a string");
                 if (imag is string) throw PythonOps.TypeError("complex() second arg can't be a string");
-                imag2 = Converter.ConvertToComplex(imag);
+                if (!Converter.TryConvertToComplex(imag, out imag2)) {
+                    throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonTypeOps.GetName(real)}'");
+                }
             }
 
-            if (real != null) {
-                if (real is string) {
-                    real2 = LiteralParser.ParseComplex((string)real);
-                } else if (real is Extensible<string>) {
-                    real2 = LiteralParser.ParseComplex(((Extensible<string>)real).Value);
-                } else if (real is Complex) {
-                    if (imag == null && cls == TypeCache.Complex) return real;
-                    else real2 = (Complex)real;
-                } else {
-                    real2 = Converter.ConvertToComplex(real);
-                }
+            Complex real2;
+            if (real is Missing) {
+                real2 = Complex.Zero;
+            } else if (real is string) {
+                real2 = LiteralParser.ParseComplex((string)real);
+            } else if (real is Extensible<string>) {
+                real2 = LiteralParser.ParseComplex(((Extensible<string>)real).Value);
+            } else if (real is Complex) {
+                if (imag is Missing && cls == TypeCache.Complex) return real;
+                else real2 = (Complex)real;
+            } else if (!Converter.TryConvertToComplex(real, out real2)) {
+                throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonTypeOps.GetName(real)}'");
             }
 
             double real3 = real2.Real - imag2.Imaginary;
@@ -223,6 +230,11 @@ namespace IronPython.Runtime.Operations {
             return FormatComplexValue(context, x.Imaginary) + "j";
         }
 
+        public static string __format__(CodeContext/*!*/ context, Complex self, string formatSpec) {
+            // TODO: this is not correct, but it's better than the .ToString representation
+            return ObjectOps.__format__(context, self, formatSpec);
+        }
+
         // report the same errors as CPython for these invalid conversions
         public static double __float__(Complex self) {
             throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
@@ -238,7 +250,6 @@ namespace IronPython.Runtime.Operations {
 
         private static string FormatComplexValue(CodeContext/*!*/ context, double x)
             => DoubleOps.Repr(context, x, trailingZeroAfterWholeFloat: false);
-
 
         // Unary Operations
         [SpecialName]

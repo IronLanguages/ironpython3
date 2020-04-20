@@ -1314,6 +1314,9 @@ namespace IronPython.Runtime {
             if (curVal is IList<byte> bytes) {
                 return new ByteArray(new List<byte>(bytes));
             }
+            if (curVal is IBufferProtocol bp) {
+                return new ByteArray(bp.ToBytes(0, null));
+            }
             throw PythonOps.TypeError("can only join an iterable of bytes");
         }
 

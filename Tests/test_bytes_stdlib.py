@@ -180,7 +180,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_bytes.BytesTest('test_custom'))
         suite.addTest(test.test_bytes.BytesTest('test_decode'))
         suite.addTest(test.test_bytes.BytesTest('test_empty_sequence'))
-        #suite.addTest(test.test_bytes.BytesTest('test_encoding'))
+        suite.addTest(test.test_bytes.BytesTest('test_encoding'))
         suite.addTest(test.test_bytes.BytesTest('test_endswith'))
         suite.addTest(test.test_bytes.BytesTest('test_extended_getslice'))
         suite.addTest(test.test_bytes.BytesTest('test_find'))

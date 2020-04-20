@@ -67,8 +67,12 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("string argument without an encoding");
         }
 
-        public Bytes(CodeContext context, [NotNull]string unicode, [NotNull]string encoding) {
-            _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
+        public Bytes(CodeContext context, [NotNull]string @string, [NotNull]string encoding) {
+            _bytes = StringOps.encode(context, @string, encoding, "strict").UnsafeByteArray;
+        }
+
+        public Bytes(CodeContext context, [NotNull]string @string, [NotNull]string encoding, [NotNull]string errors) {
+            _bytes = StringOps.encode(context, @string, encoding, errors).UnsafeByteArray;
         }
 
         private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();

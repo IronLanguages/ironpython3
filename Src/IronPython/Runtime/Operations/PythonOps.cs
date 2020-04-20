@@ -175,7 +175,13 @@ namespace IronPython.Runtime.Operations {
             lock (searchFunctions) {
                 for (int i = 0; i < searchFunctions.Count; i++) {
                     object? res = PythonCalls.Call(context, searchFunctions[i], normalized);
-                    if (res != null) return (PythonTuple)res;
+                    if (res != null) {
+                        if (res is PythonTuple pt && pt.__len__() == 4) {
+                            return pt;
+                        } else {
+                            throw PythonOps.TypeError("codec search functions must return 4-tuples");
+                        }
+                    }
                 }
             }
 
@@ -210,7 +216,7 @@ namespace IronPython.Runtime.Operations {
             return StringOps.AsciiEncode(Repr(context, o));
         }
 
-        public static string? Repr(CodeContext/*!*/ context, object? o) {
+        public static string Repr(CodeContext/*!*/ context, object? o) {
             if (o == null) return "None";
 
             if (o is string s) return StringOps.__repr__(s);
@@ -235,7 +241,12 @@ namespace IronPython.Runtime.Operations {
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "Repr " + o.GetType().FullName);
 
-            return PythonContext.InvokeUnaryOperator(context, UnaryOperators.Repr, o) as string;
+            object? repr = PythonContext.InvokeUnaryOperator(context, UnaryOperators.Repr, o);
+
+            if (repr is string strRepr) return strRepr;
+            if (repr is Extensible<string> esRepr) return esRepr;
+
+            throw PythonOps.TypeError("__repr__ returned non-string (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(repr), PythonOps.GetPythonTypeName(o));
         }
 
         public static List<object>? GetAndCheckInfinite(object o) {
@@ -1324,7 +1335,7 @@ namespace IronPython.Runtime.Operations {
                     for (int i = 0; i < bases.Length; i++) {
                         if (bases[i] is TypeGroup tc) {
                             if (!tc.TryGetNonGenericType(out Type nonGenericType)) {
-                                throw PythonOps.TypeError("cannot derive from open generic types " + Builtin.repr(context, tc).ToString());
+                                throw PythonOps.TypeError("cannot derive from open generic types {0}", Repr(context, tc));
                             }
                             newBases[i] = DynamicHelpers.GetPythonTypeFromType(nonGenericType);
                         } else {

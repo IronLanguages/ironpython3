@@ -1293,16 +1293,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return line;
         }
 
-        public static object repr(CodeContext/*!*/ context, object? o) {
-            object? res = PythonOps.Repr(context, o);
-
-            // TODO: this check should probably be done in PythonOps...
-            if (!(res is string) && !(res is ExtensibleString)) {
-                throw PythonOps.TypeError("__repr__ returned non-string (type {0})", PythonOps.GetPythonTypeName(o));
-            }
-
-            return res;
-        }
+        public static object repr(CodeContext/*!*/ context, object? o)
+            => PythonOps.Repr(context, o);
 
         public static PythonType reversed => DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
 

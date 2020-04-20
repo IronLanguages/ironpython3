@@ -21,7 +21,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_unicode.UnicodeTest('test___contains__'))
         suite.addTest(test.test_unicode.UnicodeTest('test_additional_rsplit'))
         suite.addTest(test.test_unicode.UnicodeTest('test_additional_split'))
-        #suite.addTest(test.test_unicode.UnicodeTest('test_ascii'))
+        suite.addTest(test.test_unicode.UnicodeTest('test_ascii'))
         #suite.addTest(test.test_unicode.UnicodeTest('test_aswidechar'))
         #suite.addTest(test.test_unicode.UnicodeTest('test_aswidecharstring'))
         suite.addTest(test.test_unicode.UnicodeTest('test_bug1001011'))
@@ -51,7 +51,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_unicode.UnicodeTest('test_expandtabs_optimization'))
         #suite.addTest(test.test_unicode.UnicodeTest('test_expandtabs_overflows_gracefully'))
         suite.addTest(test.test_unicode.UnicodeTest('test_extended_getslice'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_find'))  # UTF-16 vs. UTF-32 representation
+        suite.addTest(test.test_unicode.UnicodeTest('test_find'))
         suite.addTest(test.test_unicode.UnicodeTest('test_find_etc_raise_correct_error_messages'))
         suite.addTest(test.test_unicode.UnicodeTest('test_floatformatting'))
         #suite.addTest(test.test_unicode.UnicodeTest('test_format'))

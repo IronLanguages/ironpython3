@@ -1040,8 +1040,15 @@ class BuiltinsTest2(IronPythonTestCase):
     def test_error_messages(self):
         if is_cli:
             self.assertRaisesMessage(TypeError, "join() takes exactly 1 argument (2 given)", "".join, ["a", "b"], "c")
+            self.assertRaisesMessage(TypeError, "'NoneType' object is not iterable", "".join, None)
         else:
             self.assertRaisesMessage(TypeError, "join() takes exactly one argument (2 given)", "".join, ["a", "b"], "c")
+            self.assertRaisesMessage(TypeError, "can only join an iterable", "".join, None)
+
+        self.assertRaisesMessage(TypeError, "sequence item 0: expected str instance, NoneType found", "".join, (None,))
+        self.assertRaisesMessage(TypeError, "sequence item 0: expected str instance, NoneType found", "".join, [None])
+        self.assertRaisesMessage(TypeError, "sequence item 1: expected str instance, NoneType found", "".join, ("", None))
+        self.assertRaisesMessage(TypeError, "sequence item 1: expected str instance, NoneType found", "".join, ["", None])
 
     def test_enumerate(self):
         class MyIndex(object):

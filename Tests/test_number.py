@@ -7,6 +7,9 @@ import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
+if not is_cli:
+    long = int
+
 def get_builtins_dict():
     if type(__builtins__) is type(sys):
         return __builtins__.__dict__
@@ -45,16 +48,13 @@ class NumberTest(IronPythonTestCase):
     def test_silly_long(self):
         self.assertEqual(1 * SillyLong(2), 42)
         self.assertEqual(SillyLong(2) * 1, 2)
-        self.assertEqual((1).__mul__(SillyLong(2)), NotImplemented)
+        if is_cli:
+            self.assertEqual((1).__mul__(SillyLong(2)), NotImplemented)
 
     @skipUnlessIronPython()
     def test_clr(self):
         self.assertTrue(Single.IsInfinity(Single.PositiveInfinity))
         self.assertTrue(not Single.IsInfinity(1.0))
-
-        x = ['a','c','d','b',1,3,2, 2.5, -2]
-        x.sort()
-        self.assertTrue(x == [-2, 1, 2, 2.5, 3, 'a', 'b', 'c', 'd'])
 
         x = [333, 1234.5, 1, 333, -1, 66.6]
         x.sort()
@@ -327,17 +327,18 @@ class NumberTest(IronPythonTestCase):
             self.assertTrue(c == a * b)
             self.assertTrue(c == b * a)
             if a != 0:
-                self.assertTrue(b == c / a)
+                self.assertTrue(b == c // a)
             if b != 0:
-                self.assertTrue(a == c / b)
+                self.assertTrue(a == c // b)
 
         def operator_div(a, b) :
             if b != 0:
-                return a / b
+                return a // b
 
         def test_div(a,b,c):
             if b != 0:
-                self.assertTrue(a / b == c, '%s == %s' % (a/b, c))
+                #print(a,b,c)
+                self.assertTrue(a // b == c, '%s == %s' % (a//b, c))
                 self.assertTrue(((c * b) + (a % b)) == a)
 
         def operator_mod(a, b) :
@@ -347,7 +348,7 @@ class NumberTest(IronPythonTestCase):
         def test_mod(a,b,c):
             if b != 0:
                 self.assertTrue(a % b == c)
-                self.assertTrue((a / b) * b + c == a)
+                self.assertTrue((a // b) * b + c == a)
                 self.assertTrue((a - c) % b == 0)
 
         def operator_and(a, b) :
@@ -430,36 +431,6 @@ class NumberTest(IronPythonTestCase):
                         #print inst, eval(easy), eval(inst)
                         self.assertTrue(eval(easy, gbls, lcls) == eval(inst, gbls, lcls), "%s == %s" % (easy, inst))
 
-    def test_oldclass_cd(self):
-        """OldClass: both C and D define __lt__"""
-        class C:
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-        class D:
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-        class C2(C): pass
-        class D2(D): pass
-        self.scenarios_helper(templates1, ["<", ">"], globals(), locals())
-
-    def test_oldclass_c(self):
-        """OldClass: C defines __lt__, D does not"""
-        class C:
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-        class D:
-            def __init__(self, value):
-                self.value = value
-        class C2(C): pass
-        class D2(D): pass
-        self.scenarios_helper(templates2, ["<"], globals(), locals())
-
     def test_usertype_cd(self):
         """UserType: both C and D define __lt__"""
         class C(object):
@@ -489,121 +460,6 @@ class NumberTest(IronPythonTestCase):
         class C2(C): pass
         class D2(D): pass
         self.scenarios_helper(templates2, ["<"], globals(), locals())
-
-    def test_mixed_cd(self):
-        """Mixed: both C and D define __lt__"""
-        class C:
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-
-        class D(object):
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-        class C2(C): pass
-        class D2(D): pass
-        self.scenarios_helper(templates1, ["<", ">"], globals(), locals())
-
-    def test_mixed_all_cmpop(self):
-        """Mixed, with all cmpop"""
-        class C(object):
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-            def __gt__(self, other):
-                return self.value > other.value
-            def __le__(self, other):
-                return self.value <= other.value
-            def __ge__(self, other):
-                return self.value >= other.value
-
-        class D:
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-            def __gt__(self, other):
-                return self.value > other.value
-            def __le__(self, other):
-                return self.value <= other.value
-            def __ge__(self, other):
-                return self.value >= other.value
-        class C2(C): pass
-        class D2(D): pass
-        self.scenarios_helper(templates1, ["<", ">", "<=", ">="], globals(), locals())
-
-        # verify two instances of class compare differently
-
-        self.assertTrue( (cmp(C(3), C(3)) == 0) == False)
-        self.assertTrue( (cmp(D(3), D(3)) == 0) == False)
-        self.assertTrue( (cmp(C2(3), C2(3)) == 0) == False)
-        self.assertTrue( (cmp(D2(3), D2(3)) == 0) == False)
-
-        self.assertTrue( (cmp(D(5), C(5)) == 0) == False)
-        self.assertTrue( (cmp(C(3), C(5)) == -1) == True)
-        self.assertTrue( (cmp(D2(5), C(3)) == 1) == True)
-        self.assertTrue( (cmp(D(5), C2(8)) == -1) == True)
-
-    def test_old_cmp(self):
-        """define __cmp__; do not move this before those above cmp testing"""
-        class C:
-            def __init__(self, value):
-                self.value = value
-            def __cmp__(self, other):
-                if self.value < other: return -1
-                elif self.value > other: return 1
-                else: return 0
-
-        class D:
-            def __init__(self, value):
-                self.value = value
-            def __cmp__(self, other):
-                if self.value < other: return -1
-                elif self.value > other: return 1
-                else: return 0
-
-        class C2(C): pass
-
-        class D2(D): pass
-
-        self.scenarios_helper(templates1, ["<", ">", ">=", "<="], globals(), locals())
-
-        self.assertTrue( (cmp(C(3), C(3)) == 0) == True)
-        self.assertTrue( (cmp(C2(3), D(3)) == 0) == True)
-        self.assertTrue( (cmp(C(3.0), D2(4.6)) > 0) == False)
-        self.assertTrue( (cmp(D(3), C(4.9)) < 0) == True)
-        self.assertTrue( (cmp(D2(3), D2(1234567890)) > 0) == False)
-
-    def test_new_cmp(self):
-        class C(object):
-            def __init__(self, value):
-                self.value = value
-            def __cmp__(self, other):
-                if self.value < other: return -1
-                elif self.value > other: return 1
-                else: return 0
-
-        class D(object):
-            def __init__(self, value):
-                self.value = value
-            def __cmp__(self, other):
-                if self.value < other: return -1
-                elif self.value > other: return 1
-                else: return 0
-
-        class C2(C): pass
-        class D2(D): pass
-        self.scenarios_helper(templates1, ["<", ">", ">=", "<="], globals(), locals())
-
-        self.assertTrue( (cmp(C(3), C(3)) == 0) == True)
-        self.assertTrue( (cmp(C2(3.4), D(3.4)) == 0) == True)
-        self.assertTrue( (cmp(C(3.3), D2(4.9232)) > 0) == False)
-        self.assertTrue( (cmp(D(long(3)), C(4000000000)) < 0) == True)
-        self.assertTrue( (cmp(D2(3), D2(4.9)) < 0) == True)
 
     @skipUnlessIronPython()
     def test_comparisions(self):
@@ -669,76 +525,12 @@ class NumberTest(IronPythonTestCase):
         D2 = ComparisonTest2
         self.scenarios_helper(templates1, ["<", ">"], globals(), locals())
 
-        class C(object):
-            def __init__(self, value):
-                self.value = value
-            def __lt__(self, other):
-                return self.value < other.value
-            def __gt__(self, other):
-                return self.value > other.value
-        class C2(C): pass
+        def cmp(a, b): return (a > b) - (a < b)
 
         ComparisonTest.report = None
-        self.assertTrue( (cmp(ComparisonTest(5), ComparisonTest(5)) == 0) == False)
-        self.assertTrue( (cmp(ComparisonTest(5), ComparisonTest(8)) == -1) == True)
-        self.assertTrue( (cmp(ComparisonTest2(50), ComparisonTest(8)) == 1) == True)
-
-        self.assertTrue( (None < None) == False)
-        self.assertTrue( (None > None) == False)
-        self.assertTrue( (None <= None) == True)
-        self.assertTrue( (None >= None) == True)
-        self.assertTrue( (None == "") == False)
-        self.assertTrue( (None != "") == True)
-        self.assertTrue( (None < "") == True)
-        self.assertTrue( (None > "") == False)
-        self.assertTrue( (None <= "") == True)
-        self.assertTrue( (None >= "") == False)
-
-        def check(c):
-            self.assertTrue( (c < None) == False)
-            self.assertTrue( (c > None) == True)
-            self.assertTrue( (c <= None) == False)
-            self.assertTrue( (c >= None) == True)
-            self.assertTrue( (None < c) == True)
-            self.assertTrue( (None > c) == False)
-            self.assertTrue( (None <= c) == True)
-            self.assertTrue( (None >= c) == False)
-
-        class C1: pass
-        class C2(object): pass
-        class C3(C2): pass
-
-        for x in [C1, C2, C3]:
-            check(x())
-
-        ignore = '''
-        ############ Let us get some strange ones ############
-        # both C and D claims bigger
-        class C:
-            def __lt__(self, other):
-                return False
-        class D:
-            def __lt__(self, other):
-                return False
-
-        self.assertTrue( (C() < D()) == False )
-        self.assertTrue( (C() > D()) == False )
-        self.assertTrue( (D() < C()) == False )
-        self.assertTrue( (D() > C()) == False )
-
-        # C is always larger
-        class C(object):
-            def __lt__(self, other):
-                return False
-
-
-        class D: pass
-
-        self.assertTrue( (C() < D()) == False )
-        self.assertTrue( (C() > D()) == True )
-        self.assertTrue( (D() < C()) == True )
-        self.assertTrue( (D() > C()) == False )
-        '''
+        self.assertTrue(cmp(ComparisonTest(5), ComparisonTest(5)) == 0)
+        self.assertTrue(cmp(ComparisonTest(5), ComparisonTest(8)) == -1)
+        self.assertTrue(cmp(ComparisonTest2(50), ComparisonTest(8)) == 1)
 
     @skipUnlessIronPython()
     def test_ipt_integertest(self):
@@ -2170,6 +1962,7 @@ class NumberTest(IronPythonTestCase):
         for x in [-(int(2**(32-1)-1)), -3, -2, -1, 0, 1, 2, 3, int(2**(32-1)-1)]:
             self.assertEqual(x.__int__(), x)
 
+    @skipUnlessIronPython()
     def test_long_conv(self):
         class Foo(long):
             def __long__(self):

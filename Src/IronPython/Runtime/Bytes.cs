@@ -30,7 +30,18 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(object? source) : this(ByteArray.GetBytes(source, useHint: true)) { }
+        public Bytes(CodeContext context, object? source) {
+            if (PythonOps.TryGetBoundAttr(context, source, "__bytes__", out object? func)) {
+                object? res = PythonOps.CallWithContext(context, func);
+                if (res is Bytes bytes) {
+                    _bytes = bytes._bytes;
+                } else {
+                    throw PythonOps.TypeError("__bytes__ returned non-bytes (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(res), PythonOps.GetPythonTypeName(source));
+                }
+            } else {
+                _bytes = ByteArray.GetBytes(source, useHint: true).ToArray();
+            }
+        }
 
         public Bytes([NotNull]IEnumerable<object?> source) {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();

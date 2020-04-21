@@ -5,16 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Exceptions {
     public static partial class PythonExceptions {
@@ -59,7 +60,6 @@ namespace IronPython.Runtime.Exceptions {
         [PythonType("BaseException"), DynamicBaseType, Serializable]
         public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider, IWeakReferenceable {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
-            private object _message = String.Empty; // the message object, cached at __init__ time, not updated on args assignment
             private PythonTuple _args;              // the tuple of args provided at creation time
             private PythonDictionary _dict;    // the dictionary for extra values, created on demand
             private System.Exception _clrException; // the cached CLR exception that is thrown
@@ -100,9 +100,6 @@ namespace IronPython.Runtime.Exceptions {
             /// </summary>
             public virtual void __init__(params object[] args\u00F8) {
                 _args = PythonTuple.MakeTuple(args\u00F8 ?? new object[] { null });
-                if (_args.__len__() == 1) {
-                    _message = _args[0];
-                }
             }
 
             /// <summary>
@@ -235,11 +232,6 @@ namespace IronPython.Runtime.Exceptions {
             /// </summary>
             [SpecialName]
             public bool DeleteCustomMember(string name) {
-                if (name == "message") {
-                    _message = null;
-                    return true;
-                }
-
                 if (_dict == null) return false;
 
                 return _dict.Remove(name);
@@ -367,8 +359,8 @@ namespace IronPython.Runtime.Exceptions {
                     return _clrException;
                 }
 
-                string stringMessage = _message as string;
-                if (String.IsNullOrEmpty(stringMessage)) {
+                string stringMessage = _args.FirstOrDefault() as string;
+                if (string.IsNullOrEmpty(stringMessage)) {
                     stringMessage = _type.Name;
                 }
                 System.Exception newExcep = _type._makeException(stringMessage, innerException);

@@ -639,20 +639,18 @@ for k, v in toError.items():
 
         public partial class _BlockingIOError {
             public override void __init__(params object[] args) {
-                switch (args.Length) {
-                    case 2:
-                        base.__init__(args);
-                        break;
-                    case 3:
-                        characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? "an integer is required";
-                        base.__init__(args[0], args[1]);
-                        break;
-                    default:
-                        if (args.Length < 2) {
-                            throw PythonOps.TypeError("BlockingIOError() takes at least 2 arguments ({0} given)", args.Length);
-                        }
-                        throw PythonOps.TypeError("BlockingIOError() takes at most 3 arguments ({0} given)", args.Length);
+                if (args.Length >= 3) {
+                    _characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? Undefined;
                 }
+                base.__init__(args);
+            }
+
+            private static readonly object Undefined = new object();
+
+            private object _characters_written = Undefined;
+            public object characters_written {
+                get { return ReferenceEquals(_characters_written, Undefined) ? throw PythonOps.AttributeError(nameof(characters_written)) : _characters_written; }
+                set { _characters_written = PythonOps.Index(value); }
             }
         }
 

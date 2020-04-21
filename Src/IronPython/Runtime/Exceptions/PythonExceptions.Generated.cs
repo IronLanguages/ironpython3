@@ -209,8 +209,6 @@ namespace IronPython.Runtime.Exceptions {
         public partial class _BlockingIOError : _OSError {
             public _BlockingIOError() : base(BlockingIOError) { }
             public _BlockingIOError(PythonType type) : base(type) { }
-
-            public object characters_written { get; set; }
         }
 
         [MultiRuntimeAware]

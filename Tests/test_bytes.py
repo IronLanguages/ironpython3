@@ -135,6 +135,38 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(rom), b"abc")
             self.assertEqual(testType(mem), b"abc")
 
+    def test_dunder_bytes(self):
+        class A:
+            def __bytes__(self):
+                return b'abc'
+
+        self.assertEqual(bytes(A()), b'abc')
+        self.assertRaisesRegex(TypeError, "^'A' object is not iterable$", bytearray, A())
+
+        class A1:
+            def __bytes__(self):
+                return bytearray(b'abc')
+
+        self.assertRaisesRegex(TypeError, r"__bytes__ returned non-bytes \(.*bytearray.*\)$", bytes, A1())
+
+        class A2: pass
+        self.assertRaisesRegex(TypeError, "^'A2' object is not iterable$", bytearray, A2())
+
+        class A3:
+            def __bytes__(self):
+                return None
+
+        self.assertRaisesRegex(TypeError, r"__bytes__ returned non-bytes \(.*NoneType.*\)$", bytes, A3())
+
+        class A4:
+            def __bytes__(self):
+                return b'abc'
+            def __index__(self):
+                return 42
+
+        assert bytes(A4()) == b'abc'
+        #assert bytearray(A4()) == bytearray(42)  # TODO
+
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),
                 (b' foo', b' foo'),

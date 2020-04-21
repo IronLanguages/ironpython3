@@ -169,7 +169,7 @@ class BytesTest(IronPythonTestCase):
 
         class EmptyClass: pass
         t = EmptyClass()
-        t.__bytes__ = lambda x: b"1"
+        t.__bytes__ = lambda: b"1"
         self.assertRaisesRegex(TypeError, "'EmptyClass' object is not iterable", bytes, t)
 
 

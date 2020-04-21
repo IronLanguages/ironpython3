@@ -104,6 +104,9 @@ namespace IronPython.Modules {
                     _readStream = stream;
                     _writeStream = stream;
                 }
+                else {
+                    Debug.Fail($"{nameof(fileObject)} is of unexpected type {fileObject.GetType().Name}");
+                }
 
                 _closefd = closefd;
             }
@@ -113,7 +116,6 @@ namespace IronPython.Modules {
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
                 }
-                _closefd = true;
 
                 this.name = name;
                 PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
@@ -161,6 +163,8 @@ namespace IronPython.Modules {
                         BadMode(mode);
                         break;
                 }
+
+                _closefd = true;
 
                 _context = context.LanguageContext;
 
@@ -260,9 +264,11 @@ namespace IronPython.Modules {
                 _closed = true;
 
                 if (_closefd) {
-                    _readStream.Close();
-                    _readStream.Dispose();
-                    if (!object.ReferenceEquals(_readStream, _writeStream)) {
+                    if (_readStream != null) {
+                        _readStream.Close();
+                        _readStream.Dispose();
+                    }
+                    if (_writeStream != null && !ReferenceEquals(_readStream, _writeStream)) {
                         _writeStream.Close();
                         _writeStream.Dispose();
                     }

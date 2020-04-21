@@ -31,8 +31,7 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(CodeContext context, object? source) {
-            if (PythonOps.TryGetBoundAttr(context, source, "__bytes__", out object? func)) {
-                object? res = PythonOps.CallWithContext(context, func);
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, source, "__bytes__", out object? res)) {
                 if (res is Bytes bytes) {
                     _bytes = bytes._bytes;
                 } else {

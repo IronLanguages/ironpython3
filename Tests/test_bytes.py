@@ -167,6 +167,12 @@ class BytesTest(IronPythonTestCase):
         assert bytes(A4()) == b'abc'
         #assert bytearray(A4()) == bytearray(42)  # TODO
 
+        class EmptyClass: pass
+        t = EmptyClass()
+        t.__bytes__ = lambda x: b"1"
+        self.assertRaisesRegex(TypeError, "'EmptyClass' object is not iterable", bytes, t)
+
+
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),
                 (b' foo', b' foo'),

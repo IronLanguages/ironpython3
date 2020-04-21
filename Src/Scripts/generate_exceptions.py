@@ -18,7 +18,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'ConnectionRefusedError', 'ConnectionResetError']
 
 class ExceptionInfo(object):
-    def __init__(self, name, clrException, args, fields, subclasses, baseMapping = None):
+    def __init__(self, name, clrException, args, fields, subclasses, baseMapping=None, generate_class=False):
         self.name = name
         self.clrException = clrException
         self.args = args
@@ -28,10 +28,11 @@ class ExceptionInfo(object):
         self.baseMapping = baseMapping
         for child in subclasses:
             child.parent = self
+        self.generate_class = generate_class or fields
 
     @property
     def ConcreteParent(self):
-        while not self.parent.fields:
+        while not self.parent.generate_class:
             self = self.parent
             if self.parent == None: return exceptionHierarchy
 
@@ -48,7 +49,7 @@ class ExceptionInfo(object):
     def ClrType(self):
         if not self.parent:
             return 'BaseException'
-        elif self.fields:
+        elif self.generate_class:
             return '_' + self.name
         else:
             return self.name
@@ -71,7 +72,7 @@ class ExceptionInfo(object):
             return 'PythonExceptions.' + self.name
 
     def MakeNewException(self):
-        if self.fields or self.name == 'BaseException':
+        if self.generate_class or self.name == 'BaseException':
             return 'new PythonExceptions._%s()' % (self.name)
         else:
             return 'new PythonExceptions.%s(PythonExceptions.%s)' % (self.ConcreteParent.ClrType, self.name)
@@ -331,7 +332,7 @@ def fix_object(name):
     return name
 
 def gen_one_new_exception(cw, exception, parent):
-    if exception.fields:
+    if exception.generate_class:
         cw.writeline('[MultiRuntimeAware]')
         cw.writeline('private static PythonType %sStorage;' % (exception.name, ))
         cw.enter_block('public static PythonType %s' % (exception.name, ))
@@ -345,16 +346,16 @@ def gen_one_new_exception(cw, exception, parent):
         cw.writeline()
 
         cw.writeline('[PythonType("%s"), PythonHidden, DynamicBaseType, Serializable]' % exception.name)
-        if exception.ConcreteParent.fields:
+        if exception.ConcreteParent.generate_class:
             cw.enter_block('public partial class _%s : _%s' % (exception.name, exception.ConcreteParent.name))
         else:
             cw.enter_block('public partial class _%s : %s' % (exception.name, exception.ConcreteParent.name))
 
         cw.writeline('public _%s() : base(%s) { }' % (exception.name, exception.name))
         cw.writeline('public _%s(PythonType type) : base(type) { }' % (exception.name, ))
-        cw.writeline('')
 
         if exception.args:
+            cw.writeline()
             argstr = ', '.join(['object ' + fix_object(x) for x in exception.args])
             cw.enter_block('public void __init__(%s)' % (argstr))
             for arg in exception.args:
@@ -368,14 +369,13 @@ def gen_one_new_exception(cw, exception, parent):
             cw.exit_block()
             cw.writeline('__init__(' + ', '.join(["args[" + str(i) + "]" for i in range(len(exception.args))]) + ');')
             cw.exit_block()
-            cw.writeline('')
 
         for field in exception.fields:
+            cw.writeline()
             cw.writeline('public object %s { get; set; }' % fix_object(field))
-            cw.writeline('')
 
         cw.exit_block()
-        cw.writeline('')
+        cw.writeline()
 
     else:
         cw.writeline('[MultiRuntimeAware]')

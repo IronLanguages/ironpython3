@@ -46,15 +46,12 @@ namespace IronPython.Modules {
 
             context.SetModuleState(_defaultBufsizeKey, DefaultBufferSize);
 
-            PythonType socketErr = GetSocketError(context, dict);
-            context.EnsureModuleException("socketherror", socketErr, dict, "herror", "socket");
-            context.EnsureModuleException("socketgaierror", socketErr, dict, "gaierror", "socket");
-            context.EnsureModuleException("sockettimeout", socketErr, dict, "timeout", "socket");
+            context.EnsureModuleException("socketherror", error, dict, "herror", "socket");
+            context.EnsureModuleException("socketgaierror", error, dict, "gaierror", "socket");
+            context.EnsureModuleException("sockettimeout", error, dict, "timeout", "socket");
         }
 
-        internal static PythonType GetSocketError(PythonContext context, PythonDictionary dict) {
-            return context.EnsureModuleException("socketerror", PythonExceptions.OSError, dict, "error", "socket");
-        }
+        public static PythonType error => PythonExceptions.OSError;
 
         public const string __doc__ = "Implementation module for socket operations.\n\n"
             + "This module is a loose wrapper around the .NET System.Net.Sockets API, so you\n"
@@ -479,7 +476,7 @@ namespace IronPython.Modules {
                 catch (Exception e) {
                     if (_socket.SendTimeout == 0) {
                         var s = new SocketException((int)SocketError.NotConnected);
-                        throw PythonExceptions.CreateThrowable(error(_context), (int)SocketError.NotConnected, s.Message);
+                        throw PythonExceptions.CreateThrowable(error, (int)SocketError.NotConnected, s.Message);
                     }
                     else
                         throw MakeException(_context, e);
@@ -615,10 +612,10 @@ namespace IronPython.Modules {
                 // on the socket recv throw a special socket error code when SendTimeout is zero
                 if (_socket.SendTimeout == 0) {
                     var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error(_context), (int)SocketError.InvalidArgument, s.Message);
-                }
-                else
+                    return PythonExceptions.CreateThrowable(error, (int)SocketError.InvalidArgument, s.Message);
+                } else {
                     return MakeException(_context, e);
+                }
             }
 
             [Documentation("send(string[, flags]) -> bytes_sent\n\n"
@@ -1071,7 +1068,7 @@ namespace IronPython.Modules {
             Exception lastException = null;
             var addrInfos = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None);
             if (addrInfos.Count == 0) {
-                throw PythonExceptions.CreateThrowable(error(context), "getaddrinfo returns an empty list");
+                throw PythonExceptions.CreateThrowable(error, "getaddrinfo returns an empty list");
             }
             foreach (PythonTuple current in addrInfos) {
                 int family = Converter.ConvertToInt32(current[0]);
@@ -1343,7 +1340,7 @@ namespace IronPython.Modules {
             try {
                 addrs = HostToAddresses(context, host, AddressFamily.InterNetwork);
                 if (addrs.Count < 1) {
-                    throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
+                    throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to zero addresses");
                 }
             } catch (SocketException e) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
@@ -1360,13 +1357,13 @@ namespace IronPython.Modules {
                     }
                 }
                 if (newAddrs.Count > 1) {
-                    throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to multiple addresses");
+                    throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to multiple addresses");
                 }
                 addrs = newAddrs;
             }
 
             if (addrs.Count < 1) {
-                throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
+                throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to zero addresses");
             }
 
             IPHostEntry hostEntry = null;
@@ -1427,7 +1424,7 @@ namespace IronPython.Modules {
                 case "tcp": return IPPROTO_TCP;
                 case "udp": return IPPROTO_UDP;
                 default:
-                    throw PythonExceptions.CreateThrowable(error(context), "protocol not found");
+                    throw PythonExceptions.CreateThrowable(error, "protocol not found");
             }
         }
 
@@ -1441,7 +1438,7 @@ namespace IronPython.Modules {
             if(protocolName != null){ 
                 protocolName = protocolName.ToLower();
                 if(protocolName != "udp" && protocolName != "tcp")
-                    throw PythonExceptions.CreateThrowable(error(context), "service/proto not found");
+                    throw PythonExceptions.CreateThrowable(error, "service/proto not found");
             }
 
             // try the pinvoke call if it fails fall back to hard coded swtich statement
@@ -1483,7 +1480,7 @@ namespace IronPython.Modules {
                 case "dhcpv6-server": return 547;
                 case "rtsp": return 554;
                 default:
-                    throw PythonExceptions.CreateThrowable(error(context), "service/proto not found");
+                    throw PythonExceptions.CreateThrowable(error, "service/proto not found");
             }
         }
 
@@ -1500,7 +1497,7 @@ namespace IronPython.Modules {
             if (protocolName != null){ 
                 protocolName = protocolName.ToLower();
                 if (protocolName != "udp" && protocolName != "tcp")
-                    throw PythonExceptions.CreateThrowable(error(context), "port/proto not found");
+                    throw PythonExceptions.CreateThrowable(error, "port/proto not found");
             }
 
             // try the pinvoke call if it fails fall back to hard coded swtich statement
@@ -1542,7 +1539,7 @@ namespace IronPython.Modules {
                 case 547: return "dhcpv6-server";
                 case 554: return "rtsp";
                 default:
-                    throw PythonExceptions.CreateThrowable(error(context), "port/proto not found");
+                    throw PythonExceptions.CreateThrowable(error, "port/proto not found");
             }
         }
 
@@ -1638,7 +1635,7 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.AddressFamilyNotSupported));
                 }
             } catch (FormatException) {
-                throw PythonExceptions.CreateThrowable(error(context), "illegal IP address passed to inet_pton");
+                throw PythonExceptions.CreateThrowable(error, "illegal IP address passed to inet_pton");
             }
             return ip.GetAddressBytes().MakeString();
         }
@@ -1876,10 +1873,10 @@ namespace IronPython.Modules {
                     case SocketError.TimedOut:
                         return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
                     default:
-                        return PythonExceptions.CreateThrowable(error(context), (int)se.SocketErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(error, (int)se.SocketErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error(context), (int)EBADF, "the socket is closed");
+                return PythonExceptions.CreateThrowable(error, (int)EBADF, "the socket is closed");
             } else if (exception is InvalidOperationException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
@@ -2120,10 +2117,6 @@ namespace IronPython.Modules {
             context.LanguageContext.SetModuleState(_defaultTimeoutKey, timeout);
         }
 
-        private static PythonType error(CodeContext/*!*/ context) {
-            return (PythonType)context.LanguageContext.GetModuleState("socketerror");
-        }
-
         private static PythonType herror(CodeContext/*!*/ context) {
             return (PythonType)context.LanguageContext.GetModuleState("socketherror");
         }
@@ -2230,10 +2223,7 @@ namespace IronPython.Modules {
                 }
 
                 if (throwWhenNotConnected && _sslStream == null) {
-                    var socket = _context.LanguageContext.GetBuiltinModule("_socket");
-                    var socketError = PythonSocket.GetSocketError(_context.LanguageContext, socket.__dict__);
-
-                    throw PythonExceptions.CreateThrowable(socketError, 10057, "A request to send or receive data was disallowed because the socket is not connected.");
+                    throw PythonExceptions.CreateThrowable(error, 10057, "A request to send or receive data was disallowed because the socket is not connected.");
                 }
             }
 

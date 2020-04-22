@@ -122,7 +122,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
-            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<string, object> kwArgs, params object[] args) {
                 if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {

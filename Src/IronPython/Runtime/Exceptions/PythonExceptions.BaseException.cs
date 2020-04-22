@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Exceptions {
         [PythonType("BaseException"), DynamicBaseType, Serializable]
         public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider, IWeakReferenceable {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
-            private PythonTuple? _args;              // the tuple of args provided at creation time
+            private PythonTuple _args;              // the tuple of args provided at creation time
             private PythonDictionary? _dict;    // the dictionary for extra values, created on demand
             private System.Exception? _clrException; // the cached CLR exception that is thrown
             private object[]? _slots;                // slots, only used for storage of our weak reference.
@@ -81,39 +81,37 @@ namespace IronPython.Runtime.Exceptions {
 
             public BaseException([NotNull]PythonType/*!*/ type) {
                 ContractUtils.RequiresNotNull(type, nameof(type));
-
                 _type = type;
+                _args = PythonTuple.EMPTY;
             }
 
-            public static object __new__([NotNull]PythonType/*!*/ cls, [NotNull]params object[] args\u00F8) {
+            public static object __new__([NotNull]PythonType/*!*/ cls, [NotNull]params object?[] args\u00F8) {
+                BaseException res;
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    return new BaseException(cls);
+                    res = new BaseException(cls);
                 }
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
+                else {
+                    res = (BaseException)Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
+                }
+                res._args = new PythonTuple(args\u00F8);
+                return res;
             }
 
-            public static object __new__([NotNull]PythonType/*!*/ cls, [ParamDictionary, NotNull]IDictionary<object, object> kwArgs\u00F8, [NotNull]params object[] args\u00F8) {
-                if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    return new BaseException(cls);
-                }
-
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
-            }
+            public static object __new__([NotNull]PythonType/*!*/ cls, [ParamDictionary, NotNull]IDictionary<string, object?> kwArgs\u00F8, [NotNull]params object?[] args\u00F8)
+                => __new__(cls, args\u00F8);
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__([NotNull]params object[] args\u00F8) {
+            public virtual void __init__([NotNull]params object?[] args\u00F8) {
                 _args = PythonTuple.MakeTuple(args\u00F8 ?? new object?[] { null });
             }
 
             /// <summary>
             /// Gets or sets the arguments used for creating the exception
             /// </summary>
-            public PythonTuple/*!*/ args {
-                get {
-                    return _args ?? PythonTuple.EMPTY;
-                }
+            public object/*!*/ args {
+                get { return _args; }
                 [param: AllowNull]
                 set { _args = PythonTuple.Make(value); }
             }
@@ -184,21 +182,12 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public override string/*!*/ ToString() {
-                if (_args == null) return string.Empty;
-                if (_args.__len__() == 0) return string.Empty;
-                if (_args.__len__() == 1) {
-                    if (_args[0] is string str) {
-                        return str;
-                    }
-
-                    if (_args[0] is Extensible<string> extStr) {
-                        return extStr.Value;
-                    }
-
-                    return PythonOps.ToString(_args[0]);
-                }
-
-                return _args.ToString();
+                return (_args.__len__()) switch
+                {
+                    0 => string.Empty,
+                    1 => PythonOps.ToString(_args[0]),
+                    _ => _args.ToString(),
+                };
             }
 
             #endregion

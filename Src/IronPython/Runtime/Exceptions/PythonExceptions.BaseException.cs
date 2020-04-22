@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -16,6 +19,8 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Exceptions {
     public static partial class PythonExceptions {
@@ -60,46 +65,46 @@ namespace IronPython.Runtime.Exceptions {
         [PythonType("BaseException"), DynamicBaseType, Serializable]
         public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider, IWeakReferenceable {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
-            private PythonTuple _args;              // the tuple of args provided at creation time
-            private PythonDictionary _dict;    // the dictionary for extra values, created on demand
-            private System.Exception _clrException; // the cached CLR exception that is thrown
-            private object[] _slots;                // slots, only used for storage of our weak reference.
+            private PythonTuple? _args;              // the tuple of args provided at creation time
+            private PythonDictionary? _dict;    // the dictionary for extra values, created on demand
+            private System.Exception? _clrException; // the cached CLR exception that is thrown
+            private object[]? _slots;                // slots, only used for storage of our weak reference.
 
-            private BaseException _cause;
-            private BaseException _context;
-            private TraceBack _traceback;
+            private BaseException? _cause;
+            private BaseException? _context;
+            private TraceBack? _traceback;
             private bool _tracebackSet;
 
             public static string __doc__ = "Common base class for all non-exit exceptions.";
 
             #region Public API Surface
 
-            public BaseException(PythonType/*!*/ type) {
+            public BaseException([NotNull]PythonType/*!*/ type) {
                 ContractUtils.RequiresNotNull(type, nameof(type));
 
                 _type = type;
             }
 
-            public static object __new__(PythonType/*!*/ cls, params object[] args\u00F8) {
+            public static object __new__([NotNull]PythonType/*!*/ cls, [NotNull]params object[] args\u00F8) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     return new BaseException(cls);
                 }
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
             }
 
-            public static object __new__(PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwArgs\u00F8, params object[] args\u00F8) {
+            public static object __new__([NotNull]PythonType/*!*/ cls, [ParamDictionary, NotNull]IDictionary<object, object> kwArgs\u00F8, [NotNull]params object[] args\u00F8) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     return new BaseException(cls);
                 }
 
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
             }
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__(params object[] args\u00F8) {
-                _args = PythonTuple.MakeTuple(args\u00F8 ?? new object[] { null });
+            public virtual void __init__([NotNull]params object[] args\u00F8) {
+                _args = PythonTuple.MakeTuple(args\u00F8 ?? new object?[] { null });
             }
 
             /// <summary>
@@ -109,10 +114,11 @@ namespace IronPython.Runtime.Exceptions {
                 get {
                     return _args ?? PythonTuple.EMPTY;
                 }
+                [param: AllowNull]
                 set { _args = PythonTuple.Make(value); }
             }
 
-            public object with_traceback(TraceBack tb) {
+            public object with_traceback(TraceBack? tb) {
                 __traceback__ = tb;
                 return this;
             }
@@ -121,7 +127,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Returns a tuple of (type, (arg0, ..., argN)) for implementing pickling/copying
             /// </summary>
             public virtual object/*!*/ __reduce__() {
-                if (_dict.Count > 0)
+                if (_dict != null && _dict.Count > 0)
                     return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args, _dict);
                 return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
             }
@@ -137,13 +143,13 @@ namespace IronPython.Runtime.Exceptions {
             /// Gets or sets the dictionary which is used for storing members not declared to have space reserved
             /// within the exception object.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
             public PythonDictionary/*!*/ __dict__ {
                 get {
                     EnsureDict();
 
-                    return _dict;
+                    return _dict!;
                 }
+                [param: AllowNull]
                 set {
                     if (_dict == null) {
                         throw PythonOps.TypeError("__dict__ must be a dictionary");
@@ -156,7 +162,8 @@ namespace IronPython.Runtime.Exceptions {
             /// <summary>
             /// Updates the exception's state (dictionary) with the new values
             /// </summary>
-            public void __setstate__(PythonDictionary state) {
+            public void __setstate__(PythonDictionary? state) {
+                if (state == null) return;
                 foreach (KeyValuePair<object, object> pair in state) {
                     __dict__[pair.Key] = pair.Value;
                 }
@@ -178,16 +185,13 @@ namespace IronPython.Runtime.Exceptions {
 
             public override string/*!*/ ToString() {
                 if (_args == null) return string.Empty;
-                if (_args.__len__() == 0) return String.Empty;
+                if (_args.__len__() == 0) return string.Empty;
                 if (_args.__len__() == 1) {
-                    string str;
-                    Extensible<string> extStr;
-
-                    if ((str = _args[0] as string) != null) {
+                    if (_args[0] is string str) {
                         return str;
                     }
 
-                    if ((extStr = _args[0] as Extensible<string>) != null) {
+                    if (_args[0] is Extensible<string> extStr) {
                         return extStr.Value;
                     }
 
@@ -205,10 +209,9 @@ namespace IronPython.Runtime.Exceptions {
             /// Provides custom member lookup access that fallbacks to the dictionary
             /// </summary>
             [SpecialName]
-            public object GetBoundMember(string name) {
+            public object GetBoundMember([NotNull]string name) {
                 if (_dict != null) {
-                    object res;
-                    if (_dict.TryGetValue(name, out res)) {
+                    if (_dict.TryGetValue(name, out object res)) {
                         return res;
                     }
                 }
@@ -220,10 +223,10 @@ namespace IronPython.Runtime.Exceptions {
             /// Provides custom member assignment which stores values in the dictionary
             /// </summary>
             [SpecialName]
-            public void SetMemberAfter(string name, object value) {
+            public void SetMemberAfter([NotNull]string name, object? value) {
                 EnsureDict();
 
-                _dict[name] = value;
+                _dict![name] = value;
             }
 
             /// <summary>
@@ -231,7 +234,7 @@ namespace IronPython.Runtime.Exceptions {
             /// or allows clearing 'message'.
             /// </summary>
             [SpecialName]
-            public bool DeleteCustomMember(string name) {
+            public bool DeleteCustomMember([NotNull]string name) {
                 if (_dict == null) return false;
 
                 return _dict.Remove(name);
@@ -239,7 +242,7 @@ namespace IronPython.Runtime.Exceptions {
 
             private void EnsureDict() {
                 if (_dict == null) {
-                    Interlocked.CompareExchange<PythonDictionary>(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
+                    Interlocked.CompareExchange(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
                 }
             }
 
@@ -259,24 +262,24 @@ namespace IronPython.Runtime.Exceptions {
 
             #region IPythonObject Members
 
-            PythonDictionary IPythonObject.Dict {
+            PythonDictionary? IPythonObject.Dict {
                 get { return _dict; }
             }
 
             PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
-                Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
+                Interlocked.CompareExchange(ref _dict, dict, null);
                 return _dict;
             }
 
             bool IPythonObject.ReplaceDict(PythonDictionary dict) {
-                return Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null) == null;
+                return Interlocked.CompareExchange(ref _dict, dict, null) == null;
             }
 
             PythonType IPythonObject.PythonType {
                 get { return _type; }
             }
 
-            public BaseException __cause__ {
+            public BaseException? __cause__ {
                 get { return _cause; }
                 set {
                     _cause = value;
@@ -284,10 +287,9 @@ namespace IronPython.Runtime.Exceptions {
                 }
             }
 
-            public BaseException __context__ {
+            public BaseException? __context__ {
                 get {
-                    if (_context == null) return __cause__;
-                    return _context;
+                    return _context ?? __cause__;
                 }
                 internal set {
                     _context = value;
@@ -296,7 +298,7 @@ namespace IronPython.Runtime.Exceptions {
 
             public bool __suppress_context__ { get; set; }
 
-            public TraceBack __traceback__ {
+            public TraceBack? __traceback__ {
                 get {
                     if (!_tracebackSet && _traceback == null) {
                         var clrException = GetClrException();
@@ -325,7 +327,8 @@ namespace IronPython.Runtime.Exceptions {
                 _type = newType;
             }
 
-            object[] IPythonObject.GetSlots() { return _slots; }
+            object[]? IPythonObject.GetSlots() { return _slots; }
+
             object[] IPythonObject.GetSlotsCreate() {
                 if (_slots == null) {
                     Interlocked.CompareExchange(ref _slots, new object[1], null);
@@ -354,24 +357,24 @@ namespace IronPython.Runtime.Exceptions {
             /// Helper to get the CLR exception associated w/ this Python exception
             /// creating it if one has not already been created.
             /// </summary>
-            internal/*!*/ System.Exception GetClrException(Exception innerException = null) {
+            internal/*!*/ System.Exception GetClrException(Exception? innerException = null) {
                 if (_clrException != null) {
                     return _clrException;
                 }
 
-                string stringMessage = _args.FirstOrDefault() as string;
+                string? stringMessage = _args.FirstOrDefault() as string;
                 if (string.IsNullOrEmpty(stringMessage)) {
                     stringMessage = _type.Name;
                 }
                 System.Exception newExcep = _type._makeException(stringMessage, innerException);
                 newExcep.SetPythonException(this);
 
-                Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);
+                Interlocked.CompareExchange(ref _clrException, newExcep, null);
 
                 return _clrException;
             }
 
-            internal Exception CreateClrExceptionWithCause(BaseException cause, BaseException context) {
+            internal Exception CreateClrExceptionWithCause(BaseException? cause, BaseException? context) {
                 _cause = cause;
                 _context = context;
                 _traceback = null;

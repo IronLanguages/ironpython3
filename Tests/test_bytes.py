@@ -393,6 +393,9 @@ class BytesTest(IronPythonTestCase):
             self.assertEquals(len(empty_reduce[1]), 1)
             self.assertEquals(len(empty_reduce[1][0]), 0)
 
+            it = iter(testType(b""))
+            self.assertEquals(it.__reduce__(), (iter, (b"",), 0))
+
     def test_iterator_setstate(self):
         for testType in types:
             b = testType(b"abc")

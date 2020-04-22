@@ -8,23 +8,22 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Text;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Compiler.Ast;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
-using Utils = Microsoft.Scripting.Ast.Utils;
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime {
-    using Ast = System.Linq.Expressions.Expression;
-
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
     public class PythonTuple : IList, IList<object?>, ICodeFormattable, IExpressionSerializable, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object?> {
@@ -32,7 +31,7 @@ namespace IronPython.Runtime {
 
         internal static readonly PythonTuple EMPTY = new PythonTuple();
 
-        public PythonTuple([NotNull]object o) {
+        public PythonTuple([AllowNull]object o) {
             _data = MakeItems(o);
         }
 
@@ -41,7 +40,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple() {
-            _data = ArrayUtils.EmptyObjects;
+            _data = Array.Empty<object>();
         }
 
         internal PythonTuple(PythonTuple other, object o) {
@@ -64,16 +63,17 @@ namespace IronPython.Runtime {
         }
 
         public static PythonTuple __new__(CodeContext context, [NotNull]PythonType cls, object? sequence) {
-            if (sequence == null) throw PythonOps.TypeError("iteration over a non-sequence");
+            if (sequence == null) return new PythonTuple(sequence); // this will throw the proper exception
 
             if (cls == TypeCache.PythonTuple) {
                 if (sequence.GetType() == typeof(PythonTuple)) return (PythonTuple)sequence;
-                return new PythonTuple(MakeItems(sequence));
+                return new PythonTuple(sequence);
             } else {
                 if (!(cls.CreateInstance(context, sequence) is PythonTuple tupObj)) throw PythonOps.TypeError("{0} is not a subclass of tuple", cls);
                 return tupObj;
             }
         }
+
         #endregion
 
         #region Python 2.6 Methods
@@ -117,7 +117,7 @@ namespace IronPython.Runtime {
 
         internal static PythonTuple Make(object o) {
             if (o is PythonTuple t) return t;
-            return new PythonTuple(MakeItems(o));
+            return new PythonTuple(o);
         }
 
         internal static PythonTuple MakeTuple(params object?[] items) {
@@ -125,13 +125,13 @@ namespace IronPython.Runtime {
             return new PythonTuple(items);
         }
 
-        private static object?[] MakeItems(object o) {
-            var t = o.GetType();
+        private static object?[] MakeItems(object? o) {
+            var t = o?.GetType();
             // Only use fast paths if we have an exact tuple/list, otherwise use iter
             if (t == typeof(PythonTuple)) {
-                return ((PythonTuple)o)._data;
+                return ((PythonTuple)o!)._data;
             } else if (t == typeof(PythonList)) {
-                return ((PythonList)o).GetObjectArray();
+                return ((PythonList)o!).GetObjectArray();
             } else if (o is string s) {
                 object[] res = new object[s.Length];
                 for (int i = 0; i < res.Length; i++) {
@@ -589,15 +589,15 @@ namespace IronPython.Runtime {
         #region IExpressionSerializable Members
 
         [PythonHidden]
-        public Ast CreateExpression() {
-            Ast[] items = new Ast[Count];
+        public Expression CreateExpression() {
+            Expression[] items = new Expression[Count];
             for (int i = 0; i < items.Length; i++) {
-                items[i] = Expression.Convert(Utils.Constant(this[i]), typeof(object));
+                items[i] = Expression.Convert(Microsoft.Scripting.Ast.Utils.Constant(this[i]), typeof(object));
             }
 
-            return Ast.Call(
-                AstMethods.MakeTuple,
-                Ast.NewArrayInit(
+            return Expression.Call(
+                Compiler.Ast.AstMethods.MakeTuple,
+                Expression.NewArrayInit(
                     typeof(object),
                     items
                 )

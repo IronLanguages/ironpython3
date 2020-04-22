@@ -829,7 +829,7 @@ namespace IronPython.Runtime.Operations {
                     obj[2] = self.Substring(index + sep.Length, self.Length - index - sep.Length);
                 }
             }
-            return new PythonTuple(obj);
+            return PythonTuple.MakeTuple(obj);
         }
 
         public static string replace([NotNull]this string self, [NotNull]string old, [NotNull]string @new)
@@ -936,7 +936,7 @@ namespace IronPython.Runtime.Operations {
                     obj[2] = self.Substring(index + sep.Length, self.Length - index - sep.Length);
                 }
             }
-            return new PythonTuple(obj);
+            return PythonTuple.MakeTuple(obj);
         }
 
         public static PythonList rsplit([NotNull]this string self, string? sep = null, int maxsplit = -1) {

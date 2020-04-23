@@ -319,14 +319,15 @@ namespace IronPython.Modules {
         public static PythonTuple polar([NotNull]object x) {
             Complex num = GetComplexNum(x);
 
-            double[] res = new double[] { ComplexOps.Abs(num), GetAngle(num) };
+            var abs = ComplexOps.Abs(num);
+            var angle = GetAngle(num);
 
             // check for overflow
-            if (double.IsInfinity(res[0]) && !IsInfinity(num)) {
+            if (double.IsInfinity(abs) && !IsInfinity(num)) {
                 throw PythonOps.OverflowError("math range error");
             }
 
-            return new PythonTuple(res);
+            return PythonTuple.MakeTuple(abs, angle);
         }
 
         public static Complex rect(double r, double theta) {

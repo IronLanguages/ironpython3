@@ -643,7 +643,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            return new PythonTuple(obj);
+            return PythonTuple.MakeTuple(obj);
         }
 
         public ByteArray replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
@@ -788,7 +788,7 @@ namespace IronPython.Runtime {
                         obj[2] = new ByteArray(_bytes.Substring(index + sep.Count, Count - index - sep.Count));
                     }
                 }
-                return new PythonTuple(obj);
+                return PythonTuple.MakeTuple(obj);
             }
         }
 

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 using Microsoft.Scripting.Utils;
 
+using IronPython.Modules;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -23,6 +24,28 @@ namespace IronPython.Runtime {
             _bytes = bytes;
             _index = -1;
         }
+
+        #region Pickling Protocol
+
+        public PythonTuple __reduce__(CodeContext context) {
+            // Using BuiltinModuleInstance rather than GetBuiltinsDict() or TryLookupBuiltin() matches CPython 3.8.2 behaviour
+            // Older versions of CPython may have a different hehaviour
+            object? iter = PythonOps.GetBoundAttr(context, context.LanguageContext.BuiltinModuleInstance, nameof(Builtin.iter));
+
+            if (_index < _bytes.Count) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_bytes), _index + 1);
+            } else {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(Bytes.Empty));
+            }
+        }
+
+        public void __setstate__(int state) {
+            if (_index < _bytes.Count) {
+                _index = state <= 0 ? -1 : state - 1;
+            }
+        }
+
+        #endregion
 
         #region IEnumerator<T> Members
 

@@ -373,6 +373,61 @@ class BytesTest(IronPythonTestCase):
 
         self.assertRaises(ValueError, b.insert, 0, 256)
 
+    def test_iterator_reduce(self):
+        for testType in types:
+            b = testType(b"abc")
+
+            it = iter(b)
+            self.assertEquals(it.__reduce__(), (iter, (b"abc",), 0))
+            self.assertEquals(next(it), ord("a"))
+            self.assertEquals(it.__reduce__(), (iter, (b"abc",), 1))
+            self.assertEquals(next(it), ord("b"))
+            self.assertEquals(it.__reduce__(), (iter, (b"abc",), 2))
+            self.assertEquals(next(it), ord("c"))
+            self.assertEquals(it.__reduce__(), (iter, (b"abc",), 3))
+
+            self.assertRaises(StopIteration, next, it)
+            empty_reduce = it.__reduce__()
+            self.assertEquals(len(empty_reduce), 2)
+            self.assertEquals(empty_reduce[0], iter)
+            self.assertEquals(len(empty_reduce[1]), 1)
+            self.assertEquals(len(empty_reduce[1][0]), 0)
+
+            it = iter(testType(b""))
+            self.assertEquals(it.__reduce__(), (iter, (b"",), 0))
+
+    def test_iterator_setstate(self):
+        for testType in types:
+            b = testType(b"abc")
+
+            it = iter(b)
+            self.assertEquals(next(it), ord("a"))
+            self.assertEquals(next(it), ord("b"))
+            self.assertEquals(next(it), ord("c"))
+            self.assertRaises(StopIteration, next, it)
+
+            it = iter(b)
+            self.assertEquals(next(it), ord("a"))
+            it.__setstate__(0)
+            self.assertEquals(next(it), ord("a"))
+            it.__setstate__(-10)
+            self.assertEquals(next(it), ord("a"))
+            it.__setstate__(2)
+            self.assertEquals(next(it), ord("c"))
+            it.__setstate__(1)
+            self.assertEquals(next(it), ord("b"))
+            it.__setstate__(3)
+            self.assertRaises(StopIteration, next, it)
+            it.__setstate__(0)
+            self.assertRaises(StopIteration, next, it)
+
+            it = iter(b)
+            it.__setstate__(10)
+            self.assertRaises(StopIteration, next, it)
+            it.__setstate__(0)
+            self.assertRaises(StopIteration, next, it)
+
+
     def check_is_method(self, methodName, result):
         for testType in types:
             self.assertEqual(getattr(testType(b''), methodName)(), False)

@@ -62,10 +62,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void __init__(BigInteger source) {
-            __init__((int)source);
-        }
-
         public void __init__([NotNull]IEnumerable<byte> source) {
             _bytes = new ArrayData<byte>(source);
         }
@@ -75,10 +71,14 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object? source) {
-            _bytes = new ArrayData<byte>();
-            IEnumerator ie = PythonOps.GetEnumerator(context, source);
-            while (ie.MoveNext()) {
-                Add(GetByte(ie.Current));
+            if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+                __init__(size);
+            } else {
+                _bytes = new ArrayData<byte>();
+                IEnumerator ie = PythonOps.GetEnumerator(context, source);
+                while (ie.MoveNext()) {
+                    Add(GetByte(ie.Current));
+                }
             }
         }
 

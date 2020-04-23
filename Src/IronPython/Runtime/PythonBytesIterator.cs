@@ -32,7 +32,7 @@ namespace IronPython.Runtime {
 
         public PythonTuple __reduce__(CodeContext context) {
             // Using BuiltinModuleInstance rather than GetBuiltinsDict() or TryLookupBuiltin() matches CPython 3.8.2 behaviour
-            // Older versions of CPython may have a different hehaviour
+            // Older versions of CPython may have a different behaviour
             object? iter = PythonOps.GetBoundAttr(context, context.LanguageContext.BuiltinModuleInstance, nameof(Builtin.iter));
 
             if (_index < _bytes.Count) {

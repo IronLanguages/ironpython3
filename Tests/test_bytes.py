@@ -47,8 +47,14 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(5), b'\x00\x00\x00\x00\x00')
             self.assertRaises(ValueError, testType, [256])
             self.assertRaises(ValueError, testType, [257])
+            self.assertRaises(ValueError, testType, -1)
 
             self.assertEqual(list(testType(list(range(256)))), list(range(256)))
+
+            self.assertEqual(testType(IndexableOC(10)), b"\0" * 10)
+            self.assertRaisesRegex(TypeError, "'IndexableOC' object", testType, IndexableOC(IndexableOC(10)))
+            self.assertRaises(OverflowError, testType, 2<<222)
+            self.assertRaises(OverflowError, testType, IndexableOC(2<<222))
 
         def f():
             yield 42

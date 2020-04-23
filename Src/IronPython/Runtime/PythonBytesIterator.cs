@@ -28,7 +28,9 @@ namespace IronPython.Runtime {
         #region Pickling Protocol
 
         public PythonTuple __reduce__(CodeContext context) {
-            object? iter = context.GetBuiltinsDict()?[nameof(Builtin.iter)] ?? throw PythonOps.KeyError("'__builtins__'");
+            // Using BuiltinModuleInstance rather than GetBuiltinsDict() or TryLookupBuiltin() matches CPython 3.8.2 behaviour
+            // Older versions of CPython may have a different hehaviour
+            object? iter = PythonOps.GetBoundAttr(context, context.LanguageContext.BuiltinModuleInstance, nameof(Builtin.iter));
 
             if (_index < _bytes.Count) {
                 return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_bytes), _index + 1);

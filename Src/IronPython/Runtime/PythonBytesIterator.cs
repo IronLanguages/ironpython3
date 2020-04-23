@@ -25,6 +25,9 @@ namespace IronPython.Runtime {
             _index = -1;
         }
 
+        public int __length_hint__()
+            => _index < _bytes.Count ? _bytes.Count - _index - 1 : 0;
+
         #region Pickling Protocol
 
         public PythonTuple __reduce__(CodeContext context) {

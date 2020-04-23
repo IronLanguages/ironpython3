@@ -373,6 +373,22 @@ class BytesTest(IronPythonTestCase):
 
         self.assertRaises(ValueError, b.insert, 0, 256)
 
+    def test_iterator_length_hint(self):
+        for testType in types:
+            b = testType(b"abc")
+
+            it = iter(b)
+            self.assertEquals(it.__length_hint__(), 3)
+            self.assertEquals(next(it), ord("a"))
+            self.assertEquals(it.__length_hint__(), 2)
+            self.assertEquals(next(it), ord("b"))
+            self.assertEquals(it.__length_hint__(), 1)
+            self.assertEquals(next(it), ord("c"))
+            self.assertEquals(it.__length_hint__(), 0)
+
+            self.assertRaises(StopIteration, next, it)
+            self.assertEquals(it.__length_hint__(), 0)
+
     def test_iterator_reduce(self):
         for testType in types:
             b = testType(b"abc")
@@ -426,7 +442,6 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(StopIteration, next, it)
             it.__setstate__(0)
             self.assertRaises(StopIteration, next, it)
-
 
     def check_is_method(self, methodName, result):
         for testType in types:

@@ -422,7 +422,7 @@ namespace IronPython.Runtime {
 
         public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
             if (count == 0) {
-                return this;
+                return GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
             }
 
             return new Bytes(_bytes.Replace(old, @new, count));

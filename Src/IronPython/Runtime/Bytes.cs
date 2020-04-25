@@ -30,12 +30,18 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(object? source) {
-            if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+        public Bytes(CodeContext context, object? source) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, source, "__bytes__", out object? res)) {
+                if (res is Bytes bytes) {
+                    _bytes = bytes._bytes;
+                } else {
+                    throw PythonOps.TypeError("__bytes__ returned non-bytes (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(res), PythonOps.GetPythonTypeName(source));
+                }
+            } else if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
                 if (size < 0) throw PythonOps.ValueError("negative count");
                 _bytes = new byte[size];
             } else {
-                _bytes = ByteArray.GetBytes(source, useHint: true).ToArray(); 
+                _bytes = ByteArray.GetBytes(source, useHint: true).ToArray();
             }
         }
 

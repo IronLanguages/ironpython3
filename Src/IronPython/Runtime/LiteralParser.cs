@@ -198,7 +198,7 @@ namespace IronPython.Runtime {
                 if (errorHandler == null) {
                     Bytes bytesData = null;
                     if (typeof(T) == typeof(byte)) {
-                        bytesData = new Bytes(data.ToArray());
+                        bytesData = Bytes.Make(data.ToArray() as byte[]);
                     }
                     throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", bytesData, start, end, reason);
                 }

@@ -37,6 +37,9 @@ namespace IronPython.Runtime {
                 } else {
                     throw PythonOps.TypeError("__bytes__ returned non-bytes (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(res), PythonOps.GetPythonTypeName(source));
                 }
+            } else if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+                if (size < 0) throw PythonOps.ValueError("negative count");
+                _bytes = new byte[size];
             } else {
                 _bytes = ByteArray.GetBytes(source, useHint: true).ToArray();
             }
@@ -63,8 +66,6 @@ namespace IronPython.Runtime {
             _bytes = new byte[size];
         }
 
-        public Bytes(BigInteger size) : this((int)size) { }
-
         public Bytes([NotNull]byte[] bytes) {
             _bytes = bytes.ToArray();
         }
@@ -77,8 +78,12 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("string argument without an encoding");
         }
 
-        public Bytes(CodeContext context, [NotNull]string unicode, [NotNull]string encoding) {
-            _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
+        public Bytes(CodeContext context, [NotNull]string @string, [NotNull]string encoding) {
+            _bytes = StringOps.encode(context, @string, encoding, "strict").UnsafeByteArray;
+        }
+
+        public Bytes(CodeContext context, [NotNull]string @string, [NotNull]string encoding, [NotNull]string errors) {
+            _bytes = StringOps.encode(context, @string, encoding, errors).UnsafeByteArray;
         }
 
         private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
@@ -418,12 +423,12 @@ namespace IronPython.Runtime {
                 }
             }
 
-            return new PythonTuple(obj);
+            return PythonTuple.MakeTuple(obj);
         }
 
         public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
             if (count == 0) {
-                return this;
+                return GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
             }
 
             return new Bytes(_bytes.Replace(old, @new, count));
@@ -539,7 +544,7 @@ namespace IronPython.Runtime {
                     obj[2] = new Bytes(_bytes.Substring(index + sep.Count, Count - index - sep.Count));
                 }
             }
-            return new PythonTuple(obj);
+            return PythonTuple.MakeTuple(obj);
         }
 
         public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {

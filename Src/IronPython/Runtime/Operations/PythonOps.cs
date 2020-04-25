@@ -2603,8 +2603,9 @@ namespace IronPython.Runtime.Operations {
                 return null;
             }
 
-            double d = (double)value;
-            return new Complex(d, 0.0);
+            if (value is double d) return new Complex(d, 0.0);
+            if (value is Extensible<double> ed) return new Complex(ed.Value, 0.0);
+            throw new InvalidOperationException();
         }
 
         internal static bool CheckingConvertToInt(object value) {

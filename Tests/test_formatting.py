@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import math
 import os
 import unittest
 
@@ -19,9 +20,17 @@ class B(object):
     def __repr__(self):
         return "repr"
 
+format_rounds_to_even = "%.0f" % 2.5 == "2"
+
 class FormattingTest(IronPythonTestCase):
+    def test_format_rounds_to_even(self):
+        # https://github.com/IronLanguages/ironpython2/issues/634
+        self.assertEqual(format_rounds_to_even, is_netcoreapp31 or not is_cli)
+
     def test_floats(self):
         """Formatting of floats"""
+
+        def str(x): return "%.12g" % x
 
         # 12 significant digits near the decimal point
 
@@ -30,13 +39,8 @@ class FormattingTest(IronPythonTestCase):
 
         # 12 significant digits near the decimal point, preceeded by upto 3 0s
 
-        if is_cli: #https://github.com/IronLanguages/ironpython2/issues/17
-            self.assertEqual(str(123456789012.00), "123456789012.0")
-            self.assertEqual(str(123456789012.0), "123456789012.0")
-        else:
-            self.assertEqual(str(123456789012.00), "1.23456789012e+11")
-            self.assertEqual(str(123456789012.0), "1.23456789012e+11")
-            
+        self.assertEqual(str(123456789012.00), "123456789012")
+        self.assertEqual(str(123456789012.0), "123456789012")
         self.assertEqual(str(00.123456789012), "0.123456789012")
         self.assertEqual(str(0.000123456789012), "0.000123456789012")
 
@@ -48,39 +52,19 @@ class FormattingTest(IronPythonTestCase):
         # More than 12 significant digits near the decimal point, with rounding down
 
         self.assertEqual(str(12345678901.23), "12345678901.2")
-
-        #https://github.com/IronLanguages/ironpython2/issues/17
-        if is_cli:
-            self.assertEqual(str(123456789012.3), "123456789012.0")
-        else:
-            self.assertEqual(str(123456789012.3), "1.23456789012e+11")
-            
+        self.assertEqual(str(123456789012.3), "123456789012")
         self.assertEqual(str(1.234567890123), "1.23456789012")
 
         # More than 12 significant digits near the decimal point, with rounding up
 
-        if is_cli and not is_netcoreapp31: # https://github.com/IronLanguages/ironpython2/issues/634
-            self.assertEqual(str(12345678901.25), "12345678901.3")
-            self.assertEqual(str(123456789012.5), "123456789013.0")
-        else:
-            self.assertEqual(str(12345678901.25), "12345678901.2")
-            if is_cli: # https://github.com/IronLanguages/ironpython2/issues/17
-                self.assertEqual(str(123456789012.5), "123456789012.0")
-            else:
-                self.assertEqual(str(123456789012.5), "1.23456789012e+11")
-
-        if is_cli and not is_netcoreapp31: # https://github.com/IronLanguages/ironpython2/issues/634
-            self.assertEqual(str(1.234567890125), "1.23456789013")
-        else:
-            self.assertEqual(str(1.234567890125), "1.23456789012")
+        self.assertEqual(str(12345678901.25), "12345678901.2" if format_rounds_to_even else "12345678901.3")
+        self.assertEqual(str(123456789012), "123456789012")
+        self.assertEqual(str(1.234567890125), "1.23456789012" if format_rounds_to_even else "1.23456789013")
         self.assertEqual(str(1.234567890126), "1.23456789013")
 
         # Signficiant digits away from the decimal point
 
-        if is_cli: # https://github.com/IronLanguages/ironpython2/issues/17
-            self.assertEqual(str(100000000000.0), "100000000000.0")
-        else:
-            self.assertEqual(str(100000000000.0), "1e+11")
+        self.assertEqual(str(100000000000.0), "100000000000")
         self.assertEqual(str(1000000000000.0), "1e+12")
         self.assertEqual(str(0.0001), "0.0001")
         self.assertEqual(str(0.00001), "1e-05")
@@ -98,9 +82,9 @@ class FormattingTest(IronPythonTestCase):
         # NaN
         self.assertEqual(str((1.79769313486232e+308 * 2.0) * 0.0), "nan")
 
-        self.assertEqual(str(2.0), "2.0")
-        self.assertEqual(str(.0), "0.0")
-        self.assertEqual(str(-.0), "-0.0")
+        self.assertEqual(str(2.0), "2")
+        self.assertEqual(str(.0), "0")
+        self.assertEqual(str(-.0), "-0")
         # verify small strings display all precision by default
         x = 123.456E-19 * 2.0
         self.assertEqual(str(x), "2.46912e-17")
@@ -134,11 +118,10 @@ class FormattingTest(IronPythonTestCase):
                 (100000.0, "100000"),
                 (1000000.0, "1e+06"),
                 (0.0001, "0.0001"),
-                (0.00001, "1e-05")]
-        if is_cli and not is_netcoreapp31: # https://github.com/IronLanguages/ironpython2/issues/634
-            values.append((123456.5, "123457"))
-        else:
-            values.append((123456.5, "123456"))
+                (0.00001, "1e-05"),
+
+                (123456.5, "123456" if format_rounds_to_even else "123457"),
+        ]
 
         for v in values:
             self.assertEqual("%g" % v[0], v[1])
@@ -166,7 +149,7 @@ class FormattingTest(IronPythonTestCase):
     def test_errors(self):
         def formatError():
             "%d" % (1,2)
-            
+
         self.assertRaises(TypeError, formatError, None)
 
         def formatError_earlyEnd():
@@ -232,8 +215,8 @@ class FormattingTest(IronPythonTestCase):
 
         self.assertEqual('%(key)s %(yek)d' % {'key':'ff', 'yek':200}, "ff 200")
 
-        self.assertEqual(repr("\u00F4"), "u'\\xf4'")
-        self.assertEqual(repr("\u10F4"), "u'\\u10f4'")
+        self.assertEqual(repr("\u00F4"), "'\xf4'")
+        self.assertEqual(repr("\u10F4"), "'\u10f4'")
 
         self.assertRaises(TypeError, lambda: "%5c" % None)
         self.assertEqual("%5c" % 'c', '    c')
@@ -244,7 +227,7 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual("%5s" % 'abc', '  abc')
         self.assertEqual("%+5s" % 'abc', '  abc')
         self.assertEqual("%-5s" % 'abc', 'abc  ')
- 
+
     def test_named_inputs_nested_parens(self):
         """Test named inputs with nested ()"""
 
@@ -284,7 +267,6 @@ class FormattingTest(IronPythonTestCase):
 
         self.assertRaises(ValueError, Error2)
 
-
         self.assertEqual('%*s' %(-5,'abc'), 'abc  ')
 
     def test_cp28936(self):
@@ -304,25 +286,145 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual('% -10.1e' % -1, '-1.0e+00  ')
         self.assertEqual('%+-10.1e' % -1, '-1.0e+00  ')
 
+    def test_inf_nan(self):
+        inf_nan_cases = """
+-- nans and infinities
+%f nan -> nan
+%f inf -> inf
+%f -infinity -> -inf
+%F nan -> NAN
+%F infinity -> INF
+%F -inf -> -INF
+
+-- nans and infinities
+%e nan -> nan
+%e inf -> inf
+%e -infinity -> -inf
+%E nan -> NAN
+%E infinity -> INF
+%E -inf -> -INF
+
+-- nans and infinities
+%g nan -> nan
+%g inf -> inf
+%g -infinity -> -inf
+%G nan -> NAN
+%G infinity -> INF
+%G -inf -> -INF
+""".strip().split("\n")
+
+        self.check_lines(inf_nan_cases)
+
     def test_format_testfile(self):
         """the following is borrowed from stdlib"""
-        import math
-        format_testfile = 'formatfloat_testcases.txt'
-        with open(os.path.join(self.test_dir, format_testfile)) as testfile:
-            for line in testfile:
-                print(line)
-                if line.startswith('--'):
-                    continue
-                line = line.strip()
-                if not line:
-                    continue
 
-                lhs, rhs = map(str.strip, line.split('->'))
-                fmt, arg = lhs.split()
-                arg = float(arg)
-                self.assertEqual(fmt % arg, rhs)
-                if not math.isnan(arg) and math.copysign(1.0, arg) > 0.0:
-                    print("minus")
-                    self.assertEqual(fmt % -arg, '-' + rhs)
+        expected_failures = []
+        if is_cli:
+            expected_failures = """
+%#.0e 0.01 -> 1.e-02
+%#.0e 0.1 -> 1.e-01
+%#.0e 1 -> 1.e+00
+%#.0e 10 -> 1.e+01
+%#.0e 100 -> 1.e+02
+%#.0e 0.012 -> 1.e-02
+%#.0e 0.12 -> 1.e-01
+%#.0e 1.2 -> 1.e+00
+%#.0e 12 -> 1.e+01
+%#.0e 120 -> 1.e+02
+%#.0e 123.456 -> 1.e+02
+%#.0e 0.000123456 -> 1.e-04
+%#.0e 123456000 -> 1.e+08
+%#.0e 0.5 -> 5.e-01
+%#.0e 1.4 -> 1.e+00
+%#.0e 1.5 -> 2.e+00
+%#.0e 1.6 -> 2.e+00
+%#.0e 2.4999999 -> 2.e+00
+%#.0e 2.5 -> 2.e+00
+%#.0e 2.5000001 -> 3.e+00
+%#.0e 3.499999999999 -> 3.e+00
+%#.0e 3.5 -> 4.e+00
+%#.0e 4.5 -> 4.e+00
+%#.0e 5.5 -> 6.e+00
+%#.0e 6.5 -> 6.e+00
+%#.0e 7.5 -> 8.e+00
+%#.0e 8.5 -> 8.e+00
+%#.0e 9.4999 -> 9.e+00
+%#.0e 9.5 -> 1.e+01
+%#.0e 10.5 -> 1.e+01
+%#.0e 14.999 -> 1.e+01
+%#.0e 15 -> 2.e+01
+%#.1g 0 -> 0.
+%#.2g 0 -> 0.0
+%#.3g 0 -> 0.00
+%#.4g 0 -> 0.000
+%#.0g 0.2 -> 0.2
+%#.2g 0.2 -> 0.20
+%#.3g 0.2 -> 0.200
+%#.4g 0.2 -> 0.2000
+%#.10g 0.2 -> 0.2000000000
+%#.1g 2 -> 2.
+%#.2g 2 -> 2.0
+%#.3g 2 -> 2.00
+%#.4g 2 -> 2.000
+%#.0g 20 -> 2.e+01
+%#.1g 20 -> 2.e+01
+%#.2g 20 -> 20.
+%#.3g 20 -> 20.0
+%#.4g 20 -> 20.00
+%#.0g 234.56 -> 2.e+02
+%#.1g 234.56 -> 2.e+02
+%#.3g 234.56 -> 235.
+%#.6g 234.56 -> 234.560
+%r 0.03 -> 0.03
+%r 0.04 -> 0.04
+%r 0.05 -> 0.05
+%r 9999999999999999 -> 1e+16
+%r 1e16 -> 1e+16
+%r 1.001e-4 -> 0.0001001
+%r 1.00000000001e-4 -> 0.000100000000001
+%r 1.0000000001e-4 -> 0.00010000000001
+%r 0.9999999999999999e-4 -> 9.999999999999999e-05
+%r 0.999999999999e-4 -> 9.99999999999e-05
+%r 0.999e-4 -> 9.99e-05
+%r 1e-5 -> 1e-05
+""".strip().split("\n")
+
+        if not format_rounds_to_even:
+            expected_failures += """
+%.0f 2.5 -> 2
+%.0f 1e49 -> 9999999999999999464902769475481793196872414789632
+%.0f 9.9999999999999987e+49 -> 99999999999999986860582406952576489172979654066176
+%.0f 1e50 -> 100000000000000007629769841091887003294964970946560
+%.1f 0.25 -> 0.2
+%.2f 0.125 -> 0.12
+%#.0f 2.5 -> 2.
+%.0e 2.5 -> 2e+00
+%.0e 4.5 -> 4e+00
+%.0e 6.5 -> 6e+00
+%.0e 8.5 -> 8e+00
+%r 9999999999999998 -> 9999999999999998.0
+""".strip().split("\n")
+
+        import test
+        with open(os.path.join(test.__path__[0], 'formatfloat_testcases.txt')) as testfile:
+            self.check_lines(testfile, expected_failures=expected_failures)
+
+    def check_lines(self, lines, expected_failures=None):
+        for i, line in enumerate(lines):
+            if line.startswith('--'):
+                continue
+            line = line.strip()
+            if not line:
+                continue
+
+            lhs, rhs = map(str.strip, line.split('->'))
+            fmt, arg = lhs.split()
+            arg = float(arg)
+            if expected_failures and line in expected_failures:
+                self.assertNotEqual(fmt % arg, rhs, "line " + str(i+1))
+                continue
+            self.assertEqual(fmt % arg, rhs, "line " + str(i+1))
+            if math.copysign(1.0, arg) > 0.0:
+                self.assertEqual(fmt % -arg, '-' + rhs)
 
 run_test(__name__)

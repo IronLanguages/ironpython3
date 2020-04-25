@@ -31,7 +31,7 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, object x) {
-            object value = null;
+            object value;
             if (x is string) {
                 value = ParseFloat((string)x);
             } else if (x is Extensible<string>) {
@@ -43,13 +43,16 @@ namespace IronPython.Runtime.Operations {
             } else if (x is Complex) {
                 throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
             } else {
-                object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
-                if (d is double) {
-                    value = d;
-                } else if (d is Extensible<double>) {
-                    value = ((Extensible<double>)d).Value;
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__float__", out object d)) {
+                    if (d is double) {
+                        value = d;
+                    } else if (d is Extensible<double>) {
+                        value = ((Extensible<double>)d).Value;
+                    } else {
+                        throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
+                    }
                 } else {
-                    throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
+                    throw PythonOps.TypeError("float() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(x));
                 }
             }
 
@@ -61,13 +64,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [BytesLike, NotNull]IList<byte> s) {
             // First, check for subclasses of bytearray/bytes
             object value;
-            IPythonObject po = s as IPythonObject;
-            if (po == null ||
+            if (!(s is IPythonObject po) ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
-                // If __float__oes not exist, just parse the string normally
+                // If __float__ does not exist, just parse the string normally
                 value = ParseFloat(s.MakeString());
             }
 

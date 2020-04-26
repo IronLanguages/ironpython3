@@ -259,21 +259,49 @@ namespace IronPython.Runtime {
 
         public ByteArray copy() => CopyThis();
 
-        public int count([BytesLike, NotNull]IList<byte> sub) => count(sub, null, null);
-
-        public int count([BytesLike, NotNull]IList<byte> sub, int? start) => count(sub, start, null);
-
-        public int count([BytesLike, NotNull]IList<byte> sub, int? start, int? end) {
+        public int count([BytesLike, NotNull]IList<byte> sub) {
             lock (this) {
-                return _bytes.CountOf(sub, start ?? 0, end ?? _bytes.Count);
+                return _bytes.CountOf(sub, 0, _bytes.Count);
             }
         }
 
-        public int count(int @byte) => count(@byte, null, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, int start) {
+            lock (this) {
+                return _bytes.CountOf(sub, start, _bytes.Count);
+            }
+        }
 
-        public int count(int @byte, int? start) => count(@byte, start, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, int start, int end) {
+            lock (this) {
+                return _bytes.CountOf(sub, start, end);
+            }
+        }
 
-        public int count(int @byte, int? start, int? end) => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+        public int count([BytesLike, NotNull]IList<byte> sub, object? start)
+            => count(sub, start, null);
+
+        public int count([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            lock (this) {
+                int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
+                return _bytes.CountOf(sub, istart, iend); 
+            }
+        }
+
+        public int count(BigInteger @byte)
+            => count(Bytes.FromByte(@byte.ToByteChecked()));
+
+        public int count(BigInteger @byte, int start)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start);
+
+        public int count(BigInteger @byte, int start, int end)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+
+        public int count(BigInteger @byte, object? start)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start);
+
+        public int count(BigInteger @byte, object? start, object? end)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
@@ -591,6 +619,9 @@ namespace IronPython.Runtime {
         private ByteArray ljust(int width, byte fillchar) {
             lock (this) {
                 int spaces = width - _bytes.Count;
+                if (spaces <= 0) {
+                    return CopyThis();
+                }
 
                 List<byte> ret = new List<byte>(width);
                 ret.AddRange(_bytes);
@@ -646,7 +677,10 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(obj);
         }
 
-        public ByteArray replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
+        public ByteArray replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new)
+            => replace(old, @new, -1);
+
+        public ByteArray replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count) {
             if (count == 0) {
                 return CopyThis();
             }

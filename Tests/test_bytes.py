@@ -27,6 +27,9 @@ class Indexable(object):
     def __index__(self):
         return self.value
 
+class BytesSubclass(bytes): pass
+class BytearraySubclass(bytearray): pass
+
 class BytesTest(IronPythonTestCase):
 
     def test_init(self):
@@ -88,7 +91,7 @@ class BytesTest(IronPythonTestCase):
 
     def test_hints(self):
         global test_hint_called
-        
+
         class BadHint:
             def __length_hint__(self):
                 global test_hint_called
@@ -170,8 +173,8 @@ class BytesTest(IronPythonTestCase):
             def __index__(self):
                 return 42
 
-        assert bytes(A4()) == b'abc'
-        #assert bytearray(A4()) == bytearray(42)  # TODO
+        self.assertEquals(bytes(A4()), b'abc')
+        self.assertEquals(bytearray(A4()), bytearray(42))
 
         class EmptyClass: pass
         t = EmptyClass()
@@ -194,10 +197,12 @@ class BytesTest(IronPythonTestCase):
         y = b''
         x = y.capitalize()
         self.assertEqual(id(x), id(y))
+        self.assertIs(type(BytesSubclass(y).capitalize()), bytes)
 
         y = bytearray(b'')
         x = y.capitalize()
         self.assertTrue(id(x) != id(y), "bytearray.capitalize returned self")
+        self.assertIs(type(BytearraySubclass(y).capitalize()), bytearray)
 
     def test_center(self):
         for testType in types:
@@ -210,9 +215,11 @@ class BytesTest(IronPythonTestCase):
 
         x = b'aa'
         self.assertEqual(id(x.center(2, b'*')), id(x))
+        self.assertIs(type(BytesSubclass(x).center(2, b'*')), bytes)
 
         x = bytearray(b'aa')
         self.assertTrue(id(x.center(2, b'*')) != id(x))
+        self.assertIs(type(BytearraySubclass(x).center(2, b'*')), bytearray)
 
     def test_count(self):
         for testType in types:
@@ -227,6 +234,22 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(TypeError, testType(b"adbaddads").count, [2,])
             self.assertRaises(TypeError, testType(b"adbaddads").count, [2,], 0)
             self.assertRaises(TypeError, testType(b"adbaddads").count, [2,], 0, 1)
+
+            self.assertEqual(testType(b"adbaddads").count(b"ad", -10), 3)
+            self.assertEqual(testType(b"adbaddads").count(b"ad", -2<<222), 3)
+            self.assertEqual(testType(b"adbaddads").count(b"ad", -2<<222, 2<<222), 3)
+            self.assertFalse(testType(b"adbaddads").count(b"ad", None, -2<<222), 0)
+            self.assertFalse(testType(b"adbaddads").count(b"ad", 2<<222, None), 0)
+
+            self.assertEqual(testType(b"adbaddads").count(b"ad", IndexableOC(1), IndexableOC(8)), 2)
+            self.assertEqual(testType(b"adbaddads").count(b"ad", IndexableOC(-10)), 3)
+            self.assertEqual(testType(b"adbaddads").count(b"ad", IndexableOC(-2<<222)), 3)
+            self.assertEqual(testType(b"adbaddads").count(b"ad", IndexableOC(-2<<222), IndexableOC(2<<222)), 3)
+            self.assertFalse(testType(b"adbaddads").count(b"ad", None, IndexableOC(-2<<222)), 0)
+            self.assertFalse(testType(b"adbaddads").count(b"ad", IndexableOC(2<<222), None), 0)
+
+            self.assertEqual(testType(b"adbaddads").count((ord('a')<<222>>221) // 2), 3)
+            self.assertRaises(ValueError, testType(b"adbaddads").count, ord('a')<<222)
 
     def test_decode(self):
         for testType in types:
@@ -309,6 +332,14 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(len(testType(b"aaa\taaa\taaa").expandtabs()), 19)
             self.assertEqual(testType(b"aaa\taaa\taaa").expandtabs(), b"aaa     aaa     aaa")
             self.assertRaises(OverflowError, bytearray(b'\t\t').expandtabs, sys.maxsize)
+
+        x = b''
+        self.assertEqual(id(x.expandtabs()), id(x))
+        self.assertIs(type(BytesSubclass(x).expandtabs()), bytes)
+
+        x = bytearray(b'')
+        self.assertTrue(id(x.expandtabs()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).expandtabs()), bytearray)
 
     def test_extend(self):
         b = bytearray(b'abc')
@@ -566,12 +597,15 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(TypeError, testType(b'').ljust, 42, '\u0100')
             self.assertEqual(testType(b'abc').ljust(4), b'abc ')
             self.assertEqual(testType(b'abc').ljust(4, b'x'), b'abcx')
+            self.assertEqual(testType(b'abc').ljust(-4), b'abc')
 
         x = b'abc'
         self.assertEqual(id(x.ljust(2)), id(x))
+        self.assertIs(type(BytesSubclass(x).ljust(2)), bytes)
 
         x = bytearray(x)
         self.assertTrue(id(x.ljust(2)) != id(x))
+        self.assertIs(type(BytearraySubclass(x).ljust(2)), bytearray)
 
     def test_lower(self):
         expected = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'  \
@@ -593,6 +627,14 @@ class BytesTest(IronPythonTestCase):
         for testType in types:
             self.assertEqual(testType(data).lower(), expected)
 
+        x = b''
+        self.assertEqual(id(x.lower()), id(x))
+        self.assertIs(type(BytesSubclass(x).lower()), bytes)
+
+        x = bytearray(b'')
+        self.assertTrue(id(x.lower()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).lower()), bytearray)
+
     def test_lstrip(self):
         for testType in types:
             self.assertEqual(testType(b' abc').lstrip(), b'abc')
@@ -601,9 +643,13 @@ class BytesTest(IronPythonTestCase):
 
         x = b'abc'
         self.assertEqual(id(x.lstrip()), id(x))
+        self.assertIs(type(BytesSubclass(x).lstrip()), bytes)
+        self.assertIs(type(BytesSubclass(x).lstrip(b'x')), bytes)
 
         x = bytearray(x)
         self.assertTrue(id(x.lstrip()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).lstrip()), bytearray)
+        self.assertIs(type(BytearraySubclass(x).lstrip(b'x')), bytearray)
 
     def test_partition(self):
         for testType in types:
@@ -677,10 +723,12 @@ class BytesTest(IronPythonTestCase):
 
         x = b'abc'
         self.assertEqual(id(x.replace(b'foo', b'bar', 0)), id(x))
+        self.assertIs(type(BytesSubclass(x).replace(b'foo', b'bar', 0)), bytes)
 
         # CPython bug in 2.6 - http://bugs.python.org/issue4348
         x = bytearray(b'abc')
         self.assertTrue(id(x.replace(b'foo', b'bar', 0)) != id(x))
+        self.assertIs(type(BytearraySubclass(x).replace(b'foo', b'bar', 0)), bytearray)
 
     def test_remove(self):
         for toremove in (ord('a'), b'a', Indexable(ord('a')), IndexableOC(ord('a'))):
@@ -759,12 +807,15 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(TypeError, testType(b'').rjust, 42, [2])
             self.assertEqual(testType(b'abc').rjust(4), b' abc')
             self.assertEqual(testType(b'abc').rjust(4, b'x'), b'xabc')
+            self.assertEqual(testType(b'abc').rjust(-4), b'abc')
 
         x = b'abc'
         self.assertEqual(id(x.rjust(2)), id(x))
+        self.assertIs(type(BytesSubclass(x).rjust(2)), bytes)
 
         x = bytearray(x)
         self.assertTrue(id(x.rjust(2)) != id(x))
+        self.assertIs(type(BytearraySubclass(x).rjust(2)), bytearray)
 
     def test_rpartition(self):
         for testType in types:
@@ -838,9 +889,13 @@ class BytesTest(IronPythonTestCase):
 
         x = b'abc'
         self.assertEqual(id(x.rstrip()), id(x))
+        self.assertIs(type(BytesSubclass(x).rstrip()), bytes)
+        self.assertIs(type(BytesSubclass(x).rstrip(b'x')), bytes)
 
         x = bytearray(x)
         self.assertTrue(id(x.rstrip()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).rstrip()), bytearray)
+        self.assertIs(type(BytearraySubclass(x).rstrip(b'x')), bytearray)
 
     def test_split(self):
         for testType in types:
@@ -984,9 +1039,13 @@ class BytesTest(IronPythonTestCase):
 
         x = b'abc'
         self.assertEqual(id(x.strip()), id(x))
+        self.assertIs(type(BytesSubclass(x).strip()), bytes)
+        self.assertIs(type(BytesSubclass(x).strip(b'x')), bytes)
 
         x = bytearray(x)
         self.assertTrue(id(x.strip()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).strip()), bytearray)
+        self.assertIs(type(BytearraySubclass(x).strip(b'x')), bytearray)
 
     def test_swapcase(self):
         expected = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'  \
@@ -1014,8 +1073,15 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(testType(b'ABC').swapcase(), b'abc')
             self.assertEqual(testType(b'ABc').swapcase(), b'abC')
 
-            x = testType(data).swapcase()
             self.assertEqual(testType(data).swapcase(), expected)
+
+        x = b''
+        self.assertEqual(id(x.swapcase()), id(x))
+        self.assertIs(type(BytesSubclass(x).swapcase()), bytes)
+
+        x = bytearray(b'')
+        self.assertTrue(id(x.swapcase()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).swapcase()), bytearray)
 
     def test_title(self):
         for testType in types:
@@ -1037,9 +1103,11 @@ class BytesTest(IronPythonTestCase):
 
         x = b''
         self.assertEqual(id(x.title()), id(x))
+        self.assertIs(type(BytesSubclass(x).title()), bytes)
 
         x = bytearray(b'')
         self.assertTrue(id(x.title()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).title()), bytearray)
 
     def test_translate(self):
         identTable = bytearray()
@@ -1067,12 +1135,15 @@ class BytesTest(IronPythonTestCase):
 
         b = b'abc'
         self.assertEqual(id(b.translate(None)), id(b))
+        self.assertIs(type(BytesSubclass(b).translate(None)), bytes)
 
         b = b''
         self.assertEqual(id(b.translate(identTable)), id(b))
+        self.assertIs(type(BytesSubclass(b).translate(identTable)), bytes)
 
         b = b''
         self.assertEqual(id(b.translate(identTable, b'')), id(b))
+        self.assertIs(type(BytesSubclass(b'').translate(identTable, b'')), bytes)
 
         b = b''
         self.assertEqual(id(b.translate(identTable, b'')), id(b))
@@ -1080,6 +1151,7 @@ class BytesTest(IronPythonTestCase):
         # CPython bug 4348 - http://bugs.python.org/issue4348
         b = bytearray(b'')
         self.assertTrue(id(b.translate(identTable)) != id(b))
+        self.assertIs(type(BytearraySubclass(b).translate(identTable)), bytearray)
 
         self.assertRaises(TypeError, testType(b'').translate, [])
         self.assertRaises(TypeError, testType(b'').translate, [], [])
@@ -1104,6 +1176,14 @@ class BytesTest(IronPythonTestCase):
         for testType in types:
             self.assertEqual(testType(data).upper(), expected)
 
+        x = b''
+        self.assertEqual(id(x.upper()), id(x))
+        self.assertIs(type(BytesSubclass(x).upper()), bytes)
+
+        x = bytearray(b'')
+        self.assertTrue(id(x.upper()) != id(x))
+        self.assertIs(type(BytearraySubclass(x).upper()), bytearray)
+
     def test_zfill(self):
         for testType in types:
             self.assertEqual(testType(b'abc').zfill(0), b'abc')
@@ -1116,9 +1196,11 @@ class BytesTest(IronPythonTestCase):
 
         b = b'abc'
         self.assertEqual(id(b.zfill(0)), id(b))
+        self.assertIs(type(BytesSubclass(b).zfill(0)), bytes)
 
         b = bytearray(b)
         self.assertTrue(id(b.zfill(0)) != id(b))
+        self.assertIs(type(BytearraySubclass(b).zfill(0)), bytearray)
 
     def test_none(self):
         for testType in types:

@@ -88,52 +88,73 @@ namespace IronPython.Runtime {
 
         private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
 
-        internal static Bytes FromByte(byte b) {
-            return oneByteBytes[b];
-        }
+        internal static Bytes FromByte(byte b)
+            => oneByteBytes[b];
 
-        internal static Bytes Make(byte[] bytes) {
-            return new Bytes(bytes, copyData: false);
-        }
+        internal static Bytes Make(byte[] bytes)
+            => new Bytes(bytes, copyData: false);
 
         internal byte[] UnsafeByteArray {
             [PythonHidden]
             get => _bytes;
         }
 
+        private Bytes AsBytes()
+            => this.GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
+
         #region Public Python API surface
 
         public Bytes capitalize() {
             if (Count == 0) {
-                return this;
+                return this.AsBytes();
             }
 
             return new Bytes(_bytes.Capitalize());
         }
 
-        public Bytes center(int width) => center(width, (byte)' ');
+        public Bytes center(int width)
+            => center(width, (byte)' ');
 
         public Bytes center(int width, [BytesLike, NotNull]IList<byte> fillchar)
             => center(width, fillchar.ToByte("center", 2));
 
         private Bytes center(int width, byte fillchar) {
             var res = _bytes.TryCenter(width, fillchar);
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
-        public int count([BytesLike, NotNull]IList<byte> sub) => count(sub, null, null);
+        public int count([BytesLike, NotNull]IList<byte> sub)
+            => _bytes.CountOf(sub, 0, _bytes.Length);
 
-        public int count([BytesLike, NotNull]IList<byte> sub, int? start) => count(sub, start, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, int start)
+            => _bytes.CountOf(sub, start, _bytes.Length);
 
-        public int count([BytesLike, NotNull]IList<byte> sub, int? start, int? end)
-            => _bytes.CountOf(sub, start ?? 0, end ?? Count);
+        public int count([BytesLike, NotNull]IList<byte> sub, int start, int end)
+            => _bytes.CountOf(sub, start, end);
 
-        public int count(int @byte) => count(@byte, null, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, object? start)
+            => count(sub, start, null);
 
-        public int count(int @byte, int? start) => count(@byte, start, null);
+        public int count([BytesLike, NotNull]IList<byte> sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Length;
+            return _bytes.CountOf(sub, istart, iend);
+        }
 
-        public int count(int @byte, int? start, int? end)
-            => _bytes.CountOf(Bytes.FromByte(@byte.ToByteChecked()), start ?? 0, end ?? Count);
+        public int count(BigInteger @byte)
+            => _bytes.CountOf(Bytes.FromByte(@byte.ToByteChecked()), 0, _bytes.Length);
+
+        public int count(BigInteger @byte, int start)
+            => _bytes.CountOf(Bytes.FromByte(@byte.ToByteChecked()), start, _bytes.Length);
+
+        public int count(BigInteger @byte, int start, int end)
+            => _bytes.CountOf(Bytes.FromByte(@byte.ToByteChecked()), start, end);
+
+        public int count(BigInteger @byte, object? start)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start);
+
+        public int count(BigInteger @byte, object? start, object? end)
+            => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
@@ -198,11 +219,14 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("{0} first arg must be a bytes-like object or a tuple of bytes-like objects, not {1}", nameof(endswith), PythonOps.GetPythonTypeName(suffix));
         }
 
-        public Bytes expandtabs() {
-            return expandtabs(8);
-        }
+        public Bytes expandtabs()
+            => expandtabs(8);
 
         public Bytes expandtabs(int tabsize) {
+            if (Count == 0) {
+                return this.AsBytes();
+            }
+
             return new Bytes(_bytes.ExpandTabs(tabsize));
         }
 
@@ -366,7 +390,7 @@ namespace IronPython.Runtime {
         private Bytes ljust(int width, byte fillchar) {
             int spaces = width - Count;
             if (spaces <= 0) {
-                return this;
+                return this.AsBytes();
             }
 
             List<byte> ret = new List<byte>(width);
@@ -378,18 +402,22 @@ namespace IronPython.Runtime {
         }
 
         public Bytes lower() {
+            if (Count == 0) {
+                return this.AsBytes();
+            }
+
             return new Bytes(_bytes.ToLower());
         }
 
         public Bytes lstrip() {
             var res = _bytes.LeftStrip();
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public Bytes lstrip([BytesLike]IList<byte>? chars) {
             if (chars == null) return lstrip();
             var res = _bytes.LeftStrip(chars);
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public static Bytes maketrans([BytesLike, NotNull]IList<byte> from, [BytesLike, NotNull]IList<byte> to) {
@@ -426,9 +454,12 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(obj);
         }
 
-        public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count = -1) {
+        public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new)
+            => replace(old, @new, -1);
+
+        public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count) {
             if (count == 0) {
-                return GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
+                return this.AsBytes();
             }
 
             return new Bytes(_bytes.Replace(old, @new, count));
@@ -517,7 +548,7 @@ namespace IronPython.Runtime {
         private Bytes rjust(int width, byte fillchar) {
             int spaces = width - Count;
             if (spaces <= 0) {
-                return this;
+                return this.AsBytes();
             }
 
             List<byte> ret = new List<byte>(width);
@@ -553,13 +584,13 @@ namespace IronPython.Runtime {
 
         public Bytes rstrip() {
             var res = _bytes.RightStrip();
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public Bytes rstrip([BytesLike]IList<byte>? chars) {
             if (chars == null) return rstrip();
             var res = _bytes.RightStrip(chars);
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
@@ -631,31 +662,35 @@ namespace IronPython.Runtime {
 
         public Bytes strip() {
             var res = _bytes.Strip();
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public Bytes strip([BytesLike]IList<byte>? chars) {
             if (chars == null) return strip();
             var res = _bytes.Strip(chars);
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public Bytes swapcase() {
+            if (Count == 0) {
+                return this.AsBytes();
+            }
+
             return new Bytes(_bytes.SwapCase());
         }
 
         public Bytes title() {
             var res = _bytes.Title();
-            return res == null ? this : new Bytes(res);
+            return res == null ? this.AsBytes() : new Bytes(res);
         }
 
         public Bytes translate([BytesLike]IList<byte>? table) {
             if (table == null) {
-                return this;
+                return this.AsBytes();
             } else if (table.Count != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
             } else if (Count == 0) {
-                return this;
+                return this.AsBytes();
             }
 
             return new Bytes(_bytes.Translate(table, null));
@@ -663,20 +698,24 @@ namespace IronPython.Runtime {
 
         public Bytes translate([BytesLike]IList<byte>? table, [BytesLike, NotNull]IList<byte> delete) {
             if (Count == 0) {
-                return this;
+                return this.AsBytes();
             }
 
             return new Bytes(_bytes.Translate(table, delete));
         }
 
         public Bytes upper() {
+            if (Count == 0) {
+                return this.AsBytes();
+            }
+
             return new Bytes(_bytes.ToUpper());
         }
 
         public Bytes zfill(int width) {
             int spaces = width - Count;
             if (spaces <= 0) {
-                return this;
+                return this.AsBytes();
             }
 
             return new Bytes(_bytes.ZeroFill(width, spaces));

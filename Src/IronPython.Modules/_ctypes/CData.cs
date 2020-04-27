@@ -35,7 +35,7 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData : IBufferProtocol {
+        public abstract class CData : IBufferProtocol, IPythonBuffer {
             internal MemoryHolder _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
@@ -95,15 +95,21 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            object IBufferProtocol.GetItem(int index) {
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+                return this;
+            }
+
+            void IDisposable.Dispose() { }
+
+            object IPythonBuffer.GetItem(int index) {
                 return Bytes.Make(GetBytes(index, NativeType.Size));
             }
 
-            void IBufferProtocol.SetItem(int index, object value) {
+            void IPythonBuffer.SetItem(int index, object value) {
                 throw new NotImplementedException();
             }
 
-            void IBufferProtocol.SetSlice(Slice index, object value) {
+            void IPythonBuffer.SetSlice(Slice index, object value) {
                 throw new NotImplementedException();
             }
 
@@ -114,7 +120,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            string IBufferProtocol.Format {
+            string IPythonBuffer.Format {
                 get { return NativeType.TypeFormat; }
             }
 
@@ -123,11 +129,11 @@ namespace IronPython.Modules {
                 get { return this.NativeType.Size; }
             }
 
-            BigInteger IBufferProtocol.NumberDimensions {
+            BigInteger IPythonBuffer.NumberDimensions {
                 get { return 0; }
             }
 
-            bool IBufferProtocol.ReadOnly {
+            bool IPythonBuffer.ReadOnly {
                 get { return false; }
             }
 
@@ -136,23 +142,23 @@ namespace IronPython.Modules {
                 return null;
             }
 
-            PythonTuple IBufferProtocol.Strides {
+            PythonTuple IPythonBuffer.Strides {
                 get { return null; }
             }
 
-            PythonTuple IBufferProtocol.SubOffsets {
+            PythonTuple IPythonBuffer.SubOffsets {
                 get { return null; }
             }
 
-            Bytes IBufferProtocol.ToBytes(int start, int? end) {
+            Bytes IPythonBuffer.ToBytes(int start, int? end) {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
-            PythonList IBufferProtocol.ToList(int start, int? end) {
-                return new PythonList(((IBufferProtocol)this).ToBytes(start, end));
+            PythonList IPythonBuffer.ToList(int start, int? end) {
+                return new PythonList(((IPythonBuffer)this).ToBytes(start, end));
             }
 
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
                 return GetBytes(0, NativeType.Size);
             }
 

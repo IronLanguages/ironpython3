@@ -1674,7 +1674,7 @@ namespace IronPython.Runtime.Operations {
         internal static string? NormalizeEncodingName(string? name) =>
             name?.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
 
-        internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string? errors) {
+        internal static string RawDecode(CodeContext/*!*/ context, IPythonBuffer data, string encoding, string? errors) {
             if (TryGetEncoding(encoding, out Encoding? e)) {
                 return DoDecode(context, data.ToMemory(), errors, encoding, e);
             }

@@ -352,9 +352,9 @@ types and lengths of a and b--but not their values.")]
                 string aStr = a as string;
                 string bStr = b as string;
                 return CompareBytes(aStr.MakeByteArray(), bStr.MakeByteArray());
-            } else if(a is IBufferProtocol && b is IBufferProtocol) {
-                IBufferProtocol aBuf = a as IBufferProtocol;
-                IBufferProtocol bBuf = b as IBufferProtocol;
+            } else if(a is IBufferProtocol abp && b is IBufferProtocol bbp) {
+                using IPythonBuffer aBuf = abp.GetBuffer();
+                using IPythonBuffer bBuf = bbp.GetBuffer();
                 if(aBuf.NumberDimensions > 1 || bBuf.NumberDimensions > 1) {
                     throw PythonOps.BufferError("Buffer must be single dimension");
                 }

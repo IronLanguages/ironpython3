@@ -680,8 +680,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return ret;
         }
 
-        private static IList<byte> tobytes(this IBufferProtocol buffer)
-            => buffer as IList<byte> ?? buffer.ToBytes(0, null);
+        private static IList<byte> tobytes(this IBufferProtocol buffer) {
+            if (buffer is IList<byte> list) return list;
+
+            using (IPythonBuffer buf = buffer.GetBuffer()) {
+                return buf.ToBytes(0, null);
+            }
+        }
 
         #endregion
     }

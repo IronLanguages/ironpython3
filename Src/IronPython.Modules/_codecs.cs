@@ -118,7 +118,9 @@ namespace IronPython.Modules {
                 if (obj is ReadOnlyMemory<byte> bytesLikeObj) {
                     return StringOps.DoDecode(context, bytesLikeObj, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
                 } else if (obj is IBufferProtocol bp) {
-                    return StringOps.DoDecode(context, bp.ToMemory(), errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
+                    using (IPythonBuffer buf = bp.GetBuffer()) {
+                        return StringOps.DoDecode(context, buf.ToMemory(), errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
+                    }
                 } else {
                     throw PythonOps.TypeError("expected bytes-like object, got {0}", PythonTypeOps.GetName(obj));
                 }

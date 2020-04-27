@@ -19,15 +19,24 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using IronPython.Hosting;
 
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
-    public class Bytes : IList<byte>, IReadOnlyList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
+    public class Bytes : IList<byte>, IReadOnlyList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol, IPythonBuffer {
         private readonly byte[] _bytes;
         internal static readonly Bytes Empty = new Bytes();
 
         public Bytes() {
             _bytes = new byte[0];
+        }
+
+        public Bytes([NotNull]IEnumerable<byte> bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
+            _bytes = bytes.ToArray();
         }
 
         public Bytes(CodeContext context, object? source) {
@@ -47,14 +56,6 @@ namespace IronPython.Runtime {
 
         public Bytes([NotNull]IEnumerable<object?> source) {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
-        }
-
-        public Bytes([NotNull]IEnumerable<byte> bytes) {
-            _bytes = bytes.ToArray();
-        }
-
-        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
-            _bytes = bytes.ToArray();
         }
 
         public Bytes([NotNull]PythonList bytes) {
@@ -881,7 +882,9 @@ namespace IronPython.Runtime {
                 return new Bytes(b);
             }
             if (curVal is IBufferProtocol bp) {
-                return bp.ToBytes(0, null);
+                using (IPythonBuffer buf = bp.GetBuffer()) {
+                    return buf.ToBytes(0, null);
+                }
             }
             throw PythonOps.TypeError("can only join an iterable of bytes");
         }
@@ -1034,57 +1037,66 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        object IBufferProtocol.GetItem(int index) {
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+            if (flags.HasFlag(BufferFlags.Writable))
+                throw PythonOps.BufferError("Object is not writable.");
+
+            return this;
+        }
+
+        void IDisposable.Dispose() { }
+
+        object IPythonBuffer.GetItem(int index) {
             byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
             return (int)res;
         }
 
-        void IBufferProtocol.SetItem(int index, object value) {
+        void IPythonBuffer.SetItem(int index, object value) {
             throw new InvalidOperationException();
         }
 
-        void IBufferProtocol.SetSlice(Slice index, object value) {
+        void IPythonBuffer.SetSlice(Slice index, object value) {
             throw new InvalidOperationException();
         }
 
-        int IBufferProtocol.ItemCount {
+        int IPythonBuffer.ItemCount {
             get {
                 return _bytes.Length;
             }
         }
 
-        string IBufferProtocol.Format {
+        string IPythonBuffer.Format {
             get { return "B"; }
         }
 
-        BigInteger IBufferProtocol.ItemSize {
+        BigInteger IPythonBuffer.ItemSize {
             get { return 1; }
         }
 
-        BigInteger IBufferProtocol.NumberDimensions {
+        BigInteger IPythonBuffer.NumberDimensions {
             get { return 1; }
         }
 
-        bool IBufferProtocol.ReadOnly {
+        bool IPythonBuffer.ReadOnly {
             get { return true; }
         }
 
-        IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) {
+        IList<BigInteger> IPythonBuffer.GetShape(int start, int? end) {
             if (end != null) {
                 return new[] { (BigInteger)end - start };
             }
             return new[] { (BigInteger)_bytes.Length - start };
         }
 
-        PythonTuple IBufferProtocol.Strides {
+        PythonTuple IPythonBuffer.Strides {
             get { return PythonTuple.MakeTuple(1); }
         }
 
-        PythonTuple? IBufferProtocol.SubOffsets {
+        PythonTuple? IPythonBuffer.SubOffsets {
             get { return null; }
         }
 
-        Bytes IBufferProtocol.ToBytes(int start, int? end) {
+        Bytes IPythonBuffer.ToBytes(int start, int? end) {
             if (start == 0 && end == null) {
                 return this;
             }
@@ -1092,12 +1104,12 @@ namespace IronPython.Runtime {
             return this[new Slice(start, end)];
         }
 
-        PythonList IBufferProtocol.ToList(int start, int? end) {
+        PythonList IPythonBuffer.ToList(int start, int? end) {
             var res = _bytes.Slice(new Slice(start, end));
             return res == null ? new PythonList() : new PythonList(res);
         }
 
-        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
             return _bytes.AsMemory();
         }
 

@@ -109,7 +109,7 @@ namespace IronPython.Modules {
         public static readonly BuiltinFunction _array_reconstructor = BuiltinFunction.MakeFunction(nameof(_array_reconstructor), ArrayUtils.ConvertAll(typeof(ArrayModule).GetMember(nameof(ArrayReconstructor), BindingFlags.NonPublic | BindingFlags.Static), x => (MethodBase)x), typeof(ArrayModule));
 
         [PythonType]
-        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
+        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol, IPythonBuffer {
             private ArrayData _data;
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
@@ -1167,33 +1167,37 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            object IBufferProtocol.GetItem(int index) => this[index];
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
 
-            void IBufferProtocol.SetItem(int index, object value) {
+            void IDisposable.Dispose() { }
+
+            object IPythonBuffer.GetItem(int index) => this[index];
+
+            void IPythonBuffer.SetItem(int index, object value) {
                 this[index] = value;
             }
 
-            void IBufferProtocol.SetSlice(Slice index, object value) {
+            void IPythonBuffer.SetSlice(Slice index, object value) {
                 this[index] = value;
             }
 
-            int IBufferProtocol.ItemCount => _data.Count;
+            int IPythonBuffer.ItemCount => _data.Count;
 
-            string IBufferProtocol.Format => _typeCode.ToString();
+            string IPythonBuffer.Format => _typeCode.ToString();
 
-            BigInteger IBufferProtocol.ItemSize => itemsize;
+            BigInteger IPythonBuffer.ItemSize => itemsize;
 
-            BigInteger IBufferProtocol.NumberDimensions => 1;
+            BigInteger IPythonBuffer.NumberDimensions => 1;
 
-            bool IBufferProtocol.ReadOnly => false;
+            bool IPythonBuffer.ReadOnly => false;
 
-            IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Count) - start };
+            IList<BigInteger> IPythonBuffer.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Count) - start };
 
-            PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(itemsize);
+            PythonTuple IPythonBuffer.Strides => PythonTuple.MakeTuple(itemsize);
 
-            PythonTuple? IBufferProtocol.SubOffsets => null;
+            PythonTuple? IPythonBuffer.SubOffsets => null;
 
-            Bytes IBufferProtocol.ToBytes(int start, int? end) {
+            Bytes IPythonBuffer.ToBytes(int start, int? end) {
                 if (start == 0 && end == null) {
                     return tobytes();
                 }
@@ -1201,7 +1205,7 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tobytes();
             }
 
-            PythonList IBufferProtocol.ToList(int start, int? end) {
+            PythonList IPythonBuffer.ToList(int start, int? end) {
                 if (start == 0 && end == null) {
                     return tolist();
                 }
@@ -1209,7 +1213,7 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tolist();
             }
 
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
+            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
                 return ToByteArray().AsMemory();
             }
 

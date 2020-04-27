@@ -722,8 +722,12 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 AstUtils.Convert(
                     Ast.Call(
-                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
-                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToMemory))
+                        Ast.Call(
+                            AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
+                            typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.GetBuffer)),
+                            AstUtils.Constant(BufferFlags.Simple, typeof(BufferFlags))
+                        ),
+                        typeof(IPythonBuffer).GetMethod(nameof(IPythonBuffer.ToMemory))
                     ),
                     toType
                 ),
@@ -735,8 +739,12 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 AstUtils.Convert(
                     Ast.Call(
-                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
-                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToBytes)),
+                        Ast.Call(
+                            AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
+                            typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.GetBuffer)),
+                            AstUtils.Constant(BufferFlags.Simple, typeof(BufferFlags))
+                        ),
+                        typeof(IPythonBuffer).GetMethod(nameof(IPythonBuffer.ToBytes)),
                         AstUtils.Constant(0, typeof(int)),
                         AstUtils.Constant(null, typeof(Nullable<int>))
                     ),

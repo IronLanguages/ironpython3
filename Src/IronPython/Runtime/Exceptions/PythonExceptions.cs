@@ -155,6 +155,12 @@ namespace IronPython.Runtime.Exceptions {
                 set { _filename2 = value; }
             }
 
+            private object _characters_written = Undefined;
+            public object characters_written {
+                get { return ReferenceEquals(_characters_written, Undefined) ? throw PythonOps.AttributeError(nameof(characters_written)) : _characters_written; }
+                set { _characters_written = PythonOps.Index(value); }
+            }
+
             public override void __init__(params object[] args) {
                 if (args.Length >= 2 && args.Length <= 5) {
                     errno = args[0];
@@ -640,17 +646,10 @@ for k, v in toError.items():
         public partial class _BlockingIOError {
             public override void __init__(params object[] args) {
                 if (args.Length >= 3) {
-                    _characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? Undefined;
+                    if (PythonOps.TryToIndex(args[2], out object index)) // this is the behavior since CPython 3.8
+                        characters_written = index;
                 }
                 base.__init__(args);
-            }
-
-            private static readonly object Undefined = new object();
-
-            private object _characters_written = Undefined;
-            public object characters_written {
-                get { return ReferenceEquals(_characters_written, Undefined) ? throw PythonOps.AttributeError(nameof(characters_written)) : _characters_written; }
-                set { _characters_written = PythonOps.Index(value); }
             }
         }
 

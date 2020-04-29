@@ -1174,7 +1174,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static void print(CodeContext/*!*/ context, [NotNull]params object?[] args) {
-            print(context, " ", "\n", null, args);
+            PrintHelper(context, " ", "\n", null, args, false);
         }
 
         public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> kwargs, [NotNull]params object?[] args) {
@@ -1190,6 +1190,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             object? file = AttrCollectionPop(kwargs, "file", null);
 
+            bool flush = Converter.ConvertToBoolean(AttrCollectionPop(kwargs, "flush", false));
+
             if (kwargs.Count != 0) {
                 throw PythonOps.TypeError(
                     "'{0}' is an invalid keyword argument for this function",
@@ -1197,7 +1199,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 );
             }
 
-            print(context, (string?)sep ?? " ", (string?)end ?? "\n", file, args);
+            PrintHelper(context, (string?)sep ?? " ", (string?)end ?? "\n", file, args, flush);
         }
 
         private static object? AttrCollectionPop(IDictionary<string, object?> kwargs, string name, object? defaultValue) {
@@ -1210,7 +1212,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return res;
         }
 
-        private static void print(CodeContext/*!*/ context, string/*!*/ sep, string/*!*/ end, object? file, object?[]/*!*/ args) {
+        private static void PrintHelper(CodeContext/*!*/ context, string/*!*/ sep, string/*!*/ end, object? file, object?[]/*!*/ args, bool flush) {
             PythonContext pc = context.LanguageContext;
 
             if (file == null) {
@@ -1264,6 +1266,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     PythonOps.GetBoundAttr(context, file, "write"),
                     end
                 );
+            }
+
+            if (flush) {
+                if (pf != null) {
+                    pf.flush(context);
+                } else {
+                    PythonOps.Invoke(context, file, "flush");
+                }
             }
         }
 

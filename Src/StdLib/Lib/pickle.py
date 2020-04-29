@@ -177,8 +177,10 @@ STACK_GLOBAL     = b'\x93'  # same as GLOBAL but using names on the stacks
 MEMOIZE          = b'\x94'  # store top of the stack in memo
 FRAME            = b'\x95'  # indicate the beginning of a new frame
 
-__all__.extend([x for x in dir() if re.match("[A-Z][A-Z0-9_]+$", x)])
-
+# _dir is a workaround for https://github.com/IronLanguages/ironpython3/issues/809
+_dir = dir()
+__all__.extend([x for x in _dir if re.match("[A-Z][A-Z0-9_]+$", x)])
+del _dir
 
 class _Framer:
 

@@ -63,10 +63,6 @@ namespace IronPython.Runtime {
         private ConcurrentDictionary<string, object> _errorHandlers;
         private List<object> _searchFunctions;
         private Dictionary<object, object> _moduleState;
-        /// <summary> stored for copyreg module, used for reduce protocol </summary>
-        internal BuiltinFunction NewObject;
-        /// <summary> stored for copyreg module, used for reduce protocol </summary>
-        internal BuiltinFunction PythonReconstructor;
         private Dictionary<Type, object> _genericSiteStorage;
 
         private CallSite<Func<CallSite, CodeContext, object, object>>[] _newUnarySites;

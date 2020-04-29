@@ -121,21 +121,21 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Runs the pickle protocol
         /// </summary>
-        public static object __reduce__(CodeContext/*!*/ context, object self) {
+        public static object? __reduce__(CodeContext/*!*/ context, object self) {
             return __reduce_ex__(context, self, 0);
         }
 
         /// <summary>
         /// Runs the pickle protocol
         /// </summary>
-        public static object __reduce_ex__(CodeContext/*!*/ context, object self) {
+        public static object? __reduce_ex__(CodeContext/*!*/ context, object self) {
             return __reduce_ex__(context, self, 0);
         }
 
         /// <summary>
         /// Runs the pickle protocol
         /// </summary>
-        public static object __reduce_ex__(CodeContext/*!*/ context, object self, object protocol) {
+        public static object? __reduce_ex__(CodeContext/*!*/ context, object self, object protocol) {
             object objectReduce = PythonOps.GetBoundAttr(context, DynamicHelpers.GetPythonTypeFromType(typeof(object)), "__reduce__");
             if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), "__reduce__", out object? myReduce)) {
                 if (!PythonOps.IsRetBool(myReduce, objectReduce)) {
@@ -319,61 +319,10 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Implements the default __reduce_ex__ method as specified by PEP 307 case 2 (new-style instance, protocol 0 or 1)
         /// </summary>
-        internal static PythonTuple ReduceProtocol0(CodeContext/*!*/ context, object self) {
-            // CPython implements this in copyreg._reduce_ex
-
-            PythonType myType = DynamicHelpers.GetPythonType(self); // PEP 307 calls this "D"
-            ThrowIfNativelyPickable(myType);
-
-            object? getState;
-            bool hasGetState = PythonOps.TryGetBoundAttr(context, self, "__getstate__", out getState);
-
-            if (PythonOps.TryGetBoundAttr(context, myType, "__slots__", out object? slots) && PythonOps.Length(slots) > 0 && !hasGetState) {
-                // ??? does this work with superclass slots?
-                throw PythonOps.TypeError("a class that defines __slots__ without defining __getstate__ cannot be pickled with protocols 0 or 1");
-            }
-
-            PythonType closestNonPythonBase = FindClosestNonPythonBase(myType); // PEP 307 calls this "B"
-
-            object func = context.LanguageContext.PythonReconstructor;
-
-            object funcArgs = PythonTuple.MakeTuple(
-                myType,
-                closestNonPythonBase,
-                TypeCache.Object == closestNonPythonBase ? null : PythonCalls.Call(context, closestNonPythonBase, self)
-            );
-
-            object? state;
-            if (hasGetState) {
-                state = PythonOps.CallWithContext(context, getState);
-            } else {
-                if (self is IPythonObject ipo) {
-                    state = ipo.Dict;
-                } else if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out state)) {
-                    state = null;
-                }
-            }
-            if (!PythonOps.IsTrue(state)) state = null;
-
-            return PythonTuple.MakeTuple(func, funcArgs, state);
-        }
-
-        private static void ThrowIfNativelyPickable(PythonType type) {
-            if (NativelyPickleableTypes.Contains(type)) {
-                throw PythonOps.TypeError("can't pickle {0} objects", type.Name);
-            }
-        }
-
-        /// <summary>
-        /// Returns the closest base class (in terms of MRO) that isn't defined in Python code
-        /// </summary>
-        private static PythonType FindClosestNonPythonBase(PythonType type) {
-            foreach (PythonType pythonBase in type.ResolutionOrder) {
-                if (pythonBase.IsSystemType) {
-                    return pythonBase;
-                }
-            }
-            throw PythonOps.TypeError("can't pickle {0} instance: no non-Python bases found", type.Name);
+        internal static object? ReduceProtocol0(CodeContext/*!*/ context, object self) {
+            var copyreg = context.LanguageContext.GetCopyRegModule();
+            var _reduce_ex = PythonOps.GetBoundAttr(context, copyreg, "_reduce_ex");
+            return PythonOps.CallWithContext(context, _reduce_ex, self, 0);
         }
 
         /// <summary>
@@ -385,7 +334,8 @@ namespace IronPython.Runtime.Operations {
             object? state;
             object?[] funcArgs;
 
-            object func = context.LanguageContext.NewObject;
+            var copyreg = context.LanguageContext.GetCopyRegModule();
+            var func = PythonOps.GetBoundAttr(context, copyreg, "__newobj__");
 
             if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out object? getNewArgsCallable)) {
                 // TypeError will bubble up if __getnewargs__ isn't callable

@@ -866,17 +866,6 @@ namespace IronPython.Runtime {
         public IEnumerator<int> __iter__()
             => IListOfByteOps.BytesEnumerator(this);
 
-        public PythonTuple __reduce__(CodeContext context) {
-            return PythonTuple.MakeTuple(
-                DynamicHelpers.GetPythonType(this),
-                PythonTuple.MakeTuple(
-                    PythonOps.MakeString(this),
-                    "latin-1"
-                ),
-                GetType() == typeof(Bytes) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
-            );
-        }
-
         public virtual string __str__(CodeContext context) {
             if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {
                 PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytes instance");

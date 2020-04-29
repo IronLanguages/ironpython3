@@ -109,10 +109,6 @@ namespace IronPython.Modules {
                 throw new NotImplementedException();
             }
 
-            void IPythonBuffer.SetSlice(Slice index, object value) {
-                throw new NotImplementedException();
-            }
-
             public virtual int ItemCount {
                 [PythonHidden]
                 get {

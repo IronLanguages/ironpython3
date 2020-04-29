@@ -1177,10 +1177,6 @@ namespace IronPython.Modules {
                 this[index] = value;
             }
 
-            void IPythonBuffer.SetSlice(Slice index, object value) {
-                this[index] = value;
-            }
-
             int IPythonBuffer.ItemCount => _data.Count;
 
             string IPythonBuffer.Format => _typeCode.ToString();

@@ -1641,10 +1641,6 @@ namespace IronPython.Runtime {
             this[index] = value;
         }
 
-        void IPythonBuffer.SetSlice(Slice index, object value) {
-            this[index] = value;
-        }
-
         int IPythonBuffer.ItemCount {
             get {
                 return _bytes.Count;

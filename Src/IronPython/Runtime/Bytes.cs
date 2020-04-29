@@ -1055,10 +1055,6 @@ namespace IronPython.Runtime {
             throw new InvalidOperationException();
         }
 
-        void IPythonBuffer.SetSlice(Slice index, object value) {
-            throw new InvalidOperationException();
-        }
-
         int IPythonBuffer.ItemCount {
             get {
                 return _bytes.Length;

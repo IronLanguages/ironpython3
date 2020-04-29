@@ -761,8 +761,6 @@ namespace IronPython.Runtime {
 
         void IPythonBuffer.SetItem(int index, object value) => this[index] = value;
 
-        void IPythonBuffer.SetSlice(Slice index, object value) => this[index] = value;
-
         int IPythonBuffer.ItemCount => numberOfElements();
 
         string IPythonBuffer.Format => format;

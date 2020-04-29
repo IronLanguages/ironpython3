@@ -50,7 +50,6 @@ namespace IronPython.Runtime {
     public interface IPythonBuffer : IDisposable {
         object GetItem(int index);
         void SetItem(int index, object value);
-        void SetSlice(Slice index, object value);
 
         int ItemCount { get; }
 

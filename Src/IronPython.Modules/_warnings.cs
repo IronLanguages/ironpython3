@@ -149,9 +149,9 @@ namespace IronPython.Modules {
             foreach (PythonTuple filter in filters) {
                 last_filter = filter;
                 action = (string)filter._data[0];
-                PythonRegex.RE_Pattern fMsg = (PythonRegex.RE_Pattern)filter._data[1];
+                PythonRegex.Pattern fMsg = (PythonRegex.Pattern)filter._data[1];
                 PythonType fCat = (PythonType)filter._data[2];
-                PythonRegex.RE_Pattern fMod = (PythonRegex.RE_Pattern)filter._data[3];
+                PythonRegex.Pattern fMod = (PythonRegex.Pattern)filter._data[3];
                 int fLno;
                 if (filter._data[4] is int) {
                     fLno = (int)filter._data[4];

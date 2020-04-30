@@ -28,12 +28,12 @@ namespace IronPython.Modules {
     /// Python regular expression module.
     /// </summary>
     public static class PythonRegex {
-        private static CacheDict<PatternKey, RE_Pattern> _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
+        private static CacheDict<PatternKey, Pattern> _cachedPatterns = new CacheDict<PatternKey, Pattern>(100);
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
-            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict["_pickle"];
+            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(Pattern))] = dict["_pickle"];
         }
 
         private static readonly Random r = new Random(DateTime.Now.Millisecond);
@@ -62,7 +62,7 @@ namespace IronPython.Modules {
 
         #region Public API Surface
 
-        public static RE_Pattern compile(CodeContext/*!*/ context, object pattern, int flags = 0) {
+        public static Pattern compile(CodeContext/*!*/ context, object pattern, int flags = 0) {
             try {
                 return GetPattern(context, pattern, flags, true);
             } catch (ArgumentException e) {
@@ -103,7 +103,7 @@ namespace IronPython.Modules {
         }
 
         public static PythonList findall(CodeContext/*!*/ context, object pattern, string @string, int flags = 0) {
-            RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
+            Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, nameof(@string));
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Length);
@@ -111,7 +111,7 @@ namespace IronPython.Modules {
         }
 
         public static PythonList findall(CodeContext context, object pattern, IList<byte> @string, int flags = 0) {
-            RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
+            Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, nameof(@string));
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Count);
@@ -126,7 +126,7 @@ namespace IronPython.Modules {
             return maker;
         }
 
-        private static PythonList FixFindAllMatch(RE_Pattern pat, MatchCollection mc, Func<string, object> maker) {
+        private static PythonList FixFindAllMatch(Pattern pat, MatchCollection mc, Func<string, object> maker) {
             object[] matches = new object[mc.Count];
             int numgrps = pat._re.GetGroupNumbers().Length;
             for (int i = 0; i < mc.Count; i++) {
@@ -166,19 +166,19 @@ namespace IronPython.Modules {
         }
 
         public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
-            RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
+            Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
 
             string str = ValidateString(@string, nameof(@string));
             return MatchIterator(pat.FindAllWorker(context, str, 0, str.Length), pat, str);
         }
 
-        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+        public static Match match(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
             => GetPattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, nameof(@string)));
 
-        public static RE_Match fullmatch(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+        public static Match fullmatch(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
             => GetPattern(context, ValidatePattern(pattern), flags).fullmatch(context, ValidateString(@string, nameof(@string)));
 
-        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+        public static Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
             => GetPattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, nameof(@string)));
 
         [return: SequenceTypeInfo(typeof(string))]
@@ -192,7 +192,7 @@ namespace IronPython.Modules {
             => GetPattern(context, ValidatePattern(pattern), flags).subn(context, repl, ValidateString(@string, nameof(@string)), count);
 
         public static void purge() {
-            _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
+            _cachedPatterns = new CacheDict<PatternKey, Pattern>(100);
         }
 
         #endregion
@@ -203,7 +203,7 @@ namespace IronPython.Modules {
         /// Compiled reg-ex pattern
         /// </summary>
         [PythonType]
-        public class RE_Pattern : IWeakReferenceable {
+        public class Pattern : IWeakReferenceable {
             internal readonly Regex _re;
             internal readonly ParsedRegex _pre;
             private PythonDictionary _groups;
@@ -218,16 +218,16 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal RE_Pattern(CodeContext/*!*/ context, object pattern, int flags = 0, bool compiled = false) {
+            internal Pattern(CodeContext/*!*/ context, object pattern, int flags = 0, bool compiled = false) {
                 _pre = PreParseRegex(context, ValidatePatternAsString(pattern), (flags & VERBOSE) != 0);
                 flags |= OptionToFlags(_pre.Options);
                 _re = GenRegex(context, _pre.Pattern, flags, compiled, false);
                 this.flags = flags;
             }
 
-            public RE_Match match(object text) {
+            public Match match(object text) {
                 string input = ValidateString(text, nameof(text));
-                return RE_Match.makeMatch(_re.Match(input), this, input, 0, input.Length);
+                return Match.makeMatch(_re.Match(input), this, input, 0, input.Length);
             }
 
             private static int FixPosition(string text, int position) {
@@ -237,17 +237,17 @@ namespace IronPython.Modules {
                 return position;
             }
 
-            public RE_Match match(object text, int pos) {
+            public Match match(object text, int pos) {
                 string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
-                return RE_Match.makeMatch(_re.Match(input, pos), this, input, pos, input.Length);
+                return Match.makeMatch(_re.Match(input, pos), this, input, pos, input.Length);
             }
 
-            public RE_Match match(object text, [DefaultParameterValue(0)]int pos, int endpos) {
+            public Match match(object text, [DefaultParameterValue(0)]int pos, int endpos) {
                 string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);
-                return RE_Match.makeMatch(
+                return Match.makeMatch(
                     _re.Match(input.Substring(0, endpos), pos),
                     this,
                     input,
@@ -267,18 +267,18 @@ namespace IronPython.Modules {
                 return _re_fullmatch;
             }
 
-            public RE_Match fullmatch(CodeContext/*!*/ context, object text, int pos = 0) {
+            public Match fullmatch(CodeContext/*!*/ context, object text, int pos = 0) {
                 string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
 
-                return RE_Match.makeFullMatch(GetRegexFullMatch(context).Match(input, pos), this, input, pos, input.Length);
+                return Match.makeFullMatch(GetRegexFullMatch(context).Match(input, pos), this, input, pos, input.Length);
             }
 
-            public RE_Match fullmatch(CodeContext/*!*/ context, object text, [DefaultParameterValue(0)]int pos, int endpos) {
+            public Match fullmatch(CodeContext/*!*/ context, object text, [DefaultParameterValue(0)]int pos, int endpos) {
                 string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);
-                return RE_Match.makeFullMatch(
+                return Match.makeFullMatch(
                     GetRegexFullMatch(context).Match(input.Substring(0, endpos), pos),
                     this,
                     input,
@@ -286,23 +286,23 @@ namespace IronPython.Modules {
                     endpos);
             }
 
-            public RE_Match search(object text) {
+            public Match search(object text) {
                 string input = ValidateString(text, nameof(text));
-                return RE_Match.make(_re.Match(input), this, input);
+                return Match.make(_re.Match(input), this, input);
             }
 
-            public RE_Match search(object text, int pos) {
+            public Match search(object text, int pos) {
                 string input = ValidateString(text, nameof(text));
                 if (pos < 0) pos = 0;
-                return RE_Match.make(_re.Match(input, pos), this, input);
+                return Match.make(_re.Match(input, pos), this, input);
             }
 
-            public RE_Match search(object text, int pos, int endpos) {
+            public Match search(object text, int pos, int endpos) {
                 string input = ValidateString(text, nameof(text));
                 if (pos < 0) pos = 0;
                 if (endpos < pos) return null;
                 if (endpos < input.Length) input = input.Substring(0, endpos);
-                return RE_Match.make(_re.Match(input, pos), this, input);
+                return Match.make(_re.Match(input, pos), this, input);
             }
 
             public object findall(CodeContext/*!*/ context, object @string, int pos = 0, object endpos = null) {
@@ -344,7 +344,7 @@ namespace IronPython.Modules {
                     MatchCollection matches = _re.Matches(theStr);
                     int lastPos = 0; // is either start of the string, or first position *after* the last match
                     int nSplits = 0; // how many splits have occurred?
-                    foreach (Match m in matches) {
+                    foreach (System.Text.RegularExpressions.Match m in matches) {
                         if (m.Length > 0) {
                             // add substring from lastPos to beginning of current match
                             result.AddNoLock(theStr.Substring(lastPos, m.Index - lastPos));
@@ -382,11 +382,11 @@ namespace IronPython.Modules {
                     }
                 }
 
-                Match prev = null;
+                System.Text.RegularExpressions.Match prev = null;
                 string input = ValidateString(@string, nameof(@string));
                 return _re.Replace(
                     input,
-                    delegate (Match match) {
+                    delegate (System.Text.RegularExpressions.Match match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && prev != null &&
@@ -396,7 +396,7 @@ namespace IronPython.Modules {
                         prev = match;
 
                         if (replacement != null) return UnescapeGroups(match, replacement);
-                        return PythonCalls.Call(context, repl, RE_Match.make(match, this, input)) as string;
+                        return PythonCalls.Call(context, repl, Match.make(match, this, input)) as string;
                     },
                     count);
             }
@@ -418,11 +418,11 @@ namespace IronPython.Modules {
                     }
                 }
 
-                Match prev = null;
+                System.Text.RegularExpressions.Match prev = null;
                 string input = ValidateString(@string, nameof(@string));
                 res = _re.Replace(
                     input,
-                    delegate (Match match) {
+                    delegate (System.Text.RegularExpressions.Match match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && prev != null &&
@@ -434,7 +434,7 @@ namespace IronPython.Modules {
                         totalCount++;
                         if (replacement != null) return UnescapeGroups(match, replacement);
 
-                        return PythonCalls.Call(context, repl, RE_Match.make(match, this, input)) as string;
+                        return PythonCalls.Call(context, repl, Match.make(match, this, input)) as string;
                     },
                     count);
 
@@ -468,7 +468,7 @@ namespace IronPython.Modules {
             public string pattern => _pre.UserPattern;
 
             public override bool Equals(object obj)
-                => obj is RE_Pattern other && other.pattern == pattern && other.flags == flags;
+                => obj is Pattern other && other.pattern == pattern && other.flags == flags;
 
             public override int GetHashCode() => pattern.GetHashCode() ^ flags;
 
@@ -486,7 +486,7 @@ namespace IronPython.Modules {
             #endregion
         }
 
-        public static PythonTuple _pickle(CodeContext/*!*/ context, RE_Pattern pattern) {
+        public static PythonTuple _pickle(CodeContext/*!*/ context, Pattern pattern) {
             object scope = Importer.ImportModule(context, new PythonDictionary(), "re", false, 0);
             if (scope is PythonModule module && module.__dict__.TryGetValue("compile", out object compile)) {
                 return PythonTuple.MakeTuple(compile, PythonTuple.MakeTuple(pattern.pattern, pattern.flags));
@@ -495,29 +495,29 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class RE_Match {
-            private readonly Match _m;
+        public class Match {
+            private readonly System.Text.RegularExpressions.Match _m;
             private int _lastindex = -1;
 
             #region Internal makers
 
-            internal static RE_Match make(Match m, RE_Pattern pattern, string input) {
-                if (m.Success) return new RE_Match(m, pattern, input, 0, input.Length);
+            internal static Match make(System.Text.RegularExpressions.Match m, Pattern pattern, string input) {
+                if (m.Success) return new Match(m, pattern, input, 0, input.Length);
                 return null;
             }
 
-            internal static RE_Match make(Match m, RE_Pattern pattern, string input, int offset, int endpos) {
-                if (m.Success) return new RE_Match(m, pattern, input, offset, endpos);
+            internal static Match make(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+                if (m.Success) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static RE_Match makeMatch(Match m, RE_Pattern pattern, string input, int offset, int endpos) {
-                if (m.Success && m.Index == offset) return new RE_Match(m, pattern, input, offset, endpos);
+            internal static Match makeMatch(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+                if (m.Success && m.Index == offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static RE_Match makeFullMatch(Match m, RE_Pattern pattern, string input, int offset, int endpos) {
-                if (m.Success && m.Index == offset && m.Length == endpos - offset) return new RE_Match(m, pattern, input, offset, endpos);
+            internal static Match makeFullMatch(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+                if (m.Success && m.Index == offset && m.Length == endpos - offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
@@ -525,13 +525,13 @@ namespace IronPython.Modules {
 
             #region Public ctors
 
-            public RE_Match(Match m, RE_Pattern pattern, string text) {
+            public Match(System.Text.RegularExpressions.Match m, Pattern pattern, string text) {
                 _m = m;
                 re = pattern;
                 @string = text;
             }
 
-            public RE_Match(Match m, RE_Pattern pattern, string text, int pos, int endpos) {
+            public Match(System.Text.RegularExpressions.Match m, Pattern pattern, string text, int pos, int endpos) {
                 _m = m;
                 re = pattern;
                 @string = text;
@@ -688,7 +688,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public RE_Pattern re { get; }
+            public Pattern re { get; }
 
             public object lastindex {
                 get {
@@ -763,8 +763,8 @@ namespace IronPython.Modules {
 
         #region Private helper functions
 
-        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled = false) {
-            if (pattern is RE_Pattern res) {
+        private static Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled = false) {
+            if (pattern is Pattern res) {
                 return res;
             }
 
@@ -776,15 +776,15 @@ namespace IronPython.Modules {
                         return res;
                     }
                 }
-                res = new RE_Pattern(context, strPattern, flags, compiled);
+                res = new Pattern(context, strPattern, flags, compiled);
                 _cachedPatterns[key] = res;
                 return res;
             }
         }
 
-        private static IEnumerator MatchIterator(MatchCollection matches, RE_Pattern pattern, string input) {
+        private static IEnumerator MatchIterator(MatchCollection matches, Pattern pattern, string input) {
             for (int i = 0; i < matches.Count; i++) {
-                yield return RE_Match.make(matches[i], pattern, input, 0, input.Length);
+                yield return Match.make(matches[i], pattern, input, 0, input.Length);
             }
         }
 
@@ -1083,7 +1083,7 @@ namespace IronPython.Modules {
 
         private static string GetRandomString() => r.Next(int.MaxValue / 2, int.MaxValue).ToString();
 
-        private static string UnescapeGroups(Match m, string text) {
+        private static string UnescapeGroups(System.Text.RegularExpressions.Match m, string text) {
             for (int i = 0; i < text.Length; i++) {
                 if (text[i] == '\\') {
                     StringBuilder sb = new StringBuilder(text, 0, i, text.Length);
@@ -1173,7 +1173,7 @@ namespace IronPython.Modules {
                     return es.Value;
                 case Bytes bytes:
                     return bytes.MakeString();
-                case RE_Pattern rep:
+                case Pattern rep:
                     return rep;
                 default:
                     throw PythonOps.TypeError("pattern must be a string or compiled pattern");
@@ -1189,7 +1189,7 @@ namespace IronPython.Modules {
                     return es.Value;
                 case Bytes bytes:
                     return bytes.MakeString();
-                case RE_Pattern rep:
+                case Pattern rep:
                     return rep._pre.UserPattern;
                 default:
                     throw PythonOps.TypeError("pattern must be a string or compiled pattern");

@@ -40,7 +40,7 @@ namespace IronPython.Runtime {
         private static NumberFormatInfo NumberFormatInfoForThreadLower;
         [ThreadStatic]
         private static NumberFormatInfo NumberFormatInfoForThreadUpper;
- 
+
         internal static NumberFormatInfo nfil {
             get {
                 if (NumberFormatInfoForThreadLower == null) {
@@ -73,7 +73,7 @@ namespace IronPython.Runtime {
         private NumberFormatInfo _nfi;
 
         #region Constructors
-        
+
         public StringFormatter(CodeContext/*!*/ context, string str, object data) {
             _str = str;
             _data = data;
@@ -156,7 +156,7 @@ namespace IronPython.Runtime {
             Debug.Assert(_curCh == _str[_index - 1]);
             Debug.Assert(_str[_index - 2] == '%');
 
-            
+
             if (_curCh != '(') {
                 // No parenthesized key.
                 return null;
@@ -250,7 +250,7 @@ namespace IronPython.Runtime {
         }
 
         private void ReadMinimumFieldWidth() {
-            int fieldWidth = ReadNumberOrStar();;
+            int fieldWidth = ReadNumberOrStar();
             if (fieldWidth < 0) {
                 _opts.FieldWidth = fieldWidth * -1;
                 _opts.LeftAdj = true;
@@ -424,6 +424,9 @@ namespace IronPython.Runtime {
 
         private static readonly char[] zero = new char[] { '0' };
 
+        // With .NET Framework "F" formatting is truncated after 15 digits:
+        private static bool truncatedToString = (1.0 / 3).ToString("F17", CultureInfo.InvariantCulture) == "0.33333333333333300";
+
         // Return the new type char to use
         private char AdjustForG(char type, double v) {
             if (type != 'G' && type != 'g')
@@ -456,27 +459,34 @@ namespace IronPython.Runtime {
                     _opts.Precision = mantissa.Length - 2;
                 }
             } else {
-                // "0.000ddddd" is allowed when the precision is 5. The 3 leading zeros are not counted
-                int numberDecimalDigits = _opts.Precision;
-                if (absV < 1e-3) numberDecimalDigits += 3;
-                else if (absV < 1e-2) numberDecimalDigits += 2;
-                else if (absV < 1e-1) numberDecimalDigits += 1;
-
-                string fixedPointForm = absV.ToString("F" + numberDecimalDigits, CultureInfo.InvariantCulture).TrimEnd(zero);
+                string fixedPointForm;
                 bool convertType = true;
-                if (numberDecimalDigits > 15) {
-                    // System.Double(0.33333333333333331).ToString("F17") == "0.33333333333333300"
-                    string fixedPointFormG = absV.ToString("G" + numberDecimalDigits, CultureInfo.InvariantCulture).TrimEnd(zero);
-                    if (fixedPointFormG.Length > fixedPointForm.Length) {
-                        fixedPointForm = fixedPointFormG;
-                        convertType = false;
+                if (truncatedToString) {
+                    // "0.000ddddd" is allowed when the precision is 5. The 3 leading zeros are not counted
+                    int numberDecimalDigits = _opts.Precision;
+                    if (absV < 1e-3) numberDecimalDigits += 3;
+                    else if (absV < 1e-2) numberDecimalDigits += 2;
+                    else if (absV < 1e-1) numberDecimalDigits += 1;
+
+                    fixedPointForm = absV.ToString("F" + numberDecimalDigits, CultureInfo.InvariantCulture).TrimEnd(zero);
+                    if (numberDecimalDigits > 15) {
+                        // System.Double(0.33333333333333331).ToString("F17") == "0.33333333333333300"
+                        string fixedPointFormG = absV.ToString("G" + _opts.Precision, CultureInfo.InvariantCulture);
+                        if (fixedPointFormG.Length > fixedPointForm.Length) {
+                            fixedPointForm = fixedPointFormG;
+                            convertType = false;
+                        }
                     }
+                }
+                else {
+                    fixedPointForm = absV.ToString("G" + _opts.Precision, CultureInfo.InvariantCulture);
                 }
                 if (convertType) {
                     type = (type == 'G') ? 'F' : 'f';
 
                     // For f/F formatting, precision means the number of digits after the decimal point.
-                    string fraction = fixedPointForm.Substring(fixedPointForm.IndexOf('.') + 1);
+                    var decimalPointIdx = fixedPointForm.IndexOf('.');
+                    string fraction = decimalPointIdx == -1 ? string.Empty : fixedPointForm.Substring(decimalPointIdx + 1);
                     if (absV < 1.0) {
                         _opts.Precision = fraction.Length;
                     } else {
@@ -494,12 +504,9 @@ namespace IronPython.Runtime {
             if (!Converter.TryConvertToDouble(_opts.Value, out v))
                 throw PythonOps.TypeError("float argument required");
 
-            // scientific exponential format 
-            Debug.Assert(type == 'E' || type == 'e' ||
-                // floating point decimal
-                         type == 'F' || type == 'f' ||
-                // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
-                         type == 'G' || type == 'g');
+            Debug.Assert(type == 'E' || type == 'e' || // scientific exponential format
+                         type == 'F' || type == 'f' || // floating point decimal
+                         type == 'G' || type == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
 
             bool forceDot = false;
             // update our precision first...
@@ -737,7 +744,7 @@ namespace IronPython.Runtime {
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
             var str = (type == 'e' || type == 'E') ?
-                adjustExponent(string.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)):
+                adjustExponent(string.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)) :
                 string.Format(_nfi, "{0:" + type + "}", val);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
@@ -970,7 +977,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static readonly long NegativeZeroBits =  BitConverter.DoubleToInt64Bits(-0.0);
+        private static readonly long NegativeZeroBits = BitConverter.DoubleToInt64Bits(-0.0);
 
         internal static bool IsNegativeZero(double x) {
             // -0.0 == 0.0 is True, so detecting -0.0 uses memory representation

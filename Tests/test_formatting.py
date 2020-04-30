@@ -424,7 +424,7 @@ class FormattingTest(IronPythonTestCase):
                 self.assertNotEqual(fmt % arg, rhs, "line " + str(i+1))
                 continue
             self.assertEqual(fmt % arg, rhs, "line " + str(i+1))
-            if math.copysign(1.0, arg) > 0.0:
+            if not math.isnan(arg) and math.copysign(1.0, arg) > 0.0:
                 self.assertEqual(fmt % -arg, '-' + rhs)
 
 run_test(__name__)

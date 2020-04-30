@@ -21,6 +21,8 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using RegExpMatch = System.Text.RegularExpressions.Match;
+
 [assembly: PythonModule("re", typeof(IronPython.Modules.PythonRegex))]
 namespace IronPython.Modules {
 
@@ -344,7 +346,7 @@ namespace IronPython.Modules {
                     MatchCollection matches = _re.Matches(theStr);
                     int lastPos = 0; // is either start of the string, or first position *after* the last match
                     int nSplits = 0; // how many splits have occurred?
-                    foreach (System.Text.RegularExpressions.Match m in matches) {
+                    foreach (RegExpMatch m in matches) {
                         if (m.Length > 0) {
                             // add substring from lastPos to beginning of current match
                             result.AddNoLock(theStr.Substring(lastPos, m.Index - lastPos));
@@ -382,11 +384,11 @@ namespace IronPython.Modules {
                     }
                 }
 
-                System.Text.RegularExpressions.Match prev = null;
+                RegExpMatch prev = null;
                 string input = ValidateString(@string, nameof(@string));
                 return _re.Replace(
                     input,
-                    delegate (System.Text.RegularExpressions.Match match) {
+                    delegate (RegExpMatch match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && prev != null &&
@@ -418,11 +420,11 @@ namespace IronPython.Modules {
                     }
                 }
 
-                System.Text.RegularExpressions.Match prev = null;
+                RegExpMatch prev = null;
                 string input = ValidateString(@string, nameof(@string));
                 res = _re.Replace(
                     input,
-                    delegate (System.Text.RegularExpressions.Match match) {
+                    delegate (RegExpMatch match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && prev != null &&
@@ -496,27 +498,27 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class Match {
-            private readonly System.Text.RegularExpressions.Match _m;
+            private readonly RegExpMatch _m;
             private int _lastindex = -1;
 
             #region Internal makers
 
-            internal static Match make(System.Text.RegularExpressions.Match m, Pattern pattern, string input) {
+            internal static Match make(RegExpMatch m, Pattern pattern, string input) {
                 if (m.Success) return new Match(m, pattern, input, 0, input.Length);
                 return null;
             }
 
-            internal static Match make(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match make(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static Match makeMatch(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match makeMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success && m.Index == offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static Match makeFullMatch(System.Text.RegularExpressions.Match m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match makeFullMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success && m.Index == offset && m.Length == endpos - offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
@@ -525,13 +527,13 @@ namespace IronPython.Modules {
 
             #region Public ctors
 
-            public Match(System.Text.RegularExpressions.Match m, Pattern pattern, string text) {
+            public Match(RegExpMatch m, Pattern pattern, string text) {
                 _m = m;
                 re = pattern;
                 @string = text;
             }
 
-            public Match(System.Text.RegularExpressions.Match m, Pattern pattern, string text, int pos, int endpos) {
+            public Match(RegExpMatch m, Pattern pattern, string text, int pos, int endpos) {
                 _m = m;
                 re = pattern;
                 @string = text;
@@ -1083,7 +1085,7 @@ namespace IronPython.Modules {
 
         private static string GetRandomString() => r.Next(int.MaxValue / 2, int.MaxValue).ToString();
 
-        private static string UnescapeGroups(System.Text.RegularExpressions.Match m, string text) {
+        private static string UnescapeGroups(RegExpMatch m, string text) {
             for (int i = 0; i < text.Length; i++) {
                 if (text[i] == '\\') {
                     StringBuilder sb = new StringBuilder(text, 0, i, text.Length);

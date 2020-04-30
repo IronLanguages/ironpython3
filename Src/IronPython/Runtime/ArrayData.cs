@@ -24,6 +24,7 @@ namespace IronPython.Runtime {
         ArrayData Multiply(int count);
         new bool Remove(object? item);
         void Reverse();
+        Span<byte> AsByteSpan();
     }
 
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
@@ -247,6 +248,9 @@ namespace IronPython.Runtime {
 
         public void Reverse()
             => Array.Reverse(_items, 0, _size);
+
+        public Span<byte> AsByteSpan()
+            => MemoryMarshal.AsBytes(_items.AsSpan(0, _size));
 
         private static bool TryConvert([NotNullWhen(true)]object? value, out T result) {
             if (value is null) {

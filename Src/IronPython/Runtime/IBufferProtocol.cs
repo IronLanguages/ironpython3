@@ -72,5 +72,9 @@ namespace IronPython.Runtime {
         PythonList ToList(int start, int? end);
 
         ReadOnlyMemory<byte> ToMemory();
+
+        ReadOnlySpan<byte> AsReadOnlySpan();
+
+        Span<byte> AsSpan();
     }
 }

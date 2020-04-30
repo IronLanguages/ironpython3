@@ -1109,6 +1109,12 @@ namespace IronPython.Runtime {
             return _bytes.AsMemory();
         }
 
+        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+            => _bytes;
+
+        Span<byte> IPythonBuffer.AsSpan()
+            => throw new InvalidOperationException("bytes object is not writable");
+
         #endregion
     }
 }

@@ -5,6 +5,7 @@
     <BaseAddress>885063680</BaseAddress>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">

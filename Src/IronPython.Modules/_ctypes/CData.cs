@@ -158,6 +158,12 @@ namespace IronPython.Modules {
                 return GetBytes(0, NativeType.Size);
             }
 
+            unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
+            unsafe Span<byte> IPythonBuffer.AsSpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
             #endregion
         }
     }

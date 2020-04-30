@@ -1567,7 +1567,7 @@ namespace IronPython.Runtime {
 
         public bool __eq__(CodeContext context, [NotNull]IBufferProtocol value) {
             using (IPythonBuffer buf = value.GetBuffer()) {
-                return Equals(buf.ToBytes(0, null));
+                return Equals(buf.AsReadOnlySpan());
             }
         }
 
@@ -1604,6 +1604,25 @@ namespace IronPython.Runtime {
 
         private bool Equals(IList<byte> other) {
             if (Count != other.Count) {
+                return false;
+            } else if (Count == 0) {
+                // 2 empty ByteArrays are equal
+                return true;
+            }
+
+            lock (this) {
+                for (int i = 0; i < Count; i++) {
+                    if (_bytes[i] != other[i]) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private bool Equals(ReadOnlySpan<byte> other) {
+            if (Count != other.Length) {
                 return false;
             } else if (Count == 0) {
                 // 2 empty ByteArrays are equal
@@ -1689,6 +1708,14 @@ namespace IronPython.Runtime {
 
         ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
             return _bytes.Data.AsMemory(0, _bytes.Count);
+        }
+
+        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan() {
+            return _bytes.Data.AsSpan(0, _bytes.Count);
+        }
+
+        Span<byte> IPythonBuffer.AsSpan() {
+            return _bytes.Data.AsSpan(0, _bytes.Count);
         }
 
         #endregion

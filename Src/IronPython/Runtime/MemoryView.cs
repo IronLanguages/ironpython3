@@ -808,6 +808,22 @@ namespace IronPython.Runtime {
             }
         }
 
+        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan() {
+            CheckBuffer();
+            if (_step != 1) throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+
+            return _end.HasValue ? _buffer.AsReadOnlySpan().Slice(_start, _end.Value - _start) : _buffer.AsReadOnlySpan().Slice(_start);
+        }
+
+        Span<byte> IPythonBuffer.AsSpan() {
+            if (_isReadOnly) throw new InvalidOperationException("memoryview: object is not writable");
+
+            CheckBuffer();
+            if (_step != 1) throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+
+            return _end.HasValue ? _buffer.AsSpan().Slice(_start, _end.Value - _start) : _buffer.AsSpan().Slice(_start);
+        }
+
         #endregion
     }
 }

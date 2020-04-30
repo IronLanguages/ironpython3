@@ -1213,6 +1213,12 @@ namespace IronPython.Modules {
                 return ToByteArray().AsMemory();
             }
 
+            ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                => _data.AsByteSpan();
+
+            Span<byte> IPythonBuffer.AsSpan()
+                => _data.AsByteSpan();
+
             #endregion
         }
 

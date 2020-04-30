@@ -866,6 +866,7 @@ namespace IronPython.Modules {
 
         private static RegexOptions FlagsToOption(ReFlags flags) {
             RegexOptions opts = RegexOptions.None;
+            if ((flags & ReFlags.ASCII) != 0) opts |= RegexOptions.ECMAScript;
             if ((flags & ReFlags.IGNORECASE) != 0) opts |= RegexOptions.IgnoreCase;
             if ((flags & ReFlags.MULTILINE) != 0) opts |= RegexOptions.Multiline;
             if ((flags & ReFlags.LOCALE) == 0) opts &= ~RegexOptions.CultureInvariant;

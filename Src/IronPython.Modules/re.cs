@@ -359,7 +359,7 @@ namespace IronPython.Modules {
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = int.MaxValue;
 
-                string replacement = ValidateString(repl);
+                string replacement = ValidateReplacement(repl);
 
                 RegExpMatch prev = null;
                 string input = ValidateString(@string);
@@ -387,7 +387,7 @@ namespace IronPython.Modules {
 
                 int totalCount = 0;
                 string res;
-                string replacement = ValidateString(repl);
+                string replacement = ValidateReplacement(repl);
 
                 RegExpMatch prev = null;
                 string input = ValidateString(@string);
@@ -496,6 +496,40 @@ namespace IronPython.Modules {
                     }
                 } else {
                     throw PythonOps.TypeError("pattern must be a string or compiled pattern");
+                }
+                return str;
+            }
+
+            private string ValidateReplacement(object repl) {
+                string str = null;
+                if (pattern is Bytes) {
+                    switch (repl) {
+                        case IBufferProtocol bufferProtocol:
+                            str = bufferProtocol.ToBytes(0, null).MakeString();
+                            break;
+                        case IList<byte> b:
+                            str = b.MakeString();
+                            break;
+                        case string _:
+                        case ExtensibleString _:
+                            throw PythonOps.TypeError($"expected a bytes-like object, {PythonTypeOps.GetName(repl)} found");
+                        default:
+                            break;
+                    }
+                } else if (pattern is string) {
+                    switch (repl) {
+                        case string s:
+                            str = s;
+                            break;
+                        case ExtensibleString es:
+                            str = es;
+                            break;
+                        case IBufferProtocol _:
+                        case IList<byte> _:
+                            throw PythonOps.TypeError($"expected str instance, {PythonTypeOps.GetName(repl)} found");
+                        default:
+                            break;
+                    }
                 }
                 return str;
             }

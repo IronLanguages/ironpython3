@@ -360,9 +360,9 @@ class ReTests(unittest.TestCase):
             self.assertEqual(re.fullmatch(r"a|ab", string).span(), (0, 2))
         for string in b"ab", B(b"ab"), bytearray(b"ab"), memoryview(b"ab"):
             self.assertEqual(re.fullmatch(br"a|ab", string).span(), (0, 2))
-        for a, b in "\xe0\xdf", "\u0430\u0431", "\U0001d49c\U0001d49e":
+        for a, b in "\xe0\xdf", "\u0430\u0431", ("\U0001d49c", "\U0001d49e"): # https://github.com/IronLanguages/ironpython3/issues/252
             r = r"%s|%s" % (a, a + b)
-            self.assertEqual(re.fullmatch(r, a + b).span(), (0, 2))
+            self.assertEqual(re.fullmatch(r, a + b).span(), (0, len(a + b)))
         self.assertEqual(re.fullmatch(r".*?$", "abc").span(), (0, 3))
         self.assertEqual(re.fullmatch(r".*?", "abc").span(), (0, 3))
         self.assertEqual(re.fullmatch(r"a.*?b", "ab").span(), (0, 2))

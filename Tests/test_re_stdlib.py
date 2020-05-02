@@ -98,7 +98,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_re_escape_non_ascii'))
         #suite.addTest(test.test_re.ReTests('test_re_escape_non_ascii_bytes'))
         #suite.addTest(test.test_re.ReTests('test_re_findall'))
-        #suite.addTest(test.test_re.ReTests('test_re_fullmatch'))
+        suite.addTest(test.test_re.ReTests('test_re_fullmatch'))
         suite.addTest(test.test_re.ReTests('test_re_groupref'))
         suite.addTest(test.test_re.ReTests('test_re_groupref_exists'))
         suite.addTest(test.test_re.ReTests('test_re_match'))

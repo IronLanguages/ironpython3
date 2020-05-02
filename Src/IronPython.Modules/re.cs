@@ -592,8 +592,6 @@ namespace IronPython.Modules {
 
             #region Public API Surface
 
-            private Group GetGroup(object group) => _m.Groups[GetGroupIndex(group)];
-
             public int end() => _m.Index + _m.Length;
 
             public int start() => _m.Index;
@@ -605,10 +603,7 @@ namespace IronPython.Modules {
 
             public int end(object group) {
                 var g = GetGroup(group);
-                if (!g.Success) {
-                    return -1;
-                }
-                return g.Index + g.Length;
+                return g.Success ? g.Index + g.Length : -1;
             }
 
             public object group(object index, params object[] additional) {
@@ -617,30 +612,25 @@ namespace IronPython.Modules {
                 }
 
                 object[] res = new object[additional.Length + 1];
-                var g = GetGroup(index);
-                res[0] = g.Success ? g.Value : null;
+                res[0] = GetGroupValue(index);
                 for (int i = 1; i < res.Length; i++) {
-                    g = GetGroup(additional[i - 1]);
-                    res[i] = g.Success ? g.Value : null;
+                    res[i] = GetGroupValue(additional[i - 1]);
                 }
                 return PythonTuple.MakeTuple(res);
             }
 
-            public string group(object index) {
-                var g = GetGroup(index);
-                return g.Success ? g.Value : null;
-            }
+            public object group(object index)
+                => GetGroupValue(index);
 
-            public string group() => group(0);
+            public object group() => group(0);
 
-            [return: SequenceTypeInfo(typeof(string))]
             public PythonTuple groups() => groups(null);
 
             public PythonTuple groups(object @default) {
                 object[] ret = new object[_m.Groups.Count - 1];
-                for (int i = 1; i < _m.Groups.Count; i++) {
-                    var g = _m.Groups[i];
-                    ret[i - 1] = g.Success ? g.Value : @default;
+                for (int i = 0; i < ret.Length; i++) {
+                    var g = _m.Groups[i + 1];
+                    ret[i] = GetGroupValue(g, @default);
                 }
                 return PythonTuple.MakeTuple(ret);
             }
@@ -698,10 +688,9 @@ namespace IronPython.Modules {
                             throw PythonOps.TypeError($"expected string or bytes-like object");
                     }
                 }
-            }
 
-            [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict() => groupdict(null);
+                void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
+            }
 
             private static bool IsGroupNumber(string name) {
                 foreach (char c in name) {
@@ -710,22 +699,15 @@ namespace IronPython.Modules {
                 return true;
             }
 
-            [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict([NotNull]string value) => groupdict((object)value);
-
             [return: DictionaryTypeInfo(typeof(string), typeof(object))]
-            public PythonDictionary groupdict(object value) {
+            public PythonDictionary groupdict(object @default = null) {
                 string[] groupNames = this.re._re.GetGroupNames();
                 Debug.Assert(groupNames.Length == this._m.Groups.Count);
                 PythonDictionary d = new PythonDictionary();
                 for (int i = 0; i < groupNames.Length; i++) {
                     if (IsGroupNumber(groupNames[i])) continue; // python doesn't report group numbers
-
-                    if (_m.Groups[i].Captures.Count != 0) {
-                        d[groupNames[i]] = _m.Groups[i].Value;
-                    } else {
-                        d[groupNames[i]] = value;
-                    }
+                    var g = _m.Groups[i];
+                    d[groupNames[i]] = GetGroupValue(g, @default);
                 }
                 return d;
             }
@@ -809,24 +791,37 @@ namespace IronPython.Modules {
 
             #region Private helper functions
 
-            private void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
+            private Group GetGroup(object group) {
+                return _m.Groups[GetGroupIndex(group)];
 
-            private int GetGroupIndex(object group) {
-                int grpIndex;
-                if (!Converter.TryConvertToInt32(group, out grpIndex)) {
-                    if (group is string s) {
-                        grpIndex = re._re.GroupNumberFromName(s);
-                    } else if (group is ExtensibleString es) {
-                        grpIndex = re._re.GroupNumberFromName(es);
-                    } else {
-                        grpIndex = -1;
+                int GetGroupIndex(object group) {
+                    int grpIndex;
+                    if (!Converter.TryConvertToInt32(group, out grpIndex)) {
+                        if (group is string s) {
+                            grpIndex = re._re.GroupNumberFromName(s);
+                        } else if (group is ExtensibleString es) {
+                            grpIndex = re._re.GroupNumberFromName(es);
+                        } else {
+                            grpIndex = -1;
+                        }
                     }
+                    if (grpIndex < 0 || grpIndex >= _m.Groups.Count) {
+                        throw PythonOps.IndexError("no such group");
+                    }
+                    return grpIndex;
                 }
-                if (grpIndex < 0 || grpIndex >= _m.Groups.Count) {
-                    throw PythonOps.IndexError("no such group");
-                }
-                return grpIndex;
             }
+
+            private object GetGroupValue(Group g, object @default = null) {
+                if (!g.Success) return @default;
+                if (re.pattern is Bytes) {
+                    return Bytes.Make(g.Value.MakeByteArray());
+                }
+                return g.Value;
+            }
+
+            private object GetGroupValue(object group, object @default = null)
+                => GetGroupValue(GetGroup(group), @default);
 
             #endregion
         }

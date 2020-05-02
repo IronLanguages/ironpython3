@@ -179,7 +179,7 @@ namespace IronPython.Modules {
 
             public Match match(object @string) {
                 string input = ValidateString(@string);
-                return Match.makeMatch(_re.Match(input), this, input, 0, input.Length);
+                return Match.MakeMatch(_re.Match(input), this, input, 0, input.Length);
             }
 
             private static int FixPosition(string text, int position) {
@@ -192,14 +192,14 @@ namespace IronPython.Modules {
             public Match match(object @string, int pos) {
                 string input = ValidateString(@string);
                 pos = FixPosition(input, pos);
-                return Match.makeMatch(_re.Match(input, pos), this, input, pos, input.Length);
+                return Match.MakeMatch(_re.Match(input, pos), this, input, pos, input.Length);
             }
 
             public Match match(object @string, [DefaultParameterValue(0)]int pos, int endpos) {
                 string input = ValidateString(@string);
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);
-                return Match.makeMatch(_re.Match(input.Substring(0, endpos), pos), this, input, pos, endpos);
+                return Match.MakeMatch(_re.Match(input.Substring(0, endpos), pos), this, input, pos, endpos);
             }
 
             private Regex _re_fullmatch;
@@ -218,25 +218,25 @@ namespace IronPython.Modules {
                 string input = ValidateString(@string);
                 pos = FixPosition(input, pos);
 
-                return Match.makeFullMatch(GetRegexFullMatch(context).Match(input, pos), this, input, pos, input.Length);
+                return Match.MakeFullMatch(GetRegexFullMatch(context).Match(input, pos), this, input, pos, input.Length);
             }
 
             public Match fullmatch(CodeContext/*!*/ context, object @string, [DefaultParameterValue(0)]int pos, int endpos) {
                 string input = ValidateString(@string);
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);
-                return Match.makeFullMatch(GetRegexFullMatch(context).Match(input.Substring(0, endpos), pos), this, input, pos, endpos);
+                return Match.MakeFullMatch(GetRegexFullMatch(context).Match(input.Substring(0, endpos), pos), this, input, pos, endpos);
             }
 
             public Match search(object @string) {
                 string input = ValidateString(@string);
-                return Match.make(_re.Match(input), this, input);
+                return Match.Make(_re.Match(input), this, input);
             }
 
             public Match search(object @string, int pos) {
                 string input = ValidateString(@string);
                 if (pos < 0) pos = 0;
-                return Match.make(_re.Match(input, pos), this, input);
+                return Match.Make(_re.Match(input, pos), this, input);
             }
 
             public Match search(object @string, int pos, int endpos) {
@@ -244,7 +244,7 @@ namespace IronPython.Modules {
                 if (pos < 0) pos = 0;
                 if (endpos < pos) return null;
                 if (endpos < input.Length) input = input.Substring(0, endpos);
-                return Match.make(_re.Match(input, pos), this, input);
+                return Match.Make(_re.Match(input, pos), this, input);
             }
 
             public PythonList findall(CodeContext/*!*/ context, object @string, int pos = 0, object endpos = null) {
@@ -375,7 +375,7 @@ namespace IronPython.Modules {
                         prev = match;
 
                         if (replacement != null) return UnescapeGroups(match, replacement);
-                        return PythonCalls.Call(context, repl, Match.make(match, this, input)) as string;
+                        return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
                     },
                     count);
             }
@@ -405,7 +405,7 @@ namespace IronPython.Modules {
                         totalCount++;
                         if (replacement != null) return UnescapeGroups(match, replacement);
 
-                        return PythonCalls.Call(context, repl, Match.make(match, this, input)) as string;
+                        return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
                     },
                     count);
 
@@ -516,22 +516,22 @@ namespace IronPython.Modules {
 
             #region Internal makers
 
-            internal static Match make(RegExpMatch m, Pattern pattern, string input) {
+            internal static Match Make(RegExpMatch m, Pattern pattern, string input) {
                 if (m.Success) return new Match(m, pattern, input, 0, input.Length);
                 return null;
             }
 
-            internal static Match make(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match Make(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static Match makeMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match MakeMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success && m.Index == offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
 
-            internal static Match makeFullMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
+            internal static Match MakeFullMatch(RegExpMatch m, Pattern pattern, string input, int offset, int endpos) {
                 if (m.Success && m.Index == offset && m.Length == endpos - offset) return new Match(m, pattern, input, offset, endpos);
                 return null;
             }
@@ -641,11 +641,10 @@ namespace IronPython.Modules {
                             case '\\': res.Append('\\'); break;
                         }
                     }
-
                 }
                 return res.ToString();
 
-                string ValidateString(object str) {
+                static string ValidateString(object str) {
                     switch (str) {
                         case string s:
                             return s;
@@ -829,7 +828,7 @@ namespace IronPython.Modules {
 
         private static IEnumerator MatchIterator(MatchCollection matches, Pattern pattern, string input) {
             for (int i = 0; i < matches.Count; i++) {
-                yield return Match.make(matches[i], pattern, input, 0, input.Length);
+                yield return Match.Make(matches[i], pattern, input, 0, input.Length);
             }
         }
 

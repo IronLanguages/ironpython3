@@ -257,7 +257,7 @@ class ReTests(unittest.TestCase):
             self.assertTypedEqual(re.split(b"(:*)", string),
                                   [b'', b':', b'a', b':', b'b', b'::', b'c'])
         for a, b, c in ("\xe0\xdf\xe7", "\u0430\u0431\u0432",
-                        "\U0001d49c\U0001d49e\U0001d4b5"):
+                        ("\U0001d49c", "\U0001d49e", "\U0001d4b5")): # https://github.com/IronLanguages/ironpython3/issues/252
             string = ":%s:%s::%s" % (a, b, c)
             self.assertEqual(re.split(":", string), ['', a, b, '', c])
             self.assertEqual(re.split(":*", string), ['', a, b, c])

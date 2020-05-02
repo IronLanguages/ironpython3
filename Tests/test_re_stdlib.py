@@ -102,7 +102,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_re_groupref'))
         suite.addTest(test.test_re.ReTests('test_re_groupref_exists'))
         suite.addTest(test.test_re.ReTests('test_re_match'))
-        #suite.addTest(test.test_re.ReTests('test_re_split'))
+        suite.addTest(test.test_re.ReTests('test_re_split'))
         suite.addTest(test.test_re.ReTests('test_re_subn'))
         suite.addTest(test.test_re.ReTests('test_repeat_minmax'))
         #suite.addTest(test.test_re.ReTests('test_repeat_minmax_overflow'))

@@ -319,13 +319,12 @@ namespace IronPython.Modules {
                 return MatchIterator(FindAllWorker(context, input, pos, endpos), this, input);
             }
 
-            [return: SequenceTypeInfo(typeof(string))]
             public PythonList split(object @string, int maxsplit = 0) {
                 string input = ValidateString(@string);
                 PythonList result = new PythonList();
                 // fast path for negative maxSplit ( == "make no splits")
                 if (maxsplit < 0) {
-                    result.AddNoLock(input);
+                    result.AddNoLock(ToPatternType(input));
                 } else {
                     // iterate over all matches
                     MatchCollection matches = _re.Matches(input);
@@ -334,12 +333,11 @@ namespace IronPython.Modules {
                     foreach (RegExpMatch m in matches) {
                         if (m.Length > 0) {
                             // add substring from lastPos to beginning of current match
-                            result.AddNoLock(input.Substring(lastPos, m.Index - lastPos));
+                            result.AddNoLock(ToPatternType(input.Substring(lastPos, m.Index - lastPos)));
                             // if there are subgroups of the match, add their match or None
                             if (m.Groups.Count > 1)
                                 for (int i = 1; i < m.Groups.Count; i++) {
-                                    var g = m.Groups[i];
-                                    result.AddNoLock(g.Success ? g.Value : null);
+                                    result.AddNoLock(GetGroupValue(m.Groups[i]));
                                 }
                             // update lastPos, nSplits
                             lastPos = m.Index + m.Length;
@@ -349,7 +347,7 @@ namespace IronPython.Modules {
                         }
                     }
                     // add tail following last match
-                    result.AddNoLock(input.Substring(lastPos));
+                    result.AddNoLock(ToPatternType(input.Substring(lastPos)));
                 }
                 return result;
             }
@@ -533,6 +531,12 @@ namespace IronPython.Modules {
                 }
                 return str;
             }
+
+            internal object ToPatternType(string value)
+                => pattern is Bytes ? Bytes.Make(value.MakeByteArray()) : (object)value;
+
+            internal object GetGroupValue(Group g, object @default = null)
+                => g.Success ? ToPatternType(g.Value) : @default;
         }
 
         public static PythonTuple _pickle(CodeContext/*!*/ context, Pattern pattern) {
@@ -612,15 +616,15 @@ namespace IronPython.Modules {
                 }
 
                 object[] res = new object[additional.Length + 1];
-                res[0] = GetGroupValue(index);
+                res[0] = re.GetGroupValue(GetGroup(index));
                 for (int i = 1; i < res.Length; i++) {
-                    res[i] = GetGroupValue(additional[i - 1]);
+                    res[i] = re.GetGroupValue(GetGroup(additional[i - 1]));
                 }
                 return PythonTuple.MakeTuple(res);
             }
 
             public object group(object index)
-                => GetGroupValue(index);
+                => re.GetGroupValue(GetGroup(index));
 
             public object group() => group(0);
 
@@ -629,8 +633,7 @@ namespace IronPython.Modules {
             public PythonTuple groups(object @default) {
                 object[] ret = new object[_m.Groups.Count - 1];
                 for (int i = 0; i < ret.Length; i++) {
-                    var g = _m.Groups[i + 1];
-                    ret[i] = GetGroupValue(g, @default);
+                    ret[i] = re.GetGroupValue(_m.Groups[i + 1], @default);
                 }
                 return PythonTuple.MakeTuple(ret);
             }
@@ -706,8 +709,7 @@ namespace IronPython.Modules {
                 PythonDictionary d = new PythonDictionary();
                 for (int i = 0; i < groupNames.Length; i++) {
                     if (IsGroupNumber(groupNames[i])) continue; // python doesn't report group numbers
-                    var g = _m.Groups[i];
-                    d[groupNames[i]] = GetGroupValue(g, @default);
+                    d[groupNames[i]] = re.GetGroupValue(_m.Groups[i], @default);
                 }
                 return d;
             }
@@ -811,17 +813,6 @@ namespace IronPython.Modules {
                     return grpIndex;
                 }
             }
-
-            private object GetGroupValue(Group g, object @default = null) {
-                if (!g.Success) return @default;
-                if (re.pattern is Bytes) {
-                    return Bytes.Make(g.Value.MakeByteArray());
-                }
-                return g.Value;
-            }
-
-            private object GetGroupValue(object group, object @default = null)
-                => GetGroupValue(GetGroup(group), @default);
 
             #endregion
         }

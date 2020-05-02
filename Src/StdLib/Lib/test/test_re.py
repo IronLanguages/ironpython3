@@ -3,7 +3,10 @@ from test.support import verbose, run_unittest, gc_collect, bigmemtest, _2G, \
 import io
 import locale
 import re
-from re import Scanner
+try:
+    from re import Scanner
+except ImportError:
+    pass
 import sre_compile
 import sre_constants
 import sys
@@ -921,6 +924,7 @@ class ReTests(unittest.TestCase):
         self.assertIsNone(re.match(r'(?:a?)+?y', 'z'))
         self.assertIsNone(re.match(r'(?:a?){2,}?y', 'z'))
 
+    @unittest.skipIf(sys.implementation.name == 'ironpython', 'CPython impl detail')
     def test_scanner(self):
         def s_ident(scanner, token): return token
         def s_operator(scanner, token): return "op%s" % token

@@ -846,19 +846,4 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(
             re.compile(r".*?").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
 
-    def test_bytes_str_mixing(self):
-        # test_bytes_str_mixing from the StdLib - can be removed once test_re is passing
-
-        # Mixing str and bytes is disallowed
-        pat = re.compile('.')
-        bpat = re.compile(b'.')
-        self.assertRaises(TypeError, pat.match, b'b')
-        self.assertRaises(TypeError, bpat.match, 'b')
-        self.assertRaises(TypeError, pat.sub, b'b', 'c')
-        self.assertRaises(TypeError, pat.sub, 'b', b'c')
-        self.assertRaises(TypeError, pat.sub, b'b', b'c')
-        self.assertRaises(TypeError, bpat.sub, b'b', 'c')
-        self.assertRaises(TypeError, bpat.sub, 'b', b'c')
-        self.assertRaises(TypeError, bpat.sub, 'b', 'c')
-
 run_test(__name__)

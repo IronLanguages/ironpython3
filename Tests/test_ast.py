@@ -200,9 +200,14 @@ eval_tests = eval_tests_stdlib + [
   # Lambda
   "lambda x: x",
   "lambda x: (yield x)",
+  # ListComp
+  "[a for b in c for d in e for f in g]",
+  "[a for b in c for c in d]",
+  "[a for b in c for c in d if e]",
   # GeneratorExp
   "(a for b in c for d in e for f in g)",
   "(a for b in c for c in d)",
+  "(a for b in c for c in d if e)",
   # Yield
   "((yield i) for i in range(5))",
   # ellipsis
@@ -1438,8 +1443,12 @@ eval_results_stdlib = [
 eval_results = eval_results_stdlib + [
 ('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Name', (1, 10), 'x', ('Load',)))),
 ('Expression', ('Lambda', (1, 0), ('arguments', [('arg', (1, 7), 'x', None)], None, [], [], None, []), ('Yield', (1, 10 if is_cli else 11), ('Name', (1, 17), 'x', ('Load',))))),
+('Expression', ('ListComp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
+('Expression', ('ListComp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('ListComp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [('Name', (1, 28), 'e', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []), ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])])),
 ('Expression', ('GeneratorExp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [])])),
+('Expression', ('GeneratorExp', (1, 0 if is_cli else 1), ('Name', (1, 1), 'a', ('Load',)), [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []), ('comprehension', ('Name', (1, 18), 'c', ('Store',)), ('Name', (1, 23), 'd', ('Load',)), [('Name', (1, 28), 'e', ('Load',))])])),
 ('Expression', ('GeneratorExp', (1, 0 if is_cli else 1), ('Yield', (1, 1 if is_cli else 2), ('Name', (1, 8), 'i', ('Load',))), [('comprehension', ('Name', (1, 15), 'i', ('Store',)), ('Call', (1, 20), ('Name', (1, 20), 'range', ('Load',)), [('Num', (1, 26), 5)], [], None, None), [])])),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Ellipsis', (1, 1 if is_cli else 2))), ('Load',))),
 ('Expression', ('Subscript', (1, 0), ('Name', (1, 0), 'a', ('Load',)), ('Index', ('Num', (1, 1 if is_cli else 2), 1)), ('Load',))),

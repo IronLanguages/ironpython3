@@ -119,11 +119,10 @@ namespace IronPython.Modules {
         public static Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
             => GetPattern(context, pattern, flags).search(@string);
 
-        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0)
             => GetPattern(context, pattern, flags).split(@string, maxsplit);
 
-        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
+        public static object sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
             => GetPattern(context, pattern, flags).sub(context, repl, @string, count);
 
         public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
@@ -250,17 +249,9 @@ namespace IronPython.Modules {
             public PythonList findall(CodeContext/*!*/ context, object @string, int pos = 0, object endpos = null) {
                 string input = ValidateString(@string);
                 MatchCollection mc = FindAllWorker(context, input, pos, endpos);
-                return FixFindAllMatch(this, mc, FindMaker(@string));
+                return FixFindAllMatch(this, mc);
 
-                static Func<string, object> FindMaker(object input) {
-                    Func<string, object> maker = null;
-                    if (input is IList<byte>) {
-                        maker = delegate (string x) { return Bytes.Make(x.MakeByteArray()); };
-                    }
-                    return maker;
-                }
-
-                static PythonList FixFindAllMatch(Pattern pat, MatchCollection mc, Func<string, object> maker) {
+                PythonList FixFindAllMatch(Pattern pat, MatchCollection mc) {
                     object[] matches = new object[mc.Count];
                     int numgrps = pat._re.GetGroupNumbers().Length;
                     for (int i = 0; i < mc.Count; i++) {
@@ -280,19 +271,19 @@ namespace IronPython.Modules {
                                 //  the first match object...so we'll skip the first item when creating the
                                 //  tuple
                                 if (k++ != 0) {
-                                    tpl.Add(maker != null ? maker(g.Value) : g.Value);
+                                    tpl.Add(ToPatternType(g.Value));
                                 }
                             }
-                            matches[i] = PythonTuple.Make(tpl);
+                            matches[i] = PythonTuple.MakeTuple(tpl.ToArray());
                         } else if (numgrps == 2) {
                             //  at this point we have exactly one group in the pattern (including the "bonus" one given
                             //  by the CLR
                             //  skip the first match since that contains the entire match and not the group match
                             //  e.g. re.findall(r"(\w+)\s+fish\b", "green fish") will have "green fish" in the 0
                             //  index and "green" as the (\w+) group match
-                            matches[i] = maker != null ? maker(mc[i].Groups[1].Value) : mc[i].Groups[1].Value;
+                            matches[i] = ToPatternType(mc[i].Groups[1].Value);
                         } else {
-                            matches[i] = maker != null ? maker(mc[i].Value) : mc[i].Value;
+                            matches[i] = ToPatternType(mc[i].Value);
                         }
                     }
 
@@ -319,13 +310,12 @@ namespace IronPython.Modules {
                 return MatchIterator(FindAllWorker(context, input, pos, endpos), this, input);
             }
 
-            [return: SequenceTypeInfo(typeof(string))]
             public PythonList split(object @string, int maxsplit = 0) {
                 string input = ValidateString(@string);
                 PythonList result = new PythonList();
                 // fast path for negative maxSplit ( == "make no splits")
                 if (maxsplit < 0) {
-                    result.AddNoLock(input);
+                    result.AddNoLock(ToPatternType(input));
                 } else {
                     // iterate over all matches
                     MatchCollection matches = _re.Matches(input);
@@ -334,12 +324,11 @@ namespace IronPython.Modules {
                     foreach (RegExpMatch m in matches) {
                         if (m.Length > 0) {
                             // add substring from lastPos to beginning of current match
-                            result.AddNoLock(input.Substring(lastPos, m.Index - lastPos));
+                            result.AddNoLock(ToPatternType(input.Substring(lastPos, m.Index - lastPos)));
                             // if there are subgroups of the match, add their match or None
                             if (m.Groups.Count > 1)
                                 for (int i = 1; i < m.Groups.Count; i++) {
-                                    var g = m.Groups[i];
-                                    result.AddNoLock(g.Success ? g.Value : null);
+                                    result.AddNoLock(GetGroupValue(m.Groups[i]));
                                 }
                             // update lastPos, nSplits
                             lastPos = m.Index + m.Length;
@@ -349,12 +338,12 @@ namespace IronPython.Modules {
                         }
                     }
                     // add tail following last match
-                    result.AddNoLock(input.Substring(lastPos));
+                    result.AddNoLock(ToPatternType(input.Substring(lastPos)));
                 }
                 return result;
             }
 
-            public string sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
+            public object sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = int.MaxValue;
@@ -363,7 +352,7 @@ namespace IronPython.Modules {
 
                 RegExpMatch prev = null;
                 string input = ValidateString(@string);
-                return _re.Replace(
+                return ToPatternType(_re.Replace(
                     input,
                     delegate (RegExpMatch match) {
                         //  from the docs: Empty matches for the pattern are replaced 
@@ -377,10 +366,10 @@ namespace IronPython.Modules {
                         if (replacement != null) return UnescapeGroups(match, replacement);
                         return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
                     },
-                    count);
+                    count));
             }
 
-            public object subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
+            public PythonTuple subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = int.MaxValue;
@@ -533,6 +522,12 @@ namespace IronPython.Modules {
                 }
                 return str;
             }
+
+            internal object ToPatternType(string value)
+                => pattern is Bytes ? Bytes.Make(value.MakeByteArray()) : (object)value;
+
+            internal object GetGroupValue(Group g, object @default = null)
+                => g.Success ? ToPatternType(g.Value) : @default;
         }
 
         public static PythonTuple _pickle(CodeContext/*!*/ context, Pattern pattern) {
@@ -592,8 +587,6 @@ namespace IronPython.Modules {
 
             #region Public API Surface
 
-            private Group GetGroup(object group) => _m.Groups[GetGroupIndex(group)];
-
             public int end() => _m.Index + _m.Length;
 
             public int start() => _m.Index;
@@ -605,10 +598,7 @@ namespace IronPython.Modules {
 
             public int end(object group) {
                 var g = GetGroup(group);
-                if (!g.Success) {
-                    return -1;
-                }
-                return g.Index + g.Length;
+                return g.Success ? g.Index + g.Length : -1;
             }
 
             public object group(object index, params object[] additional) {
@@ -617,30 +607,24 @@ namespace IronPython.Modules {
                 }
 
                 object[] res = new object[additional.Length + 1];
-                var g = GetGroup(index);
-                res[0] = g.Success ? g.Value : null;
+                res[0] = re.GetGroupValue(GetGroup(index));
                 for (int i = 1; i < res.Length; i++) {
-                    g = GetGroup(additional[i - 1]);
-                    res[i] = g.Success ? g.Value : null;
+                    res[i] = re.GetGroupValue(GetGroup(additional[i - 1]));
                 }
                 return PythonTuple.MakeTuple(res);
             }
 
-            public string group(object index) {
-                var g = GetGroup(index);
-                return g.Success ? g.Value : null;
-            }
+            public object group(object index)
+                => re.GetGroupValue(GetGroup(index));
 
-            public string group() => group(0);
+            public object group() => group(0);
 
-            [return: SequenceTypeInfo(typeof(string))]
             public PythonTuple groups() => groups(null);
 
             public PythonTuple groups(object @default) {
                 object[] ret = new object[_m.Groups.Count - 1];
-                for (int i = 1; i < _m.Groups.Count; i++) {
-                    var g = _m.Groups[i];
-                    ret[i - 1] = g.Success ? g.Value : @default;
+                for (int i = 0; i < ret.Length; i++) {
+                    ret[i] = re.GetGroupValue(_m.Groups[i + 1], @default);
                 }
                 return PythonTuple.MakeTuple(ret);
             }
@@ -698,10 +682,9 @@ namespace IronPython.Modules {
                             throw PythonOps.TypeError($"expected string or bytes-like object");
                     }
                 }
-            }
 
-            [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict() => groupdict(null);
+                void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
+            }
 
             private static bool IsGroupNumber(string name) {
                 foreach (char c in name) {
@@ -710,22 +693,14 @@ namespace IronPython.Modules {
                 return true;
             }
 
-            [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict([NotNull]string value) => groupdict((object)value);
-
             [return: DictionaryTypeInfo(typeof(string), typeof(object))]
-            public PythonDictionary groupdict(object value) {
+            public PythonDictionary groupdict(object @default = null) {
                 string[] groupNames = this.re._re.GetGroupNames();
                 Debug.Assert(groupNames.Length == this._m.Groups.Count);
                 PythonDictionary d = new PythonDictionary();
                 for (int i = 0; i < groupNames.Length; i++) {
                     if (IsGroupNumber(groupNames[i])) continue; // python doesn't report group numbers
-
-                    if (_m.Groups[i].Captures.Count != 0) {
-                        d[groupNames[i]] = _m.Groups[i].Value;
-                    } else {
-                        d[groupNames[i]] = value;
-                    }
+                    d[groupNames[i]] = re.GetGroupValue(_m.Groups[i], @default);
                 }
                 return d;
             }
@@ -809,23 +784,25 @@ namespace IronPython.Modules {
 
             #region Private helper functions
 
-            private void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
+            private Group GetGroup(object group) {
+                return _m.Groups[GetGroupIndex(group)];
 
-            private int GetGroupIndex(object group) {
-                int grpIndex;
-                if (!Converter.TryConvertToInt32(group, out grpIndex)) {
-                    if (group is string s) {
-                        grpIndex = re._re.GroupNumberFromName(s);
-                    } else if (group is ExtensibleString es) {
-                        grpIndex = re._re.GroupNumberFromName(es);
-                    } else {
-                        grpIndex = -1;
+                int GetGroupIndex(object group) {
+                    int grpIndex;
+                    if (!Converter.TryConvertToInt32(group, out grpIndex)) {
+                        if (group is string s) {
+                            grpIndex = re._re.GroupNumberFromName(s);
+                        } else if (group is ExtensibleString es) {
+                            grpIndex = re._re.GroupNumberFromName(es);
+                        } else {
+                            grpIndex = -1;
+                        }
                     }
+                    if (grpIndex < 0 || grpIndex >= _m.Groups.Count) {
+                        throw PythonOps.IndexError("no such group");
+                    }
+                    return grpIndex;
                 }
-                if (grpIndex < 0 || grpIndex >= _m.Groups.Count) {
-                    throw PythonOps.IndexError("no such group");
-                }
-                return grpIndex;
             }
 
             #endregion
@@ -1177,7 +1154,10 @@ namespace IronPython.Modules {
                                 case 't': sb.Append('\t'); break;
                                 case '\\': sb.Append('\\'); break;
                                 case '\'': sb.Append('\''); break;
+                                case 'a': sb.Append('\a'); break;
                                 case 'b': sb.Append('\b'); break;
+                                case 'f': sb.Append('\f'); break;
+                                case 'v': sb.Append('\v'); break;
                                 case 'g':
                                     //  \g<#>, \g<name> need to be substituted by the groups they 
                                     //  matched

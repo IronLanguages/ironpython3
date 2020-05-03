@@ -22,13 +22,11 @@ namespace IronPython.Modules.Bz2 {
         /// <param name="bytes"></param>
         /// <returns></returns>
         private static byte[] ToArrayNoCopy(this IList<byte> bytes) {
-            byte[] bytesA = bytes as byte[];
-            if (bytesA != null) {
+            if (bytes is byte[] bytesA) {
                 return bytesA;
             }
 
-            Bytes bytesP = bytes as Bytes;
-            if (bytesP != null) {
+            if (bytes is Bytes bytesP) {
                 return bytesP.UnsafeByteArray;
             }
 

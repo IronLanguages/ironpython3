@@ -304,9 +304,10 @@ class ReTests(unittest.TestCase):
             xx = x * 2
             xxx = x * 3
             string = "a%sb%sc%sd" % (x, xx, xxx)
-            self.assertEqual(re.findall("%s+" % x, string), [x, xx, xxx])
-            self.assertEqual(re.findall("(%s+)" % x, string), [x, xx, xxx])
-            self.assertEqual(re.findall("(%s)(%s*)" % (x, x), string),
+            p = "(?:%s)" % x if len(x) == 2 else x # https://github.com/IronLanguages/ironpython3/issues/252
+            self.assertEqual(re.findall("%s+" % p, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s+)" % p, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s)(%s*)" % (p, p), string),
                              [(x, ""), (x, x), (x, xx)])
 
     def test_bug_117612(self):

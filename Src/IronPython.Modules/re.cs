@@ -249,17 +249,9 @@ namespace IronPython.Modules {
             public PythonList findall(CodeContext/*!*/ context, object @string, int pos = 0, object endpos = null) {
                 string input = ValidateString(@string);
                 MatchCollection mc = FindAllWorker(context, input, pos, endpos);
-                return FixFindAllMatch(this, mc, FindMaker(@string));
+                return FixFindAllMatch(this, mc);
 
-                static Func<string, object> FindMaker(object input) {
-                    Func<string, object> maker = null;
-                    if (input is IList<byte>) {
-                        maker = delegate (string x) { return Bytes.Make(x.MakeByteArray()); };
-                    }
-                    return maker;
-                }
-
-                static PythonList FixFindAllMatch(Pattern pat, MatchCollection mc, Func<string, object> maker) {
+                PythonList FixFindAllMatch(Pattern pat, MatchCollection mc) {
                     object[] matches = new object[mc.Count];
                     int numgrps = pat._re.GetGroupNumbers().Length;
                     for (int i = 0; i < mc.Count; i++) {
@@ -279,19 +271,19 @@ namespace IronPython.Modules {
                                 //  the first match object...so we'll skip the first item when creating the
                                 //  tuple
                                 if (k++ != 0) {
-                                    tpl.Add(maker != null ? maker(g.Value) : g.Value);
+                                    tpl.Add(ToPatternType(g.Value));
                                 }
                             }
-                            matches[i] = PythonTuple.Make(tpl);
+                            matches[i] = PythonTuple.MakeTuple(tpl.ToArray());
                         } else if (numgrps == 2) {
                             //  at this point we have exactly one group in the pattern (including the "bonus" one given
                             //  by the CLR
                             //  skip the first match since that contains the entire match and not the group match
                             //  e.g. re.findall(r"(\w+)\s+fish\b", "green fish") will have "green fish" in the 0
                             //  index and "green" as the (\w+) group match
-                            matches[i] = maker != null ? maker(mc[i].Groups[1].Value) : mc[i].Groups[1].Value;
+                            matches[i] = ToPatternType(mc[i].Groups[1].Value);
                         } else {
-                            matches[i] = maker != null ? maker(mc[i].Value) : mc[i].Value;
+                            matches[i] = ToPatternType(mc[i].Value);
                         }
                     }
 

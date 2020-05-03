@@ -18,7 +18,7 @@ namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
         public class BZ2Decompressor {
-            public const string __doc__ = 
+            public const string __doc__ =
 @"BZ2Decompressor() -> decompressor object
 
 Create a new decompressor object. This object may be used to decompress
@@ -33,13 +33,15 @@ decompress() function instead.
 
             public Bytes unused_data {
                 get {
+                    if (!_finished) return Bytes.Empty;
+
                     var buffer = this.input.GetBuffer();
 
                     var unusedCount = this.input.Length - this.lastSuccessfulPosition;
                     var unused = new byte[unusedCount];
 
                     Array.Copy(buffer, this.lastSuccessfulPosition, unused, 0, unusedCount);
-                    
+
                     return Bytes.Make(unused);
                 }
             }
@@ -65,7 +67,7 @@ unused_data attribute.
                 if (InitializeBZ2Stream()) {
                     long memoryPosition = this.input.Position;
                     object state = this.bz2Input.DumpState();
-                    
+
                     try {
                         // this is the same as what Read() does, so it's unlikely to be
                         // any slower. However, using blocks would require fewer state saves,
@@ -77,7 +79,7 @@ unused_data attribute.
                             memoryPosition = this.input.Position;
                             state = this.bz2Input.DumpState();
                         }
-                        
+
                         this.lastSuccessfulPosition = this.input.Position;
                         this._finished = true;
                     } catch (IOException) {
@@ -90,6 +92,8 @@ unused_data attribute.
 
                 return new Bytes(output);
             }
+
+            public bool eof => _finished;
 
             private bool InitializeMemoryStream(byte[] data) {
                 if (this.input != null) {
@@ -111,7 +115,10 @@ unused_data attribute.
                 try {
                     this.bz2Input = new BZip2InputStream(this.input, true);
                     return true;
-                } catch (IOException) {
+                } catch (IOException ex) {
+                    if (ex.Message != "unexpected end of stream") {
+                        throw PythonOps.OSError(ex.Message);
+                    }
                     // need to rewind the memory buffer so that the next attempt will start from
                     // the beginning of the block
                     this.input.Position = lastSuccessfulPosition;
@@ -129,7 +136,7 @@ unused_data attribute.
                 long position = this.input.Position;
                 this.input.Position = this.input.Length;
 
-                this.input.Write(bytes.ToArray(), 0, bytes.Length);
+                this.input.Write(bytes, 0, bytes.Length);
 
                 // restore the position so that bz2 doesn't get confused
                 this.input.Position = position;
@@ -137,4 +144,3 @@ unused_data attribute.
         }
     }
 }
-

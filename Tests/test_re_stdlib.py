@@ -126,11 +126,6 @@ def load_tests(loader, standard_tests, pattern):
         return suite
         
     else:
-        z = loader.loadTestsFromModule(test.test_re, pattern)
-        for y in z:
-            for t in y:
-                print(t)
-        return None
         return loader.loadTestsFromModule(test.test_re, pattern)
 
 run_test(__name__)

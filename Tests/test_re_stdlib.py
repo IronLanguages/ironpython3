@@ -32,7 +32,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_anyall'))
         #suite.addTest(test.test_re.ReTests('test_ascii_and_unicode_flag'))
         #suite.addTest(test.test_re.ReTests('test_backref_group_name_in_exception'))
-        #suite.addTest(test.test_re.ReTests('test_basic_re_sub'))
+        suite.addTest(test.test_re.ReTests('test_basic_re_sub'))
         suite.addTest(test.test_re.ReTests('test_big_codesize'))
         suite.addTest(test.test_re.ReTests('test_bigcharset'))
         suite.addTest(test.test_re.ReTests('test_bug_113254'))

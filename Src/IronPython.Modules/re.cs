@@ -119,11 +119,10 @@ namespace IronPython.Modules {
         public static Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
             => GetPattern(context, pattern, flags).search(@string);
 
-        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0)
             => GetPattern(context, pattern, flags).split(@string, maxsplit);
 
-        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
+        public static object sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
             => GetPattern(context, pattern, flags).sub(context, repl, @string, count);
 
         public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
@@ -352,7 +351,7 @@ namespace IronPython.Modules {
                 return result;
             }
 
-            public string sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
+            public object sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = int.MaxValue;
@@ -361,7 +360,7 @@ namespace IronPython.Modules {
 
                 RegExpMatch prev = null;
                 string input = ValidateString(@string);
-                return _re.Replace(
+                return ToPatternType(_re.Replace(
                     input,
                     delegate (RegExpMatch match) {
                         //  from the docs: Empty matches for the pattern are replaced 
@@ -375,10 +374,10 @@ namespace IronPython.Modules {
                         if (replacement != null) return UnescapeGroups(match, replacement);
                         return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
                     },
-                    count);
+                    count));
             }
 
-            public object subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
+            public PythonTuple subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = int.MaxValue;
@@ -1163,7 +1162,10 @@ namespace IronPython.Modules {
                                 case 't': sb.Append('\t'); break;
                                 case '\\': sb.Append('\\'); break;
                                 case '\'': sb.Append('\''); break;
+                                case 'a': sb.Append('\a'); break;
                                 case 'b': sb.Append('\b'); break;
+                                case 'f': sb.Append('\f'); break;
+                                case 'v': sb.Append('\v'); break;
                                 case 'g':
                                     //  \g<#>, \g<name> need to be substituted by the groups they 
                                     //  matched

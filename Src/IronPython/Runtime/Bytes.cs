@@ -433,6 +433,7 @@ namespace IronPython.Runtime {
             return Make(bytes);
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonTuple partition([BytesLike, NotNull]IList<byte> sep) {
             if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
@@ -559,6 +560,7 @@ namespace IronPython.Runtime {
             return new Bytes(ret);
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonTuple rpartition([BytesLike, NotNull]IList<byte> sep) {
             if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
@@ -578,6 +580,7 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(obj);
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             return _bytes.RightSplit(sep, maxsplit, x => new Bytes(new List<byte>(x)));
         }
@@ -593,14 +596,17 @@ namespace IronPython.Runtime {
             return res == null ? this.AsBytes() : new Bytes(res);
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
             return _bytes.Split(sep, maxsplit, x => new Bytes(x));
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonList splitlines() {
             return splitlines(false);
         }
 
+        [return: SequenceTypeInfo(typeof(Bytes))]
         public PythonList splitlines(bool keepends) {
             return _bytes.SplitLines(keepends, x => new Bytes(x));
         }

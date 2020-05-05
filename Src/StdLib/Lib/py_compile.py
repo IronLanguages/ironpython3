@@ -103,6 +103,8 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1):
     the resulting file would be regular and thus not the same type of file as
     it was previously.
     """
+    if sys.implementation.name == "ironpython": return # not supported on IronPython, so return unconditionally
+
     if cfile is None:
         if optimize >= 0:
             cfile = importlib.util.cache_from_source(file,

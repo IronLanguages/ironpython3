@@ -1525,19 +1525,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal bool TryGetNonCustomMember(CodeContext context, object instance, string name, out object value) {
-            PythonType pt;
-            IPythonObject sdo;
             bool hasValue = false;
             value = null;
 
             // first see if we have the value in the instance dictionary...
             // TODO: Instance checks should also work on functions, 
-            if ((pt = instance as PythonType) != null) {
+            if (instance is PythonType pt) {
                 PythonTypeSlot pts;
                 if (pt.TryLookupSlot(context, name, out pts)) {
                     hasValue = pts.TryGetValue(context, null, this, out value);
                 }
-            } else if ((sdo = instance as IPythonObject) != null) {
+            } else if (instance is IPythonObject sdo) {
                 PythonDictionary dict = sdo.Dict;
 
                 hasValue = dict != null && dict.TryGetValue(name, out value);
@@ -1550,11 +1548,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
 
-                PythonTypeSlot slot;
-                object newValue;
-                if (dt.TryLookupSlot(context, name, out slot)) {
+                if (dt.TryLookupSlot(context, name, out PythonTypeSlot slot)) {
                     if (!hasValue || slot.IsSetDescriptor(context, this)) {
-                        if (slot.TryGetValue(context, instance, this, out newValue))
+                        if (slot.TryGetValue(context, instance, this, out object newValue))
                             value = newValue;
                             return true;
                     }

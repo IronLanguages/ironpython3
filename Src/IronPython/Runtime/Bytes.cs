@@ -23,7 +23,7 @@ using IronPython.Hosting;
 
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
-    public class Bytes : IList<byte>, IReadOnlyList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol, IPythonBuffer {
+    public class Bytes : IList<byte>, IReadOnlyList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
         private readonly byte[] _bytes;
         internal static readonly Bytes Empty = new Bytes();
 
@@ -1041,52 +1041,62 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IBufferProtocol Members
+        #region IBufferProtocol Support
 
         IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
             if (flags.HasFlag(BufferFlags.Writable))
                 throw PythonOps.BufferError("Object is not writable.");
 
-            return this;
+            return new BytesView(this, flags);
         }
 
-        void IDisposable.Dispose() { }
+        private class BytesView : IPythonBuffer {
+            private readonly BufferFlags _flags;
+            private readonly Bytes _exporter;
 
-        object IPythonBuffer.Object => this;
-
-        bool IPythonBuffer.IsReadOnly => true;
-
-        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan() => _bytes;
-
-        Span<byte> IPythonBuffer.AsSpan()
-            => throw new InvalidOperationException("bytes object is not writable");
-
-        int IPythonBuffer.Offset => 0;
-
-        string? IPythonBuffer.Format => "B";  // TODO: provide null when appropriate
-
-        int IPythonBuffer.ItemCount => _bytes.Length;
-
-        int IPythonBuffer.ItemSize => 1;
-
-        int IPythonBuffer.NumOfDims => 1;
-
-        IReadOnlyList<int>? IPythonBuffer.Shape => null;
-
-        IReadOnlyList<int>? IPythonBuffer.Strides => null;
-
-        IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
-
-        Bytes IPythonBuffer.ToBytes(int start, int? end) {
-            if (start == 0 && end == null) {
-                return this;
+            public BytesView(Bytes bytes, BufferFlags flags) {
+                _exporter = bytes;
+                _flags = flags;
             }
 
-            return this[new Slice(start, end)];
-        }
+            public void Dispose() { }
 
-        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-            return _bytes.AsMemory();
+            public object Object => _exporter;
+
+            public bool IsReadOnly => true;
+
+            public ReadOnlySpan<byte> AsReadOnlySpan() => _exporter._bytes;
+
+            public Span<byte> AsSpan()
+                => throw new InvalidOperationException("bytes object is not writable");
+
+            public int Offset => 0;
+
+            public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+            public int ItemCount => _exporter._bytes.Length;
+
+            public int ItemSize => 1;
+
+            public int NumOfDims => 1;
+
+            public IReadOnlyList<int>? Shape => null;
+
+            public IReadOnlyList<int>? Strides => null;
+
+            public IReadOnlyList<int>? SubOffsets => null;
+
+            public Bytes ToBytes(int start, int? end) {
+                if (start == 0 && end == null) {
+                    return _exporter;
+                }
+
+                return _exporter[new Slice(start, end)];
+            }
+
+            public ReadOnlyMemory<byte> ToMemory() {
+                return _exporter.AsMemory();
+            }
         }
 
         #endregion

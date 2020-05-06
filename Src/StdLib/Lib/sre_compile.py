@@ -64,7 +64,7 @@ _equivalences = (
 )
 
 # Maps the lowercase code to lowercase codes which have the same uppercase.
-_ignorecase_fixes = {i: tuple(j for j in t if i != j)
+_ignorecase_fixes = {i: tuple([j for j in t if i != j]) # https://github.com/IronLanguages/ironpython3/issues/817
                      for t in _equivalences for i in t}
 
 def _compile(code, pattern, flags):

@@ -3,7 +3,10 @@ from test.support import verbose, run_unittest, gc_collect, bigmemtest, _2G, \
 import io
 import locale
 import re
-from re import Scanner
+try:
+    from re import Scanner
+except ImportError:
+    pass
 import sre_compile
 import sre_constants
 import sys
@@ -254,7 +257,7 @@ class ReTests(unittest.TestCase):
             self.assertTypedEqual(re.split(b"(:*)", string),
                                   [b'', b':', b'a', b':', b'b', b'::', b'c'])
         for a, b, c in ("\xe0\xdf\xe7", "\u0430\u0431\u0432",
-                        "\U0001d49c\U0001d49e\U0001d4b5"):
+                        ("\U0001d49c", "\U0001d49e", "\U0001d4b5")): # https://github.com/IronLanguages/ironpython3/issues/252
             string = ":%s:%s::%s" % (a, b, c)
             self.assertEqual(re.split(":", string), ['', a, b, '', c])
             self.assertEqual(re.split(":*", string), ['', a, b, c])
@@ -301,9 +304,10 @@ class ReTests(unittest.TestCase):
             xx = x * 2
             xxx = x * 3
             string = "a%sb%sc%sd" % (x, xx, xxx)
-            self.assertEqual(re.findall("%s+" % x, string), [x, xx, xxx])
-            self.assertEqual(re.findall("(%s+)" % x, string), [x, xx, xxx])
-            self.assertEqual(re.findall("(%s)(%s*)" % (x, x), string),
+            p = "(?:%s)" % x if len(x) == 2 else x # https://github.com/IronLanguages/ironpython3/issues/252
+            self.assertEqual(re.findall("%s+" % p, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s+)" % p, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s)(%s*)" % (p, p), string),
                              [(x, ""), (x, x), (x, xx)])
 
     def test_bug_117612(self):
@@ -357,9 +361,9 @@ class ReTests(unittest.TestCase):
             self.assertEqual(re.fullmatch(r"a|ab", string).span(), (0, 2))
         for string in b"ab", B(b"ab"), bytearray(b"ab"), memoryview(b"ab"):
             self.assertEqual(re.fullmatch(br"a|ab", string).span(), (0, 2))
-        for a, b in "\xe0\xdf", "\u0430\u0431", "\U0001d49c\U0001d49e":
+        for a, b in "\xe0\xdf", "\u0430\u0431", ("\U0001d49c", "\U0001d49e"): # https://github.com/IronLanguages/ironpython3/issues/252
             r = r"%s|%s" % (a, a + b)
-            self.assertEqual(re.fullmatch(r, a + b).span(), (0, 2))
+            self.assertEqual(re.fullmatch(r, a + b).span(), (0, len(a + b)))
         self.assertEqual(re.fullmatch(r".*?$", "abc").span(), (0, 3))
         self.assertEqual(re.fullmatch(r".*?", "abc").span(), (0, 3))
         self.assertEqual(re.fullmatch(r"a.*?b", "ab").span(), (0, 2))
@@ -921,6 +925,7 @@ class ReTests(unittest.TestCase):
         self.assertIsNone(re.match(r'(?:a?)+?y', 'z'))
         self.assertIsNone(re.match(r'(?:a?){2,}?y', 'z'))
 
+    @unittest.skipIf(sys.implementation.name == 'ironpython', 'CPython impl detail')
     def test_scanner(self):
         def s_ident(scanner, token): return token
         def s_operator(scanner, token): return "op%s" % token

@@ -350,40 +350,22 @@ namespace IronPython.Modules {
                 return ast;
             }
 
-            internal static PythonList Convert(IList<ComprehensionIterator> iterators) {
-                ComprehensionIterator[] iters = new ComprehensionIterator[iterators.Count];
-                iterators.CopyTo(iters, 0);
-
-                PythonList comps = new PythonList();
-                int start = 1;
-                for (int i = 0; i < iters.Length; i++) {
-                    if (i == 0 || iters[i] is ComprehensionIf)
-                        if (i == iters.Length - 1)
-                            i++;
-                        else
-                            continue;
-
-                    ComprehensionIf[] ifs = new ComprehensionIf[i - start];
-                    Array.Copy(iters, start, ifs, 0, ifs.Length);
-                    comps.Add(new comprehension((ComprehensionFor)iters[start - 1], ifs));
-                    start = i + 1;
-                }
-                return comps;
-            }
-
-            internal static PythonList Convert(ComprehensionIterator[] iters) {
+            internal static PythonList Convert(IList<ComprehensionIterator> iters) {
                 var cfCollector = new List<ComprehensionFor>();
                 var cifCollector = new List<List<ComprehensionIf>>();
                 List<ComprehensionIf> cif = null;
-                for (int i = 0; i < iters.Length; i++) {
-                    if (iters[i] is ComprehensionFor) {
-                        ComprehensionFor cf = (ComprehensionFor)iters[i];
-                        cfCollector.Add(cf);
-                        cif = new List<ComprehensionIf>();
-                        cifCollector.Add(cif);
-                    } else {
-                        ComprehensionIf ci = (ComprehensionIf)iters[i];
-                        cif.Add(ci);
+                for (int i = 0; i < iters.Count; i++) {
+                    switch(iters[i]) {
+                        case ComprehensionFor cf:
+                            cfCollector.Add(cf);
+                            cif = new List<ComprehensionIf>();
+                            cifCollector.Add(cif);
+                            break;
+                        case ComprehensionIf ci:
+                            cif.Add(ci);
+                            break;
+                        default:
+                            throw new InvalidOperationException();
                     }
                 }
 

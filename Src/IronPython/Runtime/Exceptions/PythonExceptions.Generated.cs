@@ -42,7 +42,6 @@ namespace IronPython.Runtime.Exceptions {
             public _SystemExit(PythonType type) : base(type) { }
 
             public object code { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -95,7 +94,6 @@ namespace IronPython.Runtime.Exceptions {
             public _StopIteration(PythonType type) : base(type) { }
 
             public object value { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -211,9 +209,6 @@ namespace IronPython.Runtime.Exceptions {
         public partial class _BlockingIOError : _OSError {
             public _BlockingIOError() : base(BlockingIOError) { }
             public _BlockingIOError(PythonType type) : base(type) { }
-
-            public object characters_written { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -400,7 +395,6 @@ namespace IronPython.Runtime.Exceptions {
             public object name { get; set; }
 
             public object path { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -529,7 +523,6 @@ namespace IronPython.Runtime.Exceptions {
             public object offset { get; set; }
 
             public object msg { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -639,7 +632,6 @@ namespace IronPython.Runtime.Exceptions {
             public object end { get; set; }
 
             public object encoding { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -683,7 +675,6 @@ namespace IronPython.Runtime.Exceptions {
             public object end { get; set; }
 
             public object encoding { get; set; }
-
         }
 
         [MultiRuntimeAware]
@@ -711,7 +702,6 @@ namespace IronPython.Runtime.Exceptions {
             public object end { get; set; }
 
             public object encoding { get; set; }
-
         }
 
         [MultiRuntimeAware]

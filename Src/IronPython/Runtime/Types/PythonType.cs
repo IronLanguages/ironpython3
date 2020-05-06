@@ -1677,7 +1677,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         /// <summary>
-        /// Attempst to set a value w/o going through the customizer.
+        /// Attempts to set a value w/o going through the customizer.
         /// 
         /// This enables languages to provide the "base" implementation for setting attributes
         /// so that the customizer can call back here.

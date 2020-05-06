@@ -26,7 +26,6 @@ class ReTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, re.escape, None)
 
-
     def test_sanity_re(self):
         '''
         Basic sanity tests for the re module.  Each module member is
@@ -118,8 +117,8 @@ class ReTest(IronPythonTestCase):
         #escape
         self.assertEqual(re.escape("abc"), "abc")
         self.assertEqual(re.escape(""), "")
-        self.assertEqual(re.escape("_"), "\\_")
-        self.assertEqual(re.escape("a_c"), "a\\_c")
+        self.assertEqual(re.escape("_"), "_")
+        self.assertEqual(re.escape("a_c"), "a_c")
 
         #error
         exc = re.error()
@@ -127,7 +126,6 @@ class ReTest(IronPythonTestCase):
 
         #purge
         re.purge()
-
 
     def test_sanity_re_pattern(self):
         '''
@@ -146,8 +144,8 @@ class ReTest(IronPythonTestCase):
         for i in [-1, -2, -5, -7, -8, -65536]:
             for j in [3, 4, 5, 7, 8, 65536]:
                 self.assertEqual(pattern.match("abc", i, j).span(), (0,3))
-        self.assertRaises(OverflowError, lambda: pattern.match("abc", 0, 2**32).span())
-        self.assertRaises(OverflowError, lambda: pattern.match("abc", -(2**32), 3).span())
+        self.assertRaises(OverflowError, lambda: pattern.match("abc", 0, 2**64).span())
+        self.assertRaises(OverflowError, lambda: pattern.match("abc", -(2**64), 3).span())
 
         #search
         self.assertEqual(pattern.search(""), None)
@@ -189,8 +187,8 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(pattern.subn("1", "abcdabcd", 2), ("1d1d",2))
 
         #flags
-        self.assertEqual(pattern.flags, 0)
-        self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L)
+        self.assertEqual(pattern.flags, 0 if is_cli else 32)
+        self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L | (0 if is_cli else 32))
 
         #groupindex
         self.assertEqual(pattern.groupindex, {})
@@ -208,7 +206,6 @@ class ReTest(IronPythonTestCase):
                         ]
         for x in test_list:
             self.assertEqual(re.compile(x).groupindex, {})
-
 
     def test_sanity_re_match(self):
         '''
@@ -265,7 +262,6 @@ class ReTest(IronPythonTestCase):
 
         #string
         self.assertEqual(match_obj.string, "abcxyzabc123 and some other words...")
-
 
     def test_comment(self):
         '''
@@ -453,7 +449,7 @@ class ReTest(IronPythonTestCase):
             if not chr(i).isalnum():
                 s = s + chr(i)
         x = re.escape(s)
-        self.assertTrue(x == '\\ \\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\`\\{\\|\\}\\~\\\x7f')
+        self.assertEqual(x, '\\ \\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~\\\x7f')
 
         x = re.compile(r'[\\A-Z\.\+]')
         self.assertTrue(x.search('aaaA\\B\\Caaa'))
@@ -614,7 +610,6 @@ class ReTest(IronPythonTestCase):
         tup = re.subn("(ab)?", "cd", "abababababab", 10)
         self.assertTrue(tup == ('cdcdcdcdcdcd', 6))
 
-
     def test_groups(self):
         reg = re.compile("\[(?P<header>.*?)\]")
         m = reg.search("[DEFAULT]")
@@ -627,9 +622,9 @@ class ReTest(IronPythonTestCase):
         self.assertTrue ( m2.groups('Default') == ('Default',))
 
     def test_locale_flags(self):
-        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, 0)
-        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L)
-        self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L)
+        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, 0 if is_cli else re.U)
+        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L | (0 if is_cli else re.U))
+        self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L | (0 if is_cli else re.U))
 
     def test_end(self):
         ex = re.compile(r'\s+')
@@ -776,8 +771,7 @@ class ReTest(IronPythonTestCase):
         pickled_regex = re._pickle(regex)
         self.assertEqual(len(pickled_regex), 2)
         self.assertEqual(pickled_regex[1],
-                ('^(?P<msg>NMAKE[A-Za-z0-9]*)\'\\"?(?P<file>[\\\\A-Za-z0-9/:_\\.\\+]+)', 0))
-
+                ('^(?P<msg>NMAKE[A-Za-z0-9]*)\'\\"?(?P<file>[\\\\A-Za-z0-9/:_\\.\\+]+)', 0 if is_cli else re.U))
 
     def test_conditional(self):
         p = re.compile(r'(a)?(b)((?(1)c))')
@@ -812,44 +806,5 @@ class ReTest(IronPythonTestCase):
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 2; was group 1", re.compile, r'(?P<hoge>\w+):(?P<hoge>\w+)')
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 3; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(?P<hoge>\w+)')
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 4; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(abc)(?P<hoge>\w+)')
-
-    def test_re_fullmatch(self):
-        # test_re_fullmatch from the StdLib - can be removed once test_re is passing
-
-        class S(str):
-            def __getitem__(self, index):
-                return S(super().__getitem__(index))
-
-        class B(bytes):
-            def __getitem__(self, index):
-                return B(super().__getitem__(index))
-
-        self.assertEqual(re.fullmatch(r"a", "a").span(), (0, 1))
-        for string in "ab", S("ab"):
-            self.assertEqual(re.fullmatch(r"a|ab", string).span(), (0, 2))
-        for string in b"ab", B(b"ab"), bytearray(b"ab"):
-            self.assertEqual(re.fullmatch(br"a|ab", string).span(), (0, 2))
-        for a, b in "\xe0\xdf", "\u0430\u0431":
-            r = r"%s|%s" % (a, a + b)
-            self.assertEqual(re.fullmatch(r, a + b).span(), (0, 2))
-        self.assertEqual(re.fullmatch(r".*?$", "abc").span(), (0, 3))
-        self.assertEqual(re.fullmatch(r".*?", "abc").span(), (0, 3))
-        self.assertEqual(re.fullmatch(r"a.*?b", "ab").span(), (0, 2))
-        self.assertEqual(re.fullmatch(r"a.*?b", "abb").span(), (0, 3))
-        self.assertEqual(re.fullmatch(r"a.*?b", "axxb").span(), (0, 4))
-        self.assertIsNone(re.fullmatch(r"a+", "ab"))
-        self.assertIsNone(re.fullmatch(r"abc$", "abc\n"))
-        self.assertIsNone(re.fullmatch(r"abc\Z", "abc\n"))
-        self.assertIsNone(re.fullmatch(r"(?m)abc$", "abc\n"))
-        self.assertEqual(re.fullmatch(r"ab(?=c)cd", "abcd").span(), (0, 4))
-        self.assertEqual(re.fullmatch(r"ab(?<=b)cd", "abcd").span(), (0, 4))
-        self.assertEqual(re.fullmatch(r"(?=a|ab)ab", "ab").span(), (0, 2))
-
-        self.assertEqual(
-            re.compile(r"bc").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
-        self.assertEqual(
-            re.compile(r".*?$").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
-        self.assertEqual(
-            re.compile(r".*?").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
 
 run_test(__name__)

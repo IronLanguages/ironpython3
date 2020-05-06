@@ -535,6 +535,20 @@ namespace IronPython.Runtime.Operations {
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
+            return FromBytes(bytes, isLittle, signed);
+        }
+
+        public static BigInteger from_bytes(CodeContext context, object bytes, string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            // TODO: return int when possible?
+
+            bool isLittle = byteorder == "little";
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
+
+            return FromBytes(new Bytes(context, bytes), isLittle, signed);
+        }
+
+        private static BigInteger FromBytes(IList<byte> bytes, bool isLittle, bool signed) {
             if (!bytes.Any()) return 0;
 
             byte[] bytesArr = bytes as byte[] ?? ((bytes is Bytes) ? ((Bytes)bytes).UnsafeByteArray : bytes.ToArray());
@@ -543,8 +557,7 @@ namespace IronPython.Runtime.Operations {
                 bool msbSet = (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80;
                 if (!msbSet) return new BigInteger(bytesArr);
                 return new BigInteger(bytesArr.Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray());
-            }
-            else {
+            } else {
                 bool msbSet = (bytesArr[0] & 0x80) == 0x80;
                 if (!msbSet) return new BigInteger(bytesArr.Reverse());
                 return new BigInteger(bytesArr.Reverse().Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray());

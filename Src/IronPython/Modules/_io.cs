@@ -596,8 +596,7 @@ namespace IronPython.Modules {
 
             public BufferedReader(
                 CodeContext/*!*/ context,
-                object raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE
+                params object[] args
             ) : base(context) {
             }
 

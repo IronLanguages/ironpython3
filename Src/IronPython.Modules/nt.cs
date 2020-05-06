@@ -1128,6 +1128,36 @@ namespace IronPython.Modules {
         }
 #endif
 
+        public static terminal_size get_terminal_size(CodeContext context)
+            => get_terminal_size(1); // stdout
+
+        public static terminal_size get_terminal_size(int fd)
+            => new terminal_size(new object[2] { Console.WindowWidth, Console.WindowHeight }); // TODO: use the fd
+
+        [PythonType]
+        public sealed class terminal_size : PythonTuple {
+            public const int n_fields = 2;
+            public const int n_sequence_fields = 2;
+            public const int n_unnamed_fields = 0;
+
+            internal terminal_size(object[] sequence) : base(sequence) {
+                if (sequence.Length != n_sequence_fields) {
+                    throw PythonOps.TypeError($"os.{nameof(terminal_size)}() takes a {n_sequence_fields}-sequence ({sequence.Length}-sequence given)");
+                }
+            }
+
+            public static terminal_size __new__(CodeContext context, PythonType cls, IEnumerable<object> sequence) {
+                return new terminal_size(sequence.ToArray());
+            }
+
+            public object columns => this[0];
+            public object lines => this[1];
+
+            public override string/*!*/ __repr__(CodeContext/*!*/ context) {
+                return $"os.{nameof(terminal_size)}(columns={PythonOps.Repr(context, columns)}, lines={PythonOps.Repr(context, lines)})";
+            }
+        }
+
 #if FEATURE_FILESYSTEM
         public static object times() {
             System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess();

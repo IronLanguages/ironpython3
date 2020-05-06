@@ -24,10 +24,8 @@ using System.Net.Sockets;
 namespace IronPython.Modules {
     public static class PythonSelect {
         public const string __doc__ = "Provides support for asynchronous socket operations.";
-        [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException("selecterror", dict, "error", "select");
-        }
+
+        public static PythonType error => PythonExceptions.OSError;
 
         #region Public API
 

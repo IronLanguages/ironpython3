@@ -763,36 +763,51 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Index(object? o) {
-            if (o is int) {
-                return Int32Ops.__index__((int)o);
-            } else if (o is uint) {
-                return UInt32Ops.__index__((uint)o);
-            } else if (o is ushort) {
-                return UInt16Ops.__index__((ushort)o);
-            } else if (o is short) {
-                return Int16Ops.__index__((short)o);
-            } else if (o is byte) {
-                return ByteOps.__index__((byte)o);
-            } else if (o is sbyte) {
-                return SByteOps.__index__((sbyte)o);
-            } else if (o is long) {
-                return Int64Ops.__index__((long)o);
-            } else if (o is ulong) {
-                return UInt64Ops.__index__((ulong)o);
-            } else if (o is BigInteger) {
-                return BigIntegerOps.__index__((BigInteger)o);
-            }
-
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
-                o,
-                "__index__",
-                out object index)) {
-                if (!(index is int) && !(index is BigInteger))
-                    throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
-
-                return index;
-            }
+            if (TryToIndex(o, out object? index)) return index;
             throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
+        }
+
+        internal static bool TryToIndex(object? o, [NotNullWhen(true)]out object? index) {
+            switch (o) {
+                case int i:
+                    index = Int32Ops.__index__(i);
+                    return true;
+                case uint ui:
+                    index = UInt32Ops.__index__(ui);
+                    return true;
+                case ushort us:
+                    index = UInt16Ops.__index__(us);
+                    return true;
+                case short s:
+                    index = Int16Ops.__index__(s);
+                    return true;
+                case byte b:
+                    index = ByteOps.__index__(b);
+                    return true;
+                case sbyte sb:
+                    index = SByteOps.__index__(sb);
+                    return true;
+                case long l:
+                    index = Int64Ops.__index__(l);
+                    return true;
+                case ulong ul:
+                    index = UInt64Ops.__index__(ul);
+                    return true;
+                case BigInteger bi:
+                    index = BigIntegerOps.__index__(bi);
+                    return true;
+                default:
+                    break;
+            }
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__index__", out index)) {
+                if (!(index is int) && !(index is BigInteger))
+                    throw TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
+                return true;
+            }
+
+            index = default;
+            return false;
         }
 
         public static int Length(object? o) {

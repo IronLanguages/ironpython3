@@ -939,6 +939,7 @@ namespace IronPython.Runtime.Operations {
             return PythonTuple.MakeTuple(obj);
         }
 
+        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList rsplit([NotNull]this string self, string? sep = null, int maxsplit = -1) {
             if (sep == null && maxsplit < 0) {
                 // in this case rsplit becomes equivalent of split
@@ -972,6 +973,7 @@ namespace IronPython.Runtime.Operations {
             return self.TrimEnd(chars.ToCharArray());
         }
 
+        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList split([NotNull]this string self, string? sep = null, int maxsplit = -1) {
             if (sep == null) {
                 if (maxsplit == 0) {
@@ -994,10 +996,12 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList splitlines([NotNull]this string self) {
             return splitlines(self, false);
         }
 
+        [return: SequenceTypeInfo(typeof(string))]
         public static PythonList splitlines([NotNull]this string self, bool keepends) {
             PythonList ret = new PythonList();
             int i, linestart;
@@ -1227,7 +1231,6 @@ namespace IronPython.Runtime.Operations {
                 kwargs\u00F8
             );
         }
-
 
         public static IEnumerable<PythonTuple>/*!*/ _formatter_parser([NotNull]this string/*!*/ self) {
             return NewStringFormatter.GetFormatInfo(self);

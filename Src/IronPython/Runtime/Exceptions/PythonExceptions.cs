@@ -122,7 +122,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
-            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<string, object> kwArgs, params object[] args) {
                 if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
@@ -153,6 +153,12 @@ namespace IronPython.Runtime.Exceptions {
             public object filename2 {
                 get { return ReferenceEquals(_filename2, Undefined) ? null : _filename2; }
                 set { _filename2 = value; }
+            }
+
+            private object _characters_written = Undefined;
+            public object characters_written {
+                get { return ReferenceEquals(_characters_written, Undefined) ? throw PythonOps.AttributeError(nameof(characters_written)) : _characters_written; }
+                set { _characters_written = PythonOps.Index(value); }
             }
 
             public override void __init__(params object[] args) {
@@ -639,20 +645,11 @@ for k, v in toError.items():
 
         public partial class _BlockingIOError {
             public override void __init__(params object[] args) {
-                switch (args.Length) {
-                    case 2:
-                        base.__init__(args);
-                        break;
-                    case 3:
-                        characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? "an integer is required";
-                        base.__init__(args[0], args[1]);
-                        break;
-                    default:
-                        if (args.Length < 2) {
-                            throw PythonOps.TypeError("BlockingIOError() takes at least 2 arguments ({0} given)", args.Length);
-                        }
-                        throw PythonOps.TypeError("BlockingIOError() takes at most 3 arguments ({0} given)", args.Length);
+                if (args.Length >= 3) {
+                    if (PythonOps.TryToIndex(args[2], out object index)) // this is the behavior since CPython 3.8
+                        characters_written = index;
                 }
+                base.__init__(args);
             }
         }
 

@@ -1171,27 +1171,31 @@ namespace IronPython.Modules {
 
             void IDisposable.Dispose() { }
 
-            object IPythonBuffer.GetItem(int index) => this[index];
+            object IPythonBuffer.Object => this;
 
-            void IPythonBuffer.SetItem(int index, object value) {
-                this[index] = value;
-            }
+            bool IPythonBuffer.IsReadOnly => false;
 
-            int IPythonBuffer.ItemCount => _data.Count;
+            ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                => _data.AsByteSpan();
+
+            Span<byte> IPythonBuffer.AsSpan()
+                => _data.AsByteSpan();
+
+            int IPythonBuffer.Offset => 0;
 
             string IPythonBuffer.Format => _typeCode.ToString();
 
-            BigInteger IPythonBuffer.ItemSize => itemsize;
+            int IPythonBuffer.ItemCount => _data.Count;
 
-            BigInteger IPythonBuffer.NumberDimensions => 1;
+            int IPythonBuffer.ItemSize => itemsize;
 
-            bool IPythonBuffer.ReadOnly => false;
+            int IPythonBuffer.NumOfDims => 1;
 
-            IList<BigInteger> IPythonBuffer.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Count) - start };
+            IReadOnlyList<int>? IPythonBuffer.Shape => null;
 
-            PythonTuple IPythonBuffer.Strides => PythonTuple.MakeTuple(itemsize);
+            IReadOnlyList<int>? IPythonBuffer.Strides => null;
 
-            PythonTuple? IPythonBuffer.SubOffsets => null;
+            IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
 
             Bytes IPythonBuffer.ToBytes(int start, int? end) {
                 if (start == 0 && end == null) {
@@ -1201,23 +1205,9 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tobytes();
             }
 
-            PythonList IPythonBuffer.ToList(int start, int? end) {
-                if (start == 0 && end == null) {
-                    return tolist();
-                }
-
-                return ((array)this[new Slice(start, end)]).tolist();
-            }
-
             ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
                 return ToByteArray().AsMemory();
             }
-
-            ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-                => _data.AsByteSpan();
-
-            Span<byte> IPythonBuffer.AsSpan()
-                => _data.AsByteSpan();
 
             #endregion
         }

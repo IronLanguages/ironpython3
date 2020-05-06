@@ -1046,51 +1046,30 @@ namespace IronPython.Runtime {
 
         void IDisposable.Dispose() { }
 
-        object IPythonBuffer.GetItem(int index) {
-            byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
-            return (int)res;
-        }
+        object IPythonBuffer.Object => this;
 
-        void IPythonBuffer.SetItem(int index, object value) {
-            throw new InvalidOperationException();
-        }
+        bool IPythonBuffer.IsReadOnly => true;
 
-        int IPythonBuffer.ItemCount {
-            get {
-                return _bytes.Length;
-            }
-        }
+        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan() => _bytes;
 
-        string IPythonBuffer.Format {
-            get { return "B"; }
-        }
+        Span<byte> IPythonBuffer.AsSpan()
+            => throw new InvalidOperationException("bytes object is not writable");
 
-        BigInteger IPythonBuffer.ItemSize {
-            get { return 1; }
-        }
+        int IPythonBuffer.Offset => 0;
 
-        BigInteger IPythonBuffer.NumberDimensions {
-            get { return 1; }
-        }
+        string? IPythonBuffer.Format => "B";  // TODO: provide null when appropriate
 
-        bool IPythonBuffer.ReadOnly {
-            get { return true; }
-        }
+        int IPythonBuffer.ItemCount => _bytes.Length;
 
-        IList<BigInteger> IPythonBuffer.GetShape(int start, int? end) {
-            if (end != null) {
-                return new[] { (BigInteger)end - start };
-            }
-            return new[] { (BigInteger)_bytes.Length - start };
-        }
+        int IPythonBuffer.ItemSize => 1;
 
-        PythonTuple IPythonBuffer.Strides {
-            get { return PythonTuple.MakeTuple(1); }
-        }
+        int IPythonBuffer.NumOfDims => 1;
 
-        PythonTuple? IPythonBuffer.SubOffsets {
-            get { return null; }
-        }
+        IReadOnlyList<int>? IPythonBuffer.Shape => null;
+
+        IReadOnlyList<int>? IPythonBuffer.Strides => null;
+
+        IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
 
         Bytes IPythonBuffer.ToBytes(int start, int? end) {
             if (start == 0 && end == null) {
@@ -1100,20 +1079,9 @@ namespace IronPython.Runtime {
             return this[new Slice(start, end)];
         }
 
-        PythonList IPythonBuffer.ToList(int start, int? end) {
-            var res = _bytes.Slice(new Slice(start, end));
-            return res == null ? new PythonList() : new PythonList(res);
-        }
-
         ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
             return _bytes.AsMemory();
         }
-
-        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-            => _bytes;
-
-        Span<byte> IPythonBuffer.AsSpan()
-            => throw new InvalidOperationException("bytes object is not writable");
 
         #endregion
     }

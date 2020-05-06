@@ -2,13 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
-    internal class TypecodeOps {
+    internal static class TypecodeOps {
 
-        public static bool TryGetTypecodeWidth(string typecode, out int width) {
+        public static bool TryGetTypecodeWidth([NotNullWhen(true)]string? typecode, out int width) {
+            // TODO: accept optional '@' byteorder char
+            // this applies to all methods in this class
             switch (typecode) {
                 case "c": // char
                 case "b": // signed byte
@@ -41,94 +47,93 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static bool TryGetFromBytes(string typecode, byte[] bytes, int offset, out object result) {
+        public static bool TryGetFromBytes(string? typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
             switch (typecode) {
                 case "c":
-                    result = (char)bytes[offset];
+                    result = (char)bytes[0];
                     return true;
                 case "b":
-                    result = (sbyte)bytes[offset];
+                    result = (sbyte)bytes[0];
                     return true;
                 case "B":
-                    result = bytes[offset];
+                    result = bytes[0];
                     return true;
                 case "u":
-                    result = BitConverter.ToChar(bytes, offset);
+                    result = MemoryMarshal.Read<char>(bytes);
                     return true;
                 case "h":
-                    result = BitConverter.ToInt16(bytes, offset);
+                    result = MemoryMarshal.Read<short>(bytes);
                     return true;
                 case "H":
-                    result = BitConverter.ToUInt16(bytes, offset);
+                    result = MemoryMarshal.Read<ushort>(bytes);
                     return true;
                 case "l":
                 case "i":
-                    result = BitConverter.ToInt32(bytes, offset);
+                    result = MemoryMarshal.Read<int>(bytes);
                     return true;
                 case "L":
                 case "I":
-                    result = BitConverter.ToUInt32(bytes, offset);
+                    result = MemoryMarshal.Read<uint>(bytes);
                     return true;
                 case "f":
-                    result = BitConverter.ToSingle(bytes, offset);
+                    result = MemoryMarshal.Read<float>(bytes);
                     return true;
                 case "d":
-                    result = BitConverter.ToDouble(bytes, offset);
+                    result = MemoryMarshal.Read<double>(bytes);
                     return true;
                 case "q":
-                    result = (BitConverter.ToInt64(bytes, offset));
+                    result = MemoryMarshal.Read<long>(bytes);
                     return true;
                 case "Q":
-                    result = (BitConverter.ToUInt64(bytes, offset));
+                    result = MemoryMarshal.Read<ulong>(bytes);
                     return true;
                 default:
-                    result = 0;
+                    result = null;
                     return false;
             }
         }
 
-        public static bool TryGetBytes(string typecode, object obj, out byte[] result) {
+        public static bool TryGetBytes(string? typecode, object obj, Span<byte> dest) {
             switch (typecode) {
                 case "c":
-                    result = new[] { (byte)Convert.ToChar(obj) };
-                    return true;
+                    var cbyteVal = (byte)Convert.ToChar(obj);
+                    return MemoryMarshal.TryWrite(dest, ref cbyteVal);
                 case "b":
-                    result = new[] { (byte)Convert.ToSByte(obj) };
-                    return true;
+                    var sbyteVal = (byte)Convert.ToSByte(obj);
+                    return MemoryMarshal.TryWrite(dest, ref sbyteVal);
                 case "B":
-                    result = new[] { Convert.ToByte(obj) };
-                    return true;
+                    var byteVal = Convert.ToByte(obj);
+                    return MemoryMarshal.TryWrite(dest, ref byteVal);
                 case "u":
-                    result = BitConverter.GetBytes((byte)Convert.ToChar(obj));
-                    return true;
+                    var charVal = Convert.ToChar(obj);
+                    return MemoryMarshal.TryWrite(dest, ref charVal);
                 case "h":
-                    result = BitConverter.GetBytes(Convert.ToInt16(obj));
-                    return true;
+                    var shortVal = Convert.ToInt16(obj);
+                    return MemoryMarshal.TryWrite(dest, ref shortVal);
                 case "H":
-                    result = BitConverter.GetBytes(Convert.ToUInt16(obj));
-                    return true;
+                    var ushortVal = Convert.ToUInt16(obj);
+                    return MemoryMarshal.TryWrite(dest, ref ushortVal);
                 case "l":
                 case "i":
-                    result = BitConverter.GetBytes(Convert.ToInt32(obj));
-                    return true;
+                    var intVal = Convert.ToInt32(obj);
+                    return MemoryMarshal.TryWrite(dest, ref intVal);
                 case "L":
                 case "I":
-                    result = BitConverter.GetBytes(Convert.ToUInt32(obj));
-                    return true;
+                    var uintVal = Convert.ToUInt32(obj);
+                    return MemoryMarshal.TryWrite(dest, ref uintVal);
                 case "f":
-                    result = BitConverter.GetBytes(Convert.ToSingle(obj));
-                    return true;
+                    var singleVal = Convert.ToSingle(obj);
+                    return MemoryMarshal.TryWrite(dest, ref singleVal);
                 case "d":
-                    result = BitConverter.GetBytes(Convert.ToDouble(obj));
-                    return true;
+                    var doubleVal = Convert.ToDouble(obj);
+                    return MemoryMarshal.TryWrite(dest, ref doubleVal);
                 case "q":
-                    result = BitConverter.GetBytes(Convert.ToInt64(obj));
-                    return true;
+                    var longVal = Convert.ToInt64(obj);
+                    return MemoryMarshal.TryWrite(dest, ref longVal);
                 case "Q":
-                    result = BitConverter.GetBytes(Convert.ToUInt64(obj));
-                    return true;
+                    var ulongVal = Convert.ToUInt64(obj);
+                    return MemoryMarshal.TryWrite(dest, ref ulongVal);
                 default:
-                    result = null;
                     return false;
             }
         }

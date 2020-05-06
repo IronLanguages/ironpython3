@@ -305,7 +305,7 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, new MemoryView(this, 0, null, 1, "B", PythonTuple.MakeTuple(_bytes.Count), readonlyView: true), encoding, errors);
+                return StringOps.RawDecode(context, new MemoryView(this, readOnly: true), encoding, errors);
             }
         }
 
@@ -1650,48 +1650,31 @@ namespace IronPython.Runtime {
 
         void IDisposable.Dispose() { }
 
-        object IPythonBuffer.GetItem(int index) {
-            lock (this) {
-                return (int)_bytes[PythonOps.FixIndex(index, _bytes.Count)];
-            }
-        }
+        object IPythonBuffer.Object => this;
 
-        void IPythonBuffer.SetItem(int index, object value) {
-            this[index] = value;
-        }
+        bool IPythonBuffer.IsReadOnly => false;
 
-        int IPythonBuffer.ItemCount {
-            get {
-                return _bytes.Count;
-            }
-        }
+        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+            => _bytes.Data.AsSpan(0, _bytes.Count);
 
-        string IPythonBuffer.Format {
-            get { return "B"; }
-        }
+        Span<byte> IPythonBuffer.AsSpan()
+            => _bytes.Data.AsSpan(0, _bytes.Count);
 
-        BigInteger IPythonBuffer.ItemSize {
-            get { return 1; }
-        }
+        int IPythonBuffer.Offset => 0;
 
-        BigInteger IPythonBuffer.NumberDimensions {
-            get { return 1; }
-        }
+        string? IPythonBuffer.Format => "B";  // TODO: provide null when appropriate
 
-        bool IPythonBuffer.ReadOnly {
-            get { return false; }
-        }
+        int IPythonBuffer.ItemCount => _bytes.Count;
 
-        IList<BigInteger> IPythonBuffer.GetShape(int start, int? end) {
-            if (end != null) {
-                return new[] { (BigInteger)end - start };
-            }
-            return new[] { (BigInteger)_bytes.Count - start };
-        }
+        int IPythonBuffer.ItemSize => 1;
 
-        PythonTuple IPythonBuffer.Strides => PythonTuple.MakeTuple(1);
+        int IPythonBuffer.NumOfDims => 1;
 
-        PythonTuple? IPythonBuffer.SubOffsets => null;
+        IReadOnlyList<int>? IPythonBuffer.Shape => null;
+
+        IReadOnlyList<int>? IPythonBuffer.Strides => null;
+
+        IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
 
         Bytes IPythonBuffer.ToBytes(int start, int? end) {
             if (start == 0 && end == null) {
@@ -1701,21 +1684,8 @@ namespace IronPython.Runtime {
             return new Bytes((ByteArray)this[new Slice(start, end)]);
         }
 
-        PythonList IPythonBuffer.ToList(int start, int? end) {
-            var res = _bytes.Slice(new Slice(start, end));
-            return res == null ? new PythonList() : new PythonList(res);
-        }
-
         ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
             return _bytes.Data.AsMemory(0, _bytes.Count);
-        }
-
-        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan() {
-            return _bytes.Data.AsSpan(0, _bytes.Count);
-        }
-
-        Span<byte> IPythonBuffer.AsSpan() {
-            return _bytes.Data.AsSpan(0, _bytes.Count);
         }
 
         #endregion

@@ -355,7 +355,7 @@ types and lengths of a and b--but not their values.")]
             } else if(a is IBufferProtocol abp && b is IBufferProtocol bbp) {
                 using IPythonBuffer aBuf = abp.GetBuffer();
                 using IPythonBuffer bBuf = bbp.GetBuffer();
-                if(aBuf.NumberDimensions > 1 || bBuf.NumberDimensions > 1) {
+                if(aBuf.NumOfDims > 1 || bBuf.NumOfDims > 1) {
                     throw PythonOps.BufferError("Buffer must be single dimension");
                 }
 

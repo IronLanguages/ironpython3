@@ -12,6 +12,7 @@ using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -101,13 +102,15 @@ namespace IronPython.Modules {
 
             void IDisposable.Dispose() { }
 
-            object IPythonBuffer.GetItem(int index) {
-                return Bytes.Make(GetBytes(index, NativeType.Size));
-            }
+            object IPythonBuffer.Object => this;
 
-            void IPythonBuffer.SetItem(int index, object value) {
-                throw new NotImplementedException();
-            }
+            unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
+            unsafe Span<byte> IPythonBuffer.AsSpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
+            int IPythonBuffer.Offset => 0;
 
             public virtual int ItemCount {
                 [PythonHidden]
@@ -120,29 +123,38 @@ namespace IronPython.Modules {
                 get { return NativeType.TypeFormat; }
             }
 
+            // TODO: change sig
             public virtual BigInteger ItemSize {
                 [PythonHidden]
                 get { return this.NativeType.Size; }
             }
 
-            BigInteger IPythonBuffer.NumberDimensions {
-                get { return 0; }
+            int IPythonBuffer.ItemSize => (int)this.ItemSize;
+
+            int IPythonBuffer.NumOfDims {
+                get {
+                    return GetShape(0, null)?.Count ?? (ItemCount > 1 ? 1 : 0);
+                }
             }
 
-            bool IPythonBuffer.ReadOnly {
+            bool IPythonBuffer.IsReadOnly {
                 get { return false; }
             }
 
+            // TODO: change sig
             [PythonHidden]
             public virtual IList<BigInteger> GetShape(int start, int? end) {
                 return null;
             }
 
-            PythonTuple IPythonBuffer.Strides {
+            IReadOnlyList<int> IPythonBuffer.Shape => GetShape(0, null)?.Select(big => (int)big).ToArray();  // TODO: remove using Linq when done with sig change
+
+
+            IReadOnlyList<int> IPythonBuffer.Strides {
                 get { return null; }
             }
 
-            PythonTuple IPythonBuffer.SubOffsets {
+            IReadOnlyList<int> IPythonBuffer.SubOffsets {
                 get { return null; }
             }
 
@@ -150,19 +162,9 @@ namespace IronPython.Modules {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
-            PythonList IPythonBuffer.ToList(int start, int? end) {
-                return new PythonList(((IPythonBuffer)this).ToBytes(start, end));
-            }
-
             ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
                 return GetBytes(0, NativeType.Size);
             }
-
-            unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
-
-            unsafe Span<byte> IPythonBuffer.AsSpan()
-                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
 
             #endregion
         }

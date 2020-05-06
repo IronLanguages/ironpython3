@@ -94,8 +94,8 @@ namespace IronPython.Modules {
 
             public MemoryView getbuffer() {
                 _checkClosed();
-
-                return new MemoryView(new Bytes(_data), 0, _length, 1, "B", PythonTuple.MakeTuple(_length), readonlyView: true);
+                // TODO: MemoryView constructor should accept Memory/ReadOnlyMemory
+                return (MemoryView)new MemoryView(new Bytes(_data))[new Slice(0, _length, 1)];
             }
 
             [Documentation("isatty() -> False\n\n"

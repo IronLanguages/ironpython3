@@ -450,7 +450,9 @@ namespace IronPython.Modules {
                 if (pattern is Bytes) {
                     switch (@string) {
                         case IBufferProtocol bufferProtocol:
-                            str = bufferProtocol.ToBytes(0, null).MakeString();
+                            using (IPythonBuffer buf = bufferProtocol.GetBuffer()) {
+                                str = buf.AsReadOnlySpan().MakeString();
+                            }
                             break;
                         case IList<byte> b:
                             str = b.MakeString();
@@ -494,7 +496,9 @@ namespace IronPython.Modules {
                 if (pattern is Bytes) {
                     switch (repl) {
                         case IBufferProtocol bufferProtocol:
-                            str = bufferProtocol.ToBytes(0, null).MakeString();
+                            using (IPythonBuffer buf = bufferProtocol.GetBuffer()) {
+                                str = buf.AsReadOnlySpan().MakeString();
+                            }
                             break;
                         case IList<byte> b:
                             str = b.MakeString();
@@ -1231,7 +1235,9 @@ namespace IronPython.Modules {
             if (pattern is Bytes) {
                 switch (@string) {
                     case IBufferProtocol bufferProtocol:
-                        str = bufferProtocol.ToBytes(0, null).MakeString();
+                        using (IPythonBuffer buf = bufferProtocol.GetBuffer()) {
+                            str = buf.AsReadOnlySpan().MakeString();
+                        }
                         break;
                     case IList<byte> b:
                         str = b.MakeString();

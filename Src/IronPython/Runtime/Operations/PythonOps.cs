@@ -1618,7 +1618,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Standard I/O support
 
-        public static void Write(CodeContext/*!*/ context, object f, string text) {
+        internal static void Write(CodeContext/*!*/ context, object f, string text) {
             PythonContext pc = context.LanguageContext;
 
             if (f == null) {
@@ -1647,22 +1647,17 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.Invoke(context, f, "readline");
         }
 
-        // Must stay here for now because libs depend on it.
-        internal static void Print(CodeContext/*!*/ context, object o) {
-            PrintWithDest(context, context.LanguageContext.SystemStandardOut, o);
-        }
-
-        internal static void PrintNoNewline(CodeContext/*!*/ context, object o) {
-            PrintWithDestNoNewline(context, context.LanguageContext.SystemStandardOut, o);
-        }
-
-        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o) {
-            PrintWithDestNoNewline(context, dest, o);
-            Write(context, dest, "\n");
-        }
-
-        internal static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o) {
+        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o, bool noNewLine = false, bool flush = false) {
             Write(context, dest, ToString(context, o));
+            if (!noNewLine) Write(context, dest, "\n");
+
+            if (flush) {
+                if (dest is PythonIOModule._IOBase pf) {
+                    pf.flush(context);
+                } else if (TryGetBoundAttr(context, dest, "flush", out object? flushAttr)) {
+                    PythonCalls.Call(context, flushAttr);
+                }
+            }
         }
 
         internal static object? ReadLineFromSrc(CodeContext/*!*/ context, object src) {
@@ -3035,7 +3030,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (warn == null) {
-                PythonOps.PrintWithDestNoNewline(context, pc.SystemStandardError, string.Format("{0}:{1}: {2}: {3}\n", filename, lineNo, category.Name, message));
+                PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}\n", noNewLine: true);
             } else {
                 PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
             }

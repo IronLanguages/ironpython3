@@ -839,13 +839,13 @@ namespace IronPython.Runtime.Operations {
                 return true;
             }
 
-            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, $"object of type '{PythonOps.GetPythonTypeName(o)}' has no len()");
+            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, $"object of type '{GetPythonTypeName(o)}' has no len()");
 
             if (ObjectToInt(len, out res, out bigRes)) {
-                if (res < 0) throw PythonOps.ValueError("__len__ should return >= 0, got {0}", res);
+                if (res < 0) throw ValueError("__len__() should return >= 0");
                 return true;
             } else {
-                if (bigRes < 0) throw PythonOps.ValueError("__len__ should return >= 0, got {0}", bigRes);
+                if (bigRes < 0) throw ValueError("__len__() should return >= 0");
                 return false;
             }
         }

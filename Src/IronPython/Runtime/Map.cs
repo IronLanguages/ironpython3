@@ -24,7 +24,6 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
         private readonly CodeContext _context;
         private readonly object? _func;
         private readonly IEnumerator[] _enumerators;
-        private object? current;
 
         public Map(CodeContext context, object? func, [NotNull]params object[] iterables) {
             if (iterables.Length == 0) {
@@ -44,21 +43,20 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
             _func = func;
         }
 
-        public object Current {
-            get {
-                if (current == null) throw new InvalidOperationException();
-                return current;
-            }
-        }
+        [PythonHidden]
+        public object? Current { get; private set; }
+
+        [PythonHidden]
         public bool MoveNext() {
             if (_enumerators.Length > 0 && _enumerators.All(x => x.MoveNext())) {
-                current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
+                Current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
                 return true;
             }
-            current = null;
+            Current = default;
             return false;
         }
 
+        [PythonHidden]
         public void Reset() { throw new NotSupportedException(); }
     }
 }

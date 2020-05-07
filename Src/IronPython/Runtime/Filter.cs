@@ -6,10 +6,10 @@
 
 using System.Collections;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
@@ -18,35 +18,40 @@ namespace IronPython.Runtime {
 
 Return an iterator yielding those items of iterable for which function(item)
 is true. If function is None, return the items that are true.")]
-    public class Filter : IEnumerable {
+    public class Filter : IEnumerator {
         private readonly CodeContext _context;
         private readonly object? _function;
-        private readonly object _iterable;
+        private readonly IEnumerator _enumerator;
 
         public Filter(CodeContext context, object? function, object? iterable) {
-            if (!PythonOps.TryGetEnumerator(context, iterable, out _)) {
+            if (!PythonOps.TryGetEnumerator(context, iterable, out IEnumerator? enumerator)) {
                 throw PythonOps.TypeErrorForNotIterable(iterable);
             }
 
             _context = context;
             _function = function;
-            _iterable = iterable;
+            _enumerator = enumerator;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            if (_function != null && !PythonOps.IsCallable(_context, _function)) {
-                throw PythonOps.UncallableError(_function);
-            }
+        [PythonHidden]
+        public object? Current { get; private set; }
 
-            IEnumerator e = PythonOps.GetEnumerator(_context, _iterable);
-            while (e.MoveNext()) {
-                object? o = e.Current;
+        [PythonHidden]
+        public bool MoveNext() {
+            while (_enumerator.MoveNext()) {
+                object? o = _enumerator.Current;
                 object? t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
 
                 if (PythonOps.IsTrue(t)) {
-                    yield return o;
+                    Current = o;
+                    return true;
                 }
             }
+            Current = default;
+            return false;
         }
+
+        [PythonHidden]
+        public void Reset() { throw new System.NotSupportedException(); }
     }
 }

@@ -25,6 +25,8 @@ namespace IronPython.Runtime {
         new bool Remove(object? item);
         void Reverse();
         Span<byte> AsByteSpan();
+        IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags);
+        bool HasBuffer { get; }
     }
 
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
@@ -129,6 +131,7 @@ namespace IronPython.Runtime {
 
         private void EnsureSize(int size) {
             if (_items.Length < size) {
+                CheckBuffer();
                 var length = _items.Length;
                 if (length == 0) length = 8;
                 while (length < size) {
@@ -269,5 +272,79 @@ namespace IronPython.Runtime {
                 return false;
             }
         }
+
+        public bool HasBuffer => bufferCount > 0;
+
+        private int bufferCount = 0;
+
+        public IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags) {
+            return new ArrayDataView(owner, format, this, flags);
+        }
+
+        private void CheckBuffer() {
+            if (HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
+        }
+
+        private sealed class ArrayDataView : IPythonBuffer {
+            private readonly BufferFlags _flags;
+            private readonly ArrayData<T> _arrayData;
+
+            public ArrayDataView(object owner, string format, ArrayData<T> arrayData, BufferFlags flags) {
+                Object = owner;
+                Format = format;
+                _arrayData = arrayData;
+                _flags = flags;
+                _arrayData.bufferCount++;
+            }
+
+            private bool _disposed = false;
+
+            ~ArrayDataView() {
+                Dispose();
+            }
+
+            public void Dispose() {
+                if (_disposed) return;
+                _arrayData.bufferCount--;
+                GC.SuppressFinalize(this);
+                _disposed = true;
+            }
+
+            public object Object { get; }
+
+            public bool IsReadOnly => false;
+
+            public ReadOnlySpan<byte> AsReadOnlySpan() => _arrayData.AsByteSpan();
+
+            public Span<byte> AsSpan() => _arrayData.AsByteSpan();
+
+            public int Offset => 0;
+
+            public string? Format { get; }
+
+            public int ItemCount => _arrayData.Count;
+
+            public int ItemSize => Marshal.SizeOf<T>();
+
+            public int NumOfDims => 1;
+
+            public IReadOnlyList<int>? Shape => null;
+
+            public IReadOnlyList<int>? Strides => null;
+
+            public IReadOnlyList<int>? SubOffsets => null;
+
+            Bytes IPythonBuffer.ToBytes(int start, int? end) {
+                return Bytes.Make(MemoryMarshal.AsBytes(_arrayData.Data.AsSpan(start, (end ?? _arrayData.Count) - start)).ToArray());
+            }
+
+            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
+                if (typeof(T) == typeof(byte)) {
+                    return ((byte[])(object)_arrayData.Data).AsMemory(0, _arrayData.Count);
+                }
+                throw new InvalidOperationException();
+            }
+        }
     }
+
 }

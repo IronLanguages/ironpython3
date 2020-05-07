@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
     /// (default=0)
     /// </summary>
     [PythonType("bytearray")]
-    public class ByteArray : IList<byte>, IReadOnlyList<byte>, ICodeFormattable, IBufferProtocol, IPythonBuffer {
+    public class ByteArray : IList<byte>, IReadOnlyList<byte>, ICodeFormattable, IBufferProtocol {
         private ArrayData<byte> _bytes;
 
         public ByteArray() {
@@ -51,10 +51,12 @@ namespace IronPython.Runtime {
         }
 
         public void __init__() {
+            CheckBuffer();
             _bytes = new ArrayData<byte>();
         }
 
         public void __init__(int source) {
+            CheckBuffer();
             if (source < 0) throw PythonOps.ValueError("negative count");
             _bytes = new ArrayData<byte>(source);
             for (int i = 0; i < source; i++) {
@@ -63,14 +65,17 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]IEnumerable<byte> source) {
+            CheckBuffer();
             _bytes = new ArrayData<byte>(source);
         }
 
         public void __init__([BytesLike, NotNull]ReadOnlyMemory<byte> source) {
+            CheckBuffer();
             _bytes = new ArrayData<byte>(source);
         }
 
         public void __init__(CodeContext context, object? source) {
+            CheckBuffer();
             if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
                 __init__(size);
             } else {
@@ -83,10 +88,12 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]string @string) {
+            CheckBuffer();
             throw PythonOps.TypeError("string argument without an encoding");
         }
 
         public void __init__(CodeContext context, [NotNull]string source, [NotNull]string encoding, [NotNull]string errors = "strict") {
+            CheckBuffer();
             _bytes = new ArrayData<byte>(StringOps.encode(context, source, encoding, errors));
         }
 
@@ -1650,48 +1657,11 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
-            return this;
-        }
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags)
+            => UnsafeByteList.GetBuffer(this, "B", flags);
 
-        void IDisposable.Dispose() { }
-
-        object IPythonBuffer.Object => this;
-
-        bool IPythonBuffer.IsReadOnly => false;
-
-        ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-            => _bytes.Data.AsSpan(0, _bytes.Count);
-
-        Span<byte> IPythonBuffer.AsSpan()
-            => _bytes.Data.AsSpan(0, _bytes.Count);
-
-        int IPythonBuffer.Offset => 0;
-
-        string? IPythonBuffer.Format => "B";  // TODO: provide null when appropriate
-
-        int IPythonBuffer.ItemCount => _bytes.Count;
-
-        int IPythonBuffer.ItemSize => 1;
-
-        int IPythonBuffer.NumOfDims => 1;
-
-        IReadOnlyList<int>? IPythonBuffer.Shape => null;
-
-        IReadOnlyList<int>? IPythonBuffer.Strides => null;
-
-        IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
-
-        Bytes IPythonBuffer.ToBytes(int start, int? end) {
-            if (start == 0 && end == null) {
-                return new Bytes(this);
-            }
-
-            return new Bytes((ByteArray)this[new Slice(start, end)]);
-        }
-
-        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-            return _bytes.Data.AsMemory(0, _bytes.Count);
+        private void CheckBuffer() {
+            if (_bytes.HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 
         #endregion

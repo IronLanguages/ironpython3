@@ -487,7 +487,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     Ops.Print(context.SystemState, "-- More --");
                     Ops.ReadLineFromSrc(context.SystemState);
                 }*/
-                PythonOps.Print(context, strings[i]);
+                PythonOps.PrintWithDest(context, context.LanguageContext.SystemStandardOut, strings[i]);
             }
         }
 
@@ -1294,7 +1294,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 line = PythonOps.Invoke(context, rl, "readline", new[] { prompt }) as string;
             } else {
                 if (prompt != null) {
-                    PythonOps.PrintNoNewline(context, prompt);
+                    PythonOps.PrintWithDest(context, context.LanguageContext.SystemStandardOut, prompt, noNewLine: true, flush: true);
                 }
                 line = PythonOps.ReadLineFromSrc(context, context.LanguageContext.SystemStandardIn) as string;
             }

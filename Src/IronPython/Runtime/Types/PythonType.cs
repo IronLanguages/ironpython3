@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,19 +9,20 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
 
@@ -674,6 +673,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             type.Name = name;
         }
+
+        public static PythonDictionary __prepare__([ParamDictionary]IDictionary<object, object> kwargs, params object[] args)
+            => new PythonDictionary();
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             string name = Name;
@@ -1525,19 +1527,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal bool TryGetNonCustomMember(CodeContext context, object instance, string name, out object value) {
-            PythonType pt;
-            IPythonObject sdo;
             bool hasValue = false;
             value = null;
 
             // first see if we have the value in the instance dictionary...
             // TODO: Instance checks should also work on functions, 
-            if ((pt = instance as PythonType) != null) {
+            if (instance is PythonType pt) {
                 PythonTypeSlot pts;
                 if (pt.TryLookupSlot(context, name, out pts)) {
                     hasValue = pts.TryGetValue(context, null, this, out value);
                 }
-            } else if ((sdo = instance as IPythonObject) != null) {
+            } else if (instance is IPythonObject sdo) {
                 PythonDictionary dict = sdo.Dict;
 
                 hasValue = dict != null && dict.TryGetValue(name, out value);
@@ -1550,11 +1550,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
 
-                PythonTypeSlot slot;
-                object newValue;
-                if (dt.TryLookupSlot(context, name, out slot)) {
+                if (dt.TryLookupSlot(context, name, out PythonTypeSlot slot)) {
                     if (!hasValue || slot.IsSetDescriptor(context, this)) {
-                        if (slot.TryGetValue(context, instance, this, out newValue))
+                        if (slot.TryGetValue(context, instance, this, out object newValue))
                             value = newValue;
                             return true;
                     }

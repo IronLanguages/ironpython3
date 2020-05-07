@@ -1758,10 +1758,9 @@ namespace IronPython.Runtime {
         }
 
         private void SetVersionVariables(PythonDictionary dict) {
-            var implementation = new Implementation();
-            dict["implementation"] = implementation;
-            dict["version_info"] = implementation.version;
-            dict["hexversion"] = implementation.hexversion;
+            dict["implementation"] = new SimpleNamespace(new Dictionary<string, object>() { { "cache_tag", "ironpython-34" }, { "name", "ironpython" }, { "version", VersionInfo.Instance }, { "hexversion", VersionInfo.Instance.GetHexVersion() } });
+            dict["version_info"] = VersionInfo.Instance;
+            dict["hexversion"] = VersionInfo.Instance.GetHexVersion();
             dict["version"] = _initialVersionString ?? GetVersionString();
         }
 
@@ -1781,7 +1780,7 @@ namespace IronPython.Runtime {
             string configuration = Runtime.ClrModule.IsDebug ? " DEBUG" : string.Empty;
             string bitness = (IntPtr.Size * 8).ToString();
 
-            return $"{Implementation.Instance.version.GetVersionString()}{configuration} ({Runtime.ClrModule.FileVersion})\n" +
+            return $"{VersionInfo.Instance.GetVersionString()}{configuration} ({Runtime.ClrModule.FileVersion})\n" +
                 $"[{Runtime.ClrModule.TargetFramework} on {Runtime.ClrModule.FrameworkDescription} ({bitness}-bit)]";
         }
 

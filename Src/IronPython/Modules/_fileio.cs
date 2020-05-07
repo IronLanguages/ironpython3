@@ -611,6 +611,8 @@ namespace IronPython.Modules {
                     return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
                 } catch (UnauthorizedAccessException) {
                     throw PythonOps.OSError(13, "Permission denied", name);
+                } catch (FileNotFoundException) {
+                    throw PythonOps.OSError(2, "No such file or directory", name);
                 } catch (IOException e) {
                     AddFilename(context, name, e);
                     throw;

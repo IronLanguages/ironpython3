@@ -65,15 +65,15 @@ namespace IronPython.Modules {
             if (value == null) return;
             context.LanguageContext.BuiltinModuleDict["_"] = null;
             var text = PythonOps.Repr(context, value);
+            var stdout = context.LanguageContext.SystemStandardOut;
             try {
-                PythonOps.Print(context, text);
+                PythonOps.PrintWithDest(context, stdout, text);
             } catch (EncoderFallbackException) {
-                var stdout = context.LanguageContext.SystemStandardOut;
                 var encoding = PythonOps.GetBoundAttr(context, stdout, "encoding") as string;
                 var bytes = StringOps.encode(context, text, encoding, "backslashreplace");
                 // TODO: write the bytes directly to the buffer if possible
                 text = bytes.decode(context, encoding, "strict");
-                PythonOps.Print(context, text);
+                PythonOps.PrintWithDest(context, stdout, text);
             }
             context.LanguageContext.BuiltinModuleDict["_"] = value;
         }

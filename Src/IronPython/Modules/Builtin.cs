@@ -751,8 +751,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return collection.Count;
         }
 
-        public static int len(object? o) {
-            return PythonOps.Length(o);
+        public static object len(object? o) {
+            return PythonOps.Length(o, out int res, out BigInteger bigRes) ? (object)res : bigRes;
         }
 
         public static PythonType set => DynamicHelpers.GetPythonTypeFromType(typeof(SetCollection));

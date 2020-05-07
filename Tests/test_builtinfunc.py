@@ -627,6 +627,12 @@ class BuiltinsTest2(IronPythonTestCase):
 
         self.assertRaises(TypeError, len, foo())
 
+        # ensure len doesn't fail when __len__ returns a long
+        class LongLength(object):
+            def __len__(self): return 11111111111111111
+
+        self.assertEqual(len(LongLength()), 11111111111111111)
+
     def test_int_ctor(self):
         self.assertEqual(int('0x10', 16), 16)
         self.assertEqual(int('0X10', 16), 16)

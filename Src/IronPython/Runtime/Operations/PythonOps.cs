@@ -1531,7 +1531,7 @@ namespace IronPython.Runtime.Operations {
                 return GetEnumeratorValuesFromTuple((PythonTuple)e, expected, argcntafter);
             }
 
-            IEnumerator ie = PythonOps.GetEnumeratorForUnpack(context, e);
+            IEnumerator ie = PythonOps.GetEnumerator(context, e);
 
             if (argcntafter == -1) {
                 int count = 0;
@@ -1872,37 +1872,43 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static IEnumerator GetEnumerator(CodeContext/*!*/ context, object? o) {
-            if (!TryGetEnumerator(context, o, out IEnumerator? ie)) {
-                throw TypeErrorForNotIterable(o);
+            if (TryGetEnumerator(context, o, out IEnumerator? ie)) {
+                return ie;
             }
-            return ie;
+            throw TypeErrorForNotIterable(o);
         }
 
         // Lack of type restrictions allows this method to return the direct result of __iter__ without
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object? o) {
-            if (o is PythonType pt && !pt.IsIterable(context)) {
-                throw TypeErrorForNotIterable(o);
+            if (TryGetEnumeratorObject(context, o, out object? enumerator)) {
+                return enumerator;
             }
-
-            if (PythonOps.TryGetBoundAttr(context, o, "__iter__", out object? iterFunc) &&
-                !Object.ReferenceEquals(iterFunc, NotImplementedType.Value)) {
-                var iter = PythonOps.CallWithContext(context, iterFunc!);
-                if (!PythonOps.TryGetBoundAttr(context, iter, "__next__", out _)) {
-                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
-                }
-                return iter!;
-            }
-
-            return GetEnumerator(context, o);
+            throw TypeErrorForNotIterable(o);
         }
 
-        public static IEnumerator GetEnumeratorForUnpack(CodeContext/*!*/ context, object? enumerable) {
-            if (!TryGetEnumerator(context, enumerable, out IEnumerator? enumerator)) {
-                throw TypeErrorForNotIterable(enumerable);
+        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
+            if (o is PythonType pt && !pt.IsIterable(context)) {
+                enumerator = default;
+                return false;
             }
 
-            return enumerator;
+            if (PythonTypeOps.TryGetOperator(context, o, "__iter__", out object? iterFunc) && iterFunc != null) {
+                var iter = PythonCalls.Call(context, iterFunc);
+                if (!PythonTypeOps.TryGetOperator(context, iter, "__next__", out _)) {
+                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
+                }
+                enumerator = iter!;
+                return true;
+            }
+
+            if (TryGetEnumerator(context, o, out IEnumerator? ie)) {
+                enumerator = ie;
+                return true;
+            }
+
+            enumerator = default;
+            return false;
         }
 
         public static Exception TypeErrorForNotIterable(object? enumerable) {
@@ -2336,11 +2342,18 @@ namespace IronPython.Runtime.Operations {
             return new PythonList(list);
         }
 
+        public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {
+            if (!TryGetEnumeratorObject(context, list, out object? enumerator)) {
+                // TODO: CPython 3.5 uses "an iterable" in the error message instead of "a sequence"
+                throw TypeError($"{funcName}() argument after * must be a sequence, not {PythonTypeOps.GetName(list)}");
+            }
+
+            return PythonTuple.Make(enumerator);
+        }
+
         public static PythonTuple GetOrCopyParamsTuple(PythonFunction function, object input) {
             if (input == null) {
                 throw PythonOps.TypeError("{0}() argument after * must be a sequence, not NoneType", function.__name__);
-            } else if (input.GetType() == typeof(PythonTuple)) {
-                return (PythonTuple)input;
             }
 
             return PythonTuple.Make(input);

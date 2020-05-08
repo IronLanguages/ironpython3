@@ -432,10 +432,20 @@ namespace IronPython.Modules {
 
 #if FEATURE_NATIVE
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static void symlink(string source, string link_name) {
-            if (Mono.Unix.Native.Syscall.symlink(source, link_name) == 0) return;
-            throw GetLastUnixError(source, link_name);
+        public static void symlink(string src, string dst, bool target_is_directory = false) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                // TODO: implement this
+                throw new NotImplementedException();
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                symlinkUnix(src, dst);
+            } else {
+                throw new NotImplementedException();
+            }
+
+            static void symlinkUnix(string src, string dst) {
+                if (Mono.Unix.Native.Syscall.symlink(src, dst) == 0) return;
+                throw GetLastUnixError(src, dst);
+            }
         }
 
         [PythonType("uname_result"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]

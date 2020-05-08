@@ -304,10 +304,12 @@ namespace IronPython.Runtime {
             }
 
             public void Dispose() {
-                if (_disposed) return;
-                _arrayData.bufferCount--;
-                GC.SuppressFinalize(this);
-                _disposed = true;
+                lock (Object) {
+                    if (_disposed) return;
+                    _arrayData.bufferCount--;
+                    GC.SuppressFinalize(this);
+                    _disposed = true;
+                }
             }
 
             public object Object { get; }

@@ -1657,8 +1657,11 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags)
-            => UnsafeByteList.GetBuffer(this, "B", flags);
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+            lock (this) {
+                return UnsafeByteList.GetBuffer(this, "B", flags);
+            }
+        }
 
         private void CheckBuffer() {
             if (_bytes.HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");

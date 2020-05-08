@@ -112,6 +112,22 @@ namespace IronPython.Runtime {
         #endregion
     }
 
+    /// <summary>
+    /// Provides low-level read-write access to byte data of the underlying object.
+    /// </summary>
+    /// <remarks>
+    /// 1. The buffer should be disposed after usage. Failing to dispose a buffer
+    /// instance will render the underlying object permanently locked in an export state.
+    ///
+    /// 2. <see cref="IDisposable.Dispose()"/> can be called multiple times (subsequent cals being no-op).
+    /// In multi-thread use scanarios, the client has to ensure that the call to Dispose()
+    /// happens only after all calls to other methods are terminated.
+    ///
+    /// 3. The buffer provides low-level byte acces to the exported data
+    /// that may not be synchronized for multiper read-write threads,
+    /// even if the exporter itself is a synchronized object.
+    /// The client can ensure proper synchronization by locking on <see cref="IPythonBuffer.Object"/>.
+    /// </remarks>
     public interface IPythonBuffer : IDisposable {
         /// <summary>
         /// A reference to the exporting object.

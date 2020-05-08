@@ -502,20 +502,20 @@ namespace IronPython.Runtime.Types {
 
             if (sig.HasListArgument()) {
                 int index = sig.IndexOf(ArgumentType.List);
-                DynamicMetaObject str = args[index];
+                DynamicMetaObject list = args[index];
 
-                 // TODO: ANything w/ __iter__ that's not an IList<object>
-                if (!(str.Value is IList<object>) && str.Value is IEnumerable) {
+                if (!(list.Value is IList<object>) && list.Value != null) {
                     // The DefaultBinder only handles types that implement IList<object>.  Here we have a
-                    // string.  We'll convert it into a tuple
-                    // and then have an embedded dynamic site pass that tuple through to the default
-                    // binder.
+                    // arbitrary user-defined sequence type.  We'll convert it into a tuple and then have
+                    // an embedded dynamic site pass that tuple through to the default binder.
                     DynamicMetaObject[] dynamicArgs = ArrayUtils.Insert(function, args);
 
                     dynamicArgs[index + 1] = new DynamicMetaObject(
                         Expression.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTupleFromSequence)),
-                            Expression.Convert(args[index].Expression, typeof(object))
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.UserMappingToPythonTuple)),
+                            codeContext,
+                            args[index].Expression,
+                            AstUtils.Constant(name)
                         ),
                         BindingRestrictions.Empty
                     );
@@ -534,7 +534,7 @@ namespace IronPython.Runtime.Types {
                             DynamicUtils.GetExpressions(dynamicArgs)
                         ),
                         function.Restrictions.Merge(
-                            BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(str.Expression, str.GetLimitType()))
+                            BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(list.Expression, list.GetLimitType()))
                         )
                     );
                 }

@@ -824,15 +824,22 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
+        internal static bool TryGetOperator(CodeContext context, object o, string name, out object callable) {
+            PythonType pt = DynamicHelpers.GetPythonType(o);
+
+            if (pt.TryResolveSlot(context, name, out PythonTypeSlot pts) &&
+                pts.TryGetValue(context, o, pt, out callable)) {
+                return true;
+            }
+
+            callable = default;
+            return false;
+        }
+
         internal static bool TryInvokeUnaryOperator(CodeContext context, object o, string name, out object value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "UnaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
-            PythonTypeSlot pts;
-            PythonType pt = DynamicHelpers.GetPythonType(o);
-            object callable;
-
-            if (pt.TryResolveSlot(context, name, out pts) &&
-                pts.TryGetValue(context, o, pt, out callable)) {
+            if (TryGetOperator(context, o, name, out object callable)) {
                 value = PythonCalls.Call(context, callable);
                 return true;
             }
@@ -844,11 +851,7 @@ namespace IronPython.Runtime.Operations {
         internal static bool TryInvokeBinaryOperator(CodeContext context, object o, object arg1, string name, out object value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "BinaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
-            PythonTypeSlot pts;
-            PythonType pt = DynamicHelpers.GetPythonType(o);
-            object callable;
-            if (pt.TryResolveSlot(context, name, out pts) &&
-                pts.TryGetValue(context, o, pt, out callable)) {
+            if (TryGetOperator(context, o, name, out object callable)) {
                 value = PythonCalls.Call(context, callable, arg1);
                 return true;
             }
@@ -860,11 +863,7 @@ namespace IronPython.Runtime.Operations {
         internal static bool TryInvokeTernaryOperator(CodeContext context, object o, object arg1, object arg2, string name, out object value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "TernaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
-            PythonTypeSlot pts;
-            PythonType pt = DynamicHelpers.GetPythonType(o);
-            object callable;
-            if (pt.TryResolveSlot(context, name, out pts) &&
-                pts.TryGetValue(context, o, pt, out callable)) {
+            if (TryGetOperator(context, o, name, out object callable)) {
                 value = PythonCalls.Call(context, callable, arg1, arg2);
                 return true;
             }

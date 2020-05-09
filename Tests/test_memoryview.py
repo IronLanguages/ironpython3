@@ -94,10 +94,10 @@ class MemoryViewTests(unittest.TestCase):
 
         # check that equality works for all combinations
         for x, y in itertools.product((b, ba, mv), repeat=2):
-            self.assertTrue(x == y, "{} {}".format(x, y))
+            self.assertTrue(x == y, "{!r} {!r}".format(x, y))
 
         for x, y in itertools.product((a, mv), repeat=2):
-            self.assertTrue(x == y, "{} {}".format(x, y))
+            self.assertTrue(x == y, "{!r} {!r}".format(x, y))
 
         # check __ne__
         self.assertFalse(b.__ne__(b))
@@ -116,12 +116,12 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(a.__ne__(mv), NotImplemented)
         self.assertFalse(a.__ne__(a))
 
-        # check that equality works for all combinations
+        # check that inequality works for all combinations
         for x, y in itertools.product((b, ba, mv), repeat=2):
-            self.assertFalse(x != y, "{} {}".format(x, y))
+            self.assertFalse(x != y, "{!r} {!r}".format(x, y))
 
         for x, y in itertools.product((a, mv), repeat=2):
-            self.assertFalse(x != y, "{} {}".format(x, y))
+            self.assertFalse(x != y, "{!r} {!r}".format(x, y))
 
     def test_overflow(self):
         def setitem(m, value):
@@ -193,6 +193,40 @@ class CastTests(unittest.TestCase):
         mv[0] = 32767
         self.assertEqual(mv[0], 32767)
         self.assertEqual(a[0], 58720000)
+
+    def test_cast_byteorder_typecode(self):
+        a = array.array('h', [100, 200])
+        mv = memoryview(a)
+        self.assertEqual(mv.format, 'h')
+
+        mv2 = mv.cast('@B')
+        self.assertEqual(mv2.format, '@B')
+        self.assertEqual(len(mv2), 4)
+        self.assertEqual(mv2[0], 100)
+        self.assertEqual(mv2[2], 200)
+
+        mv3 = mv2.cast('@h')
+        self.assertEqual(mv3.format, '@h')
+        self.assertEqual(len(mv3), 2)
+        self.assertEqual(mv3[0], 100)
+        self.assertEqual(mv3[1], 200)
+        self.assertEqual(mv3, a)
+
+        mv4 = mv.cast('B')
+        self.assertEqual(mv4.format, 'B')
+        self.assertRaises(ValueError, mv4.cast, '<B')
+        self.assertRaises(ValueError, mv4.cast, '>B')
+        self.assertRaises(ValueError, mv4.cast, '=B')
+        self.assertRaises(ValueError, mv4.cast, '!B')
+        self.assertRaises(ValueError, mv4.cast, ' B')
+        self.assertRaises(ValueError, mv4.cast, 'B ')
+        self.assertRaises(ValueError, mv4.cast, '<h')
+        self.assertRaises(ValueError, mv4.cast, '>h')
+        self.assertRaises(ValueError, mv4.cast, '=h')
+        self.assertRaises(ValueError, mv4.cast, '!h')
+        self.assertRaises(ValueError, mv4.cast, ' h')
+        self.assertRaises(ValueError, mv4.cast, 'h ')
+
 
     def test_cast_wrong_size(self):
         a = array.array('b', [1,2,3,4,5])

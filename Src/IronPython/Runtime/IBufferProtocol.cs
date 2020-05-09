@@ -165,6 +165,8 @@ namespace IronPython.Runtime {
         /// String describing the format of a single element, using element codes as defined in the 'struct' module.
         /// Value null implies unformatted, byte-oriented data access.
         /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.format"/>
+        /// <seealso href="https://docs.python.org/3/library/struct.html#format-strings"/>
         string? Format { get; }
 
         /// <summary>
@@ -190,18 +192,21 @@ namespace IronPython.Runtime {
         /// 0 for single values, 1 for simple arrays, 2 and more for ND-arrays.
         /// Maximum number of dimensions is 64.
         /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.ndim"/>
         int NumOfDims { get; }
 
         /// <summary>
         /// A list of number of elements in each dimension.
         /// If null, it implies a scalar or a simple 1-dimensional array.
         /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.shape"/>
         IReadOnlyList<int>? Shape { get; }
 
         /// <summary>
         /// For each dimension, a value indicating how many bytes to skip to get to the next element.
         /// If null, it implies a scalar or a contiguous n-dimensional array.
         /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.strides"/>
         IReadOnlyList<int>? Strides { get; }
 
         /// <summary>
@@ -209,6 +214,7 @@ namespace IronPython.Runtime {
         /// If null, it implies that all buffer data lies within the span provided by <see cref="AsReadOnlySpan()"/>
         /// and can be accessed by simple offset calculations (no pointer dereferencing).
         /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.suboffsets"/>
         IReadOnlyList<int>? SubOffsets { get; }
 
         // Obsolete

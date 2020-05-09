@@ -430,10 +430,7 @@ namespace IronPython.Runtime {
                     "memoryview: destination format must be a native single character format prefixed with an optional '@'");
             }
 
-            bool thisIsBytes = this._format == "B" || this._format == "b" || this._format == "c";
-            bool otherIsBytes = format == "B" || format == "b" || format == "c";
-
-            if (!thisIsBytes && !otherIsBytes) {
+            if (!TypecodeOps.IsByteFormat(this._format) && !TypecodeOps.IsByteFormat(format)) {
                 throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
             }
 

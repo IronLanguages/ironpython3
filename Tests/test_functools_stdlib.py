@@ -50,7 +50,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_functools.TestPartialC('test_pickle')) # StackOverflowException
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
-        #suite.addTest(test.test_functools.TestPartialC('test_repr')) # AttributeError: 'str' object has no attribute 'format_map'
+        #suite.addTest(test.test_functools.TestPartialC('test_repr')) # AssertionError
         #suite.addTest(test.test_functools.TestPartialC('test_setstate_refcount')) # AttributeError: 'partial' object has no attribute '__setstate__'
         #suite.addTest(test.test_functools.TestPartialC('test_weakref')) # AssertionError: ReferenceError not raised by getattr
         suite.addTest(test.test_functools.TestPartialC('test_with_bound_and_unbound_methods'))
@@ -66,7 +66,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle')) # StackOverflowException
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_protection_of_callers_dict_argument'))
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_repr')) # AttributeError: 'str' object has no attribute 'format_map'
+        #suite.addTest(test.test_functools.TestPartialCSubclass('test_repr')) # AssertionError
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_refcount')) # AttributeError: 'PartialSubclass' object has no attribute '__setstate__'
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref')) # AssertionError: ReferenceError not raised by getattr
         suite.addTest(test.test_functools.TestPartialCSubclass('test_with_bound_and_unbound_methods'))
@@ -78,7 +78,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialMethod('test_nested'))
         suite.addTest(test.test_functools.TestPartialMethod('test_over_partial'))
         suite.addTest(test.test_functools.TestPartialMethod('test_overriding_keywords'))
-        #suite.addTest(test.test_functools.TestPartialMethod('test_repr')) # AttributeError: 'str' object has no attribute 'format_map'
+        suite.addTest(test.test_functools.TestPartialMethod('test_repr'))
         suite.addTest(test.test_functools.TestPartialMethod('test_unbound_method_retrieval'))
         suite.addTest(test.test_functools.TestPartialPy('test_arg_combinations'))
         suite.addTest(test.test_functools.TestPartialPy('test_argument_checking'))

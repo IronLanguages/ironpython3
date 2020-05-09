@@ -1232,12 +1232,13 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static IEnumerable<PythonTuple>/*!*/ _formatter_parser([NotNull]this string/*!*/ self) {
-            return NewStringFormatter.GetFormatInfo(self);
-        }
-
-        public static PythonTuple/*!*/ _formatter_field_name_split([NotNull]this string/*!*/ self) {
-            return NewStringFormatter.GetFieldNameInfo(self);
+        public static string format_map(CodeContext/*!*/ context, [NotNull]string self, [NotNull]IDictionary<object, object> mapping) {
+            return NewStringFormatter.FormatString(
+                context.LanguageContext,
+                self,
+                PythonTuple.EMPTY,
+                mapping
+            );
         }
 
         #endregion

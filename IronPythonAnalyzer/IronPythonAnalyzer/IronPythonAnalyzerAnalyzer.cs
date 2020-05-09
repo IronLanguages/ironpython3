@@ -44,6 +44,7 @@ namespace IronPythonAnalyzer {
                 if (methodSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(pythonHiddenAttributeSymbol))) return;
 
                 var codeContextSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.CodeContext");
+                var siteLocalStorageSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.SiteLocalStorage");
                 var notNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
                 var disallowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.DisallowNullAttribute");
                 var allowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.AllowNullAttribute");
@@ -67,6 +68,7 @@ namespace IronPythonAnalyzer {
                     }
                     if (parameterSymbol.Type.IsValueType) continue;
                     if (parameterSymbol.Type.Equals(codeContextSymbol)) continue;
+                    if (SymbolEqualityComparer.Default.Equals(parameterSymbol.Type.BaseType, siteLocalStorageSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
                         if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
                             && !parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(allowNullAttributeSymbol))) {

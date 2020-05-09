@@ -2,63 +2,64 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
-using System.Collections;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_functools", typeof(IronPython.Modules.FunctionTools))]
 namespace IronPython.Modules {
     public static class FunctionTools {
         public const string __doc__ = "provides functionality for manipulating callable objects";
 
-        public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq) {
+        public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (!i.MoveNext()) {
                 throw PythonOps.TypeError("reduce() of empty sequence with no initial value");
             }
             EnsureReduceData(context, siteData);
 
-            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
+            CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>> site = siteData.Data;
 
-            object ret = i.Current;
+            object? ret = i.Current;
             while (i.MoveNext()) {
                 ret = site.Target(site, context, func, ret, i.Current);
             }
             return ret;
         }
 
-        public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq, object initializer) {
+        public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq, object? initializer) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             EnsureReduceData(context, siteData);
 
-            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
+            CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>> site = siteData.Data;
 
-            object ret = initializer;
+            object? ret = initializer;
             while (i.MoveNext()) {
                 ret = site.Target(site, context, func, ret, i.Current);
             }
             return ret;
         }
 
-        private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
+        private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData) {
             if (siteData.Data == null) {
-                siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
+                siteData.Data = CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>.Create(
                     context.LanguageContext.Invoke(
                         new CallSignature(2)
                     )
                 );
-
             }
         }
 
@@ -71,29 +72,30 @@ namespace IronPython.Modules {
         public class partial : IWeakReferenceable {
             private const string _defaultDoc = "partial(func, *args, **keywords) - new function with partial application\n    of the given arguments and keywords.\n";
 
-            private object/*!*/ _function;                                                  // the callable function to dispatch to
-            private object[]/*!*/ _args;                                                    // the initially provided arguments
-            private IDictionary<object, object> _keywordArgs;                               // the initially provided keyword arguments or null
-            private CodeContext/*!*/ _context;                                              // code context from the caller who created us
-            private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
-            private CallSite<Func<CallSite, CodeContext, object, object[], object>> _splatSite;      // the position only call site
-            private PythonDictionary _dict;                                                 // dictionary for storing extra attributes
-            private WeakRefTracker _tracker;                                                // tracker so users can use Python weak references
-            private string _doc;                                                            // A custom docstring, if used
+            private readonly CodeContext/*!*/ _context;                                             // code context from the caller who created us
+            private readonly object/*!*/ _function;                                                 // the callable function to dispatch to
+            private readonly object[]/*!*/ _args;                                                   // the initially provided arguments
+            private readonly IDictionary<object, object> _keywordArgs;                              // the initially provided keyword arguments or null
+
+            private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>? _dictSite; // the dictionary call site if ever called w/ keyword args
+            private CallSite<Func<CallSite, CodeContext, object, object[], object>>? _splatSite;    // the position only call site
+            private PythonDictionary? _dict;                                                        // dictionary for storing extra attributes
+            private WeakRefTracker? _tracker;                                                       // tracker so users can use Python weak references
+            private string? _doc;                                                                   // A custom docstring, if used
 
             #region Constructors
 
             /// <summary>
             /// Creates a new partial object with the provided positional arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object func, [NotNull]params object[]/*!*/ args)
-                : this(context, func, null, args) {
+            public partial(CodeContext/*!*/ context, object? func, [NotNull]params object[]/*!*/ args)
+                : this(context, func, new PythonDictionary(), args) {
             }
 
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object func, [ParamDictionary]IDictionary<object, object> keywords, [NotNull]params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object? func, [NotNull, ParamDictionary]IDictionary<object, object> keywords, [NotNull]params object[]/*!*/ args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -109,12 +111,12 @@ namespace IronPython.Modules {
             #region Public Python API
 
             [SpecialName, PropertyMethod, WrapperDescriptor]
-            public static object Get__doc__(CodeContext context, partial self) {
+            public static object Get__doc__(CodeContext context, [NotNull]partial self) {
                 return self._doc ?? _defaultDoc;
             }
 
             [SpecialName, PropertyMethod, WrapperDescriptor]
-            public static void Set__doc__(partial self, object value) {
+            public static void Set__doc__([NotNull]partial self, object? value) {
                 self._doc = value as string;
             }
 
@@ -153,6 +155,7 @@ namespace IronPython.Modules {
                 get {
                     return EnsureDict();
                 }
+                [param: NotNull]
                 set {
                     _dict = value;
                 }
@@ -164,7 +167,7 @@ namespace IronPython.Modules {
             }
 
             // This exists for subtypes because we don't yet automap DeleteMember onto __delattr__
-            public void __delattr__(string name) {
+            public void __delattr__([NotNull]string name) {
                 if (name == "__dict__") Delete__dict__();
 
                 _dict?.Remove(name);
@@ -178,21 +181,21 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments.
             /// </summary>
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, params object[] args) {
+            public object? Call(CodeContext/*!*/ context, [NotNull]params object[] args) {
                 if (_keywordArgs == null) {
                     EnsureSplatSite();
-                    return _splatSite.Target(_splatSite, context, _function, ArrayUtils.AppendRange(_args, args));
+                    return _splatSite!.Target(_splatSite, context, _function, ArrayUtils.AppendRange(_args, args));
                 }
 
                 EnsureDictSplatSite();
-                return _dictSite.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), _keywordArgs);
+                return _dictSite!.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), _keywordArgs);
             }
 
             /// <summary>
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<object, object> dict, [NotNull]params object[] args) {
 
                 IDictionary<object, object> finalDict;
                 if (_keywordArgs != null) {
@@ -206,26 +209,25 @@ namespace IronPython.Modules {
                 }
 
                 EnsureDictSplatSite();
-                return _dictSite.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), finalDict);
+                return _dictSite!.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), finalDict);
             }
 
             /// <summary>
             /// Operator method to set arbitrary members on the partial object.
             /// </summary>
             [SpecialName]
-            public void SetMemberAfter(CodeContext/*!*/ context, string name, object value) {
+            public void SetMemberAfter(CodeContext/*!*/ context, [NotNull]string name, object? value) {
                 EnsureDict();
 
-                _dict[name] = value;
+                _dict![name] = value;
             }
 
             /// <summary>
             /// Operator method to get additional arbitrary members defined on the partial object.
             /// </summary>
             [SpecialName]
-            public object GetBoundMember(CodeContext/*!*/ context, string name) {
-                object value;
-                if (_dict != null && _dict.TryGetValue(name, out value)) {
+            public object GetBoundMember(CodeContext/*!*/ context, [NotNull]string name) {
+                if (_dict != null && _dict.TryGetValue(name, out object value)) {
                     return value;
                 }
                 return OperationFailed.Value;
@@ -235,7 +237,7 @@ namespace IronPython.Modules {
             /// Operator method to delete arbitrary members defined in the partial object.
             /// </summary>
             [SpecialName]
-            public bool DeleteMember(CodeContext/*!*/ context, string name) {
+            public bool DeleteMember(CodeContext/*!*/ context, [NotNull]string name) {
                 switch (name) {
                     case "__dict__":
                         Delete__dict__();
@@ -286,12 +288,12 @@ namespace IronPython.Modules {
 
             #region IWeakReferenceable Members
 
-            WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            WeakRefTracker? IWeakReferenceable.GetWeakRef() {
                 return _tracker;
             }
 
             bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
-                return Interlocked.CompareExchange<WeakRefTracker>(ref _tracker, value, null) == null;
+                return Interlocked.CompareExchange(ref _tracker, value, null) == null;
             }
 
             void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {

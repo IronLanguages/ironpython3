@@ -45,7 +45,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_basic_examples'))
         suite.addTest(test.test_functools.TestPartialC('test_error_propagation'))
         suite.addTest(test.test_functools.TestPartialC('test_keyword'))
-        #suite.addTest(test.test_functools.TestPartialC('test_kw_combinations')) # AssertionError: None != {}
+        suite.addTest(test.test_functools.TestPartialC('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialC('test_no_side_effects'))
         #suite.addTest(test.test_functools.TestPartialC('test_pickle')) # StackOverflowException
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
@@ -61,7 +61,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_basic_examples'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_error_propagation'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_keyword'))
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_kw_combinations')) # AssertionError: None != {}
+        suite.addTest(test.test_functools.TestPartialCSubclass('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_no_side_effects'))
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle')) # StackOverflowException
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
@@ -86,7 +86,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialPy('test_basic_examples'))
         suite.addTest(test.test_functools.TestPartialPy('test_error_propagation'))
         suite.addTest(test.test_functools.TestPartialPy('test_keyword'))
-        #suite.addTest(test.test_functools.TestPartialPy('test_kw_combinations')) # AssertionError: None != {}
+        suite.addTest(test.test_functools.TestPartialPy('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialPy('test_no_side_effects'))
         suite.addTest(test.test_functools.TestPartialPy('test_positional'))
         suite.addTest(test.test_functools.TestPartialPy('test_protection_of_callers_dict_argument'))

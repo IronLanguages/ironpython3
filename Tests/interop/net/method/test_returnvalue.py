@@ -78,7 +78,6 @@ class ReturnValueTest(IronPythonTestCase):
         x= self.c.ReturnDelegate()
         self.assertEqual(x.GetType(), clr.GetClrType(Int32RInt32EventHandler))
         self.assertEqual(x(3), 6)
-        self.assertEqual(x(3.0), 6)
         
         # array
         x= self.c.ReturnInt32Array()

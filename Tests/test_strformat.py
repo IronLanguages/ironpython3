@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import _string
 import sys
 import unittest
 
@@ -18,6 +19,88 @@ class bad_str(object):
         raise TestException('booh')
 
 class StrFormatTest(IronPythonTestCase):
+
+    def test_formatter_parser_errors(self):
+        errors = [ ("{0!",             "unmatched '{' in format"),
+                ("{0!}}",           "end of format while looking for conversion specifier"),
+                ("}a{",             "Single '}' encountered in format string"),
+                ("{0:0.1a",         "unmatched '{' in format"),
+                ("{0:{}",           "unmatched '{' in format"),
+                ("{0:aa{ab}",       "unmatched '{' in format"),
+                ("{0!}}",           "end of format while looking for conversion specifier"),
+                ("{0!}",            "end of format while looking for conversion specifier"),
+                ("{0!",             "unmatched '{' in format"),
+                ("{0!aa}",          "expected ':' after format specifier"),
+                ("{0.{!:{.}.}}",    "expected ':' after format specifier"),
+                ("{",               "Single '{' encountered in format string"),
+                ]
+
+        for format, errorMsg in errors:
+            self.assertRaisesMessage(ValueError, errorMsg, list, _string.formatter_parser(format))
+
+    def test_formatter_parser(self):
+        tests = [ ('{0.}',             [('', '0.', '', None)]),
+                ('{0:.{abc}}',       [('', '0', '.{abc}', None)]),
+                ('{0[]}',            [('', '0[]', '', None)]),
+                ('{0.{:{.}.}}',      [('', '0.{', '{.}.}', None)]),
+                ('{0.{:.}.}',        [('', '0.{', '.}.', None)]),
+                ('{0.{!.:{.}.}}',    [('', '0.{', '{.}.}', '.')]),
+                ('{0.{!!:{.}.}}',    [('', '0.{', '{.}.}', '!')]),
+                ('{0!!}',            [('', '0', '', '!')]),
+                ('{0[}',             [('', '0[', '', None)]),
+                ('{0:::!!::!::}',    [('', '0', '::!!::!::', None)]),
+                ('{0.]}',            [('', '0.]', '', None)]),
+                ('{0.[}',            [('', '0.[', '', None)]),
+                ('{0..}',            [('', '0..', '', None)]),
+                ('{{',               [('{', None, None, None)]),
+                ('}}',               [('}', None, None, None)]),
+                ('{{}}',             [('{', None, None, None), ('}', None, None, None)]),
+                ]
+
+        for format, expected in tests:
+            self.assertEqual(list(_string.formatter_parser(format)), expected)
+
+    def test_format_field_name_split_errors(self):
+        if is_cpython: #http://ironpython.codeplex.com/workitem/28224
+            temp = _string.formatter_field_name_split('') #Just ensure it doesn't throw
+        else:
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '[')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '.')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '[.abc')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '.abc')
+
+        errors = [ ("0[",              "Missing ']' in format string"),
+                ("abc.",            "Empty attribute in format string"),
+                ("abc[]",           "Empty attribute in format string"),
+                ]
+
+        for format, errorMsg in errors:
+            self.assertRaisesMessage(ValueError, errorMsg, list, _string.formatter_field_name_split(format)[1])
+
+    def test_format_field_name_split(self):
+        tests = [ ('0',                [long(0), []]),
+                ('abc.foo',          ['abc', [(True, 'foo')]]),
+                ('abc[2]',           ['abc', [(False, long(2))]]),
+                ('1[2]',             [long(1), [(False, long(2))]]),
+                ('1.abc',            [long(1), [(True, 'abc')]]),
+                ('abc 2.abc',        ['abc 2', [(True, 'abc')]]),
+                ('abc!2.abc',        ['abc!2', [(True, 'abc')]]),
+                ('].abc',            [']', [(True, 'abc')]]),
+                ("abc[[]",           ['abc', [(False, '[')]] ),
+                ("abc[[[]",          ['abc', [(False, '[[')]] ),
+                ]
+
+        if not is_cpython: #http://ironpython.codeplex.com/workitem/28331
+            tests.append(("abc[2]#x",         ['abc', [(False, long(2))]] ))
+        tests.append([allChars, [allChars, []]])
+        tests.append([allChars + '.foo', [allChars, [(True, 'foo')]]])
+        tests.append([allChars + '[2]', [allChars, [(False, long(2))]]])
+
+        for format, expected in tests:
+            res = list(_string.formatter_field_name_split(format))
+            res[1] = list(res[1])
+            self.assertEqual(res, expected)
 
     def test_format_arg_errors(self):
         self.assertRaises(IndexError, '{0}'.format)

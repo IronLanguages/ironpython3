@@ -1251,7 +1251,9 @@ namespace IronPython.Runtime {
                 IList<byte> list = GetBytes(value, useHint: false);
 
                 lock (this) {
-                    if (slice.step != null) {
+                    slice.indices(_bytes.Count, out int start, out int stop, out int step);
+
+                    if (step != 1) {
                         // try to assign back to self: make a copy first
                         if (ReferenceEquals(this, list)) {
                             list = CopyThis();
@@ -1260,30 +1262,18 @@ namespace IronPython.Runtime {
                             return;
                         }
 
-                        int start, stop, step, count;
-                        slice.GetIndicesAndCount(_bytes.Count, out start, out stop, out step, out count);
+                        int count = PythonOps.GetSliceCount(start, stop, step);
 
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
 
-                        if (list.Count < count) {
-                            throw PythonOps.ValueError("too few items in the enumerator. need {0} have {1}", count, list.Count);
+                        if (list.Count != count) {
+                            throw PythonOps.ValueError("attempt to assign bytes of size {0} to extended slice of size {1}", list.Count, count);
                         }
 
                         for (int i = 0, index = start; i < list.Count; i++, index += step) {
-                            if (i >= count) {
-                                if (index == _bytes.Count) {
-                                    _bytes.Add(list[i]);
-                                } else {
-                                    _bytes.Insert(index, list[i]);
-                                }
-                            } else {
-                                _bytes[index] = list[i];
-                            }
+                            _bytes[index] = list[i];
                         }
                     } else {
-                        int start, stop, step;
-                        slice.indices(_bytes.Count, out start, out stop, out step);
-
                         SliceNoStep(start, stop, list);
                     }
                 }

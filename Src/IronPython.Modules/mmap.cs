@@ -117,7 +117,7 @@ namespace IronPython.Modules {
                 if (offset < 0) {
                     throw PythonOps.OverflowError("memory mapped offset must be positive");
                 }
-                if (length > SysModule.maxsize) {
+                if (IntPtr.Size == 4 && length > int.MaxValue) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
                 }
 

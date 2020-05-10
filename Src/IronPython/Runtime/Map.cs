@@ -4,13 +4,14 @@
 
 #nullable enable
 
+using System;
 using System.Collections;
 using System.Linq;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
@@ -19,36 +20,43 @@ namespace IronPython.Runtime {
 
 Make an iterator that computes the function using arguments from
 each of the iterables.  Stops when the shortest iterable is exhausted.")]
-    public class Map : IEnumerable {
+    public class Map : IEnumerator {
         private readonly CodeContext _context;
-        private readonly object _func;
-        private readonly object[] _iters;
+        private readonly object? _func;
+        private readonly IEnumerator[] _enumerators;
 
-        public Map(CodeContext context, [System.Diagnostics.CodeAnalysis.NotNull]object? func, [NotNull]params object[] iters) {
-            if (iters.Length == 0) {
+        public Map(CodeContext context, object? func, [NotNull]params object[] iterables) {
+            if (iterables.Length == 0) {
                 throw PythonOps.TypeError("map() must have at least two arguments.");
             }
 
-            if (!PythonOps.IsCallable(context, func)) {
-                throw PythonOps.UncallableError(func);
-            }
-
-            foreach (object o in iters) {
-                if (!PythonOps.TryGetEnumerator(context, o, out _)) {
-                    throw PythonOps.TypeErrorForNotIterable(o);
+            _enumerators = new IEnumerator[iterables.Length];
+            for (var i = 0; i < iterables.Length; i++) {
+                var iter = iterables[i];
+                if (!PythonOps.TryGetEnumerator(context, iter, out var enumerator)) {
+                    throw PythonOps.TypeErrorForNotIterable(iter);
                 }
+                _enumerators[i] = enumerator;
             }
 
             _context = context;
             _func = func;
-            _iters = iters;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            IEnumerator[] enumerators = _iters.Select(x => PythonOps.GetEnumerator(x)).ToArray();
-            while (enumerators.All(x => x.MoveNext())) {
-                yield return PythonOps.CallWithContext(_context, _func, enumerators.Select(x => x.Current).ToArray());
+        [PythonHidden]
+        public object? Current { get; private set; }
+
+        [PythonHidden]
+        public bool MoveNext() {
+            if (_enumerators.Length > 0 && _enumerators.All(x => x.MoveNext())) {
+                Current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
+                return true;
             }
+            Current = default;
+            return false;
         }
+
+        [PythonHidden]
+        public void Reset() { throw new NotSupportedException(); }
     }
 }

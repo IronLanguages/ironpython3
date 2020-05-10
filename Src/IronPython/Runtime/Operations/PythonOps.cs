@@ -810,29 +810,51 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static int Length(object? o) {
+        private static bool ObjectToInt(object o, out int res, out BigInteger longRes) {
+            if (o is BigInteger bi) {
+                if (!bi.AsInt32(out res)) {
+                    longRes = bi;
+                    return false;
+                }
+            } else if (o is int i) {
+                res = i;
+            } else {
+                res = Converter.ConvertToInt32(o);
+            }
+
+            longRes = default;
+            return true;
+        }
+
+        internal static bool Length(object? o, out int res, out BigInteger bigRes) {
             if (o is string s) {
-                return s.Length;
+                res = s.Length;
+                bigRes = default;
+                return true;
             }
 
             if (o is object[] os) {
-                return os.Length;
+                res = os.Length;
+                bigRes = default;
+                return true;
             }
 
-            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o,
-                string.Format("object of type '{0}' has no len()", PythonOps.GetPythonTypeName(o)));
+            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, $"object of type '{GetPythonTypeName(o)}' has no len()");
 
-            int res;
-            if (len is int) {
-                res = (int)len;
+            if (ObjectToInt(len, out res, out bigRes)) {
+                if (res < 0) throw ValueError("__len__() should return >= 0");
+                return true;
             } else {
-                res = Converter.ConvertToInt32(len);
+                if (bigRes < 0) throw ValueError("__len__() should return >= 0");
+                return false;
             }
+        }
 
-            if (res < 0) {
-                throw PythonOps.ValueError("__len__() should return >= 0");
+        public static int Length(object? o) {
+            if (Length(o, out int res, out _)) {
+                return res;
             }
-            return res;
+            throw new OverflowException();
         }
 
         internal static bool TryInvokeLengthHint(CodeContext context, object? sequence, out int hint) {
@@ -1509,7 +1531,7 @@ namespace IronPython.Runtime.Operations {
                 return GetEnumeratorValuesFromTuple((PythonTuple)e, expected, argcntafter);
             }
 
-            IEnumerator ie = PythonOps.GetEnumeratorForUnpack(context, e);
+            IEnumerator ie = PythonOps.GetEnumerator(context, e);
 
             if (argcntafter == -1) {
                 int count = 0;
@@ -1618,7 +1640,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Standard I/O support
 
-        public static void Write(CodeContext/*!*/ context, object f, string text) {
+        internal static void Write(CodeContext/*!*/ context, object f, string text) {
             PythonContext pc = context.LanguageContext;
 
             if (f == null) {
@@ -1647,22 +1669,17 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.Invoke(context, f, "readline");
         }
 
-        // Must stay here for now because libs depend on it.
-        internal static void Print(CodeContext/*!*/ context, object o) {
-            PrintWithDest(context, context.LanguageContext.SystemStandardOut, o);
-        }
-
-        internal static void PrintNoNewline(CodeContext/*!*/ context, object o) {
-            PrintWithDestNoNewline(context, context.LanguageContext.SystemStandardOut, o);
-        }
-
-        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o) {
-            PrintWithDestNoNewline(context, dest, o);
-            Write(context, dest, "\n");
-        }
-
-        internal static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o) {
+        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o, bool noNewLine = false, bool flush = false) {
             Write(context, dest, ToString(context, o));
+            if (!noNewLine) Write(context, dest, "\n");
+
+            if (flush) {
+                if (dest is PythonIOModule._IOBase pf) {
+                    pf.flush(context);
+                } else if (TryGetBoundAttr(context, dest, "flush", out object? flushAttr)) {
+                    PythonCalls.Call(context, flushAttr);
+                }
+            }
         }
 
         internal static object? ReadLineFromSrc(CodeContext/*!*/ context, object src) {
@@ -1855,37 +1872,43 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static IEnumerator GetEnumerator(CodeContext/*!*/ context, object? o) {
-            if (!TryGetEnumerator(context, o, out IEnumerator? ie)) {
-                throw TypeErrorForNotIterable(o);
+            if (TryGetEnumerator(context, o, out IEnumerator? ie)) {
+                return ie;
             }
-            return ie;
+            throw TypeErrorForNotIterable(o);
         }
 
         // Lack of type restrictions allows this method to return the direct result of __iter__ without
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object? o) {
-            if (o is PythonType pt && !pt.IsIterable(context)) {
-                throw TypeErrorForNotIterable(o);
+            if (TryGetEnumeratorObject(context, o, out object? enumerator)) {
+                return enumerator;
             }
-
-            if (PythonOps.TryGetBoundAttr(context, o, "__iter__", out object? iterFunc) &&
-                !Object.ReferenceEquals(iterFunc, NotImplementedType.Value)) {
-                var iter = PythonOps.CallWithContext(context, iterFunc!);
-                if (!PythonOps.TryGetBoundAttr(context, iter, "__next__", out _)) {
-                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
-                }
-                return iter!;
-            }
-
-            return GetEnumerator(context, o);
+            throw TypeErrorForNotIterable(o);
         }
 
-        public static IEnumerator GetEnumeratorForUnpack(CodeContext/*!*/ context, object? enumerable) {
-            if (!TryGetEnumerator(context, enumerable, out IEnumerator? enumerator)) {
-                throw TypeErrorForNotIterable(enumerable);
+        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
+            if (o is PythonType pt && !pt.IsIterable(context)) {
+                enumerator = default;
+                return false;
             }
 
-            return enumerator;
+            if (PythonTypeOps.TryGetOperator(context, o, "__iter__", out object? iterFunc) && iterFunc != null) {
+                var iter = PythonCalls.Call(context, iterFunc);
+                if (!PythonTypeOps.TryGetOperator(context, iter, "__next__", out _)) {
+                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
+                }
+                enumerator = iter!;
+                return true;
+            }
+
+            if (TryGetEnumerator(context, o, out IEnumerator? ie)) {
+                enumerator = ie;
+                return true;
+            }
+
+            enumerator = default;
+            return false;
         }
 
         public static Exception TypeErrorForNotIterable(object? enumerable) {
@@ -2319,11 +2342,18 @@ namespace IronPython.Runtime.Operations {
             return new PythonList(list);
         }
 
+        public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {
+            if (!TryGetEnumeratorObject(context, list, out object? enumerator)) {
+                // TODO: CPython 3.5 uses "an iterable" in the error message instead of "a sequence"
+                throw TypeError($"{funcName}() argument after * must be a sequence, not {PythonTypeOps.GetName(list)}");
+            }
+
+            return PythonTuple.Make(enumerator);
+        }
+
         public static PythonTuple GetOrCopyParamsTuple(PythonFunction function, object input) {
             if (input == null) {
                 throw PythonOps.TypeError("{0}() argument after * must be a sequence, not NoneType", function.__name__);
-            } else if (input.GetType() == typeof(PythonTuple)) {
-                return (PythonTuple)input;
             }
 
             return PythonTuple.Make(input);
@@ -3035,7 +3065,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (warn == null) {
-                PythonOps.PrintWithDestNoNewline(context, pc.SystemStandardError, string.Format("{0}:{1}: {2}: {3}\n", filename, lineNo, category.Name, message));
+                PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}\n", noNewLine: true);
             } else {
                 PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
             }

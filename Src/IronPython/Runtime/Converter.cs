@@ -808,7 +808,10 @@ namespace IronPython.Runtime {
 
             if (allowNarrowing == PythonNarrowing.All) {
                 //__int__, __float__, __long__
-                if (IsNumeric(fromType) && IsNumeric(toType)) return true;
+                if (IsNumeric(fromType) && IsNumeric(toType)) {
+                    if (toType == Int32Type && (fromType == DoubleType || typeof(Extensible<double>).IsAssignableFrom(fromType))) return false;
+                    return true;
+                }
                 if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
                 if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
                 if (toType == BigIntegerType && HasPythonProtocol(fromType, "__long__")) return true;
@@ -911,8 +914,7 @@ namespace IronPython.Runtime {
             if (t.FullName.StartsWith(NewTypeMaker.TypePrefix)) return true;
             PythonType dt = DynamicHelpers.GetPythonTypeFromType(t);
             if (dt == null) return false;
-            PythonTypeSlot tmp;
-            return dt.TryResolveSlot(DefaultContext.Default, name, out tmp);
+            return dt.TryResolveSlot(DefaultContext.Default, name, out _);
         }
     }
 }

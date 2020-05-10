@@ -5,15 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("_thread", typeof(IronPython.Modules.PythonThread))]
@@ -98,9 +100,9 @@ namespace IronPython.Modules {
             }
 
             int oldSize = GetStackSize(context);
-            
+
             SetStackSize(context, size);
-            
+
             return oldSize;
         }
 
@@ -147,8 +149,8 @@ namespace IronPython.Modules {
             public void __exit__(CodeContext/*!*/ context, params object[] args) {
                 release(context);
             }
-            
-            public bool acquire(bool blocking=true, int timeout=-1) {
+
+            public bool acquire(bool blocking = true, float timeout = -1) {
                 for (; ; ) {
                     if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {
                         return true;
@@ -162,7 +164,7 @@ namespace IronPython.Modules {
                         CreateBlockEvent();
                         continue;
                     }
-                    if (!blockEvent.WaitOne(timeout < 0 ? Timeout.Infinite : timeout)) {
+                    if (!blockEvent.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout))) {
                         return false;
                     }
                     GC.KeepAlive(this);

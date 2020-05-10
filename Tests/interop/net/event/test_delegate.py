@@ -25,10 +25,11 @@ class DelegateTest(IronPythonTestCase):
         y(3)
         y = d(x.MVoidByte)
         y(3)
-        y = d(x.MVoidDouble)
-        y(3.234)
 
         # negative
+        y = d(x.MVoidDouble)
+        self.assertRaises(TypeError, y, 3.234)
+
         y = d(x.MInt32Void)
         self.assertRaises(TypeError, y)
         

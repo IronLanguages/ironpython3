@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import _string
 import sys
 import unittest
 
@@ -35,7 +36,7 @@ class StrFormatTest(IronPythonTestCase):
                 ]
 
         for format, errorMsg in errors:
-            self.assertRaisesMessage(ValueError, errorMsg, list, format._formatter_parser())
+            self.assertRaisesMessage(ValueError, errorMsg, list, _string.formatter_parser(format))
 
     def test_formatter_parser(self):
         tests = [ ('{0.}',             [('', '0.', '', None)]),
@@ -57,17 +58,17 @@ class StrFormatTest(IronPythonTestCase):
                 ]
 
         for format, expected in tests:
-            self.assertEqual(list(format._formatter_parser()), expected)
+            self.assertEqual(list(_string.formatter_parser(format)), expected)
 
     def test_format_field_name_split_errors(self):
         if is_cpython: #http://ironpython.codeplex.com/workitem/28224
-            temp = ''._formatter_field_name_split() #Just ensure it doesn't throw
+            temp = _string.formatter_field_name_split('') #Just ensure it doesn't throw
         else:
-            self.assertRaisesMessage(ValueError, "empty field name", ''._formatter_field_name_split)
-            self.assertRaisesMessage(ValueError, "empty field name", '['._formatter_field_name_split)
-            self.assertRaisesMessage(ValueError, "empty field name", '.'._formatter_field_name_split)
-            self.assertRaisesMessage(ValueError, "empty field name", '[.abc'._formatter_field_name_split)
-            self.assertRaisesMessage(ValueError, "empty field name", '.abc'._formatter_field_name_split)
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '[')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '.')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '[.abc')
+            self.assertRaisesMessage(ValueError, "empty field name", _string.formatter_field_name_split, '.abc')
 
         errors = [ ("0[",              "Missing ']' in format string"),
                 ("abc.",            "Empty attribute in format string"),
@@ -75,7 +76,7 @@ class StrFormatTest(IronPythonTestCase):
                 ]
 
         for format, errorMsg in errors:
-            self.assertRaisesMessage(ValueError, errorMsg, list, format._formatter_field_name_split()[1])
+            self.assertRaisesMessage(ValueError, errorMsg, list, _string.formatter_field_name_split(format)[1])
 
     def test_format_field_name_split(self):
         tests = [ ('0',                [long(0), []]),
@@ -97,7 +98,7 @@ class StrFormatTest(IronPythonTestCase):
         tests.append([allChars + '[2]', [allChars, [(False, long(2))]]])
 
         for format, expected in tests:
-            res = list(format._formatter_field_name_split())
+            res = list(_string.formatter_field_name_split(format))
             res[1] = list(res[1])
             self.assertEqual(res, expected)
 

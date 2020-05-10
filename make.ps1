@@ -46,24 +46,6 @@ if(!$global:isUnix) {
     }
 }
 
-$_defaultFrameworkSettings = @{
-    "runner" = "dotnet";
-    "args" = @('test', '__BASEDIR__/Src/IronPythonTest/IronPythonTest.csproj', '-f', '__FRAMEWORK__', '-o', '__BASEDIR__/bin/__CONFIGURATION__/__FRAMEWORK__', '-c', '__CONFIGURATION__', '--no-build', '-l', "trx;LogFileName=__FILTERNAME__-__FRAMEWORK__-__CONFIGURATION__-result.trx", '-s', '__RUNSETTINGS__');
-    "filterArg" = '--filter="__FILTER__"';
-    "filters" = @{
-        "all" = "";
-        "smoke" = "TestCategory=StandardCPython";
-        "cpython" = "TestCategory=StandardCPython | TestCategory=AllCPython";
-        "ironpython" = "TestCategory=IronPython";
-        "ctypes" = "TestCategory=CTypesCPython";
-        "single" = "Name=__TESTNAME__";
-        "query" = "FullyQualifiedName__QUERY__";
-    }
-}
-
-# Overrides for the default framework settings
-$_FRAMEWORKS = @{}
-
 function Main([String] $target, [String] $configuration) {
     # verify that the DLR submodule has been initialized
     if(![System.Linq.Enumerable]::Any([System.IO.Directory]::EnumerateFileSystemEntries([System.IO.Path]::Combine($_BASEDIR, "Src/DLR")))) {
@@ -141,53 +123,25 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         # generate the runsettings file for the settings
         $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
 
-        $frameworkSettings = $_FRAMEWORKS[$framework]
-        if ($null -eq $frameworkSettings) { $frameworkSettings = $_defaultFrameworkSettings }
+        $filter = $target
 
-        if ($target -imatch "^ID[=~]") {
-            $testquery = $target.Substring(2)
-            $filtername = "query"
-        } elseif(!$frameworkSettings["filters"].ContainsKey($target)) {
-            Write-Warning "No tests available for '$target' trying to run single test '$framework.$target'"
-            $testname = "$framework.$target"
-            $filtername = "single"
-        }
-
-        $filter = $frameworkSettings["filters"][$filtername]
-
-        $replacements = @{
-            "__FRAMEWORK__" = $framework;
-            "__CONFIGURATION__" = $configuration;
-            "__FILTERNAME__" = $filtername;
-            "__FILTER__" = $filter;
-            "__BASEDIR__" = $_BASEDIR;
-            "__TESTNAME__" = $testname;
-            "__QUERY__" = $testquery;
-            "__RUNSETTINGS__" = $runSettings;
-        };
-
-        $runner = $frameworkSettings["runner"]
-        # make a copy of the args array
-        [Object[]] $args = @() + $frameworkSettings["args"]
-        # replace the placeholders with actual values
-        for([int] $i = 0; $i -lt $args.Length; $i++) {
-            foreach($r in $replacements.Keys) {
-                $args[$i] = $args[$i].Replace($r, $replacements[$r])
+        switch ($filter.ToLower()) {
+            "all"        { $filter = ""}
+            "ironpython" { $filter = "TestCategory=IronPython" }
+            "cpython"    { $filter = "TestCategory=CPython" }
+            default      {
+                $filtername = "query"
+                if ($filter.ToLower().StartsWith('ironpython')) { $filter = "TestCategory=IronPython&" + $filter }
+                if ($filter.ToLower().StartsWith('cpython')) { $filter = "TestCategory=CPython&" + $filter }
             }
         }
 
-        if($filter.Length -gt 0) {
-            $tmp = $frameworkSettings["filterArg"].Replace('__FILTER__', $replacements['__FILTER__'])
-            foreach($r in $replacements.Keys) {
-                $tmp = $tmp.Replace($r, $replacements[$r])
-            }
-            $filter = $tmp
-        }
+        [Object[]] $args = @("$_BASEDIR/Src/IronPythonTest/IronPythonTest.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
 
-        Write-Host "$runner $args $filter"
+        Write-Host "dotnet test $args"
 
         # execute the tests
-        & $runner $args $filter
+        & dotnet test $args
 
         # save off the status in case of failure
         if($LastExitCode -ne 0) {
@@ -204,6 +158,7 @@ switch -wildcard ($target) {
     "stage-debug"   { Main "Stage" "Debug" }
     "package-debug" { Main "Package" "Debug" }
     "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks $platform; break }
+    "test-debug"    { Test "" "Debug" $frameworks $platform; break }
     
     # release targets
     "restore"       { Main "RestoreReferences" "Release" }
@@ -212,6 +167,7 @@ switch -wildcard ($target) {
     "stage"         { Main "Stage" "Release" }
     "package"       { Main "Package" "Release" }
     "test-*"        { Test $target.Substring(5) "Release" $frameworks $platform; break }
+    "test"          { Test "" "Release" $frameworks $platform; break }
 
     # utility targets
     "ngen"          {

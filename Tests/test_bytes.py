@@ -745,6 +745,10 @@ class BytesTest(IronPythonTestCase):
         b = bytearray(b'abc')
         b.reverse()
         self.assertEqual(b, b'cba')
+        mv = memoryview(b)
+        b.reverse()
+        self.assertEqual(b, b'abc')
+        self.assertEqual(mv, b'abc')
 
     # CoreCLR bug xxxx found in build 30324 from silverlight_w2
     def test_rfind(self):
@@ -1643,9 +1647,18 @@ class BytesTest(IronPythonTestCase):
             x[2:0:-1] = setval[0:-1]
             self.assertEqual(x, b'aab')
 
-            x = bytearray(b'abcdef')
-            def f():x[0:6:2] = b'a'
-            self.assertRaises(ValueError, f)
+        x = bytearray(b'abcd')
+        with self.assertRaisesRegex(ValueError, "^attempt to assign bytes of size 1 to extended slice of size 2$"):
+            x[0:6:2] = b'a'
+        with self.assertRaisesRegex(ValueError, "^attempt to assign bytes of size 3 to extended slice of size 2$"):
+            x[0:6:2] = b'abc'
+
+        # lock size by exporting the byte buffer
+        mv = memoryview(x)
+        with self.assertRaisesRegex(BufferError, "^Existing exports of data: object cannot be re-sized$"):
+            x[0:1] = b'ab'
+        with self.assertRaisesRegex(BufferError, "^Existing exports of data: object cannot be re-sized$"):
+            x[0:3] = b'ab'
 
         self.assertEqual(bytearray(source=b'abc'), bytearray(b'abc'))
         self.assertEqual(bytearray(source=2), bytearray(b'\x00\x00'))
@@ -1735,6 +1748,20 @@ class BytesTest(IronPythonTestCase):
         self.assertEqual(1 * x, x)
         self.assertTrue(id(x) != id(x * 1))
         self.assertTrue(id(x) != id(1 * x))
+
+        x = bytearray(b'abc')
+        x *= 2
+        self.assertEqual(x, b'abcabc')
+        mv = memoryview(x)
+        with self.assertRaisesRegex(BufferError, "^Existing exports of data: object cannot be re-sized$"):
+            x *= 2
+
+        x = bytearray(b'abc')
+        x += b'def'
+        self.assertEqual(x, b'abcdef')
+        mv = memoryview(x)
+        with self.assertRaisesRegex(BufferError, "^Existing exports of data: object cannot be re-sized$"):
+            x += b'ghi'
 
     def test_slicing(self):
         for testType in types:

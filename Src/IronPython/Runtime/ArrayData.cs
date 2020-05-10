@@ -86,8 +86,11 @@ namespace IronPython.Runtime {
         }
 
         public void Add(T item) {
-            EnsureSize(_size + 1);
-            _items[_size++] = item;
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(_size + 1);
+                _items[_size++] = item;
+            }
         }
 
         int IList.Add(object? item) {
@@ -97,9 +100,12 @@ namespace IronPython.Runtime {
 
         public void AddRange(IEnumerable<T> collection) {
             if (collection is ICollection<T> c) {
-                EnsureSize(_size + c.Count);
-                c.CopyTo(_items, _size);
-                _size += c.Count;
+                lock (this) {
+                    CheckBuffer();
+                    EnsureSize(_size + c.Count);
+                    c.CopyTo(_items, _size);
+                    _size += c.Count;
+                }
             } else {
                 foreach (var x in collection) {
                     Add(x);
@@ -111,7 +117,10 @@ namespace IronPython.Runtime {
             => TryConvert(item, out _);
 
         public void Clear() {
-            _size = 0;
+            lock (this) {
+                CheckBuffer();
+                _size = 0;
+            }
         }
 
         public bool Contains(T item)
@@ -131,7 +140,6 @@ namespace IronPython.Runtime {
 
         private void EnsureSize(int size) {
             if (_items.Length < size) {
-                CheckBuffer();
                 var length = _items.Length;
                 if (length == 0) length = 8;
                 while (length < size) {
@@ -185,12 +193,15 @@ namespace IronPython.Runtime {
             => TryConvert(item, out T value) ? IndexOf(value) : -1;
 
         public void Insert(int index, T item) {
-            EnsureSize(_size + 1);
-            if (index < _size) {
-                Array.Copy(_items, index, _items, index + 1, _size - index);
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(_size + 1);
+                if (index < _size) {
+                    Array.Copy(_items, index, _items, index + 1, _size - index);
+                }
+                _items[index] = item;
+                _size++;
             }
-            _items[index] = item;
-            _size++;
         }
 
         void IList.Insert(int index, object? item)
@@ -234,7 +245,10 @@ namespace IronPython.Runtime {
         }
 
         public void RemoveAt(int index) {
-            _size--;
+            lock (this) {
+                CheckBuffer();
+                _size--;
+            }
             if (index < _size) {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
@@ -242,7 +256,10 @@ namespace IronPython.Runtime {
 
         public void RemoveRange(int index, int count) {
             if (count > 0) {
-                _size -= count;
+                lock (this) {
+                    CheckBuffer();
+                    _size -= count;
+                }
                 if (index < _size) {
                     Array.Copy(_items, index + count, _items, index, _size - index);
                 }
@@ -273,9 +290,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool HasBuffer => bufferCount > 0;
+        public bool HasBuffer => _bufferCount > 0;
 
-        private int bufferCount = 0;
+        private int _bufferCount = 0;
 
         public IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags) {
             return new ArrayDataView(owner, format, this, flags);
@@ -288,26 +305,24 @@ namespace IronPython.Runtime {
         private sealed class ArrayDataView : IPythonBuffer {
             private readonly BufferFlags _flags;
             private readonly ArrayData<T> _arrayData;
+            private readonly string _format;
 
             public ArrayDataView(object owner, string format, ArrayData<T> arrayData, BufferFlags flags) {
                 Object = owner;
-                Format = format;
+                _format = format;
                 _arrayData = arrayData;
                 _flags = flags;
-                _arrayData.bufferCount++;
+                lock (_arrayData) {
+                    _arrayData._bufferCount++;
+                }
             }
 
             private bool _disposed = false;
 
-            ~ArrayDataView() {
-                Dispose();
-            }
-
             public void Dispose() {
-                lock (Object) {
+                lock (_arrayData) {
                     if (_disposed) return;
-                    _arrayData.bufferCount--;
-                    GC.SuppressFinalize(this);
+                    _arrayData._bufferCount--;
                     _disposed = true;
                 }
             }
@@ -322,7 +337,7 @@ namespace IronPython.Runtime {
 
             public int Offset => 0;
 
-            public string? Format { get; }
+            public string? Format => _flags.HasFlag(BufferFlags.Format)? _format : null;
 
             public int ItemCount => _arrayData.Count;
 

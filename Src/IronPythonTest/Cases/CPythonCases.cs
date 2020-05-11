@@ -2,83 +2,37 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using IronPython.Hosting;
-using IronPythonTest.Util;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting;
 using NUnit.Framework;
-using NUnit.Framework.Api;
 
 namespace IronPythonTest.Cases {
-    [TestFixture(Category = "StandardCPython")]
-    public class StandardCPythonCases : CommonCases {
-        [Test, TestCaseSource(typeof(StandardCPythonCaseGenerator))]
+    [TestFixture(Category = "CPython")]
+    public class CPythonCases : CommonCases {
+        [Test, TestCaseSource(typeof(CPythonCaseGenerator))]
         public override int Test(TestInfo testcase) {
             return TestImpl(testcase);
         }
     }
 
-    [TestFixture(Category = "AllCPython")]
-    public class AllCPythonCases : CommonCases {
-        [Test, TestCaseSource(typeof(AllCPythonCaseGenerator))]
-        public override int Test(TestInfo testcase) {
-            return TestImpl(testcase);
-        }
-    }
-
-    [TestFixture(Category = "CTypesCPython")]
-    public class CTypesCPythonCases : CommonCases {
-        [Test, TestCaseSource(typeof(CTypesCPythonCaseGenerator))]
-        public override int Test(TestInfo testcase) {
-            return TestImpl(testcase);
-        }
-    }
-
-    internal class StandardCPythonCaseGenerator : CommonCaseGenerator<StandardCPythonCases> {
-        internal static readonly HashSet<string> STDTESTS = new HashSet<String> {
-            "test_grammar",
-            "test_opcodes",
-            "test_dict",
-            "test_builtin",
-            "test_exceptions",
-            "test_types",
-            "test_unittest",
-            "test_doctest",
-            "test_doctest2",
-            "test_support"
-        };
-
+    internal class CPythonCaseGenerator : CommonCaseGenerator<CPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
-            var testDir = Path.Combine("Src", "StdLib", "Lib", "test");
-            var fullPath = Path.Combine(CaseExecuter.FindRoot(), testDir);
-            return STDTESTS.Select(test => new TestInfo(Path.GetFullPath(Path.Combine(fullPath, test) + ".py"), category, testDir, this.manifest));
-        }
-    }
+            return GetFilenames(new [] {
+                System.Tuple.Create(category, Path.Combine("Src", "StdLib", "Lib", "test")),
+                System.Tuple.Create($"{category}.ctypes", Path.Combine("Src", "StdLib", "Lib", "ctypes", "test")),
+                System.Tuple.Create($"{category}.distutils", Path.Combine("Src", "StdLib", "Lib", "distutils", "tests")),
+                System.Tuple.Create($"{category}.unittest", Path.Combine("Src", "StdLib", "Lib", "unittest", "test")),
+            })
+            .OrderBy(testcase => testcase.Name);
 
-    internal class AllCPythonCaseGenerator : CommonCaseGenerator<AllCPythonCases> {
-        protected override IEnumerable<TestInfo> GetTests() {
-            var testDir = Path.Combine("Src", "StdLib", "Lib", "test");
-            var fullPath = Path.Combine(CaseExecuter.FindRoot(), testDir);
-            return Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories)
-                .Where(file => !StandardCPythonCaseGenerator.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
-                .Select(file => new TestInfo(Path.GetFullPath(file), category, testDir, this.manifest))
-                .OrderBy(testcase => testcase.Name);
-        }
-    }
-
-    internal class CTypesCPythonCaseGenerator : CommonCaseGenerator<CTypesCPythonCases> {
-        protected override IEnumerable<TestInfo> GetTests() {
-            var testDir = Path.Combine("Src", "StdLib", "Lib", "ctypes", "test");
-            var fullPath = Path.Combine(CaseExecuter.FindRoot(), testDir);
-            return Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories)
-                .Select(file => new TestInfo(Path.GetFullPath(file), category, testDir, this.manifest))
-                .OrderBy(testcase => testcase.Name);
+            IEnumerable<TestInfo> GetFilenames(IEnumerable<System.Tuple<string, string>> folders) {
+                foreach (var tuple in folders) {
+                    var fullPath = Path.Combine(CaseExecuter.FindRoot(), tuple.Item2);
+                    foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories))
+                        yield return new TestInfo(Path.GetFullPath(filename), tuple.Item1, tuple.Item2, manifest);
+                }
+            }
         }
     }
 }

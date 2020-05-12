@@ -16,8 +16,8 @@ import test.test_unicode
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        #suite.addTest(test.test_unicode.StringModuleTest('test_formatter_field_name_split'))
-        #suite.addTest(test.test_unicode.StringModuleTest('test_formatter_parser'))
+        suite.addTest(test.test_unicode.StringModuleTest('test_formatter_field_name_split'))
+        suite.addTest(test.test_unicode.StringModuleTest('test_formatter_parser'))
         suite.addTest(test.test_unicode.UnicodeTest('test___contains__'))
         suite.addTest(test.test_unicode.UnicodeTest('test_additional_rsplit'))
         suite.addTest(test.test_unicode.UnicodeTest('test_additional_split'))

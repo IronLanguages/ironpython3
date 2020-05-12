@@ -106,6 +106,7 @@ class DumbDBMTestCase(unittest.TestCase):
         self.init_db()
         f = dumbdbm.open(_fname, 'r')
         self.assertEqual(f['\u00fc'], self._dict['\u00fc'.encode('utf-8')])
+        f.close()
 
     def test_str_write_contains(self):
         self.init_db()
@@ -118,6 +119,7 @@ class DumbDBMTestCase(unittest.TestCase):
         self.assertEqual(f['\u00fc'.encode('utf-8')],
                          self._dict['\u00fc'.encode('utf-8')])
         self.assertEqual(f[b'1'], b'a')
+        f.close()
 
     def test_line_endings(self):
         # test for bug #1172763: dumbdbm would die if the line endings
@@ -140,7 +142,7 @@ class DumbDBMTestCase(unittest.TestCase):
         f = dumbdbm.open(_fname)
         self.assertEqual(f[b'1'], b'hello')
         self.assertEqual(f[b'2'], b'hello2')
-
+        f.close()
 
     def read_helper(self, f):
         keys = self.keys_helper(f)

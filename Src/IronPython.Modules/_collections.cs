@@ -1112,7 +1112,6 @@ namespace IronPython.Modules {
                         Debug.Assert(index == infinite.Count - 1);
                         infinite.RemoveAt(index);
                     }
-
                 }
             }
 

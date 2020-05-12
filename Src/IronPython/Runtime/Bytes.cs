@@ -1050,7 +1050,7 @@ namespace IronPython.Runtime {
             return new BytesView(this, flags);
         }
 
-        private class BytesView : IPythonBuffer {
+        private sealed class BytesView : IPythonBuffer {
             private readonly BufferFlags _flags;
             private readonly Bytes _exporter;
 

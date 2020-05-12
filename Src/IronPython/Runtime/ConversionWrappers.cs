@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -83,7 +84,6 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
 
     public class DictionaryGenericWrapper<K, V> : IDictionary<K, V> {
         private readonly IDictionary<object, object> self;
@@ -201,22 +201,17 @@ namespace IronPython.Runtime {
 
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
         private readonly IEnumerator enumerable;
- 
+
         public IEnumeratorOfTWrapper(IEnumerator enumerable) {
             this.enumerable = enumerable;
         }
 
         #region IEnumerator<T> Members
-        public T Current
-        {
-            get
-            {
-                try
-                {
+        public T Current {
+            get {
+                try {
                     return (T)enumerable.Current;
-                }
-                catch (System.InvalidCastException iex)
-                {
+                } catch (System.InvalidCastException iex) {
                     throw new System.InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: {0} in {1}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
                 }
             }
@@ -272,4 +267,87 @@ namespace IronPython.Runtime {
 
         #endregion
     }
+
+#nullable enable
+
+    public sealed class MemoryBufferWrapper : IPythonBuffer {
+        private readonly ReadOnlyMemory<byte> _rom;
+        private readonly Memory<byte>? _memory;
+        private readonly BufferFlags _flags;
+
+        public MemoryBufferWrapper(ReadOnlyMemory<byte> memory, BufferFlags flags) {
+            _rom = memory;
+            _memory = null;
+            _flags = flags;
+        }
+
+        public MemoryBufferWrapper(Memory<byte> memory, BufferFlags flags) {
+            _rom = memory;
+            _memory = memory;
+            _flags = flags;
+        }
+
+        public void Dispose() { }
+
+        public object Object => _memory ?? _rom;
+
+        public bool IsReadOnly => !_memory.HasValue;
+
+        public ReadOnlySpan<byte> AsReadOnlySpan() => _rom.Span;
+
+        public Span<byte> AsSpan() => _memory.HasValue ? _memory.Value.Span : throw new InvalidOperationException("ReadOnlyMemory is not writable");
+
+        public int Offset => 0;
+
+        public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+        public int ItemCount => _rom.Length;
+
+        public int ItemSize => 1;
+
+        public int NumOfDims => 1;
+
+        public IReadOnlyList<int>? Shape => null;
+
+        public IReadOnlyList<int>? Strides => null;
+
+        public IReadOnlyList<int>? SubOffsets => null;
+
+        Bytes IPythonBuffer.ToBytes(int start, int? end) {
+            return Bytes.Make(_rom.Slice(start, (end ?? _rom.Length) - start).ToArray());
+        }
+
+        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
+            return _rom;
+        }
+    }
+
+    public class MemoryBufferProtocolWrapper : IBufferProtocol {
+        private readonly ReadOnlyMemory<byte> _rom;
+        private readonly Memory<byte>? _memory;
+
+        public MemoryBufferProtocolWrapper(ReadOnlyMemory<byte> memory) {
+            _rom = memory;
+            _memory = null;
+        }
+
+        public MemoryBufferProtocolWrapper(Memory<byte> memory) {
+            _rom = memory;
+            _memory = memory;
+        }
+
+        public IPythonBuffer GetBuffer(BufferFlags flags) {
+            if (_memory.HasValue) {
+                return new MemoryBufferWrapper(_memory.Value, flags);
+            }
+
+            if (flags.HasFlag(BufferFlags.Writable)) {
+                throw Operations.PythonOps.BufferError("ReadOnlyMemory is not writable.");
+            }
+
+            return new MemoryBufferWrapper(_rom, flags);
+        }
+    }
+
+#nullable restore
 }

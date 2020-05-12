@@ -209,8 +209,15 @@ namespace IronPython.Modules {
 
         #region Latin-1 Functions
 
-        public static PythonTuple latin_1_decode(CodeContext context, [BytesLike,NotNull]ReadOnlyMemory<byte> input, string? errors = null)
+        private static PythonTuple latin_1_decode(CodeContext context, ReadOnlyMemory<byte> input, string? errors = null)  // TODO: remove
             => DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors, input.Length).ToPythonTuple();
+
+        public static PythonTuple latin_1_decode(CodeContext context, [NotNull]IBufferProtocol input, string? errors = null) {
+            // pilot interface change
+            using IPythonBuffer buf = input.GetBuffer();
+            ReadOnlyMemory<byte> mem = buf.ToMemory();
+            return DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), mem, errors, mem.Length).ToPythonTuple();
+        }
 
         public static PythonTuple latin_1_encode(CodeContext context, [NotNull]string input, string? errors = null)
             => DoEncode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors).ToPythonTuple();

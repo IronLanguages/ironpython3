@@ -836,7 +836,7 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        private static bool HasImplicitConversion(Type fromType, Type toType) {
+        internal static bool HasImplicitConversion(Type fromType, Type toType) {
             return 
                 HasImplicitConversionWorker(fromType, fromType, toType) ||
                 HasImplicitConversionWorker(toType, fromType, toType);

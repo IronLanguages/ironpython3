@@ -166,6 +166,17 @@ namespace IronPython.Runtime.Binding {
                     // !!! Deferral?
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
                         res = MakeToArrayConversion(self, type);
+                    } else if (type == typeof(IBufferProtocol) && !type.IsAssignableFrom(self.GetLimitType())) {
+                        Type fromType = CompilerHelpers.GetType(self.Value);
+                        if (fromType == typeof(Memory<byte>)) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(Memory<byte>));
+                        } else if (fromType == typeof(ReadOnlyMemory<byte>)) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
+                        } else if (Converter.HasImplicitConversion(fromType, typeof(Memory<byte>))) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(Memory<byte>));
+                        } else if (Converter.HasImplicitConversion(fromType, typeof(ReadOnlyMemory<byte>))) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
+                        }
                     } else if (type.IsGenericType && !type.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
                         Type genTo = type.GetGenericTypeDefinition();
 
@@ -714,6 +725,19 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     ),
                     ReturnType
+                ),
+                self.Restrictions
+            );
+        }
+
+        private DynamicMetaObject ConvertFromMemoryToBufferProtocol(DynamicMetaObject self, Type fromType) {
+            return new DynamicMetaObject(
+                AstUtils.Convert(
+                    Ast.New(
+                        typeof(MemoryBufferProtocolWrapper).GetConstructor(new Type[] { fromType }),
+                        AstUtils.Convert(self.Expression, fromType)
+                    ),
+                    typeof(IBufferProtocol)
                 ),
                 self.Restrictions
             );

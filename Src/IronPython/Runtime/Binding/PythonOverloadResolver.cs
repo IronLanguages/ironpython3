@@ -120,6 +120,15 @@ namespace IronPython.Runtime.Binding {
                 return true;
             }
 
+            if (toType == typeof(IBufferProtocol)) {
+                if (fromType == typeof(Memory<byte>) ||
+                    fromType == typeof(ReadOnlyMemory<byte>) ||
+                    fromType == typeof(byte[]) ||
+                    fromType == typeof(ArraySegment<byte>)) {
+                    return true;
+                }
+            }
+
             return base.CanConvertFrom(fromType, fromArg, toParameter, level);
         }
 

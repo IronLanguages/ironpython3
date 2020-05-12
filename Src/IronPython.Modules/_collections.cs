@@ -1049,18 +1049,22 @@ namespace IronPython.Modules {
                 );
             }
 
-            public void __init__(object default_factory) {
+            public new void __init__(CodeContext/*!*/ context, object default_factory) {
+                if (default_factory != null && !PythonOps.IsCallable(context, default_factory))
+                    throw PythonOps.TypeError("first argument must be callable or None");
+
                 this.default_factory = default_factory;
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, params object[] args) {
-                this.default_factory = default_factory;
+            public void __init__(CodeContext/*!*/ context, object default_factory, [NotNull]params object[] args) {
+                __init__(context, default_factory);
+
                 foreach (object o in args) {
                     update(context, o);
                 }
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary, NotNull]IDictionary<object, object> dict, [NotNull]params object[] args) {
                 __init__(context, default_factory, args);
 
                 foreach (KeyValuePair<object , object> kvp in dict) {
@@ -1092,7 +1096,24 @@ namespace IronPython.Modules {
             }
 
             public override string __repr__(CodeContext context) {
-                return string.Format("defaultdict({0}, {1})", PythonOps.Repr(context, default_factory), base.__repr__(context));
+                return string.Format("defaultdict({0}, {1})", ReprFactory(context, default_factory), base.__repr__(context));
+
+                static string ReprFactory(CodeContext context, object factory) {
+                    var infinite = PythonOps.GetAndCheckInfinite(factory);
+                    if (infinite == null) {
+                        return "...";
+                    }
+
+                    int index = infinite.Count;
+                    infinite.Add(factory);
+                    try {
+                        return PythonOps.Repr(context, factory);
+                    } finally {
+                        Debug.Assert(index == infinite.Count - 1);
+                        infinite.RemoveAt(index);
+                    }
+
+                }
             }
 
             public PythonTuple __reduce__(CodeContext context) {

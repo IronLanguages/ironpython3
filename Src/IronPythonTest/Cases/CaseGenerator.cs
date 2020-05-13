@@ -63,7 +63,9 @@ namespace IronPythonTest.Cases {
                     .SetName(name)
                     .Returns(0);
 
-                if (testcase.Options.Ignore && string.IsNullOrWhiteSpace(TestContext.Parameters["RUN_IGNORED"])) {
+                var runIgnored = !string.IsNullOrWhiteSpace(TestContext.Parameters["RUN_IGNORED"]);
+
+                if (testcase.Options.Ignore && !runIgnored) {
                     if (!string.IsNullOrWhiteSpace(testcase.Options.Reason)) {
                         result.Ignore($"ignored - {testcase.Options.Reason}");
                     } else {
@@ -71,7 +73,7 @@ namespace IronPythonTest.Cases {
                     }
                 }
 
-                if (!ConditionMatched(testcase.Options.RunCondition) && string.IsNullOrWhiteSpace(TestContext.Parameters["RUN_IGNORED"])) {
+                if (!ConditionMatched(testcase.Options.RunCondition)) {
                     if (!string.IsNullOrWhiteSpace(testcase.Options.Reason)) {
                         result.Ignore($"condition ({testcase.Options.RunCondition}) - {testcase.Options.Reason}");
                     } else {

@@ -65,5 +65,12 @@ is exhausted and then it raises StopIteration.")]
 
         [PythonHidden]
         public void Reset() { throw new NotSupportedException(); }
+
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(Zip)),
+                PythonTuple.Make(enumerators)
+            );
+        }
     }
 }

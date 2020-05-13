@@ -19,6 +19,7 @@ using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPythonTest.Util;
+using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
     internal class CaseExecuter {
@@ -119,7 +120,13 @@ namespace IronPythonTest.Cases {
         }
 
         private int RunTestImpl(TestInfo testcase) {
-            switch (testcase.Options.IsolationLevel) {
+            var isolationLevel = testcase.Options.IsolationLevel;
+            // when RUN_IGNORED is set, always isolate ignored tests
+            if (testcase.Options.Ignore) {
+                isolationLevel = TestIsolationLevel.PROCESS;
+            }
+
+            switch (isolationLevel) {
                 case TestIsolationLevel.DEFAULT:
                     return GetScopeTest(testcase);
 

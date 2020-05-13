@@ -53,5 +53,12 @@ is true. If function is None, return the items that are true.")]
 
         [PythonHidden]
         public void Reset() { throw new System.NotSupportedException(); }
+
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(Filter)),
+                PythonTuple.MakeTuple(_function, _enumerator)
+            );
+        }
     }
 }

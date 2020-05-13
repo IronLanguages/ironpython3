@@ -38,8 +38,20 @@ namespace IronPython.Runtime {
         }
 
         public string __repr__(CodeContext context) {
-            var attrs = Modules.Builtin.sorted(context, __dict__).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
-            return $"namespace({string.Join(", ", attrs)})";
+            var infinite = PythonOps.GetAndCheckInfinite(this);
+            if (infinite == null) {
+                return "namespace(...)";
+            }
+
+            int index = infinite.Count;
+            infinite.Add(this);
+            try {
+                var attrs = Modules.Builtin.sorted(context, __dict__).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
+                return $"namespace({string.Join(", ", attrs)})";
+            } finally {
+                System.Diagnostics.Debug.Assert(index == infinite.Count - 1);
+                infinite.RemoveAt(index);
+            }
         }
     }
 }

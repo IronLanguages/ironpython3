@@ -2,8 +2,8 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import sys
 import math
+import sys
 import unittest
 
 #-----------------------------------------------------------------------------------
@@ -42,6 +42,9 @@ from operator import neg
 import random
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test
+
+if not is_cli:
+    long = int
 
 def callable(x):
     return isinstance(x, collections.Callable)
@@ -805,13 +808,8 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(round(self.ParameterlessRoundable()), "sphere")
 
         # too few arguments
-        try:
+        with self.assertRaisesMessage(TypeError, "__round__() takes exactly 2 arguments (1 given)" if is_cli else "__round__() missing 1 required positional argument: 'ndigits'"):
             round(roundable)
-            self.assertUnreachable()
-        except TypeError as err:
-            self.assertEqual("__round__() takes exactly 2 arguments (2 given)", str(err))
-        else:
-            self.assertUnreachable()
 
         # too many arguments
         try:
@@ -888,8 +886,9 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, long)
         self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, long)
 
-        self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
-        self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+        if is_cli:
+            self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+            self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, long)
 
         try:
             round(number=2, ndigits=1.1)
@@ -975,9 +974,9 @@ class BuiltinsTest2(IronPythonTestCase):
         actual = round(float('nan'), -354250895282439122322875506826024599142533926918074193061745122574500)
         self.assertTrue(math.isnan(actual))
 
-        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6)
+        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6 if is_cli else 3.5)
         self.assertEqual(round(35, self.IntIndex(-1)), 40)
-        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56)
+        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56 if is_cli else 35.55)
         self.assertEqual(round(355, self.LongIndex(-2)), 400)
 
         try:

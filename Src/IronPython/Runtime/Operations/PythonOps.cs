@@ -3762,6 +3762,10 @@ namespace IronPython.Runtime.Operations {
             return TypeError("expected {0}, got {1}", expectedTypeName, PythonOps.GetPythonTypeName(instance));
         }
 
+        public static Exception TypeErrorForBytesLikeTypeMismatch(object? instance) {
+            return TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(instance));
+        }
+
         // If hash is called on an instance of an unhashable type
         public static Exception TypeErrorForUnhashableType(string typeName) {
             return TypeError(typeName + " objects are unhashable");

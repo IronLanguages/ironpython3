@@ -205,6 +205,15 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override ErrorInfo MakeConversionError(Type toType, Expression value) {
+            if (toType == typeof(IBufferProtocol)) {
+                return ErrorInfo.FromException(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForBytesLikeTypeMismatch)),
+                        AstUtils.Convert(value, typeof(object))
+                   )
+                );
+            }
+
             return ErrorInfo.FromException(
                 Ast.Call(
                     typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForTypeMismatch)),

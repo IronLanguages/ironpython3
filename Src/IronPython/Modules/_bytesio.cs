@@ -440,7 +440,7 @@ namespace IronPython.Modules {
 
             private int DoWrite(object bytes) {
                 if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
-                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(bytes));
+                return DoWrite(Converter.Convert<IBufferProtocol>(bytes));
             }
 
             private void EnsureSize(int size) {

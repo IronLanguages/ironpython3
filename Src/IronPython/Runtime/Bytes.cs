@@ -35,8 +35,9 @@ namespace IronPython.Runtime {
             _bytes = bytes.ToArray();
         }
 
-        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
-            _bytes = bytes.ToArray();
+        public Bytes([BytesLike, NotNull]IBufferProtocol source) {
+            using IPythonBuffer buffer = source.GetBuffer();
+            _bytes = buffer.AsReadOnlySpan().ToArray();
         }
 
         public Bytes(CodeContext context, object? source) {
@@ -158,11 +159,13 @@ namespace IronPython.Runtime {
             => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
-            return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
+            using var mv = new MemoryView(this);
+            return StringOps.RawDecode(context, mv, encoding, errors);
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
-            return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+            using var buffer = ((IBufferProtocol)this).GetBuffer();
+            return StringOps.DoDecode(context, buffer, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix) {

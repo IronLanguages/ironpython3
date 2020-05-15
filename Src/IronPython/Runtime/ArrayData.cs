@@ -53,6 +53,19 @@ namespace IronPython.Runtime {
             _size = _items.Length;
         }
 
+        public ArrayData(IPythonBuffer data) {
+            GC.SuppressFinalize(this);
+
+            ReadOnlySpan<byte> dataSpan = data.AsReadOnlySpan();
+            Debug.Assert(data.Offset == 0);
+            Debug.Assert(data.Strides == null); // C-contiguous
+            Debug.Assert(dataSpan.Length % Marshal.SizeOf<T>() == 0);
+
+            _size = dataSpan.Length / Marshal.SizeOf<T>();
+            _items = new T[_size];
+            dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan()));
+        }
+
         ~ArrayData() {
             Debug.Assert(_dataHandle.HasValue);
             _dataHandle?.Free();

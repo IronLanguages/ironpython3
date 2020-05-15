@@ -63,8 +63,7 @@ namespace IronPython.Modules {
                 res.frombytes(items);
                 if (isBigEndian) res.byteswap();
             } else {
-                using var buf = ((IBufferProtocol)items).GetBuffer();
-                res.fromunicode(context, StringOps.RawDecode(context, buf, encoding, null));
+                res.fromunicode(context, StringOps.RawDecode(context, items, encoding, null));
             }
             return res;
 

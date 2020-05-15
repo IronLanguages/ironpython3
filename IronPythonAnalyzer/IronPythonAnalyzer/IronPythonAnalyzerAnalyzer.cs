@@ -57,10 +57,12 @@ namespace IronPythonAnalyzer {
                 var readOnlyMemoryOfByteType = readOnlyMemoryType.Construct(byteType);
                 var ireadOnlyListOfByteType = ireadOnlyListType.Construct(byteType);
                 var ilistOfByteType = ilistType.Construct(byteType);
+                var ibufferProtocolType = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.IBufferProtocol");
 
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
                     if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol))
                         && !parameterSymbol.Type.Equals(readOnlyMemoryOfByteType)
+                        && !parameterSymbol.Type.Equals(ibufferProtocolType)
                         && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType) && !parameterSymbol.Type.Equals(ilistOfByteType)) {
                         var diagnostic = Diagnostic.Create(Rule3, parameterSymbol.Locations[0], parameterSymbol.Name, parameterSymbol.Type.MetadataName);
                         context.ReportDiagnostic(diagnostic);

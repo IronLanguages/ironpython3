@@ -76,10 +76,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void __init__([BytesLike, NotNull]ReadOnlyMemory<byte> source) {
+        public void __init__([BytesLike, NotNull]IBufferProtocol source) {
             lock (this) {
                 CheckBuffer();
-                _bytes = new ArrayData<byte>(source);
+                using IPythonBuffer buffer = source.GetBuffer();
+                _bytes = new ArrayData<byte>(buffer);
             }
         }
 
@@ -327,13 +328,15 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, new MemoryView(this, readOnly: true), encoding, errors);
+                using var mv = new MemoryView(this, readOnly: true);
+                return StringOps.RawDecode(context, mv, encoding, errors);
             }
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
             lock (this) {
-                return StringOps.DoDecode(context, ((IPythonBuffer)this).ToMemory(), errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+                using var bufer = ((IBufferProtocol)this).GetBuffer();
+                return StringOps.DoDecode(context, bufer, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
             }
         }
 

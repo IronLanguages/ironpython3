@@ -872,11 +872,16 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.register, "abc")
         self.assertRaises(TypeError, codecs.register, 3.14)
 
-        global ironpython_test_codecs_test_register_decode_input
+        global decode_input
+        global mv_decode_input
 
         def my_test_decode(b, errors = None):
-            global ironpython_test_codecs_test_register_decode_input
-            ironpython_test_codecs_test_register_decode_input = b
+            global decode_input
+            decode_input = b
+            if type(b) == memoryview:
+                # clone memoryview for inspection, since the original may get released in the meantime
+                global mv_decode_input
+                mv_decode_input = memoryview(b)
             return ('*' * len(b), len(b))
 
         def my_search_function(name):
@@ -887,45 +892,48 @@ class CodecTest(IronPythonTestCase):
 
         # When 'codecs.decode' is used, the decode input is passed to the decoding function as is
         b = b"abc"
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(codecs.decode(b, 'ironpython_test_codecs_test_register'), "***")
-        self.assertIs(ironpython_test_codecs_test_register_decode_input, b)
+        self.assertIs(decode_input, b)
 
         ba = bytearray(b)
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(codecs.decode(ba, 'ironpython_test_codecs_test_register'), "***")
-        self.assertIs(ironpython_test_codecs_test_register_decode_input, ba)
+        self.assertIs(decode_input, ba)
 
         mv = memoryview(ba)
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(codecs.decode(mv, 'ironpython_test_codecs_test_register'), "***")
-        self.assertIs(ironpython_test_codecs_test_register_decode_input, mv)
+        self.assertIs(decode_input, mv)
+        mv_decode_input.release()
 
         import array
         arr = array.array('B', b)
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(codecs.decode(arr, 'ironpython_test_codecs_test_register'), "***")
-        self.assertIs(ironpython_test_codecs_test_register_decode_input, arr)
+        self.assertIs(decode_input, arr)
 
         # When 'decode' method is used on 'bytes' or 'bytearray', the object is being wrapped in a readonly 'memoryview'
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(b.decode('ironpython_test_codecs_test_register'), "***")
-        self.assertIs(type(ironpython_test_codecs_test_register_decode_input), memoryview)
-        self.assertTrue(ironpython_test_codecs_test_register_decode_input.readonly)
-        self.assertRaises(TypeError, memoryview.__setitem__, ironpython_test_codecs_test_register_decode_input, 0, 120)
+        self.assertIs(type(decode_input), memoryview)
+        self.assertTrue(mv_decode_input.readonly)
+        self.assertRaises(TypeError, memoryview.__setitem__, mv_decode_input, 0, 120)
+        mv_decode_input.release()
 
-        ironpython_test_codecs_test_register_decode_input = None
+        decode_input = mv_decode_input = None
         self.assertEqual(ba.decode('ironpython_test_codecs_test_register'), "***")
-        self.assertIs(type(ironpython_test_codecs_test_register_decode_input), memoryview)
-        self.assertTrue(ironpython_test_codecs_test_register_decode_input.readonly)
-        self.assertRaises(TypeError, memoryview.__setitem__, ironpython_test_codecs_test_register_decode_input, 0, 120)
+        self.assertIs(type(decode_input), memoryview)
+        self.assertTrue(mv_decode_input.readonly)
+        self.assertRaises(TypeError, memoryview.__setitem__, mv_decode_input, 0, 120)
         numBytes = len(ba)
-        self.assertEqual(len(ironpython_test_codecs_test_register_decode_input), numBytes)
-        self.assertEqual(ironpython_test_codecs_test_register_decode_input.shape, (numBytes,))
+        self.assertEqual(len(mv_decode_input), numBytes)
+        self.assertEqual(mv_decode_input.shape, (numBytes,))
         ba[1] = ord('x')
-        self.assertEqual(ironpython_test_codecs_test_register_decode_input[1], ord('x'))
+        self.assertEqual(mv_decode_input[1], ord('x'))
+        mv_decode_input.release()
 
-        del ironpython_test_codecs_test_register_decode_input
+        del decode_input, mv_decode_input
 
     def test_unicode_internal_encode(self):
         # takes one or two parameters, not zero or three

@@ -1016,7 +1016,8 @@ namespace IronPython.Runtime {
 
         public ByteArray translate([BytesLike]IList<byte>? table, object? delete) {
             if (delete is IBufferProtocol bufferProtocol) {
-                return translate(table, bufferProtocol.ToBytes(0, null));
+                using var buffer = bufferProtocol.GetBuffer();
+                return translate(table, buffer.ToBytes(0, null));
             }
             ValidateTable(table);
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));

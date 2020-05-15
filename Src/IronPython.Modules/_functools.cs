@@ -13,6 +13,7 @@ using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -171,6 +172,15 @@ namespace IronPython.Modules {
                 if (name == "__dict__") Delete__dict__();
 
                 _dict?.Remove(name);
+            }
+
+            public PythonTuple __reduce__() {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonTypeFromType(typeof(partial)),
+                    PythonTuple.MakeTuple(func),
+                    PythonTuple.MakeTuple(func,  args, keywords),
+                    null // TODO: what should this be?
+                );
             }
 
             #endregion

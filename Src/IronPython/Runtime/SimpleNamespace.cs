@@ -7,10 +7,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
 using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime {
@@ -38,8 +41,30 @@ namespace IronPython.Runtime {
         }
 
         public string __repr__(CodeContext context) {
-            var attrs = Modules.Builtin.sorted(context, __dict__).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
-            return $"namespace({string.Join(", ", attrs)})";
+            var infinite = PythonOps.GetAndCheckInfinite(this);
+            if (infinite == null) {
+                return "namespace(...)";
+            }
+
+            int index = infinite.Count;
+            infinite.Add(this);
+            try {
+                var attrs = Modules.Builtin.sorted(context, __dict__).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
+                return $"namespace({string.Join(", ", attrs)})";
+            } finally {
+                System.Diagnostics.Debug.Assert(index == infinite.Count - 1);
+                infinite.RemoveAt(index);
+            }
+        }
+
+        public bool __eq__(CodeContext context, [NotNull]SimpleNamespace other)
+            => PythonOps.IsOrEqualsRetBool(__dict__, other.__dict__);
+
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext context, object? other) {
+            if (other is SimpleNamespace simpleNamespace)
+                return __eq__(context, simpleNamespace);
+            return NotImplementedType.Value;
         }
     }
 }

@@ -30,7 +30,7 @@ def copy(cw, mutable):
 
 def copy_op(cw, mutable, name):
     t = get_type(mutable)
-    
+
     cw.enter_block('public %s %s()' % (t, name))
     copy(cw, mutable)
     cw.exit_block()
@@ -38,7 +38,7 @@ def copy_op(cw, mutable, name):
 
 def simple_op(cw, t, arg_t, name):
     clrname = get_clrname(name)
-    
+
     cw.enter_block('public %s %s(%s set)' % (t, name, arg_t))
     simple_op_worker(cw, t, arg_t, name)
     cw.exit_block()
@@ -46,7 +46,7 @@ def simple_op(cw, t, arg_t, name):
 
 def simple_op_worker(cw, t, arg_t, name):
     clrname = get_clrname(name)
-    
+
     if arg_t == 'object':
         cw.writeline('SetStorage items;')
         cw.enter_block('if (SetStorage.GetItems(set, out items))')
@@ -68,26 +68,26 @@ def enter_multiarg_op(cw, t, name):
 def union_multiarg(cw, mutable):
     t = get_type(mutable)
     enter_multiarg_op(cw, t, 'union')
-    
+
     cw.writeline('SetStorage res = _items.Clone();')
     cw.enter_block('foreach (object set in sets)')
     cw.writeline('res.UnionUpdate(SetStorage.GetItems(set));')
     cw.exit_block()
     cw.writeline()
     cw.writeline('return Make(res);')
-    
+
     cw.exit_block()
     cw.writeline()
 
 def intersection_multiarg(cw, mutable):
     t = get_type(mutable)
     enter_multiarg_op(cw, t, 'intersection')
-    
+
     cw.enter_block('if (sets.Length == 0)')
     copy(cw, mutable)
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('SetStorage res = _items;')
     cw.enter_block('foreach (object set in sets)')
     cw.writeline('SetStorage items, x = res, y;')
@@ -111,42 +111,42 @@ def intersection_multiarg(cw, mutable):
     cw.writeline('res = x;')
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('Debug.Assert(!object.ReferenceEquals(res, _items));')
     cw.writeline('return Make(res);')
-    
+
     cw.exit_block()
     cw.writeline()
 
 def difference(cw, t, arg_t):
     items = get_items(arg_t)
-    
+
     cw.enter_block('public %s difference(%s set)' % (t, arg_t))
-    
+
     if (t == arg_t):
         cw.enter_block('if (object.ReferenceEquals(set, this))')
         cw.writeline('return Empty;')
         cw.exit_block()
         cw.writeline()
-    
+
     cw.writeline('return Make(')
     cw.indent()
     cw.writeline('SetStorage.Difference(_items, %s)' % items)
     cw.dedent()
     cw.writeline(');');
-    
+
     cw.exit_block()
     cw.writeline()
 
 def difference_multiarg(cw, mutable):
     t = get_type(mutable)
     enter_multiarg_op(cw, t, 'difference')
-    
+
     cw.enter_block('if (sets.Length == 0)')
     copy(cw, mutable)
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('SetStorage res = _items;')
     cw.enter_block('foreach (object set in sets)')
     cw.enter_block('if (object.ReferenceEquals(set, this))')
@@ -161,24 +161,24 @@ def difference_multiarg(cw, mutable):
     cw.exit_block()
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('Debug.Assert(!object.ReferenceEquals(res, _items));')
     cw.writeline('return Make(res);')
-    
+
     cw.exit_block()
     cw.writeline()
 
 def symmetric_difference(cw, t, arg_t):
     cw.enter_block('public %s symmetric_difference(%s set)' % (t, arg_t))
-    
+
     if (t == arg_t):
         cw.enter_block('if (object.ReferenceEquals(set, this))')
         cw.writeline('return Empty;')
         cw.exit_block()
         cw.writeline()
-    
+
     simple_op_worker(cw, t, arg_t, 'symmetric_difference')
-    
+
     cw.exit_block()
     cw.writeline()
 
@@ -186,46 +186,46 @@ def gen_setops(mutable):
     def _gen_setops(cw):
         t = get_type(mutable)
         arg_ts = get_arg_ts(mutable)
-        
+
         for arg_t in arg_ts:
             items = get_items(arg_t)
             cw.enter_block('public bool isdisjoint(%s set)' % arg_t)
             cw.writeline('return _items.IsDisjoint(%s);' % items)
             cw.exit_block()
             cw.writeline()
-        
+
         for arg_t in arg_ts:
             items = get_items(arg_t)
             cw.enter_block('public bool issubset(%s set)' % arg_t)
             cw.writeline('return _items.IsSubset(%s);' % items)
             cw.exit_block()
             cw.writeline()
-        
+
         for arg_t in arg_ts:
             items = get_items(arg_t)
             cw.enter_block('public bool issuperset(%s set)' % arg_t)
             cw.writeline('return %s.IsSubset(_items);' % items)
             cw.exit_block()
             cw.writeline()
-        
+
         copy_op(cw, mutable, 'union')
         for arg_t in arg_ts:
             simple_op(cw, t, arg_t, 'union')
         union_multiarg(cw, mutable)
-        
+
         copy_op(cw, mutable, 'intersection')
         for arg_t in arg_ts:
             simple_op(cw, t, arg_t, 'intersection')
         intersection_multiarg(cw, mutable)
-        
+
         copy_op(cw, mutable, 'difference')
         for arg_t in arg_ts:
             difference(cw, t, arg_t)
         difference_multiarg(cw, mutable)
-        
+
         for arg_t in arg_ts:
             symmetric_difference(cw, t, arg_t)
-    
+
     return _gen_setops
 
 op_symbols = [ '|', '&', '^', '-' ]
@@ -247,31 +247,31 @@ def gen_ops(mutable):
         t = get_type(mutable)
         u = get_type(not mutable)
         ops = list(zip(op_symbols, op_names))
-        
+
         for symbol, name in ops:
             gen_op(cw, t, t, symbol, name)
         for symbol, name in ops:
             gen_op(cw, t, u, symbol, name)
-    
+
     return _gen_ops
 
 def gen_mutating_op(cw, t, arg_t, symbol, upname, clrname):
     cw.writeline('[SpecialName]')
     cw.enter_block('public %s InPlace%s(%s set)' % (t, clrname, arg_t))
-    
+
     if arg_t == 'object':
         cw.enter_block(
             'if (set is %s || set is %s)' %
             tuple(map(get_type, [False, True]))
         )
-        
+
     cw.writeline('%s(set);' % upname)
     cw.writeline('return this;')
-    
+
     if arg_t == 'object':
         cw.exit_block()
         cw.writeline()
-    
+
         cw.writeline('throw PythonOps.TypeError(')
         cw.indent()
         cw.writeline(
@@ -281,14 +281,14 @@ def gen_mutating_op(cw, t, arg_t, symbol, upname, clrname):
         cw.writeline('%s(this), %s(set)' % (('PythonTypeOps.GetName',) * 2))
         cw.dedent()
         cw.writeline(');')
-    
+
     cw.exit_block()
     cw.writeline()
 
 def gen_mutating_ops(cw):
     t = get_type(True)
     arg_ts = get_arg_ts(True)
-    
+
     for op in zip(op_symbols, op_upnames, op_clrnames):
         for arg_t in arg_ts:
             gen_mutating_op(cw, t, arg_t, *op)
@@ -302,13 +302,13 @@ def is_strict(compare):
     return not compare.endswith('=')
 
 def gen_comparison(cw, t, compare):
+    cw.writeline('[return: MaybeNotImplemented]')
     cw.enter_block(
-        'public static bool operator %s(%s self, object other)' %
+        'public static object operator %s(%s self, object other)' %
         (compare, t)
     )
-    
-    cw.writeline('SetStorage items;')
-    cw.enter_block('if (SetStorage.GetItemsIfSet(other, out items))')
+
+    cw.enter_block('if (SetStorage.GetItemsIfSet(other, out SetStorage items))')
     if is_subset(compare):
         left = 'self._items'
         right = 'items'
@@ -322,16 +322,16 @@ def gen_comparison(cw, t, compare):
     cw.writeline('return %s.%s(%s);' % (left, func, right))
     cw.exit_block()
     cw.writeline()
-    
-    cw.writeline('throw PythonOps.TypeError("can only compare to a set");')
-    
+
+    cw.writeline('return NotImplementedType.Value;')
+
     cw.exit_block()
     cw.writeline()
 
 def suppress(cw, *msgs):
     if len(msgs) == 0:
         return
-    
+
     comma = ''
     res = '['
     for msg in msgs:
@@ -339,74 +339,57 @@ def suppress(cw, *msgs):
         res += msg + ')'
         comma = ' ,'
     res += ']'
-    
+
     cw.writeline(res)
 
 def gen_comparisons(cw, t):
     cw.writeline('#region IRichComparable')
     cw.writeline()
-    
+
     for compare in compares:
         gen_comparison(cw, t, compare)
-    
-    ca1822 = '"Microsoft.Performance", "CA1822:MarkMembersAsStatic"'
-    ca1801 = '"Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o"'
-    throw_msg = 'throw PythonOps.TypeError("cannot compare sets using cmp()");'
-    
-    suppress(cw, ca1822, ca1801)
-    cw.writeline('[SpecialName]')
-    cw.enter_block('public int Compare(object o)')
-    cw.writeline(throw_msg)
-    cw.exit_block()
-    cw.writeline()
-    
-    suppress(cw, ca1822, ca1801)
-    cw.enter_block('public int __cmp__(object o)')
-    cw.writeline(throw_msg)
-    cw.exit_block()
-    cw.writeline()
-    
+
     cw.writeline('#endregion')
     cw.writeline()
 
 def gen_ienumerable(cw, mutable):
     cw.writeline('#region IEnumerable Members')
     cw.writeline()
-    
+
     cw.enter_block('IEnumerator IEnumerable.GetEnumerator()')
     cw.writeline('return new SetIterator(_items, %s);' % str(mutable).lower())
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('#endregion')
     cw.writeline()
     cw.writeline('#region IEnumerable<object> Members')
     cw.writeline()
-    
+
     cw.enter_block('IEnumerator<object> IEnumerable<object>.GetEnumerator()')
     cw.writeline('return new SetIterator(_items, %s);' % str(mutable).lower())
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('#endregion')
     cw.writeline()
 
 def gen_icodeformattable(cw):
     cw.writeline('#region ICodeFormattable Members')
     cw.writeline()
-    
+
     cw.enter_block('public virtual string/*!*/ __repr__(CodeContext/*!*/ context)')
     cw.writeline('return SetStorage.SetToString(context, this, _items);')
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('#endregion')
     cw.writeline()
 
 def gen_icollection(cw):
     cw.writeline('#region ICollection Members')
     cw.writeline()
-    
+
     cw.enter_block('void ICollection.CopyTo(Array array, int index)')
     cw.writeline('int i = 0;')
     cw.enter_block('foreach (object o in this)')
@@ -414,35 +397,35 @@ def gen_icollection(cw):
     cw.exit_block()
     cw.exit_block()
     cw.writeline()
-    
+
     cw.enter_block('public int Count')
     cw.writeline('[PythonHidden]')
     cw.writeline('get { return _items.Count; }')
     cw.exit_block()
     cw.writeline()
-    
+
     cw.enter_block('bool ICollection.IsSynchronized')
     cw.writeline('get { return false; }')
     cw.exit_block()
     cw.writeline()
-    
+
     cw.enter_block('object ICollection.SyncRoot')
     cw.writeline('get { return this; }')
     cw.exit_block()
     cw.writeline()
-    
+
     cw.writeline('#endregion')
     cw.writeline()
 
 def gen_interfaces(mutable):
     def _gen_interfaces(cw):
         t = get_type(mutable)
-        
+
         gen_comparisons(cw, t)
         gen_ienumerable(cw, mutable)
         gen_icodeformattable(cw)
         gen_icollection(cw)
-    
+
     return _gen_interfaces
 
 def main():
@@ -451,11 +434,11 @@ def main():
         ('Operators', gen_ops),
         ('Interface Implementations', gen_interfaces),
     ]
-    
+
     mutable_generators = [
         ('Mutating Operators', gen_mutating_ops),
     ]
-    
+
     _generators = []
     for title, func in generators:
         for bit in [True, False]:
@@ -464,7 +447,7 @@ def main():
                 func(bit)
             ))
     _generators.extend(mutable_generators)
-    
+
     return generate(*_generators)
 
 if __name__ == '__main__':

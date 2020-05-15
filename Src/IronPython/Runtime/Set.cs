@@ -181,18 +181,20 @@ namespace IronPython.Runtime {
         // but sets can do __eq__ / __ne__ against any type. This is why we define a separate
         // __eq__ / __ne__ here.
 
-        public bool __eq__(object other) {
-            SetStorage items;
-            return SetStorage.GetItemsIfSet(other, out items) &&
-                _items.Count == items.Count &&
-                _items.IsSubset(items);
+        [return: MaybeNotImplemented]
+        public object __eq__(object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
+                return _items.Count == items.Count && _items.IsSubset(items);
+            }
+            return NotImplementedType.Value;
         }
 
-        public bool __ne__(object other) {
-            SetStorage items;
-            return !SetStorage.GetItemsIfSet(other, out items) ||
-                _items.Count != items.Count ||
-                !_items.IsSubset(items);
+        [return: MaybeNotImplemented]
+        public object __ne__(object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
+                return _items.Count != items.Count || !_items.IsSubset(items);
+            }
+            return NotImplementedType.Value;
         }
 
         #endregion
@@ -770,51 +772,40 @@ namespace IronPython.Runtime {
 
         #region IRichComparable
 
-        public static bool operator >(SetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator >(SetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsStrictSubset(self._items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator <(SetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator <(SetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsStrictSubset(items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator >=(SetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator >=(SetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsSubset(self._items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator <=(SetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator <=(SetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsSubset(items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic") ,System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        [SpecialName]
-        public int Compare(object o) {
-            throw PythonOps.TypeError("cannot compare sets using cmp()");
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic") ,System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        public int __cmp__(object o) {
-            throw PythonOps.TypeError("cannot compare sets using cmp()");
+            return NotImplementedType.Value;
         }
 
         #endregion
@@ -1049,18 +1040,20 @@ namespace IronPython.Runtime {
         // but sets can do __eq__ / __ne__ against any type. This is why we define a separate
         // __eq__ / __ne__ here.
 
-        public bool __eq__(object other) {
-            SetStorage items;
-            return SetStorage.GetItemsIfSet(other, out items) &&
-                _items.Count == items.Count &&
-                _items.IsSubset(items);
+        [return: MaybeNotImplemented]
+        public object __eq__(object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
+                return _items.Count == items.Count && _items.IsSubset(items);
+            }
+            return NotImplementedType.Value;
         }
 
-        public bool __ne__(object other) {
-            SetStorage items;
-            return !SetStorage.GetItemsIfSet(other, out items) ||
-                _items.Count != items.Count ||
-                !_items.IsSubset(items);
+        [return: MaybeNotImplemented]
+        public object __ne__(object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
+                return _items.Count != items.Count || !_items.IsSubset(items);
+            }
+            return NotImplementedType.Value;
         }
 
         #endregion
@@ -1321,51 +1314,40 @@ namespace IronPython.Runtime {
 
         #region IRichComparable
 
-        public static bool operator >(FrozenSetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator >(FrozenSetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsStrictSubset(self._items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator <(FrozenSetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator <(FrozenSetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsStrictSubset(items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator >=(FrozenSetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator >=(FrozenSetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsSubset(self._items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
+            return NotImplementedType.Value;
         }
 
-        public static bool operator <=(FrozenSetCollection self, object other) {
-            SetStorage items;
-            if (SetStorage.GetItemsIfSet(other, out items)) {
+        [return: MaybeNotImplemented]
+        public static object operator <=(FrozenSetCollection self, object other) {
+            if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsSubset(items);
             }
 
-            throw PythonOps.TypeError("can only compare to a set");
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic") ,System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        [SpecialName]
-        public int Compare(object o) {
-            throw PythonOps.TypeError("cannot compare sets using cmp()");
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic") ,System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        public int __cmp__(object o) {
-            throw PythonOps.TypeError("cannot compare sets using cmp()");
+            return NotImplementedType.Value;
         }
 
         #endregion

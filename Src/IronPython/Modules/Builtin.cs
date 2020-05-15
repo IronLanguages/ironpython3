@@ -1144,6 +1144,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             if (stringValue != null) {
+                if (stringValue.Length == 2 && char.IsSurrogatePair(stringValue, 0)) {
+                    return char.ConvertToUtf32(stringValue, 0);
+                }
                 if (stringValue.Length != 1) {
                     throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
                 }
@@ -1322,12 +1325,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return BigIntegerOps.__round__(bi);
             }
 
-            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
-                var pythonType = DynamicHelpers.GetPythonType(number);
-                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, number, "__round__", out object? val)) {
+                return val;
             }
 
-            return PythonOps.CallWithContextAndThis(context, func, number);
+            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonTypeOps.GetName(number));
         }
 
         public static object? round(CodeContext/*!*/ context, object? number, object? ndigits) {
@@ -1360,12 +1362,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
             }
 
-            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
-                var pythonType = DynamicHelpers.GetPythonType(number);
-                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            if (PythonTypeOps.TryInvokeBinaryOperator(context, number, ndigits, "__round__", out object? val)) {
+                return val;
             }
 
-            return PythonOps.CallWithContextAndThis(context, func, number, ndigits);
+            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonTypeOps.GetName(number));
         }
 
         public static void setattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? val) {
@@ -1405,9 +1406,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static object? sum(CodeContext/*!*/ context, object? sequence, object? start) {
             IEnumerator i = PythonOps.GetEnumerator(sequence);
 
-            if (start is string) {
-                throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
-            }
+            ValidateSumStart(start);
 
             var sumState = new SumState(context.LanguageContext, start);
             while (i.MoveNext()) {
@@ -1418,9 +1417,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? sum(CodeContext/*!*/ context, [NotNull]PythonList sequence, object? start) {
-            if (start is string) {
-                throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
-            }
+            if (sequence.GetType() != typeof(PythonList)) return sum(context, (object)sequence, start);
+
+            ValidateSumStart(start);
 
             var sumState = new SumState(context.LanguageContext, start);
             for (int i = 0; i < sequence._size; i++) {
@@ -1431,9 +1430,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence, object? start) {
-            if (start is string) {
-                throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
-            }
+            if (sequence.GetType() != typeof(PythonTuple)) return sum(context, (object)sequence, start);
+
+            ValidateSumStart(start);
 
             var sumState = new SumState(context.LanguageContext, start);
             var arr = sequence._data;
@@ -1445,6 +1444,18 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         #region Optimized sum
+
+        private static void ValidateSumStart(object? start) {
+            if (start is string || start is Extensible<string>) {
+                throw PythonOps.TypeError("sum() can't sum strings [use ''.join(seq) instead]");
+            }
+            if (start is Bytes) {
+                throw PythonOps.TypeError("sum() can't sum bytes [use b''.join(seq) instead]");
+            }
+            if (start is ByteArray) {
+                throw PythonOps.TypeError("sum() can't sum bytearray [use b''.join(seq) instead]");
+            }
+        }
 
         private static void SumOne(ref SumState state, object? current) {
             if (current != null) {

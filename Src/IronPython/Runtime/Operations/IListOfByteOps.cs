@@ -606,15 +606,25 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> Translate(this IList<byte> bytes, IList<byte>? table, IList<byte>? deletechars) {
+        internal static List<byte> Translate(this IList<byte> bytes, IList<byte>? table, IList<byte>? deletechars)
+            => Translate(bytes, table, deletechars, out _);
+
+        internal static List<byte> Translate(this IList<byte> bytes, IList<byte>? table, IList<byte>? deletechars, out bool changed) {
+            changed = false;
             List<byte> res = new List<byte>();
             for (int i = 0; i < bytes.Count; i++) {
-                if (deletechars == null || !deletechars.Contains(bytes[i])) {
+                var b = bytes[i];
+                if (deletechars == null || !deletechars.Contains(b)) {
                     if (table == null) {
-                        res.Add(bytes[i]);
+                        res.Add(b);
                     } else {
-                        res.Add(table[bytes[i]]);
+                        var t = table[b];
+                        if (b != t) changed = true;
+                        res.Add(t);
                     }
+                }
+                else {
+                    changed = true;
                 }
             }
             return res;

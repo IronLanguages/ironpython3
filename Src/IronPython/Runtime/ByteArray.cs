@@ -993,25 +993,33 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray translate([BytesLike]IList<byte>? table) {
-            lock (this) {
-                if (table != null) {
-                    if (table.Count != 256) {
-                        throw PythonOps.ValueError("translation table must be 256 characters long");
-                    } else if (Count == 0) {
-                        return CopyThis();
-                    }
-                }
+        private void ValidateTable(IList<byte>? table) {
+            if (table != null && table.Count != 256) {
+                throw PythonOps.ValueError("translation table must be 256 characters long");
+            }
+        }
 
+        public ByteArray translate([BytesLike]IList<byte>? table) {
+            ValidateTable(table);
+            lock (this) {
                 return new ByteArray(_bytes.Translate(table, null));
             }
         }
 
 
         public ByteArray translate([BytesLike]IList<byte>? table, [BytesLike, NotNull]IList<byte> delete) {
+            ValidateTable(table);
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, delete));
             }
+        }
+
+        public ByteArray translate([BytesLike]IList<byte>? table, object? delete) {
+            if (delete is IBufferProtocol bufferProtocol) {
+                return translate(table, bufferProtocol.ToBytes(0, null));
+            }
+            ValidateTable(table);
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
         }
 
         public ByteArray upper() {

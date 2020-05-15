@@ -58,5 +58,15 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
 
         [PythonHidden]
         public void Reset() { throw new NotSupportedException(); }
+
+        public PythonTuple __reduce__() {
+            var args = new object?[_enumerators.Length + 1];
+            args[0] = _func;
+            Array.Copy(_enumerators, 0, args, 1, _enumerators.Length);
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(Map)),
+                PythonTuple.MakeTuple(args)
+            );
+        }
     }
 }

@@ -1856,6 +1856,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             PythonDictionary dict = PythonDictionary.MakeSymbolDictionary();
             if (IsSystemType) {
                 PythonBinder.GetBinder(context).LookupMembers(context, this, dict);
+
+                foreach (var item in dict) {
+                    if (item.Value is PythonTypeUserDescriptorSlot dts)
+                        dict[item.Key] = dts.Value;
+                }
             } else {
                 foreach (var item in _dict) {
                     if (excludeDict && item.Key == "__dict__") {

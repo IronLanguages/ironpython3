@@ -1266,12 +1266,14 @@ namespace IronPython.Runtime {
         }
 
         internal static string SetToString(CodeContext/*!*/ context, object set, SetStorage items) {
+            var infinite = PythonOps.GetAndCheckInfinite(set);
+
             bool notEmpty = items._hasNull || items._count > 0;
 
             string setTypeStr;
             Type setType = set.GetType();
             if (setType == typeof(SetCollection)) {
-                setTypeStr = notEmpty ? null : "set";
+                setTypeStr = notEmpty && infinite != null ? null : "set";
             } else if (setType == typeof(FrozenSetCollection)) {
                 setTypeStr = "frozenset";
             } else {
@@ -1284,7 +1286,9 @@ namespace IronPython.Runtime {
                 sb.Append("(");
             }
 
-            if (notEmpty) {
+            if (infinite == null) {
+                sb.Append("...");
+            } else if (notEmpty) {
                 sb.Append("{");
                 string comma = "";
 
@@ -1295,10 +1299,18 @@ namespace IronPython.Runtime {
                 }
 
                 if (items._count > 0) {
+
                     foreach (Bucket bucket in items._buckets) {
                         if (bucket.Item != null && bucket.Item != Removed) {
                             sb.Append(comma);
-                            sb.Append(PythonOps.Repr(context, bucket.Item));
+                            int index = infinite.Count;
+                            infinite.Add(set);
+                            try {
+                                sb.Append(PythonOps.Repr(context, bucket.Item));
+                            } finally {
+                                Debug.Assert(index == infinite.Count - 1);
+                                infinite.RemoveAt(index);
+                            }
                             comma = ", ";
                         }
                     }

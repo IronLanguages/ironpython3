@@ -154,7 +154,6 @@ namespace IronPython.Runtime.Operations {
         internal static Encoding Latin1Encoding => _latin1 ??= Encoding.GetEncoding(28591, new EncoderExceptionFallback(), new DecoderExceptionFallback()); // ISO-8859-1
         [DisallowNull] private static Encoding? _latin1;
 
-
         internal static object FastNew(CodeContext/*!*/ context, object? x) {
             if (x == null) {
                 return "None";
@@ -1389,8 +1388,8 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
-        public static Extensible<string> __str__([NotNull]ExtensibleString self) {
-            return self;
+        public static string __str__([NotNull]ExtensibleString self) {
+            return self.Value;
         }
 
         public static string/*!*/ __repr__([NotNull]string/*!*/ self) {

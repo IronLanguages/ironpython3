@@ -120,7 +120,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool UserObjectIsCallable(CodeContext/*!*/ context, object o) {
-            return TryGetBoundAttr(context, o, "__call__", out object? callFunc) && callFunc != null;
+            return PythonTypeOps.TryGetOperator(context, o, "__call__", out object callFunc) && callFunc != null;
         }
 
         public static bool IsTrue(object? o) {

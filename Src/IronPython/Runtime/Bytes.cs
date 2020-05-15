@@ -1016,12 +1016,12 @@ namespace IronPython.Runtime {
         public bool __eq__(CodeContext context, [NotNull]Bytes value) => Equals(value);
 
         [return: MaybeNotImplemented]
-        public object __eq__(CodeContext context, object? value) => NotImplementedType.Value;
+        public NotImplementedType __eq__(CodeContext context, object? value) => NotImplementedType.Value;
 
         public bool __ne__(CodeContext context, [NotNull]Bytes value) => !Equals(value);
 
         [return: MaybeNotImplemented]
-        public object __ne__(CodeContext context, object? value) => NotImplementedType.Value;
+        public NotImplementedType __ne__(CodeContext context, object? value) => NotImplementedType.Value;
 
         [PythonHidden]
         public bool Equals(Bytes? other) => other != null && (ReferenceEquals(this, other) || Enumerable.SequenceEqual(_bytes, other._bytes));

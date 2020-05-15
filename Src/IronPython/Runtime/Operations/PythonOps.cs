@@ -3019,6 +3019,7 @@ namespace IronPython.Runtime.Operations {
 
         public static Ellipsis Ellipsis => Ellipsis.Value;
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static NotImplementedType NotImplemented => NotImplementedType.Value;
 
         public static void ListAddForComprehension(PythonList l, object? o) {

@@ -650,30 +650,17 @@ namespace IronPython.Runtime {
             return base.GetHashCode();
         }
 
-        // these are present in CPython but always return NotImplemented.
         [return: MaybeNotImplemented]
-        [Python3Warning("code inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator >(FunctionCode self, FunctionCode other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __gt__(CodeContext context, object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("code inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator <(FunctionCode self, FunctionCode other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __lt__(CodeContext context, object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("code inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator >=(FunctionCode self, FunctionCode other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __ge__(CodeContext context, object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("code inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator <=(FunctionCode self, FunctionCode other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __le__(CodeContext context, object other) => NotImplementedType.Value;
 
         /// <summary>
         /// Called the 1st time a function is invoked by our OriginalCallTarget* methods

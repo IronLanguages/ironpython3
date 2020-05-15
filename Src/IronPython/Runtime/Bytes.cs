@@ -690,24 +690,34 @@ namespace IronPython.Runtime {
             return res == null ? this.AsBytes() : new Bytes(res);
         }
 
-        public Bytes translate([BytesLike]IList<byte>? table) {
-            if (table == null) {
-                return this.AsBytes();
-            } else if (table.Count != 256) {
+        private void ValidateTable(IList<byte>? table) {
+            if (table != null && table.Count != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
-            } else if (Count == 0) {
-                return this.AsBytes();
             }
+        }
 
-            return new Bytes(_bytes.Translate(table, null));
+        public Bytes translate([BytesLike]IList<byte>? table) {
+            ValidateTable(table);
+            if (table is null) return AsBytes();
+            var res = _bytes.Translate(table, null, out bool changed);
+            if (changed) return Make(res.ToArray());
+            return AsBytes();
         }
 
         public Bytes translate([BytesLike]IList<byte>? table, [BytesLike, NotNull]IList<byte> delete) {
-            if (Count == 0) {
-                return this.AsBytes();
-            }
+            ValidateTable(table);
+            if (table is null && delete.Count == 0) return AsBytes();
+            var res = _bytes.Translate(table, delete, out bool changed);
+            if (changed) return Make(res.ToArray());
+            return AsBytes();
+        }
 
-            return new Bytes(_bytes.Translate(table, delete));
+        public Bytes translate([BytesLike]IList<byte>? table, object? delete) {
+            if (delete is IBufferProtocol bufferProtocol) {
+                return translate(table, bufferProtocol.ToBytes(0, null));
+            }
+            ValidateTable(table);
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
         }
 
         public Bytes upper() {
@@ -1014,7 +1024,7 @@ namespace IronPython.Runtime {
         public object __ne__(CodeContext context, object? value) => NotImplementedType.Value;
 
         [PythonHidden]
-        public bool Equals(Bytes other) => other != null && (ReferenceEquals(this, other) || Enumerable.SequenceEqual(_bytes, other._bytes));
+        public bool Equals(Bytes? other) => other != null && (ReferenceEquals(this, other) || Enumerable.SequenceEqual(_bytes, other._bytes));
 
         public override bool Equals(object? obj) => obj is Bytes bytes && Equals(bytes);
 

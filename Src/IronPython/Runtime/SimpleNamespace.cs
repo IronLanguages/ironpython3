@@ -7,10 +7,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
 using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime {
@@ -52,6 +55,16 @@ namespace IronPython.Runtime {
                 System.Diagnostics.Debug.Assert(index == infinite.Count - 1);
                 infinite.RemoveAt(index);
             }
+        }
+
+        public bool __eq__(CodeContext context, [NotNull]SimpleNamespace other)
+            => PythonOps.IsOrEqualsRetBool(__dict__, other.__dict__);
+
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext context, object? other) {
+            if (other is SimpleNamespace simpleNamespace)
+                return __eq__(context, simpleNamespace);
+            return NotImplementedType.Value;
         }
     }
 }

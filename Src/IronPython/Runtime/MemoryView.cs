@@ -762,35 +762,26 @@ namespace IronPython.Runtime {
         public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => __eq__(context, new MemoryView(value));
 
         [return: MaybeNotImplemented]
-        public object __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
-
+        public NotImplementedType __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
         public bool __ne__(CodeContext/*!*/ context, [NotNull]MemoryView value) => !__eq__(context, value);
 
         public bool __ne__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
-        public object __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
-        public bool __lt__(CodeContext/*!*/ context, object value) {
-            throw PythonOps.TypeError("'<' not supported between instances of '{0}' and '{1}'",
-                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __lt__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
-        public bool __le__(CodeContext/*!*/ context, object value) {
-            throw PythonOps.TypeError("'<=' not supported between instances of '{0}' and '{1}'",
-                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __le__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
-        public bool __gt__(CodeContext/*!*/ context, object value) {
-            throw PythonOps.TypeError("'>' not supported between instances of '{0}' and '{1}'",
-                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __gt__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
-        public bool __ge__(CodeContext/*!*/ context, object value) {
-            throw PythonOps.TypeError("'>=' not supported between instances of '{0}' and '{1}'",
-                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __ge__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
         #region ICodeFormattable Members
 

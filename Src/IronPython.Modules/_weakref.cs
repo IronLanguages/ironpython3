@@ -167,22 +167,22 @@ namespace IronPython.Modules {
 
             [return: MaybeNotImplemented]
             public static NotImplementedType operator >(@ref self, object other) {
-                return PythonOps.NotImplemented;
+                return NotImplementedType.Value;
             }
 
             [return: MaybeNotImplemented]
             public static NotImplementedType operator <(@ref self, object other) {
-                return PythonOps.NotImplemented;
+                return NotImplementedType.Value;
             }
 
             [return: MaybeNotImplemented]
             public static NotImplementedType operator <=(@ref self, object other) {
-                return PythonOps.NotImplemented;
+                return NotImplementedType.Value;
             }
 
             [return: MaybeNotImplemented]
             public static NotImplementedType operator >=(@ref self, object other) {
-                return PythonOps.NotImplemented;
+                return NotImplementedType.Value;
             }
 
             #region IStructuralEquatable Members

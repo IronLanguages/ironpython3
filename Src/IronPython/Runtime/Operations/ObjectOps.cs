@@ -226,6 +226,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
+        public static object __eq__(object self, object value) {
+            if (ReferenceEquals(self, value)) return ScriptingRuntimeHelpers.True;
+            return NotImplementedType.Value;
+        }
+
+        [return: MaybeNotImplemented]
         public static object __ne__(CodeContext context, object self, object other) {
             if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, "__eq__", out object res)) {
                 if (res is NotImplementedType) {
@@ -235,6 +241,18 @@ namespace IronPython.Runtime.Operations {
             }
             return NotImplementedType.Value;
         }
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __gt__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __lt__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __ge__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __le__(object self, object value) => NotImplementedType.Value;
 
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
             string text = PythonOps.ToString(context, self);

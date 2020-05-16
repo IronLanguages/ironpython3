@@ -1888,6 +1888,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
+            // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
+            // which would make it "iterable" even though it is not.
             if (o is PythonType pt && !pt.IsIterable(context)) {
                 enumerator = default;
                 return false;
@@ -1922,6 +1924,8 @@ namespace IronPython.Runtime.Operations {
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
             enumerator = null;
 
+            // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
+            // which would make it "iterable" even though it is not.
             if (enumerable is PythonType ptEnumerable && !ptEnumerable.IsIterable(context)) {
                 return false;
             }

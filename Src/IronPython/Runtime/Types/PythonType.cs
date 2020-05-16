@@ -376,18 +376,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="context"></param>
         /// <returns>True if it is iterable</returns>
-        internal bool IsIterable(CodeContext context) {
-            object _dummy = null;
-            if (PythonOps.TryGetBoundAttr(context,  this, "__iter__", out _dummy) &&
-                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value)
-                && PythonOps.TryGetBoundAttr(context, this, "__next__", out _dummy) &&
-                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value))
-            {
-                return true;
-            }
-
-            return false;
-        }
+        internal bool IsIterable(CodeContext context)
+            => PythonTypeOps.TryGetOperator(context, this, "__iter__", out object iter) && iter != null;
 
         private void ClearAbstractMethodFlags(string name) {
             if (name == "__abstractmethods__") {

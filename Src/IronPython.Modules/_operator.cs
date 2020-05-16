@@ -359,7 +359,7 @@ types and lengths of a and b--but not their values.")]
                     throw PythonOps.BufferError("Buffer must be single dimension");
                 }
 
-                return CompareBytes(aBuf.ToBytes(0, null), bBuf.ToBytes(0, null));
+                return CompareBytes(aBuf.AsReadOnlySpan().ToArray(), bBuf.AsReadOnlySpan().ToArray());
             }
             throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
         }

@@ -216,8 +216,5 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.suboffsets"/>
         IReadOnlyList<int>? SubOffsets { get; }
-
-        // Obsolete
-        Bytes ToBytes(int start, int? end);
     }
 }

@@ -312,10 +312,6 @@ namespace IronPython.Runtime {
         public IReadOnlyList<int>? Strides => null;
 
         public IReadOnlyList<int>? SubOffsets => null;
-
-        Bytes IPythonBuffer.ToBytes(int start, int? end) {
-            return Bytes.Make(_rom.Slice(start, (end ?? _rom.Length) - start).ToArray());
-        }
     }
 
     public class MemoryBufferProtocolWrapper : IBufferProtocol {

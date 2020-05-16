@@ -158,10 +158,6 @@ namespace IronPython.Modules {
                 get { return null; }
             }
 
-            Bytes IPythonBuffer.ToBytes(int start, int? end) {
-                return Bytes.Make(GetBytes(start, NativeType.Size));
-            }
-
             #endregion
         }
     }

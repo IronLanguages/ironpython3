@@ -1017,7 +1017,7 @@ namespace IronPython.Runtime {
         public ByteArray translate([BytesLike]IList<byte>? table, object? delete) {
             if (delete is IBufferProtocol bufferProtocol) {
                 using var buffer = bufferProtocol.GetBuffer();
-                return translate(table, buffer.ToBytes(0, null));
+                return translate(table, buffer.AsReadOnlySpan().ToArray());
             }
             ValidateTable(table);
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
@@ -1382,7 +1382,7 @@ namespace IronPython.Runtime {
             }
             if (curVal is IBufferProtocol bp) {
                 using (IPythonBuffer buf = bp.GetBuffer()) {
-                    return new ByteArray(buf.ToBytes(0, null));
+                    return new ByteArray(new ArrayData<byte>(buf));
                 }
             }
             throw PythonOps.TypeError("can only join an iterable of bytes");
@@ -1459,7 +1459,7 @@ namespace IronPython.Runtime {
                     return lob;
                 case IBufferProtocol bp:
                     using (IPythonBuffer buf = bp.GetBuffer()) {
-                        return buf.ToBytes(0, null);
+                        return buf.AsReadOnlySpan().ToArray();
                     }
                 case ReadOnlyMemory<byte> rom:
                     return rom.ToArray();

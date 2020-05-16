@@ -363,10 +363,6 @@ namespace IronPython.Runtime {
             public IReadOnlyList<int>? Strides => null;
 
             public IReadOnlyList<int>? SubOffsets => null;
-
-            Bytes IPythonBuffer.ToBytes(int start, int? end) {
-                return Bytes.Make(MemoryMarshal.AsBytes(_arrayData.Data.AsSpan(start, (end ?? _arrayData.Count) - start)).ToArray());
-            }
         }
     }
 

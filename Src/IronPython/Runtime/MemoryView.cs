@@ -873,14 +873,6 @@ namespace IronPython.Runtime {
 
         IReadOnlyList<int> IPythonBuffer.SubOffsets => null; // not supported yet
 
-        Bytes IPythonBuffer.ToBytes(int start, int? end) {
-            if (start == 0 && end == null) {
-                return tobytes();
-            } else {
-                return ((MemoryView)this[new Slice(start, end)]).tobytes();
-            }
-        }
-
         #endregion
     }
 }

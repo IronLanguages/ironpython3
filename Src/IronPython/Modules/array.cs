@@ -1197,14 +1197,6 @@ namespace IronPython.Modules {
 
             IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
 
-            Bytes IPythonBuffer.ToBytes(int start, int? end) {
-                if (start == 0 && end == null) {
-                    return tobytes();
-                }
-
-                return ((array)this[new Slice(start, end)]).tobytes();
-            }
-
             #endregion
         }
 

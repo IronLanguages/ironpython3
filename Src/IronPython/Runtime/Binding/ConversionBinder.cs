@@ -756,7 +756,7 @@ namespace IronPython.Runtime.Binding {
 
         private static IList<byte> ConvertFromBufferProtocolToByteListHelper(IBufferProtocol bp) {
             using var buf = bp.GetBuffer(BufferFlags.Simple);
-            return buf.ToBytes(0, null);
+            return buf.AsReadOnlySpan().ToArray();
         }
 
         internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {

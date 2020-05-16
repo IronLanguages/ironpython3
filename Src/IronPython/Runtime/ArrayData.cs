@@ -367,13 +367,6 @@ namespace IronPython.Runtime {
             Bytes IPythonBuffer.ToBytes(int start, int? end) {
                 return Bytes.Make(MemoryMarshal.AsBytes(_arrayData.Data.AsSpan(start, (end ?? _arrayData.Count) - start)).ToArray());
             }
-
-            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-                if (typeof(T) == typeof(byte)) {
-                    return ((byte[])(object)_arrayData.Data).AsMemory(0, _arrayData.Count);
-                }
-                throw new InvalidOperationException();
-            }
         }
     }
 

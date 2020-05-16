@@ -316,10 +316,6 @@ namespace IronPython.Runtime {
         Bytes IPythonBuffer.ToBytes(int start, int? end) {
             return Bytes.Make(_rom.Slice(start, (end ?? _rom.Length) - start).ToArray());
         }
-
-        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-            return _rom;
-        }
     }
 
     public class MemoryBufferProtocolWrapper : IBufferProtocol {

@@ -1205,10 +1205,6 @@ namespace IronPython.Modules {
                 return ((array)this[new Slice(start, end)]).tobytes();
             }
 
-            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-                return ToByteArray().AsMemory();
-            }
-
             #endregion
         }
 

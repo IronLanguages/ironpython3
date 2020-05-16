@@ -183,7 +183,7 @@ namespace IronPython.Modules {
                         int pos = 0;
                         byte[] contents;
                         using (IPythonBuffer buf = cabuf.GetBuffer()) {
-                            contents = buf.ToMemory().ToArray();
+                            contents = buf.AsReadOnlySpan().ToArray();
                         }
                         while (pos < contents.Length) {
                             byte[] curr = new byte[contents.Length - pos];

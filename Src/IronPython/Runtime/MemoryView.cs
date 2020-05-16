@@ -881,10 +881,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-            return ((IPythonBuffer)this).AsReadOnlySpan().ToArray();
-        }
-
         #endregion
     }
 }

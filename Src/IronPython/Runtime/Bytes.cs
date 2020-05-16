@@ -68,14 +68,6 @@ namespace IronPython.Runtime {
             _bytes = new byte[size];
         }
 
-        public Bytes([NotNull]byte[] bytes) {
-            _bytes = bytes.ToArray();
-        }
-
-        private Bytes(byte[] bytes, bool copyData) {
-            _bytes = copyData ? _bytes.ToArray() : bytes;
-        }
-
         public Bytes([NotNull]string @string) {
             throw PythonOps.TypeError("string argument without an encoding");
         }
@@ -88,13 +80,17 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, @string, encoding, errors).UnsafeByteArray;
         }
 
-        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
+        private Bytes(byte[] bytes) {
+            _bytes = bytes;
+        }
+
+        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
 
         internal static Bytes FromByte(byte b)
             => oneByteBytes[b];
 
         internal static Bytes Make(byte[] bytes)
-            => new Bytes(bytes, copyData: false);
+            => new Bytes(bytes);
 
         internal byte[] UnsafeByteArray {
             [PythonHidden]
@@ -102,7 +98,7 @@ namespace IronPython.Runtime {
         }
 
         private Bytes AsBytes()
-            => this.GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
+            => this.GetType() == typeof(Bytes) ? this : new Bytes(_bytes);
 
         #region Public Python API surface
 
@@ -1106,10 +1102,6 @@ namespace IronPython.Runtime {
                 }
 
                 return _exporter[new Slice(start, end)];
-            }
-
-            public ReadOnlyMemory<byte> ToMemory() {
-                return _exporter.AsMemory();
             }
         }
 

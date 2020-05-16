@@ -162,10 +162,6 @@ namespace IronPython.Modules {
                 return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
-            ReadOnlyMemory<byte> IPythonBuffer.ToMemory() {
-                return GetBytes(0, NativeType.Size);
-            }
-
             #endregion
         }
     }

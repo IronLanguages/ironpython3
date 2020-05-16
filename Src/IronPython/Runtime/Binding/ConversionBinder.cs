@@ -181,9 +181,7 @@ namespace IronPython.Runtime.Binding {
                         Type genTo = type.GetGenericTypeDefinition();
 
                         // Interface conversion helpers...
-                        if (type == typeof(ReadOnlyMemory<byte>) && self.Value is IBufferProtocol) {
-                            res = ConvertFromBufferProtocolToMemory(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
-                        } else if (type == typeof(IReadOnlyList<byte>) && self.Value is IBufferProtocol) {
+                        if (type == typeof(IReadOnlyList<byte>) && self.Value is IBufferProtocol) {
                             res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IReadOnlyList<byte>));
                         } else if (type == typeof(IList<byte>) && self.Value is IBufferProtocol) {
                             res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IList<byte>));
@@ -741,24 +739,6 @@ namespace IronPython.Runtime.Binding {
                 ),
                 self.Restrictions
             );
-        }
-
-        private DynamicMetaObject ConvertFromBufferProtocolToMemory(DynamicMetaObject self, Type toType) {
-            return new DynamicMetaObject(
-                AstUtils.Convert(
-                    Ast.Call(
-                        typeof(PythonConversionBinder).GetMethod(nameof(PythonConversionBinder.ConvertFromBufferProtocolToMemoryHelper), BindingFlags.NonPublic | BindingFlags.Static),
-                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol))
-                    ),
-                    toType
-                ),
-                self.Restrictions
-            );
-        }
-
-        private static ReadOnlyMemory<byte> ConvertFromBufferProtocolToMemoryHelper(IBufferProtocol bp) {
-            using var buf = bp.GetBuffer(BufferFlags.Simple);
-            return buf.ToMemory();
         }
 
         private DynamicMetaObject ConvertFromBufferProtocolToByteList(DynamicMetaObject self, Type toType) {

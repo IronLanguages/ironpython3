@@ -219,7 +219,5 @@ namespace IronPython.Runtime {
 
         // Obsolete
         Bytes ToBytes(int start, int? end);
-        // Obsolete
-        ReadOnlyMemory<byte> ToMemory();
     }
 }

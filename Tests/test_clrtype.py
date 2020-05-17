@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test
+from iptest import IronPythonTestCase, is_netcoreapp21, is_posix, run_test
 
 import clr
 import clrtype
@@ -14,8 +14,8 @@ clr.AddReference("System.Xml")
 import System
 from System.Reflection import BindingFlags
 
-class IProduct(object):
-    __metaclass__ = clrtype.ClrInterface
+class IProduct(object, metaclass=clrtype.ClrInterface):
+    __metaclass__ = clrtype.ClrInterface # https://github.com/IronLanguages/ironpython3/issues/836
 
     _clrnamespace = "IronPython.Samples.ClrType"
 
@@ -23,31 +23,31 @@ class IProduct(object):
     @clrtype.accepts()
     @clrtype.returns(str)
     def Name(self): raise RuntimeError("this should not get called")
-    
+
     @property
     @clrtype.accepts()
     @clrtype.returns(float)
     def Cost(self): raise RuntimeError("this should not get called")
-    
+
     @clrtype.accepts()
     @clrtype.returns(bool)
     def IsAvailable(self): raise RuntimeError("this should not get called")
 
-class Product(IProduct):
-    __metaclass__ = clrtype.ClrClass
-    
+class Product(IProduct, metaclass=clrtype.ClrClass):
+    __metaclass__ = clrtype.ClrClass # https://github.com/IronLanguages/ironpython3/issues/836
+
     _clrnamespace = "IronPython.Samples.ClrType"
-    
+
     _clrfields = {
         "name" : str,
         "cost" : float,
         "_quantity" : int
     }
-    
+
     CLSCompliant = clrtype.attribute(System.CLSCompliantAttribute)
     clr.AddReference("System.Xml")
     XmlRoot = clrtype.attribute(System.Xml.Serialization.XmlRootAttribute)
-    
+
     _clrclassattribs = [
         # Use System.Attribute subtype directly for custom attributes without arguments
         System.ObsoleteAttribute,
@@ -70,7 +70,7 @@ class Product(IProduct):
     @clrtype.accepts()
     @clrtype.returns(int)
     def quantity(self): return self._quantity
-    
+
     @quantity.setter
     @clrtype.accepts(int)
     @clrtype.returns()
@@ -81,10 +81,10 @@ class Product(IProduct):
     def calc_total(self, discount=0.0):
         return (self.cost - discount) * self.quantity
 
-if not is_netcoreapp and not is_posix:
-    class NativeMethods(object):
+if not is_netcoreapp21 and not is_posix:
+    class NativeMethods(object, metaclass=clrtype.ClrClass):
         # Note that you could also the "ctypes" modules instead of pinvoke declarations
-        __metaclass__ = clrtype.ClrClass
+        __metaclass__ = clrtype.ClrClass # https://github.com/IronLanguages/ironpython3/issues/836
 
         from System.Runtime.InteropServices import DllImportAttribute, PreserveSigAttribute
         DllImport = clrtype.attribute(DllImportAttribute)
@@ -109,7 +109,7 @@ class ClrTypeTest(IronPythonTestCase):
         super(ClrTypeTest, self).setUp()
         self.p = Product("Widget", 10.0, 42)
 
-    @unittest.skipIf(is_netcoreapp, 'No DefinePInvokeMethod')
+    @unittest.skipIf(is_netcoreapp21, 'No DefinePInvokeMethod')
     @unittest.skipIf(is_posix, 'Windows specific P/Invoke')
     def test_pinvoke_method(self):
         self.assertTrue(NativeMethods.IsCharAlpha('A'))
@@ -146,7 +146,7 @@ class ClrTypeTest(IronPythonTestCase):
         # methods
         m = [method.Name for method in t.GetMethods() if method.DeclaringType == method.ReflectedType]
         self.assertTrue('calc_total' in m)
-        self.assertTrue('quantity' in m) 
+        self.assertTrue('quantity' in m)
 
     def test_interface_members(self):
         # Calling IProduct.Name and IProduct.IsAvailable as a strongly-typed members
@@ -154,7 +154,7 @@ class ClrTypeTest(IronPythonTestCase):
         self.assertEqual(name.Invoke(self.p, None), 'Widget')
         isAvailable = clr.GetClrType(IProduct).GetMethod("IsAvailable")
         self.assertTrue(isAvailable.Invoke(self.p, None))
-    
+
     def _call_typed_method(self):
         """Calling calc_total as a strongly-typed method using Reflection"""
         calc_total = self.p.GetType().GetMethod("calc_total")
@@ -164,7 +164,7 @@ class ClrTypeTest(IronPythonTestCase):
 
     # these methods are named with numbers because they need to run in a specific order
 
-    
+
     def test_0typed_method(self):
         self.assertEqual(self._call_typed_method(), 378.0)
 

@@ -29,7 +29,7 @@
                 Log.LogError(string.Format("{0} not in {1}", filename, WorkingDirectory));
                 return false;
               }
-              var archivename = fi.FullName.Substring(di.FullName.Length).TrimStart(new char [] { '\\', '/' });
+              var archivename = fi.FullName.Substring(di.FullName.Length).Replace('\\', '/').TrimStart(new char [] { '/' });
               using (Stream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
               using (Stream fileStreamInZip = archive.CreateEntry(archivename).Open())
                 fileStream.CopyTo(fileStreamInZip);

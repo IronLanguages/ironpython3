@@ -39,6 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\netcoreapp3.1.props = Build\netcoreapp3.1.props
 		Build\netstandard2.0.props = Build\netstandard2.0.props
 		Build\steps.yml = Build\steps.yml
+		Build\Tasks.Targets = Build\Tasks.Targets
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonCompiler", "Src\IronPythonCompiler\IronPythonCompiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"

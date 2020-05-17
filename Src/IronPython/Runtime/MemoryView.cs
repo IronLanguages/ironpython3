@@ -2,17 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
-using System.Numerics;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Linq;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Linq;
+
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
@@ -20,8 +24,9 @@ namespace IronPython.Runtime {
         private const int MaximumDimensions = 64;
 
         private IBufferProtocol _exporter;
-        private IPythonBuffer _buffer;   // null if disposed
+        private IPythonBuffer? _buffer;   // null if disposed
         // TODO: rename _offset to _startOffset
+        private readonly BufferFlags _flags;
         private readonly int _offset;    // in bytes
         private readonly bool _isReadOnly;
         private readonly int _numDims;
@@ -32,11 +37,12 @@ namespace IronPython.Runtime {
         private readonly IReadOnlyList<int> _strides;  // always in bytes
 
         private int? _storedHash;
-        private WeakRefTracker _tracker;
+        private WeakRefTracker? _tracker;
 
         // Fields below are computed based on readonly fields above
         private readonly int _numItems;   // product(shape); 1 for scalars
         private readonly bool _isCContig;
+        private readonly bool _isFContig;
 
         /// <seealso href="https://docs.python.org/3/c-api/memoryview.html#c.PyMemoryView_FromObject"/>
         public MemoryView([NotNull]IBufferProtocol @object) {
@@ -45,7 +51,8 @@ namespace IronPython.Runtime {
             // MemoryView should support all possible buffer exports (BufferFlags.FullRO)
             // but handling of suboffsets (BufferFlags.Indirect) is not implemented yet.
             // Hence the request is for BufferFlags.RecordsRO
-            _buffer = @object.GetBuffer(BufferFlags.RecordsRO);
+            _flags = BufferFlags.RecordsRO;
+            _buffer = @object.GetBuffer(_flags);
             // doublecheck that we don't have to deal with suboffsets
             if (_buffer.SubOffsets != null)
                 throw PythonOps.NotImplementedError("memoryview: indirect buffers are not supported");
@@ -62,16 +69,15 @@ namespace IronPython.Runtime {
             _isReadOnly = _buffer.IsReadOnly;
             _numDims = _buffer.NumOfDims;
 
-            _format = _buffer.Format;
             // in flags we requested format be provided, check that the exporter complied
-            if (_format == null)
+            if (_buffer.Format == null)
                 throw PythonOps.BufferError("memoryview: object of type {0} did not report its format", PythonOps.GetPythonTypeName(@object));
+            _format = _buffer.Format;
 
             _itemSize = _buffer.ItemSize;
-            // for convenience _shape and _strides are never null, even if _numDims == 0
+            // for convenience _shape and _strides are never null, even if _numDims == 0 or _flags indicate no _shape or _strides
             _shape = _buffer.Shape ?? (_numDims > 0 ? new int[] { _buffer.ItemCount } : new int[0]);  // TODO: use a static singleton
 
-            //_strides = _buffer.Strides ?? _shape.Reverse().PreScan(_itemSize, (sub, size) => sub * size).Reverse();
             if (shape.Count == 0) {
                 _strides = _shape; // TODO: use a static singleton
                 _isCContig = true;
@@ -89,6 +95,7 @@ namespace IronPython.Runtime {
 
             // invariants
             _numItems = _buffer.ItemCount;
+            _isFContig = _isCContig && _numDims <= 1;  // TODO: support for ND Fortran arrays not implemented
 
             // sanity check
             Debug.Assert(_numItems == 0 || VerifyStructure(memblock.Length, _itemSize, _numDims, _numDims > 0 ? _shape : null, _numDims > 0 ? _strides : null, _offset));
@@ -96,7 +103,8 @@ namespace IronPython.Runtime {
 
         public MemoryView([NotNull]MemoryView @object) {
             _exporter    = @object._exporter;
-            _buffer      = _exporter.GetBuffer(BufferFlags.RecordsRO);
+            _flags       = BufferFlags.RecordsRO;
+            _buffer      = _exporter.GetBuffer(_flags);
             _offset      = @object._offset;
             _isReadOnly  = @object._isReadOnly;
             _numDims     = @object._numDims;
@@ -105,6 +113,7 @@ namespace IronPython.Runtime {
             _shape       = @object._shape;
             _strides     = @object._strides;
             _isCContig   = @object._isCContig;
+            _isFContig   = @object._isFContig;
             _numItems    = @object._numItems;
         }
 
@@ -136,6 +145,7 @@ namespace IronPython.Runtime {
             if (oldLen != 0) _numItems /= oldLen;
             _numItems *= newLen;
             _isCContig = _isCContig && newStep == 1;
+            _isFContig = _isCContig && _numDims <= 1;  // TODO: support for ND Fortran arrays not implemented
         }
 
         private MemoryView(MemoryView mv, string newFormat, int newItemSize, IReadOnlyList<int> newShape) : this(mv) {
@@ -155,30 +165,20 @@ namespace IronPython.Runtime {
             _strides = GetContiguousStrides(_shape, _itemSize);
         }
 
-        // TODO: use cached flags on the fly iso changing fields
         private MemoryView(MemoryView @object, BufferFlags flags) : this(@object) {
-            if (!flags.HasFlag(BufferFlags.Strides)) {
-                Debug.Assert(_isCContig);
-                _strides = null;
-            }
+            // flags already checked for consistency with the underlying buffer
+            _flags = flags;
 
-            if (!flags.HasFlag(BufferFlags.ND)) {
+            if (!_flags.HasFlag(BufferFlags.ND)) {
                 // flatten
-                _shape = null;
-            }
-
-            if (!flags.HasFlag(BufferFlags.Format)) {
-                _format = null;
-                // keep original _itemSize
-                // TODO: verify: adjustments to _shape needed?
+                _numDims = 1;
+                _shape = new[] { _numItems };
+                _isCContig = _isFContig = true;
             }
         }
 
-        private void CheckBuffer([System.Runtime.CompilerServices.CallerMemberName] string memberName = null) {
+        private void CheckBuffer() {
             if (_buffer == null) throw PythonOps.ValueError("operation forbidden on released memoryview object");
-
-            // TODO: properly handle unformmated views
-            if (_format == null && memberName != nameof(tobytes)) throw PythonOps.ValueError("memoryview: not formatted");
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace IronPython.Runtime {
         /// the bounds of the allocated memory and conforms to the buffer protocol rules.
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#numpy-style-shape-and-strides"/>
-        private static bool VerifyStructure(int memlen, int itemsize, int ndim, IReadOnlyList<int> shape, IReadOnlyList<int> strides, int offset) {
+        private static bool VerifyStructure(int memlen, int itemsize, int ndim, IReadOnlyList<int>? shape, IReadOnlyList<int>? strides, int offset) {
             if (offset % itemsize != 0)
                 return false;
             if (offset < 0 || offset + itemsize > memlen)
@@ -265,7 +265,7 @@ namespace IronPython.Runtime {
             return this;
         }
 
-        public void __exit__(CodeContext/*!*/ context, params object[] excinfo) {
+        public void __exit__(CodeContext/*!*/ context, params object?[]? excinfo) {
             release(context);
         }
 
@@ -279,7 +279,7 @@ namespace IronPython.Runtime {
         public bool f_contiguous {
             get {
                 CheckBuffer();
-                return _isCContig && _numDims <= 1;  // TODO: support for ND Fortran arrays not implemented
+                return _isFContig;
             }
         }
 
@@ -342,11 +342,11 @@ namespace IronPython.Runtime {
         public Bytes tobytes() {
             CheckBuffer();
 
-            if (_shape?.Contains(0) ?? false) {
+            if (_shape.Contains(0)) {
                 return Bytes.Empty;
             }
 
-            var buf = _buffer.AsReadOnlySpan();
+            var buf = _buffer!.AsReadOnlySpan();
 
             if (_isCContig) {
                 return Bytes.Make(buf.Slice(_offset, _numItems * _itemSize).ToArray());
@@ -375,7 +375,7 @@ namespace IronPython.Runtime {
         public object tolist() {
             CheckBuffer();
 
-            return subdimensionToList(_buffer.AsReadOnlySpan(), _offset, dim: 0);
+            return subdimensionToList(_buffer!.AsReadOnlySpan(), _offset, dim: 0);
 
             object subdimensionToList(ReadOnlySpan<byte> source, int ofs, int dim) {
                 if (dim >= _shape.Count) {
@@ -396,7 +396,7 @@ namespace IronPython.Runtime {
             return cast(format, null);
         }
 
-        public MemoryView cast([NotNull]string format, [NotNull]object shape) {
+        public MemoryView cast([NotNull]string format, [NotNull, AllowNull]object shape) {
             if (!_isCContig) {
                 throw PythonOps.TypeError("memoryview: casts are restricted to C-contiguous views");
             }
@@ -405,7 +405,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: cannot cast view with zeros in shape or strides");
             }
 
-            PythonTuple shapeAsTuple = null;
+            PythonTuple? shapeAsTuple = null;
 
             if (shape != null) {
                 if (!(shape is PythonList) && !(shape is PythonTuple)) {
@@ -467,7 +467,7 @@ namespace IronPython.Runtime {
         }
 
         private static object packBytes(string format, ReadOnlySpan<byte> bytes) {
-            if (TypecodeOps.TryGetFromBytes(format, bytes, out object result))
+            if (TypecodeOps.TryGetFromBytes(format, bytes, out object? result))
                 return result;
             else {
                 return Bytes.Make(bytes.ToArray());
@@ -475,12 +475,15 @@ namespace IronPython.Runtime {
         }
 
         private object GetItem(int offset) {
-            object result = packBytes(_format, _buffer.AsReadOnlySpan().Slice(offset, _itemSize));
+            object result = packBytes(_format, _buffer!.AsReadOnlySpan().Slice(offset, _itemSize));
 
             return PythonOps.ConvertToPythonPrimitive(result);
         }
 
-        private void SetItem(int offset, object value) {
+        private void SetItem(int offset, object? value) {
+            if (value == null) {
+                throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+            }
             switch (_format) {
                 case "d": // double
                 case "f": // float
@@ -522,11 +525,11 @@ namespace IronPython.Runtime {
                     break; // This could be a variety of types, let the UnpackBytes decide
             }
 
-            unpackBytes(format, value, _buffer.AsSpan().Slice(offset, _itemSize));
+            unpackBytes(format, value, _buffer!.AsSpan().Slice(offset, _itemSize));
         }
 
         // TODO: support indexable, BigInteger etc.
-        public object this[int index] {
+        public object? this[int index] {
             get {
                 CheckBuffer();
                 if (_numDims == 0) {
@@ -574,7 +577,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("cannot delete memory");
         }
 
-        public object this[[NotNull]Slice slice] {
+        public object? this[[NotNull]Slice slice] {
             get {
                 CheckBuffer();
                 if (_numDims == 0) {
@@ -606,12 +609,13 @@ namespace IronPython.Runtime {
                     throw PythonOps.ValueError("cannot resize memory view");
                 }
 
+                // TODO: treat value as bytes-like object, not enumerable
                 slice = new Slice(start, stop, step);
                 slice.DoSliceAssign(SliceAssign, __len__(), value);
             }
         }
 
-        private void SliceAssign(int index, object value) {
+        private void SliceAssign(int index, object? value) {
             SetItem(GetItemOffset(index), value);
         }
 
@@ -630,7 +634,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object this[[NotNull]PythonTuple index] {
+        public object? this[[NotNull]PythonTuple index] {
             get {
                 CheckBuffer();
                 return GetItem(GetItemOffset(index));
@@ -676,7 +680,7 @@ namespace IronPython.Runtime {
             }
 
             for (int i = 0; i < tupleLength; i++) {
-                object indexObject = tuple[i];
+                object? indexObject = tuple[i];
                 if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
                     allSlices = false;
                     // If we have a "bad" tuple, we no longer care
@@ -762,26 +766,26 @@ namespace IronPython.Runtime {
         public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => __eq__(context, new MemoryView(value));
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __eq__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         public bool __ne__(CodeContext/*!*/ context, [NotNull]MemoryView value) => !__eq__(context, value);
 
         public bool __ne__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __ne__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __lt__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __lt__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __le__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __le__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __gt__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __gt__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __ge__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+        public NotImplementedType __ge__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
         #region ICodeFormattable Members
 
@@ -796,7 +800,7 @@ namespace IronPython.Runtime {
 
         #region IWeakReferenceable Members
 
-        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+        WeakRefTracker? IWeakReferenceable.GetWeakRef() {
             return _tracker;
         }
 
@@ -815,20 +819,39 @@ namespace IronPython.Runtime {
         IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
             CheckBuffer();
 
-            if (_isReadOnly && flags.HasFlag(BufferFlags.Writable))
-                throw PythonOps.BufferError("Object is not writable.");
+            if (flags.HasFlag(BufferFlags.Writable) && _isReadOnly)
+                throw PythonOps.BufferError("memoryview: underlying buffer is not writable");
 
-            if (!_isCContig && !flags.HasFlag(BufferFlags.Strides))
-                throw PythonOps.BufferError("memoryview: underlying buffer is not c-contiguous");
+            if (flags.HasFlag(BufferFlags.CContiguous) && !_isCContig)
+                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+
+            if (flags.HasFlag(BufferFlags.FContiguous) && !_isFContig)
+                throw PythonOps.BufferError("memoryview: underlying buffer is not Fortran contiguous");
+
+            if (flags.HasFlag(BufferFlags.AnyContiguous) && !_isCContig && !_isFContig)
+                throw PythonOps.BufferError("memoryview: underlying buffer is not contiguous");
+
+            // TODO: Support for suboffsets
+            //if (!flags.HasFlag(!BufferFlags.Indirect) && _suboffsets != null)
+            //    throw PythonOps.BufferError("memoryview: underlying buffer requires suboffsets");
+
+            if (!flags.HasFlag(BufferFlags.Strides) && !_isCContig)
+                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+
+            if (!flags.HasFlag(BufferFlags.ND) && flags.HasFlag(BufferFlags.Format))
+                throw PythonOps.BufferError("memoryview: cannot cast to unsigned bytes if the format flag is present");
 
             return new MemoryView(this, flags);
         }
+
+        #endregion
+
+        #region IPythonBuffer Members
 
         void IDisposable.Dispose() {
             if (_buffer != null) {
                 _buffer.Dispose();
                 _buffer = null;
-                _exporter = null;
             }
         }
 
@@ -857,21 +880,29 @@ namespace IronPython.Runtime {
             }
         }
 
-        int IPythonBuffer.Offset => _isCContig ? 0 : _offset;
+        int IPythonBuffer.Offset
+            => _isCContig ? 0 : _offset;
 
-        int IPythonBuffer.ItemCount => _numItems;
+        int IPythonBuffer.ItemCount
+            => _numItems;
 
-        string IPythonBuffer.Format => _format;
+        string? IPythonBuffer.Format
+            => _flags.HasFlag(BufferFlags.Format) ? _format : null;
 
-        int IPythonBuffer.ItemSize => _itemSize;
+        int IPythonBuffer.ItemSize
+            => _itemSize;
 
-        int IPythonBuffer.NumOfDims => _numDims;
+        int IPythonBuffer.NumOfDims
+            => _numDims;
 
-        IReadOnlyList<int> IPythonBuffer.Shape => _numDims > 0 ? _shape : null;
+        IReadOnlyList<int>? IPythonBuffer.Shape
+            => _numDims > 0 && _flags.HasFlag(BufferFlags.ND) ? _shape : null;
 
-        IReadOnlyList<int> IPythonBuffer.Strides => !_isCContig ? _strides : null;
+        IReadOnlyList<int>? IPythonBuffer.Strides
+            => !_isCContig ? _strides : null;
 
-        IReadOnlyList<int> IPythonBuffer.SubOffsets => null; // not supported yet
+        IReadOnlyList<int>? IPythonBuffer.SubOffsets
+            => null; // not supported yet
 
         #endregion
     }

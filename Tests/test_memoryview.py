@@ -289,6 +289,9 @@ class CastTests(unittest.TestCase):
         self.assertEqual(mv[(1,1,1,0)], 14)
         self.assertEqual(mv[(1,1,1,1)], 15)
 
+        self.assertEqual(mv.tolist(), [[[[0, 1], [2, 3]], [[4, 5], [6, 7]]], [[[8, 9], [10, 11]], [[12, 13], [14, 15]]]])
+        self.assertEqual(mv.tobytes(), b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
+
     def test_cast_reshape_then_slice(self):
         a = array.array('b', range(16))
         mv = memoryview(a).cast('b', (4,2,2))
@@ -298,5 +301,19 @@ class CastTests(unittest.TestCase):
             for j in range(2):
                 for k in range(2):
                     self.assertEqual(mv[(i + 2, j, k)], mv2[(i, j, k)])
+
+        self.assertEqual(mv2.tolist(), [[[8, 9], [10, 11]], [[12, 13], [14, 15]]])
+        self.assertEqual(mv2.tobytes(), b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
+
+        mv_2 = mv[::2]
+        self.assertEqual(len(mv_2), 2)
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    self.assertEqual(mv[(i * 2, j, k)], mv_2[(i, j, k)])
+
+        self.assertEqual(mv_2.tolist(), [[[0, 1], [2, 3]], [[8, 9], [10, 11]]])
+        self.assertEqual(mv_2.tobytes(), b'\x00\x01\x02\x03\x08\x09\x0a\x0b')
+
 
 run_test(__name__)

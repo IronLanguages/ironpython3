@@ -31,6 +31,9 @@ namespace IronPython.Runtime {
         /// <summary>
         /// The consumer expects the item format to be reported and is prepared to deal with items that are more complex than a byte.
         /// </summary>
+        /// <remarks>
+        /// If format is requested, the consumer must also indicate preparedness to handle shape (<see cref="ND"/> flag set).
+        /// </remarks>
         Format        = 0x0004,
 
         /// <summary>

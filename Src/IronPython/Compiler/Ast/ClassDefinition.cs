@@ -5,26 +5,26 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+
+using IronPython.Runtime;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime;
-
-using MSAst = System.Linq.Expressions;
-
-using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-    
+
     public class ClassDefinition : ScopeStatement {
         private readonly string _name;
         private readonly Expression[] _bases;
-        private readonly Expression[] _keywords;
+        private readonly Arg[] _keywords;
 
         private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
 
@@ -33,7 +33,7 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, Expression[] bases, Expression[] keywords, Statement body=null, Expression metaclass=null) {
+        public ClassDefinition(string name, Expression[] bases, Arg[] keywords, Statement body = null) {
             ContractUtils.RequiresNotNullItems(bases, nameof(bases));
             ContractUtils.RequiresNotNullItems(keywords, nameof(keywords));
 
@@ -41,7 +41,7 @@ namespace IronPython.Compiler.Ast {
             _bases = bases;
             _keywords = keywords;
             Body = body;
-            Metaclass = metaclass;
+            Metaclass = keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
         }
 
         public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
@@ -50,11 +50,11 @@ namespace IronPython.Compiler.Ast {
 
         public override string Name => _name;
 
-        public IList<Expression> Bases => _bases;
+        public IReadOnlyList<Expression> Bases => _bases;
 
-        public IList<Expression> Keywords => _keywords;
+        public IReadOnlyList<Arg> Keywords => _keywords;
 
-        public Expression Metaclass { get; set; }
+        public Expression Metaclass { get; }
 
         public Statement Body { get; set; }
 
@@ -158,6 +158,7 @@ namespace IronPython.Compiler.Ast {
                     typeof(object),
                     ToObjectArray(_bases)
                 ),
+                Metaclass is null ? AstUtils.Constant(null, typeof(object)) : AstUtils.Convert(Metaclass, typeof(object)),
                 AstUtils.Constant(FindSelfNames())
             );
 

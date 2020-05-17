@@ -1324,10 +1324,6 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        private static bool TryGetMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict, out object metaclass) {
-            return dict.TryGetValue("__metaclass__", out metaclass) && metaclass != null;
-        }
-
         internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
             object? classdict = dict;
 
@@ -1344,10 +1340,10 @@ namespace IronPython.Runtime.Operations {
             return classdict;
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
+        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, object metaclass, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
-            return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Dict);
+            return MakeClass(parentContext, name, bases, metaclass, selfNames, func(parentContext).Dict);
         }
 
         private static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
@@ -1365,7 +1361,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, string selfNames, PythonDictionary vars) {
+        private static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, object metaclass, string selfNames, PythonDictionary vars) {
             foreach (object dt in bases) {
                 if (dt is TypeGroup) {
                     object[] newBases = new object[bases.Length];
@@ -1392,7 +1388,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
-            if (!TryGetMetaclass(context, tupleBases, vars, out object metaclass)) {
+            if (metaclass is null) {
                 // this makes sure that object is a base
                 if (tupleBases.Count == 0) {
                     tupleBases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));

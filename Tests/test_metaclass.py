@@ -1,11 +1,10 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
-    
 
 import unittest
 
-from iptest import run_test
+from iptest import is_cli, run_test
 
 # ref: http://docs.python.org/ref/metaclasses.html
 
@@ -21,10 +20,10 @@ def g_f_modify(new_base=None, new_name=None):
             name = new_name
         if new_base:
             bases = new_base + bases
-            
+
         dict['version'] = 2.4
         return type(name, bases, dict)
-        
+
     return f_modify
 
 def g_c_modify(new_base=None, new_name=None):
@@ -34,26 +33,26 @@ def g_c_modify(new_base=None, new_name=None):
                 name = new_name
             if new_base:
                 bases = new_base + bases
-                
+
             dict['version'] = 2.4
             return super(c_modify, cls).__new__(cls, name, bases, dict)
-            
+
     return c_modify
 
 class dash_attributes(type):
     def __new__(metaclass, name, bases, dict):
         new_dict = {}
-        for key, val in dict.iteritems():
+        for key, val in dict.items():
             new_key = key[0].lower()
-            
+
             for x in key[1:]:
                 if not x.islower():
                     new_key += "_" + x.lower()
                 else:
                     new_key += x
-                
+
             new_dict[new_key] = val
-        
+
         return super(dash_attributes, metaclass).__new__(metaclass, name, bases, new_dict)
 
 
@@ -79,8 +78,6 @@ class sub_type3(sub_type2): # subclass
         return super(sub_type3, cls).__new__(cls, name, bases, dict)
 
 
-
-
 class MetaclassTest(unittest.TestCase):
 
     def test_modify(self):
@@ -90,7 +87,7 @@ class MetaclassTest(unittest.TestCase):
             self.assertEqual(x.version, 2.4)
             self.assertEqual(x.method(), 10)
             self.assertEqual(x.__class__.__name__, "D")
-        
+
         for f in [ g_f_modify, g_c_modify ]:
             class C(object, metaclass=f((New,), "D")):
                 pass
@@ -103,7 +100,7 @@ class MetaclassTest(unittest.TestCase):
     def test_dash_attribute(self):
         class C(object, metaclass=dash_attributes):
             def WriteLine(self, *arg): return 4
-        
+
         x = C()
         self.assertFalse(hasattr(C, "WriteLine"))
         self.assertEqual(x.write_line(), 4)
@@ -143,7 +140,7 @@ class MetaclassTest(unittest.TestCase):
 
         class D(C2, metaclass=dash_attributes):
             def StartSomethingToday(self): pass
-            
+
         self.assertTrue(hasattr(D, "version"))
         self.assertTrue(hasattr(D, "start_something_today"))
 
@@ -151,7 +148,7 @@ class MetaclassTest(unittest.TestCase):
         class A1: pass
         class A2(object): pass
         self.assertEqual(A2.__class__, type)
-        
+
         class B1(metaclass=dash_attributes):
             pass
         class B2(object, metaclass=dash_attributes):
@@ -165,7 +162,7 @@ class MetaclassTest(unittest.TestCase):
 
         class D2(object,metaclass=meta):
             pass
-        self.assertEqual(D2.__class__, type)
+        self.assertEqual(D2.__class__, int)
 
         # base order: how to see the effect of the order???
         for x in [
@@ -180,14 +177,14 @@ class MetaclassTest(unittest.TestCase):
                 class E(y, x):
                     def PythonMethod(self): pass
                 self.assertTrue(hasattr(E, "python_method"))
-        
+
 
         class F1: pass
         self.assertTrue(F1 != 100)
 
     def test_conflict(self):
         global flag
-        
+
         class C1(object): pass
         class C2(object,metaclass=sub_type1):
             pass
@@ -211,21 +208,21 @@ class MetaclassTest(unittest.TestCase):
         flag = 0
         class D(C4, C1): pass
         #self.assertEqual(flag, 110)
-        
+
         def f1():
             class D(C2, C3): pass
         def f2():
             class D(C1, C2, C3): pass
         def f3():
             class D(C2, C1, C3): pass
-        
+
         for f in [
                 f1,
                 #f2,   # bug 364991
                 f3,
             ]:
             self.assertRaises(TypeError, f)
-        
+
     def test_bad_choices(self):
         def create(x):
             class C(object, metaclass=x):
@@ -255,24 +252,29 @@ class MetaclassTest(unittest.TestCase):
 
     def test_metaclass(self):
         global recvArgs
-        
+
         # verify we can use a function as a metaclass in the dictionary
         recvArgs = None
         def funcMeta(*args):
             global recvArgs
             recvArgs = args
-            
+
         class foo(metaclass=funcMeta):
             pass
 
-        self.assertEqual(recvArgs, ('foo', (), {'__module__' : __name__, '__metaclass__' : funcMeta}))
+        if is_cli:
+            self.assertEqual(recvArgs, ('foo', (), {'__module__': __name__}))
+        else:
+            self.assertEqual(recvArgs, ('foo', (), {'__module__': __name__, '__qualname__': 'MetaclassTest.test_metaclass.<locals>.foo'}))
 
         class foo(object,metaclass=funcMeta):
             pass
 
-        self.assertEqual(recvArgs, ('foo', (object, ), {'__module__' : __name__, '__metaclass__' : funcMeta}))
-                
-        
+        if is_cli:
+            self.assertEqual(recvArgs, ('foo', (object, ), {'__module__': __name__}))
+        else:
+            self.assertEqual(recvArgs, ('foo', (object, ), {'__module__': __name__, '__qualname__': 'MetaclassTest.test_metaclass.<locals>.foo'}))
+
         class classType: pass
         classType = type(classType)     # get classObj for tests
 
@@ -290,11 +292,6 @@ class MetaclassTest(unittest.TestCase):
 
         class xyz: pass
         self.assertEqual(type(xyz), type(c))
-
-        recvArgs = None
-        class foo(metaclass=funcMeta):
-            pass
-        self.assertEqual(recvArgs, ('foo', (), {'__module__' : __name__}))  # note no __metaclass__ becauses its not in our dict
 
     def test_arguments(self):
         class MetaType(type):
@@ -314,16 +311,16 @@ class MetaclassTest(unittest.TestCase):
         b = ('there',)
         a = A('hello', *b)
         self.assertEqual(a.val, 'hellothere12')
-        
+
         c = ['42','23']
         a = A('hello', *c)
         self.assertEqual(a.val, 'hello4223')
-        
+
         x = ()
         y = {'d': 'boom'}
         a = A('hello', *x, **y)
         self.assertEqual(a.val, 'hellob12boom')
-    
+
     def test_getattr_optimized(self):
         class Meta(type):
             def __getattr__(self, attr):
@@ -337,6 +334,15 @@ class MetaclassTest(unittest.TestCase):
         for i in range(110):
             self.assertEqual('A', A.__name__) # after 100 iterations: see https://github.com/IronLanguages/main/issues/1269
             self.assertEqual('b', A.b)
-    
+
+    def test_single_line_with_metaclass(self):
+        """https://github.com/IronLanguages/ironpython3/issues/272"""
+        class metaTest(type):
+            def __new__(cls, name, bases, body):
+                return "test"
+
+        class test(metaclass=metaTest): pass
+
+        self.assertEqual(test, "test")
 
 run_test(__name__)

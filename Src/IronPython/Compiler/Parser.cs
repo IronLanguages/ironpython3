@@ -1034,23 +1034,18 @@ namespace IronPython.Compiler {
             string name = ReadName();
             if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(null, new Expression[0], new Expression[0], ErrorStmt());
+                return new ClassDefinition(null, new Expression[0], new Arg[0], ErrorStmt());
             }
 
-            Expression metaclass = null;
             var bases = new List<Expression>();
-            var keywords = new List<Expression>();
+            var keywords = new List<Arg>();
             if (MaybeEat(TokenKind.LeftParenthesis)) {
                 foreach (var arg in FinishArgumentList(null)) {
                     var info = arg.GetArgumentInfo();
                     if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Simple) {
                         bases.Add(arg.Expression);
-                    }
-                    else if(info.Kind == Microsoft.Scripting.Actions.ArgumentType.Named) {
-                        keywords.Add(arg.Expression);
-                        if (arg.Name == "metaclass") {
-                            metaclass = arg.Expression;
-                        }
+                    } else if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Named) {
+                        keywords.Add(arg);
                     }
                 }
             }
@@ -1059,7 +1054,7 @@ namespace IronPython.Compiler {
             // Save private prefix
             string savedPrefix = SetPrivatePrefix(name);
 
-            var ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray(), metaclass: metaclass);
+            var ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray());
             PushClass(ret);
 
             // Parse the class body
@@ -1072,11 +1067,10 @@ namespace IronPython.Compiler {
             _privatePrefix = savedPrefix;
 
             ret.Body = body;
-            ret.HeaderIndex =  mid;
+            ret.HeaderIndex = mid;
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
-
 
         //  decorators ::=
         //      decorator+
@@ -1728,10 +1722,6 @@ namespace IronPython.Compiler {
                         ReportSyntaxError("unexpected end of file");
                         break; // error handling
                     }
-                }
-
-                if(CurrentClass != null && CurrentClass.Metaclass != null) {
-                    l.Insert(1, new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, CurrentClass.Metaclass));
                 }
 
                 Statement[] stmts = l.ToArray();

@@ -160,9 +160,10 @@ namespace IronPython.Modules {
 
         public static PythonTuple escape_decode([NotNull]IBufferProtocol data, string? errors = null) {
             using IPythonBuffer buffer = data.GetBuffer();
-            var res = LiteralParser.ParseBytes(buffer.AsReadOnlySpan(), isRaw: false, isAscii: false, normalizeLineEndings: false, getErrorHandler(errors));
+            var span = buffer.AsReadOnlySpan();
+            var res = LiteralParser.ParseBytes(span, isRaw: false, isAscii: false, normalizeLineEndings: false, getErrorHandler(errors));
 
-            return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), buffer.ItemCount);
+            return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), span.Length);
 
             static LiteralParser.ParseBytesErrorHandler<byte>? getErrorHandler(string? errors) {
                 if (errors == null) return default;
@@ -184,12 +185,10 @@ namespace IronPython.Modules {
         [DisallowNull]
         private static byte[]? _replacementMarker;
 
-        public static PythonTuple/*!*/ escape_encode([NotNull]IBufferProtocol data, string? errors = null) {
-            using IPythonBuffer buffer = data.GetBuffer();
-            var result = new List<byte>(buffer.ItemCount);
-            var span = buffer.AsReadOnlySpan();
-            for (int i = 0; i < span.Length; i++) {
-                byte b = span[i];
+        public static PythonTuple/*!*/ escape_encode([NotNull]Bytes data, string? errors = null) {
+            var result = new List<byte>(data.Count);
+            for (int i = 0; i < data.Count; i++) {
+                byte b = unchecked((byte)data[i]);
                 switch (b) {
                     case (byte)'\n': result.Add((byte)'\\'); result.Add((byte)'n'); break;
                     case (byte)'\r': result.Add((byte)'\\'); result.Add((byte)'r'); break;
@@ -205,7 +204,7 @@ namespace IronPython.Modules {
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(Bytes.Make(result.ToArray()), buffer.ItemCount);
+            return PythonTuple.MakeTuple(Bytes.Make(result.ToArray()), data.Count);
         }
 
         #endregion
@@ -214,11 +213,11 @@ namespace IronPython.Modules {
 
         public static PythonTuple latin_1_decode(CodeContext context, [NotNull]IBufferProtocol input, string? errors = null) {
             using IPythonBuffer buffer = input.GetBuffer();
-            return DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), buffer, errors, buffer.ItemCount).ToPythonTuple();
+            return DoDecode(context, "latin-1", StringOps.Latin1Encoding, buffer, errors).ToPythonTuple();
         }
 
         public static PythonTuple latin_1_encode(CodeContext context, [NotNull]string input, string? errors = null)
-            => DoEncode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors).ToPythonTuple();
+            => DoEncode(context, "latin-1", StringOps.Latin1Encoding, input, errors).ToPythonTuple();
 
         #endregion
 
@@ -274,7 +273,7 @@ namespace IronPython.Modules {
             using IPythonBuffer buffer = input.GetBuffer();
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, buffer, errors, "raw-unicode-escape", StringOps.CodecsInfo.RawUnicodeEscapeEncoding),
-                buffer.ItemCount
+                buffer.ItemCount * buffer.ItemSize
             );
         }
 
@@ -301,7 +300,7 @@ namespace IronPython.Modules {
             using IPythonBuffer buffer = input.GetBuffer();
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, buffer, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding),
-                buffer.ItemCount
+                buffer.ItemCount * buffer.ItemSize
             );
         }
 
@@ -318,11 +317,12 @@ namespace IronPython.Modules {
         #region Readbuffer Functions
 
         public static PythonTuple readbuffer_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null)
-            => DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").ToPythonTuple();
+            => readbuffer_encode(StringOps.DoEncodeUtf8(context, input), errors);
 
         public static PythonTuple readbuffer_encode([NotNull]IBufferProtocol input, string? errors = null) {
             using IPythonBuffer buffer = input.GetBuffer();
-            return PythonTuple.MakeTuple(Bytes.Make(buffer.AsReadOnlySpan().ToArray()), buffer.ItemCount);
+            var bytes = Bytes.Make(buffer.AsReadOnlySpan().ToArray());
+            return PythonTuple.MakeTuple(bytes, bytes.Count);
         }
 
         #endregion
@@ -348,7 +348,8 @@ namespace IronPython.Modules {
         public static PythonTuple unicode_internal_encode(CodeContext context, [NotNull]IBufferProtocol input, string? errors = null) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
             using IPythonBuffer buffer = input.GetBuffer();
-            return PythonTuple.MakeTuple(Bytes.Make(buffer.AsReadOnlySpan().ToArray()), buffer.ItemCount);
+            var bytes = Bytes.Make(buffer.AsReadOnlySpan().ToArray());
+            return PythonTuple.MakeTuple(bytes, bytes.Count);
         }
 
         #endregion
@@ -615,7 +616,7 @@ namespace IronPython.Modules {
 
         private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, IPythonBuffer input, string? errors, int numBytes = -1) {
             var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, numBytes);
-            return Tuple.Create(decoded, numBytes >= 0 ? numBytes : input.ItemCount);
+            return Tuple.Create(decoded, numBytes >= 0 ? numBytes : input.ItemCount * input.ItemSize);
         }
 
         private static Tuple<Bytes, int> DoEncode(CodeContext context, string encodingName, Encoding encoding, string input, string? errors, bool includePreamble = false) {

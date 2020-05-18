@@ -186,9 +186,11 @@ namespace IronPython.Modules {
         private static byte[]? _replacementMarker;
 
         public static PythonTuple/*!*/ escape_encode([NotNull]Bytes data, string? errors = null) {
-            var result = new List<byte>(data.Count);
-            for (int i = 0; i < data.Count; i++) {
-                byte b = unchecked((byte)data[i]);
+            using IPythonBuffer buffer = ((IBufferProtocol)data).GetBuffer();
+            var span = buffer.AsReadOnlySpan();
+            var result = new List<byte>(span.Length);
+            for (int i = 0; i < span.Length; i++) {
+                byte b = span[i];
                 switch (b) {
                     case (byte)'\n': result.Add((byte)'\\'); result.Add((byte)'n'); break;
                     case (byte)'\r': result.Add((byte)'\\'); result.Add((byte)'r'); break;
@@ -204,7 +206,7 @@ namespace IronPython.Modules {
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(Bytes.Make(result.ToArray()), data.Count);
+            return PythonTuple.MakeTuple(Bytes.Make(result.ToArray()), span.Length);
         }
 
         #endregion

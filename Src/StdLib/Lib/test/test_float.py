@@ -178,7 +178,10 @@ class GeneralFloatCases(unittest.TestCase):
             def __float__(self):
                 return OtherFloatSubclass(42.)
         self.assertAlmostEqual(float(F()), 42.)
-        self.assertIs(type(float(F())), OtherFloatSubclass)
+        if sys.implementation.name == "ironpython" or sys.version_info >= (3,6):
+            self.assertIs(type(float(F())), float)
+        else:
+            self.assertIs(type(float(F())), OtherFloatSubclass)
         self.assertAlmostEqual(FloatSubclass(F()), 42.)
         self.assertIs(type(FloatSubclass(F())), FloatSubclass)
 

@@ -273,23 +273,7 @@ namespace IronPython.Modules {
                 }
 
                 if (pa._data.Count == 0) return;
-
-                switch (_typeCode) {
-                    case 'b': ((ArrayData<sbyte>)_data).AddRange((ArrayData<sbyte>)pa._data); break;
-                    case 'B': ((ArrayData<byte>)_data).AddRange((ArrayData<byte>)pa._data); break;
-                    case 'u': ((ArrayData<char>)_data).AddRange((ArrayData<char>)pa._data); break;
-                    case 'h': ((ArrayData<short>)_data).AddRange((ArrayData<short>)pa._data); break;
-                    case 'H': ((ArrayData<ushort>)_data).AddRange((ArrayData<ushort>)pa._data); break;
-                    case 'i': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
-                    case 'I': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
-                    case 'l': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
-                    case 'L': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
-                    case 'q': ((ArrayData<long>)_data).AddRange((ArrayData<long>)pa._data); break;
-                    case 'Q': ((ArrayData<ulong>)_data).AddRange((ArrayData<ulong>)pa._data); break;
-                    case 'f': ((ArrayData<float>)_data).AddRange((ArrayData<float>)pa._data); break;
-                    case 'd': ((ArrayData<double>)_data).AddRange((ArrayData<double>)pa._data); break;
-                    default: throw new InvalidOperationException(); // should never happen
-                }
+                _data.AddRange(pa._data);
             }
 
             private void ExtendIter(object? iterable) {
@@ -613,22 +597,7 @@ namespace IronPython.Modules {
                 int count = stop - start;
                 if (count == 0 && pa._data.Count == 0) return;
 
-                switch (_typeCode) {
-                    case 'b': ((ArrayData<sbyte>)_data).InsertRange(start, count, (ArrayData<sbyte>)pa._data); break;
-                    case 'B': ((ArrayData<byte>)_data).InsertRange(start, count, (ArrayData<byte>)pa._data); break;
-                    case 'u': ((ArrayData<char>)_data).InsertRange(start, count, (ArrayData<char>)pa._data); break;
-                    case 'h': ((ArrayData<short>)_data).InsertRange(start, count, (ArrayData<short>)pa._data); break;
-                    case 'H': ((ArrayData<ushort>)_data).InsertRange(start, count, (ArrayData<ushort>)pa._data); break;
-                    case 'i': ((ArrayData<int>)_data).InsertRange(start, count, (ArrayData<int>)pa._data); break;
-                    case 'I': ((ArrayData<uint>)_data).InsertRange(start, count, (ArrayData<uint>)pa._data); break;
-                    case 'l': ((ArrayData<int>)_data).InsertRange(start, count, (ArrayData<int>)pa._data); break;
-                    case 'L': ((ArrayData<uint>)_data).InsertRange(start, count, (ArrayData<uint>)pa._data); break;
-                    case 'q': ((ArrayData<long>)_data).InsertRange(start, count, (ArrayData<long>)pa._data); break;
-                    case 'Q': ((ArrayData<ulong>)_data).InsertRange(start, count, (ArrayData<ulong>)pa._data); break;
-                    case 'f': ((ArrayData<float>)_data).InsertRange(start, count, (ArrayData<float>)pa._data); break;
-                    case 'd': ((ArrayData<double>)_data).InsertRange(start, count, (ArrayData<double>)pa._data); break;
-                    default: throw new InvalidOperationException(); // should never happen
-                }
+                _data.InsertRange(start, count, pa._data);
             }
 
             public array __copy__() {

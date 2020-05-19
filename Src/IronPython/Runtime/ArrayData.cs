@@ -21,6 +21,8 @@ namespace IronPython.Runtime {
         bool CanStore([NotNullWhen(true)]object? item);
         int CountItems(object? item);
         IntPtr GetAddress();
+        void AddRange(ArrayData value);
+        void InsertRange(int index, int count, ArrayData value);
         ArrayData Multiply(int count);
         new bool Remove(object? item);
         void Reverse();
@@ -125,6 +127,9 @@ namespace IronPython.Runtime {
                 }
             }
         }
+
+        void ArrayData.AddRange(ArrayData value)
+            => AddRange((ArrayData<T>)value);
 
         bool ArrayData.CanStore([NotNullWhen(true)]object? item)
             => TryConvert(item, out _);
@@ -245,6 +250,9 @@ namespace IronPython.Runtime {
             }
             value.CopyTo(_items, index);
         }
+
+        void ArrayData.InsertRange(int index, int count, ArrayData value)
+            => InsertRange(index, count, (ArrayData<T>)value);
 
         ArrayData ArrayData.Multiply(int count) {
             count *= _size;

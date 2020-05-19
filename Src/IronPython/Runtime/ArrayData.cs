@@ -220,6 +220,32 @@ namespace IronPython.Runtime {
         void IList.Insert(int index, object? item)
             => Insert(index, GetValue(item));
 
+        public void InsertRange(int index, int count, IList<T> value) {
+            Debug.Assert(index >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(index + count <= _size);
+
+            if (ReferenceEquals(value, this)) {
+                if (count == value.Count) return;
+
+                // copying over itself, clone value items first
+                value = _items.AsSpan(0, _size).ToArray();
+            }
+
+            int delta = value.Count - count;
+            if (delta != 0) {
+                lock (this) {
+                    CheckBuffer();
+                    EnsureSize(_size + delta);
+                    if (index + count < _size) {
+                        Array.Copy(_items, index + count, _items, index + value.Count, _size - index - count);
+                    }
+                    _size += delta;
+                }
+            }
+            value.CopyTo(_items, index);
+        }
+
         ArrayData ArrayData.Multiply(int count) {
             count *= _size;
             var res = new ArrayData<T>(count * _size);

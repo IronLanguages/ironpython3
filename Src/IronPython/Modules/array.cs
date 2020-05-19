@@ -109,8 +109,8 @@ namespace IronPython.Modules {
         public static readonly BuiltinFunction _array_reconstructor = BuiltinFunction.MakeFunction(nameof(_array_reconstructor), ArrayUtils.ConvertAll(typeof(ArrayModule).GetMember(nameof(ArrayReconstructor), BindingFlags.NonPublic | BindingFlags.Static), x => (MethodBase)x), typeof(ArrayModule));
 
         [PythonType]
-        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol, IPythonBuffer {
-            private ArrayData _data;
+        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
+            private readonly ArrayData _data;
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
 
@@ -581,7 +581,7 @@ namespace IronPython.Modules {
                     return pa;
                 }
                 set {
-                    CheckSliceAssignType(value);
+                    array arr = CheckSliceAssignType(value);
 
                     if (index.step != null) {
                         if (Object.ReferenceEquals(value, this)) value = this.tolist();
@@ -594,37 +594,41 @@ namespace IronPython.Modules {
                             stop = start;
                         }
 
-                        SliceNoStep(value, start, stop);
+                        SliceNoStep(arr, start, stop);
                     }
                 }
             }
 
-            private void CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
+            private array CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
                 if (!(value is array pa)) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
                 } else if (pa._typeCode != _typeCode) {
                     throw PythonOps.TypeError("bad argument type for built-in operation");
                 }
+                return pa;
             }
 
-            private void SliceNoStep(object value, int start, int stop) {
+            private void SliceNoStep(array pa, int start, int stop) {
                 // replace between start & stop w/ values
-                IEnumerator ie = PythonOps.GetEnumerator(value);
+                int count = stop - start;
+                if (count == 0 && pa._data.Count == 0) return;
 
-                ArrayData newData = CreateData(_typeCode);
-                for (int i = 0; i < start; i++) {
-                    newData.Add(_data[i]);
+                switch (_typeCode) {
+                    case 'b': ((ArrayData<sbyte>)_data).InsertRange(start, count, (ArrayData<sbyte>)pa._data); break;
+                    case 'B': ((ArrayData<byte>)_data).InsertRange(start, count, (ArrayData<byte>)pa._data); break;
+                    case 'u': ((ArrayData<char>)_data).InsertRange(start, count, (ArrayData<char>)pa._data); break;
+                    case 'h': ((ArrayData<short>)_data).InsertRange(start, count, (ArrayData<short>)pa._data); break;
+                    case 'H': ((ArrayData<ushort>)_data).InsertRange(start, count, (ArrayData<ushort>)pa._data); break;
+                    case 'i': ((ArrayData<int>)_data).InsertRange(start, count, (ArrayData<int>)pa._data); break;
+                    case 'I': ((ArrayData<uint>)_data).InsertRange(start, count, (ArrayData<uint>)pa._data); break;
+                    case 'l': ((ArrayData<int>)_data).InsertRange(start, count, (ArrayData<int>)pa._data); break;
+                    case 'L': ((ArrayData<uint>)_data).InsertRange(start, count, (ArrayData<uint>)pa._data); break;
+                    case 'q': ((ArrayData<long>)_data).InsertRange(start, count, (ArrayData<long>)pa._data); break;
+                    case 'Q': ((ArrayData<ulong>)_data).InsertRange(start, count, (ArrayData<ulong>)pa._data); break;
+                    case 'f': ((ArrayData<float>)_data).InsertRange(start, count, (ArrayData<float>)pa._data); break;
+                    case 'd': ((ArrayData<double>)_data).InsertRange(start, count, (ArrayData<double>)pa._data); break;
+                    default: throw new InvalidOperationException(); // should never happen
                 }
-
-                while (ie.MoveNext()) {
-                    newData.Add(ie.Current);
-                }
-
-                for (int i = Math.Max(stop, start); i < _data.Count; i++) {
-                    newData.Add(_data[i]);
-                }
-
-                _data = newData;
             }
 
             public array __copy__() {
@@ -764,7 +768,7 @@ namespace IronPython.Modules {
             }
 
             internal void Clear() {
-                _data = CreateData(_typeCode);
+                _data.Clear();
             }
 
             internal void FromStream(Stream ms) {
@@ -1167,35 +1171,9 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
-
-            void IDisposable.Dispose() { }
-
-            object IPythonBuffer.Object => this;
-
-            bool IPythonBuffer.IsReadOnly => false;
-
-            ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-                => _data.AsByteSpan();
-
-            Span<byte> IPythonBuffer.AsSpan()
-                => _data.AsByteSpan();
-
-            int IPythonBuffer.Offset => 0;
-
-            string IPythonBuffer.Format => _typeCode.ToString();
-
-            int IPythonBuffer.ItemCount => _data.Count;
-
-            int IPythonBuffer.ItemSize => itemsize;
-
-            int IPythonBuffer.NumOfDims => 1;
-
-            IReadOnlyList<int>? IPythonBuffer.Shape => null;
-
-            IReadOnlyList<int>? IPythonBuffer.Strides => null;
-
-            IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+                return _data.GetBuffer(this, _typeCode.ToString(), flags);
+            }
 
             #endregion
         }

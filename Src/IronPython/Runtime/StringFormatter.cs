@@ -240,9 +240,13 @@ namespace IronPython.Runtime {
             } else {
                 if (char.IsDigit(_curCh)) {
                     res = 0;
-                    while (char.IsDigit(_curCh) && _index < this._str.Length) {
-                        res = res * 10 + ((int)(_curCh - '0'));
-                        _curCh = _str[_index++];
+                    try {
+                        while (char.IsDigit(_curCh) && _index < this._str.Length) {
+                            res = checked(res * 10 + ((int)(_curCh - '0')));
+                            _curCh = _str[_index++];
+                        }
+                    } catch (OverflowException) {
+                        throw PythonOps.ValueError("width too big");
                     }
                 }
             }

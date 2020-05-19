@@ -1599,7 +1599,16 @@ namespace IronPython.Runtime.Operations {
 
         [LightThrowing]
         public static object UnpackIterable(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
-            var enumeratorValues = GetEnumeratorValuesNoComplexSets(context, e, expected, argcntafter);
+            object enumeratorValues;
+            // Don't use GetEnumeratorValuesNoComplexSets since it returns the underlying object[]
+            // which may be larger than the actual list.
+            if (e is PythonList l && l.GetType() == typeof(PythonList) && l._size == l._data.Length) {
+                // fast path for lists, avoid enumerating & copying the list.
+                enumeratorValues = GetEnumeratorValuesFromList(l, expected, argcntafter);
+            } else {
+                enumeratorValues = GetEnumeratorValues(context, e, expected, argcntafter);
+            }
+
             if (argcntafter == -1 || LightExceptions.IsLightException(enumeratorValues)) return enumeratorValues;
 
             Debug.Assert(enumeratorValues is object[]);
@@ -2967,7 +2976,7 @@ namespace IronPython.Runtime.Operations {
                     ie = Converter.ConvertToIEnumerator(enumerable);
                 }
             }
-            
+
             while (ie.MoveNext()) {
                 if (IsOrEqualsRetBool(context, ie.Current, value)) {
                     return true;
@@ -2986,7 +2995,7 @@ namespace IronPython.Runtime.Operations {
                 throw new UnboundLocalException(string.Format("Local variable '{0}' referenced before assignment.", name));
             }
             return value;
-        }      
+        }
 
         public static object PythonTypeSetCustomMember(CodeContext/*!*/ context, PythonType self, string name, object value) {
             self.SetCustomMember(context, name, value);
@@ -3224,7 +3233,7 @@ namespace IronPython.Runtime.Operations {
             ContractUtils.RequiresNotNull(precompiled, nameof(precompiled));
             ContractUtils.RequiresNotNull(main, nameof(main));
 
-            if(options == null) {
+            if (options == null) {
                 options = new Dictionary<string, object>();
             }
             options["Arguments"] = Environment.GetCommandLineArgs();
@@ -3540,8 +3549,7 @@ namespace IronPython.Runtime.Operations {
         public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             if (o is PythonType dt) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
-            }
-            else if (o is NamespaceTracker) {
+            } else if (o is NamespaceTracker) {
                 return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
             }
 
@@ -3689,7 +3697,7 @@ namespace IronPython.Runtime.Operations {
             SyntaxErrorException res = new SyntaxErrorException(
                 message,
                 path,
-                null, 
+                null,
                 null,
                 new SourceSpan(sloc, sloc),
                 ErrorCodes.SyntaxError,
@@ -3719,8 +3727,7 @@ namespace IronPython.Runtime.Operations {
                     return ValueError("not enough values to unpack (expected {0}, got {1})", left, right);
                 else
                     return ValueError("too many values to unpack (expected {0})", left);
-            }
-            else {
+            } else {
                 Debug.Assert(right < left + argcntafter);
                 return ValueError("not enough values to unpack (expected at least {0}, got {1})", left + argcntafter, right);
             }
@@ -3827,9 +3834,9 @@ namespace IronPython.Runtime.Operations {
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
         internal static Exception MakeExceptionTypeError(object? type, bool forGenerator = false) {
-                        return PythonOps.TypeError(forGenerator ?
-            "exceptions must be classes or instances deriving from BaseException, not {0}" :
-            "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
+            return PythonOps.TypeError(forGenerator ?
+                "exceptions must be classes or instances deriving from BaseException, not {0}" :
+                "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
@@ -3919,11 +3926,11 @@ namespace IronPython.Runtime.Operations {
                 Debug.Assert(line != SourceLocation.None.Line);
 
                 List<DynamicStackFrame> pyFrames = e.GetFrameList();
-                
+
                 if (pyFrames == null) {
                     e.SetFrameList(pyFrames = new List<DynamicStackFrame>());
                 }
-                
+
                 var frame = new PythonDynamicStackFrame(context, funcCode, line);
                 funcCode.LightThrowCompile(context);
                 pyFrames.Add(frame);
@@ -4056,5 +4063,4 @@ namespace IronPython.Runtime.Operations {
             Frame = frame;
         }
     }
-
 }

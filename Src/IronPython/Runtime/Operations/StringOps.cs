@@ -412,6 +412,15 @@ namespace IronPython.Runtime.Operations {
             return count;
         }
 
+        public static int count([NotNull]this string self, [NotNull]string sub, object? start)
+            => count(self, sub, start, null);
+
+        public static int count([NotNull]this string self, [NotNull]string sub, object? start, object? end) {
+            int istart = start != null ? Converter.ConvertToIndex(start) : 0;
+            int iend = end != null ? Converter.ConvertToIndex(end) : self.Length;
+            return count(self, sub, istart, iend);
+        }
+
         public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]string encoding = "utf-8", [NotNull, DisallowNull]string? errors = null) {
             return RawEncode(context, s, encoding, errors);
         }

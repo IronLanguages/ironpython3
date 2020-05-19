@@ -1,3 +1,7 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
+
 import test.support, unittest
 
 class UnpackTest(unittest.TestCase):
@@ -181,7 +185,15 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError('del *a', "can use starred expression only as assignment target")
         self.assertRaisesSyntaxError('del *a, b', "can use starred expression only as assignment target")
         self.assertRaisesSyntaxError('del b, *a', "can use starred expression only as assignment target")
-        
+
+    def test_ipy3_gh841(self):
+        "https://github.com/IronLanguages/ironpython3/issues/841"
+        x = [1, 2, 3]
+        x.pop()
+        a, *b = x
+        self.assertEqual(a, 1)
+        self.assertEqual(b, [2])
+
 def test_main():
     test.support.run_unittest(UnpackTest)
 

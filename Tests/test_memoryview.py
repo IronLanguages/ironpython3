@@ -4,9 +4,10 @@
 
 import array
 import itertools
+import gc
 import unittest
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
@@ -66,6 +67,35 @@ class MemoryViewTests(unittest.TestCase):
         y = memoryview(x)
         self.assertEqual(x, y)
         self.assertIsNot(x, y)
+
+    def test_finalizer(self):
+        ba = bytearray()
+
+        mv = memoryview(ba)
+        self.assertRaises(BufferError, ba.append, 1)
+        mv.release()
+        ba.append(0)
+        self.assertEqual(len(ba), 1)
+
+        with memoryview(ba) as mv:
+            self.assertRaises(BufferError, ba.append, 1)
+        ba.append(0)
+        self.assertEqual(len(ba), 2)
+
+    @unittest.skipIf(is_mono, "gc.collect() implementation not synchronous")
+    def test_exports(self):
+        ba = bytearray()
+
+        def f(b):
+            mv = memoryview(b)
+        ba.append(0)
+        self.assertEqual(len(ba), 1)
+
+        mv = memoryview(ba)
+        del mv
+        gc.collect()
+        ba.append(0)
+        self.assertEqual(len(ba), 2)
 
     def test_equality(self):
         b = b"aaa"

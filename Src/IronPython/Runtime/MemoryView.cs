@@ -177,6 +177,14 @@ namespace IronPython.Runtime {
             }
         }
 
+        ~MemoryView() {
+            try {
+                if (_buffer != null) {
+                    _buffer.Dispose();
+                }
+            } catch {}
+        }
+
         private void CheckBuffer() {
             if (_buffer == null) throw PythonOps.ValueError("operation forbidden on released memoryview object");
         }
@@ -852,6 +860,7 @@ namespace IronPython.Runtime {
             if (_buffer != null) {
                 _buffer.Dispose();
                 _buffer = null;
+                GC.SuppressFinalize(this);
             }
         }
 

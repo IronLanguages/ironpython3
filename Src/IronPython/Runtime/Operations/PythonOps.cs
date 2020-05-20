@@ -869,7 +869,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object? CallWithContext(CodeContext/*!*/ context, [NotNull]object? func, params object?[] args) {
+        public static object? CallWithContext(CodeContext/*!*/ context, object? func, params object?[] args) {
             return PythonCalls.Call(context, func, args);
         }
 
@@ -879,7 +879,7 @@ namespace IronPython.Runtime.Operations {
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
-        public static object? CallWithContextAndThis(CodeContext/*!*/ context, [NotNull]object? func, object? instance, params object?[] args) {
+        public static object? CallWithContextAndThis(CodeContext/*!*/ context, object? func, object? instance, params object?[] args) {
             // drop the 'this' and make the call
             return CallWithContext(context, func, args);
         }

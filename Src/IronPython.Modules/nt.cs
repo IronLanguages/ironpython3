@@ -198,6 +198,7 @@ namespace IronPython.Modules {
                 }
             }
         }
+
         private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO _)) {
@@ -259,8 +260,6 @@ namespace IronPython.Modules {
             return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
         }
 
-
-
 #if FEATURE_PROCESS
         /// <summary>
         /// single instance of environment dictionary is shared between multiple runtimes because the environment
@@ -279,10 +278,19 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file) && file.name is string strName) {
-                return file.IsConsole ? new stat_result(8192) : lstat(strName);
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
+                if (file.IsConsole) return new stat_result(8192);
+                if (file._readStream is PipeStream) return new stat_result(4096);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (IsUnixStream(file._readStream)) return new stat_result(4096);
+                }
+                if (file.name is string strName) return lstat(strName);
             }
             throw PythonOps.OSError(9, "Bad file descriptor");
+
+            static bool IsUnixStream(Stream stream) {
+                return stream is Mono.Unix.UnixStream;
+            }
         }
 
         public static void fsync(CodeContext context, int fd) {
@@ -374,19 +382,46 @@ namespace IronPython.Modules {
 
                 return res;
             }
+
+            static bool IsWindows() {
+                return Environment.OSVersion.Platform == PlatformID.Win32NT ||
+                    Environment.OSVersion.Platform == PlatformID.Win32S ||
+                    Environment.OSVersion.Platform == PlatformID.Win32Windows;
+            }
         }
 
-        private static bool IsWindows() {
-            return Environment.OSVersion.Platform == PlatformID.Win32NT ||
-                Environment.OSVersion.Platform == PlatformID.Win32S ||
-                Environment.OSVersion.Platform == PlatformID.Win32Windows;
-        }
+        public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNull] Bytes dir)
+            => StringOps.encode(context, _getfullpathname(context, dir.MakeString()), SysModule.getfilesystemencoding());
 
 #if FEATURE_PROCESS
         public static int getpid() {
             return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 #endif
+
+        public static void link(string src, string dst, bool target_is_directory = false) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                linkWindows(src, dst);
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                linkUnix(src, dst);
+            } else {
+                throw new NotImplementedException();
+            }
+
+            static void linkWindows(string src, string dst) {
+                if (!CreateHardLink(dst, src, IntPtr.Zero))
+                    throw GetLastWin32Error(src, dst);
+            }
+
+            static void linkUnix(string src, string dst) {
+                if (Mono.Unix.Native.Syscall.link(src, dst) == 0) return;
+                throw GetLastUnixError(src, dst);
+            }
+        }
+
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);
 
         public static PythonList listdir(CodeContext/*!*/ context, [BytesLike][NotNull]IList<byte> path)
             => listdir(context, PythonOps.MakeString(path));
@@ -569,10 +604,6 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_PIPES
-        private static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
-            Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-            return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
-        }
 
         private static Tuple<Stream, Stream> CreatePipeStreams() {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -581,6 +612,11 @@ namespace IronPython.Modules {
                 var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
                 var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
                 return Tuple.Create<Stream, Stream>(inPipe, outPipe);
+            }
+
+            static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
+                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+                return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
             }
         }
 
@@ -990,7 +1026,7 @@ namespace IronPython.Modules {
 
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path, [ParamDictionary]IDictionary<string, object> dict) {
+        public static object stat(string path, [ParamDictionary, NotNull]IDictionary<string, object> dict) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
@@ -1062,8 +1098,12 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing]
-        public static object stat([BytesLike]IList<byte> path, [ParamDictionary]IDictionary<string, object> dict)
+        public static object stat([BytesLike]IList<byte> path, [ParamDictionary, NotNull]IDictionary<string, object> dict)
             => stat(PythonOps.MakeString(path), dict);
+
+        [LightThrowing]
+        public static object stat(CodeContext context, int fd)
+            => fstat(context, fd);
 
         public static string strerror(int code) {
             switch (code) {

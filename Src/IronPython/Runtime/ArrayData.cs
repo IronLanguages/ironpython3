@@ -90,7 +90,7 @@ namespace IronPython.Runtime {
         public void Add(T item) {
             lock (this) {
                 CheckBuffer();
-                EnsureSize(_size + 1);
+                EnsureSize(_size + 1L);
                 _items[_size++] = item;
             }
         }
@@ -110,7 +110,7 @@ namespace IronPython.Runtime {
             int delta = dataSpan.Length / Marshal.SizeOf<T>();
             lock (this) {
                 CheckBuffer();
-                EnsureSize(_size + delta);
+                EnsureSize((long)_size + delta);
                 dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan(_size)));
                 _size += delta;
             }
@@ -120,7 +120,7 @@ namespace IronPython.Runtime {
             if (collection is ICollection<T> c) {
                 lock (this) {
                     CheckBuffer();
-                    EnsureSize(_size + c.Count);
+                    EnsureSize((long)_size + c.Count);
                     c.CopyTo(_items, _size);
                     _size += c.Count;
                 }
@@ -159,15 +159,18 @@ namespace IronPython.Runtime {
         int ArrayData.CountItems(object? item)
             => TryConvert(item, out T value) ? this.Count(x => x.Equals(value)) : 0;
 
-        private void EnsureSize(int size) {
+        private void EnsureSize(long size) {
+            if (size > int.MaxValue) throw PythonOps.MemoryError();
+
             const int IndexOverflow = 0x7FF00000; // https://docs.microsoft.com/en-us/dotnet/api/system.array?view=netcore-3.1#remarks
+
             if (_items.Length < size) {
                 var length = _items.Length;
                 if (length == 0) length = 8;
                 while (length < size && length <= IndexOverflow / 2) {
                     length *= 2;
                 }
-                if (length < size) length = size;
+                if (length < size) length = (int)size;
                 Array.Resize(ref _items, length);
                 if (_dataHandle != null) {
                     _dataHandle.Value.Free();
@@ -218,7 +221,7 @@ namespace IronPython.Runtime {
         public void Insert(int index, T item) {
             lock (this) {
                 CheckBuffer();
-                EnsureSize(_size + 1);
+                EnsureSize(_size + 1L);
                 if (index < _size) {
                     Array.Copy(_items, index, _items, index + 1, _size - index);
                 }
@@ -240,7 +243,7 @@ namespace IronPython.Runtime {
             if (delta != 0) {
                 lock (this) {
                     CheckBuffer();
-                    EnsureSize(_size + delta);
+                    EnsureSize((long)_size + delta);
                     if (index + count < _size) {
                         Array.Copy(_items, index + count, _items, index + value.Count, _size - index - count);
                     }
@@ -254,16 +257,17 @@ namespace IronPython.Runtime {
             => InsertRange(index, count, (ArrayData<T>)value);
 
         public void InPlaceMultiply(int count) {
-            int newSize = ((long)_size * count).ClampToInt32();
+            long newSize = (long)_size * count;
+            if (newSize > int.MaxValue) throw PythonOps.MemoryError();
             if (newSize < 0) newSize = 0;
             if (newSize == _size) return;
 
-            int block = _size;
-            int pos = _size;
+            long block = _size;
+            long pos = _size;
             lock (this) {
                 CheckBuffer();
                 EnsureSize(newSize);
-                _size = newSize;
+                _size = (int)newSize;
             }
             while (pos < _size) {
                 Array.Copy(_items, 0, _items, pos, Math.Min(block, _size - pos));

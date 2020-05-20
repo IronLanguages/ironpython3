@@ -36,7 +36,8 @@ namespace IronPython.Runtime {
     /// </summary>
     [PythonType("bytearray")]
     public class ByteArray : IList<byte>, IReadOnlyList<byte>, ICodeFormattable, IBufferProtocol {
-        private ArrayData<byte> _bytes;
+        //  _bytes is readonly to ensure proper size locking during buffer exports
+        private readonly ArrayData<byte> _bytes;
 
         public ByteArray() {
             _bytes = new ArrayData<byte>(0);
@@ -52,35 +53,33 @@ namespace IronPython.Runtime {
 
         public void __init__() {
             lock (this) {
-                CheckBuffer();
-                _bytes = new ArrayData<byte>();
+                _bytes.Clear();
             }
         }
 
         public void __init__(int source) {
             lock (this) {
-                CheckBuffer();
                 if (source < 0) throw PythonOps.ValueError("negative count");
-                _bytes = new ArrayData<byte>(source);
-                for (int i = 0; i < source; i++) {
+                _bytes.Clear();
+                if (source > 0) {
                     _bytes.Add(0);
+                    _bytes.InPlaceMultiply(source);
                 }
-
             }
         }
 
         public void __init__([NotNull]IEnumerable<byte> source) {
             lock (this) {
-                CheckBuffer();
-                _bytes = new ArrayData<byte>(source);
+                _bytes.Clear();
+                _bytes.AddRange(source);
             }
         }
 
         public void __init__([BytesLike, NotNull]IBufferProtocol source) {
             lock (this) {
-                CheckBuffer();
+                _bytes.Clear();
                 using IPythonBuffer buffer = source.GetBuffer();
-                _bytes = new ArrayData<byte>(buffer);
+                _bytes.AddRange(buffer);
             }
         }
 
@@ -89,8 +88,7 @@ namespace IronPython.Runtime {
                 __init__(size);
             } else {
                 lock (this) {
-                    CheckBuffer();
-                    _bytes = new ArrayData<byte>();
+                    _bytes.Clear();
                 }
                 IEnumerator ie = PythonOps.GetEnumerator(context, source);
                 while (ie.MoveNext()) {
@@ -106,8 +104,8 @@ namespace IronPython.Runtime {
 
         public void __init__(CodeContext context, [NotNull]string source, [NotNull]string encoding, [NotNull]string errors = "strict") {
             lock (this) {
-                CheckBuffer();
-                _bytes = new ArrayData<byte>(StringOps.encode(context, source, encoding, errors));
+                _bytes.Clear();
+                _bytes.AddRange(StringOps.encode(context, source, encoding, errors));
             }
         }
 
@@ -214,12 +212,7 @@ namespace IronPython.Runtime {
 
         public void reverse() {
             lock (this) {
-                int halfway = _bytes.Count / 2;
-                for (int i = 0, j = _bytes.Count - 1; i < halfway; i++, j--) {
-                    byte tmp = _bytes[i];
-                    _bytes[i] = _bytes[j];
-                    _bytes[j] = tmp;
-                }
+                _bytes.Reverse();
             }
         }
 
@@ -250,8 +243,7 @@ namespace IronPython.Runtime {
         [SpecialName]
         public ByteArray InPlaceMultiply(int len) {
             lock (this) {
-                CheckBuffer();
-                _bytes = (this * len)._bytes;
+                _bytes.InPlaceMultiply(len);
                 return this;
             }
         }
@@ -1265,15 +1257,15 @@ namespace IronPython.Runtime {
                 lock (this) {
                     slice.indices(_bytes.Count, out int start, out int stop, out int step);
 
-                    if (step != 1) {
-                        // try to assign back to self: make a copy first
-                        if (ReferenceEquals(this, list)) {
-                            list = CopyThis();
-                        } else if (list.Count == 0) {
-                            DeleteItem(slice);
-                            return;
-                        }
+                    // try to assign back to self: make a copy first
+                    if (ReferenceEquals(this, list)) {
+                        list = CopyThis();
+                    } else if (list.Count == 0) {
+                        DeleteItem(slice);
+                        return;
+                    }
 
+                    if (step != 1) {
                         int count = PythonOps.GetSliceCount(start, stop, step);
 
                         // we don't use slice.Assign* helpers here because bytearray has different assignment semantics.
@@ -1286,6 +1278,9 @@ namespace IronPython.Runtime {
                             _bytes[index] = list[i];
                         }
                     } else {
+                        if (stop < start) {
+                            stop = start;
+                        }
                         SliceNoStep(start, stop, list);
                     }
                 }
@@ -1382,7 +1377,7 @@ namespace IronPython.Runtime {
             }
             if (curVal is IBufferProtocol bp) {
                 using (IPythonBuffer buf = bp.GetBuffer()) {
-                    return new ByteArray(new ArrayData<byte>(buf));
+                    return new ByteArray(new ArrayData<byte>(buf.AsReadOnlySpan()));
                 }
             }
             throw PythonOps.TypeError("can only join an iterable of bytes");
@@ -1393,52 +1388,12 @@ namespace IronPython.Runtime {
         }
 
         private void SliceNoStep(int start, int stop, IList<byte> other) {
+            // replace between start & stop w/ values
             lock (this) {
-                if (start > stop) {
-                    CheckBuffer();
-                    int newSize = Count + other.Count;
+                int count = stop - start;
+                if (count == 0 && other.Count == 0) return;
 
-                    var newData = new ArrayData<byte>(newSize);
-                    int reading = 0;
-                    for (reading = 0; reading < start; reading++) {
-                        newData.Add(_bytes[reading]);
-                    }
-
-                    for (int i = 0; i < other.Count; i++) {
-                        newData.Add(other[i]);
-                    }
-
-                    for (; reading < Count; reading++) {
-                        newData.Add(_bytes[reading]);
-                    }
-
-                    _bytes = newData;
-                } else if ((stop - start) == other.Count) {
-                    // we are simply replacing values, this is fast...
-                    for (int i = 0; i < other.Count; i++) {
-                        _bytes[i + start] = other[i];
-                    }
-                } else {
-                    // we are resizing the array (either bigger or smaller), we 
-                    // will copy the data array and replace it all at once.
-                    CheckBuffer();
-                    int newSize = Count - (stop - start) + other.Count;
-
-                    var newData = new ArrayData<byte>(newSize);
-                    for (int i = 0; i < start; i++) {
-                        newData.Add(_bytes[i]);
-                    }
-
-                    for (int i = 0; i < other.Count; i++) {
-                        newData.Add(other[i]);
-                    }
-
-                    for (int i = stop; i < Count; i++) {
-                        newData.Add(_bytes[i]);
-                    }
-
-                    _bytes = newData;
-                }
+                _bytes.InsertRange(start, count, other);
             }
         }
 
@@ -1679,9 +1634,7 @@ namespace IronPython.Runtime {
         #region IBufferProtocol Members
 
         IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
-            lock (this) {
-                return _bytes.GetBuffer(this, "B", flags);
-            }
+            return _bytes.GetBuffer(this, "B", flags);
         }
 
         private void CheckBuffer() {

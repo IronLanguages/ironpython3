@@ -110,6 +110,7 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
+            //  _data is readonly to ensure proper size locking during buffer exports
             private readonly ArrayData _data;
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
@@ -577,7 +578,6 @@ namespace IronPython.Modules {
                         if (stop < start) {
                             stop = start;
                         }
-
                         SliceNoStep(arr, start, stop);
                     }
                 }
@@ -592,12 +592,15 @@ namespace IronPython.Modules {
                 return pa;
             }
 
-            private void SliceNoStep(array pa, int start, int stop) {
+            private void SliceNoStep(array arr, int start, int stop) {
                 // replace between start & stop w/ values
                 int count = stop - start;
-                if (count == 0 && pa._data.Count == 0) return;
+                if (count == 0 && arr._data.Count == 0) return;
 
-                _data.InsertRange(start, count, pa._data);
+                if (ReferenceEquals(this, arr)) {
+                    arr = new array(typecode, this);
+                }
+                _data.InsertRange(start, count, arr._data);
             }
 
             public array __copy__() {

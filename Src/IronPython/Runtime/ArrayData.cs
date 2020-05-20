@@ -49,23 +49,10 @@ namespace IronPython.Runtime {
             AddRange(collection);
         }
 
-        public ArrayData(ReadOnlyMemory<T> data) {
+        internal ArrayData(ReadOnlySpan<T> data) {
             GC.SuppressFinalize(this);
             _items = data.ToArray();
             _size = _items.Length;
-        }
-
-        public ArrayData(IPythonBuffer data) {
-            GC.SuppressFinalize(this);
-
-            ReadOnlySpan<byte> dataSpan = data.AsReadOnlySpan();
-            Debug.Assert(data.Offset == 0);
-            Debug.Assert(data.Strides == null); // C-contiguous
-            Debug.Assert(dataSpan.Length % Marshal.SizeOf<T>() == 0);
-
-            _size = dataSpan.Length / Marshal.SizeOf<T>();
-            _items = new T[_size];
-            dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan()));
         }
 
         ~ArrayData() {
@@ -113,6 +100,22 @@ namespace IronPython.Runtime {
             return _size - 1;
         }
 
+        public void AddRange(IPythonBuffer data) {
+            ReadOnlySpan<byte> dataSpan = data.AsReadOnlySpan();
+
+            Debug.Assert(data.Offset == 0);
+            Debug.Assert(data.Strides == null); // C-contiguous
+            Debug.Assert(dataSpan.Length % Marshal.SizeOf<T>() == 0);
+
+            int delta = dataSpan.Length / Marshal.SizeOf<T>();
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(_size + delta);
+                dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan(_size)));
+                _size += delta;
+            }
+        }
+
         public void AddRange(IEnumerable<T> collection) {
             if (collection is ICollection<T> c) {
                 lock (this) {
@@ -157,12 +160,14 @@ namespace IronPython.Runtime {
             => TryConvert(item, out T value) ? this.Count(x => x.Equals(value)) : 0;
 
         private void EnsureSize(int size) {
+            const int IndexOverflow = 0x7FF00000; // https://docs.microsoft.com/en-us/dotnet/api/system.array?view=netcore-3.1#remarks
             if (_items.Length < size) {
                 var length = _items.Length;
                 if (length == 0) length = 8;
-                while (length < size) {
+                while (length < size && length <= IndexOverflow / 2) {
                     length *= 2;
                 }
+                if (length < size) length = size;
                 Array.Resize(ref _items, length);
                 if (_dataHandle != null) {
                     _dataHandle.Value.Free();
@@ -226,16 +231,10 @@ namespace IronPython.Runtime {
             => Insert(index, GetValue(item));
 
         public void InsertRange(int index, int count, IList<T> value) {
+            // The caller has to ensure that value does not use this ArrayData as its data backing
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(index + count <= _size);
-
-            if (ReferenceEquals(value, this)) {
-                if (count == value.Count) return;
-
-                // copying over itself, clone value items first
-                value = _items.AsSpan(0, _size).ToArray();
-            }
 
             int delta = value.Count - count;
             if (delta != 0) {
@@ -254,22 +253,30 @@ namespace IronPython.Runtime {
         void ArrayData.InsertRange(int index, int count, ArrayData value)
             => InsertRange(index, count, (ArrayData<T>)value);
 
-        ArrayData ArrayData.Multiply(int count) {
-            count *= _size;
-            var res = new ArrayData<T>(count * _size);
-            if (count != 0) {
-                Array.Copy(_items, res._items, _size);
+        public void InPlaceMultiply(int count) {
+            int newSize = ((long)_size * count).ClampToInt32();
+            if (newSize < 0) newSize = 0;
+            if (newSize == _size) return;
 
-                int block = _size;
-                int pos = _size;
-                while (pos < count) {
-                    Array.Copy(res._items, 0, res._items, pos, Math.Min(block, count - pos));
-                    pos += block;
-                    block *= 2;
-                }
-                res._size = count;
+            int block = _size;
+            int pos = _size;
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(newSize);
+                _size = newSize;
             }
+            while (pos < _size) {
+                Array.Copy(_items, 0, _items, pos, Math.Min(block, _size - pos));
+                pos += block;
+                block *= 2;
+            }
+        }
 
+        ArrayData ArrayData.Multiply(int count) {
+            var res = new ArrayData<T>(count * _size);
+            CopyTo(res._items, 0);
+            res._size = _size;
+            res.InPlaceMultiply(count);
             return res;
         }
 

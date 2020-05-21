@@ -1561,7 +1561,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public object __eq__(CodeContext context, object? value) => NotImplementedType.Value;
+        public NotImplementedType __eq__(CodeContext context, object? value) => NotImplementedType.Value;
 
         public bool __ne__(CodeContext context, [NotNull]ByteArray value) => !__eq__(context, value);
 
@@ -1570,7 +1570,7 @@ namespace IronPython.Runtime {
         public bool __ne__(CodeContext context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
-        public object __ne__(CodeContext context, object? value) => NotImplementedType.Value;
+        public NotImplementedType __ne__(CodeContext context, object? value) => NotImplementedType.Value;
 
         private bool Equals(ByteArray other) {
             if (Count != other.Count) {

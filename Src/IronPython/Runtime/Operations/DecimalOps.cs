@@ -9,6 +9,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Operations {
@@ -76,7 +78,7 @@ namespace IronPython.Runtime.Operations {
             if (y is null) {
                 return ScriptingRuntimeHelpers.Int32ToObject(+1);
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         public static int __hash__(decimal x) {

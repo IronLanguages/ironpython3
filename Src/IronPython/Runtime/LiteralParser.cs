@@ -658,20 +658,24 @@ namespace IronPython.Runtime {
         public static Complex ParseComplex(string s) {
             // remove no-meaning spaces and convert to lowercase
             string text = s.Trim().ToLower();
-            if (String.IsNullOrEmpty(text) || text.IndexOf(' ') != -1) {
-                throw ExnMalformed();
-            }
 
             // remove 1 layer of parens
             if (text.StartsWith("(") && text.EndsWith(")")) {
                 text = text.Substring(1, text.Length - 2);
             }
 
+            text = text.Trim();
+
+            if (string.IsNullOrEmpty(text) || text.IndexOf(' ') != -1) {
+                throw ExnMalformed();
+            }
+
             try {
                 int len = text.Length;
-                string real, imag;
-
-                if (text[len - 1] == 'j') {
+                var idx = text.IndexOf('j');
+                if (idx == -1) {
+                    return MathUtils.MakeReal(ParseFloatNoCatch(text));
+                } else if (idx == len - 1) {
                     // last sign delimits real and imaginary...
                     int signPos = text.LastIndexOfAny(signs);
                     // ... unless it's after 'e', so we bypass up to 2 of those here
@@ -688,34 +692,16 @@ namespace IronPython.Runtime {
                         return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloatNoCatch(text.Substring(0, len - 1)));
                     }
 
-                    real = text.Substring(0, signPos);
-                    imag = text.Substring(signPos, len - signPos - 1);
+                    string real = text.Substring(0, signPos);
+                    string imag = text.Substring(signPos, len - signPos - 1);
                     if (imag.Length == 1) {
                         imag += "1"; // convert +/- to +1/-1
                     }
+
+                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
                 } else {
-                    // 'j' delimits real and imaginary
-                    string[] splitText = text.Split(new char[] { 'j' });
-
-                    // no imaginary component
-                    if (splitText.Length == 1) {
-                        return MathUtils.MakeReal(ParseFloatNoCatch(text));
-                    }
-
-                    // there should only be one j
-                    if (splitText.Length != 2) {
-                        throw ExnMalformed();
-                    }
-                    real = splitText[1];
-                    imag = splitText[0];
-
-                    // a sign must follow the 'j'
-                    if (!(real.StartsWith("+") || real.StartsWith("-"))) {
-                        throw ExnMalformed();
-                    }
+                    throw ExnMalformed();
                 }
-
-                return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
             } catch (OverflowException) {
                 throw PythonOps.ValueError("complex() literal too large to convert");
             } catch {

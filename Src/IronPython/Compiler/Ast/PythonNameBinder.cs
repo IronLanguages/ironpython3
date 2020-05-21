@@ -233,6 +233,8 @@ namespace IronPython.Compiler.Ast {
             // Base references are in the outer context
             foreach (Expression b in node.Bases) b.Walk(this);
 
+            foreach (Arg a in node.Keywords) a.Walk(this);
+
             // process the decorators in the outer context
             if (node.Decorators != null) {
                 foreach (Expression dec in node.Decorators) {

@@ -9,21 +9,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Generic = System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Runtime.InteropServices;
 
 using IronPython.Compiler;
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Runtime.InteropServices;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using AstExpression = IronPython.Compiler.Ast.Expression;
+using Generic = System.Collections.Generic;
 
 [assembly: PythonModule("_ast", typeof(IronPython.Modules._ast))]
 namespace IronPython.Modules {
@@ -1014,7 +1016,6 @@ namespace IronPython.Modules {
                 keywords = new PythonList();
                 func = Convert(call.Target);
                 foreach (Arg arg in call.Args) {
-
                     if (arg.Name == null)
                         args.Add(Convert(arg.Expression));
                     else if (arg.Name == "*")
@@ -1087,15 +1088,17 @@ namespace IronPython.Modules {
                 }
                 if (def.Keywords != null) {
                     keywords = new PythonList(def.Keywords.Count);
-                    foreach (AstExpression expr in def.Keywords)
-                        keywords.AddNoLock(Convert(expr));
+                    foreach (Arg arg in def.Keywords)
+                        keywords.AddNoLock(new keyword(arg));
                 } else {
                     keywords = new PythonList(0);
                 }
             }
 
             internal override Statement Revert() {
-                ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), expr.RevertExprs(keywords), RevertStmts(body));
+                var newBases = expr.RevertExprs(bases);
+                var newKeywords = keywords.Cast<keyword>().Select(kw => new Arg(kw.arg, expr.Revert(kw.value))).ToArray();
+                ClassDefinition cd = new ClassDefinition(name, newBases, newKeywords, RevertStmts(body));
                 if (decorator_list.Count != 0)
                     cd.Decorators = expr.RevertExprs(decorator_list);
                 return cd;

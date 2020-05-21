@@ -707,7 +707,8 @@ class CommonTest(BaseTest):
 
         # check that titlecased chars are lowered correctly
         # \u1ffc is the titlecased char
-        self.checkequal('\u03a9\u0399\u1ff3\u1ff3\u1ff3',
+        if sys.implementation.name != "ironpython": # https://github.com/IronLanguages/ironpython3/issues/839
+            self.checkequal('\u03a9\u0399\u1ff3\u1ff3\u1ff3',
                         '\u1ff3\u1ff3\u1ffc\u1ffc', 'capitalize')
         # check with cased non-letter chars
         self.checkequal('\u24c5\u24e8\u24e3\u24d7\u24de\u24dd',
@@ -1176,8 +1177,7 @@ class MixinStrUnicodeUserStringTest:
         self.checkraises(TypeError, 'abc', '__mod__')
         self.checkraises(TypeError, '%(foo)s', '__mod__', 42)
         self.checkraises(TypeError, '%s%s', '__mod__', (42,))
-        with self.assertWarns(DeprecationWarning):
-            self.checkraises(TypeError, '%c', '__mod__', (None,))
+        self.checkraises(TypeError, '%c', '__mod__', (None,))
         self.checkraises(ValueError, '%(foo', '__mod__', {})
         self.checkraises(TypeError, '%(foo)s %(bar)s', '__mod__', ('foo', 42))
         self.checkraises(TypeError, '%d', '__mod__', "42") # not numeric

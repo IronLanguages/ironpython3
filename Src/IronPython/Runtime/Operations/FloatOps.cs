@@ -47,6 +47,8 @@ namespace IronPython.Runtime.Operations {
                     if (d is double) {
                         value = d;
                     } else if (d is Extensible<double>) {
+                        // returning the underlying double is the behavior starting with Python 3.6
+                        // TODO: should also raise DeprecationWarning
                         value = ((Extensible<double>)d).Value;
                     } else {
                         throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));

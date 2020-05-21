@@ -869,7 +869,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object? CallWithContext(CodeContext/*!*/ context, [NotNull]object? func, params object?[] args) {
+        public static object? CallWithContext(CodeContext/*!*/ context, object? func, params object?[] args) {
             return PythonCalls.Call(context, func, args);
         }
 
@@ -879,7 +879,7 @@ namespace IronPython.Runtime.Operations {
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
-        public static object? CallWithContextAndThis(CodeContext/*!*/ context, [NotNull]object? func, object? instance, params object?[] args) {
+        public static object? CallWithContextAndThis(CodeContext/*!*/ context, object? func, object? instance, params object?[] args) {
             // drop the 'this' and make the call
             return CallWithContext(context, func, args);
         }
@@ -1324,10 +1324,6 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        private static bool TryGetMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict, out object metaclass) {
-            return dict.TryGetValue("__metaclass__", out metaclass) && metaclass != null;
-        }
-
         internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
             object? classdict = dict;
 
@@ -1344,10 +1340,10 @@ namespace IronPython.Runtime.Operations {
             return classdict;
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
+        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, object metaclass, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
-            return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Dict);
+            return MakeClass(parentContext, name, bases, metaclass, selfNames, func(parentContext).Dict);
         }
 
         private static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
@@ -1365,7 +1361,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, string selfNames, PythonDictionary vars) {
+        private static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, object metaclass, string selfNames, PythonDictionary vars) {
             foreach (object dt in bases) {
                 if (dt is TypeGroup) {
                     object[] newBases = new object[bases.Length];
@@ -1392,7 +1388,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
-            if (!TryGetMetaclass(context, tupleBases, vars, out object metaclass)) {
+            if (metaclass is null) {
                 // this makes sure that object is a base
                 if (tupleBases.Count == 0) {
                     tupleBases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
@@ -1603,7 +1599,16 @@ namespace IronPython.Runtime.Operations {
 
         [LightThrowing]
         public static object UnpackIterable(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
-            var enumeratorValues = GetEnumeratorValuesNoComplexSets(context, e, expected, argcntafter);
+            object enumeratorValues;
+            // Don't use GetEnumeratorValuesNoComplexSets since it returns the underlying object[]
+            // which may be larger than the actual list.
+            if (e is PythonList l && l.GetType() == typeof(PythonList) && l._size == l._data.Length) {
+                // fast path for lists, avoid enumerating & copying the list.
+                enumeratorValues = GetEnumeratorValuesFromList(l, expected, argcntafter);
+            } else {
+                enumeratorValues = GetEnumeratorValues(context, e, expected, argcntafter);
+            }
+
             if (argcntafter == -1 || LightExceptions.IsLightException(enumeratorValues)) return enumeratorValues;
 
             Debug.Assert(enumeratorValues is object[]);
@@ -1888,6 +1893,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
+            // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
+            // which would make it "iterable" even though it is not.
             if (o is PythonType pt && !pt.IsIterable(context)) {
                 enumerator = default;
                 return false;
@@ -1922,6 +1929,8 @@ namespace IronPython.Runtime.Operations {
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
             enumerator = null;
 
+            // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
+            // which would make it "iterable" even though it is not.
             if (enumerable is PythonType ptEnumerable && !ptEnumerable.IsIterable(context)) {
                 return false;
             }
@@ -2967,7 +2976,7 @@ namespace IronPython.Runtime.Operations {
                     ie = Converter.ConvertToIEnumerator(enumerable);
                 }
             }
-            
+
             while (ie.MoveNext()) {
                 if (IsOrEqualsRetBool(context, ie.Current, value)) {
                     return true;
@@ -2986,7 +2995,7 @@ namespace IronPython.Runtime.Operations {
                 throw new UnboundLocalException(string.Format("Local variable '{0}' referenced before assignment.", name));
             }
             return value;
-        }      
+        }
 
         public static object PythonTypeSetCustomMember(CodeContext/*!*/ context, PythonType self, string name, object value) {
             self.SetCustomMember(context, name, value);
@@ -3019,6 +3028,7 @@ namespace IronPython.Runtime.Operations {
 
         public static Ellipsis Ellipsis => Ellipsis.Value;
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static NotImplementedType NotImplemented => NotImplementedType.Value;
 
         public static void ListAddForComprehension(PythonList l, object? o) {
@@ -3223,7 +3233,7 @@ namespace IronPython.Runtime.Operations {
             ContractUtils.RequiresNotNull(precompiled, nameof(precompiled));
             ContractUtils.RequiresNotNull(main, nameof(main));
 
-            if(options == null) {
+            if (options == null) {
                 options = new Dictionary<string, object>();
             }
             options["Arguments"] = Environment.GetCommandLineArgs();
@@ -3539,8 +3549,7 @@ namespace IronPython.Runtime.Operations {
         public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             if (o is PythonType dt) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
-            }
-            else if (o is NamespaceTracker) {
+            } else if (o is NamespaceTracker) {
                 return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
             }
 
@@ -3688,7 +3697,7 @@ namespace IronPython.Runtime.Operations {
             SyntaxErrorException res = new SyntaxErrorException(
                 message,
                 path,
-                null, 
+                null,
                 null,
                 new SourceSpan(sloc, sloc),
                 ErrorCodes.SyntaxError,
@@ -3718,8 +3727,7 @@ namespace IronPython.Runtime.Operations {
                     return ValueError("not enough values to unpack (expected {0}, got {1})", left, right);
                 else
                     return ValueError("too many values to unpack (expected {0})", left);
-            }
-            else {
+            } else {
                 Debug.Assert(right < left + argcntafter);
                 return ValueError("not enough values to unpack (expected at least {0}, got {1})", left + argcntafter, right);
             }
@@ -3830,9 +3838,9 @@ namespace IronPython.Runtime.Operations {
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
         internal static Exception MakeExceptionTypeError(object? type, bool forGenerator = false) {
-                        return PythonOps.TypeError(forGenerator ?
-            "exceptions must be classes or instances deriving from BaseException, not {0}" :
-            "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
+            return PythonOps.TypeError(forGenerator ?
+                "exceptions must be classes or instances deriving from BaseException, not {0}" :
+                "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
@@ -3922,11 +3930,11 @@ namespace IronPython.Runtime.Operations {
                 Debug.Assert(line != SourceLocation.None.Line);
 
                 List<DynamicStackFrame> pyFrames = e.GetFrameList();
-                
+
                 if (pyFrames == null) {
                     e.SetFrameList(pyFrames = new List<DynamicStackFrame>());
                 }
-                
+
                 var frame = new PythonDynamicStackFrame(context, funcCode, line);
                 funcCode.LightThrowCompile(context);
                 pyFrames.Add(frame);
@@ -4059,5 +4067,4 @@ namespace IronPython.Runtime.Operations {
             Frame = frame;
         }
     }
-
 }

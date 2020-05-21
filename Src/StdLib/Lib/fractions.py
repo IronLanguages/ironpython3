@@ -367,7 +367,7 @@ class Fraction(numbers.Rational):
 
         """
         def forward(a, b):
-            if isinstance(b, (int, Fraction)):
+            if isinstance(b, (int, long, Fraction)): # https://github.com/IronLanguages/ironpython3/issues/52
                 return monomorphic_operator(a, b)
             elif isinstance(b, float):
                 return fallback_operator(float(a), b)

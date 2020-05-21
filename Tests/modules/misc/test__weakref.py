@@ -162,4 +162,14 @@ def %s(self, *args, **kwargs):
                 self.assertEqual(eval('a ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
                 self.assertEqual(eval('x ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
 
+    def test_ipy3_gh719(self):
+        """https://github.com/IronLanguages/ironpython3/issues/719"""
+        class A: pass
+
+        a = A()
+        p = _weakref.proxy(a)
+        p.__lt__ # this line incorrectly raised a SystemError
+
+        self.assertEqual(a.__lt__, p.__lt__)
+
 run_test(__name__)

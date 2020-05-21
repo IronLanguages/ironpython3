@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Operations;
@@ -29,6 +30,7 @@ namespace IronPython.Runtime {
         Span<byte> AsByteSpan();
         IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags);
         bool HasBuffer { get; }
+        void CheckBuffer();
     }
 
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
@@ -356,7 +358,7 @@ namespace IronPython.Runtime {
             return new ArrayDataView(owner, format, this, flags);
         }
 
-        private void CheckBuffer() {
+        public void CheckBuffer() {
             if (HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 
@@ -399,7 +401,7 @@ namespace IronPython.Runtime {
 
             public int ItemCount => _arrayData.Count;
 
-            public int ItemSize => Marshal.SizeOf<T>();
+            public int ItemSize => Unsafe.SizeOf<T>();
 
             public int NumOfDims => 1;
 

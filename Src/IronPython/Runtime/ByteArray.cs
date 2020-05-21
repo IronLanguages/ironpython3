@@ -98,7 +98,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]string @string) {
-            CheckBuffer();
+            _bytes.CheckBuffer();
             throw PythonOps.TypeError("string argument without an encoding");
         }
 
@@ -1312,7 +1312,7 @@ namespace IronPython.Runtime {
                 if (step > 0 && (start >= stop)) return;
                 if (step < 0 && (start <= stop)) return;
 
-                CheckBuffer();
+                _bytes.CheckBuffer();
 
                 if (step == 1) {
                     int i = start;
@@ -1635,10 +1635,6 @@ namespace IronPython.Runtime {
 
         IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
             return _bytes.GetBuffer(this, "B", flags);
-        }
-
-        private void CheckBuffer() {
-            if (_bytes.HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 
         #endregion

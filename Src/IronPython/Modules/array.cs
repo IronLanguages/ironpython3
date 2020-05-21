@@ -491,6 +491,8 @@ namespace IronPython.Modules {
                 if (step > 0 && (start >= stop)) return;
                 if (step < 0 && (start <= stop)) return;
 
+                _data.CheckBuffer();
+
                 if (step == 1) {
                     int i = start;
                     for (int j = stop; j < _data.Count; j++, i++) {

@@ -107,9 +107,9 @@ namespace IronPython.Runtime {
 
             Debug.Assert(data.Offset == 0);
             Debug.Assert(data.Strides == null); // C-contiguous
-            Debug.Assert(dataSpan.Length % Marshal.SizeOf<T>() == 0);
+            Debug.Assert(dataSpan.Length % Unsafe.SizeOf<T>() == 0);
 
-            int delta = dataSpan.Length / Marshal.SizeOf<T>();
+            int delta = dataSpan.Length / Unsafe.SizeOf<T>();
             lock (this) {
                 CheckBuffer();
                 EnsureSize((long)_size + delta);

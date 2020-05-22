@@ -19,6 +19,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using IronPython.Hosting;
 
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
@@ -28,6 +29,15 @@ namespace IronPython.Runtime {
 
         public Bytes() {
             _bytes = new byte[0];
+        }
+
+        public Bytes([NotNull]IEnumerable<byte> bytes) {
+            _bytes = bytes.ToArray();
+        }
+
+        public Bytes([BytesLike, NotNull]IBufferProtocol source) {
+            using IPythonBuffer buffer = source.GetBuffer();
+            _bytes = buffer.AsReadOnlySpan().ToArray();
         }
 
         public Bytes(CodeContext context, object? source) {
@@ -49,14 +59,6 @@ namespace IronPython.Runtime {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
-        public Bytes([NotNull]IEnumerable<byte> bytes) {
-            _bytes = bytes.ToArray();
-        }
-
-        public Bytes([BytesLike, NotNull]ReadOnlyMemory<byte> bytes) {
-            _bytes = bytes.ToArray();
-        }
-
         public Bytes([NotNull]PythonList bytes) {
             _bytes = ByteOps.GetBytes(bytes).ToArray();
         }
@@ -64,14 +66,6 @@ namespace IronPython.Runtime {
         public Bytes(int size) {
             if (size < 0) throw PythonOps.ValueError("negative count");
             _bytes = new byte[size];
-        }
-
-        public Bytes([NotNull]byte[] bytes) {
-            _bytes = bytes.ToArray();
-        }
-
-        private Bytes(byte[] bytes, bool copyData) {
-            _bytes = copyData ? _bytes.ToArray() : bytes;
         }
 
         public Bytes([NotNull]string @string) {
@@ -86,13 +80,17 @@ namespace IronPython.Runtime {
             _bytes = StringOps.encode(context, @string, encoding, errors).UnsafeByteArray;
         }
 
-        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i }, false)).ToArray();
+        private Bytes(byte[] bytes) {
+            _bytes = bytes;
+        }
+
+        private static readonly IReadOnlyList<Bytes> oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
 
         internal static Bytes FromByte(byte b)
             => oneByteBytes[b];
 
         internal static Bytes Make(byte[] bytes)
-            => new Bytes(bytes, copyData: false);
+            => new Bytes(bytes);
 
         internal byte[] UnsafeByteArray {
             [PythonHidden]
@@ -100,7 +98,7 @@ namespace IronPython.Runtime {
         }
 
         private Bytes AsBytes()
-            => this.GetType() == typeof(Bytes) ? this : new Bytes(_bytes, copyData: false);
+            => this.GetType() == typeof(Bytes) ? this : new Bytes(_bytes);
 
         #region Public Python API surface
 
@@ -157,11 +155,13 @@ namespace IronPython.Runtime {
             => count(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
         public string decode(CodeContext context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
-            return StringOps.RawDecode(context, new MemoryView(this), encoding, errors);
+            using var mv = new MemoryView(this);
+            return StringOps.RawDecode(context, mv, encoding, errors);
         }
 
         public string decode(CodeContext context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
-            return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
+            using var buffer = ((IBufferProtocol)this).GetBuffer();
+            return StringOps.DoDecode(context, buffer, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
         }
 
         public bool endswith([BytesLike, NotNull]IList<byte> suffix) {
@@ -714,7 +714,8 @@ namespace IronPython.Runtime {
 
         public Bytes translate([BytesLike]IList<byte>? table, object? delete) {
             if (delete is IBufferProtocol bufferProtocol) {
-                return translate(table, bufferProtocol.ToBytes(0, null));
+                using var buffer = bufferProtocol.GetBuffer();
+                return translate(table, buffer.AsReadOnlySpan().ToArray());
             }
             ValidateTable(table);
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
@@ -897,7 +898,7 @@ namespace IronPython.Runtime {
                 return new Bytes(b);
             }
             if (curVal is IBufferProtocol bp) {
-                return bp.ToBytes(0, null);
+                return new Bytes(bp);
             }
             throw PythonOps.TypeError("can only join an iterable of bytes");
         }
@@ -1048,73 +1049,50 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IBufferProtocol Members
+        #region IBufferProtocol Support
 
-        object IBufferProtocol.GetItem(int index) {
-            byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
-            return (int)res;
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+            if (flags.HasFlag(BufferFlags.Writable))
+                throw PythonOps.BufferError("Object is not writable.");
+
+            return new BytesView(this, flags);
         }
 
-        void IBufferProtocol.SetItem(int index, object value) {
-            throw new InvalidOperationException();
-        }
+        private sealed class BytesView : IPythonBuffer {
+            private readonly BufferFlags _flags;
+            private readonly Bytes _exporter;
 
-        void IBufferProtocol.SetSlice(Slice index, object value) {
-            throw new InvalidOperationException();
-        }
-
-        int IBufferProtocol.ItemCount {
-            get {
-                return _bytes.Length;
-            }
-        }
-
-        string IBufferProtocol.Format {
-            get { return "B"; }
-        }
-
-        BigInteger IBufferProtocol.ItemSize {
-            get { return 1; }
-        }
-
-        BigInteger IBufferProtocol.NumberDimensions {
-            get { return 1; }
-        }
-
-        bool IBufferProtocol.ReadOnly {
-            get { return true; }
-        }
-
-        IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) {
-            if (end != null) {
-                return new[] { (BigInteger)end - start };
-            }
-            return new[] { (BigInteger)_bytes.Length - start };
-        }
-
-        PythonTuple IBufferProtocol.Strides {
-            get { return PythonTuple.MakeTuple(1); }
-        }
-
-        PythonTuple? IBufferProtocol.SubOffsets {
-            get { return null; }
-        }
-
-        Bytes IBufferProtocol.ToBytes(int start, int? end) {
-            if (start == 0 && end == null) {
-                return this;
+            public BytesView(Bytes bytes, BufferFlags flags) {
+                _exporter = bytes;
+                _flags = flags;
             }
 
-            return this[new Slice(start, end)];
-        }
+            public void Dispose() { }
 
-        PythonList IBufferProtocol.ToList(int start, int? end) {
-            var res = _bytes.Slice(new Slice(start, end));
-            return res == null ? new PythonList() : new PythonList(res);
-        }
+            public object Object => _exporter;
 
-        ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-            return _bytes.AsMemory();
+            public bool IsReadOnly => true;
+
+            public ReadOnlySpan<byte> AsReadOnlySpan() => _exporter._bytes;
+
+            public Span<byte> AsSpan()
+                => throw new InvalidOperationException("bytes object is not writable");
+
+            public int Offset => 0;
+
+            public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+            public int ItemCount => _exporter._bytes.Length;
+
+            public int ItemSize => 1;
+
+            public int NumOfDims => 1;
+
+            public IReadOnlyList<int>? Shape => null;
+
+            public IReadOnlyList<int>? Strides => null;
+
+            public IReadOnlyList<int>? SubOffsets => null;
         }
 
         #endregion

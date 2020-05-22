@@ -21,7 +21,7 @@ namespace IronPython.Modules {
     /// Provides support for interop with native code from Python code.
     /// </summary>
     public static partial class CTypes {
-        
+
         [PythonType("Array")]
         public abstract class _Array : CData {
 
@@ -127,7 +127,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            
+
             internal override PythonTuple GetBufferInfo() {
                 INativeType elemType = ElementType;
                 int dimensions = 1;
@@ -178,6 +178,8 @@ namespace IronPython.Modules {
                 }
                 return shape;
             }
+
+            // TODO: if this.NativeType.ElementType is ArrayType, suboffsets need to be reported
 
 #endregion
         }

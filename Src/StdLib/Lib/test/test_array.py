@@ -952,7 +952,6 @@ class BaseTest:
         l.append(l)
         gc.collect()
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: https://github.com/IronLanguages/ironpython3/issues/767")
     def test_buffer(self):
         a = array.array(self.typecode, self.example)
         m = memoryview(a)

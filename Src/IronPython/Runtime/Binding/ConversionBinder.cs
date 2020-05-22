@@ -20,6 +20,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Reflection;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -165,13 +166,22 @@ namespace IronPython.Runtime.Binding {
                     // !!! Deferral?
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
                         res = MakeToArrayConversion(self, type);
+                    } else if (type == typeof(IBufferProtocol) && !type.IsAssignableFrom(self.GetLimitType())) {
+                        Type fromType = CompilerHelpers.GetType(self.Value);
+                        if (fromType == typeof(Memory<byte>)) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(Memory<byte>));
+                        } else if (fromType == typeof(ReadOnlyMemory<byte>)) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
+                        } else if (Converter.HasImplicitConversion(fromType, typeof(Memory<byte>))) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(Memory<byte>));
+                        } else if (Converter.HasImplicitConversion(fromType, typeof(ReadOnlyMemory<byte>))) {
+                            res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
+                        }
                     } else if (type.IsGenericType && !type.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
                         Type genTo = type.GetGenericTypeDefinition();
 
                         // Interface conversion helpers...
-                        if (type == typeof(ReadOnlyMemory<byte>) && self.Value is IBufferProtocol) {
-                            res = ConvertFromBufferProtocolToMemory(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
-                        } else if (type == typeof(IReadOnlyList<byte>) && self.Value is IBufferProtocol) {
+                        if (type == typeof(IReadOnlyList<byte>) && self.Value is IBufferProtocol) {
                             res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IReadOnlyList<byte>));
                         } else if (type == typeof(IList<byte>) && self.Value is IBufferProtocol) {
                             res = ConvertFromBufferProtocolToByteList(self.Restrict(self.GetLimitType()), typeof(IList<byte>));
@@ -718,14 +728,14 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private DynamicMetaObject ConvertFromBufferProtocolToMemory(DynamicMetaObject self, Type toType) {
+        private DynamicMetaObject ConvertFromMemoryToBufferProtocol(DynamicMetaObject self, Type fromType) {
             return new DynamicMetaObject(
                 AstUtils.Convert(
-                    Ast.Call(
-                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
-                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToMemory))
+                    Ast.New(
+                        typeof(MemoryBufferProtocolWrapper).GetConstructor(new Type[] { fromType }),
+                        AstUtils.Convert(self.Expression, fromType)
                     ),
-                    toType
+                    typeof(IBufferProtocol)
                 ),
                 self.Restrictions
             );
@@ -735,15 +745,18 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 AstUtils.Convert(
                     Ast.Call(
-                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol)),
-                        typeof(IBufferProtocol).GetMethod(nameof(IBufferProtocol.ToBytes)),
-                        AstUtils.Constant(0, typeof(int)),
-                        AstUtils.Constant(null, typeof(Nullable<int>))
+                        typeof(PythonConversionBinder).GetMethod(nameof(PythonConversionBinder.ConvertFromBufferProtocolToByteListHelper), BindingFlags.NonPublic | BindingFlags.Static),
+                        AstUtils.Convert(self.Expression, typeof(IBufferProtocol))
                     ),
                     toType
                 ),
                 self.Restrictions
             );
+        }
+
+        private static IList<byte> ConvertFromBufferProtocolToByteListHelper(IBufferProtocol bp) {
+            using var buf = bp.GetBuffer(BufferFlags.Simple);
+            return buf.AsReadOnlySpan().ToArray();
         }
 
         internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {

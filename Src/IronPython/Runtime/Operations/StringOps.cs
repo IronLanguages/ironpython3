@@ -1688,7 +1688,8 @@ namespace IronPython.Runtime.Operations {
 
         internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string? errors) {
             if (TryGetEncoding(encoding, out Encoding? e)) {
-                return DoDecode(context, data.ToMemory(), errors, encoding, e);
+                using var buffer = data.GetBuffer();
+                return DoDecode(context, buffer, errors, encoding, e);
             }
 
             // look for user-registered codecs
@@ -1700,8 +1701,10 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 #endif
 
-        internal static string DoDecode(CodeContext context, ReadOnlyMemory<byte> data, string? errors, string encoding, Encoding e) {
-            data = RemovePreamble(data, e);
+        internal static string DoDecode(CodeContext context, IPythonBuffer buffer, string? errors, string encoding, Encoding e, int numBytes = -1) {
+            var span = buffer.AsReadOnlySpan();
+            int start = GetStartingOffset(span, e);
+            int length = (numBytes >= 0 ? numBytes : span.Length) - start;
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1717,12 +1720,12 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace":
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
-                case "ignore": e = setFallback(e, new PythonDecoderFallback(encoding, data)); break;
+                case "ignore": e = setFallback(e, new PythonDecoderFallback(encoding, buffer, start)); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
                     e = setFallback(e, new PythonDecoderFallback(encoding,
-                        data,
+                        buffer, start,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
@@ -1731,16 +1734,16 @@ namespace IronPython.Runtime.Operations {
             string decoded = string.Empty;
             try {
                 unsafe {
-                    fixed (byte* bp = data.Span) {
-                        if (bp != null) {
+                    fixed (byte* ptr = span.Slice(start)) {
+                        if (ptr != null) {
 #if FEATURE_ENCODING
                             if (e is UnicodeEscapeEncoding ue) {
                                 // This overload is not virtual, but the base implementation is inefficient for this encoding
-                                decoded = ue.GetString(bp, data.Length);
+                                decoded = ue.GetString(ptr, length);
                             } else
 #endif
                             {
-                                decoded = e.GetString(bp, data.Length);
+                                decoded = e.GetString(ptr, length);
                             }
                         }
                     }
@@ -1748,7 +1751,7 @@ namespace IronPython.Runtime.Operations {
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                ex.Data["object"] = new Bytes(data);
+                ex.Data["object"] = Bytes.Make(span.Slice(start, length).ToArray());
                 throw;
             }
 
@@ -1758,9 +1761,9 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Gets the starting offset checking to see if the incoming bytes already include a preamble.
         /// </summary>
-        private static ReadOnlyMemory<byte> RemovePreamble(ReadOnlyMemory<byte> bytes, Encoding e) {
+        private static int GetStartingOffset(ReadOnlySpan<byte> bytes, Encoding e) {
             byte[] preamble = e.GetPreamble();
-            return preamble.Length > 0 && bytes.Span.StartsWith(preamble) ? bytes.Slice(preamble.Length) : bytes;
+            return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string? errors) {
@@ -2316,14 +2319,16 @@ namespace IronPython.Runtime.Operations {
         private class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly object? _function;
             private readonly string _encoding;
-            private readonly ReadOnlyMemory<byte> _data;
+            private readonly IPythonBuffer _data;
+            private readonly int _offset;
             private Bytes? _byteData;
             private string? _buffer;
             private int _bufferIndex;
 
-            public PythonDecoderFallbackBuffer(string encoding, ReadOnlyMemory<byte> data, object? callable) {
+            public PythonDecoderFallbackBuffer(string encoding, IPythonBuffer data, int offset, object? callable) {
                 _encoding = encoding;
                 _data = data;
+                _offset = offset;
                 _function = callable;
             }
 
@@ -2357,7 +2362,7 @@ namespace IronPython.Runtime.Operations {
             public override bool Fallback(byte[] bytesUnknown, int index) {
                 if (_function != null) {
                     // create the exception object to hand to the user-function...
-                    _byteData ??= new Bytes(_data);
+                    _byteData ??= Bytes.Make(_data.AsReadOnlySpan().Slice(_offset).ToArray());
                     var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _byteData, index, index + bytesUnknown.Length, "unexpected code byte");
 
                     // call the user function...
@@ -2378,13 +2383,15 @@ namespace IronPython.Runtime.Operations {
 
         private class PythonDecoderFallback : DecoderFallback {
             private readonly string encoding;
-            private readonly ReadOnlyMemory<byte> data;
+            private readonly IPythonBuffer data;
+            private readonly int offset;
             private readonly Func<object>? lookup;
             private object? function;
 
-            public PythonDecoderFallback(string encoding, ReadOnlyMemory<byte> data, Func<object>? lookup = null) {
+            public PythonDecoderFallback(string encoding, IPythonBuffer data, int offset, Func<object>? lookup = null) {
                 this.encoding = encoding;
                 this.data = data;
+                this.offset = offset;
                 this.lookup = lookup;
             }
 
@@ -2392,7 +2399,7 @@ namespace IronPython.Runtime.Operations {
                 if (function == null && lookup != null) {
                     function = lookup.Invoke();
                 }
-                return new PythonDecoderFallbackBuffer(encoding, data, function);
+                return new PythonDecoderFallbackBuffer(encoding, data, offset, function);
             }
 
             public override int MaxCharCount {

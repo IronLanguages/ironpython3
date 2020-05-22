@@ -12,7 +12,10 @@ import codecs
 from iptest import run_test, is_cli
 
 if is_cli:
+    import clr
+    import System
     import System.Text
+    clr.AddReference("System.Memory")
 
 class CodecsTest(unittest.TestCase):
 
@@ -104,6 +107,18 @@ class CodecsTest(unittest.TestCase):
 
         self.assertEqual("abć".encode('utf_32_be'), b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07")
         self.assertEqual(b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07".decode('utf_32_be'), "abć")
+
+    @unittest.skipUnless(is_cli, "Interop with CLI")
+    def test_interop_array(self):
+        arr = System.Array[System.Byte](b"abc")
+        ars = System.ArraySegment[System.Byte](arr)
+        mem = System.Memory[System.Byte](arr)
+        rom = System.ReadOnlyMemory[System.Byte](arr)
+
+        self.assertEqual(codecs.latin_1_decode(arr), ("abc", 3))
+        self.assertEqual(codecs.latin_1_decode(ars), ("abc", 3))
+        self.assertEqual(codecs.latin_1_decode(mem), ("abc", 3))
+        self.assertEqual(codecs.latin_1_decode(rom), ("abc", 3))
 
     def test_interop_ascii_encode_exeption(self):
         def check_error1(encoding, name):

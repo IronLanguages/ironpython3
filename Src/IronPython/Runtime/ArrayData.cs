@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Operations;
@@ -21,9 +22,14 @@ namespace IronPython.Runtime {
         bool CanStore([NotNullWhen(true)]object? item);
         int CountItems(object? item);
         IntPtr GetAddress();
+        void AddRange(ArrayData value);
+        void InsertRange(int index, int count, ArrayData value);
         ArrayData Multiply(int count);
         new bool Remove(object? item);
         void Reverse();
+        Span<byte> AsByteSpan();
+        IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags);
+        void CheckBuffer();
     }
 
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
@@ -44,7 +50,7 @@ namespace IronPython.Runtime {
             AddRange(collection);
         }
 
-        public ArrayData(ReadOnlyMemory<T> data) {
+        internal ArrayData(ReadOnlySpan<T> data) {
             GC.SuppressFinalize(this);
             _items = data.ToArray();
             _size = _items.Length;
@@ -83,8 +89,11 @@ namespace IronPython.Runtime {
         }
 
         public void Add(T item) {
-            EnsureSize(_size + 1);
-            _items[_size++] = item;
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(_size + 1L);
+                _items[_size++] = item;
+            }
         }
 
         int IList.Add(object? item) {
@@ -92,11 +101,30 @@ namespace IronPython.Runtime {
             return _size - 1;
         }
 
+        public void AddRange(IPythonBuffer data) {
+            ReadOnlySpan<byte> dataSpan = data.AsReadOnlySpan();
+
+            Debug.Assert(data.Offset == 0);
+            Debug.Assert(data.Strides == null); // C-contiguous
+            Debug.Assert(dataSpan.Length % Unsafe.SizeOf<T>() == 0);
+
+            int delta = dataSpan.Length / Unsafe.SizeOf<T>();
+            lock (this) {
+                CheckBuffer();
+                EnsureSize((long)_size + delta);
+                dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan(_size)));
+                _size += delta;
+            }
+        }
+
         public void AddRange(IEnumerable<T> collection) {
             if (collection is ICollection<T> c) {
-                EnsureSize(_size + c.Count);
-                c.CopyTo(_items, _size);
-                _size += c.Count;
+                lock (this) {
+                    CheckBuffer();
+                    EnsureSize((long)_size + c.Count);
+                    c.CopyTo(_items, _size);
+                    _size += c.Count;
+                }
             } else {
                 foreach (var x in collection) {
                     Add(x);
@@ -104,11 +132,17 @@ namespace IronPython.Runtime {
             }
         }
 
+        void ArrayData.AddRange(ArrayData value)
+            => AddRange((ArrayData<T>)value);
+
         bool ArrayData.CanStore([NotNullWhen(true)]object? item)
             => TryConvert(item, out _);
 
         public void Clear() {
-            _size = 0;
+            lock (this) {
+                CheckBuffer();
+                _size = 0;
+            }
         }
 
         public bool Contains(T item)
@@ -126,13 +160,18 @@ namespace IronPython.Runtime {
         int ArrayData.CountItems(object? item)
             => TryConvert(item, out T value) ? this.Count(x => x.Equals(value)) : 0;
 
-        private void EnsureSize(int size) {
+        private void EnsureSize(long size) {
+            if (size > int.MaxValue) throw PythonOps.MemoryError();
+
+            const int IndexOverflow = 0x7FF00000; // https://docs.microsoft.com/en-us/dotnet/api/system.array?view=netcore-3.1#remarks
+
             if (_items.Length < size) {
                 var length = _items.Length;
                 if (length == 0) length = 8;
-                while (length < size) {
+                while (length < size && length <= IndexOverflow / 2) {
                     length *= 2;
                 }
+                if (length < size) length = (int)size;
                 Array.Resize(ref _items, length);
                 if (_dataHandle != null) {
                     _dataHandle.Value.Free();
@@ -181,33 +220,68 @@ namespace IronPython.Runtime {
             => TryConvert(item, out T value) ? IndexOf(value) : -1;
 
         public void Insert(int index, T item) {
-            EnsureSize(_size + 1);
-            if (index < _size) {
-                Array.Copy(_items, index, _items, index + 1, _size - index);
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(_size + 1L);
+                if (index < _size) {
+                    Array.Copy(_items, index, _items, index + 1, _size - index);
+                }
+                _items[index] = item;
+                _size++;
             }
-            _items[index] = item;
-            _size++;
         }
 
         void IList.Insert(int index, object? item)
             => Insert(index, GetValue(item));
 
-        ArrayData ArrayData.Multiply(int count) {
-            count *= _size;
-            var res = new ArrayData<T>(count * _size);
-            if (count != 0) {
-                Array.Copy(_items, res._items, _size);
+        public void InsertRange(int index, int count, IList<T> value) {
+            // The caller has to ensure that value does not use this ArrayData as its data backing
+            Debug.Assert(index >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(index + count <= _size);
 
-                int block = _size;
-                int pos = _size;
-                while (pos < count) {
-                    Array.Copy(res._items, 0, res._items, pos, Math.Min(block, count - pos));
-                    pos += block;
-                    block *= 2;
+            int delta = value.Count - count;
+            if (delta != 0) {
+                lock (this) {
+                    CheckBuffer();
+                    EnsureSize((long)_size + delta);
+                    if (index + count < _size) {
+                        Array.Copy(_items, index + count, _items, index + value.Count, _size - index - count);
+                    }
+                    _size += delta;
                 }
-                res._size = count;
             }
+            value.CopyTo(_items, index);
+        }
 
+        void ArrayData.InsertRange(int index, int count, ArrayData value)
+            => InsertRange(index, count, (ArrayData<T>)value);
+
+        public void InPlaceMultiply(int count) {
+            long newSize = (long)_size * count;
+            if (newSize > int.MaxValue) throw PythonOps.MemoryError();
+            if (newSize < 0) newSize = 0;
+            if (newSize == _size) return;
+
+            long block = _size;
+            long pos = _size;
+            lock (this) {
+                CheckBuffer();
+                EnsureSize(newSize);
+                _size = (int)newSize;
+            }
+            while (pos < _size) {
+                Array.Copy(_items, 0, _items, pos, Math.Min(block, _size - pos));
+                pos += block;
+                block *= 2;
+            }
+        }
+
+        ArrayData ArrayData.Multiply(int count) {
+            var res = new ArrayData<T>(count * _size);
+            CopyTo(res._items, 0);
+            res._size = _size;
+            res.InPlaceMultiply(count);
             return res;
         }
 
@@ -230,7 +304,10 @@ namespace IronPython.Runtime {
         }
 
         public void RemoveAt(int index) {
-            _size--;
+            lock (this) {
+                CheckBuffer();
+                _size--;
+            }
             if (index < _size) {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
@@ -238,7 +315,10 @@ namespace IronPython.Runtime {
 
         public void RemoveRange(int index, int count) {
             if (count > 0) {
-                _size -= count;
+                lock (this) {
+                    CheckBuffer();
+                    _size -= count;
+                }
                 if (index < _size) {
                     Array.Copy(_items, index + count, _items, index, _size - index);
                 }
@@ -247,6 +327,9 @@ namespace IronPython.Runtime {
 
         public void Reverse()
             => Array.Reverse(_items, 0, _size);
+
+        public Span<byte> AsByteSpan()
+            => MemoryMarshal.AsBytes(_items.AsSpan(0, _size));
 
         private static bool TryConvert([NotNullWhen(true)]object? value, out T result) {
             if (value is null) {
@@ -265,5 +348,66 @@ namespace IronPython.Runtime {
                 return false;
             }
         }
+
+        private int _bufferCount = 0;
+
+        public IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags) {
+            return new ArrayDataView(owner, format, this, flags);
+        }
+
+        public void CheckBuffer() {
+            if (_bufferCount > 0) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
+        }
+
+        private sealed class ArrayDataView : IPythonBuffer {
+            private readonly BufferFlags _flags;
+            private readonly ArrayData<T> _arrayData;
+            private readonly string _format;
+
+            public ArrayDataView(object owner, string format, ArrayData<T> arrayData, BufferFlags flags) {
+                Object = owner;
+                _format = format;
+                _arrayData = arrayData;
+                _flags = flags;
+                lock (_arrayData) {
+                    _arrayData._bufferCount++;
+                }
+            }
+
+            private bool _disposed = false;
+
+            public void Dispose() {
+                lock (_arrayData) {
+                    if (_disposed) return;
+                    _arrayData._bufferCount--;
+                    _disposed = true;
+                }
+            }
+
+            public object Object { get; }
+
+            public bool IsReadOnly => false;
+
+            public ReadOnlySpan<byte> AsReadOnlySpan() => _arrayData.AsByteSpan();
+
+            public Span<byte> AsSpan() => _arrayData.AsByteSpan();
+
+            public int Offset => 0;
+
+            public string? Format => _flags.HasFlag(BufferFlags.Format)? _format : null;
+
+            public int ItemCount => _arrayData.Count;
+
+            public int ItemSize => Unsafe.SizeOf<T>();
+
+            public int NumOfDims => 1;
+
+            public IReadOnlyList<int>? Shape => null;
+
+            public IReadOnlyList<int>? Strides => null;
+
+            public IReadOnlyList<int>? SubOffsets => null;
+        }
     }
+
 }

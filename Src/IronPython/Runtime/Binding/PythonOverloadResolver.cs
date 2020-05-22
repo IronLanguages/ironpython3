@@ -103,9 +103,6 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 if (typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
-                    if (toParameter.Type == typeof(ReadOnlyMemory<byte>)) {
-                        return true;
-                    }
                     if (toParameter.Type == typeof(IList<byte>) || toParameter.Type == typeof(IReadOnlyList<byte>)) {
                         return true;
                     }
@@ -118,6 +115,15 @@ namespace IronPython.Runtime.Binding {
                 toType.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>) &&
                 fromType.GetGenericArguments()[0] == toType.GetGenericArguments()[0]) {
                 return true;
+            }
+
+            if (toType == typeof(IBufferProtocol)) {
+                if (fromType == typeof(Memory<byte>) ||
+                    fromType == typeof(ReadOnlyMemory<byte>) ||
+                    fromType == typeof(byte[]) ||
+                    fromType == typeof(ArraySegment<byte>)) {
+                    return true;
+                }
             }
 
             return base.CanConvertFrom(fromType, fromArg, toParameter, level);

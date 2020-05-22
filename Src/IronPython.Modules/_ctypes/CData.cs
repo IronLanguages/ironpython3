@@ -12,6 +12,7 @@ using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -35,7 +36,7 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData : IBufferProtocol {
+        public abstract class CData : IBufferProtocol, IPythonBuffer {
             internal MemoryHolder _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
@@ -95,17 +96,21 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            object IBufferProtocol.GetItem(int index) {
-                return Bytes.Make(GetBytes(index, NativeType.Size));
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+                return this;
             }
 
-            void IBufferProtocol.SetItem(int index, object value) {
-                throw new NotImplementedException();
-            }
+            void IDisposable.Dispose() { }
 
-            void IBufferProtocol.SetSlice(Slice index, object value) {
-                throw new NotImplementedException();
-            }
+            object IPythonBuffer.Object => this;
+
+            unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
+            unsafe Span<byte> IPythonBuffer.AsSpan()
+                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+
+            int IPythonBuffer.Offset => 0;
 
             public virtual int ItemCount {
                 [PythonHidden]
@@ -114,46 +119,43 @@ namespace IronPython.Modules {
                 }
             }
 
-            string IBufferProtocol.Format {
+            string IPythonBuffer.Format {
                 get { return NativeType.TypeFormat; }
             }
 
+            // TODO: change sig
             public virtual BigInteger ItemSize {
                 [PythonHidden]
                 get { return this.NativeType.Size; }
             }
 
-            BigInteger IBufferProtocol.NumberDimensions {
-                get { return 0; }
+            int IPythonBuffer.ItemSize => (int)this.ItemSize;
+
+            int IPythonBuffer.NumOfDims {
+                get {
+                    return GetShape(0, null)?.Count ?? (ItemCount > 1 ? 1 : 0);
+                }
             }
 
-            bool IBufferProtocol.ReadOnly {
+            bool IPythonBuffer.IsReadOnly {
                 get { return false; }
             }
 
+            // TODO: change sig
             [PythonHidden]
             public virtual IList<BigInteger> GetShape(int start, int? end) {
                 return null;
             }
 
-            PythonTuple IBufferProtocol.Strides {
+            IReadOnlyList<int> IPythonBuffer.Shape => GetShape(0, null)?.Select(big => (int)big).ToArray();  // TODO: remove using Linq when done with sig change
+
+
+            IReadOnlyList<int> IPythonBuffer.Strides {
                 get { return null; }
             }
 
-            PythonTuple IBufferProtocol.SubOffsets {
+            IReadOnlyList<int> IPythonBuffer.SubOffsets {
                 get { return null; }
-            }
-
-            Bytes IBufferProtocol.ToBytes(int start, int? end) {
-                return Bytes.Make(GetBytes(start, NativeType.Size));
-            }
-
-            PythonList IBufferProtocol.ToList(int start, int? end) {
-                return new PythonList(((IBufferProtocol)this).ToBytes(start, end));
-            }
-
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-                return GetBytes(0, NativeType.Size);
             }
 
             #endregion

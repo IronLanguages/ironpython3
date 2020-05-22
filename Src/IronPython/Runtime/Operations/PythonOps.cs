@@ -1137,10 +1137,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static int ClampToInt32(this long value) {
-            return (int)Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
-        }
-
         public static bool IsMappingType(CodeContext/*!*/ context, object o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
                 return true;
@@ -3768,6 +3764,10 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception TypeErrorForTypeMismatch(string expectedTypeName, object? instance) {
             return TypeError("expected {0}, got {1}", expectedTypeName, PythonOps.GetPythonTypeName(instance));
+        }
+
+        public static Exception TypeErrorForBytesLikeTypeMismatch(object? instance) {
+            return TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(instance));
         }
 
         // If hash is called on an instance of an unhashable type

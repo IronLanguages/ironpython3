@@ -104,7 +104,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bytes.ByteArrayTest('test_repeat'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_repeat_1char'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_replace'))
-        #suite.addTest(test.test_bytes.ByteArrayTest('test_resize_forbidden'))
+        suite.addTest(test.test_bytes.ByteArrayTest('test_resize_forbidden'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_reverse'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_reversed'))
         suite.addTest(test.test_bytes.ByteArrayTest('test_rfind'))

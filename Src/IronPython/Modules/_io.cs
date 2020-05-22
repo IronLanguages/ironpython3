@@ -421,12 +421,11 @@ namespace IronPython.Modules {
                 ByteArray arr = new ByteArray(new byte[sizeInt]);
                 sizeInt = (int)readinto(context, arr);
 
-                var res = arr.UnsafeByteList;
-                if (sizeInt < res.Count) {
-                    res.RemoveRange(sizeInt, res.Count - sizeInt);
-                }
-
-                return new Bytes(res);
+                // cannot use arr.UnsafeByteList.RemoveRange(sizeInt, res.Count - sizeInt)
+                // because HTTPResponse.client.readinto may wrap `arr` in `memoryview`
+                // and never release it
+                using var buf = ((IBufferProtocol)arr).GetBuffer();
+                return Bytes.Make(buf.AsReadOnlySpan().Slice(0, sizeInt).ToArray());
             }
 
             public Bytes readall(CodeContext/*!*/ context) {

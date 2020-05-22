@@ -86,7 +86,9 @@ namespace IronPython.Runtime.Operations {
             if (value is IList<byte> bytesValue) {
                 byteList.AddRange(bytesValue);
             } else if (value is IBufferProtocol bp) {
-                byteList.AddRange(bp.ToBytes(0, null));
+                using (IPythonBuffer buf = bp.GetBuffer()) {
+                    byteList.AddRange(buf.AsReadOnlySpan().ToArray());
+                }
             } else {
                 throw PythonOps.TypeError("sequence item {0}: expected bytes or byte array, {1} found", index.ToString(), PythonOps.GetPythonTypeName(value));
             }
@@ -97,7 +99,9 @@ namespace IronPython.Runtime.Operations {
                 return ret;
             }
             if (obj is IBufferProtocol bp) {
-                return bp.ToBytes(0, null);
+                using (IPythonBuffer buf = bp.GetBuffer()) {
+                    return buf.AsReadOnlySpan().ToArray();
+                }
             }
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
         }

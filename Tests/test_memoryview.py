@@ -4,9 +4,10 @@
 
 import array
 import itertools
+import gc
 import unittest
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
@@ -67,6 +68,38 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(x, y)
         self.assertIsNot(x, y)
 
+    def test_exports(self):
+        ba = bytearray()
+
+        mv = memoryview(ba)
+        self.assertRaises(BufferError, ba.append, 1)
+        mv.release()
+        ba.append(0)
+        self.assertEqual(len(ba), 1)
+
+        with memoryview(ba) as mv:
+            self.assertRaises(BufferError, ba.append, 1)
+        ba.append(0)
+        self.assertEqual(len(ba), 2)
+
+    @unittest.skipIf(is_mono, "gc.collect() implementation not synchronous")
+    def test_finalizer(self):
+        ba = bytearray()
+
+        def f(b):
+            memoryview(b)
+            mv = memoryview(b)
+        f(ba)
+        gc.collect()
+        ba.append(0)
+        self.assertEqual(len(ba), 1)
+
+        mv = memoryview(ba)
+        del mv
+        gc.collect()
+        ba.append(0)
+        self.assertEqual(len(ba), 2)
+
     def test_equality(self):
         b = b"aaa"
         ba = bytearray(b)
@@ -94,10 +127,10 @@ class MemoryViewTests(unittest.TestCase):
 
         # check that equality works for all combinations
         for x, y in itertools.product((b, ba, mv), repeat=2):
-            self.assertTrue(x == y, "{} {}".format(x, y))
+            self.assertTrue(x == y, "{!r} {!r}".format(x, y))
 
         for x, y in itertools.product((a, mv), repeat=2):
-            self.assertTrue(x == y, "{} {}".format(x, y))
+            self.assertTrue(x == y, "{!r} {!r}".format(x, y))
 
         # check __ne__
         self.assertFalse(b.__ne__(b))
@@ -116,12 +149,15 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(a.__ne__(mv), NotImplemented)
         self.assertFalse(a.__ne__(a))
 
-        # check that equality works for all combinations
+        # check that inequality works for all combinations
         for x, y in itertools.product((b, ba, mv), repeat=2):
-            self.assertFalse(x != y, "{} {}".format(x, y))
+            self.assertFalse(x != y, "{!r} {!r}".format(x, y))
 
         for x, y in itertools.product((a, mv), repeat=2):
-            self.assertFalse(x != y, "{} {}".format(x, y))
+            self.assertFalse(x != y, "{!r} {!r}".format(x, y))
+
+        # check strided memoryview
+        self.assertTrue(memoryview(b'axc')[::2] == memoryview(b'ayc')[::2])
 
     def test_overflow(self):
         def setitem(m, value):
@@ -148,6 +184,23 @@ class MemoryViewTests(unittest.TestCase):
         mv = memoryview(array.array('d', [1.0, 2.0, 3.0]))
         mv  = mv.cast('b').cast('i')
         self.assertRaises(TypeError, lambda: setitem(mv, 2.5))
+
+    def test_scalar(self):
+        scalar = memoryview(b'a').cast('B', ())
+
+        self.assertEqual(len(scalar), 1)
+        self.assertEqual(scalar.ndim, 0)
+        self.assertEqual(scalar.format, 'B')
+        self.assertEqual(scalar.itemsize, 1)
+        self.assertEqual(scalar.nbytes, 1)
+        self.assertEqual(scalar.shape, ())
+        self.assertEqual(scalar.strides, ())
+        self.assertEqual(scalar.suboffsets, ())
+        self.assertTrue(scalar.c_contiguous)
+        self.assertTrue(scalar.f_contiguous)
+        self.assertTrue(scalar.contiguous)
+        self.assertEqual(scalar.tobytes(), b'a')
+        self.assertEqual(scalar.tolist(), ord('a'))
 
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
@@ -193,6 +246,40 @@ class CastTests(unittest.TestCase):
         mv[0] = 32767
         self.assertEqual(mv[0], 32767)
         self.assertEqual(a[0], 58720000)
+
+    def test_cast_byteorder_typecode(self):
+        a = array.array('h', [100, 200])
+        mv = memoryview(a)
+        self.assertEqual(mv.format, 'h')
+
+        mv2 = mv.cast('@B')
+        self.assertEqual(mv2.format, '@B')
+        self.assertEqual(len(mv2), 4)
+        self.assertEqual(mv2[0], 100)
+        self.assertEqual(mv2[2], 200)
+
+        mv3 = mv2.cast('@h')
+        self.assertEqual(mv3.format, '@h')
+        self.assertEqual(len(mv3), 2)
+        self.assertEqual(mv3[0], 100)
+        self.assertEqual(mv3[1], 200)
+        self.assertEqual(mv3, a)
+
+        mv4 = mv.cast('B')
+        self.assertEqual(mv4.format, 'B')
+        self.assertRaises(ValueError, mv4.cast, '<B')
+        self.assertRaises(ValueError, mv4.cast, '>B')
+        self.assertRaises(ValueError, mv4.cast, '=B')
+        self.assertRaises(ValueError, mv4.cast, '!B')
+        self.assertRaises(ValueError, mv4.cast, ' B')
+        self.assertRaises(ValueError, mv4.cast, 'B ')
+        self.assertRaises(ValueError, mv4.cast, '<h')
+        self.assertRaises(ValueError, mv4.cast, '>h')
+        self.assertRaises(ValueError, mv4.cast, '=h')
+        self.assertRaises(ValueError, mv4.cast, '!h')
+        self.assertRaises(ValueError, mv4.cast, ' h')
+        self.assertRaises(ValueError, mv4.cast, 'h ')
+
 
     def test_cast_wrong_size(self):
         a = array.array('b', [1,2,3,4,5])
@@ -255,6 +342,9 @@ class CastTests(unittest.TestCase):
         self.assertEqual(mv[(1,1,1,0)], 14)
         self.assertEqual(mv[(1,1,1,1)], 15)
 
+        self.assertEqual(mv.tolist(), [[[[0, 1], [2, 3]], [[4, 5], [6, 7]]], [[[8, 9], [10, 11]], [[12, 13], [14, 15]]]])
+        self.assertEqual(mv.tobytes(), b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
+
     def test_cast_reshape_then_slice(self):
         a = array.array('b', range(16))
         mv = memoryview(a).cast('b', (4,2,2))
@@ -264,5 +354,19 @@ class CastTests(unittest.TestCase):
             for j in range(2):
                 for k in range(2):
                     self.assertEqual(mv[(i + 2, j, k)], mv2[(i, j, k)])
+
+        self.assertEqual(mv2.tolist(), [[[8, 9], [10, 11]], [[12, 13], [14, 15]]])
+        self.assertEqual(mv2.tobytes(), b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
+
+        mv_2 = mv[::2]
+        self.assertEqual(len(mv_2), 2)
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    self.assertEqual(mv[(i * 2, j, k)], mv_2[(i, j, k)])
+
+        self.assertEqual(mv_2.tolist(), [[[0, 1], [2, 3]], [[8, 9], [10, 11]]])
+        self.assertEqual(mv_2.tobytes(), b'\x00\x01\x02\x03\x08\x09\x0a\x0b')
+
 
 run_test(__name__)

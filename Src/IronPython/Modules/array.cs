@@ -110,7 +110,8 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol {
-            private ArrayData _data;
+            //  _data is readonly to ensure proper size locking during buffer exports
+            private readonly ArrayData _data;
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
 
@@ -273,23 +274,7 @@ namespace IronPython.Modules {
                 }
 
                 if (pa._data.Count == 0) return;
-
-                switch (_typeCode) {
-                    case 'b': ((ArrayData<sbyte>)_data).AddRange((ArrayData<sbyte>)pa._data); break;
-                    case 'B': ((ArrayData<byte>)_data).AddRange((ArrayData<byte>)pa._data); break;
-                    case 'u': ((ArrayData<char>)_data).AddRange((ArrayData<char>)pa._data); break;
-                    case 'h': ((ArrayData<short>)_data).AddRange((ArrayData<short>)pa._data); break;
-                    case 'H': ((ArrayData<ushort>)_data).AddRange((ArrayData<ushort>)pa._data); break;
-                    case 'i': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
-                    case 'I': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
-                    case 'l': ((ArrayData<int>)_data).AddRange((ArrayData<int>)pa._data); break;
-                    case 'L': ((ArrayData<uint>)_data).AddRange((ArrayData<uint>)pa._data); break;
-                    case 'q': ((ArrayData<long>)_data).AddRange((ArrayData<long>)pa._data); break;
-                    case 'Q': ((ArrayData<ulong>)_data).AddRange((ArrayData<ulong>)pa._data); break;
-                    case 'f': ((ArrayData<float>)_data).AddRange((ArrayData<float>)pa._data); break;
-                    case 'd': ((ArrayData<double>)_data).AddRange((ArrayData<double>)pa._data); break;
-                    default: throw new InvalidOperationException(); // should never happen
-                }
+                _data.AddRange(pa._data);
             }
 
             private void ExtendIter(object? iterable) {
@@ -506,6 +491,8 @@ namespace IronPython.Modules {
                 if (step > 0 && (start >= stop)) return;
                 if (step < 0 && (start <= stop)) return;
 
+                _data.CheckBuffer();
+
                 if (step == 1) {
                     int i = start;
                     for (int j = stop; j < _data.Count; j++, i++) {
@@ -581,7 +568,7 @@ namespace IronPython.Modules {
                     return pa;
                 }
                 set {
-                    CheckSliceAssignType(value);
+                    array arr = CheckSliceAssignType(value);
 
                     if (index.step != null) {
                         if (Object.ReferenceEquals(value, this)) value = this.tolist();
@@ -593,38 +580,29 @@ namespace IronPython.Modules {
                         if (stop < start) {
                             stop = start;
                         }
-
-                        SliceNoStep(value, start, stop);
+                        SliceNoStep(arr, start, stop);
                     }
                 }
             }
 
-            private void CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
+            private array CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
                 if (!(value is array pa)) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
                 } else if (pa._typeCode != _typeCode) {
                     throw PythonOps.TypeError("bad argument type for built-in operation");
                 }
+                return pa;
             }
 
-            private void SliceNoStep(object value, int start, int stop) {
+            private void SliceNoStep(array arr, int start, int stop) {
                 // replace between start & stop w/ values
-                IEnumerator ie = PythonOps.GetEnumerator(value);
+                int count = stop - start;
+                if (count == 0 && arr._data.Count == 0) return;
 
-                ArrayData newData = CreateData(_typeCode);
-                for (int i = 0; i < start; i++) {
-                    newData.Add(_data[i]);
+                if (ReferenceEquals(this, arr)) {
+                    arr = new array(typecode, this);
                 }
-
-                while (ie.MoveNext()) {
-                    newData.Add(ie.Current);
-                }
-
-                for (int i = Math.Max(stop, start); i < _data.Count; i++) {
-                    newData.Add(_data[i]);
-                }
-
-                _data = newData;
+                _data.InsertRange(start, count, arr._data);
             }
 
             public array __copy__() {
@@ -764,7 +742,7 @@ namespace IronPython.Modules {
             }
 
             internal void Clear() {
-                _data = CreateData(_typeCode);
+                _data.Clear();
             }
 
             internal void FromStream(Stream ms) {
@@ -1167,50 +1145,8 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            object IBufferProtocol.GetItem(int index) => this[index];
-
-            void IBufferProtocol.SetItem(int index, object value) {
-                this[index] = value;
-            }
-
-            void IBufferProtocol.SetSlice(Slice index, object value) {
-                this[index] = value;
-            }
-
-            int IBufferProtocol.ItemCount => _data.Count;
-
-            string IBufferProtocol.Format => _typeCode.ToString();
-
-            BigInteger IBufferProtocol.ItemSize => itemsize;
-
-            BigInteger IBufferProtocol.NumberDimensions => 1;
-
-            bool IBufferProtocol.ReadOnly => false;
-
-            IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Count) - start };
-
-            PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(itemsize);
-
-            PythonTuple? IBufferProtocol.SubOffsets => null;
-
-            Bytes IBufferProtocol.ToBytes(int start, int? end) {
-                if (start == 0 && end == null) {
-                    return tobytes();
-                }
-
-                return ((array)this[new Slice(start, end)]).tobytes();
-            }
-
-            PythonList IBufferProtocol.ToList(int start, int? end) {
-                if (start == 0 && end == null) {
-                    return tolist();
-                }
-
-                return ((array)this[new Slice(start, end)]).tolist();
-            }
-
-            ReadOnlyMemory<byte> IBufferProtocol.ToMemory() {
-                return ToByteArray().AsMemory();
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+                return _data.GetBuffer(this, _typeCode.ToString(), flags);
             }
 
             #endregion

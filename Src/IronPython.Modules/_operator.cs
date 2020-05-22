@@ -352,14 +352,14 @@ types and lengths of a and b--but not their values.")]
                 string aStr = a as string;
                 string bStr = b as string;
                 return CompareBytes(aStr.MakeByteArray(), bStr.MakeByteArray());
-            } else if(a is IBufferProtocol && b is IBufferProtocol) {
-                IBufferProtocol aBuf = a as IBufferProtocol;
-                IBufferProtocol bBuf = b as IBufferProtocol;
-                if(aBuf.NumberDimensions > 1 || bBuf.NumberDimensions > 1) {
+            } else if(a is IBufferProtocol abp && b is IBufferProtocol bbp) {
+                using IPythonBuffer aBuf = abp.GetBuffer();
+                using IPythonBuffer bBuf = bbp.GetBuffer();
+                if(aBuf.NumOfDims > 1 || bBuf.NumOfDims > 1) {
                     throw PythonOps.BufferError("Buffer must be single dimension");
                 }
 
-                return CompareBytes(aBuf.ToBytes(0, null), bBuf.ToBytes(0, null));
+                return CompareBytes(aBuf.AsReadOnlySpan().ToArray(), bBuf.AsReadOnlySpan().ToArray());
             }
             throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
         }

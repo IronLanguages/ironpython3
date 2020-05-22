@@ -43,7 +43,7 @@ namespace IronPython.Modules {
                 : base(context) {
             }
 
-            public void __init__(object initial_bytes=null) {
+            public void __init__(IBufferProtocol initial_bytes=null) {
                 if (Object.ReferenceEquals(_data, null)) {
                     _data = new byte[DEFAULT_BUF_SIZE];
                 }
@@ -94,8 +94,8 @@ namespace IronPython.Modules {
 
             public MemoryView getbuffer() {
                 _checkClosed();
-
-                return new MemoryView(new Bytes(_data), 0, _length, 1, "B", PythonTuple.MakeTuple(_length), readonlyView: true);
+                // TODO: MemoryView constructor should accept Memory/ReadOnlyMemory
+                return (MemoryView)new MemoryView(new Bytes(_data))[new Slice(0, _length, 1)];
             }
 
             [Documentation("isatty() -> False\n\n"
@@ -355,7 +355,12 @@ namespace IronPython.Modules {
                 )]
             public override BigInteger write(CodeContext/*!*/ context, object bytes) {
                 _checkClosed();
+                if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
+                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(bytes));
+            }
 
+            public BigInteger write(CodeContext/*!*/ context, IBufferProtocol bytes) {
+                _checkClosed();
                 return DoWrite(bytes);
             }
 
@@ -418,83 +423,24 @@ namespace IronPython.Modules {
 
             #region Private implementation details
 
-            private int DoWrite(byte[] bytes) {
+            private int DoWrite(IBufferProtocol bufferProtocol) {
+                using var buffer = bufferProtocol.GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
+
                 if (bytes.Length == 0) {
                     return 0;
                 }
 
                 EnsureSizeSetLength(_pos + bytes.Length);
-                Array.Copy(bytes, 0, _data, _pos, bytes.Length);
+                bytes.CopyTo(_data.AsSpan(_pos, bytes.Length));
 
                 _pos += bytes.Length;
                 return bytes.Length;
             }
 
-            private int DoWrite(ICollection<byte> bytes) {
-                int nbytes = bytes.Count;
-                if (nbytes == 0) {
-                    return 0;
-                }
-
-                EnsureSizeSetLength(_pos + nbytes);
-                bytes.CopyTo(_data, _pos);
-
-                _pos += nbytes;
-                return nbytes;
-            }
-
-            private int DoWrite(string bytes) {
-                // CLR strings are natively Unicode (UTF-16 LE, to be precise).
-                // In 2.x, io.BytesIO.write() takes "bytes or bytearray" as a parameter.
-                // On 2.x "bytes" is an alias for str, so str types are accepted by BytesIO.write().
-                // When given a unicode object, 2.x BytesIO.write() complains:
-                //   TypeError: 'unicode' does not have the buffer interface
-
-                // We will accept CLR strings, but only if the data in it is in Latin 1 (iso-8859-1)
-                // encoding (i.e. ord(c) for all c is within 0-255.
-
-                // Alternatively, we could support strings containing any Unicode character by ignoring
-                // any 0x00 bytes, but as CPython doesn't support that it is unlikely that we will need to.
-
-                int nbytes = bytes.Length;
-                if (nbytes == 0) {
-                    return 0;
-                }
-
-                byte[] _raw_string = new byte[nbytes];
-                for (int i = 0; i < nbytes; i++) {
-                    int ord = (int)bytes[i];
-                    if(ord < 256) {
-                        _raw_string[i] = (byte)ord;
-                    } else {
-                        // A character outside the range 0x00-0xFF is present in the original string.
-                        // Ejecting, emulating the cPython 2.x behavior when it enounters "unicode".
-                        // This should keep the unittest gods at bay.
-                        throw PythonOps.TypeError("'unicode' does not have the buffer interface");
-                    }
-                }
-
-                return DoWrite(_raw_string);
-            }
-
             private int DoWrite(object bytes) {
-                switch (bytes) {
-                    case byte[] b:
-                        return DoWrite(b);
-                    case Bytes b:
-                        return DoWrite(b.UnsafeByteArray);
-                    case ArrayModule.array a:
-                        return DoWrite(a.ToByteArray()); // as byte[]
-                    case ICollection<byte> c:
-                        return DoWrite(c);
-                    case string s:
-                        // TODO Remove this when we move to 3.x
-                        return DoWrite(s);
-                    case MemoryView mv:
-                        return DoWrite(mv.tobytes().UnsafeByteArray);
-                }
-
-                throw PythonOps.TypeError("expected a readable buffer object");
+                if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
+                return DoWrite(Converter.Convert<IBufferProtocol>(bytes));
             }
 
             private void EnsureSize(int size) {

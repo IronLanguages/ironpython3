@@ -29,7 +29,6 @@ namespace IronPython.Runtime {
         void Reverse();
         Span<byte> AsByteSpan();
         IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags);
-        bool HasBuffer { get; }
         void CheckBuffer();
     }
 
@@ -350,8 +349,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool HasBuffer => _bufferCount > 0;
-
         private int _bufferCount = 0;
 
         public IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags) {
@@ -359,7 +356,7 @@ namespace IronPython.Runtime {
         }
 
         public void CheckBuffer() {
-            if (HasBuffer) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
+            if (_bufferCount > 0) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 
         private sealed class ArrayDataView : IPythonBuffer {

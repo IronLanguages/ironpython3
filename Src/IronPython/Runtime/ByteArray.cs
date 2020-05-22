@@ -98,7 +98,6 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]string @string) {
-            _bytes.CheckBuffer();
             throw PythonOps.TypeError("string argument without an encoding");
         }
 

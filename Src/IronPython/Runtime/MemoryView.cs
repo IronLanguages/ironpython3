@@ -294,7 +294,7 @@ namespace IronPython.Runtime {
         public bool contiguous {
             get {
                 CheckBuffer();
-                return _isCContig;
+                return _isCContig || _isFContig;
             }
         }
 
@@ -316,6 +316,13 @@ namespace IronPython.Runtime {
             get {
                 CheckBuffer();
                 return _numDims;
+            }
+        }
+
+        public int nbytes {
+            get {
+                CheckBuffer();
+                return _itemSize * _numItems;
             }
         }
 
@@ -343,6 +350,7 @@ namespace IronPython.Runtime {
         public PythonTuple suboffsets {
             get {
                 CheckBuffer();
+                Debug.Assert(_buffer!.SubOffsets == null); // TODO: implement suboffsets support
                 return PythonTuple.EMPTY;
             }
         }

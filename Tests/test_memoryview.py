@@ -68,7 +68,7 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(x, y)
         self.assertIsNot(x, y)
 
-    def test_finalizer(self):
+    def test_exports(self):
         ba = bytearray()
 
         mv = memoryview(ba)
@@ -83,11 +83,14 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(len(ba), 2)
 
     @unittest.skipIf(is_mono, "gc.collect() implementation not synchronous")
-    def test_exports(self):
+    def test_finalizer(self):
         ba = bytearray()
 
         def f(b):
+            memoryview(b)
             mv = memoryview(b)
+        f(ba)
+        gc.collect()
         ba.append(0)
         self.assertEqual(len(ba), 1)
 
@@ -153,6 +156,9 @@ class MemoryViewTests(unittest.TestCase):
         for x, y in itertools.product((a, mv), repeat=2):
             self.assertFalse(x != y, "{!r} {!r}".format(x, y))
 
+        # check strided memoryview
+        self.assertTrue(memoryview(b'axc')[::2] == memoryview(b'ayc')[::2])
+
     def test_overflow(self):
         def setitem(m, value):
             m[0] = value
@@ -178,6 +184,23 @@ class MemoryViewTests(unittest.TestCase):
         mv = memoryview(array.array('d', [1.0, 2.0, 3.0]))
         mv  = mv.cast('b').cast('i')
         self.assertRaises(TypeError, lambda: setitem(mv, 2.5))
+
+    def test_scalar(self):
+        scalar = memoryview(b'a').cast('B', ())
+
+        self.assertEqual(len(scalar), 1)
+        self.assertEqual(scalar.ndim, 0)
+        self.assertEqual(scalar.format, 'B')
+        self.assertEqual(scalar.itemsize, 1)
+        self.assertEqual(scalar.nbytes, 1)
+        self.assertEqual(scalar.shape, ())
+        self.assertEqual(scalar.strides, ())
+        self.assertEqual(scalar.suboffsets, ())
+        self.assertTrue(scalar.c_contiguous)
+        self.assertTrue(scalar.f_contiguous)
+        self.assertTrue(scalar.contiguous)
+        self.assertEqual(scalar.tobytes(), b'a')
+        self.assertEqual(scalar.tolist(), ord('a'))
 
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):

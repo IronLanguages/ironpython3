@@ -89,6 +89,13 @@ class BytesTest(IronPythonTestCase):
         self.assertRaises(TypeError, ba.__init__, 1.0)
         self.assertEqual(ba, bytearray())
 
+        self.assertRaises(TypeError, ba.__init__, "abc")
+        self.assertEqual(ba, bytearray())
+
+        mv = memoryview(ba)
+        self.assertRaises(TypeError, ba.__init__, "abc")
+        self.assertRaises(BufferError, ba.__init__, "abc", 'ascii')
+
     def test_hints(self):
         global test_hint_called
 

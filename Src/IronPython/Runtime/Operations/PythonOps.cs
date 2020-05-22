@@ -1137,10 +1137,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static int ClampToInt32(this long value) {
-            return (int)Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
-        }
-
         public static bool IsMappingType(CodeContext/*!*/ context, object o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
                 return true;

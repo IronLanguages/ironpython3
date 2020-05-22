@@ -311,4 +311,13 @@ class BytesIOTest(unittest.TestCase):
                 self.assertEqual(a.tolist(),
                         a_expected[i])
 
+    def test_ipy2_gh711(self):
+        """https://github.com/IronLanguages/ironpython2/issues/711"""
+        class TestStream(BytesIO):
+            def __init__(self, val1, val2, val3):
+                self.val3 = val3
+
+        testObject = TestStream("val1", "val2", "val3")
+        self.assertEqual(testObject.val3, "val3")
+
 run_test(__name__)

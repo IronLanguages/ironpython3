@@ -39,7 +39,7 @@ namespace IronPython.Modules {
                 : base(context) {
             }
 
-            public BytesIO(CodeContext/*!*/ context, object initial_bytes=null)
+            public BytesIO(CodeContext/*!*/ context, params object[] args)
                 : base(context) {
             }
 

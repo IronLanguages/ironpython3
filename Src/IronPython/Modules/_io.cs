@@ -1128,14 +1128,15 @@ namespace IronPython.Modules {
             public override BigInteger write(CodeContext/*!*/ context, object buf) {
                 _checkClosed("write to closed file");
 
-                IList<byte> bytes = GetBytes(buf);
+                using var buffer = Converter.Convert<IBufferProtocol>(buf).GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
                 lock (this) {
                     if (_writeBuf.Count > _bufSize) {
                         FlushNoLock(context);
                     }
 
                     int count = _writeBuf.Count;
-                    _writeBuf.AddRange(bytes);
+                    _writeBuf.AddRange(bytes.ToArray());
                     count = _writeBuf.Count - count;
 
                     if (_writeBuf.Count > _bufSize) {
@@ -1566,14 +1567,15 @@ namespace IronPython.Modules {
                     }
                 }
 
-                IList<byte> bytes = GetBytes(buf);
+                using var buffer = Converter.Convert<IBufferProtocol>(buf).GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
                 lock (this) {
                     if (_writeBuf.Count > _bufSize) {
                         FlushNoLock(context);
                     }
 
                     int count = _writeBuf.Count;
-                    _writeBuf.AddRange(bytes);
+                    _writeBuf.AddRange(bytes.ToArray());
                     count = _writeBuf.Count - count;
 
                     if (_writeBuf.Count > _bufSize) {
@@ -3163,21 +3165,6 @@ namespace IronPython.Modules {
             }
 
             throw PythonOps.TypeError("'" + name + "' should have returned bytes");
-        }
-
-        /// <summary>
-        /// Convert most bytearray-like objects into IList of byte
-        /// </summary>
-        private static IList<byte> GetBytes(object buf) {
-            if (buf is IList<byte> bytes) {
-                return bytes;
-            }
-
-            if (buf is ArrayModule.array arr) {
-                return arr.ToByteArray();
-            }
-
-            throw PythonOps.TypeError("must be bytes or buffer, not {0}", PythonTypeOps.GetName(buf));
         }
 
         #endregion

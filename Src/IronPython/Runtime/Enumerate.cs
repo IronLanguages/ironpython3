@@ -324,7 +324,7 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("iterator")]
-    public class ItemEnumerator : IEnumerator {
+    public sealed class ItemEnumerator : IEnumerator {
         // The actual object on which we are calling __getitem__()
         private object _source;
         private object _getItemMethod;
@@ -338,11 +338,12 @@ namespace IronPython.Runtime {
             _site = site;
         }
 
+        #region Pickling
+
         public PythonTuple __reduce__(CodeContext context) {
-            object iter;
-            context.TryLookupBuiltin("iter", out iter);
+            context.TryLookupBuiltin("iter", out object iter);
             if (_index < 0) {
-                return PythonTuple.MakeTuple(iter, PythonTuple.EMPTY);
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonTuple.EMPTY));
             }
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_source), _index);
         }
@@ -360,6 +361,8 @@ namespace IronPython.Runtime {
                 _index = index;
             }
         }
+
+        #endregion
 
         #region IEnumerator members
 
@@ -404,7 +407,7 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("iterable")]
-    public class ItemEnumerable : IEnumerable {
+    public sealed class ItemEnumerable : IEnumerable {
         private readonly object _source;
         private readonly object _getitem;
         private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
@@ -427,5 +430,4 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
 }

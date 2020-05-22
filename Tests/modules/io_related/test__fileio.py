@@ -408,13 +408,19 @@ class FileIOTest(unittest.TestCase):
             
             for i in range(len(f_list)):
                 a = array.array(*a_params)
+                ba = bytearray(a.tobytes())
                 f = f_list[i]
                 
                 self.assertEqual(f.readinto(a),
                         f_expected[i])
                 self.assertEqual(a.tolist(),
                         a_expected[i])
-            
+
+                # try with bytearray as well - https://github.com/IronLanguages/ironpython2/issues/713
+                f.seek(0)
+                self.assertEqual(f.readinto(ba), f_expected[i])
+                self.assertEqual(ba, a.tobytes())
+
             #cleanup
             for f in f_list: 
                 f.close()

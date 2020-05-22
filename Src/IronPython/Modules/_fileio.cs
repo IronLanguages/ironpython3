@@ -407,7 +407,7 @@ namespace IronPython.Modules {
 
                     for (int i = 0; i < span.Length; i++) {
                         int b = _readStream.ReadByte();
-                        if (b == -1) return i - 1;
+                        if (b == -1) return i;
                         span[i] = (byte)b;
                     }
 

@@ -1239,7 +1239,7 @@ namespace IronPython.Runtime {
                 if (IsHashable(set)) {
                     return true;
                 }
-                o = new FrozenSetCollection(set._items.Clone());
+                o = FrozenSetCollection.Make(set._items.Clone());
                 return true;
             }
             return o is FrozenSetCollection;
@@ -1258,11 +1258,6 @@ namespace IronPython.Runtime {
             return pt.TryResolveSlot(DefaultContext.Default, "__hash__", out pts) &&
                    pts.TryGetValue(DefaultContext.Default, set, pt, out slotValue) &&
                    slotValue != null;
-        }
-
-        internal static PythonTuple Reduce(SetStorage items, PythonType type) {
-            PythonTuple itemTuple = PythonTuple.MakeTuple(items.GetItems());
-            return PythonTuple.MakeTuple(type, itemTuple, null);
         }
 
         internal static string SetToString(CodeContext/*!*/ context, object set, SetStorage items) {

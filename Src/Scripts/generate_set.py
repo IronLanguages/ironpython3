@@ -417,6 +417,31 @@ def gen_icollection(cw):
     cw.writeline('#endregion')
     cw.writeline()
 
+def gen_iweakreferenceable(cw):
+    cw.writeline('#region IWeakReferenceable Members')
+    cw.writeline()
+
+    cw.writeline('private WeakRefTracker _tracker;')
+    cw.writeline()
+
+    cw.enter_block('WeakRefTracker IWeakReferenceable.GetWeakRef()')
+    cw.writeline('return _tracker;')
+    cw.exit_block()
+    cw.writeline()
+
+    cw.enter_block('bool IWeakReferenceable.SetWeakRef(WeakRefTracker value)')
+    cw.writeline('return Interlocked.CompareExchange(ref _tracker, value, null) == null;')
+    cw.exit_block()
+    cw.writeline()
+
+    cw.enter_block('void IWeakReferenceable.SetFinalizer(WeakRefTracker value)')
+    cw.writeline('_tracker = value;')
+    cw.exit_block()
+    cw.writeline()
+
+    cw.writeline('#endregion')
+    cw.writeline()
+
 def gen_interfaces(mutable):
     def _gen_interfaces(cw):
         t = get_type(mutable)
@@ -425,6 +450,7 @@ def gen_interfaces(mutable):
         gen_ienumerable(cw, mutable)
         gen_icodeformattable(cw)
         gen_icollection(cw)
+        gen_iweakreferenceable(cw)
 
     return _gen_interfaces
 

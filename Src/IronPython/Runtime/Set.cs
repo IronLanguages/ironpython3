@@ -7,21 +7,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
+using System.Threading;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /// <summary>
     /// Mutable set class
     /// </summary>
     [PythonType("set"), DebuggerDisplay("set, {Count} items", TargetTypeName = "set"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
-    public class SetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable
+    public class SetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable, IWeakReferenceable
     {
         internal SetStorage _items;
 
@@ -78,11 +78,7 @@ namespace IronPython.Runtime {
 
         private SetCollection Empty {
             get {
-                if (GetType() == typeof(SetCollection)) {
-                    return new SetCollection();
-                }
-
-                return Make(DynamicHelpers.GetPythonType(this), new SetStorage());
+                return new SetCollection();
             }
         }
 
@@ -93,35 +89,17 @@ namespace IronPython.Runtime {
             }
         }
 
-        private SetCollection Make(SetStorage items) {
-            if (this.GetType() == typeof(SetCollection)) {
-                return new SetCollection(items);
-            }
-
-            return Make(DynamicHelpers.GetPythonType(this), items);
+        internal static SetCollection Make(SetStorage items) {
+            return new SetCollection(items);
         }
 
-        private static SetCollection Make(PythonType/*!*/ cls, SetStorage items) {
-            if (cls == TypeCache.Set) {
-                return new SetCollection(items);
-            }
-
-            SetCollection res = PythonCalls.Call(cls) as SetCollection;
-            Debug.Assert(res != null);
-
-            if (items.Count > 0) {
-                res._items = items;
-            }
-            return res;
-        }
-
-        internal static SetCollection Make(PythonType/*!*/ cls, object set) {
+        internal static SetCollection Make(object set) {
             SetStorage items;
             if (SetStorage.GetItems(set, out items)) {
                 items = items.Clone();
             }
 
-            return Make(cls, items);
+            return Make(items);
         }
 
         public SetCollection copy() {
@@ -144,9 +122,12 @@ namespace IronPython.Runtime {
             return _items.Contains(item);
         }
 
-        public PythonTuple __reduce__() {
-            var type = GetType() != typeof(SetCollection) ? DynamicHelpers.GetPythonType(this) : TypeCache.Set;
-            return SetStorage.Reduce(_items, type);
+        public PythonTuple __reduce__(CodeContext context) {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this),
+                PythonTuple.MakeTuple(_items.GetItems()),
+                GetType() == typeof(SetCollection) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+            );
         }
 
         #endregion
@@ -163,7 +144,7 @@ namespace IronPython.Runtime {
             int res;
             CompareUtil.Push(this);
             try {
-                res = ((IStructuralEquatable)new FrozenSetCollection(_items)).GetHashCode(comparer);
+                res = ((IStructuralEquatable)FrozenSetCollection.Make(_items)).GetHashCode(comparer);
             } finally {
                 CompareUtil.Pop(this);
             }
@@ -858,23 +839,38 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        #region IWeakReferenceable Members
+
+        private WeakRefTracker _tracker;
+
+        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            return _tracker;
+        }
+
+        bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+            return Interlocked.CompareExchange(ref _tracker, value, null) == null;
+        }
+
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+            _tracker = value;
+        }
+
+        #endregion
+
 
         // *** END GENERATED CODE ***
 
         #endregion
-
     }
 
     /// <summary>
     /// Immutable set class
     /// </summary>
     [PythonType("frozenset"), DebuggerDisplay("frozenset, {Count} items", TargetTypeName = "frozenset"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
-    public class FrozenSetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable
+    public class FrozenSetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable, IWeakReferenceable
     {
-        internal SetStorage _items;
+        internal readonly SetStorage _items;
         private HashCache _hashCache;
-
-        private static readonly FrozenSetCollection _empty = new FrozenSetCollection();
 
         #region Set Construction
 
@@ -883,98 +879,57 @@ namespace IronPython.Runtime {
             // nop
         }
 
-        public static FrozenSetCollection __new__(CodeContext/*!*/ context, object cls) {
+        public static FrozenSetCollection __new__(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.FrozenSet) {
-                return _empty;
+                return Empty;
             } else {
-                object res = ((PythonType)cls).CreateInstance(context);
-                if (!(res is FrozenSetCollection fs)) {
-                    throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
-                }
-
-                return fs;
+                object res = cls.CreateInstance(context);
+                if (res is FrozenSetCollection fs) return fs;
+                throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
             }
         }
 
-        public static FrozenSetCollection __new__(CodeContext/*!*/ context, object cls, object set) {
+        public static FrozenSetCollection __new__(CodeContext/*!*/ context, PythonType cls, object set) {
             if (cls == TypeCache.FrozenSet) {
-                return Make(TypeCache.FrozenSet, set);
+                return Make(set);
             } else {
-                object res = ((PythonType)cls).CreateInstance(context, set);
-                if (!(res is FrozenSetCollection fs)) {
-                    throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
-                }
-
-                return fs;
+                object res = cls.CreateInstance(context, set);
+                if (res is FrozenSetCollection fs) return fs;
+                throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
             }
         }
 
-        public FrozenSetCollection() : this(new SetStorage()) { }
+        protected internal FrozenSetCollection() : this(new SetStorage()) { }
 
-        internal FrozenSetCollection(SetStorage set) {
+        private FrozenSetCollection(SetStorage set) {
             _items = set;
         }
 
         protected internal FrozenSetCollection(object set) : this(SetStorage.GetFrozenItems(set)) { }
 
-        private FrozenSetCollection Empty {
-            get {
-                if (GetType() == typeof(FrozenSetCollection)) {
-                    return _empty;
-                }
+        private static FrozenSetCollection Empty { get; } = new FrozenSetCollection(new SetStorage());
 
-                return Make(DynamicHelpers.GetPythonType(this), new SetStorage());
-            }
-        }
-
-        private FrozenSetCollection Make(SetStorage items) {
+        internal static FrozenSetCollection Make(SetStorage items) {
             if (items.Count == 0) {
                 return Empty;
             }
 
-            if (this.GetType() == typeof(FrozenSetCollection)) {
-                return new FrozenSetCollection(items);
-            }
-
-            return Make(DynamicHelpers.GetPythonType(this), items);
+            return new FrozenSetCollection(items);
         }
 
-        private static FrozenSetCollection Make(PythonType/*!*/ cls, SetStorage items) {
-            if (cls == TypeCache.FrozenSet) {
-                if (items.Count == 0) {
-                    return _empty;
-                }
-                return new FrozenSetCollection(items);
+        internal static FrozenSetCollection Make(object set) {
+            if (set.GetType() == typeof(FrozenSetCollection)) {
+                return (FrozenSetCollection)set;
             }
 
-            FrozenSetCollection res = PythonCalls.Call(cls) as FrozenSetCollection;
-            Debug.Assert(res != null);
-
-            if (items.Count > 0) {
-                res._items = items;
-            }
-            return res;
-        }
-
-        internal static FrozenSetCollection Make(PythonType/*!*/ cls, object set) {
-            if (set is FrozenSetCollection fs && cls == TypeCache.FrozenSet) {
-                // constructing frozen set from frozen set, we return the original
-                return fs;
-            }
-
-            return Make(cls, SetStorage.GetFrozenItems(set));
+            return Make(SetStorage.GetFrozenItems(set));
         }
 
         public FrozenSetCollection copy() {
-            // Python behavior: If we're a non-derived frozen set, set return the original
-            // frozen set. If we're derived from a frozen set, we make a new set of this type
-            // which contains the same elements.
             if (this.GetType() == typeof(FrozenSetCollection)) {
                 return this;
             }
-
-            // subclass
-            return Make(DynamicHelpers.GetPythonType(this), _items);
+            return Make(_items);
         }
 
         #endregion
@@ -993,9 +948,12 @@ namespace IronPython.Runtime {
             return _items.Contains(item);
         }
 
-        public PythonTuple __reduce__() {
-            var type = GetType() != typeof(FrozenSetCollection) ? DynamicHelpers.GetPythonType(this) : TypeCache.FrozenSet;
-            return SetStorage.Reduce(_items, type);
+        public PythonTuple __reduce__(CodeContext context) {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this),
+                PythonTuple.MakeTuple(_items.GetItems()),
+                GetType() == typeof(FrozenSetCollection) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+            );
         }
 
         #endregion
@@ -1400,6 +1358,24 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        #region IWeakReferenceable Members
+
+        private WeakRefTracker _tracker;
+
+        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            return _tracker;
+        }
+
+        bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+            return Interlocked.CompareExchange(ref _tracker, value, null) == null;
+        }
+
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+            _tracker = value;
+        }
+
+        #endregion
+
 
         // *** END GENERATED CODE ***
 
@@ -1415,6 +1391,7 @@ namespace IronPython.Runtime {
         private readonly int _version;
         private readonly int _maxIndex;
         private int _index = -2;
+        private int _cnt = 0;
 
         internal SetIterator(SetStorage items, bool mutable) {
             _items = items;
@@ -1461,6 +1438,8 @@ namespace IronPython.Runtime {
                 return false;
             }
 
+            _cnt++;
+
             _index++;
             if (_index < 0) {
                 if (_items._hasNull) {
@@ -1480,12 +1459,14 @@ namespace IronPython.Runtime {
                 }
             }
 
+            _cnt = -1;
             return false;
         }
 
         [PythonHidden]
         public void Reset() {
             _index = -2;
+            _cnt = 0;
         }
 
         #endregion
@@ -1506,6 +1487,14 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public PythonTuple __reduce__(CodeContext/*!*/ context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            if (_cnt < 0)
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList(_items)), _cnt);
+        }
 
         public int __length_hint__() {
             if (_items.Version != _version || _index == _maxIndex) {

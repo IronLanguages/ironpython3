@@ -822,7 +822,9 @@ namespace IronPython.Runtime {
 
             lock (this) {
                 _size -= 1;
-                return _data[_size];
+                var ret = _data[_size];
+                _data[_size] = null; // release the object
+                return ret;
             }
         }
 
@@ -836,6 +838,7 @@ namespace IronPython.Runtime {
                 for (int i = index; i < _size; i++) {
                     _data[i] = _data[i + 1];
                 }
+                _data[_size] = null; // release the object
                 return ret;
             }
         }
@@ -1132,7 +1135,10 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public void Clear() {
-            lock (this) _size = 0;
+            lock (this) {
+                Array.Clear(_data, 0, _size); // release the objects
+                _size = 0;
+            }
         }
 
         [PythonHidden]

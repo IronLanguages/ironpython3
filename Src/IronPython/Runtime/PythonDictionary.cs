@@ -494,7 +494,7 @@ namespace IronPython.Runtime {
 
             CompareUtil.Push(this);
             try {
-                IStructuralEquatable eq = FrozenSetCollection.Make(TypeCache.FrozenSet, pairs);
+                IStructuralEquatable eq = FrozenSetCollection.Make(pairs);
                 res = eq.GetHashCode(comparer);
             } finally {
                 CompareUtil.Pop(this);

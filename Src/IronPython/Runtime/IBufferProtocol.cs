@@ -51,7 +51,7 @@ namespace IronPython.Runtime {
         /// An N-dimensional array with strides, so it may not be memory contiguous.
         /// The last dimension is contiguous.
         /// </summary>
-        CContiguous = 0x0020 | Strides,
+        CContiguous   = 0x0020 | Strides,
 
         /// <summary>
         /// An N-dimensional array with strides, so it may not be memory contiguous.
@@ -75,7 +75,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Unformmatted (i.e. byte-oriented) read-only blob with no structure.
         /// </summary>
-        Simple = 0,
+        Simple    = 0,
 
         /// <summary>
         /// Contiguous writable buffer of any dimension.
@@ -85,12 +85,12 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Contiguous buffer of any dimension.
         /// </summary>
-        ContigRO = ND,
+        ContigRO  = ND,
 
         /// <summary>
         /// Writable byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// </summary>
-        Strided = Strides | Writable,
+        Strided   = Strides | Writable,
 
         /// <summary>
         /// Byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -101,7 +101,7 @@ namespace IronPython.Runtime {
         /// Writable buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// Elements can be any struct type.
         /// </summary>
-        Records = Strides | Writable | Format,
+        Records   = Strides | Writable | Format,
 
         /// <summary>
         /// Buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -135,7 +135,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// A reference to the exporting object.
         /// </summary>
-        object Object { get;  }
+        object Object { get; }
 
         /// <summary>
         /// Indicates whether only read access is permitted.
@@ -219,5 +219,14 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.suboffsets"/>
         IReadOnlyList<int>? SubOffsets { get; }
+    }
+
+    public static class PythonBufferExtensions {
+        /// <summary>
+        /// Number of bytes of data in the buffer (len).
+        /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.len"/>
+        public static int NumBytes(this IPythonBuffer buffer)
+            => buffer.ItemCount * buffer.ItemSize;
     }
 }

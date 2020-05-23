@@ -60,7 +60,7 @@ namespace IronPython.Runtime {
             ReadOnlySpan<byte> memblock = _buffer.AsReadOnlySpan();
 
             if (   (_buffer.ItemCount != 0 && !VerifyStructure(memblock.Length, _buffer.ItemSize, _buffer.NumOfDims, _buffer.Shape, _buffer.Strides, _buffer.Offset))
-                || (_buffer.Shape == null && (_buffer.Offset != 0 || _buffer.ItemCount * _buffer.ItemSize != memblock.Length))
+                || (_buffer.Shape == null && (_buffer.Offset != 0 || _buffer.NumBytes() != memblock.Length))
                ) {
                 throw PythonOps.BufferError("memoryview: invalid buffer exported from object of type {0}", PythonOps.GetPythonTypeName(@object));
             }

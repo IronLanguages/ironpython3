@@ -88,8 +88,23 @@ namespace IronPython.Modules {
         /// F_OK: Check to see if the file exists
         /// R_OK | W_OK | X_OK: Check for the specific permissions.  Only W_OK is respected.
         /// </summary>
-        public static bool access(CodeContext/*!*/ context, string path, int mode) {
+        public static bool access(CodeContext/*!*/ context, [NotNull] string path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> dict) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
+
+            foreach (var pair in dict) {
+                switch (pair.Key) {
+                    case "dir_fd":
+                    case "follow_symlinks":
+                        // TODO: implement these!
+                        break;
+                    case "effective_ids":
+                        if (PythonOps.IsTrue(pair.Value))
+                            throw PythonOps.NotImplementedError("access: effective_ids unavailable on this platform");
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", pair.Key);
+                }
+            }
 
 #if FEATURE_FILESYSTEM
             try {

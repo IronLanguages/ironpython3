@@ -484,47 +484,7 @@ namespace IronPython.Modules {
             }
 
             public void __delitem__([NotNull]Slice slice) {
-                int start, stop, step;
-                // slice is sealed, indices can't be user code...
-                slice.indices(_data.Count, out start, out stop, out step);
-
-                if (step > 0 && (start >= stop)) return;
-                if (step < 0 && (start <= stop)) return;
-
-                _data.CheckBuffer();
-
-                if (step == 1) {
-                    _data.RemoveRange(start, stop - start);
-                    return;
-                }
-                if (step == -1) {
-                    _data.RemoveRange(stop + 1, start - stop);
-                    return;
-                }
-
-                if (step < 0) {
-                    // normalize start/stop for positive step case
-                    int count = PythonOps.GetSliceCount(start, stop, step);
-                    stop = start + 1;
-                    start += (count - 1) * step;
-                    step = -step; // can overflow, OK
-                }
-
-                int curr, skip, move;
-                // skip: the next position we should skip
-                // curr: the next position we should fill in data
-                // move: the next position we will check
-                curr = skip = move = start;
-
-                while (move < stop) {
-                    if (move != skip) {
-                        _data[curr++] = _data[move];
-                    } else {
-                        skip += step; // can overflow, OK
-                    }
-                    move++;
-                }
-                _data.RemoveRange(curr, stop - curr);
+                _data.RemoveSlice(slice);
             }
 
             [System.Diagnostics.CodeAnalysis.NotNull]

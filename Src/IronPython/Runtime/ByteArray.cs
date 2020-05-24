@@ -1298,50 +1298,15 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public void DeleteItem(int index) {
-            _bytes.RemoveAt(PythonOps.FixIndex(index, _bytes.Count));
+            lock (this) {
+                _bytes.RemoveAt(PythonOps.FixIndex(index, _bytes.Count));
+            }
         }
 
         [SpecialName]
         public void DeleteItem([NotNull]Slice slice) {
             lock (this) {
-                int start, stop, step;
-                // slice is sealed, indices can't be user code...
-                slice.indices(_bytes.Count, out start, out stop, out step);
-
-                if (step > 0 && (start >= stop)) return;
-                if (step < 0 && (start <= stop)) return;
-
-                _bytes.CheckBuffer();
-
-                if (step == 1) {
-                    _bytes.RemoveRange(start, stop - start);
-                    return;
-                } else if (step == -1) {
-                    _bytes.RemoveRange(stop + 1, start - stop);
-                    return;
-                } else if (step < 0) {
-                    // normalize start/stop for positive step case
-                    int count = PythonOps.GetSliceCount(start, stop, step);
-                    stop = start + 1;
-                    start += (count - 1) * step;
-                    step = -step; // can overflow, OK
-                }
-
-                int curr, skip, move;
-                // skip: the next position we should skip
-                // curr: the next position we should fill in data
-                // move: the next position we will check
-                curr = skip = move = start;
-
-                while (move < stop) {
-                    if (move != skip) {
-                        _bytes[curr++] = _bytes[move];
-                    } else {
-                        skip += step; // can overflow, OK
-                    }
-                    move++;
-                }
-                _bytes.RemoveRange(curr, stop - curr);
+                _bytes.RemoveSlice(slice);
             }
         }
 

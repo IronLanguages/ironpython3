@@ -6,7 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Numerics;
+using System.Diagnostics;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -228,5 +228,52 @@ namespace IronPython.Runtime {
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.len"/>
         public static int NumBytes(this IPythonBuffer buffer)
             => buffer.ItemCount * buffer.ItemSize;
+
+        public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
+            => new BufferBytesEnumerator(buffer);
+
+    }
+
+    public ref struct BufferBytesEnumerator {
+        private readonly ReadOnlySpan<byte> _span;
+        private readonly IEnumerator<int> _offsets;
+
+        public BufferBytesEnumerator(IPythonBuffer buffer) {
+            _span = buffer.AsReadOnlySpan();
+            _offsets = EnumerateDimension(buffer, buffer.Offset, 0).GetEnumerator();
+        }
+
+        public byte Current => _span[_offsets.Current];
+
+        public bool MoveNext() => _offsets.MoveNext();
+
+        public BufferBytesEnumerator GetEnumerator() => this;
+
+        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int dim) {
+            IReadOnlyList<int>? shape = buffer.Shape;
+            IReadOnlyList<int>? strides = buffer.Strides;
+
+            if (shape == null || strides == null) {
+                // simple C-contiguous case
+                Debug.Assert(buffer.Offset == 0);
+                int len = buffer.NumBytes();
+                for (int i = 0; i < len; i++) {
+                    yield return i;
+                }
+            } else if (dim >= shape.Count) {
+                // iterate individual element (scalar)
+                for (int i = 0; i < buffer.ItemSize; i++) {
+                    yield return ofs + i;
+                }
+            } else {
+                for (int i = 0; i < shape[dim]; i++) {
+                    // iterate all bytes from a subdimension
+                    foreach (int j in EnumerateDimension(buffer, ofs, dim + 1)) {
+                        yield return j;
+                    }
+                    ofs += strides[dim];
+                }
+            }
+        }
     }
 }

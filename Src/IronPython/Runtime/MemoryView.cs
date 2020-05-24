@@ -369,23 +369,12 @@ namespace IronPython.Runtime {
             }
 
             byte[] bytes = new byte[_numItems * _itemSize];
-            copyDimension(buf, bytes, _offset, dim: 0);
+            int i = 0;
+            foreach (byte b in this.EnumerateBytes()) {
+                bytes[i++] = b;
+            }
             return Bytes.Make(bytes);
 
-            int copyDimension(ReadOnlySpan<byte> source, Span<byte> dest, int ofs, int dim) {
-                if (dim >= _shape.Count) {
-                    // copy individual element (scalar)
-                    source.Slice(ofs, _itemSize).CopyTo(dest);
-                    return _itemSize;
-                }
-
-                int copied = 0;
-                for (int i = 0; i < _shape[dim]; i++) {
-                    copied += copyDimension(source, dest.Slice(copied), ofs, dim + 1);
-                    ofs += _strides[dim];
-                }
-                return copied;
-            }
         }
 
         public object tolist() {

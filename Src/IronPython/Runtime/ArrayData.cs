@@ -24,6 +24,7 @@ namespace IronPython.Runtime {
         IntPtr GetAddress();
         void AddRange(ArrayData value);
         void InsertRange(int index, int count, ArrayData value);
+        void RemoveRange(int index, int count);
         ArrayData Multiply(int count);
         new bool Remove(object? item);
         void Reverse();

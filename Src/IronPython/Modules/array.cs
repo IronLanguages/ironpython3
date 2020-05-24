@@ -494,38 +494,20 @@ namespace IronPython.Modules {
                 _data.CheckBuffer();
 
                 if (step == 1) {
-                    int i = start;
-                    for (int j = stop; j < _data.Count; j++, i++) {
-                        _data[i] = _data[j];
-                    }
-                    for (i = 0; i < stop - start; i++) {
-                        _data.RemoveAt(_data.Count - 1);
-                    }
+                    _data.RemoveRange(start, stop - start);
                     return;
                 }
                 if (step == -1) {
-                    int i = stop + 1;
-                    for (int j = start + 1; j < _data.Count; j++, i++) {
-                        _data[i] = _data[j];
-                    }
-                    for (i = 0; i < start - stop; i++) {
-                        _data.RemoveAt(_data.Count - 1);
-                    }
+                    _data.RemoveRange(stop + 1, start - stop);
                     return;
                 }
 
                 if (step < 0) {
-                    // find "start" we will skip in the 1,2,3,... order
-                    int i = start;
-                    while (i > stop) {
-                        i += step;
-                    }
-                    i -= step;
-
-                    // swap start/stop, make step positive
+                    // normalize start/stop for positive step case
+                    int count = PythonOps.GetSliceCount(start, stop, step);
                     stop = start + 1;
-                    start = i;
-                    step = -step;
+                    start += (count - 1) * step;
+                    step = -step; // can overflow, OK
                 }
 
                 int curr, skip, move;
@@ -534,19 +516,15 @@ namespace IronPython.Modules {
                 // move: the next position we will check
                 curr = skip = move = start;
 
-                while (curr < stop && move < stop) {
+                while (move < stop) {
                     if (move != skip) {
                         _data[curr++] = _data[move];
-                    } else
-                        skip += step;
+                    } else {
+                        skip += step; // can overflow, OK
+                    }
                     move++;
                 }
-                while (stop < _data.Count) {
-                    _data[curr++] = _data[stop++];
-                }
-                while (_data.Count > curr) {
-                    _data.RemoveAt(_data.Count - 1);
-                }
+                _data.RemoveRange(curr, stop - curr);
             }
 
             [System.Diagnostics.CodeAnalysis.NotNull]

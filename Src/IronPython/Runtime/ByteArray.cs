@@ -1314,31 +1314,17 @@ namespace IronPython.Runtime {
                 _bytes.CheckBuffer();
 
                 if (step == 1) {
-                    int i = start;
-                    for (int j = stop; j < _bytes.Count; j++, i++) {
-                        _bytes[i] = _bytes[j];
-                    }
-                    _bytes.RemoveRange(i, stop - start);
+                    _bytes.RemoveRange(start, stop - start);
                     return;
                 } else if (step == -1) {
-                    int i = stop + 1;
-                    for (int j = start + 1; j < _bytes.Count; j++, i++) {
-                        _bytes[i] = _bytes[j];
-                    }
-                    _bytes.RemoveRange(i, start - stop);
+                    _bytes.RemoveRange(stop + 1, start - stop);
                     return;
                 } else if (step < 0) {
-                    // find "start" we will skip in the 1,2,3,... order
-                    int i = start;
-                    while (i > stop) {
-                        i += step;
-                    }
-                    i -= step;
-
-                    // swap start/stop, make step positive
+                    // normalize start/stop for positive step case
+                    int count = PythonOps.GetSliceCount(start, stop, step);
                     stop = start + 1;
-                    start = i;
-                    step = -step;
+                    start += (count - 1) * step;
+                    step = -step; // can overflow, OK
                 }
 
                 int curr, skip, move;
@@ -1347,17 +1333,15 @@ namespace IronPython.Runtime {
                 // move: the next position we will check
                 curr = skip = move = start;
 
-                while (curr < stop && move < stop) {
+                while (move < stop) {
                     if (move != skip) {
                         _bytes[curr++] = _bytes[move];
-                    } else
-                        skip += step;
+                    } else {
+                        skip += step; // can overflow, OK
+                    }
                     move++;
                 }
-                while (stop < _bytes.Count) {
-                    _bytes[curr++] = _bytes[stop++];
-                }
-                _bytes.RemoveRange(curr, _bytes.Count - curr);
+                _bytes.RemoveRange(curr, stop - curr);
             }
         }
 

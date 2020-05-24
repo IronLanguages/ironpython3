@@ -24,12 +24,12 @@ namespace IronPython.Runtime {
         IntPtr GetAddress();
         void AddRange(ArrayData value);
         void InsertRange(int index, int count, ArrayData value);
+        void RemoveSlice(Slice slice);
         ArrayData Multiply(int count);
         new bool Remove(object? item);
         void Reverse();
         Span<byte> AsByteSpan();
         IPythonBuffer GetBuffer(object owner, string format, BufferFlags flags);
-        void CheckBuffer();
     }
 
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
@@ -325,6 +325,49 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void RemoveSlice(Slice slice) {
+            int start, stop, step;
+            // slice is sealed, indices can't be user code...
+            slice.indices(_size, out start, out stop, out step);
+
+            if (step > 0 && (start >= stop)) return;
+            if (step < 0 && (start <= stop)) return;
+
+            lock (this) {
+                CheckBuffer();
+
+                if (step == 1) {
+                    RemoveRange(start, stop - start);
+                    return;
+                } else if (step == -1) {
+                    RemoveRange(stop + 1, start - stop);
+                    return;
+                } else if (step < 0) {
+                    // normalize start/stop for positive step case
+                    int count = PythonOps.GetSliceCount(start, stop, step);
+                    stop = start + 1;
+                    start += (count - 1) * step;
+                    step = -step; // can overflow, OK
+                }
+
+                int curr, skip, move;
+                // skip: the next position we should skip
+                // curr: the next position we should fill in data
+                // move: the next position we will check
+                curr = skip = move = start;
+
+                while (move < stop) {
+                    if (move != skip) {
+                        _items[curr++] = _items[move];
+                    } else {
+                        skip += step; // can overflow, OK
+                    }
+                    move++;
+                }
+                RemoveRange(curr, stop - curr);
+            }
+        }
+
         public void Reverse()
             => Array.Reverse(_items, 0, _size);
 
@@ -355,7 +398,7 @@ namespace IronPython.Runtime {
             return new ArrayDataView(owner, format, this, flags);
         }
 
-        public void CheckBuffer() {
+        private void CheckBuffer() {
             if (_bufferCount > 0) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 

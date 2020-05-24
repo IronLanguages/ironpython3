@@ -1298,66 +1298,15 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public void DeleteItem(int index) {
-            _bytes.RemoveAt(PythonOps.FixIndex(index, _bytes.Count));
+            lock (this) {
+                _bytes.RemoveAt(PythonOps.FixIndex(index, _bytes.Count));
+            }
         }
 
         [SpecialName]
         public void DeleteItem([NotNull]Slice slice) {
             lock (this) {
-                int start, stop, step;
-                // slice is sealed, indices can't be user code...
-                slice.indices(_bytes.Count, out start, out stop, out step);
-
-                if (step > 0 && (start >= stop)) return;
-                if (step < 0 && (start <= stop)) return;
-
-                _bytes.CheckBuffer();
-
-                if (step == 1) {
-                    int i = start;
-                    for (int j = stop; j < _bytes.Count; j++, i++) {
-                        _bytes[i] = _bytes[j];
-                    }
-                    _bytes.RemoveRange(i, stop - start);
-                    return;
-                } else if (step == -1) {
-                    int i = stop + 1;
-                    for (int j = start + 1; j < _bytes.Count; j++, i++) {
-                        _bytes[i] = _bytes[j];
-                    }
-                    _bytes.RemoveRange(i, start - stop);
-                    return;
-                } else if (step < 0) {
-                    // find "start" we will skip in the 1,2,3,... order
-                    int i = start;
-                    while (i > stop) {
-                        i += step;
-                    }
-                    i -= step;
-
-                    // swap start/stop, make step positive
-                    stop = start + 1;
-                    start = i;
-                    step = -step;
-                }
-
-                int curr, skip, move;
-                // skip: the next position we should skip
-                // curr: the next position we should fill in data
-                // move: the next position we will check
-                curr = skip = move = start;
-
-                while (curr < stop && move < stop) {
-                    if (move != skip) {
-                        _bytes[curr++] = _bytes[move];
-                    } else
-                        skip += step;
-                    move++;
-                }
-                while (stop < _bytes.Count) {
-                    _bytes[curr++] = _bytes[stop++];
-                }
-                _bytes.RemoveRange(curr, _bytes.Count - curr);
+                _bytes.RemoveSlice(slice);
             }
         }
 

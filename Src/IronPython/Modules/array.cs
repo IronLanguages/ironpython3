@@ -484,69 +484,7 @@ namespace IronPython.Modules {
             }
 
             public void __delitem__([NotNull]Slice slice) {
-                int start, stop, step;
-                // slice is sealed, indices can't be user code...
-                slice.indices(_data.Count, out start, out stop, out step);
-
-                if (step > 0 && (start >= stop)) return;
-                if (step < 0 && (start <= stop)) return;
-
-                _data.CheckBuffer();
-
-                if (step == 1) {
-                    int i = start;
-                    for (int j = stop; j < _data.Count; j++, i++) {
-                        _data[i] = _data[j];
-                    }
-                    for (i = 0; i < stop - start; i++) {
-                        _data.RemoveAt(_data.Count - 1);
-                    }
-                    return;
-                }
-                if (step == -1) {
-                    int i = stop + 1;
-                    for (int j = start + 1; j < _data.Count; j++, i++) {
-                        _data[i] = _data[j];
-                    }
-                    for (i = 0; i < start - stop; i++) {
-                        _data.RemoveAt(_data.Count - 1);
-                    }
-                    return;
-                }
-
-                if (step < 0) {
-                    // find "start" we will skip in the 1,2,3,... order
-                    int i = start;
-                    while (i > stop) {
-                        i += step;
-                    }
-                    i -= step;
-
-                    // swap start/stop, make step positive
-                    stop = start + 1;
-                    start = i;
-                    step = -step;
-                }
-
-                int curr, skip, move;
-                // skip: the next position we should skip
-                // curr: the next position we should fill in data
-                // move: the next position we will check
-                curr = skip = move = start;
-
-                while (curr < stop && move < stop) {
-                    if (move != skip) {
-                        _data[curr++] = _data[move];
-                    } else
-                        skip += step;
-                    move++;
-                }
-                while (stop < _data.Count) {
-                    _data[curr++] = _data[stop++];
-                }
-                while (_data.Count > curr) {
-                    _data.RemoveAt(_data.Count - 1);
-                }
+                _data.RemoveSlice(slice);
             }
 
             [System.Diagnostics.CodeAnalysis.NotNull]

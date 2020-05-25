@@ -38,7 +38,7 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public sealed class Sha256Object : HashBase<SHA256> {
-            internal Sha256Object() : base("SHA256", BLOCK_SIZE, 32) { }
+            internal Sha256Object() : base("sha256", BLOCK_SIZE, 32) { }
 
             internal Sha256Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
@@ -74,7 +74,7 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public sealed class Sha224Object : HashBase<SHA224> {
-            internal Sha224Object() : base("SHA224", BLOCK_SIZE, 28) {
+            internal Sha224Object() : base("sha224", BLOCK_SIZE, 28) {
             }
 
             internal Sha224Object(IList<byte> initialBytes) : this() {

@@ -40,13 +40,10 @@ namespace IronPython.Modules {
         #region uu
 
         public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
-            => a2b_uu_impl(context, data.tobytes());
-
-        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]MemoryView data)
-            => a2b_uu_impl(context, data.tobytes());
+            => a2b_uu_impl(context, data.ToBytes());
 
         public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]string data)
-            => a2b_uu_impl(context, data.tobytes());
+            => a2b_uu_impl(context, data.ToBytes());
 
         private static Bytes a2b_uu_impl(CodeContext/*!*/ context, IList<byte> data) {
             if (data.Count < 1) return Bytes.Make(new byte[32]);
@@ -86,10 +83,7 @@ namespace IronPython.Modules {
         }
 
         public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
-            => b2a_uu_impl(context, data.tobytes());
-
-        public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull]MemoryView data)
-            => b2a_uu_impl(context, data.tobytes());
+            => b2a_uu_impl(context, data.ToBytes());
 
         private static Bytes b2a_uu_impl(CodeContext/*!*/ context, IList<byte> data) {
             if (data.Count > 45) throw Error(context, "At most 45 bytes at once");
@@ -106,13 +100,10 @@ namespace IronPython.Modules {
         #region base64
 
         public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
-            => a2b_base64_impl(context, data.tobytes());
-
-        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]MemoryView data)
-            => a2b_base64_impl(context, data.tobytes());
+            => a2b_base64_impl(context, data.ToBytes());
 
         public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]string data)
-            => a2b_base64_impl(context, data.tobytes());
+            => a2b_base64_impl(context, data.ToBytes());
 
         private static Bytes a2b_base64_impl(CodeContext/*!*/ context, IList<byte> data) {
             data = RemovePrefix(context, data, Base64DecFunc);
@@ -138,10 +129,7 @@ namespace IronPython.Modules {
         }
 
         public static Bytes b2a_base64([NotNull]IBufferProtocol data)
-            => b2a_base64_impl(data.tobytes());
-
-        public static Bytes b2a_base64([NotNull]MemoryView data)
-            => b2a_base64_impl(data.tobytes());
+            => b2a_base64_impl(data.ToBytes());
 
         private static Bytes b2a_base64_impl(IList<byte> data) {
             if (data.Count == 0) return Bytes.Empty;
@@ -372,10 +360,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         };
 
         public static int crc_hqx([NotNull]IBufferProtocol data, int crc)
-            => crc_hqx_impl(data.tobytes(), crc);
-
-        public static int crc_hqx([NotNull]MemoryView data, int crc)
-            => crc_hqx_impl(data.tobytes(), crc);
+            => crc_hqx_impl(data.ToBytes(), crc);
 
         private static int crc_hqx_impl(IList<byte> data, int crc) {
             crc &= 0xffff;
@@ -391,10 +376,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
         public static object crc32([NotNull]IBufferProtocol data, uint crc = 0)
-            => crc32_impl(data.tobytes(), crc);
-
-        public static object crc32([NotNull]MemoryView data, uint crc = 0)
-            => crc32_impl(data.tobytes(), crc);
+            => crc32_impl(data.ToBytes(), crc);
 
         private static object crc32_impl(IList<byte> bytes, uint crc) {
             var res = crc32(bytes, 0, bytes.Count, crc);
@@ -422,10 +404,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         #region hex
 
         public static Bytes b2a_hex([NotNull]IBufferProtocol data)
-            => b2a_hex_impl(data.tobytes());
-
-        public static Bytes b2a_hex([NotNull]MemoryView data)
-            => b2a_hex_impl(data.tobytes());
+            => b2a_hex_impl(data.ToBytes());
 
         private static Bytes b2a_hex_impl(IList<byte> data) {
             byte[] res = new byte[data.Count * 2];
@@ -442,19 +421,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         }
 
         public static Bytes hexlify([NotNull]IBufferProtocol data)
-            => b2a_hex_impl(data.tobytes());
-
-        public static Bytes hexlify([NotNull]MemoryView data)
-            => b2a_hex_impl(data.tobytes());
+            => b2a_hex_impl(data.ToBytes());
 
         public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
-            => a2b_hex_impl(context, data.tobytes());
-
-        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]MemoryView data)
-            => a2b_hex_impl(context, data.tobytes());
+            => a2b_hex_impl(context, data.ToBytes());
 
         public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]string data)
-            => a2b_hex_impl(context, data.tobytes());
+            => a2b_hex_impl(context, data.ToBytes());
 
         private static Bytes a2b_hex_impl(CodeContext/*!*/ context, IList<byte> data) {
             if ((data.Count & 0x01) != 0) throw Error(context, "Odd-length string");
@@ -481,9 +454,6 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         }
 
         public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]IBufferProtocol hexstr)
-            => a2b_hex(context, hexstr);
-
-        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]MemoryView hexstr)
             => a2b_hex(context, hexstr);
 
         public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]string hexstr)
@@ -668,19 +638,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        private static byte[] tobytes(this string s) {
-            byte[] ret = new byte[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x80) {
-                    ret[i] = (byte)s[i];
-                } else {
-                    throw PythonOps.ValueError("string argument should contain only ASCII characters");
-                }
-            }
-            return ret;
+        private static Bytes ToBytes(this string s) {
+            if (StringOps.TryEncodeAscii(s, out Bytes ascii))
+                return ascii;
+            throw PythonOps.ValueError("string argument should contain only ASCII characters");
         }
 
-        private static IList<byte> tobytes(this IBufferProtocol buffer) {
+        private static IList<byte> ToBytes(this IBufferProtocol buffer) {
             if (buffer is IList<byte> list) return list;
 
             return new Bytes(buffer);

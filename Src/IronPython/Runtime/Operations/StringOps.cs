@@ -1740,13 +1740,26 @@ namespace IronPython.Runtime.Operations {
             return UserEncode(context, encoding, codecTuple, s, errors);
         }
 
+        internal static Bytes DoEncodeAscii(string s)
+            => DoEncode(DefaultContext.Default, s, "strict", "ascii", Encoding.ASCII, includePreamble: false);
+
+        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)]out Bytes? b) {
+            try {
+                b = DoEncodeAscii(s);
+                return true;
+            } catch (EncoderFallbackException) {
+                b = default;
+                return false;
+            }
+        }
+
         internal static Bytes DoEncodeUtf8(CodeContext context, string s)
             => DoEncode(context, s, "strict", "utf-8", Encoding.UTF8, includePreamble: false);
 
         internal static Bytes DoEncode(CodeContext context, string s, string? errors, string encoding, Encoding e, bool includePreamble) {
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
-            Encoding setFallback(Encoding enc, EncoderFallback fb) {
+            static Encoding setFallback(Encoding enc, EncoderFallback fb) {
                 enc = (Encoding)enc.Clone();
                 enc.EncoderFallback = fb;
                 return enc;

@@ -55,9 +55,8 @@ namespace IronPython.Modules {
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
         [PythonType, PythonHidden]
-        public class sha : HashBase<SHA1>
-        {
-            public sha() : base("SHA1", BLOCK_SIZE, DIGEST_SIZE) { }
+        public class sha : HashBase<SHA1> {
+            public sha() : base("sha1", BLOCK_SIZE, DIGEST_SIZE) { }
 
             internal sha(IList<byte> initialBytes) : this() {
                 update(initialBytes);

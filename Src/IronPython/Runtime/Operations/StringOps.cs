@@ -1766,21 +1766,6 @@ namespace IronPython.Runtime.Operations {
             return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
-        internal static bool TryEncodeAscii(string str, out Bytes? ascii) {
-            var bytes = new byte[str.Length];
-            for (int i = 0; i < str.Length; i++) {
-                var b = str[i];
-                if (b < 0x80) {
-                    bytes[i] = (byte)b;
-                } else {
-                    ascii = default;
-                    return false;
-                }
-            }
-            ascii = Bytes.Make(bytes);
-            return true;
-        }
-
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string? errors) {
             if (TryGetEncoding(encoding, out Encoding? e)) {
                 return DoEncode(context, s, errors, encoding, e, true);
@@ -1791,6 +1776,19 @@ namespace IronPython.Runtime.Operations {
             return UserEncode(context, encoding, codecTuple, s, errors);
         }
 
+        internal static Bytes DoEncodeAscii(string s)
+            => DoEncode(DefaultContext.Default, s, "strict", "ascii", Encoding.ASCII, includePreamble: false);
+
+        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)]out Bytes? b) {
+            try {
+                b = DoEncodeAscii(s);
+                return true;
+            } catch (EncoderFallbackException) {
+                b = default;
+                return false;
+            }
+        }
+
         internal static Bytes DoEncodeUtf8(CodeContext context, string s)
             => DoEncode(context, s, "strict", "utf-8", Encoding.UTF8, includePreamble: false);
 
@@ -1798,7 +1796,7 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
-            Encoding setFallback(Encoding enc, EncoderFallback fb) {
+            static Encoding setFallback(Encoding enc, EncoderFallback fb) {
                 enc = (Encoding)enc.Clone();
                 enc.EncoderFallback = fb;
                 return enc;

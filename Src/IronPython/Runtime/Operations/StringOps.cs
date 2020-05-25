@@ -1766,11 +1766,12 @@ namespace IronPython.Runtime.Operations {
             return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
-        internal static bool TryEncodeAscii(string s, out Bytes? ascii) {
-            var bytes = new byte[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x80) {
-                    bytes[i] = (byte)s[i];
+        internal static bool TryEncodeAscii(string str, out Bytes? ascii) {
+            var bytes = new byte[str.Length];
+            for (int i = 0; i < str.Length; i++) {
+                var b = str[i];
+                if (b < 0x80) {
+                    bytes[i] = (byte)b;
                 } else {
                     ascii = default;
                     return false;

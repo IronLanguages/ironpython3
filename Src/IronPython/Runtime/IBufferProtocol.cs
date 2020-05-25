@@ -239,6 +239,9 @@ namespace IronPython.Runtime {
         private readonly IEnumerator<int> _offsets;
 
         public BufferBytesEnumerator(IPythonBuffer buffer) {
+            if (buffer.SubOffsets != null)
+                throw new NotImplementedException("buffers with suboffsets are not supported");
+
             _span = buffer.AsReadOnlySpan();
             _offsets = EnumerateDimension(buffer, buffer.Offset, 0).GetEnumerator();
         }

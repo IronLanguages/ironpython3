@@ -893,10 +893,8 @@ namespace IronPython.Runtime {
                 // not autodetected and not declared, hence use default
                 sourceEncoding = defaultEncoding;
             } else {
-#if FEATURE_ENCODING
                 sourceEncoding = (Encoding)sourceEncoding.Clone();
                 sourceEncoding.DecoderFallback = DecoderFallback.ExceptionFallback;
-#endif
             }
 
             // seek back to the beginning to correctly report invalid bytes, if any
@@ -1877,11 +1875,7 @@ namespace IronPython.Runtime {
         internal Dictionary<string, object> ErrorHandlers {
             get {
                 if (_errorHandlers == null) {
-#if FEATURE_ENCODING
                     Interlocked.CompareExchange(ref _errorHandlers, StringOps.CodecsInfo.MakeErrorHandlersDict(), null);
-#else
-                    Interlocked.CompareExchange(ref _errorHandlers, new Dictionary<string, object>(), null);
-#endif
                 }
 
                 return _errorHandlers;

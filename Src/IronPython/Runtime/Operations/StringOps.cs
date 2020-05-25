@@ -1420,7 +1420,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryGetEncoding(string name, [NotNullWhen(true)]out Encoding? encoding) {
-#if FEATURE_ENCODING
             encoding = null;
 
             if (string.IsNullOrWhiteSpace(name)) return false;
@@ -1451,29 +1450,6 @@ namespace IronPython.Runtime.Operations {
 #endif // NETCOREAPP || NETSTANDARD
             }
             return encoding != null;
-
-#else // !FEATURE_ENCODING
-            switch (NormalizeEncodingName(name)) {
-                case "us_ascii":
-                case "ascii": encoding = PythonAsciiEncoding.Instance; return true;
-
-                case "latin1":
-                case "latin_1":
-                case "iso_8859_1": encoding = Encoding.GetEncoding(28591); return true;
-
-                case "utf_8": encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false); return true;
-
-                case "utf_16le":
-                case "utf_16_le": encoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false); return true;
-
-                case "utf_16be":
-                case "utf_16_be": encoding = new UnicodeEncoding(bigEndian: true, byteOrderMark: false); return true;
-
-                case "utf_8_sig": encoding = Encoding.UTF8; return true;
-
-                default: encoding = null; return false;
-            }
-#endif
         }
 
         #endregion
@@ -1632,7 +1608,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string GetEncodingName(Encoding encoding, bool normalize = true) {
-#if FEATURE_ENCODING
             string? name = null;
 
             // if we have a valid code page try and get a reasonable name.  The
@@ -1674,10 +1649,6 @@ namespace IronPython.Runtime.Operations {
                 // otherwise just finally fall back to the human readable name
                 name = encoding.EncodingName;
             }
-#else
-            // only has web names
-            string name = encoding.WebName;
-#endif
 
             return normalize ? NormalizeEncodingName(name) : name;
         }
@@ -1697,16 +1668,13 @@ namespace IronPython.Runtime.Operations {
             return UserDecode(context, codecTuple, data, errors);
         }
 
-#if FEATURE_ENCODING
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
-#endif
 
         internal static string DoDecode(CodeContext context, IPythonBuffer buffer, string? errors, string encoding, Encoding e, int numBytes = -1) {
             var span = buffer.AsReadOnlySpan();
             int start = GetStartingOffset(span, e);
             int length = (numBytes >= 0 ? numBytes : span.Length) - start;
 
-#if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode.
             Encoding setFallback(Encoding enc, DecoderFallback fb) {
@@ -1729,20 +1697,16 @@ namespace IronPython.Runtime.Operations {
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
-#endif
 
             string decoded = string.Empty;
             try {
                 unsafe {
                     fixed (byte* ptr = span.Slice(start)) {
                         if (ptr != null) {
-#if FEATURE_ENCODING
                             if (e is UnicodeEscapeEncoding ue) {
                                 // This overload is not virtual, but the base implementation is inefficient for this encoding
                                 decoded = ue.GetString(ptr, length);
-                            } else
-#endif
-                            {
+                            } else {
                                 decoded = e.GetString(ptr, length);
                             }
                         }
@@ -1780,7 +1744,6 @@ namespace IronPython.Runtime.Operations {
             => DoEncode(context, s, "strict", "utf-8", Encoding.UTF8, includePreamble: false);
 
         internal static Bytes DoEncode(CodeContext context, string s, string? errors, string encoding, Encoding e, bool includePreamble) {
-#if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
             Encoding setFallback(Encoding enc, EncoderFallback fb) {
@@ -1802,7 +1765,6 @@ namespace IronPython.Runtime.Operations {
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
-#endif
 
             byte[]? preamble = includePreamble ? e.GetPreamble() : null;
             int preambleLen = preamble?.Length ?? 0;
@@ -1848,7 +1810,6 @@ namespace IronPython.Runtime.Operations {
             return Converter.ConvertToString(res[0]);
         }
 
-#if FEATURE_ENCODING
         internal static class CodecsInfo {
             internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
             internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
@@ -1964,7 +1925,6 @@ namespace IronPython.Runtime.Operations {
                 return d;
             }
         }
-#endif
 
         private static PythonList SplitEmptyString(bool separators) {
             PythonList ret = new PythonList(1);
@@ -2102,8 +2062,6 @@ namespace IronPython.Runtime.Operations {
 
         #region UnicodeEscapeEncoding
 
-#if FEATURE_ENCODING
-
         private class UnicodeEscapeEncoding : Encoding {
             private readonly bool _raw;
 
@@ -2198,13 +2156,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#endif
-
         #endregion
 
         #region  Unicode Encode/Decode Fallback Support
-
-#if FEATURE_ENCODING
 
         /// When encoding or decoding strings if an error occurs CPython supports several different
         /// behaviors, in addition it supports user-extensible behaviors as well.  For the default
@@ -2925,7 +2879,6 @@ namespace IronPython.Runtime.Operations {
                 }
             }
         }
-#endif
 
         #endregion
     }

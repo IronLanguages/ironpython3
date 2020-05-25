@@ -65,7 +65,6 @@ namespace IronPython.Modules {
         #endregion
 
         #region Charmap Encoding
-#if FEATURE_ENCODING
 
         /// <summary>
         /// Creates an optimized encoding mapping that can be consumed by an optimized version of charmap_encode/charmap_decode.
@@ -111,7 +110,6 @@ namespace IronPython.Modules {
             }
         }
 
-#endif
         #endregion
 
         #region Generic Encoding
@@ -224,7 +222,6 @@ namespace IronPython.Modules {
         #endregion
 
         #region MBCS Functions
-#if FEATURE_ENCODING
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
@@ -236,11 +233,9 @@ namespace IronPython.Modules {
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null)
             => DoEncode(context, "mbcs", MbcsEncoding, input, errors).ToPythonTuple();
 
-#endif
         #endregion
 
         #region Code Page Functions
-#if FEATURE_ENCODING
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple code_page_decode(CodeContext context, int codepage, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
@@ -259,11 +254,9 @@ namespace IronPython.Modules {
             return DoEncode(context, encodingName, encoding, input, errors, includePreamble: true).ToPythonTuple();
         }
 
-#endif
         #endregion
 
         #region Raw Unicode Escape Encoding Functions
-#if FEATURE_ENCODING
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
             // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
@@ -286,11 +279,9 @@ namespace IronPython.Modules {
             );
         }
 
-#endif
         #endregion
 
         #region Unicode Escape Encoding Functions
-#if FEATURE_ENCODING
 
         public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null) {
             // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
@@ -313,7 +304,6 @@ namespace IronPython.Modules {
             );
         }
 
-#endif
         #endregion
 
         #region Readbuffer Functions
@@ -450,8 +440,6 @@ namespace IronPython.Modules {
 
         #region Utf-7 Functions
 
-#if FEATURE_ENCODING
-
         public static PythonTuple utf_7_decode(CodeContext context, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
             using IPythonBuffer buffer = input.GetBuffer();
             return DoDecode(context, "utf-7", Encoding.UTF7, buffer, errors, NumEligibleUtf7Bytes(buffer.AsReadOnlySpan(), final)).ToPythonTuple();
@@ -476,8 +464,6 @@ namespace IronPython.Modules {
             }
             return numBytes;
         }
-
-#endif
 
         #endregion
 
@@ -520,8 +506,6 @@ namespace IronPython.Modules {
         }
 
         #endregion
-
-#if FEATURE_ENCODING
 
         #region Utf-32 Functions
 
@@ -612,8 +596,6 @@ namespace IronPython.Modules {
 
         #endregion
 
-#endif
-
         #region Private implementation
 
         private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, IPythonBuffer input, string? errors, int numBytes = -1) {
@@ -628,8 +610,6 @@ namespace IronPython.Modules {
 
         #endregion
     }
-
-#if FEATURE_ENCODING    // Encoding
 
     /// <summary>
     /// Optimized encoding mapping that can be consumed by charmap_encode/EncodingMapEncoding.
@@ -992,6 +972,4 @@ namespace IronPython.Modules {
             return byteCount * _maxDecodingReplacementLength;
         }
     }
-
-#endif
 }

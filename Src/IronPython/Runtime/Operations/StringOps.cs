@@ -1766,6 +1766,20 @@ namespace IronPython.Runtime.Operations {
             return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
+        internal static bool TryEncodeAscii(string s, out Bytes? ascii) {
+            var bytes = new byte[s.Length];
+            for (int i = 0; i < s.Length; i++) {
+                if (s[i] < 0x80) {
+                    bytes[i] = (byte)s[i];
+                } else {
+                    ascii = default;
+                    return false;
+                }
+            }
+            ascii = Bytes.Make(bytes);
+            return true;
+        }
+
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string? errors) {
             if (TryGetEncoding(encoding, out Encoding? e)) {
                 return DoEncode(context, s, errors, encoding, e, true);

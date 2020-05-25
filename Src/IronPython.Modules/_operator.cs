@@ -348,20 +348,22 @@ Note: If a and b are of different lengths, or if an error occurs,
 a timing attack could theoretically reveal information about the
 types and lengths of a and b--but not their values.")]
         public static bool _compare_digest(object a, object b) {
-            if(a is string && b is string) {
-                string aStr = a as string;
-                string bStr = b as string;
-                return CompareBytes(aStr.MakeByteArray(), bStr.MakeByteArray());
-            } else if(a is IBufferProtocol abp && b is IBufferProtocol bbp) {
+            var aStr = a as string ?? (a as Extensible<string>)?.Value;
+            var bStr = b as string ?? (b as Extensible<string>)?.Value;
+            if (aStr != null && bStr != null) {
+                if (!StringOps.TryEncodeAscii(aStr, out Bytes aBytes) || !StringOps.TryEncodeAscii(bStr, out Bytes bBytes))
+                    throw PythonOps.TypeError("comparing strings with non-ASCII characters is not supported");
+                return CompareBytes(aBytes, bBytes);
+            } else if (a is IBufferProtocol abp && b is IBufferProtocol bbp) {
                 using IPythonBuffer aBuf = abp.GetBuffer();
                 using IPythonBuffer bBuf = bbp.GetBuffer();
-                if(aBuf.NumOfDims > 1 || bBuf.NumOfDims > 1) {
+                if (aBuf.NumOfDims > 1 || bBuf.NumOfDims > 1) {
                     throw PythonOps.BufferError("Buffer must be single dimension");
                 }
 
                 return CompareBytes(aBuf.AsReadOnlySpan().ToArray(), bBuf.AsReadOnlySpan().ToArray());
             }
-            throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
+            throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}'", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
         }
 
         private static bool CompareBytes(IEnumerable<byte> a, IEnumerable<byte> b) {

@@ -21,7 +21,7 @@ namespace IronPython.Modules {
         private const int BLOCK_SIZE = 64;
 
         [Documentation("Size of the resulting digest in bytes (constant)")]
-        public static int digest_size {            
+        public static int digest_size {
             get { return DIGEST_SIZE; }
         }
 
@@ -46,7 +46,7 @@ namespace IronPython.Modules {
         [Documentation("md5([data]) -> object (object used to calculate MD5 hash)")]
         [PythonHidden]
         public class MD5Object : HashBase<MD5> {
-            public MD5Object() : base("MD5", BLOCK_SIZE, DIGEST_SIZE) { }
+            public MD5Object() : base("md5", BLOCK_SIZE, DIGEST_SIZE) { }
 
             internal MD5Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
@@ -61,7 +61,7 @@ namespace IronPython.Modules {
                 MD5Object res = new MD5Object();
                 res._hasher = CloneHasher();
                 return res;
-            }          
+            }
         }
     }
 }

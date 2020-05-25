@@ -6,7 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Numerics;
+using System.Diagnostics;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -51,7 +51,7 @@ namespace IronPython.Runtime {
         /// An N-dimensional array with strides, so it may not be memory contiguous.
         /// The last dimension is contiguous.
         /// </summary>
-        CContiguous = 0x0020 | Strides,
+        CContiguous   = 0x0020 | Strides,
 
         /// <summary>
         /// An N-dimensional array with strides, so it may not be memory contiguous.
@@ -75,7 +75,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Unformmatted (i.e. byte-oriented) read-only blob with no structure.
         /// </summary>
-        Simple = 0,
+        Simple    = 0,
 
         /// <summary>
         /// Contiguous writable buffer of any dimension.
@@ -85,12 +85,12 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Contiguous buffer of any dimension.
         /// </summary>
-        ContigRO = ND,
+        ContigRO  = ND,
 
         /// <summary>
         /// Writable byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// </summary>
-        Strided = Strides | Writable,
+        Strided   = Strides | Writable,
 
         /// <summary>
         /// Byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -101,7 +101,7 @@ namespace IronPython.Runtime {
         /// Writable buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// Elements can be any struct type.
         /// </summary>
-        Records = Strides | Writable | Format,
+        Records   = Strides | Writable | Format,
 
         /// <summary>
         /// Buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -135,7 +135,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// A reference to the exporting object.
         /// </summary>
-        object Object { get;  }
+        object Object { get; }
 
         /// <summary>
         /// Indicates whether only read access is permitted.
@@ -219,5 +219,64 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.suboffsets"/>
         IReadOnlyList<int>? SubOffsets { get; }
+    }
+
+    public static class PythonBufferExtensions {
+        /// <summary>
+        /// Number of bytes of data in the buffer (len).
+        /// </summary>
+        /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.len"/>
+        public static int NumBytes(this IPythonBuffer buffer)
+            => buffer.ItemCount * buffer.ItemSize;
+
+        public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
+            => new BufferBytesEnumerator(buffer);
+
+    }
+
+    public ref struct BufferBytesEnumerator {
+        private readonly ReadOnlySpan<byte> _span;
+        private readonly IEnumerator<int> _offsets;
+
+        public BufferBytesEnumerator(IPythonBuffer buffer) {
+            if (buffer.SubOffsets != null)
+                throw new NotImplementedException("buffers with suboffsets are not supported");
+
+            _span = buffer.AsReadOnlySpan();
+            _offsets = EnumerateDimension(buffer, buffer.Offset, 0).GetEnumerator();
+        }
+
+        public byte Current => _span[_offsets.Current];
+
+        public bool MoveNext() => _offsets.MoveNext();
+
+        public BufferBytesEnumerator GetEnumerator() => this;
+
+        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int dim) {
+            IReadOnlyList<int>? shape = buffer.Shape;
+            IReadOnlyList<int>? strides = buffer.Strides;
+
+            if (shape == null || strides == null) {
+                // simple C-contiguous case
+                Debug.Assert(buffer.Offset == 0);
+                int len = buffer.NumBytes();
+                for (int i = 0; i < len; i++) {
+                    yield return i;
+                }
+            } else if (dim >= shape.Count) {
+                // iterate individual element (scalar)
+                for (int i = 0; i < buffer.ItemSize; i++) {
+                    yield return ofs + i;
+                }
+            } else {
+                for (int i = 0; i < shape[dim]; i++) {
+                    // iterate all bytes from a subdimension
+                    foreach (int j in EnumerateDimension(buffer, ofs, dim + 1)) {
+                        yield return j;
+                    }
+                    ofs += strides[dim];
+                }
+            }
+        }
     }
 }

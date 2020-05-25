@@ -268,7 +268,7 @@ namespace IronPython.Modules {
             using IPythonBuffer buffer = input.GetBuffer();
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, buffer, errors, "raw-unicode-escape", StringOps.CodecsInfo.RawUnicodeEscapeEncoding),
-                buffer.ItemCount * buffer.ItemSize
+                buffer.NumBytes()
             );
         }
 
@@ -293,7 +293,7 @@ namespace IronPython.Modules {
             using IPythonBuffer buffer = input.GetBuffer();
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, buffer, errors, "unicode-escape", StringOps.CodecsInfo.UnicodeEscapeEncoding),
-                buffer.ItemCount * buffer.ItemSize
+                buffer.NumBytes()
             );
         }
 
@@ -600,7 +600,7 @@ namespace IronPython.Modules {
 
         private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, IPythonBuffer input, string? errors, int numBytes = -1) {
             var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, numBytes);
-            return Tuple.Create(decoded, numBytes >= 0 ? numBytes : input.ItemCount * input.ItemSize);
+            return Tuple.Create(decoded, numBytes >= 0 ? numBytes : input.NumBytes());
         }
 
         private static Tuple<Bytes, int> DoEncode(CodeContext context, string encodingName, Encoding encoding, string input, string? errors, bool includePreamble = false) {

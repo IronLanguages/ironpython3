@@ -60,7 +60,7 @@ namespace IronPython.Runtime {
             ReadOnlySpan<byte> memblock = _buffer.AsReadOnlySpan();
 
             if (   (_buffer.ItemCount != 0 && !VerifyStructure(memblock.Length, _buffer.ItemSize, _buffer.NumOfDims, _buffer.Shape, _buffer.Strides, _buffer.Offset))
-                || (_buffer.Shape == null && (_buffer.Offset != 0 || _buffer.ItemCount * _buffer.ItemSize != memblock.Length))
+                || (_buffer.Shape == null && (_buffer.Offset != 0 || _buffer.NumBytes() != memblock.Length))
                ) {
                 throw PythonOps.BufferError("memoryview: invalid buffer exported from object of type {0}", PythonOps.GetPythonTypeName(@object));
             }
@@ -369,23 +369,12 @@ namespace IronPython.Runtime {
             }
 
             byte[] bytes = new byte[_numItems * _itemSize];
-            copyDimension(buf, bytes, _offset, dim: 0);
+            int i = 0;
+            foreach (byte b in this.EnumerateBytes()) {
+                bytes[i++] = b;
+            }
             return Bytes.Make(bytes);
 
-            int copyDimension(ReadOnlySpan<byte> source, Span<byte> dest, int ofs, int dim) {
-                if (dim >= _shape.Count) {
-                    // copy individual element (scalar)
-                    source.Slice(ofs, _itemSize).CopyTo(dest);
-                    return _itemSize;
-                }
-
-                int copied = 0;
-                for (int i = 0; i < _shape[dim]; i++) {
-                    copied += copyDimension(source, dest.Slice(copied), ofs, dim + 1);
-                    ofs += _strides[dim];
-                }
-                return copied;
-            }
         }
 
         public object tolist() {

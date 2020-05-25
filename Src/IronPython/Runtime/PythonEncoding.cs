@@ -9,8 +9,6 @@ using System.Text;
 
 namespace IronPython.Runtime {
 
-#if FEATURE_ENCODING
-
     /// <summary>
     /// Wrapper class for any well-behaved <see cref="System.Text.Encoding"/> (like any encodings provided by .NET)
     /// that allows for encoding/decoding fallbacks operating on byte level.
@@ -858,6 +856,4 @@ namespace IronPython.Runtime {
                 => throw new DecoderFallbackException($"'surrogatepass' error handler: not a surrogate character", bytesUnknown, index);
         }
     }
-
-#endif
 }

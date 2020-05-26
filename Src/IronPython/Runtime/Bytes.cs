@@ -36,8 +36,16 @@ namespace IronPython.Runtime {
         }
 
         public Bytes([BytesLike, NotNull]IBufferProtocol source) {
-            using IPythonBuffer buffer = source.GetBuffer();
-            _bytes = buffer.AsReadOnlySpan().ToArray();
+            using IPythonBuffer buffer = source.GetBuffer(BufferFlags.FullRO);
+            if (buffer.IsCContiguous()) {
+                _bytes = buffer.AsReadOnlySpan().ToArray();
+            } else {
+                _bytes = new byte[buffer.NumBytes()];
+                int i = 0;
+                foreach (byte b in buffer.EnumerateBytes()) {
+                    _bytes[i++] = b;
+                }
+            }
         }
 
         public Bytes(CodeContext context, object? source) {

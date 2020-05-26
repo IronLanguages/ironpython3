@@ -244,6 +244,10 @@ namespace IronPython.Runtime {
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
             => new BufferBytesEnumerator(buffer);
 
+        public static bool IsCContiguous(this IPythonBuffer buffer) {
+            Debug.Assert(buffer.Offset == 0);
+            return buffer.Strides == null;
+        }
     }
 
     public ref struct BufferBytesEnumerator {

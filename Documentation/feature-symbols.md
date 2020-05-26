@@ -55,9 +55,6 @@ System.IO.DriveNotFoundException
 ### FEATURE_DYNAMIC_EXPRESSION_VISITOR
 System.Linq.Expressions.DynamicExpressionVisitor
 
-### FEATURE_ENCODING
-Full encoding support: code pages, decoder/encoder fallbacks.
-
 ### FEATURE_EXCEPTION_STATE
 System.Threading.ThreadAbortException.ExceptionState
 

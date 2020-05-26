@@ -18,6 +18,7 @@
 ##      implemented in a thread-safe way.
 ##
 
+import gc
 import weakref
 
 from iptest import IronPythonTestCase, run_test
@@ -58,7 +59,7 @@ class WeakrefTest(IronPythonTestCase):
         # for reasons stated in create_weakrefs(), we cannot test on instance equality
         self.assertTrue(r().value == "a") 
 
-        self.force_gc()
+        gc.collect()
 
         self.assertTrue(r() is None)
 
@@ -70,7 +71,7 @@ class WeakrefTest(IronPythonTestCase):
         r1, r2 = _create_weakrefs(self, C("a"), 2)
         self.assertTrue(hash(r1) == hash("a"))
 
-        self.force_gc()
+        gc.collect()
 
         self.assertTrue(r1() is None)
         self.assertTrue(r2() is None)
@@ -87,7 +88,7 @@ class WeakrefTest(IronPythonTestCase):
         self.assertTrue(r1 == r2)
         self.assertTrue(r1 == r3)
 
-        self.force_gc()
+        gc.collect()
 
         self.assertTrue(r1() is None)
         self.assertTrue(r3() is None)

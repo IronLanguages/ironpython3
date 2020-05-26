@@ -368,11 +368,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool IsInstance(object? o, PythonType typeinfo) {
+            var objType = DynamicHelpers.GetPythonType(o);
+            if (objType == typeinfo) {
+                return true;
+            }
+
             if (typeinfo.__instancecheck__(o)) {
                 return true;
             }
 
-            return IsInstanceDynamic(o, typeinfo, DynamicHelpers.GetPythonType(o));
+            return IsInstanceDynamic(o, typeinfo, objType);
         }
 
         internal static bool IsInstance(CodeContext/*!*/ context, object? o, PythonTuple typeinfo) {

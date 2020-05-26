@@ -13,13 +13,14 @@ def get_root_dir():
 
 root_dir = get_root_dir()
 
-
 source_directories = [
-    os.path.join(root_dir, "Src")
+    os.path.join(root_dir, "Src"),
+    os.path.join(root_dir, "Src", "DLR", "Src"),
 ]
 
 exclude_directories = [
-    root_dir + "\\runtime\\tests\\linqdlrtests",
+    os.path.join(root_dir, "Src", "DLR"),
+    os.path.join(root_dir, "Src", "StdLib"),
 ]
 
 START = "#region Generated %s"
@@ -151,7 +152,7 @@ class CodeGenerator:
         return result
 
     def do_dir(self, dirname):
-        if dirname.lower() in exclude_directories:
+        if dirname in exclude_directories:
             return
         for file in os.listdir(dirname):
             filename = os.path.join(dirname, file)

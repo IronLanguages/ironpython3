@@ -297,9 +297,9 @@ namespace IronPython.Runtime.Operations {
                         res = ps.StackObj;
 
                         if (ps.StackType == StackType.Tuple) {
-                            res = PythonTuple.Make (res);
+                            res = PythonTuple.Make(res);
                         } else if (ps.StackType == StackType.FrozenSet) {
-                            res = FrozenSetCollection.Make (TypeCache.FrozenSet, res);
+                            res = FrozenSetCollection.Make(res);
                         }
 
                         if (_stack.Count > 0) {
@@ -406,7 +406,7 @@ namespace IronPython.Runtime.Operations {
                         curStack.StackCount--;
                         if (curStack.StackCount == 0) {
                             _stack.Pop ();
-                            object frozenSet = FrozenSetCollection.Make (TypeCache.FrozenSet, ofs);
+                            object frozenSet = FrozenSetCollection.Make(ofs);
                             if (_stack.Count == 0) {
                                 _result = frozenSet;
                             }

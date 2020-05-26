@@ -31,7 +31,7 @@ namespace IronPython.Modules {
         public static Sha512Object sha512([BytesLike]IList<byte> data) {
             return new Sha512Object(data);
         }
-        
+
         public static Sha512Object sha512() {
             return new Sha512Object();
         }
@@ -47,14 +47,14 @@ namespace IronPython.Modules {
         public static Sha384Object sha384([BytesLike]IList<byte> data) {
             return new Sha384Object(data);
         }
-        
+
         public static Sha384Object sha384() {
             return new Sha384Object();
         }
 
         [PythonHidden]
         public sealed class Sha384Object : HashBase<SHA384> {
-            internal Sha384Object() : base("SHA384", BLOCK_SIZE, 48) { }
+            internal Sha384Object() : base("sha384", BLOCK_SIZE, 48) { }
 
             internal Sha384Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
@@ -74,7 +74,7 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public sealed class Sha512Object : HashBase<SHA512> {
-            internal Sha512Object() : base("SHA512", BLOCK_SIZE, 64) { }
+            internal Sha512Object() : base("sha512", BLOCK_SIZE, 64) { }
 
             internal Sha512Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
@@ -90,8 +90,8 @@ namespace IronPython.Modules {
                 res._hasher = CloneHasher();
                 return res;
             }
-        }        
-    }   
+        }
+    }
 }
 
 #endif

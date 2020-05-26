@@ -28,12 +28,11 @@ namespace IronPython.Modules {
         public readonly string name;
         public readonly int block_size;
         public readonly int digest_size;
-        public readonly int digestsize;
 
         internal HashBase(string name, int blocksize, int digestsize) {
             this.name = name;
             this.block_size = blocksize;
-            this.digest_size = this.digestsize = digestsize;
+            this.digest_size = digestsize;
             CreateHasher();
         }
 

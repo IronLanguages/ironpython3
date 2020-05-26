@@ -14,7 +14,6 @@
     <Features>$(Features);FEATURE_CTYPES</Features>
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
     <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
-    <Features>$(Features);FEATURE_ENCODING</Features>
     <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
     <Features>$(Features);FEATURE_FILESYSTEM</Features>
     <Features>$(Features);FEATURE_FULL_CONSOLE</Features>

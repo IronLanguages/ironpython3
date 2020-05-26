@@ -331,6 +331,7 @@ class TestJointOps:
             fo.close()
             support.unlink(support.TESTFN)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/848")
     def test_do_not_rehash_dict_keys(self):
         n = 10
         d = dict.fromkeys(map(HashCountingInt, range(n)))
@@ -588,6 +589,7 @@ class TestSet(TestJointOps, unittest.TestCase):
         p = weakref.proxy(s)
         self.assertEqual(str(p), str(s))
         s = None
+        gc.collect() # required by IronPython
         self.assertRaises(ReferenceError, str, p)
 
     def test_rich_compare(self):
@@ -1740,7 +1742,12 @@ class TestWeirdBugs(unittest.TestCase):
         s.clear()
         a = list(range(100))
         s.update(range(100))
-        list(si)
+        if sys.implementation.name == "ironpython":
+            # https://github.com/IronLanguages/ironpython3/issues/847
+            with self.assertRaises(RuntimeError):
+                list(si)
+        else:
+            list(si)
 
 # Application tests (based on David Eppstein's graph recipes ====================================
 

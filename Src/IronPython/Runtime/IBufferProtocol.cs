@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
+using IronPython.Runtime.Exceptions;
+
 namespace IronPython.Runtime {
     /// <summary>
     /// Equivalent functionality of CPython's <a href="https://docs.python.org/3/c-api/buffer.html">Buffer Protocol</a>.
@@ -113,6 +115,16 @@ namespace IronPython.Runtime {
         FullRO    = Indirect | Format,
 
         #endregion
+    }
+
+    internal static class BufferProtocolExtensions {
+        internal static IPythonBuffer? GetBufferNoThrow(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple) {
+            try {
+                return bufferProtocol.GetBuffer(flags);
+            } catch (BufferException) {
+                return null;
+            }
+        }
     }
 
     /// <summary>

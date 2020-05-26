@@ -146,21 +146,16 @@ namespace IronPython.Modules {
                 + "Returns number of bytes read (0 for EOF)."
                 )]
             public BigInteger readinto([NotNull] IBufferProtocol buffer) {
-                try {
-                    using var pythonBuffer = buffer.GetBuffer(BufferFlags.Writable);
-                    var span = pythonBuffer.AsSpan();
+                using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
 
-                    _checkClosed();
+                _checkClosed();
 
-                    int len = Math.Min(_length - _pos, span.Length);
-                    for (int i = 0; i < len; i++) {
-                        span[i] = _data[_pos++];
-                    }
-
-                    return len;
-                } catch (BufferException) {
-                    throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
-                }
+                var span = pythonBuffer.AsSpan();
+                int len = Math.Min(_length - _pos, span.Length);
+                _data.AsSpan(_pos, len).CopyTo(span);
+                _pos += len;
+                return len;
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {

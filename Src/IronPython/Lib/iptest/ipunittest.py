@@ -146,16 +146,6 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
             else:
                 clr.AddReference(prefix + x)
 
-    def force_gc(self):
-        if is_cpython:
-            import gc
-            gc.collect()
-        else:
-            import System
-            for i in range(100):
-                System.GC.Collect()
-            System.GC.WaitForPendingFinalizers()
-
     # assertion helpers
 
     def assertRaisesMessage(self, expected_exception, expected_message, callable_obj=None, *args, **kwargs):

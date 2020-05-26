@@ -221,6 +221,7 @@ class SysGetFrameTest(IronPythonTestCase):
 
     def test_cp24242(self):
         # This test requires -X:FullFrames, run it in separate instance of IronPython.
+        import gc
 
         frame = sys._getframe()
         ids = []
@@ -228,7 +229,7 @@ class SysGetFrameTest(IronPythonTestCase):
             ids.append(id(frame))
             frame = frame.f_back
         del frame
-        self.force_gc()
+        gc.collect()
 
         frame = sys._getframe()
         new_ids = []
@@ -236,7 +237,7 @@ class SysGetFrameTest(IronPythonTestCase):
             new_ids.append(id(frame))
             frame = frame.f_back
         del frame
-        self.force_gc()
+        gc.collect()
 
         self.assertEqual(ids, new_ids)
 

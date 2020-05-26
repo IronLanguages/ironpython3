@@ -3619,7 +3619,7 @@ class ClassTest(IronPythonTestCase):
         k = K2()
         k.__class__ = K1
         del k
-        self.force_gc()
+        import gc; gc.collect()
         self.assertEqual(A, 1)
 
 

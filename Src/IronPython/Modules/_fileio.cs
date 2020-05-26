@@ -399,22 +399,19 @@ namespace IronPython.Modules {
             public BigInteger readinto([NotNull] IBufferProtocol buffer) {
                 EnsureReadable();
 
-                try {
-                    using var pythonBuffer = buffer.GetBuffer(BufferFlags.Writable);
-                    var span = pythonBuffer.AsSpan();
+                using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
 
-                    _checkClosed();
+                _checkClosed();
 
-                    for (int i = 0; i < span.Length; i++) {
-                        int b = _readStream.ReadByte();
-                        if (b == -1) return i;
-                        span[i] = (byte)b;
-                    }
-
-                    return span.Length;
-                } catch (BufferException) {
-                    throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
+                var span = pythonBuffer.AsSpan();
+                for (int i = 0; i < span.Length; i++) {
+                    int b = _readStream.ReadByte();
+                    if (b == -1) return i;
+                    span[i] = (byte)b;
                 }
+
+                return span.Length;
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {

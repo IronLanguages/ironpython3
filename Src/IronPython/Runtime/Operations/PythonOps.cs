@@ -373,6 +373,11 @@ namespace IronPython.Runtime.Operations {
                 return true;
             }
 
+            // https://github.com/IronLanguages/ironpython3/issues/52
+            if (typeinfo == TypeCache.Int32 && o is BigInteger) {
+                return true;
+            }
+
             if (typeinfo.__instancecheck__(o)) {
                 return true;
             }

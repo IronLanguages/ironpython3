@@ -248,6 +248,30 @@ namespace IronPython.Runtime {
             Debug.Assert(buffer.Offset == 0);
             return buffer.Strides == null;
         }
+
+        public static byte[] ToArray(this IPythonBuffer buffer) {
+            if (buffer.IsCContiguous()) {
+                return buffer.AsReadOnlySpan().ToArray();
+            } else {
+                var bytes = new byte[buffer.NumBytes()];
+                int i = 0;
+                foreach (byte b in buffer.EnumerateBytes()) {
+                    bytes[i++] = b;
+                }
+                return bytes;
+            }
+        }
+
+        public static void CopyTo(this IPythonBuffer buffer, Span<byte> dest) {
+            if (buffer.IsCContiguous()) {
+                buffer.AsReadOnlySpan().CopyTo(dest);
+            } else {
+                int i = 0;
+                foreach (byte b in buffer.EnumerateBytes()) {
+                    dest[i++] = b;
+                }
+            }
+        }
     }
 
     public ref struct BufferBytesEnumerator {

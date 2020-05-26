@@ -4,19 +4,18 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.IO;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     public static partial class PythonIOModule {
@@ -39,11 +38,11 @@ namespace IronPython.Modules {
                 : base(context) {
             }
 
-            public BytesIO(CodeContext/*!*/ context, object initial_bytes=null)
+            public BytesIO(CodeContext/*!*/ context, params object[] args)
                 : base(context) {
             }
 
-            public void __init__(IBufferProtocol initial_bytes=null) {
+            public void __init__(IBufferProtocol initial_bytes = null) {
                 if (Object.ReferenceEquals(_data, null)) {
                     _data = new byte[DEFAULT_BUF_SIZE];
                 }
@@ -112,7 +111,7 @@ namespace IronPython.Modules {
                 + "If the size argument is negative, read until EOF is reached.\n"
                 + "Return an empty string at EOF."
                 )]
-            public override object read(CodeContext/*!*/ context, object size=null) {
+            public override object read(CodeContext/*!*/ context, object size = null) {
                 _checkClosed();
                 int sz = GetInt(size, -1);
 
@@ -146,47 +145,22 @@ namespace IronPython.Modules {
             [Documentation("readinto(array_or_bytearray) -> int.  Read up to len(b) bytes into b.\n\n"
                 + "Returns number of bytes read (0 for EOF)."
                 )]
-            public BigInteger readinto([NotNull]ByteArray buffer) {
+            public BigInteger readinto([NotNull] IBufferProtocol buffer) {
+                using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
+
                 _checkClosed();
 
-                int len = Math.Min(_length - _pos, buffer.Count);
-                for (int i = 0; i < len; i++) {
-                    buffer[i] = _data[_pos++];
-                }
-
-                return len;
-            }
-
-            public BigInteger readinto([NotNull]ArrayModule.array buffer) {
-                _checkClosed();
-
-                int len = Math.Min(_length - _pos, buffer.__len__() * buffer.itemsize);
-                int tailLen = len % buffer.itemsize;
-                buffer.FromStream(new MemoryStream(_data, _pos, len - tailLen, false, false), 0);
-                _pos += len - tailLen;
-
-                if (tailLen != 0) {
-                    byte[] tail = buffer.RawGetItem(len / buffer.itemsize);
-                    for (int i = 0; i < tailLen; i++) {
-                        tail[i] = _data[_pos++];
-                    }
-                    buffer.FromStream(new MemoryStream(tail), len / buffer.itemsize);
-                }
-
+                var span = pythonBuffer.AsSpan();
+                int len = Math.Min(_length - _pos, span.Length);
+                _data.AsSpan(_pos, len).CopyTo(span);
+                _pos += len;
                 return len;
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
-                if (buf is ByteArray bytes) {
-                    return readinto(bytes);
-                }
-
-                if (buf is ArrayModule.array array) {
-                    return readinto(array);
-                }
-
-                _checkClosed();
-                throw PythonOps.TypeError("must be read-write buffer, not {0}", PythonTypeOps.GetName(buf));
+                var bufferProtocol = Converter.Convert<IBufferProtocol>(buf);
+                return readinto(bufferProtocol);
             }
 
             [Documentation("readline([size]) -> next line from the file, as bytes.\n\n"
@@ -194,11 +168,11 @@ namespace IronPython.Modules {
                 + "number of bytes to return (an incomplete line may be returned then).\n"
                 + "Return an empty string at EOF."
                 )]
-            public override object readline(CodeContext/*!*/ context, int limit=-1) {
+            public override object readline(CodeContext/*!*/ context, int limit = -1) {
                 return readline(limit);
             }
 
-            private Bytes readline(int size=-1) {
+            private Bytes readline(int size = -1) {
                 _checkClosed();
                 if (_pos >= _length || size == 0) {
                     return Bytes.Empty;
@@ -233,13 +207,13 @@ namespace IronPython.Modules {
                 + "The optional size argument, if given, is an approximate bound on the\n"
                 + "total number of bytes in the lines returned."
                 )]
-            public override PythonList readlines(object hint=null) {
+            public override PythonList readlines(object hint = null) {
                 _checkClosed();
                 int size = GetInt(hint, -1);
 
                 PythonList lines = new PythonList();
                 for (Bytes line = readline(-1); line.Count > 0; line = readline(-1)) {
-                    lines.append(line); 
+                    lines.append(line);
                     if (size > 0) {
                         size -= line.Count;
                         if (size <= 0) {
@@ -272,7 +246,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public BigInteger seek(double pos, [Optional]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
+            public BigInteger seek(double pos, [Optional] object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
             [Documentation("seek(pos, whence=0) -> int.  Change stream position.\n\n"
                 + "Seek to byte offset pos relative to position indicated by whence:\n"
@@ -281,7 +255,7 @@ namespace IronPython.Modules {
                 + "     2  End of stream - pos usually negative.\n"
                 + "Returns the new absolute position."
                 )]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object whence) {
                 _checkClosed();
 
                 int posInt = (int)pos;
@@ -331,7 +305,7 @@ namespace IronPython.Modules {
                 return (BigInteger)size;
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object size=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object size = null) {
                 if (size == null) {
                     return truncate();
                 }
@@ -369,7 +343,7 @@ namespace IronPython.Modules {
                 + "object producing strings. This is equivalent to calling write() for\n"
                 + "each string."
                 )]
-            public void writelines([NotNull]IEnumerable lines) {
+            public void writelines([NotNull] IEnumerable lines) {
                 _checkClosed();
 
                 IEnumerator en = lines.GetEnumerator();
@@ -385,7 +359,7 @@ namespace IronPython.Modules {
             void IDisposable.Dispose() { }
 
             #endregion
-            
+
             #region IEnumerator methods
 
             private object _current = null;

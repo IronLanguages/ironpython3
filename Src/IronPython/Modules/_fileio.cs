@@ -66,7 +66,7 @@ namespace IronPython.Modules {
                 _consoleStreamType = consoleStreamType;
             }
 
-            public FileIO(CodeContext/*!*/ context, int fd, string mode="r", bool closefd=true, object opener=null)
+            public FileIO(CodeContext/*!*/ context, int fd, string mode = "r", bool closefd = true, object opener = null)
                 : base(context) {
                 if (fd < 0) {
                     throw PythonOps.ValueError("fd must be >= 0");
@@ -98,20 +98,18 @@ namespace IronPython.Modules {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
                     _writeStream = file._writeStream;
-                }
-                else if (fileObject is Stream stream) {
+                } else if (fileObject is Stream stream) {
                     name = fd;
                     _readStream = stream;
                     _writeStream = stream;
-                }
-                else {
+                } else {
                     Debug.Fail($"{nameof(fileObject)} is of unexpected type {fileObject.GetType().Name}");
                 }
 
                 _closefd = closefd;
             }
-            
-            public FileIO(CodeContext/*!*/ context, string name, string mode="r", bool closefd=true, object opener = null)
+
+            public FileIO(CodeContext/*!*/ context, string name, string mode = "r", bool closefd = true, object opener = null)
                 : base(context) {
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
@@ -275,7 +273,7 @@ namespace IronPython.Modules {
 
                     PythonFileManager myManager = _context.RawFileManager;
                     myManager?.Remove(this);
-                }                
+                }
             }
 
             [Documentation("True if the file is closed")]
@@ -356,7 +354,7 @@ namespace IronPython.Modules {
                 + "In non-blocking mode, returns None if no data is available.\n"
                 + "On end-of-file, returns ''."
                 )]
-            public override object read(CodeContext/*!*/ context, object size=null) {
+            public override object read(CodeContext/*!*/ context, object size = null) {
                 int sizeInt = GetInt(size, -1);
                 if (sizeInt < 0) {
                     return readall();
@@ -365,7 +363,7 @@ namespace IronPython.Modules {
 
                 byte[] buffer = new byte[sizeInt];
                 int bytesRead = _readStream.Read(buffer, 0, sizeInt);
-                
+
                 Array.Resize(ref buffer, bytesRead);
                 return Bytes.Make(buffer);
             }
@@ -398,38 +396,27 @@ namespace IronPython.Modules {
             }
 
             [Documentation("readinto() -> Same as RawIOBase.readinto().")]
-            public BigInteger readinto([NotNull]ArrayModule.array buffer) {
+            public BigInteger readinto([NotNull] IBufferProtocol buffer) {
                 EnsureReadable();
 
-                return (int)buffer.FromStream(_readStream, 0, buffer.__len__() * buffer.itemsize);
-            }
+                using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
 
-            public BigInteger readinto([NotNull]ByteArray buffer) {
-                EnsureReadable();
+                _checkClosed();
 
-                for (int i = 0; i < buffer.Count; i++) {
+                var span = pythonBuffer.AsSpan();
+                for (int i = 0; i < span.Length; i++) {
                     int b = _readStream.ReadByte();
-                    if (b == -1) return i - 1;
-                    buffer[i] = (byte)b;
+                    if (b == -1) return i;
+                    span[i] = (byte)b;
                 }
-                return buffer.Count;
+
+                return span.Length;
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
-                ByteArray bytes = buf as ByteArray;
-                if (bytes != null) {
-                    return readinto(bytes);
-                }
-
-                if (buf is ArrayModule.array arr) {
-                    return readinto(bytes);
-                };
-
-                EnsureReadable();
-                throw PythonOps.TypeError(
-                    "argument 1 must be read/write buffer, not {0}",
-                    DynamicHelpers.GetPythonType(buf).Name
-                );
+                var bufferProtocol = Converter.Convert<IBufferProtocol>(buf);
+                return readinto(bufferProtocol);
             }
 
             [Documentation("seek(offset: int[, whence: int]) -> None.  Move to new file position.\n\n"
@@ -440,13 +427,13 @@ namespace IronPython.Modules {
                 + "seeking beyond the end of a file).\n"
                 + "Note that not all file objects are seekable."
                 )]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional] object whence) {
                 _checkClosed();
 
                 return _readStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
             }
 
-            public BigInteger seek(double offset, [Optional]object whence) {
+            public BigInteger seek(double offset, [Optional] object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
@@ -486,7 +473,7 @@ namespace IronPython.Modules {
                 + "Size defaults to the current file position, as returned by tell()."
                 + "The current file position is changed to the value of size."
                 )]
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 if (pos == null) {
                     return truncate(tell(context));
                 }
@@ -507,55 +494,24 @@ namespace IronPython.Modules {
                 return _writeStream.CanWrite;
             }
 
-            private BigInteger write([NotNull]byte[] b) {
-                EnsureWritable();
-
-                _writeStream.Write(b, 0, b.Length);
-                SeekToEnd();
-
-                return b.Length;
-            }
-
-            private BigInteger write([NotNull]Bytes b) {
-                return write(b.UnsafeByteArray);
-            }
-
-            private BigInteger write([NotNull]ICollection<byte> b) {
-                EnsureWritable();
-
-                int len = b.Count;
-                byte[] bytes = new byte[len];
-                b.CopyTo(bytes, 0);
-                _writeStream.Write(bytes, 0, len);
-                SeekToEnd();
-
-                return len;
-            }
-
             [Documentation("write(b: bytes) -> int.  Write bytes b to file, return number written.\n\n"
                 + "Only makes one system call, so not all the data may be written.\n"
                 + "The number of bytes actually written is returned."
                 )]
             public override BigInteger write(CodeContext/*!*/ context, object b) {
-                if (b is byte[] bArray) {
-                    return write(bArray);
-                }
-
-                if (b is Bytes bBytes) {
-                    return write(bBytes);
-                }
-
-                if (b is ArrayModule.array bPythonArray) {
-                    return write(bPythonArray.ToByteArray());
-                }
-
-                if (b is ICollection<byte> bCollection) {
-                    return write(bCollection);
-                }
+                var bufferProtocol = Converter.Convert<IBufferProtocol>(b);
+                using var buffer = bufferProtocol.GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
 
                 EnsureWritable();
+#if NETCOREAPP
+                _writeStream.Write(bytes);
+#else
+                _writeStream.Write(bytes.ToArray(), 0, bytes.Length);
+#endif
+                SeekToEnd();
 
-                throw PythonOps.TypeError("expected a readable buffer object");
+                return bytes.Length;
             }
 
             #endregion
@@ -590,7 +546,7 @@ namespace IronPython.Modules {
             }
 
             #endregion
-            
+
             #region IDynamicMetaObjectProvider Members
 
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {

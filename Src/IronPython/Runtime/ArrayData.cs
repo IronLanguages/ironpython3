@@ -102,17 +102,12 @@ namespace IronPython.Runtime {
         }
 
         public void AddRange(IPythonBuffer data) {
-            ReadOnlySpan<byte> dataSpan = data.AsReadOnlySpan();
-
-            Debug.Assert(data.Offset == 0);
-            Debug.Assert(data.Strides == null); // C-contiguous
-            Debug.Assert(dataSpan.Length % Unsafe.SizeOf<T>() == 0);
-
-            int delta = dataSpan.Length / Unsafe.SizeOf<T>();
+            Debug.Assert(data.NumBytes() % Unsafe.SizeOf<T>() == 0);
+            int delta = data.NumBytes() / Unsafe.SizeOf<T>();
             lock (this) {
                 CheckBuffer();
                 EnsureSize((long)_size + delta);
-                dataSpan.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan(_size)));
+                data.CopyTo(MemoryMarshal.AsBytes(_items.AsSpan(_size)));
                 _size += delta;
             }
         }

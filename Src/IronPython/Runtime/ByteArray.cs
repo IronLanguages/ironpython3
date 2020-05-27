@@ -78,7 +78,7 @@ namespace IronPython.Runtime {
         public void __init__([BytesLike, NotNull]IBufferProtocol source) {
             lock (this) {
                 _bytes.Clear();
-                using IPythonBuffer buffer = source.GetBuffer();
+                using IPythonBuffer buffer = source.GetBuffer(BufferFlags.FullRO);
                 _bytes.AddRange(buffer);
             }
         }

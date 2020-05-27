@@ -33,14 +33,17 @@ class BytearraySubclass(bytearray): pass
 class BytesTest(IronPythonTestCase):
 
     def test_init(self):
-        b = bytes(b'abc')
+        b = bytes(b'abcd')
 
         for testType in types:
             self.assertEqual(testType(b), b)
             self.assertEqual(testType(bytearray(b)), b)
             self.assertEqual(testType(memoryview(b)), b)
             self.assertEqual(testType(array.array('B', b)), b)
-            self.assertEqual(testType(ctypes.c_int32(0x636261)), b"abc\0")
+            self.assertEqual(testType(array.array('H', b)), b)
+            self.assertEqual(testType(ctypes.c_int32(0x64636261)), b)
+            self.assertEqual(testType(memoryview(b)[::2]), b[::2])
+            self.assertEqual(testType(array.array('H', b"abcdefgh")[::2]), b"abef")
 
             self.assertRaises(TypeError, testType, None, 'ascii')
             self.assertRaises(TypeError, testType, 'abc', None)

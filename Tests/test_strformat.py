@@ -6,7 +6,7 @@ import _string
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp21, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp21, long, run_test, skipUnlessIronPython
 
 allChars = ''
 for y in [chr(x) for x in range(256) if chr(x) != '[' and chr(x) != '.']:
@@ -1192,11 +1192,10 @@ class StrFormatTest(IronPythonTestCase):
 
         formatTypes.sort()
         if is_cli:
-            # no unicode
             # why does bool have __format__ in ipy?
-            self.assertEqual(formatTypes, ['bool', 'complex', 'float', 'int', 'long', 'object', 'str'])
+            self.assertEqual(formatTypes, ['bool', 'complex', 'float', 'int', 'object', 'str'])
         else:
-            self.assertEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str', 'unicode'])
+            self.assertEqual(formatTypes, ['complex', 'float', 'int', 'object', 'str'])
 
 
     def test_computed_format(self):

@@ -6,3 +6,5 @@ from .ipunittest import IronPythonTestCase, stdout_trapper, stderr_trapper, path
 from .test_env import *
 from .type_util import *
 from .misc_util import ip_supported_encodings
+
+long = type(1 << 63) # https://github.com/IronLanguages/ironpython3/issues/52

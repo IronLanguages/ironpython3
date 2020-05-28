@@ -5,10 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
-
-if not is_cli:
-    long = int
+from iptest import IronPythonTestCase, is_cli, long, run_test, skipUnlessIronPython
 
 def get_builtins_dict():
     if type(__builtins__) is type(sys):

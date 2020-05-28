@@ -770,8 +770,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.Dict;
         }
 
-        public static PythonType @long => TypeCache.BigInteger;
-
         public static PythonType memoryview => DynamicHelpers.GetPythonTypeFromType(typeof(MemoryView));
 
         public static PythonType map => DynamicHelpers.GetPythonTypeFromType(typeof(Map));

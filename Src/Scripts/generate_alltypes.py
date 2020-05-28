@@ -7,6 +7,8 @@ import operator
 import clr
 from System import *
 
+long = type(1 << 63) # https://github.com/IronLanguages/ironpython3/issues/52
+
 def get_min_max(type):
     if hasattr(type, 'MinValue'):
         return type.MinValue, type.MaxValue

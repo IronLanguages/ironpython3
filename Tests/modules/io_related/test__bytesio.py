@@ -11,7 +11,7 @@ import unittest
 
 from _io import BytesIO
 
-from iptest import run_test
+from iptest import long, run_test
 
 def bytesio_helper():
     return (BytesIO(bytearray(b'')),

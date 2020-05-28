@@ -671,7 +671,7 @@ class _Pickler:
             return
         self.write(LONG + repr(obj).encode("ascii") + b'L\n')
     dispatch[int] = save_long
-    dispatch[long] = save_long
+    dispatch[type(1 << 63)] = save_long # https://github.com/IronLanguages/ironpython3/issues/52
 
     def save_float(self, obj):
         if self.bin:

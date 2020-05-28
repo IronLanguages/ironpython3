@@ -41,7 +41,7 @@ from functools import cmp_to_key, reduce
 from operator import neg
 import random
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test
 
 if not is_cli:
     long = int

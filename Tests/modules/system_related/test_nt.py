@@ -8,13 +8,10 @@ import random
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython, stderr_trapper
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test, skipUnlessIronPython, stderr_trapper
 
 if sys.platform == "win32":
     import nt
-
-if not is_cli:
-    long = type(sys.maxsize + 1)
 
 @unittest.skipUnless(sys.platform == "win32", 'Windows specific test')
 class NtTest(IronPythonTestCase):

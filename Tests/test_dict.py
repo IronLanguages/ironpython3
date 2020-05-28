@@ -12,7 +12,7 @@ import os
 import unittest
 import sys
 
-from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, skipUnlessIronPython, source_root
+from iptest import IronPythonTestCase, is_cli, long, path_modifier, run_test, skipUnlessIronPython, source_root
 
 class DictTest(IronPythonTestCase):
     def test_sanity(self):

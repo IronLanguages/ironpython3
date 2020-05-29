@@ -13,7 +13,7 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     [PythonType("mappingproxy")]
-    public class MappingProxy : IDictionary<object, object>, IDictionary {
+    public sealed class MappingProxy : IDictionary<object, object>, IDictionary {
         internal PythonDictionary GetDictionary(CodeContext context) => dictionary ?? type.GetMemberDictionary(context, false);
 
         private readonly PythonDictionary dictionary;

@@ -459,24 +459,10 @@ class FunctionTest(IronPythonTestCase):
         #self.assertRaisesMessage(TypeError, "'dummy' is an invalid keyword argument for this function", apply, bool, [1], dict({"dummy":2}))
 
         class UserClass(object): pass
-        if is_cli:
-            self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", UserClass, 1)
-            with self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters"):
-                UserClass(*[], **dict({"dummy":2}))
-        else:
-            self.assertRaisesMessage(TypeError, "object() takes no parameters", UserClass, 1)
-            with self.assertRaisesMessage(TypeError, "object() takes no parameters"):
-                UserClass(*[], **dict({"dummy":2}))
 
-        class OldStyleClass: pass
-        if is_cli:
-            self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", OldStyleClass, 1)
-            with self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters"):
-                OldStyleClass(*[], **dict({"dummy":2}))
-        else:
-            self.assertRaisesMessage(TypeError, "object() takes no parameters", OldStyleClass, 1)
-            with self.assertRaisesMessage(TypeError, "object() takes no parameters"):
-                OldStyleClass(*[], **dict({"dummy":2}))
+        self.assertRaisesMessage(TypeError, "object() takes no parameters", UserClass, 1)
+        with self.assertRaisesMessage(TypeError, "object() takes no parameters"):
+            UserClass(*[], **dict({"dummy":2}))
 
     @skipUnlessIronPython()
     def test_runtime_type_checking(self):

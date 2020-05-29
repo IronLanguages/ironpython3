@@ -61,11 +61,11 @@ if __name__ == '__main__':
 
     # these have to be tested at the global scope
     a = "hello world"
-    c = compile("x = a.Split(' ')", "<string>", "single")
+    c = compile("x = a.split(' ')", "<string>", "single")
     eval(c)
     assertEqual(x[0], "hello")
     assertEqual(x[1], "world")
 
-    y = eval("a.Split(' ')")
+    y = eval("a.split(' ')")
     assertEqual(y[0], "hello")
     assertEqual(y[1], "world")

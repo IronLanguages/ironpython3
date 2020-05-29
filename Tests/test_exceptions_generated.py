@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 
-from iptest import path_modifier, run_test, skipUnlessIronPython, source_root
+from iptest import is_cli, path_modifier, run_test, skipUnlessIronPython, source_root
 
 def gen_testcase(exc_name):
     def test(self):
@@ -29,13 +29,13 @@ class ExceptionsGeneratedTest(unittest.TestCase):
         import clr
         clr.AddReference("IronPython")
 
-
-with path_modifier(os.path.join(source_root(), 'Src', 'Scripts')):
-    from generate_exceptions import pythonExcs as test_cases
-test_cases = [x.replace('Error', '') + 'Exception' for x in test_cases]
-for exc_name in test_cases:
-    test_name = 'test_%s' % exc_name
-    test = gen_testcase(exc_name)
-    setattr(ExceptionsGeneratedTest, test_name, test)
+if is_cli:
+    with path_modifier(os.path.join(source_root(), 'Src', 'Scripts')):
+        from generate_exceptions import pythonExcs as test_cases
+    test_cases = [x.replace('Error', '') + 'Exception' for x in test_cases]
+    for exc_name in test_cases:
+        test_name = 'test_%s' % exc_name
+        test = gen_testcase(exc_name)
+        setattr(ExceptionsGeneratedTest, test_name, test)
 
 run_test(__name__)

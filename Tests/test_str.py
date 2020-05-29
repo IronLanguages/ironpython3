@@ -434,10 +434,10 @@ class StrTest(IronPythonTestCase):
 
     def test_turkish_upper_lower(self):
         self.assertEqual(u"ı".upper(),u"I")
-        self.assertEqual(u"İ".lower(),u"i")
+        self.assertEqual(u"İ".lower(),u"i" if is_cli else u"i̇")
 
         # as defined in http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
-        PERFECT_UNICODE_CASING=False
+        PERFECT_UNICODE_CASING = False
 
         import locale
         lang,encoding = locale.getlocale()
@@ -469,7 +469,7 @@ class StrTest(IronPythonTestCase):
     def test_translate(self):
         self.assertEqual(u"abcd".translate({}), u"abcd")
         self.assertEqual(u"abcd".translate({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"}) , "AcXY")
-        self.assertRaisesMessage(TypeError, "character mapping must be in range(0x%lx)", lambda: 'a'.translate({ord('a') : 65536}))
-        self.assertRaisesMessage(TypeError, "character mapping must return integer, None or unicode", lambda: 'a'.translate({ord('a') : 2.0}))
+        self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate({ord('a') : 65536}))
+        self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate({ord('a') : 2.0}))
 
 run_test(__name__)

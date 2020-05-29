@@ -66,7 +66,7 @@ class ProcessUtil(object):
         return process.ExitCode
     
     def launch(self, executable, *params):
-        l = [ executable ] + list(params)
+        l = [ '"{}"'.format(executable) ] + list(params)
         return os.spawnv(0, executable, l)
 
     def get_clr_dir(self):

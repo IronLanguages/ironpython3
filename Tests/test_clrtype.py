@@ -4,106 +4,108 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp21, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
-import clr
-import clrtype
+if is_cli:
+    import clr
+    import clrtype
 
-clr.AddReference("System.Xml")
-
-import System
-from System.Reflection import BindingFlags
-
-class IProduct(object, metaclass=clrtype.ClrInterface):
-    __metaclass__ = clrtype.ClrInterface # https://github.com/IronLanguages/ironpython3/issues/836
-
-    _clrnamespace = "IronPython.Samples.ClrType"
-
-    @property
-    @clrtype.accepts()
-    @clrtype.returns(str)
-    def Name(self): raise RuntimeError("this should not get called")
-
-    @property
-    @clrtype.accepts()
-    @clrtype.returns(float)
-    def Cost(self): raise RuntimeError("this should not get called")
-
-    @clrtype.accepts()
-    @clrtype.returns(bool)
-    def IsAvailable(self): raise RuntimeError("this should not get called")
-
-class Product(IProduct, metaclass=clrtype.ClrClass):
-    __metaclass__ = clrtype.ClrClass # https://github.com/IronLanguages/ironpython3/issues/836
-
-    _clrnamespace = "IronPython.Samples.ClrType"
-
-    _clrfields = {
-        "name" : str,
-        "cost" : float,
-        "_quantity" : int
-    }
-
-    CLSCompliant = clrtype.attribute(System.CLSCompliantAttribute)
     clr.AddReference("System.Xml")
-    XmlRoot = clrtype.attribute(System.Xml.Serialization.XmlRootAttribute)
 
-    _clrclassattribs = [
-        # Use System.Attribute subtype directly for custom attributes without arguments
-        System.ObsoleteAttribute,
-        # Use clrtype.attribute for custom attributes with arguments (either positional, named, or both)
-        CLSCompliant(False),
-        XmlRoot("product", Namespace="www.contoso.com")
-    ]
+    import System
+    from System.Reflection import BindingFlags
 
-    def __init__(self, name, cost, quantity):
-        self.name = name
-        self.cost = cost
-        self._quantity = quantity
+    class IProduct(object, metaclass=clrtype.ClrInterface):
+        __metaclass__ = clrtype.ClrInterface # https://github.com/IronLanguages/ironpython3/issues/836
 
-    # IProduct methods
-    def Name(self): return self.name
-    def Cost(self): return self.cost
-    def IsAvailable(self): return self.quantity != 0
+        _clrnamespace = "IronPython.Samples.ClrType"
 
-    @property
-    @clrtype.accepts()
-    @clrtype.returns(int)
-    def quantity(self): return self._quantity
+        @property
+        @clrtype.accepts()
+        @clrtype.returns(str)
+        def Name(self): raise RuntimeError("this should not get called")
 
-    @quantity.setter
-    @clrtype.accepts(int)
-    @clrtype.returns()
-    def quantity(self, value): self._quantity = value
+        @property
+        @clrtype.accepts()
+        @clrtype.returns(float)
+        def Cost(self): raise RuntimeError("this should not get called")
 
-    @clrtype.accepts(float)
-    @clrtype.returns(float)
-    def calc_total(self, discount=0.0):
-        return (self.cost - discount) * self.quantity
+        @clrtype.accepts()
+        @clrtype.returns(bool)
+        def IsAvailable(self): raise RuntimeError("this should not get called")
 
-if not is_netcoreapp21 and not is_posix:
-    class NativeMethods(object, metaclass=clrtype.ClrClass):
-        # Note that you could also the "ctypes" modules instead of pinvoke declarations
+    class Product(IProduct, metaclass=clrtype.ClrClass):
         __metaclass__ = clrtype.ClrClass # https://github.com/IronLanguages/ironpython3/issues/836
 
-        from System.Runtime.InteropServices import DllImportAttribute, PreserveSigAttribute
-        DllImport = clrtype.attribute(DllImportAttribute)
-        PreserveSig = clrtype.attribute(PreserveSigAttribute)
+        _clrnamespace = "IronPython.Samples.ClrType"
 
-        @staticmethod
-        @DllImport("user32.dll")
-        @PreserveSig()
-        @clrtype.accepts(System.Char)
-        @clrtype.returns(System.Boolean)
-        def IsCharAlpha(c): raise RuntimeError("this should not get called")
+        _clrfields = {
+            "name" : str,
+            "cost" : float,
+            "_quantity" : int
+        }
 
-        @staticmethod
-        @DllImport("user32.dll")
-        @PreserveSig()
-        @clrtype.accepts(System.IntPtr, System.String, System.String, System.UInt32)
-        @clrtype.returns(System.Int32)
-        def MessageBox(hwnd, text, caption, type): raise RuntimeError("this should not get called")
+        CLSCompliant = clrtype.attribute(System.CLSCompliantAttribute)
+        clr.AddReference("System.Xml")
+        XmlRoot = clrtype.attribute(System.Xml.Serialization.XmlRootAttribute)
 
+        _clrclassattribs = [
+            # Use System.Attribute subtype directly for custom attributes without arguments
+            System.ObsoleteAttribute,
+            # Use clrtype.attribute for custom attributes with arguments (either positional, named, or both)
+            CLSCompliant(False),
+            XmlRoot("product", Namespace="www.contoso.com")
+        ]
+
+        def __init__(self, name, cost, quantity):
+            self.name = name
+            self.cost = cost
+            self._quantity = quantity
+
+        # IProduct methods
+        def Name(self): return self.name
+        def Cost(self): return self.cost
+        def IsAvailable(self): return self.quantity != 0
+
+        @property
+        @clrtype.accepts()
+        @clrtype.returns(int)
+        def quantity(self): return self._quantity
+
+        @quantity.setter
+        @clrtype.accepts(int)
+        @clrtype.returns()
+        def quantity(self, value): self._quantity = value
+
+        @clrtype.accepts(float)
+        @clrtype.returns(float)
+        def calc_total(self, discount=0.0):
+            return (self.cost - discount) * self.quantity
+
+    if not is_netcoreapp21 and not is_posix:
+        class NativeMethods(object, metaclass=clrtype.ClrClass):
+            # Note that you could also the "ctypes" modules instead of pinvoke declarations
+            __metaclass__ = clrtype.ClrClass # https://github.com/IronLanguages/ironpython3/issues/836
+
+            from System.Runtime.InteropServices import DllImportAttribute, PreserveSigAttribute
+            DllImport = clrtype.attribute(DllImportAttribute)
+            PreserveSig = clrtype.attribute(PreserveSigAttribute)
+
+            @staticmethod
+            @DllImport("user32.dll")
+            @PreserveSig()
+            @clrtype.accepts(System.Char)
+            @clrtype.returns(System.Boolean)
+            def IsCharAlpha(c): raise RuntimeError("this should not get called")
+
+            @staticmethod
+            @DllImport("user32.dll")
+            @PreserveSig()
+            @clrtype.accepts(System.IntPtr, System.String, System.String, System.UInt32)
+            @clrtype.returns(System.Int32)
+            def MessageBox(hwnd, text, caption, type): raise RuntimeError("this should not get called")
+
+@skipUnlessIronPython()
 class ClrTypeTest(IronPythonTestCase):
     def setUp(self):
         super(ClrTypeTest, self).setUp()
@@ -163,7 +165,6 @@ class ClrTypeTest(IronPythonTestCase):
         return res
 
     # these methods are named with numbers because they need to run in a specific order
-
 
     def test_0typed_method(self):
         self.assertEqual(self._call_typed_method(), 378.0)

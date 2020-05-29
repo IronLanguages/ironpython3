@@ -190,7 +190,7 @@ class DictTest(IronPythonTestCase):
             self.assertTrue(d.__contains__(attr), "didn't find " + str(attr) + " in " + repr(d))
 
     def repeat_on_class(self, C):
-        newStyle = "__class__" in dir(C)
+        self.assertIn("__class__", dir(C))
 
         c = C()
         d = C.__dict__
@@ -198,16 +198,13 @@ class DictTest(IronPythonTestCase):
 
         ## recursive entries & repr
         C.abc = d
-        if not newStyle:
-            x = repr(d) # shouldn't stack overflow
-        else:
-            x = str(d)
+        x = str(d)
 
         self.assertTrue(x.find("'abc'") != -1)
-        if not newStyle:
-            self.assertTrue(x.find("{...}") != -1)
-        else:
+        if is_cli:
             self.assertTrue(x.find("'abc': <mappingproxy") != -1)
+        else:
+            self.assertTrue(x.find("'abc': mappingproxy") != -1)
         del C.abc
 
         keys, values = d.keys(), d.values()
@@ -222,99 +219,33 @@ class DictTest(IronPythonTestCase):
         def f2(self): return 22
         def f3(self): return 33
 
-        if not newStyle:
-            d['f2'] = f2
-            d['x2'] = 20
-
-            self.assertEqual(len(d), l + 2)
-            self.assertEqual(d.__len__(), l + 2)
-
-        if not newStyle:
-            self.contains(d, '__doc__', 'x1', 'x2', 'f1', 'f2')
-            self.contains(d.keys(), '__doc__', 'x1', 'x2', 'f1', 'f2')
-        else:
-            self.contains(d, '__doc__', 'x1', 'f1')
-            self.contains(d.keys(), '__doc__', 'x1', 'f1')
+        self.contains(d, '__doc__', 'x1', 'f1')
+        self.contains(d.keys(), '__doc__', 'x1', 'f1')
 
         self.assertEqual(d['x1'], 10)
-        if not newStyle:
-            self.assertEqual(d['x2'], 20)
         self.assertEqual(d['f1'](c), 11)
-        if not newStyle:
-            self.assertEqual(d['f2'](c), 22)
         self.assertRaises(KeyError, lambda : d['x3'])
         self.assertRaises(KeyError, lambda : d['f3'])
 
         ## get
         self.assertEqual(d.get('x1'), 10)
-        if not newStyle:
-            self.assertEqual(d.get('x2'), 20)
         self.assertEqual(d.get('f1')(c), 11)
-        if not newStyle:
-            self.assertEqual(d.get('f2')(c), 22)
 
         self.assertEqual(d.get('x3'), None)
         self.assertEqual(d.get('x3', 30), 30)
         self.assertEqual(d.get('f3'), None)
         self.assertEqual(d.get('f3', f3)(c), 33)
 
-        if not newStyle:
-            ## setdefault
-            self.assertEqual(d.setdefault('x1'), 10)
-            self.assertEqual(d.setdefault('x1', 30), 10)
-            self.assertEqual(d.setdefault('f1')(c), 11)
-            self.assertEqual(d.setdefault('f1', f3)(c), 11)
-            self.assertEqual(d.setdefault('x2'), 20)
-            self.assertEqual(d.setdefault('x2', 30), 20)
-            self.assertEqual(d.setdefault('f2')(c), 22)
-            self.assertEqual(d.setdefault('f2', f3)(c), 22)
-            self.assertEqual(d.setdefault('x3', 30), 30)
-            self.assertEqual(d.setdefault('f3', f3)(c), 33)
-
-        if not newStyle:
-            ## pop
-            l1 = len(d)
-            self.assertEqual(d.pop('x1', 30), 10)
-            self.assertEqual(len(d), l1-1)
-            l1 = len(d)
-            self.assertEqual(d.pop('x2', 30), 20)
-            self.assertEqual(len(d), l1-1)
-            l1 = len(d)
-            self.assertEqual(d.pop("xx", 70), 70)
-            self.assertEqual(len(d), l1)
-
         ## in
         self.assertTrue('f1' in d)
-        if not newStyle:
-            self.assertTrue('f2' in d)
-            self.assertTrue('f3' in d)
         self.assertTrue('fx' not in d)
 
-        # subclassing, overriding __getitem__, and passing to
-        # eval
+        # can't subclass mappingproxy
         dictType = type(d)
 
-        try:
+        with self.assertRaisesMessage(TypeError, 'cannot derive from IronPython.Runtime.Types.MappingProxy because it is sealed' if is_cli else "type 'mappingproxy' is not an acceptable base type"):
             class newDict(dictType):
-                def __getitem__(self, key):
-                    if key == 'abc':
-                        return 'def'
-                    return super(self, dictType).__getitem__(key)
-        except TypeError as ex:
-            if not newStyle:
-                self.assertTrue(ex.message.find('cannot derive from sealed or value types') != -1, ex.message)
-            else:
-                self.assertTrue(ex.message.find('Error when calling the metaclass bases') != -1, ex.message)
-        else:
-            try:
-                nd = newDict()
-            except TypeError as e:
-                if is_cli:
-                    import clr
-                    if clr.GetClrType(dictType).ToString() == 'IronPython.Runtime.Types.NamespaceDictionary':
-                        self.fail("Error! Threw TypeError when creating newDict deriving from NamespaceDictionary")
-            else:
-                self.assertEqual(eval('abc', {}, nd), 'def')
+                pass
 
         ############### IN THIS POINT, d LOOKS LIKE ###############
         ##  {'f1': f1, 'f2': f2, 'f3': f3, 'x3': 30, '__doc__': 'This is comment', '__module__': '??'}
@@ -331,20 +262,14 @@ class DictTest(IronPythonTestCase):
             if exp is not None:
                 self.assertEqual(v(c), exp)
 
-        if not newStyle:
-            self.contains(lk, 'f1', 'f2', 'f3', 'x3', '__doc__')
-        else:
-            self.contains(lk, 'f1', '__module__', '__dict__', 'x1', '__weakref__', '__doc__')
+        self.contains(lk, 'f1', '__module__', '__dict__', 'x1', '__weakref__', '__doc__')
 
         # iterkeys
         lk = []
         for k in d.keys():
             lk.append(k)
 
-        if not newStyle:
-            self.contains(lk, 'f1', 'f2', 'f3', 'x3', '__doc__')
-        else:
-            self.contains(lk, 'f1', '__module__', '__dict__', 'x1', '__weakref__', '__doc__')
+        self.contains(lk, 'f1', '__module__', '__dict__', 'x1', '__weakref__', '__doc__')
 
         # itervalues
         for v in d.values():
@@ -356,55 +281,7 @@ class DictTest(IronPythonTestCase):
             elif v is int:
                 self.assertTrue(v == 30)
 
-        if not newStyle:
-            ## something fun before destorying it
-            l1 = len(d)
-            d[dict] = 3    # object as key
-            self.assertEqual(len(d), l1+1)
-
-            l1 = len(d)
-            d[int] = 4     # object as key
-            if is_cli:
-                print("CodePlex 16811")
-                return
-            self.assertEqual(len(d), l1+1)
-
-            l1 = len(d)
-            del d[int]
-            self.assertEqual(len(d), l1-1)
-
-            l1 = len(d)
-            del d[dict]
-            self.assertEqual(len(d), l1-1)
-
-            l1 = len(d)
-            del d['x3']
-            self.assertEqual(len(d), l1-1)
-
-            l1 = len(d)
-            d.popitem()
-            self.assertEqual(len(d), l1-1)
-
-            ## object as key
-            d[int] = int
-            d[str] = "str"
-
-            self.assertEqual(d[int], int)
-            self.assertEqual(d[str], "str")
-
-            d.clear()
-            self.assertEqual(len(d), 0)
-            self.assertEqual(d.__len__(), 0)
-
-
-    def test_customfieldiddict_old(self):
-        class C:
-            '''This is comment'''
-            x1 = 10
-            def f1(self): return 11
-        self.repeat_on_class(C)
-
-    def test_customfieldiddict_new(self):
+    def test_customfieldiddict(self):
         class C(object):
             '''This is comment'''
             x1 = 10
@@ -412,30 +289,23 @@ class DictTest(IronPythonTestCase):
         self.repeat_on_class(C)
 
     def test_customfieldiddict_fromkeys(self):
-        def new_repeat_on_class(C):
-            d1 = C.__dict__
-            l1 = len(d1)
-            d2 = dict.fromkeys(d1)
-            l2 = len(d2)
-            self.assertEqual(l1, l2)
-            self.assertEqual(d2['x'], None)
-            self.assertEqual(d2['f'], None)
-
-            d2 = dict.fromkeys(d1, 10)
-            l2 = len(d2)
-            self.assertEqual(l1, l2)
-            self.assertEqual(d2['x'], 10)
-            self.assertEqual(d2['f'], 10)
-
-        class C:
-            x = 10
-            def f(self): pass
-        new_repeat_on_class(C)
-
         class C(object):
             x = 10
             def f(self): pass
-        new_repeat_on_class(C)
+
+        d1 = C.__dict__
+        l1 = len(d1)
+        d2 = dict.fromkeys(d1)
+        l2 = len(d2)
+        self.assertEqual(l1, l2)
+        self.assertEqual(d2['x'], None)
+        self.assertEqual(d2['f'], None)
+
+        d2 = dict.fromkeys(d1, 10)
+        l2 = len(d2)
+        self.assertEqual(l1, l2)
+        self.assertEqual(d2['x'], 10)
+        self.assertEqual(d2['f'], 10)
 
     def test_customfieldiddict_compare(self):
         def new_repeat_on_class(C1, C2):
@@ -470,10 +340,8 @@ class DictTest(IronPythonTestCase):
         self.load_iron_python_test()
         from IronPythonTest import DictConversion
         class MyDict(dict): pass
-        class KOld: pass
-        class KNew(object): pass
-        class KOldDerived(KOld): pass
-        class KNewDerived(KNew): pass
+        class K(object): pass
+        class KDerived(K): pass
 
         test_dicts = [
                         {},
@@ -483,10 +351,8 @@ class DictTest(IronPythonTestCase):
                         {1:100, 2:200},
                         {1:100, 2:200, 3:300, 4:400},
                         MyDict.__dict__,
-                        KOld.__dict__,
-                        KNew.__dict__,
-                        KOldDerived.__dict__,
-                        KNewDerived.__dict__,
+                        K.__dict__,
+                        KDerived.__dict__,
                         ]
 
         for temp_dict in test_dicts:
@@ -940,34 +806,27 @@ class DictTest(IronPythonTestCase):
                 f)
 
     def test_dict_class_dictionary(self):
-        class KOld:
+        class K(object):
             KLASS_MEMBER = 3.14
             def aFunc(): pass
             def aMethod(self): pass
 
-        class KNew(object):
-            KLASS_MEMBER = 3.14
-            def aFunc(): pass
-            def aMethod(self): pass
+        temp_dict = dict(K.__dict__)
 
+        #class member has the correct value?
+        self.assertEqual(K.__dict__["KLASS_MEMBER"], 3.14)
+        self.assertEqual(temp_dict["KLASS_MEMBER"], 3.14)
 
-        for K in [KOld, KNew]:
-            temp_dict = dict(K.__dict__)
-
-            #class member has the correct value?
-            self.assertEqual(K.__dict__["KLASS_MEMBER"], 3.14)
-            self.assertEqual(temp_dict["KLASS_MEMBER"], 3.14)
-
-            #methods show up?
-            for func_name in ["aFunc", "aMethod"]:
-                self.assertTrue(func_name in K.__dict__.keys())
-                self.assertTrue(func_name in temp_dict.keys())
+        #methods show up?
+        for func_name in ["aFunc", "aMethod"]:
+            self.assertTrue(func_name in K.__dict__.keys())
+            self.assertTrue(func_name in temp_dict.keys())
 
         expected_keys = [   '__module__', 'KLASS_MEMBER', 'aFunc', 'aMethod',
                             '__dict__',
                             '__weakref__', '__doc__']
         for expected_key in expected_keys:
-            self.assertTrue(expected_key in KNew.__dict__, expected_key)
+            self.assertTrue(expected_key in K.__dict__, expected_key)
             self.assertTrue(expected_key in temp_dict, expected_key)
 
 

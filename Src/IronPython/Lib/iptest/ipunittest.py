@@ -148,11 +148,11 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     # assertion helpers
 
-    def assertRaisesMessage(self, expected_exception, expected_message, callable_obj=None, *args, **kwargs):
-        return self.assertRaisesRegex(expected_exception, "^" + re.escape(expected_message) + "$", callable_obj, *args, **kwargs)
+    def assertRaisesMessage(self, expected_exception, expected_message, *args, **kwargs):
+        return self.assertRaisesRegex(expected_exception, "^" + re.escape(expected_message) + "$", *args, **kwargs)
 
-    def assertRaisesPartialMessage(self, expected_exception, expected_message, callable_obj=None, *args, **kwargs):
-        return self.assertRaisesRegex(expected_exception, re.escape(expected_message), callable_obj, *args, **kwargs)
+    def assertRaisesPartialMessage(self, expected_exception, expected_message, *args, **kwargs):
+        return self.assertRaisesRegex(expected_exception, re.escape(expected_message), *args, **kwargs)
 
     # environment variables
     def get_environ_variable(self, key):

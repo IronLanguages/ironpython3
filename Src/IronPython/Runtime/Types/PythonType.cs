@@ -1954,10 +1954,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         internal IList<string> GetTypeSlots() {
             PythonTypeSlot pts;
-            if(_dict != null && _dict.TryGetValue("__slots__", out pts) && pts is PythonTypeUserDescriptorSlot) {
+            if (_dict != null && _dict.TryGetValue("__slots__", out pts) && pts is PythonTypeUserDescriptorSlot) {
                 return SlotsToList(((PythonTypeUserDescriptorSlot)pts).Value);
             }
-            return ArrayUtils.EmptyStrings; 
+            return ArrayUtils.EmptyStrings;
         }
 
         internal static List<string> GetSlots(PythonDictionary dict) {
@@ -1965,6 +1965,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             object slots;
             if (dict != null && dict.TryGetValue("__slots__", out slots)) {
                 res = SlotsToList(slots);
+                foreach (var name in res) {
+                    if (name == "__dict__" || name == "__weakref__") continue;
+                    if (dict.ContainsKey(name)) {
+                        throw PythonOps.ValueError($"'{name}' in __slots__ conflicts with class variable");
+                    }
+                }
             }
 
             return res;

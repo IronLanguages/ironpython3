@@ -25,7 +25,7 @@ class CtorOverrideTest(IronPythonTestCase):
         class C(CCtor10): pass
         C()
         Flag.Check(42)
-        self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", C, 1)
+        self.assertRaisesMessage(TypeError, "object() takes no parameters", C, 1)
 
         class C(CCtor10): 
             def __new__(cls, arg1, arg2):

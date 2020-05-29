@@ -350,7 +350,7 @@ def fetest(%s):
             d = {'assertEqual':self.assertEqual}
             exec(func, d, d)
         
-            args = list(range(size))
+            args = list(range(size)) if is_cli else [0]*size
             exec("assertEqual(list(fetest(%s)),%s)" % (str(args)[1:-1], str([x*x for x in args])), d, d)
         
         lstate(1)
@@ -511,7 +511,7 @@ def fetest(%s):
         class KNew(object):
             pass
         
-        self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters",
+        self.assertRaisesMessage(TypeError, "object() takes no parameters",
                             lambda: KNew(*(i for i in range(10))) != None)
 
 

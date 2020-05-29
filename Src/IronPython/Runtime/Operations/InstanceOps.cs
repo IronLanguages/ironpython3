@@ -826,7 +826,7 @@ namespace IronPython.Runtime.Operations {
         }
 #endif
 
-        internal const string ObjectNewNoParameters = "object.__new__() takes no parameters";
+        internal const string ObjectNewNoParameters = "object() takes no parameters";
 
 
         internal static void CheckNewArgs(CodeContext context, IDictionary<object, object> dict, object[] args, PythonType pt) {

@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
 
 #############################################################
 # Helper functions for verifying the calls.  On each call

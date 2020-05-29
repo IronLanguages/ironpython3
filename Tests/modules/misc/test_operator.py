@@ -5,7 +5,7 @@
 import operator
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test, skipUnlessIronPython
 
 class OperaterTest(IronPythonTestCase):
     def setUp(self):

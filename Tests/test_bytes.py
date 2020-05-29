@@ -8,10 +8,7 @@ import itertools
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython
-
-if not is_cli:
-    long = int
+from iptest import IronPythonTestCase, is_cli, is_cpython, long, run_test, skipUnlessIronPython
 
 types = [bytearray, bytes]
 

@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, long, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class IronMathTest(IronPythonTestCase):

@@ -387,4 +387,4 @@ class Integral(Rational):
         return 1
 
 Integral.register(int)
-Integral.register(long) # TODO: remove me
+Integral.register(type(1 << 63)) # https://github.com/IronLanguages/ironpython3/issues/52

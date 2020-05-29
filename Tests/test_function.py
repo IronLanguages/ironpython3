@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
 from types import FunctionType, MethodType
 
 global init

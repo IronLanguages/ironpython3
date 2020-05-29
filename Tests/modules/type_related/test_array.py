@@ -9,10 +9,7 @@ Tests for CPython's array module.
 import array
 import unittest
 
-from iptest import is_cli, is_mono, run_test
-
-if not is_cli:
-    long = int
+from iptest import is_cli, is_mono, long, run_test
 
 class ArrayTest(unittest.TestCase):
     def test_ArrayType(self):

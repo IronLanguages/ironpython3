@@ -6,7 +6,7 @@ import unittest
 import datetime
 import time
 
-from iptest import run_test, skipUnlessIronPython
+from iptest import long, run_test, skipUnlessIronPython
 
 class TestDatetime(unittest.TestCase):
 

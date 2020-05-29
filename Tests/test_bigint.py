@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import run_test
+from iptest import long, run_test
 
 class BigIntTest(unittest.TestCase):
 

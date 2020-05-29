@@ -15,7 +15,7 @@ TODO:
 '''
 
 import unittest
-from iptest import is_cli, run_test
+from iptest import is_cli, long, run_test
 
 #Test Python/CLR number interop.
 clr_integer_types = [ "System.Byte",

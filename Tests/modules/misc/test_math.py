@@ -7,12 +7,10 @@ import itertools
 import math
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, long, run_test, skipUnlessIronPython
 
 if is_cli:
     from System import Int64, Byte, Int16
-else:
-    long = type(sys.maxsize + 1)
 
 class MathTest(IronPythonTestCase):
 

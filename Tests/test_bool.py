@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import is_cli, long, run_test
 
 class BoolTest(unittest.TestCase):
     def test_types(self):

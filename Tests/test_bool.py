@@ -13,11 +13,12 @@ class BoolTest(unittest.TestCase):
                 self.fail("should be true: %r", x)
 
     def test_bool_dir(self):
-        bool_dir = ['__abs__', '__add__', '__and__', '__class__', '__cmp__',
+        bool_dir = ['__abs__', '__add__', '__and__', '__class__',
+                    '__eq__', '__ne__', '__gt__', '__ge__', '__le__', '__lt__',
                     '__delattr__', '__divmod__', '__doc__',
                     '__float__', '__floordiv__', '__getattribute__', '__getnewargs__',
                     '__hash__', '__index__', '__init__', '__int__',
-                    '__invert__', '__long__', '__lshift__', '__mod__', '__mul__',
+                    '__invert__', '__lshift__', '__mod__', '__mul__',
                     '__neg__', '__new__', '__bool__', '__or__', '__pos__',
                     '__pow__', '__radd__', '__rand__', '__rdivmod__', '__reduce__',
                     '__reduce_ex__', '__repr__', '__rfloordiv__', '__rlshift__', '__rmod__',

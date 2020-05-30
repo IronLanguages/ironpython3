@@ -42,9 +42,9 @@ namespace IronPython.Runtime {
     }
 
     /// <summary>
-    /// Allow types to implement weakvreference tracking by returning a proxy.
+    /// Allow types to implement weakreference tracking by returning a proxy.
     /// 
-    /// The proxy can refer to the current Python context, whihc is the main purpose.
+    /// The proxy can refer to the current Python context, which is the main purpose.
     /// </summary>
     public interface IWeakReferenceableByProxy {
         /// <summary>

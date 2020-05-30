@@ -231,7 +231,7 @@ namespace IronPython.Modules {
             [Documentation("deserializes the string using the structs specified format")]
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesLike][NotNull]IList<byte> @string) {
                 if (@string.Count != size) {
-                    throw Error(context, $"unpack requires a string argument of length {size}");
+                    throw Error(context, $"unpack requires a bytes object of length {size}");
                 }
 
                 var data = @string;

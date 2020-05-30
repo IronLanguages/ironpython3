@@ -837,7 +837,7 @@ namespace IronPython.Runtime.Operations {
                 if (hasObjectInit) {
                     throw PythonOps.TypeError(ObjectNewNoParameters);
                 } else if (!hasObjectNew && !hasObjectInit) {
-                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, ObjectNewNoParameters);
+                    throw PythonOps.TypeError(ObjectNewNoParameters);
                 }
             }
         }

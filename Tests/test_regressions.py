@@ -1464,5 +1464,4 @@ class C:
         self.assertEqual(o.get_self_class(), o.get_class())
         self.assertEqual(o.get_class(), o.get_class_class())
 
-
 run_test(__name__)

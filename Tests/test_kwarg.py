@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
 
 #############################################################
 # Helper functions for verifying the calls.  On each call
@@ -56,21 +56,6 @@ class ObjectSubClass(object):
     def testFunc_kw_2(a, b, **kw):
         SetArgDict(a, b, None, kw)
 
-# keyword args on an old-style class
-        
-class OldStyleClass:
-    def testFunc_pw_kw(a, *param, **kw):
-        SetArgDict(a, None, param, kw)
-    
-    def testFunc_kw(a, **kw):
-        SetArgDict(a, None, None, kw)
-    
-    def testFunc_pw_kw_2(a, b, *param, **kw):
-        SetArgDict(a, b, param, kw)
-    
-    def testFunc_kw_2(a, b, **kw):
-        SetArgDict(a, b, None, kw)
-
 #### kw args on new
 
 class NewAll(object):
@@ -92,36 +77,34 @@ class NewKwAndExtraParamAndParams(object):
     def __new__(cls, a, *param, **kw):
         SetArgDict(cls, a, param, kw)
         return object.__new__(cls)
-                
 
 #### kw args on new w/ a corresponding init
     
 class NewInitAll(object):
     def __new__(cls, *param, **kw):
         SetArgDict(cls, None, param, kw)
-        return object.__new__(cls, param, kw)
+        return object.__new__(cls)
     def __init__(cls, *param, **kw):
         SetArgDictInit(cls, None, param, kw)
 
 class NewInitKw(object):
     def __new__(cls, **kw):
         SetArgDict(cls, None, None, kw)
-        return object.__new__(cls, kw)
+        return object.__new__(cls)
     def __init__(cls, **kw):
         SetArgDictInit(cls, None, None, kw)
-
 
 class NewInitKwAndExtraParam(object):
     def __new__(cls, a, **kw):
         SetArgDict(cls, a, None, kw)
-        return object.__new__(cls, a, kw)
+        return object.__new__(cls)
     def __init__(cls, a, **kw):
         SetArgDictInit(cls, a, None, kw)
 
 class NewInitKwAndExtraParamAndParams(object):
     def __new__(cls, a, *param, **kw):
         SetArgDict(cls, a, param, kw)
-        return object.__new__(cls, a, param, kw)
+        return object.__new__(cls)
     def __init__(cls, a, *param, **kw):
         SetArgDictInit(cls, a, param, kw)
 
@@ -198,7 +181,6 @@ class KwargTest(unittest.TestCase):
         self.CheckArgDict('abc', 'def', None, {'c': 'cde'})
         testFunc_kw_2('abc', 'def')
         self.CheckArgDict('abc', 'def', None, {})
-
 
     def _testFunc_subcls_pw_kw_cases(self, o):
         o.testFunc_pw_kw(b='def', c='cde')
@@ -352,7 +334,6 @@ class KwargTest(unittest.TestCase):
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde',), {'e':'def', 'f':'ghi'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
 
-
     def test_NewInitAll(self):
         v = NewInitAll()
         self.CheckArgDictInit(v, None, (), {})
@@ -462,51 +443,116 @@ class KwargTest(unittest.TestCase):
         a = ListSubcls(a='abc')
 
     def test_negTestFunc_testFunc_pw_kw_dupArg(self):
-        self.assertRaises(TypeError, testFunc_pw_kw, '234', a='234')
+        with self.assertRaises(TypeError):
+            testFunc_pw_kw('234', a='234')
+        with self.assertRaises(TypeError):
+            testFunc_pw_kw(*['234'], a='234')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            testFunc_pw_kw('234', **{"a":'234'})
+        else:
+            with self.assertRaises(TypeError):
+                testFunc_pw_kw('234', **{"a":'234'})
+        with self.assertRaises(TypeError):
+            testFunc_pw_kw(*['234'], **{"a":'234'})
 
     def test_negTestFunc_testFunc_kw_dupArg(self):
-        self.assertRaises(TypeError, testFunc_kw, '234', a='234')
+        with self.assertRaises(TypeError):
+            testFunc_kw('234', a='234')
+        with self.assertRaises(TypeError):
+            testFunc_kw(*['234'], a='234')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            testFunc_kw('234', **{"a":'234'})
+        else:
+            with self.assertRaises(TypeError):
+                testFunc_kw('234', **{"a":'234'})
+        with self.assertRaises(TypeError):
+            testFunc_kw(*['234'], **{"a":'234'})
 
-    @unittest.expectedFailure
     def test_negTestFunc_ObjectSubClass_testFunc_pw_kw_dupArg(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_pw_kw, a='abc')
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw(a='234')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            o.testFunc_pw_kw(**{"a":'234'})
+        else:
+            with self.assertRaises(TypeError):
+                o.testFunc_pw_kw(**{"a":'234'})
 
-    @unittest.expectedFailure
     def test_negTestFunc_ObjectSubClass_testFunc_kw_dupArg(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_kw, a='abc')
+        with self.assertRaises(TypeError):
+            o.testFunc_kw(a='234')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            o.testFunc_kw(**{"a":'234'})
+        else:
+            with self.assertRaises(TypeError):
+                o.testFunc_kw(**{"a":'234'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_pw_kw_2_dupArg(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_pw_kw_2, a='abc')
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw_2(a='234')
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw_2(**{"a":'234'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_kw_2_dupArg(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_kw_2, a='abc')
+        with self.assertRaises(TypeError):
+            o.testFunc_kw_2(a='234')
+        with self.assertRaises(TypeError):
+            o.testFunc_kw_2(**{"a":'234'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_pw_kw_2_dupArg_2(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_pw_kw_2, 'abc',b='cde')
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw_2('abc', b='cde')
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw_2(*['abc'], b='cde')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            o.testFunc_pw_kw_2('abc', **{"b":'cde'})
+        else:
+            with self.assertRaises(TypeError):
+                o.testFunc_pw_kw_2('abc', **{"b":'cde'})
+        with self.assertRaises(TypeError):
+            o.testFunc_pw_kw_2(*['abc'], **{"b":'cde'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_kw_2_dupArg_2(self):
         o = ObjectSubClass()
-        self.assertRaises(TypeError, o.testFunc_kw_2, 'abc',b='cde')
+        with self.assertRaises(TypeError):
+            o.testFunc_kw_2('abc', b='cde')
+        with self.assertRaises(TypeError):
+            o.testFunc_kw_2(*['abc'], b='cde')
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+            o.testFunc_kw_2('abc', **{"b":'cde'})
+        else:
+            with self.assertRaises(TypeError):
+                o.testFunc_kw_2('abc', **{"b":'cde'})
+        with self.assertRaises(TypeError):
+            o.testFunc_kw_2(*['abc'], **{"b":'cde'})
 
     def test_negTestFunc_tooManyArgs(self):
-        self.assertRaises(TypeError, testFunc_kw, 'abc','cde')
+        with self.assertRaises(TypeError):
+            testFunc_kw('abc','cde')
+        with self.assertRaises(TypeError):
+            testFunc_kw(*['abc','cde'])
 
     def test_negTestFunc_tooManyArgs2(self):
-        self.assertRaises(TypeError, testFunc_kw, 'abc','cde','efg')
+        with self.assertRaises(TypeError):
+            testFunc_kw('abc','cde','efg')
+        with self.assertRaises(TypeError):
+            testFunc_kw(*['abc','cde','efg'])
 
     def test_negTestFunc_missingArg(self):
-        self.assertRaises(TypeError, testFunc_kw, x='abc',y='cde')
-
-    def test_negTestFunc_missingArg(self):
-        self.assertRaises(TypeError, testFunc_kw, x='abc',y='cde')
+        with self.assertRaises(TypeError):
+            testFunc_kw(x='abc', y='cde')
+        with self.assertRaises(TypeError):
+            testFunc_kw(**{"x":'abc', "y":'cde'})
 
     def test_negTestFunc_badKwArgs(self):
-        self.assertRaises(TypeError, testFunc_plain, a='abc', x='zy')
+        with self.assertRaises(TypeError):
+            testFunc_plain(a='abc', x='zy')
+        with self.assertRaises(TypeError):
+            testFunc_plain(**{"a":'abc', "x":'zy'})
 
     def test_NewSetCls(self):
         try:
@@ -551,12 +597,6 @@ class KwargTest(unittest.TestCase):
         self._testFunc_subcls_pw_kw_2_cases(subcls)
         self._testFunc_subcls_kw_2_cases(subcls)
 
-        subcls = OldStyleClass()
-        self._testFunc_subcls_pw_kw_cases(subcls)
-        self._testFunc_subcls_kw_cases(subcls)
-        self._testFunc_subcls_pw_kw_2_cases(subcls)
-        self._testFunc_subcls_kw_2_cases(subcls)
-
     @skipUnlessIronPython()
     def test_sysrandom(self):
         import System
@@ -571,7 +611,6 @@ class KwargTest(unittest.TestCase):
     def test_user_defined_function(self):
         def f(a): return a
         self.assertEqual(f.__call__(a='abc'), 'abc')
-
 
     @skipUnlessIronPython()
     def test_appendkwargs(self):
@@ -655,19 +694,14 @@ class KwargTest(unittest.TestCase):
     def test_sequence_as_stararg(self):
         def f(x, *args): return x, args
         
-        self.assertRaises(TypeError, f, 1, x=2)
-        # try: f(1, x=2)
-        # except TypeError: pass
-        # else: raise AssertionError
+        with self.assertRaises(TypeError):
+            f(1, x=2) # TypeError: f() got multiple values for keyword argument 'x'
 
-        self.assertRaises(TypeError, f, x=2, *(3,4))
-        # try: f(1, x=2, *(3,4))
-        # except TypeError: pass
-        # else: raise AssertionError
+        with self.assertRaises(TypeError):
+            f(1, x=2, *(3,4)) # TypeError: f() got multiple values for keyword argument 'x'
 
-        try: f(1, *(2))  # 2 is not enumerable
-        except TypeError: pass
-        else: self.assertUnreachable()
+        with self.assertRaises(TypeError):
+            f(1, *(2))  # TypeError: 'int' object is not iterable
 
         self.assertEqual(f(1, *(2,)), (1, (2,)))
         self.assertEqual(f(1, *[2]), (1, (2,)))

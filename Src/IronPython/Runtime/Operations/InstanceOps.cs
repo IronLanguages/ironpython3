@@ -849,10 +849,10 @@ namespace IronPython.Runtime.Operations {
                 bool hasObjectNew = pt.HasObjectNew(context);
 
                 // NoneType seems to get some special treatment (None.__init__('abc') works)
-                if (hasObjectNew && self != null) {
-                    throw PythonOps.TypeError("object.__init__() takes no parameters");
-                } else if ((!hasObjectNew && !hasObjectInit) || self == null) {
-                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__init__() takes no parameters for type {0}", PythonTypeOps.GetName(self));
+                if (self != null) {
+                    if (hasObjectNew || !hasObjectNew && !hasObjectInit) {
+                        throw PythonOps.TypeError("object.__init__() takes no parameters");
+                    }
                 }
             }
         }

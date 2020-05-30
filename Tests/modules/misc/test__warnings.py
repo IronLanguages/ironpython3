@@ -70,11 +70,10 @@ class _WarningsTest(IronPythonTestCase):
             # remove generated files
             cleanup()
 
-    def test_gh23(self):
+    def test_ipy2_gh23(self):
         def test():
             object.__init__(object, None)
-        self.assertWarns(DeprecationWarning, test)
-
+        self.assertRaises(TypeError, test)
 
     def test_default_action(self):
         print("TODO")

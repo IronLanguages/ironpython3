@@ -629,7 +629,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-2,   'x= 10',   '-xxxxxxxx2'),
                 (-2,   'x^ 10',    'xxxx-2xxxx'),
                 (-2,   'x^ 9',     'xxx-2xxxx'),
-                (2,    '\0^ 9',    '    2    '),
+                (2,    '\0^ 9',    '    2    ' if is_cli else '\0\0\0 2\0\0\0\0'),
 
                 (2,    'c',         '\x02'),
                 (2,    '<5c',       '\x02    '),
@@ -682,7 +682,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-3,   'x^ 10b',    'xxx-11xxxx'),
                 (-3,   'x^ #10b',   'xx-0b11xxx'),
                 (-3,   'x^ 9b',     'xxx-11xxx'),
-                (3,    '\0^ 9b',    '    11   '),
+                (3,    '\0^ 9b',    '    11   ' if is_cli else '\0\0\0 11\0\0\0'),
                 (-2147483648, 'b',  '-10000000000000000000000000000000'),
                 (0,      'b',  '0'),
 
@@ -726,7 +726,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-9,   'x= 10o',   '-xxxxxxx11'),
                 (-9,   'x^ 10o',    'xxx-11xxxx'),
                 (-9,   'x^ 9o',     'xxx-11xxx'),
-                (9,    '\0^ 9o',    '    11   '),
+                (9,    '\0^ 9o',    '    11   ' if is_cli else '\0\0\0 11\0\0\0'),
                 (-9,   'x^ 9o',     'xxx-11xxx'),
 
                 (-2147483648, 'o',  '-20000000000'),
@@ -863,7 +863,7 @@ class StrFormatTest(IronPythonTestCase):
                     (ValueError, 2, '+c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, 2, '-c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, 2, ' c', "Sign not allowed with integer format specifier 'c'"),
-                    (OverflowError, -2, 'c', "%c arg not in range(0x10000)"),
+                    (OverflowError, -2, 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
                     #(-2, 'c', ),
                     #(-2, '%', "Sign not allowed with integer format specifier 'c'"),
                 ]
@@ -925,7 +925,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-long(2),   'x= 10',   '-xxxxxxxx2'),
                 (-long(2),   'x^ 10',    'xxxx-2xxxx'),
                 (-long(2),   'x^ 9',     'xxx-2xxxx'),
-                (long(2),    '\0^ 9',    '    2    '),
+                (long(2),    '\0^ 9',    '    2    ' if is_cli else '\0\0\0 2\0\0\0\0'),
 
                 (long(2),    'c',         '\x02'),
                 (long(2),    '<5c',       '\x02    '),
@@ -978,7 +978,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-long(3),   'x^ 10b',    'xxx-11xxxx'),
                 (-long(3),   'x^ #10b',   'xx-0b11xxx'),
                 (-long(3),   'x^ 9b',     'xxx-11xxx'),
-                (long(3),    '\0^ 9b',    '    11   '),
+                (long(3),    '\0^ 9b',    '    11   ' if is_cli else '\0\0\0 11\0\0\0'),
                 (-long(2147483648), 'b',  '-10000000000000000000000000000000'),
                 (long(0),      'b',  '0'),
 
@@ -1022,7 +1022,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-long(9),   'x= 10o',   '-xxxxxxx11'),
                 (-long(9),   'x^ 10o',    'xxx-11xxxx'),
                 (-long(9),   'x^ 9o',     'xxx-11xxx'),
-                (long(9),    '\0^ 9o',    '    11   '),
+                (long(9),    '\0^ 9o',    '    11   ' if is_cli else '\0\0\0 11\0\0\0'),
                 (-long(9),   'x^ 9o',     'xxx-11xxx'),
 
                 (-long(2147483648), 'o',  '-20000000000'),
@@ -1162,8 +1162,8 @@ class StrFormatTest(IronPythonTestCase):
                     (ValueError, long(2), '+c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, long(2), '-c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, long(2), ' c', "Sign not allowed with integer format specifier 'c'"),
-                    (OverflowError, -long(2), 'c', "%c arg not in range(0x10000)"),
-                    (OverflowError, long(1000000), 'c', "%c arg not in range(0x10000)"),
+                    (OverflowError, -long(2), 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
+                    (OverflowError, long(0x10000) if is_cli else long(0x110000), 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
                 ]
 
         if is_cli: #http://ironpython.codeplex.com/workitem/28373

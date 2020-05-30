@@ -67,9 +67,6 @@ namespace IronPython.Runtime {
                     case '=':
                     case '^':
                         fill = formatSpec[0];
-                        if (fill == char.MinValue) {
-                            fill = ' ';
-                        }
                         align = formatSpec[1];
                         curOffset = 2;
                         break;

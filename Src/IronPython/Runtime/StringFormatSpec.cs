@@ -47,6 +47,8 @@ namespace IronPython.Runtime {
             IsEmpty = isEmpty;
         }
 
+        internal string TypeRepr => (0x20 < Type && Type < 0x80) ? Type.ToString() : $"\\x{(int)Type:x}";
+
         /// <summary>
         /// Parses a format spec and returns a new StringFormatSpec object.
         /// </summary>

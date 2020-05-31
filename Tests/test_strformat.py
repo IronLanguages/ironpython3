@@ -21,19 +21,24 @@ class bad_str(object):
 class StrFormatTest(IronPythonTestCase):
 
     def test_formatter_parser_errors(self):
-        errors = [ ("{0!",             "unmatched '{' in format"),
-                ("{0!}}",           "end of format while looking for conversion specifier"),
+        errors = [ ("{0!",             "unmatched '{' in format" if is_cli else "end of string while looking for conversion specifier"),
                 ("}a{",             "Single '}' encountered in format string"),
-                ("{0:0.1a",         "unmatched '{' in format"),
-                ("{0:{}",           "unmatched '{' in format"),
-                ("{0:aa{ab}",       "unmatched '{' in format"),
-                ("{0!}}",           "end of format while looking for conversion specifier"),
-                ("{0!}",            "end of format while looking for conversion specifier"),
-                ("{0!",             "unmatched '{' in format"),
-                ("{0!aa}",          "expected ':' after format specifier"),
-                ("{0.{!:{.}.}}",    "expected ':' after format specifier"),
+                ("{0:0.1a",         "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
+                ("{0:{}",           "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
+                ("{0:aa{ab}",       "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
+                ("{0!}",            "end of format while looking for conversion specifier" if is_cli else "unmatched '{' in format spec"),
+                ("{0!",             "unmatched '{' in format" if is_cli else "end of string while looking for conversion specifier"),
+                ("{0!aa}",          "expected ':' after format specifier" if is_cli else "expected ':' after conversion specifier"),
+                ("{0.{!:{.}.}}",    "expected ':' after format specifier" if is_cli else "unexpected '{' in field name"),
                 ("{",               "Single '{' encountered in format string"),
                 ]
+
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/867
+            errors += [
+                ("{0!}}",           "end of format while looking for conversion specifier"),
+            ]
+        else:
+            _string.formatter_parser("{0!}}")
 
         for format, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, list, _string.formatter_parser(format))
@@ -42,15 +47,9 @@ class StrFormatTest(IronPythonTestCase):
         tests = [ ('{0.}',             [('', '0.', '', None)]),
                 ('{0:.{abc}}',       [('', '0', '.{abc}', None)]),
                 ('{0[]}',            [('', '0[]', '', None)]),
-                ('{0.{:{.}.}}',      [('', '0.{', '{.}.}', None)]),
-                ('{0.{:.}.}',        [('', '0.{', '.}.', None)]),
-                ('{0.{!.:{.}.}}',    [('', '0.{', '{.}.}', '.')]),
-                ('{0.{!!:{.}.}}',    [('', '0.{', '{.}.}', '!')]),
                 ('{0!!}',            [('', '0', '', '!')]),
-                ('{0[}',             [('', '0[', '', None)]),
                 ('{0:::!!::!::}',    [('', '0', '::!!::!::', None)]),
                 ('{0.]}',            [('', '0.]', '', None)]),
-                ('{0.[}',            [('', '0.[', '', None)]),
                 ('{0..}',            [('', '0..', '', None)]),
                 ('{{',               [('{', None, None, None)]),
                 ('}}',               [('}', None, None, None)]),
@@ -59,6 +58,22 @@ class StrFormatTest(IronPythonTestCase):
 
         for format, expected in tests:
             self.assertEqual(list(_string.formatter_parser(format)), expected)
+
+        tests = [
+                ('{0.{:{.}.}}',      [('', '0.{', '{.}.}', None)]),
+                ('{0.{:.}.}',        [('', '0.{', '.}.', None)]),
+                ('{0.{!.:{.}.}}',    [('', '0.{', '{.}.}', '.')]),
+                ('{0.{!!:{.}.}}',    [('', '0.{', '{.}.}', '!')]),
+                ('{0[}',             [('', '0[', '', None)]),
+                ('{0.[}',            [('', '0.[', '', None)]),
+        ]
+
+        for format, expected in tests:
+            if is_cli: # https://github.com/IronLanguages/ironpython3/issues/867
+                self.assertEqual(list(_string.formatter_parser(format)), expected)
+            else:
+                with self.assertRaises(ValueError):
+                    list(_string.formatter_parser(format))
 
     def test_format_field_name_split_errors(self):
         if is_cpython: #http://ironpython.codeplex.com/workitem/28224
@@ -106,8 +121,11 @@ class StrFormatTest(IronPythonTestCase):
         self.assertRaises(IndexError, '{0}'.format)
         self.assertRaisesMessage(ValueError, "Empty attribute in format string", '{0.}'.format, 42)
         self.assertRaisesMessage(ValueError, "Empty attribute in format string", '{0[]}'.format, 42)
-        self.assertRaisesMessage(ValueError, "Missing ']' in format string", '{0[}'.format, 42)
-        self.assertRaises(IndexError, '{0[}'.format)
+        self.assertRaisesMessage(ValueError, "Missing ']' in format string" if is_cli else "expected '}' before end of string", '{0[}'.format, 42)
+        if is_cli:
+            self.assertRaises(IndexError, '{0[}'.format)
+        else:
+            self.assertRaises(ValueError, '{0[}'.format)
 
     @skipUnlessIronPython()
     def test_format_cli_interop(self):
@@ -198,18 +216,22 @@ class StrFormatTest(IronPythonTestCase):
             def __format__(self, *args):
                 return 42
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return string or unicode, not NoneType", '{0}'.format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string or unicode, not int", '{0}'.format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return string, not NoneType" if is_cli else "__format__ method did not return string", '{0}'.format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string, not int" if is_cli else "__format__ method did not return string", '{0}'.format, bad2())
 
         self.assertRaisesMessage(ValueError, "Unknown conversion specifier x", '{0!x}'.format, 'abc')
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return string or unicode, not NoneType", format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string or unicode, not int", format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return string, not NoneType" if is_cli else "__format__ method did not return string", format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string, not int" if is_cli else "__format__ method did not return string", format, bad2())
 
-    def test_object___format__(self):
-        class x(object):
-            def __str__(self):
-                return 'abc'
+    def test_object__format__(self):
+        self.assertEqual(object.__format__("aaa", ""), "aaa")
+
+        with self.assertRaises(TypeError):
+            object.__format__("aaa", "6") # TypeError: non-empty format string passed to object.__format__
+
+    def test_str___format__(self):
+        x = "abc"
 
         tests = [ ('',     'abc'),
                 ('6',    'abc   '),
@@ -230,9 +252,9 @@ class StrFormatTest(IronPythonTestCase):
                 ]
 
         for spec, result in tests:
-            self.assertEqual(object.__format__(x(), spec), result)
+            self.assertEqual(str.__format__(x, spec), result)
 
-    def test_object___format___errors(self):
+    def test_str___format___errors(self):
         errors = [ ("+",             "Sign not allowed in string format specifier"),
                 ("=+",            "Sign not allowed in string format specifier"),
                 ('=10',            "'=' alignment not allowed in string format specifier"),
@@ -245,19 +267,24 @@ class StrFormatTest(IronPythonTestCase):
         # ensure only the s format type is recognized
         for char in allChars:
             if char != 's' and (char < '0' or char > '9'):
+                x = ord(char)
                 if char==',':
                     errors.append(('10' + char, "Cannot specify ',' with 's'."))
-                else:
+                elif 0x20 < x < 0x80:
                     errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
-
+                else:
+                    errors.append(('10' + char, "Unknown format code '\\x%x' for object of type 'str'" % x))
 
         for errorFmt, errorMsg in errors:
-            self.assertRaisesMessage(ValueError, errorMsg, object().__format__, errorFmt)
+            self.assertRaisesMessage(ValueError, errorMsg, str().__format__, errorFmt)
 
-        # __str__ is called before processing spec
-        self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '+')
-        self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '=10')
-        self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '.')
+        if is_cli or sys.version_info >= (3, 5):
+            self.assertRaisesMessage(TypeError, 'unsupported format string passed to bad_str.__format__', bad_str().__format__, '+')
+        else:
+            # __str__ is called before processing spec
+            self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '+')
+            self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '=10')
+            self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '.')
 
     def test_float___format__(self):
         tests = []
@@ -281,13 +308,13 @@ class StrFormatTest(IronPythonTestCase):
                         (1.1,              '.1',       '1e+00'),
                         (10.0,             '.1',       '1e+01'),
                         (10.0,             '.0',       '1e+01'),
-                        (100000000000.0,   '',         '1e+11'),
+                        (100000000000.0,   '',         '100000000000.0'),
                         (1000000000.12,    '1.10',     '1e+09'),
                         (1000000000.12,    '1.3',      '1e+09'),
                         (999999999999.9,   '1.0',      '1e+12'),
                         (999999999999.9,   '1.2',      '1e+12'),
-                        (999999999999.0,   '',         '9.99999999999e+11'),
-                        (-999999999999.0,  '',         '-9.99999999999e+11'),
+                        (999999999999.0,   '',         '999999999999.0'),
+                        (-999999999999.0,  '',         '-999999999999.0'),
                         (10e667,           '+',        '+inf'),
                         (-10e667,          '+',        '-inf'),
                         (10e667/10e667,    '+',        '+nan'),
@@ -571,14 +598,18 @@ class StrFormatTest(IronPythonTestCase):
     def test_float___format___errors(self):
         errors = []
 
-        okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ','])
+        okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ','] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
         # verify the okChars are actually ok
         for char in okChars:
             2.0.__format__('10' + char)
 
         for char in allChars:
-            if char not in okChars and (char < '0' or char > '9'):
-                errors.append((2.0, '10' + char, "Unknown format code '%s' for object of type 'float'" % char))
+            if char not in okChars:
+                x = ord(char)
+                if 0x20 < x < 0x80:
+                    errors.append((2.0, '10' + char, "Unknown format code '%s' for object of type 'float'" % char))
+                else:
+                    errors.append((2.0, '10' + char, "Unknown format code '\\x%x' for object of type 'float'" % x))
 
         for value, errorFmt, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, value.__format__, errorFmt)
@@ -868,7 +899,7 @@ class StrFormatTest(IronPythonTestCase):
                     #(-2, '%', "Sign not allowed with integer format specifier 'c'"),
                 ]
 
-        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
+        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
 
         # verify the okChars are actually ok
         for char in okChars:
@@ -876,10 +907,14 @@ class StrFormatTest(IronPythonTestCase):
 
         for char in allChars:
             if char not in okChars and (char < '0' or char > '9'):
-                errors.append((ValueError, 2, '10' + char, "Unknown format code '%s'" % char))
+                x = ord(char)
+                if 0x20 < x < 0x80:
+                    errors.append((ValueError, 2, '10' + char, "Unknown format code '%s' for object of type 'int'" % char))
+                else:
+                    errors.append((ValueError, 2, '10' + char, "Unknown format code '\\x%x' for object of type 'int'" % x))
 
         for error, value, errorFmt, errorMsg in errors:
-            self.assertRaisesPartialMessage(error, errorMsg, value.__format__, errorFmt)
+            self.assertRaisesMessage(error, errorMsg, value.__format__, errorFmt)
 
     def test_long___format__(self):
         tests = [
@@ -1171,7 +1206,7 @@ class StrFormatTest(IronPythonTestCase):
         else:
             errors.append((OverflowError, sys.maxsize + 1, 'c', "Python int too large to convert to C long"))
 
-        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
+        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
 
         # verify the okChars are actually ok
         for char in okChars:
@@ -1179,11 +1214,14 @@ class StrFormatTest(IronPythonTestCase):
 
         for char in allChars:
             if char not in okChars and (char < '0' or char > '9'):
-                errors.append((ValueError, long(2), '10' + char, "Unknown format code '%s'" % char))
+                x = ord(char)
+                if 0x20 < x < 0x80:
+                    errors.append((ValueError, long(2), '10' + char, "Unknown format code '%s' for object of type 'int'" % char))
+                else:
+                    errors.append((ValueError, long(2), '10' + char, "Unknown format code '\\x%x' for object of type 'int'" % x))
 
         for exceptionType, value, errorFmt, errorMsg in errors:
-            self.assertRaisesPartialMessage(exceptionType, errorMsg, value.__format__, errorFmt)
-
+            self.assertRaisesMessage(exceptionType, errorMsg, value.__format__, errorFmt)
 
     def test_builtin_types_that_implement_format(self):
         import builtins
@@ -1196,7 +1234,6 @@ class StrFormatTest(IronPythonTestCase):
             self.assertEqual(formatTypes, ['bool', 'complex', 'float', 'int', 'object', 'str'])
         else:
             self.assertEqual(formatTypes, ['complex', 'float', 'int', 'object', 'str'])
-
 
     def test_computed_format(self):
         self.assertEqual("|{0:10}|".format("a"), "|a         |")

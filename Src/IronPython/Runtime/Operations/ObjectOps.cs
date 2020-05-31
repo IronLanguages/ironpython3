@@ -255,35 +255,10 @@ namespace IronPython.Runtime.Operations {
         public static NotImplementedType __le__(object self, object value) => NotImplementedType.Value;
 
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
-            string text = PythonOps.ToString(context, self);
+            if (formatSpec != string.Empty)
+                throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonTypeOps.GetName(self));
 
-            StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
-
-            if (spec.Type != null && spec.Type != 's') {
-                throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'str'", spec.Type.Value.ToString());
-            } else if (spec.Sign != null) {
-                throw PythonOps.ValueError("Sign not allowed in string format specifier");
-            } else if (spec.Alignment == '=') {
-                throw PythonOps.ValueError("'=' alignment not allowed in string format specifier");
-            } else if (spec.ThousandsComma) {
-                throw PythonOps.ValueError("Cannot specify ',' with 's'.");
-            } else if (spec.IncludeType) {
-                throw PythonOps.ValueError("Alternate form (#) not allowed in string format specifier");
-            }
-
-            // apply precision to shorten the string first
-            if (spec.Precision != null) {
-                int precision = spec.Precision.Value;
-                if (text.Length > precision) {
-                    text = text.Substring(0, precision);
-                }
-            }
-
-            // then apply the minimum width & padding
-            text = spec.AlignText(text);
-
-            // finally return the text
-            return text;
+            return PythonOps.ToString(context, self);
         }
 
         #region Pickle helpers

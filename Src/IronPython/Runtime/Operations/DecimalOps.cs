@@ -251,7 +251,7 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'decimal'", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'decimal'", spec.TypeRepr);
             }
 
             return digits;

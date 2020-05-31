@@ -496,7 +496,7 @@ namespace IronPython.Runtime.Operations {
                     digits = ScriptingRuntimeHelpers.CharToString((char)self);
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'int'", spec.TypeRepr);
             }
 
             if (self < 0 && digits[0] == '-') {

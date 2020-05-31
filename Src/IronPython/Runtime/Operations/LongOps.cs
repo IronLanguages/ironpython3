@@ -960,7 +960,7 @@ namespace IronPython.Runtime.Operations {
                     digits = ScriptingRuntimeHelpers.CharToString((char)iVal);
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'int'", spec.TypeRepr);
             }
 
             Debug.Assert(digits[0] != '-');

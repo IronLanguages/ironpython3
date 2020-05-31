@@ -5,9 +5,10 @@
 import array
 import itertools
 import gc
+import sys
 import unittest
 
-from iptest import run_test, is_mono
+from iptest import run_test, is_mono, is_cli, is_64
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
@@ -202,6 +203,26 @@ class MemoryViewTests(unittest.TestCase):
         self.assertEqual(scalar.tobytes(), b'a')
         self.assertEqual(scalar.tolist(), ord('a'))
 
+    def test_hash(self):
+        b = bytes(range(8))
+        h = hash(b)
+        mv = memoryview(b)
+        self.assertEqual(hash(mv), h)
+        mvc = mv.cast('B')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('@B')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('b')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('@b')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('c')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('@c')
+        self.assertEqual(hash(mvc), h)
+        mvc = mv.cast('h')
+        self.assertRaisesRegex(ValueError, "^memoryview: hashing is restricted to formats 'B', 'b' or 'c'$", hash, mvc)
+
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
         a = array.array('b', range(8))
@@ -280,7 +301,6 @@ class CastTests(unittest.TestCase):
         self.assertRaises(ValueError, mv4.cast, ' h')
         self.assertRaises(ValueError, mv4.cast, 'h ')
 
-
     def test_cast_wrong_size(self):
         a = array.array('b', [1,2,3,4,5])
         mv = memoryview(a)
@@ -294,6 +314,13 @@ class CastTests(unittest.TestCase):
         self.assertRaises(TypeError, lambda: mv.cast('b', (2,2,2)))
         self.assertRaises(TypeError, lambda: mv.cast('i', (2,2,2)))
         mv.cast('h', (2,2,2))
+
+    def test_cast_wrong_code(self):
+        mv = memoryview(bytes(range(16)))
+        self.assertRaises(ValueError, mv.cast, 'x')
+        self.assertRaises(ValueError, mv.cast, 'u')
+        self.assertRaises(ValueError, mv.cast, 's')
+        self.assertRaises(ValueError, mv.cast, 'p')
 
     def test_cast_q_typecode_cast(self):
         a = array.array('b', range(8))
@@ -313,6 +340,99 @@ class CastTests(unittest.TestCase):
         self.assertEqual(mv[0], 18446744073709551615)
         self.assertIs(type(mv[0]), type(18446744073709551615))
 
+    def test_cast_index_typecode(self):
+        b = b'\xFF' * 8
+        ba = bytearray(b)
+        mv = memoryview(ba)
+
+        mvn = mv.cast('n')
+        self.assertEqual(mvn[0], -1)
+
+        mvn[0] = sys.maxsize
+        self.assertEqual(mvn[0], sys.maxsize)
+
+        mvn[0] = -sys.maxsize - 1
+        self.assertEqual(mvn[0], -sys.maxsize - 1)
+
+        with self.assertRaises(ValueError):
+            mvn[0] = sys.maxsize + 1
+        with self.assertRaises(ValueError):
+            mvn[0] = -sys.maxsize - 2
+        mvn.release()
+
+        ba[:] = b
+        mvn = mv.cast('N')
+        self.assertEqual(mvn[0], sys.maxsize * 2 + 1)
+
+        mvn[0] = 0
+        self.assertEqual(mvn[0], 0)
+
+        mvn[0] = sys.maxsize * 2 + 1
+        self.assertEqual(mvn[0], sys.maxsize * 2 + 1)
+        self.assertEqual(mvn.tobytes(), b)
+
+        with self.assertRaises(ValueError):
+            mvn[0] = -1
+        with self.assertRaises(ValueError):
+            mvn[0] = sys.maxsize * 2 + 2
+        mvn.release()
+
+    def test_cast_bool(self):
+        ba = bytearray(range(4))
+        mv = memoryview(ba)
+        mvb = mv.cast('?')
+        self.assertIs(mvb[0], False)
+        self.assertIs(mvb[1], True)
+        self.assertIs(mvb[2], True)
+
+        mvb[0] = 3.14
+        self.assertIs(mvb[0], True)
+        mvb[0] = 0.0
+        self.assertIs(mvb[0], False)
+
+        mvb[0] = [3.14]
+        self.assertIs(mvb[0], True)
+        mvb[0] = []
+        self.assertIs(mvb[0], False)
+
+        mvb[0] = "3.14"
+        self.assertIs(mvb[0], True)
+        mvb[0] = ""
+        self.assertIs(mvb[0], False)
+
+    @unittest.skipUnless(is_64, "asssumes 64-bit pointers")
+    def test_cast_pointer(self):
+        ba = bytearray(range(16))
+        mv = memoryview(ba)
+        mvp = mv.cast('P')
+
+        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0x0706050403020100)
+        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0x0F0E0D0C0B0A0908)
+
+        mvp[0] = 0xFFFFFFFFFFFFFFFF
+        mvp[1] = -1
+        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0xFFFFFFFFFFFFFFFF)
+        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0xFFFFFFFFFFFFFFFF)
+
+        mvp[0] = -0x0706050403020100
+        mvp[1] = -0x8000000000000000
+        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0xF8F9FAFBFCFDFF00)
+        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0x8000000000000000)
+
+        with self.assertRaises(ValueError):
+            mvp[0] = 0x10000000000000000
+            mvp[0] = -0x8000000000000001
+
+        if is_cli:
+            import System
+            # https://github.com/IronLanguages/ironpython3/issues/868
+            #mvp[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
+            #self.assertIsInstance(mvp[1], System.UIntPtr)
+            #self.assertEqual(mvp[0].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+            mvp[1] = System.IntPtr(-1)
+            self.assertIsInstance(mvp[1], System.UIntPtr)
+            self.assertEqual(mvp[1].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+
     def test_cast_double(self):
         a = array.array('b', range(8))
         mv = memoryview(a).cast('d')
@@ -325,22 +445,23 @@ class CastTests(unittest.TestCase):
 
         self.assertEqual(len(mv), 2)
 
-        self.assertEqual(mv[(0,0,0,0)], 0)
-        self.assertEqual(mv[(0,0,0,1)], 1)
-        self.assertEqual(mv[(0,0,1,0)], 2)
-        self.assertEqual(mv[(0,0,1,1)], 3)
-        self.assertEqual(mv[(0,1,0,0)], 4)
-        self.assertEqual(mv[(0,1,0,1)], 5)
-        self.assertEqual(mv[(0,1,1,0)], 6)
-        self.assertEqual(mv[(0,1,1,1)], 7)
-        self.assertEqual(mv[(1,0,0,0)], 8)
-        self.assertEqual(mv[(1,0,0,1)], 9)
-        self.assertEqual(mv[(1,0,1,0)], 10)
-        self.assertEqual(mv[(1,0,1,1)], 11)
-        self.assertEqual(mv[(1,1,0,0)], 12)
-        self.assertEqual(mv[(1,1,0,1)], 13)
-        self.assertEqual(mv[(1,1,1,0)], 14)
-        self.assertEqual(mv[(1,1,1,1)], 15)
+        if is_cli or sys.version_info.minor > 4:
+            self.assertEqual(mv[(0,0,0,0)], 0)
+            self.assertEqual(mv[(0,0,0,1)], 1)
+            self.assertEqual(mv[(0,0,1,0)], 2)
+            self.assertEqual(mv[(0,0,1,1)], 3)
+            self.assertEqual(mv[(0,1,0,0)], 4)
+            self.assertEqual(mv[(0,1,0,1)], 5)
+            self.assertEqual(mv[(0,1,1,0)], 6)
+            self.assertEqual(mv[(0,1,1,1)], 7)
+            self.assertEqual(mv[(1,0,0,0)], 8)
+            self.assertEqual(mv[(1,0,0,1)], 9)
+            self.assertEqual(mv[(1,0,1,0)], 10)
+            self.assertEqual(mv[(1,0,1,1)], 11)
+            self.assertEqual(mv[(1,1,0,0)], 12)
+            self.assertEqual(mv[(1,1,0,1)], 13)
+            self.assertEqual(mv[(1,1,1,0)], 14)
+            self.assertEqual(mv[(1,1,1,1)], 15)
 
         self.assertEqual(mv.tolist(), [[[[0, 1], [2, 3]], [[4, 5], [6, 7]]], [[[8, 9], [10, 11]], [[12, 13], [14, 15]]]])
         self.assertEqual(mv.tobytes(), b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
@@ -350,20 +471,22 @@ class CastTests(unittest.TestCase):
         mv = memoryview(a).cast('b', (4,2,2))
         mv2 = mv[2:]
         self.assertEqual(len(mv2), 2)
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
-                    self.assertEqual(mv[(i + 2, j, k)], mv2[(i, j, k)])
+        if is_cli or sys.version_info.minor > 4:
+            for i in range(2):
+                for j in range(2):
+                    for k in range(2):
+                        self.assertEqual(mv[(i + 2, j, k)], mv2[(i, j, k)])
 
         self.assertEqual(mv2.tolist(), [[[8, 9], [10, 11]], [[12, 13], [14, 15]]])
         self.assertEqual(mv2.tobytes(), b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
 
         mv_2 = mv[::2]
         self.assertEqual(len(mv_2), 2)
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
-                    self.assertEqual(mv[(i * 2, j, k)], mv_2[(i, j, k)])
+        if is_cli or sys.version_info.minor > 4:
+            for i in range(2):
+                for j in range(2):
+                    for k in range(2):
+                        self.assertEqual(mv[(i * 2, j, k)], mv_2[(i, j, k)])
 
         self.assertEqual(mv_2.tolist(), [[[0, 1], [2, 3]], [[8, 9], [10, 11]]])
         self.assertEqual(mv_2.tobytes(), b'\x00\x01\x02\x03\x08\x09\x0a\x0b')

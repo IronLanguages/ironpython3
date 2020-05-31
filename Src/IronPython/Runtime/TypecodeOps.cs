@@ -9,59 +9,81 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
+
 namespace IronPython.Runtime {
     internal static class TypecodeOps {
+        // TODO: integrate with PythonStruct
 
-        public static bool IsByteFormat([NotNullWhen(true)]string? format) {
-            int flen = format?.Length ?? 0;
-            if (flen == 0 || flen > 2) return false;
-            char fchar = format![flen - 1];
-            return fchar == 'B' || fchar == 'b' || fchar == 'c';
-        }
+        public const string ValidByteorder = "@=<>!";
+        public const string ValidScalarCodes = "cbB?hHiIlLqQnNfdP";
+        public const string ValidCodes = ValidScalarCodes + "xsp";
 
-        public static bool TryGetTypecodeWidth([NotNullWhen(true)]string? typecode, out int width) {
-            if (string.IsNullOrEmpty(typecode) || typecode!.Length > 2 || (typecode.Length == 2 && typecode[0] != '@')) {
-                width = 0;
+        public static bool TryDecomposeTypecode(ReadOnlySpan<char> format, out char byteorder, out char code) {
+            if (format.Length == 0 || format.Length > 2) {
+                byteorder = code = default;
                 return false;
             }
-            switch (typecode[typecode.Length - 1]) {
+
+            if (format.Length == 1) {
+                byteorder = '@';
+                code = format[0];
+            } else {
+                byteorder = format[0];
+                code = format[1];
+            }
+            // TODO: add validation of combinations
+            return ValidByteorder.IndexOf(byteorder) >= 0 && ValidCodes.IndexOf(code) >= 0;
+        }
+
+        public static void DecomposeTypecode(string format, out char byteorder, out char code) {
+            if (!TryDecomposeTypecode(format.AsSpan(), out byteorder, out code)) {
+                throw PythonOps.ValueError("invalid typecode");
+            }
+        }
+
+        public static bool IsByteCode(char typecode) {
+            return typecode == 'B' || typecode == 'b' || typecode == 'c';
+        }
+
+        public static bool IsScalarCode(char typecode) {
+            return ValidScalarCodes.IndexOf(typecode) >= 0;
+        }
+
+        public static int GetTypecodeWidth(char typecode) {
+            switch (typecode) {
                 case 'c': // char
                 case 'b': // signed byte
                 case 'B': // unsigned byte
-                    width = 1;
-                    return true;
-                case 'u': // unicode char
+                case '?': // bool
+                    return 1;
                 case 'h': // signed short
                 case 'H': // unsigned short
-                    width = 2;
-                    return true;
+                    return 2;
                 case 'i': // signed int
                 case 'I': // unsigned int
                 case 'l': // signed long
                 case 'L': // unsigned long
                 case 'f': // float
-                    width = 4;
-                    return true;
-                case 'P': // pointer
-                    width = IntPtr.Size;
-                    return true;
+                case 'n': // signed index
+                case 'N': // unsigned index
+                    return 4;
                 case 'q': // signed long long
                 case 'Q': // unsigned long long
                 case 'd': // double
-                    width = 8;
-                    return true;
+                    return 8;
+                case 's': // char pointer
+                case 'p': // char pointer
+                case 'P': // void pointer
+                    return UIntPtr.Size;
                 default:
-                    width = 0;
-                    return false;
+                    return 0;
             }
         }
 
-        public static bool TryGetFromBytes([NotNullWhen(true)]string? typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
-            if (string.IsNullOrEmpty(typecode) || typecode!.Length > 2 || (typecode.Length == 2 && typecode[0] != '@')) {
-                result = null;
-                return false;
-            }
-            switch (typecode[typecode.Length - 1]) {
+        public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
+            switch (typecode) {
                 case 'c':
                     result = (char)bytes[0];
                     return true;
@@ -71,8 +93,8 @@ namespace IronPython.Runtime {
                 case 'B':
                     result = bytes[0];
                     return true;
-                case 'u':
-                    result = MemoryMarshal.Read<char>(bytes);
+                case '?':
+                    result = bytes[0] != 0;
                     return true;
                 case 'h':
                     result = MemoryMarshal.Read<short>(bytes);
@@ -82,10 +104,12 @@ namespace IronPython.Runtime {
                     return true;
                 case 'l':
                 case 'i':
+                case 'n':
                     result = MemoryMarshal.Read<int>(bytes);
                     return true;
                 case 'L':
                 case 'I':
+                case 'N':
                     result = MemoryMarshal.Read<uint>(bytes);
                     return true;
                 case 'f':
@@ -100,17 +124,17 @@ namespace IronPython.Runtime {
                 case 'Q':
                     result = MemoryMarshal.Read<ulong>(bytes);
                     return true;
+                case 'P':
+                    result = MemoryMarshal.Read<UIntPtr>(bytes);
+                    return true;
                 default:
                     result = null;
                     return false;
             }
         }
 
-        public static bool TryGetBytes([NotNullWhen(true)]string? typecode, object obj, Span<byte> dest) {
-            if (string.IsNullOrEmpty(typecode) || typecode!.Length > 2 || (typecode.Length == 2 && typecode[0] != '@')) {
-                return false;
-            }
-            switch (typecode[typecode.Length - 1]) {
+        public static bool TryGetBytes(char typecode, object obj, Span<byte> dest) {
+            switch (typecode) {
                 case 'c':
                     var cbyteVal = (byte)Convert.ToChar(obj);
                     return MemoryMarshal.TryWrite(dest, ref cbyteVal);
@@ -120,9 +144,9 @@ namespace IronPython.Runtime {
                 case 'B':
                     var byteVal = Convert.ToByte(obj);
                     return MemoryMarshal.TryWrite(dest, ref byteVal);
-                case 'u':
-                    var charVal = Convert.ToChar(obj);
-                    return MemoryMarshal.TryWrite(dest, ref charVal);
+                case '?':
+                    var boolVal = PythonOps.IsTrue(obj);
+                    return MemoryMarshal.TryWrite(dest, ref boolVal);
                 case 'h':
                     var shortVal = Convert.ToInt16(obj);
                     return MemoryMarshal.TryWrite(dest, ref shortVal);
@@ -131,10 +155,12 @@ namespace IronPython.Runtime {
                     return MemoryMarshal.TryWrite(dest, ref ushortVal);
                 case 'l':
                 case 'i':
+                case 'n':
                     var intVal = Convert.ToInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref intVal);
                 case 'L':
                 case 'I':
+                case 'N':
                     var uintVal = Convert.ToUInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref uintVal);
                 case 'f':
@@ -149,6 +175,16 @@ namespace IronPython.Runtime {
                 case 'Q':
                     var ulongVal = Convert.ToUInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref ulongVal);
+                case 'P':
+                    if (obj is UIntPtr uintptrVal) {
+                        return MemoryMarshal.TryWrite(dest, ref uintptrVal);
+                    }
+                    var bi = Converter.ConvertToBigInteger(obj);
+                    if (bi < 0) {
+                        bi += (UIntPtr.Size == 4 ? new BigInteger(UInt32.MaxValue) : new BigInteger(UInt64.MaxValue)) + 1;
+                    }
+                    uintptrVal = new UIntPtr((ulong)bi);
+                    return MemoryMarshal.TryWrite(dest, ref uintptrVal);
                 default:
                     return false;
             }
@@ -159,13 +195,12 @@ namespace IronPython.Runtime {
         /// width/sign of the field as specified by the given format.
         /// </summary>
         /// <param name="value">The value to be checked.</param>
-        /// <param name="format">Valid struct-style single element format.</param>
-        public static bool CausesOverflow(object value, string format) {
+        /// <param name="typecode">Valid struct-style single element typecode.</param>
+        public static bool CausesOverflow(object value, char typecode) {
             ulong maxValue;
             long minValue;
 
-            int flen = format.Length;
-            switch (flen > 0 && flen <= 2 ? format[flen - 1] : default) {
+            switch (typecode) {
                 case 'c': // char
                     minValue = char.MinValue;
                     maxValue = char.MaxValue;
@@ -178,7 +213,8 @@ namespace IronPython.Runtime {
                     minValue = byte.MinValue;
                     maxValue = byte.MaxValue;
                     break;
-                case 'u': // unicode char
+                case '?': // bool
+                    return false; // bool never causes overflow but is coerced to 0/1
                 case 'h': // signed short
                     minValue = short.MinValue;
                     maxValue = (ulong)short.MaxValue;
@@ -189,11 +225,13 @@ namespace IronPython.Runtime {
                     break;
                 case 'i': // signed int
                 case 'l': // signed long
+                case 'n': // signed index
                     minValue = int.MinValue;
                     maxValue = int.MaxValue;
                     break;
                 case 'I': // unsigned int
                 case 'L': // unsigned long
+                case 'N': // unsigned index
                     minValue = uint.MinValue;
                     maxValue = uint.MaxValue;
                     break;
@@ -201,10 +239,13 @@ namespace IronPython.Runtime {
                     minValue = long.MinValue;
                     maxValue = long.MaxValue;
                     break;
-                case 'P': // pointer
                 case 'Q': // unsigned long long
                     minValue = (long)ulong.MinValue;
                     maxValue = ulong.MaxValue;
+                    break;
+                case 'P': // pointer
+                    minValue = UIntPtr.Size == 4 ? Int32.MinValue : Int64.MinValue;
+                    maxValue = UIntPtr.Size == 4 ? UInt32.MaxValue : UInt64.MaxValue;
                     break;
                 default:
                     return false; // All non-numeric types will not cause overflow.

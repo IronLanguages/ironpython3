@@ -78,7 +78,7 @@ namespace IronPython.Runtime {
             // for convenience _shape and _strides are never null, even if _numDims == 0 or _flags indicate no _shape or _strides
             _shape = _buffer.Shape ?? (_numDims > 0 ? new int[] { _buffer.ItemCount } : new int[0]);  // TODO: use a static singleton
 
-            if (shape.Count == 0) {
+            if (_shape.Count == 0) {
                 _strides = _shape; // TODO: use a static singleton
                 _isCContig = true;
             } else if (_buffer.Strides != null) {
@@ -379,13 +379,14 @@ namespace IronPython.Runtime {
 
         public object tolist() {
             CheckBuffer();
+            TypecodeOps.DecomposeTypecode(_format, out char byteorder, out char typecode);
 
             return subdimensionToList(_buffer!.AsReadOnlySpan(), _offset, dim: 0);
 
             object subdimensionToList(ReadOnlySpan<byte> source, int ofs, int dim) {
                 if (dim >= _shape.Count) {
                     // extract individual element (scalar)
-                    return packBytes(_format, source.Slice(ofs));
+                    return packBytes(typecode, source.Slice(ofs));
                 }
 
                 object[] elements = new object[_shape[dim]];
@@ -429,16 +430,23 @@ namespace IronPython.Runtime {
                 }
             }
 
-            int newItemsize;
-            if (!TypecodeOps.TryGetTypecodeWidth(format, out newItemsize)) {
+            if ( format == null
+              || !TypecodeOps.TryDecomposeTypecode(format.AsSpan(), out char byteorder, out char typecode)
+              || !TypecodeOps.IsScalarCode(typecode)
+              || byteorder != '@'
+            ) {
                 throw PythonOps.ValueError(
                     "memoryview: destination format must be a native single character format prefixed with an optional '@'");
             }
 
-            if (!TypecodeOps.IsByteFormat(this._format) && !TypecodeOps.IsByteFormat(format)) {
-                throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
+            if (!TypecodeOps.IsByteCode(typecode)) {
+                TypecodeOps.DecomposeTypecode(_format, out _, out char thisTypecode);
+                if (!TypecodeOps.IsByteCode(thisTypecode)) {
+                    throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
+                }
             }
 
+            int newItemsize = TypecodeOps.GetTypecodeWidth(typecode);
             if ((_numItems * _itemSize) % newItemsize != 0) {
                 throw PythonOps.TypeError("memoryview: length is not a multiple of itemsize");
             }
@@ -463,16 +471,18 @@ namespace IronPython.Runtime {
             return new MemoryView(this, format, newItemsize, newShape);
         }
 
-        private void unpackBytes(string format, object o, Span<byte> dest) {
-            if (TypecodeOps.TryGetBytes(format, o, dest)) {
+        private static void unpackBytes(char typecode, object o, Span<byte> dest) {
+            // TODO: support non-native byteorder
+            if (TypecodeOps.TryGetBytes(typecode, o, dest)) {
                 return;
             } else {
                 throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
             }
         }
 
-        private static object packBytes(string format, ReadOnlySpan<byte> bytes) {
-            if (TypecodeOps.TryGetFromBytes(format, bytes, out object? result))
+        private static object packBytes(char typecode, ReadOnlySpan<byte> bytes) {
+            // TODO: support non-native byteorder
+            if (TypecodeOps.TryGetFromBytes(typecode, bytes, out object? result))
                 return result;
             else {
                 return Bytes.Make(bytes.ToArray());
@@ -480,57 +490,79 @@ namespace IronPython.Runtime {
         }
 
         private object GetItem(int offset) {
-            object result = packBytes(_format, _buffer!.AsReadOnlySpan().Slice(offset, _itemSize));
+            TypecodeOps.DecomposeTypecode(_format, out char byteorder, out char typecode);
+            object result = packBytes(typecode, _buffer!.AsReadOnlySpan().Slice(offset, _itemSize));
 
             return PythonOps.ConvertToPythonPrimitive(result);
         }
 
         private void SetItem(int offset, object? value) {
             if (value == null) {
-                throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
             }
-            switch (_format) {
-                case "d": // double
-                case "f": // float
+            TypecodeOps.DecomposeTypecode(_format, out char byteorder, out char typecode);
+            switch (typecode) {
+                case 'd': // double
+                case 'f': // float
                     double convertedValueDouble = 0;
                     if (!Converter.TryConvertToDouble(value, out convertedValueDouble)) {
-                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
                     value = convertedValueDouble;
                     break;
 
-                case "c": // char
-                case "b": // signed byte
-                case "B": // unsigned byte
-                case "u": // unicode char
-                case "h": // signed short
-                case "H": // unsigned short
-                case "i": // signed int
-                case "I": // unsigned int
-                case "l": // signed long
-                case "L": // unsigned long
-                case "q": // signed long long
-                case "P": // pointer
-                case "Q": // unsigned long long
+                case 'c': // char
+                case 'b': // signed byte
+                case 'B': // unsigned byte
+                case 'h': // signed short
+                case 'H': // unsigned short
+                case 'i': // signed int
+                case 'I': // unsigned int
+                case 'l': // signed long
+                case 'L': // unsigned long
+                case 'n': // signed index
+                case 'N': // unsigned index
+                case 'q': // signed long long
+                case 'Q': // unsigned long long
                     if (!PythonOps.IsNumericObject(value)) {
-                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
 
-                    if (TypecodeOps.CausesOverflow(value, format)) {
-                        throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", format);
+                    if (TypecodeOps.CausesOverflow(value, typecode)) {
+                        throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
                     }
 
-                    if (format == "Q") {
+                    if (typecode == 'Q') {
                         value = Converter.ConvertToUInt64(value);
                     } else {
                         value = Converter.ConvertToInt64(value);
                     }
                     break;
+
+                case 'P': // void pointer
+                    if (value is UIntPtr) break;
+
+                    if (value is IntPtr iptr) {
+                        value = new UIntPtr(unchecked((UInt64)iptr.ToInt64()));
+                        break;
+                    }
+
+                    if (!PythonOps.IsNumericObject(value)) {
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
+                    }
+
+                    var bi = Converter.ConvertToBigInteger(value);
+                    if (TypecodeOps.CausesOverflow(bi, typecode)) {
+                        throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
+                    }
+                    value = bi;
+                    break;
+
                 default:
                     break; // This could be a variety of types, let the UnpackBytes decide
             }
 
-            unpackBytes(format, value, _buffer!.AsSpan().Slice(offset, _itemSize));
+            unpackBytes(typecode, value, _buffer!.AsSpan().Slice(offset, _itemSize));
         }
 
         // TODO: support indexable, BigInteger etc.
@@ -542,7 +574,7 @@ namespace IronPython.Runtime {
                 }
 
                 index = PythonOps.FixIndex(index, __len__());
-                if (ndim > 1) {
+                if (_numDims > 1) {
                     throw PythonOps.NotImplementedError("multi-dimensional sub-views are not implemented");
                 }
 
@@ -558,7 +590,7 @@ namespace IronPython.Runtime {
                 }
 
                 index = PythonOps.FixIndex(index, __len__());
-                if (ndim > 1) {
+                if (_numDims > 1) {
                     throw PythonOps.NotImplementedError("multi-dimensional sub-views are not implemented");
                 }
 
@@ -602,7 +634,7 @@ namespace IronPython.Runtime {
                 if (_numDims == 0) {
                     throw PythonOps.TypeError("invalid indexing of 0-dim memory");
                 }
-                if (ndim != 1) {
+                if (_numDims != 1) {
                     throw PythonOps.NotImplementedError("memoryview assignments are restricted to ndim = 1");
                 }
 
@@ -658,7 +690,6 @@ namespace IronPython.Runtime {
         private int GetItemOffset(PythonTuple tuple) {
             int flatIndex = _offset;
             int tupleLength = tuple.Count;
-            int ndim = (int)this.ndim;
             int firstOutOfRangeIndex = -1;
 
             bool allInts = true;
@@ -692,7 +723,7 @@ namespace IronPython.Runtime {
                     // about the resulting flat index, but still need
                     // to check the rest of the tuple in case it has a
                     // non-int value
-                    if (i >= ndim || firstOutOfRangeIndex > -1) {
+                    if (i >= _numDims || firstOutOfRangeIndex > -1) {
                         continue;
                     }
 
@@ -722,12 +753,12 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (tupleLength < ndim) {
+            if (tupleLength < _numDims) {
                 throw PythonOps.NotImplementedError("sub-views are not implemented");
             }
 
-            if (tupleLength > ndim) {
-                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", ndim, tupleLength);
+            if (tupleLength > _numDims) {
+                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", _numDims, tupleLength);
             }
 
             if (firstOutOfRangeIndex != -1) {
@@ -752,7 +783,8 @@ namespace IronPython.Runtime {
                 throw PythonOps.ValueError("cannot hash writable memoryview object");
             }
 
-            if (format != "B" && format != "b" && format != "c") {
+            TypecodeOps.DecomposeTypecode(_format, out _, out char typecode);
+            if (!TypecodeOps.IsByteCode(typecode)) {
                 throw PythonOps.ValueError("memoryview: hashing is restricted to formats 'B', 'b' or 'c'");
             }
 

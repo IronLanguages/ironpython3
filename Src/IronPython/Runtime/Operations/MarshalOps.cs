@@ -76,7 +76,7 @@ namespace IronPython.Runtime.Operations {
                     if (o == null) _bytes.Add ((byte)'N');
                     else if (o == ScriptingRuntimeHelpers.True || (o is bool && (bool)o)) _bytes.Add ((byte)'T');
                     else if (o == ScriptingRuntimeHelpers.False || (o is bool && (!(bool)o))) _bytes.Add ((byte)'F');
-                    else if (o is IList<byte>) WriteBytes(o as IList<byte>);
+                    else if (o is IBufferProtocol) WriteBufferProtocol((IBufferProtocol)o);
                     else if (o is string) WriteString(o as string);
                     else if (o is int) WriteInt ((int)o);
                     else if (o is float) WriteFloat ((float)o);
@@ -180,10 +180,13 @@ namespace IronPython.Runtime.Operations {
                 _bytes.Add ((byte)((val >> 24) & 0xff));
             }
 
-            private void WriteBytes(IList<byte> s) {
+            private void WriteBufferProtocol(IBufferProtocol b) {
+                using var buffer = b.GetBufferNoThrow();
+                if (buffer is null) throw PythonOps.ValueError("unmarshallable object");
+                var span = buffer.AsReadOnlySpan();
                 _bytes.Add((byte)'s');
-                WriteInt32(s.Count);
-                _bytes.AddRange(s);
+                WriteInt32(span.Length);
+                _bytes.AddRange(span.ToArray());
             }
 
             private void WriteString(string s) {

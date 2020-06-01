@@ -6,14 +6,12 @@ import marshal
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cli64, is_osx, run_test
+from iptest import IronPythonTestCase, is_cli, is_64, is_osx, long, run_test
 
 class MarshalTest(IronPythonTestCase):
     def setUp(self):
         super(MarshalTest, self).setUp()
         self.tfn = os.path.join(self.temporary_dir, 'tempfile.bin')
-
-# a couple of lines are disabled due to 1032
 
     def test_functionality(self):
         objects = [ None,
@@ -60,7 +58,7 @@ class MarshalTest(IronPythonTestCase):
             self.assertEqual(x, x2)
 
             # on 64-bit the order in set/frozenset isn't the same after dumps/loads
-            if (is_cli64 or is_osx) and isinstance(x, (set, frozenset)): continue
+            if (is_64 or is_osx) and isinstance(x, (set, frozenset)): continue
 
             s2 = marshal.dumps(x2)
             self.assertEqual(s, s2)
@@ -75,14 +73,14 @@ class MarshalTest(IronPythonTestCase):
 
             self.assertEqual(x, x2)
 
-    def test_buffer(self):
-        for s in ['', ' ', 'abc ', 'abcdef']:
-            x = marshal.dumps(buffer(s))
+    def test_memoryview(self):
+        for s in [b'', b' ', b'abc ', b'abcdef']:
+            x = marshal.dumps(memoryview(s))
             self.assertEqual(marshal.loads(x), s)
 
-        for s in ['', ' ', 'abc ', 'abcdef']:
+        for s in [b'', b' ', b'abc ', b'abcdef']:
             with open(self.tfn, 'wb') as f:
-                marshal.dump(buffer(s), f)
+                marshal.dump(memoryview(s), f)
 
             with open(self.tfn, 'rb') as f:
                 x2 = marshal.load(f)
@@ -90,12 +88,15 @@ class MarshalTest(IronPythonTestCase):
             self.assertEqual(s, x2)
 
     def test_negative(self):
-        self.assertRaises(TypeError, marshal.dump, 2, None)
+        self.assertRaises(TypeError if is_cli else AttributeError, marshal.dump, 2, None)
         self.assertRaises(TypeError, marshal.load, '-1', None)
 
         l = [1, 2]
         l.append(l)
-        self.assertRaises(ValueError, marshal.dumps, l) ## infinite loop
+        for v in range(3):
+            self.assertRaises(ValueError, marshal.dumps, l, v) ## infinite loop
+        if marshal.version > 2:
+            self.assertEqual(marshal.dumps(l), b'\xdb\x03\x00\x00\x00\xe9\x01\x00\x00\x00\xe9\x02\x00\x00\x00r\x00\x00\x00\x00')
 
         class my: pass
         self.assertRaises(ValueError, marshal.dumps, my())  ## unmarshallable object
@@ -106,11 +107,11 @@ class MarshalTest(IronPythonTestCase):
         for i in range(10):
             l.append(marshal.dumps({i:i}))
 
-        data = ''.join(l)
-        with open('tempfile.txt', 'w') as f:
+        data = b''.join(l)
+        with open('tempfile.txt', 'wb') as f:
             f.write(data)
 
-        with open('tempfile.txt') as f:
+        with open('tempfile.txt', 'rb') as f:
             for i in range(10):
                 obj = marshal.load(f)
                 self.assertEqual(obj, {i:i})
@@ -118,24 +119,30 @@ class MarshalTest(IronPythonTestCase):
         self.delete_files('tempfile.txt')
 
     def test_string_interning(self):
-        self.assertEqual(marshal.dumps(['abc', 'abc'], 1), '[\x02\x00\x00\x00t\x03\x00\x00\x00abcR\x00\x00\x00\x00')
-        self.assertEqual(marshal.dumps(['abc', 'abc']), '[\x02\x00\x00\x00t\x03\x00\x00\x00abcR\x00\x00\x00\x00')
-        self.assertEqual(marshal.dumps(['abc', 'abc'], 0), '[\x02\x00\x00\x00s\x03\x00\x00\x00abcs\x03\x00\x00\x00abc')
-        self.assertEqual(marshal.dumps(['abc', 'abc', 'abc', 'def', 'def'], 1), '[\x05\x00\x00\x00t\x03\x00\x00\x00abcR\x00\x00\x00\x00R\x00\x00\x00\x00t\x03\x00\x00\x00defR\x01\x00\x00\x00')
+        self.assertEqual(marshal.dumps(['abc', 'abc'], 0), b'[\x02\x00\x00\x00u\x03\x00\x00\x00abcu\x03\x00\x00\x00abc')
+        self.assertEqual(marshal.dumps(['abc', 'abc'], 1), b'[\x02\x00\x00\x00u\x03\x00\x00\x00abcu\x03\x00\x00\x00abc')
+        self.assertEqual(marshal.dumps(['abc', 'abc'], 2), b'[\x02\x00\x00\x00u\x03\x00\x00\x00abcu\x03\x00\x00\x00abc')
+        self.assertEqual(marshal.dumps(['abc', 'abc', 'abc', 'def', 'def'], 1), b'[\x05\x00\x00\x00u\x03\x00\x00\x00abcu\x03\x00\x00\x00abcu\x03\x00\x00\x00abcu\x03\x00\x00\x00defu\x03\x00\x00\x00def')
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc'], 1)), ['abc', 'abc'])
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc'], 0)), ['abc', 'abc'])
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc', 'abc', 'def', 'def'], 1)), ['abc', 'abc', 'abc', 'def', 'def'])
 
     def test_binary_floats(self):
-        self.assertEqual(marshal.dumps(2.0, 2), 'g\x00\x00\x00\x00\x00\x00\x00@')
-        self.assertEqual(marshal.dumps(2.0), 'g\x00\x00\x00\x00\x00\x00\x00@')
-        if is_cli: #https://github.com/IronLanguages/main/issues/854
-            self.assertEqual(marshal.dumps(2.0, 1), 'f\x032.0')
+        self.assertEqual(marshal.dumps(2.0, 2), b'g\x00\x00\x00\x00\x00\x00\x00@')
+        if marshal.version > 2:
+            self.assertEqual(marshal.dumps(2.0), b'\xe7\x00\x00\x00\x00\x00\x00\x00@')
         else:
-            self.assertEqual(marshal.dumps(2.0, 1), 'f\x012')
+            self.assertEqual(marshal.dumps(2.0), b'g\x00\x00\x00\x00\x00\x00\x00@')
+        if is_cli: #https://github.com/IronLanguages/main/issues/854
+            self.assertEqual(marshal.dumps(2.0, 1), b'f\x032.0')
+        else:
+            self.assertEqual(marshal.dumps(2.0, 1), b'f\x012')
         self.assertEqual(marshal.loads(marshal.dumps(2.0, 2)), 2.0)
 
     def test_cp24547(self):
-        self.assertEqual(marshal.dumps(2**33), "l\x03\x00\x00\x00\x00\x00\x00\x00\x08\x00")
+        if marshal.version > 2:
+            self.assertEqual(marshal.dumps(2**33), b'\xec\x03\x00\x00\x00\x00\x00\x00\x00\x08\x00')
+        else:
+            self.assertEqual(marshal.dumps(2**33), b"l\x03\x00\x00\x00\x00\x00\x00\x00\x08\x00")
 
 run_test(__name__)

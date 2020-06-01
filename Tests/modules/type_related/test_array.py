@@ -7,6 +7,7 @@ Tests for CPython's array module.
 '''
 
 import array
+import sys
 import unittest
 
 from iptest import is_cli, is_mono, long, run_test
@@ -499,11 +500,11 @@ class ArrayTest(unittest.TestCase):
             self.assertEqual(i, len(a*i))
 
         #--Negative
-        self.assertRaises(OverflowError, lambda: long(4567206470)*a)
-        self.assertRaises(OverflowError, lambda: a*long(4567206470))
+        self.assertRaises(OverflowError, lambda: long(sys.maxsize+1)*a)
+        self.assertRaises(OverflowError, lambda: a*long(sys.maxsize+1))
         if not is_mono: # these do not fail on Mono
-            self.assertRaises(MemoryError,   lambda: long(2147483646)*a)
-            self.assertRaises(MemoryError,   lambda: a*long(2147483646))
+            self.assertRaises(MemoryError, lambda: long(sys.maxsize)*a)
+            self.assertRaises(MemoryError, lambda: a*long(sys.maxsize))
 
         #--Positive
         a = array.array('b', b'abc')

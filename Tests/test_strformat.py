@@ -21,13 +21,13 @@ class bad_str(object):
 class StrFormatTest(IronPythonTestCase):
 
     def test_formatter_parser_errors(self):
-        errors = [ ("{0!",             "unmatched '{' in format" if is_cli else "end of string while looking for conversion specifier"),
+        errors = [ ("{0!",             "unmatched '{' in format spec" if is_cli else "end of string while looking for conversion specifier"),
                 ("}a{",             "Single '}' encountered in format string"),
-                ("{0:0.1a",         "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
-                ("{0:{}",           "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
-                ("{0:aa{ab}",       "unmatched '{' in format" if is_cli else "unmatched '{' in format spec"),
+                ("{0:0.1a",         "unmatched '{' in format spec"),
+                ("{0:{}",           "unmatched '{' in format spec"),
+                ("{0:aa{ab}",       "unmatched '{' in format spec"),
                 ("{0!}",            "end of format while looking for conversion specifier" if is_cli else "unmatched '{' in format spec"),
-                ("{0!",             "unmatched '{' in format" if is_cli else "end of string while looking for conversion specifier"),
+                ("{0!",             "unmatched '{' in format spec" if is_cli else "end of string while looking for conversion specifier"),
                 ("{0!aa}",          "expected ':' after format specifier" if is_cli else "expected ':' after conversion specifier"),
                 ("{0.{!:{.}.}}",    "expected ':' after format specifier" if is_cli else "unexpected '{' in field name"),
                 ("{",               "Single '{' encountered in format string"),
@@ -122,10 +122,7 @@ class StrFormatTest(IronPythonTestCase):
         self.assertRaisesMessage(ValueError, "Empty attribute in format string", '{0.}'.format, 42)
         self.assertRaisesMessage(ValueError, "Empty attribute in format string", '{0[]}'.format, 42)
         self.assertRaisesMessage(ValueError, "Missing ']' in format string" if is_cli else "expected '}' before end of string", '{0[}'.format, 42)
-        if is_cli:
-            self.assertRaises(IndexError, '{0[}'.format)
-        else:
-            self.assertRaises(ValueError, '{0[}'.format)
+        self.assertRaises(IndexError if is_cli else ValueError, '{0[}'.format)
 
     @skipUnlessIronPython()
     def test_format_cli_interop(self):
@@ -894,7 +891,7 @@ class StrFormatTest(IronPythonTestCase):
                     (ValueError, 2, '+c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, 2, '-c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, 2, ' c', "Sign not allowed with integer format specifier 'c'"),
-                    (OverflowError, -2, 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
+                    (OverflowError, -2, 'c', "%c arg not in range(0x110000)"),
                     #(-2, 'c', ),
                     #(-2, '%', "Sign not allowed with integer format specifier 'c'"),
                 ]
@@ -1197,8 +1194,8 @@ class StrFormatTest(IronPythonTestCase):
                     (ValueError, long(2), '+c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, long(2), '-c', "Sign not allowed with integer format specifier 'c'"),
                     (ValueError, long(2), ' c', "Sign not allowed with integer format specifier 'c'"),
-                    (OverflowError, -long(2), 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
-                    (OverflowError, long(0x10000) if is_cli else long(0x110000), 'c', "%c arg not in range(0x10000)" if is_cli else "%c arg not in range(0x110000)"),
+                    (OverflowError, -long(2), 'c', "%c arg not in range(0x110000)"),
+                    (OverflowError, long(0x110000), 'c', "%c arg not in range(0x110000)"),
                 ]
 
         if is_cli: #http://ironpython.codeplex.com/workitem/28373

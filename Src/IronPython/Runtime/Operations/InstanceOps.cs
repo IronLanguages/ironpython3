@@ -828,22 +828,19 @@ namespace IronPython.Runtime.Operations {
 
         internal const string ObjectNewNoParameters = "object() takes no parameters";
 
-
         internal static void CheckNewArgs(CodeContext context, IDictionary<object, object> dict, object[] args, PythonType pt) {
-            if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
+            if ((args != null && args.Length > 0) || (dict != null && dict.Count > 0)) {
                 bool hasObjectInit = pt.HasObjectInit(context);
                 bool hasObjectNew = pt.HasObjectNew(context);
 
-                if (hasObjectInit) {
-                    throw PythonOps.TypeError(ObjectNewNoParameters);
-                } else if (!hasObjectNew && !hasObjectInit) {
+                if (hasObjectInit || !hasObjectNew && !hasObjectInit) {
                     throw PythonOps.TypeError(ObjectNewNoParameters);
                 }
             }
         }
 
         internal static void CheckInitArgs(CodeContext context, IDictionary<object, object> dict, object[] args, object self) {
-            if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
+            if ((args != null && args.Length > 0) || (dict != null && dict.Count > 0)) {
                 PythonType pt = DynamicHelpers.GetPythonType(self);
                 bool hasObjectInit = pt.HasObjectInit(context);
                 bool hasObjectNew = pt.HasObjectNew(context);

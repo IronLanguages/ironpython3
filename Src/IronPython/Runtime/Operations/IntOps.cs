@@ -488,12 +488,12 @@ namespace IronPython.Runtime.Operations {
                     if (spec.Sign != null) {
                         throw PythonOps.ValueError("Sign not allowed with integer format specifier 'c'");
                     }
-                    
-                    if (self < 0 || self > 0xFF) {
-                        throw PythonOps.OverflowError("%c arg not in range(0x10000)");
+
+                    if (self < 0 || self > 0x10ffff) {
+                        throw PythonOps.OverflowError("%c arg not in range(0x110000)");
                     }
 
-                    digits = ScriptingRuntimeHelpers.CharToString((char)self);
+                    digits = (self > char.MaxValue) ? char.ConvertFromUtf32(self) : ScriptingRuntimeHelpers.CharToString((char)self);
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'int'", spec.TypeRepr);

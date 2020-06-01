@@ -246,7 +246,7 @@ namespace IronPython.Runtime {
             /// </summary>
             private bool CheckEnd() {
                 if (_index == _str.Length) {
-                    throw PythonOps.ValueError("unmatched '{{' in format");
+                    throw PythonOps.ValueError("unmatched '{{' in format spec");
                 } else if (_str[_index] == '}') {
                     _index++;
                     return true;
@@ -285,7 +285,7 @@ namespace IronPython.Runtime {
                     end = _str.IndexOfAny(ends, end + 1);
 
                     if (end == -1) {
-                        throw PythonOps.ValueError("unmatched '{{' in format");
+                        throw PythonOps.ValueError("unmatched '{{' in format spec");
                     }
 
                     switch (_str[end]) {

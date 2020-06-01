@@ -973,7 +973,7 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.TypeRepr);
             }
 
             return digits;

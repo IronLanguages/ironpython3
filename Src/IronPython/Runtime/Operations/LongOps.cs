@@ -953,14 +953,14 @@ namespace IronPython.Runtime.Operations {
                         throw PythonOps.ValueError("Sign not allowed with integer format specifier 'c'");
                     } else if (!self.AsInt32(out iVal)) {
                         throw PythonOps.OverflowError("long int too large to convert to int");
-                    } else if(iVal < 0 || iVal > 0xFF) {
-                        throw PythonOps.OverflowError("%c arg not in range(0x10000)");
+                    } else if(iVal < 0 || iVal > 0x10ffff) {
+                        throw PythonOps.OverflowError("%c arg not in range(0x110000)");
                     }
 
-                    digits = ScriptingRuntimeHelpers.CharToString((char)iVal);
+                    digits = (iVal > char.MaxValue) ? char.ConvertFromUtf32(iVal) : ScriptingRuntimeHelpers.CharToString((char)iVal);
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'int'", spec.TypeRepr);
             }
 
             Debug.Assert(digits[0] != '-');

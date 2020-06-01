@@ -63,22 +63,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        private readonly long _targetId;
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
         private readonly List<CallbackInfo> _callbacks = new List<CallbackInfo>(1);
 
         public WeakRefTracker(IWeakReferenceable target) {
-            _targetId = IdDispenser.GetId(target);
         }
 
         public WeakRefTracker(IWeakReferenceable target, object callback, object weakRef) : this(target) {
             ChainCallback(callback, weakRef);
-        }
-
-        public long TargetId {
-            get {
-                return _targetId;
-            }
         }
 
         public void ChainCallback(object callback, object weakRef) {

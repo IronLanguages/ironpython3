@@ -33,10 +33,8 @@ class C(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-def _create_weakrefs(self, o, count, cb = None):
-        # Helper method to work around the (to me yet unexplicable) fact that
-        # 'o = factory(); del o; force_gc();' does not lead to the collection of 'o'.
-
+class WeakrefTest(IronPythonTestCase):
+    def _create_weakrefs(self, o, count, cb = None):
         # force creation of different instances for the same target
         if not cb and count > 1:
             cb = lambda r: None
@@ -50,15 +48,16 @@ def _create_weakrefs(self, o, count, cb = None):
         else:
             raise Exception("not implemented")
 
-class WeakrefTest(IronPythonTestCase):
     def test_ref_callable(self):
         # "if the referent is no longer alive, calling the reference object will cause None to 
         # be returned"
 
-        r = _create_weakrefs(self, C("a"), 1)
+        o = C("a")
+        r = self._create_weakrefs(o, 1)
         # for reasons stated in create_weakrefs(), we cannot test on instance equality
-        self.assertTrue(r().value == "a") 
+        self.assertTrue(r().value == "a")
 
+        del o
         gc.collect()
 
         self.assertTrue(r() is None)
@@ -68,9 +67,11 @@ class WeakrefTest(IronPythonTestCase):
         # even after the object was deleted. If hash() is called the first time only after the object 
         # was deleted, the call will raise TypeError."
 
-        r1, r2 = _create_weakrefs(self, C("a"), 2)
+        o = C("a")
+        r1, r2 = self._create_weakrefs(o, 2)
         self.assertTrue(hash(r1) == hash("a"))
 
+        del o
         gc.collect()
 
         self.assertTrue(r1() is None)
@@ -83,17 +84,18 @@ class WeakrefTest(IronPythonTestCase):
         # their referents (regardless of the callback). If either referent has been deleted, the 
         # references are equal only if the reference objects are the same object."
 
-        r1, r2 = _create_weakrefs(self, C("a"), 2)
-        r3 = _create_weakrefs(self, C("a"), 1)
+        o, o2 = C("a"), C("a")
+        r1, r2 = self._create_weakrefs(o, 2)
+        r3 = self._create_weakrefs(o2, 1)
         self.assertTrue(r1 == r2)
         self.assertTrue(r1 == r3)
 
+        del o, o2
         gc.collect()
 
         self.assertTrue(r1() is None)
         self.assertTrue(r3() is None)
-        self.assertTrue(r1 == r2)
+        self.assertTrue(r1 != r2)
         self.assertTrue(r1 != r3)
-
 
 run_test(__name__)

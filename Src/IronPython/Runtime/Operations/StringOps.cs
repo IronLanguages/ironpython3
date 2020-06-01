@@ -307,7 +307,35 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __format__(CodeContext/*!*/ context, [NotNull]string self, [NotNull]string formatSpec) {
-            return ObjectOps.__format__(context, self, formatSpec);
+            StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
+
+            if (spec.Type != null && spec.Type != 's') {
+                throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'str'", spec.TypeRepr);
+            } else if (spec.Sign != null) {
+                throw PythonOps.ValueError("Sign not allowed in string format specifier");
+            } else if (spec.Alignment == '=') {
+                throw PythonOps.ValueError("'=' alignment not allowed in string format specifier");
+            } else if (spec.ThousandsComma) {
+                throw PythonOps.ValueError("Cannot specify ',' with 's'.");
+            } else if (spec.IncludeType) {
+                throw PythonOps.ValueError("Alternate form (#) not allowed in string format specifier");
+            }
+
+            var text = self;
+
+            // apply precision to shorten the string first
+            if (spec.Precision != null) {
+                int precision = spec.Precision.Value;
+                if (text.Length > precision) {
+                    text = text.Substring(0, precision);
+                }
+            }
+
+            // then apply the minimum width & padding
+            text = spec.AlignText(text);
+
+            // finally return the text
+            return text;
         }
 
         public static int __len__([NotNull]string s) {

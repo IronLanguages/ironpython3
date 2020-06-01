@@ -36,7 +36,6 @@ class RegressionTest(IronPythonTestCase):
         time.sleep(10)
         self.assertEqual(z, 100)
 
-    @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
     def test_cp17420(self):
         #Create a temporary Python file
         test_file_name = os.path.join(self.temporary_dir, "cp17420.py")
@@ -228,21 +227,19 @@ with open(r"%s", "w") as f:
         global andCalled
         andCalled = False
 
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code" if is_cli else "argument out of range",
                             _struct.Struct('L').pack, 4294967296)
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code" if is_cli else "argument out of range",
                             _struct.Struct('L').pack, -1)
-        self.assertRaisesRegex(Exception, "foo",
-                            _struct.Struct('L').pack, x(0))
-        self.assertRaisesRegex(Exception, "foo", _struct.Struct('L').pack, x(-1))
+        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('L').pack, x(0))
+        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('L').pack, x(-1))
 
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code" if is_cli else "argument out of range",
                             _struct.Struct('I').pack, 4294967296)
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code" if is_cli else "argument out of range",
                             _struct.Struct('I').pack, -1)
-        self.assertRaisesRegex(Exception, "foo",
-                            _struct.Struct('I').pack, x(0))
-        self.assertRaisesRegex(Exception, "foo", _struct.Struct('I').pack, x(-1))
+        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('I').pack, x(0))
+        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('I').pack, x(-1))
 
         # __and__ was called in Python2.6 check that this is no longer True
         self.assertTrue(not andCalled)
@@ -513,7 +510,7 @@ with open(r"%s", "w") as f:
         def f(a=None):
             pass
 
-        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'",
+        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'" if is_cli else "f\(\) got multiple values for argument 'a'",
                             lambda: f(1, a=3))
 
     @unittest.skipIf(is_netcoreapp, 'requires System.Drawing.Common dependency')
@@ -583,13 +580,13 @@ with open(r"%s", "w") as f:
 
     def test_cp22692(self):
         self.assertEqual(self.cp22692_helper("if 1:", 0x200),
-                [SyntaxError, IndentationError])
+                [SyntaxError, IndentationError if is_cli else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:", 0),
-                [SyntaxError, IndentationError])
+                [SyntaxError, IndentationError if is_cli else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:\n  if 1:", 0x200),
-                [IndentationError, IndentationError])
+                [IndentationError if is_cli else SyntaxError, IndentationError if is_cli else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:\n  if 1:", 0),
-                [IndentationError, IndentationError])
+                [IndentationError if is_cli else SyntaxError, IndentationError if is_cli else SyntaxError])
 
     @skipUnlessIronPython()
     def test_cp23545(self):
@@ -1038,6 +1035,7 @@ class C:
                 return limit[0]
 
             x = getdepth()
+            if not is_cli: x -= 1
 
             def f(n):
                 if n > 0: return f(n-1)
@@ -1046,7 +1044,6 @@ class C:
 
             with self.assertRaises(RuntimeError):
                 f(x+1)
-                self.fail()
 
             f(x)
         finally:
@@ -1466,6 +1463,5 @@ class C:
         o = test__class__keyword()
         self.assertEqual(o.get_self_class(), o.get_class())
         self.assertEqual(o.get_class(), o.get_class_class())
-
 
 run_test(__name__)

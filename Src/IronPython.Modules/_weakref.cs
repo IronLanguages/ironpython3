@@ -56,12 +56,11 @@ namespace IronPython.Modules {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType ReferenceType = DynamicHelpers.GetPythonTypeFromType(typeof(@ref));
 
-        [PythonType]
+        [PythonType("weakref")]
         public class @ref : IStructuralEquatable
         {
-            private CodeContext _context;
-            private WeakHandle _target;
-            private long _targetId;
+            private readonly CodeContext _context;
+            private readonly WeakHandle _target;
             private int _hashVal;
             private bool _fHasHash;
 
@@ -94,40 +93,34 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __init__(CodeContext context, object ob, object callback = null) {
-                _context = context;
-                WeakRefTracker wrt = WeakRefHelpers.InitializeWeakRef(_context.LanguageContext, this, ob, callback);
-
-                _target = new WeakHandle(ob, false);
-                _targetId = wrt.TargetId;
-            }
+            public void __init__(CodeContext context, object ob, object callback = null) { }
 
             #endregion
 
             #region Constructors
 
-            public @ref(CodeContext context, object @object, object callback = null) {
-                // the work is actually done on the call to __init__
+            public @ref(CodeContext context, object target, object callback = null) {
+                WeakRefHelpers.InitializeWeakRef(context.LanguageContext, this, target, callback);
+                _target = new WeakHandle(target, false);
+                _context = context;
+                __callback__ = callback;
             }
 
             #endregion
 
             #region Finalizer
+
             ~@ref() {
-                IWeakReferenceable iwr;
-                if (_context.LanguageContext.TryConvertToWeakReferenceable(_target.Target, out iwr))
-                {
-                    WeakRefTracker wrt = iwr.GetWeakRef();
-                    if (wrt != null) {
-                        // weak reference being finalized before target object,
-                        // we don't want to run the callback when the object is
-                        // finalized.
-                        wrt.RemoveHandler(this);
-                    }
+                if (_context != null && _context.LanguageContext.TryConvertToWeakReferenceable(_target.Target, out IWeakReferenceable iwr)) {
+                    // weak reference being finalized before target object,
+                    // we don't want to run the callback when the object is
+                    // finalized.
+                    iwr.GetWeakRef()?.RemoveHandler(this);
                 }
 
                 _target.Free();
             }
+
             #endregion
 
             #region Static helpers
@@ -164,6 +157,8 @@ namespace IronPython.Modules {
                 GC.KeepAlive(this);
                 return res;
             }
+
+            public object __callback__ { get; }
 
             [return: MaybeNotImplemented]
             public static NotImplementedType operator >(@ref self, object other) {
@@ -228,8 +223,6 @@ namespace IronPython.Modules {
 
                     if (ourTarget != null && itsTarget != null) {
                         fResult = RefEquals(ourTarget, itsTarget, comparer);
-                    } else {
-                        fResult = (_targetId == wr._targetId);
                     }
                 }
                 GC.KeepAlive(this);
@@ -270,7 +263,7 @@ namespace IronPython.Modules {
             #endregion            
         }
 
-        [PythonType, DynamicBaseTypeAttribute, PythonHidden]
+        [PythonType, DynamicBaseType, PythonHidden]
         public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable
         {
             private readonly WeakHandle _target;

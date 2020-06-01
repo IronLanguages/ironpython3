@@ -6,7 +6,7 @@ import _struct
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_64, run_test
+from iptest import IronPythonTestCase, is_64, is_cli, is_cpython, run_test
 
 def pack(f, *v):
     return _struct.Struct(f).pack(*v)
@@ -169,10 +169,12 @@ class _StructTest(IronPythonTestCase):
         for x in struct_format:
             for y in struct_format:
                 temp_str = str(x) + str(y)
-                if is_64 and "P" in temp_str:
-                    continue #CodePlex 17683 - we need to test against 64-bit CPython
-                self.assertTrue(expected[temp_str] == calcsize(temp_str),
-                        "_struct.Struct(" + temp_str + ").size is broken")
+                expected_size = expected[temp_str]
+                if is_64:
+                    if x == "P": expected_size = min(expected_size + 4, 16)
+                    if y == "P": expected_size = 16
+                self.assertEqual(expected_size, calcsize(temp_str),
+                        "_struct.Struct('" + temp_str + "').size is broken")
 
 
     def test_new_init(self):
@@ -180,9 +182,9 @@ class _StructTest(IronPythonTestCase):
         for x in (_struct.Struct.__new__(_struct.Struct), _struct.Struct.__new__(_struct.Struct, a = 2)):
             # state of uninitialized object...
             self.assertEqual(x.size, -1)
-            self.assertEqual(x.format, None)
-            self.assertRaisesMessage(_struct.error, "pack requires exactly -1 arguments", x.pack)
-            self.assertRaisesMessage(_struct.error, "unpack requires a string argument of length -1", x.unpack, b'')
+            self.assertEqual(x.format, None if is_cli or is_cpython and sys.version_info < (3,7) else '\x00\x00\x00\x00\x00\x00\x00')
+            self.assertRaisesMessage(_struct.error, "pack requires exactly -1 arguments" if is_cli else "pack expected -1 items for packing (got 0)", x.pack)
+            self.assertRaisesMessage(_struct.error, "unpack requires a bytes object of length -1" if is_cli or is_cpython and sys.version_info < (3,6) else "unpack requires a buffer of -1 bytes", x.unpack, b'')
 
         # invalid format passed to __init__ - format string is updated but old format info is stored...
         a = _struct.Struct('c')
@@ -192,13 +194,13 @@ class _StructTest(IronPythonTestCase):
         except _struct.error as e:
             pass
 
-        self.assertEqual(a.format, 'bad')
+        self.assertEqual(a.format, 'bad' if is_cli or is_cpython and sys.version_info >= (3,7) else b"bad")
         self.assertEqual(a.pack(b'1'), b'1')
         self.assertEqual(a.unpack(b'1'), (b'1', ))
 
         # and then back to a valid format
         a.__init__('i')
-        self.assertEqual(a.format, 'i')
+        self.assertEqual(a.format, 'i' if is_cli or is_cpython and sys.version_info >= (3,7) else b'i')
         self.assertEqual(a.pack(0), b'\x00\x00\x00\x00')
         self.assertEqual(a.unpack(b'\x00\x00\x00\x00'), (0, ))
 
@@ -209,13 +211,14 @@ class _StructTest(IronPythonTestCase):
         self.assertEqual(_weakref.proxy(x).size, x.size)
 
     def test_cp16476(self):
+        maxint = int((1 << 31) - 1)
         for expected, encoded_val in [(156909,       b'\xedd\x02\x00'),
-                                    (sys.maxsize,   b'\xff\xff\xff\x7f'),
-                                    (sys.maxsize-1, b'\xfe\xff\xff\x7f'),
-                                    (sys.maxsize-2, b'\xfd\xff\xff\x7f'),
-                                    (sys.maxsize+1, b'\x00\x00\x00\x80'),
-                                    (sys.maxsize+2, b'\x01\x00\x00\x80'),
-                                    (sys.maxsize+3, b'\x02\x00\x00\x80'),
+                                    (maxint,       b'\xff\xff\xff\x7f'),
+                                    (maxint-1,     b'\xfe\xff\xff\x7f'),
+                                    (maxint-2,     b'\xfd\xff\xff\x7f'),
+                                    (maxint+1,     b'\x00\x00\x00\x80'),
+                                    (maxint+2,     b'\x01\x00\x00\x80'),
+                                    (maxint+3,     b'\x02\x00\x00\x80'),
                                     (2**16,        b'\x00\x00\x01\x00'),
                                     (2**16+1,      b'\x01\x00\x01\x00'),
                                     (2**16-1,      b'\xff\xff\x00\x00'),
@@ -225,7 +228,6 @@ class _StructTest(IronPythonTestCase):
             actual_val = unpack('I', encoded_val)
             self.assertEqual((expected,), actual_val)
             self.assertEqual(type(expected), type(actual_val[0]))
-
 
     def test_unpack_from(self):
         '''

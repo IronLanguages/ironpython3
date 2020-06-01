@@ -232,7 +232,7 @@ namespace IronPython.Runtime.Operations {
 
         public static string __format__(CodeContext/*!*/ context, Complex self, string formatSpec) {
             // TODO: this is not correct, but it's better than the .ToString representation
-            return ObjectOps.__format__(context, self, formatSpec);
+            return StringOps.__format__(context, __repr__(context, self), formatSpec);
         }
 
         // report the same errors as CPython for these invalid conversions

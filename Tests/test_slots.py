@@ -270,20 +270,16 @@ class SlotsTest(IronPythonTestCase):
     def test_slots_choices(self):
         # guess: all existing attributes should never be overwriten by __slots__ members
 
-        class C(object):
-            __slots__ = ['__slots__']
+        # ValueError: '__slots__' in __slots__ conflicts with class variable
+        with self.assertRaises(ValueError):
+            class C(object):
+                __slots__ = ['__slots__']
 
-        x = C()
-        self.assertEqual(x.__slots__, ['__slots__'])
-        def f(): x.a = 1
-        self.assertRaises(AttributeError, f)
-
-        class C(object):
-            __slots__ = ['m']
-            def m(self): return 1
-
-        x = C()
-        self.assertEqual(x.m(), 1)
+        # ValueError: 'm' in __slots__ conflicts with class variable
+        with self.assertRaises(ValueError):
+            class C(object):
+                __slots__ = ['m']
+                def m(self): return 1
 
         class C(object):
             __slots__ = ['__dict__', 'c']

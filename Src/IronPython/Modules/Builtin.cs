@@ -398,7 +398,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 out res);
 
             if (!(res is string strRes)) {
-                throw PythonOps.TypeError("{0}.__format__ must return string or unicode, not {1}", PythonTypeOps.GetName(argValue), PythonTypeOps.GetName(res));
+                throw PythonOps.TypeError("{0}.__format__ must return string, not {1}", PythonTypeOps.GetName(argValue), PythonTypeOps.GetName(res));
             }
 
             return strRes;

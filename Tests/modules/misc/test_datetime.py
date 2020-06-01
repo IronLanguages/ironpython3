@@ -1084,7 +1084,7 @@ class DatetimeTest(IronPythonTestCase):
         if not is_cli:
             self.assertRaisesMessage(TypeError, "Required argument 'year' (pos 1) not found",
                                 datetime.datetime)
-            self.assertRaisesMessage(TypeError, "an integer is required",
+            self.assertRaisesMessage(TypeError, "an integer is required" if is_cli else "an integer is required (got type NoneType)",
                                 datetime.datetime, None, None)
             self.assertRaisesMessage(TypeError, "function takes at most 8 arguments (9 given)",
                                 datetime.datetime, None, None, None, None, None, None, None, None, None)

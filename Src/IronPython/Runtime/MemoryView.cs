@@ -387,7 +387,7 @@ namespace IronPython.Runtime {
             object subdimensionToList(ReadOnlySpan<byte> source, int ofs, int dim) {
                 if (dim >= _shape.Count) {
                     // extract individual element (scalar)
-                    return packBytes(typecode, source.Slice(ofs));
+                    return PackBytes(typecode, source.Slice(ofs));
                 }
 
                 object[] elements = new object[_shape[dim]];
@@ -475,7 +475,7 @@ namespace IronPython.Runtime {
             return ValidCodes.IndexOf(code) >= 0;
         }
 
-        private static void unpackBytes(char typecode, object o, Span<byte> dest) {
+        private static void UnpackBytes(char typecode, object o, Span<byte> dest) {
             if (!IsSupportedTypecode(typecode)) {
                 throw PythonOps.NotImplementedError("memoryview: format {0} not supported", typecode);
             }
@@ -486,7 +486,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static object packBytes(char typecode, ReadOnlySpan<byte> bytes) {
+        private static object PackBytes(char typecode, ReadOnlySpan<byte> bytes) {
             // TODO: support non-native byteorder
             if (IsSupportedTypecode(typecode) && TypecodeOps.TryGetFromBytes(typecode, bytes, out object? result))
                 return result;
@@ -497,7 +497,7 @@ namespace IronPython.Runtime {
 
         private object GetItem(int offset) {
             TypecodeOps.DecomposeTypecode(_format, out char byteorder, out char typecode);
-            object result = packBytes(typecode, _buffer!.AsReadOnlySpan().Slice(offset, _itemSize));
+            object result = PackBytes(typecode, _buffer!.AsReadOnlySpan().Slice(offset, _itemSize));
 
             return PythonOps.ConvertToPythonPrimitive(result);
         }
@@ -510,14 +510,21 @@ namespace IronPython.Runtime {
             switch (typecode) {
                 case 'd': // double
                 case 'f': // float
-                    double convertedValueDouble = 0;
-                    if (!Converter.TryConvertToDouble(value, out convertedValueDouble)) {
+                    if (!Converter.TryConvertToDouble(value, out double convertedValueDouble)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
                     value = convertedValueDouble;
                     break;
 
-                case 'c': // char
+                case 'c': // bytechar
+                    if (!(value is Bytes b)) {
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
+                    }
+                    if (b.Count != 1) {
+                        throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
+                    }
+                    break;
+
                 case 'b': // signed byte
                 case 'B': // unsigned byte
                 case 'h': // signed short
@@ -568,7 +575,7 @@ namespace IronPython.Runtime {
                     break; // This could be a variety of types, let the UnpackBytes decide
             }
 
-            unpackBytes(typecode, value, _buffer!.AsSpan().Slice(offset, _itemSize));
+            UnpackBytes(typecode, value, _buffer!.AsSpan().Slice(offset, _itemSize));
         }
 
         // TODO: support indexable, BigInteger etc.

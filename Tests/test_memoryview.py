@@ -424,6 +424,31 @@ class CastTests(unittest.TestCase):
         mvb[0] = ""
         self.assertIs(mvb[0], False)
 
+    def test_cast_bytechar(self):
+        ba = bytearray(range(4))
+        mv = memoryview(ba)
+        mvc = mv.cast('c')
+
+        for i in range(len(ba)):
+            self.assertEqual(mvc[i], bytes(chr(i), 'latin-1'))
+
+        mvc[1] = b"a"
+        self.assertEqual(mvc[1], b"a")
+
+        for val in [b"", b"abc"]:
+            with self.assertRaisesRegex(ValueError, "^memoryview: invalid value for format 'c'$"):
+                mvc[1] = val
+
+        class DunderBytes:
+            def __bytes__(self):
+                return b"z"
+
+        for val in ["", "ab", None, 0, False, 1.1, DunderBytes(), bytearray(b"z"), array.array('B', [100])]:
+            with self.assertRaisesRegex(TypeError, "^memoryview: invalid type for format 'c'$"):
+                mvc[1] = val
+
+        self.assertEqual(mvc[1], b"a")
+
     @unittest.skipUnless(is_64, "asssumes 64-bit pointers")
     def test_cast_pointer(self):
         ba = bytearray(range(16))

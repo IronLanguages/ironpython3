@@ -48,7 +48,7 @@ namespace IronPython.Runtime {
 
         public static int GetTypecodeWidth(char typecode) {
             switch (typecode) {
-                case 'c': // char
+                case 'c': // bytechar
                 case 'b': // signed byte
                 case 'B': // unsigned byte
                 case '?': // bool
@@ -80,7 +80,7 @@ namespace IronPython.Runtime {
         public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
             switch (typecode) {
                 case 'c':
-                    result = (char)bytes[0];
+                    result = Bytes.FromByte(bytes[0]);
                     return true;
                 case 'b':
                     result = (sbyte)bytes[0];
@@ -131,8 +131,8 @@ namespace IronPython.Runtime {
         public static bool TryGetBytes(char typecode, object obj, Span<byte> dest) {
             switch (typecode) {
                 case 'c':
-                    var cbyteVal = (byte)Convert.ToChar(obj);
-                    return MemoryMarshal.TryWrite(dest, ref cbyteVal);
+                    var bytecharVal = (byte)((Bytes)obj)[0];
+                    return MemoryMarshal.TryWrite(dest, ref bytecharVal);
                 case 'b':
                     var sbyteVal = (byte)Convert.ToSByte(obj);
                     return MemoryMarshal.TryWrite(dest, ref sbyteVal);
@@ -196,10 +196,6 @@ namespace IronPython.Runtime {
             long minValue;
 
             switch (typecode) {
-                case 'c': // char
-                    minValue = char.MinValue;
-                    maxValue = char.MaxValue;
-                    break;
                 case 'b': // signed byte
                     minValue = sbyte.MinValue;
                     maxValue = (ulong)sbyte.MaxValue;

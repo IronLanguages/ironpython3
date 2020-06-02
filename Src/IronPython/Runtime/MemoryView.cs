@@ -22,6 +22,7 @@ namespace IronPython.Runtime {
     [PythonType("memoryview")]
     public sealed class MemoryView : ICodeFormattable, IWeakReferenceable, IBufferProtocol, IPythonBuffer {
         private const int MaximumDimensions = 64;
+        private const string ValidCodes = "cbB?hHiIlLqQnNfdP";
 
         private IBufferProtocol _exporter;
         private IPythonBuffer? _buffer;   // null if disposed
@@ -430,9 +431,8 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if ( format == null
-              || !TypecodeOps.TryDecomposeTypecode(format.AsSpan(), out char byteorder, out char typecode)
-              || !TypecodeOps.IsScalarCode(typecode)
+            if ( !TypecodeOps.TryDecomposeTypecode(format.AsSpan(), out char byteorder, out char typecode)
+              || !IsSupportedTypecode(typecode)
               || byteorder != '@'
             ) {
                 throw PythonOps.ValueError(
@@ -471,21 +471,27 @@ namespace IronPython.Runtime {
             return new MemoryView(this, format, newItemsize, newShape);
         }
 
+        private static bool IsSupportedTypecode(char code) {
+            return ValidCodes.IndexOf(code) >= 0;
+        }
+
         private static void unpackBytes(char typecode, object o, Span<byte> dest) {
+            if (!IsSupportedTypecode(typecode)) {
+                throw PythonOps.NotImplementedError("memoryview: format {0} not supported", typecode);
+            }
+
             // TODO: support non-native byteorder
-            if (TypecodeOps.TryGetBytes(typecode, o, dest)) {
-                return;
-            } else {
+            if (!TypecodeOps.TryGetBytes(typecode, o, dest)) {
                 throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
             }
         }
 
         private static object packBytes(char typecode, ReadOnlySpan<byte> bytes) {
             // TODO: support non-native byteorder
-            if (TypecodeOps.TryGetFromBytes(typecode, bytes, out object? result))
+            if (IsSupportedTypecode(typecode) && TypecodeOps.TryGetFromBytes(typecode, bytes, out object? result))
                 return result;
             else {
-                return Bytes.Make(bytes.ToArray());
+                throw PythonOps.NotImplementedError("memoryview: format {0} not supported", typecode);
             }
         }
 

@@ -17,8 +17,7 @@ namespace IronPython.Runtime {
         // TODO: integrate with PythonStruct
 
         public const string ValidByteorder = "@=<>!";
-        public const string ValidScalarCodes = "cbB?hHiIlLqQnNfdP";
-        public const string ValidCodes = ValidScalarCodes + "xsp";
+        public const string ValidCodes = "xcbB?uhHiIlLqQnNfdspP";
 
         public static bool TryDecomposeTypecode(ReadOnlySpan<char> format, out char byteorder, out char code) {
             if (format.Length == 0 || format.Length > 2) {
@@ -45,10 +44,6 @@ namespace IronPython.Runtime {
 
         public static bool IsByteCode(char typecode) {
             return typecode == 'B' || typecode == 'b' || typecode == 'c';
-        }
-
-        public static bool IsScalarCode(char typecode) {
-            return ValidScalarCodes.IndexOf(typecode) >= 0;
         }
 
         public static int GetTypecodeWidth(char typecode) {

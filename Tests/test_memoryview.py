@@ -223,6 +223,30 @@ class MemoryViewTests(unittest.TestCase):
         mvc = mv.cast('h')
         self.assertRaisesRegex(ValueError, "^memoryview: hashing is restricted to formats 'B', 'b' or 'c'$", hash, mvc)
 
+    def test_unicode_array(self):
+        a = array.array('u', "abcd")
+        mv = memoryview(a)
+
+        self.assertEqual(mv.format, 'u')
+        self.assertEqual(mv.tobytes(), a.tobytes())
+
+        self.assertRaisesRegex(NotImplementedError, "^memoryview: format u not supported$", mv.tolist)
+
+        with self.assertRaises(NotImplementedError):
+            mv[0]
+
+        with self.assertRaises(NotImplementedError):
+            mv[0] = 0
+
+        if is_cli or sys.version_info.minor > 4:
+            self.assertEqual(mv.cast('B').tobytes(), a.tobytes())
+
+            with self.assertRaisesRegex(ValueError, "^memoryview: destination format must be a native single character format prefixed with an optional '@'$"):
+                mv.cast('u')
+
+            with self.assertRaisesRegex(TypeError, "^memoryview: cannot cast between two non-byte formats$"):
+                mv.cast('H')
+
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
         a = array.array('b', range(8))

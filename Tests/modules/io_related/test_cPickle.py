@@ -7,6 +7,7 @@
 #
 
 import os
+import sys
 import unittest
 
 from io import BytesIO
@@ -180,17 +181,14 @@ class TestBank:
         (long(0), {
             0:b'L0L\n.',
             1:b'K\x00.',
-            2:b'K\x00.',
             }),
         (long(1), {
             0:b'L1L\n.',
             1:b'K\x01.',
-            2:b'K\x01.',
             }),
         (long(-1), {
             0:b'L-1L\n.',
             1:b'J\xff\xff\xff\xff.',
-            2:b'J\xff\xff\xff\xff.',
             }),
         (NamedObject('smallest negative long', long_smallest_neg), {
             0:b'L-63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773888L\n.',
@@ -247,9 +245,7 @@ class TestBank:
             1:b'X\x08\x00\x00\x00hey\xc4\x80heyq<\x00>.',
             }),
         (u'hey\u07ffhey', {
-            0:( b'Vhey\\u07ffhey\np<0>\n.',
-                b'Vhey\\u07FFhey\np<0>\n.',
-                ),
+            0:b'Vhey\\u07ffhey\np<0>\n.',
             1:b'X\x08\x00\x00\x00hey\xdf\xbfheyq<\x00>.',
             }),
         (u'hey\u0800hey', {
@@ -257,9 +253,7 @@ class TestBank:
             1:b'X\t\x00\x00\x00hey\xe0\xa0\x80heyq<\x00>.',
             }),
         (u'hey\uffffhey', {
-            0:( b'Vhey\\uffffhey\np<0>\n.',
-                b'Vhey\\uFFFFhey\np<0>\n.',
-                ),
+            0:b'Vhey\\uffffhey\np<0>\n.',
             1:b'X\t\x00\x00\x00hey\xef\xbf\xbfheyq<\x00>.',
             }),
         ((), {
@@ -284,7 +278,6 @@ class TestBank:
         ((7,8,9,10), {
             0:b'(L7L\nL8L\nL9L\nL10L\ntp<0>\n.',
             1:b'(K\x07K\x08K\tK\ntq<\x00>.',
-            2:b'(K\x07K\x08K\tK\ntq<\x00>.',
             }),
         ((hey, hey), {
             0:b'(Vhey\np<0>\nVhey\np<1>\ntp<2>\n.' if is_cli else b'(Vhey\np<0>\ng<0>\ntp<1>\n.',
@@ -437,7 +430,7 @@ class TestBank:
             2:b'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         ]
-    if is_cli: #https://github.com/IronLanguages/main/issues/853
+    if is_cli or sys.version_info < (3,5): #https://github.com/IronLanguages/main/issues/853
         tests.append((0.33333333333333331,
                       {
                        0:b'F0.33333333333333331\n.',
@@ -447,22 +440,10 @@ class TestBank:
     else:
         tests.append((0.33333333333333331,
                       {
-                       0:b'F0.33333333333333331\n.',
+                       0:b'F0.3333333333333333\n.',
                        1:b'G?\xd5UUUUUU.',
                       }
                      ))
-
-class MyData(object):
-    def __init__(self, value):
-        self.value = value
-
-def persistent_id(obj):
-    if hasattr(obj, 'value'):
-        return 'MyData: %s' % obj.value
-    return None
-
-def persistent_load(id):
-    return MyData(id[8:])
 
 class CPickleTest(IronPythonTestCase):
     def test_pickler(self, module=cPickle, verbose=True):
@@ -525,7 +506,7 @@ class CPickleTest(IronPythonTestCase):
 
             obj, _unused, display_name = TestBank.normalize(test)
 
-            if verbose: print("Testing %s..." % display_name.encode("utf-8"), end=" ")
+            if verbose: print("Testing %s..." % display_name.encode("unicode-escape"), end=" ")
             for proto, pickler in enumerate(picklers):
                 s.seek(0)
                 s.truncate()
@@ -565,15 +546,20 @@ class CPickleTest(IronPythonTestCase):
             obj, pickle_lists, display_name = TestBank.normalize(test)
             expected = normalized_repr(obj)
 
-            if verbose: print("Testing %s..." % display_name.encode("utf-8"), end=" ")
+            if verbose: print("Testing %s..." % display_name.encode("unicode-escape"), end=" ")
 
-            for proto in range(3):
-                if proto not in pickle_lists:
-                    continue
+            def get_pickles(proto):
+                while proto <= 3:
+                    try:
+                        return pickle_lists[proto]
+                    except KeyError:
+                        proto += 1
+                return pickle_lists[max(pickle_lists.keys())]
 
+            for proto in range(4):
                 if verbose: print(proto, end=" ")
 
-                pickles = pickle_lists[proto]
+                pickles = get_pickles(proto)
                 if not isinstance(pickles, tuple):
                     pickles = (pickles,)
 
@@ -613,73 +599,47 @@ class CPickleTest(IronPythonTestCase):
         def persistent_load(id):
             return MyData(id[8:])
 
+        for binary in [True, False]:
+            src = BytesIO()
+            p = cPickle.Pickler(src)
+            p.persistent_id = persistent_id
+            p.bin = binary
 
-        src = BytesIO()
-        p = cPickle.Pickler(src)
-        p.persistent_id = persistent_id
+            value = MyData('abc')
+            p.dump(value)
 
-        value = MyData('abc')
-        p.dump(value)
+            up = cPickle.Unpickler(BytesIO(src.getvalue()))
+            up.persistent_load = persistent_load
+            res = up.load()
 
-        up = cPickle.Unpickler(BytesIO(src.getvalue()))
-        up.persistent_load = persistent_load
-        res = up.load()
+            if is_cli or sys.version_info >= (3,5) or binary:
+                self.assertEqual(res.value, value.value)
+            else:
+                self.assertEqual(res.value, b"abc") # issue with CPython 3.4 native unpickler?
 
-        self.assertEqual(res.value, value.value)
+            # errors
+            src = BytesIO()
+            p = cPickle.Pickler(src)
+            p.persistent_id = persistent_id
+            p.bin = binary
 
-        # errors
-        src = BytesIO()
-        p = cPickle.Pickler(src)
-        p.persistent_id = persistent_id
+            value = MyData('abc')
+            p.dump(value)
 
-        value = MyData('abc')
-        p.dump(value)
+            up = cPickle.Unpickler(BytesIO(src.getvalue()))
 
-        up = cPickle.Unpickler(BytesIO(src.getvalue()))
-
-        # exceptions vary between cPickle & Pickle
-        try:
-            up.load()
-            self.assertUnreachable()
-        except Exception as e:
-            pass
-
-    def test_pers_load(self):
-        src = BytesIO()
-        p = cPickle.Pickler(src)
-        p.persistent_id = persistent_id
-
-        value = MyData('abc')
-        p.dump(value)
-
-        up = cPickle.Unpickler(BytesIO(src.getvalue()))
-        up.persistent_load = persistent_load
-        res = up.load()
-
-        self.assertEqual(res.value, value.value)
-
-        # errors
-        src = BytesIO()
-        p = cPickle.Pickler(src)
-        p.persistent_id = persistent_id
-
-        value = MyData('abc')
-        p.dump(value)
-
-        up = cPickle.Unpickler(BytesIO(src.getvalue()))
-
-        # exceptions vary betwee cPickle & Pickle
-        try:
-            up.load()
-            self.assertUnreachable()
-        except Exception as e:
-            pass
+            # exceptions vary between cPickle & Pickle
+            try:
+                up.load()
+                self.assertUnreachable()
+            except Exception as e:
+                pass
 
     def test_loads_negative(self):
         self.assertRaises(EOFError, cPickle.loads, b"")
 
     def test_load_negative(self):
-        if cPickle.__name__ == "cPickle":   # pickle vs. cPickle report different exceptions, even on Cpy
+        if cPickle.__name__ == "_pickle":   # pickle vs. cPickle report different exceptions, even on Cpy
             filename = os.tempnam()
             for temp in ['\x02', "No"]:
                 self.write_to_file(filename, content=temp)

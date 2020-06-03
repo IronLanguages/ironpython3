@@ -437,6 +437,8 @@ namespace IronPython.Runtime.Operations {
                 dictIterator = Modules.Builtin.iter(context, PythonOps.Invoke(context, self, nameof(PythonDictionary.items)));
             }
 
+            if (state is PythonDictionary d && d.Count == 0) state = null;
+
             return PythonTuple.MakeTuple(func, PythonTuple.MakeTuple(funcArgs), state, listIterator, dictIterator);
         }
 

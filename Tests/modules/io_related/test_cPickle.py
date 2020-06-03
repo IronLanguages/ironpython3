@@ -9,19 +9,16 @@
 import os
 import unittest
 
-from io import StringIO
+from io import BytesIO
 
-from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
+from iptest import IronPythonTestCase, is_cli, long, path_modifier, run_test
 
 # We test IronPython's cPickle bytecode output against CPython's pickle.py
 # output, since pickle.py's output (specifically its memoization behavior) is
 # more predictable than cPickle's. (CPython's cPickle relies on reference counts
 # to determine whether or not to memoize objects, which is hard to reproduce on
 # IronPython.)
-if is_cli:
-    import _pickle as cPickle
-else:
-    import pickle as cPickle
+import pickle as cPickle
 
 # Acquire refs to interned strings in an attempt to force deterministic CPython
 # memo behavior if testing against CPython's cPickle module.
@@ -43,12 +40,6 @@ def sorted_dict_repr(obj, memo=None):
         else:
             val_repr = normalized_repr(v, memo)
 
-        # We do str(k) to force unicode dict keys to look like strings. On
-        # IronPython this doesn't matter, since everything is unicode. However,
-        # this allows us to test against CPython for compatibility.
-        if isinstance(k, unicode):
-            k = str(k)
-
         kv_reprs.append('%s: %s' % (normalized_repr(k, memo), val_repr))
 
     result = '{' + (', '.join(kv_reprs)) + '}'
@@ -62,27 +53,6 @@ def normalized_repr(obj, memo=None):
         return sorted_dict_repr(obj, memo)
     else:
         return repr(obj)
-
-class OldClass:
-    def __repr__(self):
-        if hasattr(self, '__getstate__'):
-            state = repr(self.__getstate__())
-        else:
-            state = sorted_dict_repr(self.__dict__)
-        return "<%s instance with state %s>" % (
-            self.__class__, normalized_repr(state))
-class OldClass_GetState(OldClass):
-    def __getstate__(self):
-        return (u'state1', u'state2')
-    def __setstate__(self, state): pass
-class OldClass_GetInitArgs(OldClass):
-    initargs = (u'arg1', 2, 3)
-    def __init__(self, *args):
-        if args != self.initargs:
-            raise AssertionError('args != self.initargs')
-    def __getinitargs__(self):
-        return self.initargs
-class OldClass_GetState_GetInitArgs(OldClass_GetState, OldClass_GetInitArgs): pass
 
 class NewClass(object):
     def __repr__(self):
@@ -137,19 +107,6 @@ class TestBank:
     list_recursive.append(list_recursive)
     dict_recursive = {0:u'hey'}
     dict_recursive[1] = dict_recursive
-    oldinst0 = OldClass()
-    oldinst1 = OldClass()
-    oldinst1.name = u'Bob'
-    oldinst1.age = 3
-    oldinst2 = OldClass_GetState()
-    oldinst3 = OldClass_GetState()
-    oldinst3.name = u'Bob'
-    oldinst4 = OldClass_GetInitArgs(*OldClass_GetInitArgs.initargs)
-    oldinst5 = OldClass_GetInitArgs(*OldClass_GetInitArgs.initargs)
-    oldinst5.name = u'Bob'
-    oldinst6 = OldClass_GetState_GetInitArgs(*OldClass_GetState_GetInitArgs.initargs)
-    oldinst7 = OldClass_GetState_GetInitArgs(*OldClass_GetState_GetInitArgs.initargs)
-    oldinst7.name = u'Bob'
     newinst0 = NewClass()
     newinst1 = NewClass()
     newinst1.name = u'Bob'
@@ -194,189 +151,184 @@ class TestBank:
 
     tests = [
         (None, {
-            0:'N.',
+            0:b'N.',
             }),
         (True, {
-            0:'I01\n.',
-            2:'\x88.',
+            0:b'I01\n.',
+            2:b'\x88.',
             }),
         (False, {
-            0:'I00\n.',
-            2:'\x89.',
+            0:b'I00\n.',
+            2:b'\x89.',
             }),
         (1, {
-            0:'I1\n.',
-            1:'K\x01.',
+            0:b'L1L\n.',
+            1:b'K\x01.',
             }),
         (-1, {
-            0:'I-1\n.',
-            1:'J\xff\xff\xff\xff.',
+            0:b'L-1L\n.',
+            1:b'J\xff\xff\xff\xff.',
             }),
         (256, {
-            0:'I256\n.',
-            1:'M\x00\x01.',
+            0:b'L256L\n.',
+            1:b'M\x00\x01.',
             }),
         (2**30, {
-            0:'I1073741824\n.',
-            1:'J\x00\x00\x00\x40.',
+            0:b'L1073741824L\n.',
+            1:b'J\x00\x00\x00\x40.',
             }),
-        (0L, {
-            0:'L0L\n.',
-            1:'L0L\n.',
-            2:'\x8a\x00.',
+        (long(0), {
+            0:b'L0L\n.',
+            1:b'K\x00.',
+            2:b'K\x00.',
             }),
-        (1L, {
-            0:'L1L\n.',
-            1:'L1L\n.',
-            2:'\x8a\x01\x01.',
+        (long(1), {
+            0:b'L1L\n.',
+            1:b'K\x01.',
+            2:b'K\x01.',
             }),
-        (-1L, {
-            0:'L-1L\n.',
-            1:'L-1L\n.',
-            2:'\x8a\x01\xff.',
-            }),
-        (-1L, {
-            0:'L-1L\n.',
-            1:'L-1L\n.',
-            2:'\x8a\x01\xff.',
+        (long(-1), {
+            0:b'L-1L\n.',
+            1:b'J\xff\xff\xff\xff.',
+            2:b'J\xff\xff\xff\xff.',
             }),
         (NamedObject('smallest negative long', long_smallest_neg), {
-            0:'L-63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773888L\n.',
-            2:'\x8a\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80.',
+            0:b'L-63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773888L\n.',
+            2:b'\x8a\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80.',
             }),
         (NamedObject('smallest negative long - 1', long_smallest_neg-1), {
-            0:'L-63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773889L\n.',
-            2:'\x8b\x00\x01\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f\xff.',
+            0:b'L-63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773889L\n.',
+            2:b'\x8b\x00\x01\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f\xff.',
             }),
         (NamedObject('largest positive long', long_largest_pos), {
-            0:'L63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773887L\n.',
-            2:'\x8a\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f.',
+            0:b'L63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773887L\n.',
+            2:b'\x8a\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x7f.',
             }),
         (NamedObject('largest positive long + 1', long_largest_pos+1), {
-            0:'L63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773888L\n.',
-            2:'\x8b\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x00.',
+            0:b'L63119152483029311134208743532558499922742388026788054750254580913134092068101349400775784006880690358767027267425582069324452263965802580263844047629781802969982182358009757991699604981229789271086050074968881969290609802036366711253590028004836270450354777054758408286889796663166144157436625779538926534222488932401695981290400341380008924794640968818996722769683214178380910532633711551074723814187845931105358601012620815151559279594339152157038471900846264123490479852950820722119447464310412741151715903477845113154386713414751950465264697590604369795983597920768026571572887653525297164440538776584100773888L\n.',
+            2:b'\x8b\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x00.',
             }),
         (0.0, {
-            0:( 'F0.0\n.',
-                'F0\n.',
+            0:( b'F0.0\n.',
+                b'F0\n.',
                 ),
-            1:'G\x00\x00\x00\x00\x00\x00\x00\x00.',
+            1:b'G\x00\x00\x00\x00\x00\x00\x00\x00.',
             }),
         (1.123, {
-            0:'F1.123\n.',
-            1:'G?\xf1\xf7\xce\xd9\x16\x87+.',
+            0:b'F1.123\n.',
+            1:b'G?\xf1\xf7\xce\xd9\x16\x87+.',
             }),
         (-1.123, {
-            0:'F-1.123\n.',
-            1:'G\xbf\xf1\xf7\xce\xd9\x16\x87+.',
+            0:b'F-1.123\n.',
+            1:b'G\xbf\xf1\xf7\xce\xd9\x16\x87+.',
             }),
         (500.5, {
-            0:'F500.5\n.',
-            1:'G@\x7fH\x00\x00\x00\x00\x00.',
+            0:b'F500.5\n.',
+            1:b'G@\x7fH\x00\x00\x00\x00\x00.',
             }),
         (1e+017, {
-            0:'F1e+17\n.',
-            1:'GCv4W\x85\xd8\xa0\x00.',
+            0:b'F1e+17\n.',
+            1:b'GCv4W\x85\xd8\xa0\x00.',
             }),
         (1e-014, {
-            0:'F1e-14\n.',
-            1:'G=\x06\x84\x9b\x86\xa1+\x9b.',
+            0:b'F1e-14\n.',
+            1:b'G=\x06\x84\x9b\x86\xa1+\x9b.',
             }),
         (u'hey\x00hey', {
-            0:'Vhey\x00hey\np<0>\n.',
-            1:'X\x07\x00\x00\x00hey\x00heyq<\x00>.',
+            0:b'Vhey\x00hey\np<0>\n.',
+            1:b'X\x07\x00\x00\x00hey\x00heyq<\x00>.',
             }),
         (u'hey\xffhey', {
-            0:'Vhey\xffhey\np<0>\n.',
-            1:'X\x08\x00\x00\x00hey\xc3\xbfheyq<\x00>.',
+            0:b'Vhey\xffhey\np<0>\n.',
+            1:b'X\x08\x00\x00\x00hey\xc3\xbfheyq<\x00>.',
             }),
         (u'hey\u0100hey', {
-            0:'Vhey\\u0100hey\np<0>\n.',
-            1:'X\x08\x00\x00\x00hey\xc4\x80heyq<\x00>.',
+            0:b'Vhey\\u0100hey\np<0>\n.',
+            1:b'X\x08\x00\x00\x00hey\xc4\x80heyq<\x00>.',
             }),
         (u'hey\u07ffhey', {
-            0:( 'Vhey\\u07ffhey\np<0>\n.',
-                'Vhey\\u07FFhey\np<0>\n.',
+            0:( b'Vhey\\u07ffhey\np<0>\n.',
+                b'Vhey\\u07FFhey\np<0>\n.',
                 ),
-            1:'X\x08\x00\x00\x00hey\xdf\xbfheyq<\x00>.',
+            1:b'X\x08\x00\x00\x00hey\xdf\xbfheyq<\x00>.',
             }),
         (u'hey\u0800hey', {
-            0:'Vhey\\u0800hey\np<0>\n.',
-            1:'X\t\x00\x00\x00hey\xe0\xa0\x80heyq<\x00>.',
+            0:b'Vhey\\u0800hey\np<0>\n.',
+            1:b'X\t\x00\x00\x00hey\xe0\xa0\x80heyq<\x00>.',
             }),
         (u'hey\uffffhey', {
-            0:( 'Vhey\\uffffhey\np<0>\n.',
-                'Vhey\\uFFFFhey\np<0>\n.',
+            0:( b'Vhey\\uffffhey\np<0>\n.',
+                b'Vhey\\uFFFFhey\np<0>\n.',
                 ),
-            1:'X\t\x00\x00\x00hey\xef\xbf\xbfheyq<\x00>.',
+            1:b'X\t\x00\x00\x00hey\xef\xbf\xbfheyq<\x00>.',
             }),
         ((), {
-            0:'(t.',
-            1:').',
+            0:b'(t.',
+            1:b').',
             }),
         ((7,), {
-            0:'(I7\ntp<0>\n.',
-            1:'(K\x07tq<\x00>.',
-            2:'K\x07\x85q<\x00>.',
+            0:b'(L7L\ntp<0>\n.',
+            1:b'(K\x07tq<\x00>.',
+            2:b'K\x07\x85q<\x00>.',
             }),
         ((7,8), {
-            0:'(I7\nI8\ntp<0>\n.',
-            1:'(K\x07K\x08tq<\x00>.',
-            2:'K\x07K\x08\x86q<\x00>.',
+            0:b'(L7L\nL8L\ntp<0>\n.',
+            1:b'(K\x07K\x08tq<\x00>.',
+            2:b'K\x07K\x08\x86q<\x00>.',
             }),
         ((7,8,9), {
-            0:'(I7\nI8\nI9\ntp<0>\n.',
-            1:'(K\x07K\x08K\ttq<\x00>.',
-            2:'K\x07K\x08K\t\x87q<\x00>.',
+            0:b'(L7L\nL8L\nL9L\ntp<0>\n.',
+            1:b'(K\x07K\x08K\ttq<\x00>.',
+            2:b'K\x07K\x08K\t\x87q<\x00>.',
             }),
         ((7,8,9,10), {
-            0:'(I7\nI8\nI9\nI10\ntp<0>\n.',
-            1:'(K\x07K\x08K\tK\ntq<\x00>.',
-            2:'(K\x07K\x08K\tK\ntq<\x00>.',
+            0:b'(L7L\nL8L\nL9L\nL10L\ntp<0>\n.',
+            1:b'(K\x07K\x08K\tK\ntq<\x00>.',
+            2:b'(K\x07K\x08K\tK\ntq<\x00>.',
             }),
         ((hey, hey), {
-            0:'(Vhey\np<0>\ng<0>\ntp<1>\n.',
-            1:'(X\x03\x00\x00\x00heyq<\x00>h<\x00>tq<\x01>.',
-            2:'X\x03\x00\x00\x00heyq<\x00>h<\x00>\x86q<\x01>.',
+            0:b'(Vhey\np<0>\nVhey\np<1>\ntp<2>\n.' if is_cli else b'(Vhey\np<0>\ng<0>\ntp<1>\n.',
+            1:b'(X\x03\x00\x00\x00heyq<\x00>h<\x00>tq<\x01>.',
+            2:b'X\x03\x00\x00\x00heyq<\x00>h<\x00>\x86q<\x01>.',
             }),
         ([], {
-            0:'(lp<0>\n.',
-            1:']q<\x00>.',
+            0:b'(lp<0>\n.',
+            1:b']q<\x00>.',
             }),
         ([5], {
-            0:'(lp<0>\nI5\na.',
-            1:']q<\x00>K\x05a.',
+            0:b'(lp<0>\nL5L\na.',
+            1:b']q<\x00>K\x05a.',
             }),
         ([5,6], {
-            0:'(lp<0>\nI5\naI6\na.',
-            1:']q<\x00>(K\x05K\x06e.',
+            0:b'(lp<0>\nL5L\naL6L\na.',
+            1:b']q<\x00>(K\x05K\x06e.',
             }),
         (list(range(8)), {
-            0:'(lp<0>\nI0\naI1\naI2\naI3\naI4\naI5\naI6\naI7\na.',
-            1:']q<\x00>(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07e.',
+            0:b'(lp<0>\nL0L\naL1L\naL2L\naL3L\naL4L\naL5L\naL6L\naL7L\na.',
+            1:b']q<\x00>(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07e.',
             }),
         (list(range(9)), {
-            0:'(lp<0>\nI0\naI1\naI2\naI3\naI4\naI5\naI6\naI7\naI8\na.',
-            1:']q<\x00>(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07eK\x08a.',
+            0:b'(lp<0>\nL0L\naL1L\naL2L\naL3L\naL4L\naL5L\naL6L\naL7L\naL8L\na.',
+            1:b']q\x00(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07K\x08e.',
             }),
         (list(range(10)), {
-            0:'(lp<0>\nI0\naI1\naI2\naI3\naI4\naI5\naI6\naI7\naI8\naI9\na.',
-            1:']q<\x00>(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07e(K\x08K\x09e.',
+            0:b'(lp<0>\nL0L\naL1L\naL2L\naL3L\naL4L\naL5L\naL6L\naL7L\naL8L\naL9L\na.',
+            1:b']q\x00(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07K\x08K\te.',
             }),
         ([hey, hey], {
-            0:'(lp<0>\nVhey\np<1>\nag<1>\na.',
-            1:']q<\x00>(X\x03\x00\x00\x00heyq<\x01>h<\x01>e.',
+            0:b'(lp<0>\nVhey\np<1>\naVhey\np<2>\na.' if is_cli else b'(lp<0>\nVhey\np<1>\nag<1>\na.',
+            1:b']q<\x00>(X\x03\x00\x00\x00heyq<\x01>h<\x01>e.',
             }),
         ({}, {
-            0:'(dp<0>\n.',
-            1:'}q<\x00>.',
+            0:b'(dp<0>\n.',
+            1:b'}q<\x00>.',
             }),
         ({1:2, 3:4}, {
-            0:( '(dp<0>\nI1\nI2\nsI3\nI4\ns.',
-                '(dp<0>\nI3\nI4\nsI1\nI2\ns.',
+            0:( b'(dp<0>\nL1L\nL2L\nsL3L\nL4L\ns.',
+                b'(dp<0>\nL3L\nL4L\nsL1L\nL2L\ns.',
                 ),
-            1:( '}q<\x00>(K\x01K\x02K\x03K\x04u.',
-                '}q<\x00>(K\x03K\x04K\x01K\x02u.',
+            1:( b'}q<\x00>(K\x01K\x02K\x03K\x04u.',
+                b'}q<\x00>(K\x03K\x04K\x01K\x02u.',
                 ),
             }),
         # Dict keys and values are kept to single digits and bracketed below to
@@ -384,171 +336,119 @@ class TestBank:
         # Everywhere else in the tests that there are dicts we keep them to two
         # elements or fewer and test for both possible orderings.
         (dict([(x,x) for x in range(8)]), {
-            0:'(dp<0>\nI<0>\nI<0>\nsI<1>\nI<1>\nsI<2>\nI<2>\nsI<3>\nI<3>\nsI<4>\nI<4>\nsI<5>\nI<5>\nsI<6>\nI<6>\nsI<7>\nI<7>\ns.',
-            1:'}q<\x00>(K<\x00>K<\x00>K<\x01>K<\x01>K<\x02>K<\x02>K<\x03>K<\x03>K<\x04>K<\x04>K<\x05>K<\x05>K<\x06>K<\x06>K<\x07>K<\x07>u.',
+            0:b'(dp<0>\nL0L\nL0L\nsL1L\nL1L\nsL2L\nL2L\nsL3L\nL3L\nsL4L\nL4L\nsL5L\nL5L\nsL6L\nL6L\nsL7L\nL7L\ns.',
+            1:b'}q<\x00>(K<\x00>K<\x00>K<\x01>K<\x01>K<\x02>K<\x02>K<\x03>K<\x03>K<\x04>K<\x04>K<\x05>K<\x05>K<\x06>K<\x06>K<\x07>K<\x07>u.',
             }),
         (dict([(x,x) for x in range(9)]), {
-            0:'(dp<0>\nI<0>\nI<0>\nsI<1>\nI<1>\nsI<2>\nI<2>\nsI<3>\nI<3>\nsI<4>\nI<4>\nsI<5>\nI<5>\nsI<6>\nI<6>\nsI<7>\nI<7>\nsI<8>\nI<8>\ns.',
-            1:'}q<\x00>(K<\x00>K<\x00>K<\x01>K<\x01>K<\x02>K<\x02>K<\x03>K<\x03>K<\x04>K<\x04>K<\x05>K<\x05>K<\x06>K<\x06>K<\x07>K<\x07>uK<\x08>K<\x08>s.',
+            0:b'(dp<0>\nL0L\nL0L\nsL1L\nL1L\nsL2L\nL2L\nsL3L\nL3L\nsL4L\nL4L\nsL5L\nL5L\nsL6L\nL6L\nsL7L\nL7L\nsL8L\nL8L\ns.',
+            1:b'}q\x00(K\x00K\x00K\x01K\x01K\x02K\x02K\x03K\x03K\x04K\x04K\x05K\x05K\x06K\x06K\x07K\x07K\x08K\x08u.',
             }),
         (dict([(x,x) for x in range(10)]), {
-            0:'(dp<0>\nI<0>\nI<0>\nsI<1>\nI<1>\nsI<2>\nI<2>\nsI<3>\nI<3>\nsI<4>\nI<4>\nsI<5>\nI<5>\nsI<6>\nI<6>\nsI<7>\nI<7>\nsI<8>\nI<8>\nsI<9>\nI<9>\ns.',
-            1:'}q<\x00>(K<\x00>K<\x00>K<\x01>K<\x01>K<\x02>K<\x02>K<\x03>K<\x03>K<\x04>K<\x04>K<\x05>K<\x05>K<\x06>K<\x06>K<\x07>K<\x07>u(K<\x08>K<\x08>K<\t>K<\t>u.',
+            0:b'(dp<0>\nL0L\nL0L\nsL1L\nL1L\nsL2L\nL2L\nsL3L\nL3L\nsL4L\nL4L\nsL5L\nL5L\nsL6L\nL6L\nsL7L\nL7L\nsL8L\nL8L\nsL9L\nL9L\ns.',
+            1:b'}q\x00(K\x00K\x00K\x01K\x01K\x02K\x02K\x03K\x03K\x04K\x04K\x05K\x05K\x06K\x06K\x07K\x07K\x08K\x08K\tK\tu.',
             }),
         ({hey: hey}, {
-            0:'(dp<0>\nVhey\np<1>\ng<1>\ns.',
-            1:'}q<\x00>X\x03\x00\x00\x00heyq<\x01>h<\x01>s.',
+            0:b'(dp<0>\nVhey\np<1>\nVhey\np<2>\ns.' if is_cli else b'(dp<0>\nVhey\np<1>\ng<1>\ns.',
+            1:b'}q<\x00>X\x03\x00\x00\x00heyq<\x01>h<\x01>s.',
             }),
         (list_recursive, {
-            0:'(lp<0>\nI1\nag<0>\na.',
-            1:']q<\x00>(K\x01h<\x00>e.',
+            0:b'(lp<0>\nL1L\nag0\na.',
+            1:b']q<\x00>(K\x01h<\x00>e.',
             }),
         (dict_recursive, {
-            0:( '(dp<0>\nI0\nVhey\np<1>\nsI1\ng<0>\ns.',
-                '(dp<0>\nI1\ng<0>\nsI0\nVhey\np<1>\ns.',
+            0:( b'(dp<0>\nL0L\nVhey\np<1>\nsL1L\ng<0>\ns.',
+                b'(dp<0>\nL1L\ng<0>\nsL0L\nVhey\np<1>\ns.',
                 ),
-            1:( '}q<\x00>(K\x00X\x03\x00\x00\x00heyq<\x01>K\x01h<\x00>u.',
-                '}q<\x00>(K\x01h<\x00>K\x00X\x03\x00\x00\x00heyq<\x01>u.',
+            1:( b'}q<\x00>(K\x00X\x03\x00\x00\x00heyq<\x01>K\x01h<\x00>u.',
+                b'}q<\x00>(K\x01h<\x00>K\x00X\x03\x00\x00\x00heyq<\x01>u.',
                 ),
             }),
 
-        (OldClass, {
-            0:'c%s\nOldClass\np<0>\n.' % (__name__,),
-            1:'c%s\nOldClass\nq<\x00>.' % (__name__,),
-            }),
         (NewClass, {
-            0:'c%s\nNewClass\np<0>\n.' % (__name__,),
-            1:'c%s\nNewClass\nq<\x00>.' % (__name__,),
+            0:b'c%s\nNewClass\np<0>\n.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'c%s\nNewClass\nq<\x00>.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (global_function, {
-            0:'c%s\nglobal_function\np<0>\n.' % (__name__,),
-            1:'c%s\nglobal_function\nq<\x00>.' % (__name__,),
+            0:b'c%s\nglobal_function\np<0>\n.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'c%s\nglobal_function\nq<\x00>.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (len, {
-            0:'c__builtin__\nlen\np<0>\n.',
-            1:'c__builtin__\nlen\nq<\x00>.',
+            0:b'c__builtin__\nlen\np<0>\n.',
+            1:b'c__builtin__\nlen\nq<\x00>.',
+            3:b'cbuiltins\nlen\nq<\x00>.',
             }),
 
-        (oldinst0, {
-            0:'(i%s\nOldClass\np<0>\n(dp<1>\nb.' % (__name__,),
-            1:'(c%s\nOldClass\nq<\x00>oq<\x01>}q<\x02>b.' % (__name__,),
-            }),
-        (oldinst1, {
-            # variants w/ unicode and string hash keys, in different hash orders
-            0:( '(i%s\nOldClass\np<0>\n(dp<1>\nVage\np<2>\nI3\nsVname\np<3>\nVBob\np<4>\nsb.' % (__name__,),
-                '(i%s\nOldClass\np<0>\n(dp<1>\nVname\np<2>\nVBob\np<3>\nsVage\np<4>\nI3\nsb.' % (__name__,),
-                "(i%s\nOldClass\np<0>\n(dp<1>\nS'age'\np<2>\nI3\nsS'name'\np<3>\nVBob\np<4>\nsb." % (__name__,),
-                "(i%s\nOldClass\np<0>\n(dp<1>\nS'name'\np<2>\nVBob\np<3>\nsS'age'\np<4>\nI3\nsb." % (__name__,),
-                ),
-            1:( '(c%s\nOldClass\nq<\x00>oq<\x01>}q<\x02>(X\x03\x00\x00\x00ageq<\x03>K\x03X\x04\x00\x00\x00nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>ub.' % (__name__,),
-                '(c%s\nOldClass\nq<\x00>oq<\x01>}q<\x02>(X\x04\x00\x00\x00nameq<\x03>X\x03\x00\x00\x00Bobq<\x04>X\x03\x00\x00\x00ageq<\x05>K\x03ub.' % (__name__,),
-                '(c%s\nOldClass\nq<\x00>oq<\x01>}q<\x02>(U\x04nameq<\x03>X\x03\x00\x00\x00Bobq<\x04>U\x03ageq<\x05>K\x03ub.' % (__name__,),
-                '(c%s\nOldClass\nq<\x00>oq<\x01>}q<\x02>(U\x03ageq<\x03>K\x03U\x04nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>ub.' % (__name__,),
-                ),
-            }),
-        (oldinst2, {
-            0:'(i%s\nOldClass_GetState\np<0>\n(Vstate1\np<1>\nVstate2\np<2>\ntp<3>\nb.' % (__name__,),
-            1:'(c%s\nOldClass_GetState\nq<\x00>oq<\x01>(X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>tq<\x04>b.' % (__name__,),
-            2:'(c%s\nOldClass_GetState\nq<\x00>oq<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.' % (__name__,),
-            }),
-        (oldinst3, {
-            0:'(i%s\nOldClass_GetState\np<0>\n(Vstate1\np<1>\nVstate2\np<2>\ntp<3>\nb.' % (__name__,),
-            1:'(c%s\nOldClass_GetState\nq<\x00>oq<\x01>(X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>tq<\x04>b.' % (__name__,),
-            2:'(c%s\nOldClass_GetState\nq<\x00>oq<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.' % (__name__,),
-            }),
-        (oldinst4, {
-            0:'(Varg1\np<0>\nI2\nI3\ni%s\nOldClass_GetInitArgs\np<1>\n(dp<2>\nb.' % (__name__,),
-            1:'(c%s\nOldClass_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>}q<\x03>b.' % (__name__,),
-            }),
-        (oldinst5, {
-            0:( "(Varg1\np<0>\nI2\nI3\ni%s\nOldClass_GetInitArgs\np<1>\n(dp<2>\nS'name'\np<3>\nVBob\np<4>\nsb." % (__name__,),
-                '(Varg1\np<0>\nI2\nI3\ni%s\nOldClass_GetInitArgs\np<1>\n(dp<2>\nVname\np<3>\nVBob\np<4>\nsb.' % (__name__,),
-                ),
-            1:( '(c%s\nOldClass_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>}q<\x03>U\x04nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>sb.' % (__name__,),
-                '(c%s\nOldClass_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>}q<\x03>X\x04\x00\x00\x00nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>sb.' % (__name__,),
-                ),
-            }),
-        (oldinst6, {
-            0:'(Varg1\np<0>\nI2\nI3\ni%s\nOldClass_GetState_GetInitArgs\np<1>\n(Vstate1\np<2>\nVstate2\np<3>\ntp<4>\nb.' % (__name__,),
-            1:'(c%s\nOldClass_GetState_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>(X\x06\x00\x00\x00state1q<\x03>X\x06\x00\x00\x00state2q<\x04>tq<\x05>b.' % (__name__,),
-            2:'(c%s\nOldClass_GetState_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>X\x06\x00\x00\x00state1q<\x03>X\x06\x00\x00\x00state2q<\x04>\x86q<\x05>b.' % (__name__,),
-            }),
-        (oldinst7, {
-            0:'(Varg1\np<0>\nI2\nI3\ni%s\nOldClass_GetState_GetInitArgs\np<1>\n(Vstate1\np<2>\nVstate2\np<3>\ntp<4>\nb.' % (__name__,),
-            1:'(c%s\nOldClass_GetState_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>(X\x06\x00\x00\x00state1q<\x03>X\x06\x00\x00\x00state2q<\x04>tq<\x05>b.' % (__name__,),
-            2:'(c%s\nOldClass_GetState_GetInitArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03oq<\x02>X\x06\x00\x00\x00state1q<\x03>X\x06\x00\x00\x00state2q<\x04>\x86q<\x05>b.' % (__name__,),
-            }),
         (newinst0, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>.' % (__name__,),
-            2:'c%s\nNewClass\nq<\x00>)\x81q<\x01>}q<\x02>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>.'.replace(b"%s", __name__.encode("ascii")),
+            2:(b'c%s\nNewClass\nq\x00)\x81q\x01.').replace(b"%s", __name__.encode("ascii")),
             }),
         (newinst1, {
-            0:( 'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVname\np<6>\nVBob\np<7>\nsVage\np<8>\nI3\nsb.' % (__name__,),
-                'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVage\np<6>\nI3\nsVname\np<7>\nVBob\np<8>\nsb.' % (__name__,),
-                'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'name\'\np<6>\nVBob\np<7>\nsS\'age\'\np<8>\nI3\nsb.' % (__name__,),
-                'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'age\'\np<6>\nI3\nsS\'name\'\np<7>\nVBob\np<8>\nsb.' % (__name__,),
+            0:( b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVname\np<6>\nVBob\np<7>\nsVage\np<8>\nL3L\nsb.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVage\np<6>\nL3L\nsVname\np<7>\nVBob\np<8>\nsb.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'name\'\np<6>\nVBob\np<7>\nsS\'age\'\np<8>\nL3L\nsb.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'age\'\np<6>\nL3L\nsS\'name\'\np<7>\nVBob\np<8>\nsb.'.replace(b"%s", __name__.encode("ascii")),
                 ),
-            1:( 'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(X\x04\x00\x00\x00nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>X\x03\x00\x00\x00ageq<\x08>K\x03ub.' % (__name__,),
-                'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(X\x03\x00\x00\x00ageq<\x06>K\x03X\x04\x00\x00\x00nameq<\x07>X\x03\x00\x00\x00Bobq<\x08>ub.' % (__name__,),
-                'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>U\x03ageq<\x08>K\x03ub.' % (__name__,),
-                'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(U\x03ageq<\x06>K\x03U\x04nameq<\x07>X\x03\x00\x00\x00Bobq<\x08>ub.' % (__name__,),
+            1:( b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(X\x04\x00\x00\x00nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>X\x03\x00\x00\x00ageq<\x08>K\x03ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(X\x03\x00\x00\x00ageq<\x06>K\x03X\x04\x00\x00\x00nameq<\x07>X\x03\x00\x00\x00Bobq<\x08>ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>U\x03ageq<\x08>K\x03ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>(U\x03ageq<\x06>K\x03U\x04nameq<\x07>X\x03\x00\x00\x00Bobq<\x08>ub.'.replace(b"%s", __name__.encode("ascii")),
                 ),
-            2:( 'c%s\nNewClass\nq<\x00>)\x81q<\x01>}q<\x02>(X\x04\x00\x00\x00nameq<\x03>X\x03\x00\x00\x00Bobq<\x04>X\x03\x00\x00\x00ageq<\x05>K\x03ub.' % (__name__,),
-                'c%s\nNewClass\nq<\x06>)\x81q<\x07>}q<\x08>(X\x03\x00\x00\x00ageq<\x00>K\x03X\x04\x00\x00\x00nameq<\x01>X\x03\x00\x00\x00Bobq<\x02>ub.' % (__name__,),
-                'c%s\nNewClass\nq<\x03>)\x81q<\x04>}q<\x05>(U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>U\x03ageq<\x08>K\x03ub.' % (__name__,),
-                'c%s\nNewClass\nq<\x00>)\x81q<\x01>}q<\x02>(U\x03ageq<\x03>K\x03U\x04nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>ub.' % (__name__,),
+            2:( b'c%s\nNewClass\nq<\x00>)\x81q<\x01>}q<\x02>(X\x04\x00\x00\x00nameq<\x03>X\x03\x00\x00\x00Bobq<\x04>X\x03\x00\x00\x00ageq<\x05>K\x03ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'c%s\nNewClass\nq<\x06>)\x81q<\x07>}q<\x08>(X\x03\x00\x00\x00ageq<\x00>K\x03X\x04\x00\x00\x00nameq<\x01>X\x03\x00\x00\x00Bobq<\x02>ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'c%s\nNewClass\nq<\x03>)\x81q<\x04>}q<\x05>(U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>U\x03ageq<\x08>K\x03ub.'.replace(b"%s", __name__.encode("ascii")),
+                b'c%s\nNewClass\nq<\x00>)\x81q<\x01>}q<\x02>(U\x03ageq<\x03>K\x03U\x04nameq<\x04>X\x03\x00\x00\x00Bobq<\x05>ub.'.replace(b"%s", __name__.encode("ascii")),
                 ),
             }),
         (newinst2, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.' % (__name__,),
-            2:'c%s\nNewClass_GetState\nq<\x00>)\x81q<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.'.replace(b"%s", __name__.encode("ascii")),
+            2:b'c%s\nNewClass_GetState\nq<\x00>)\x81q<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (newinst3, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.' % (__name__,),
-            2:'c%s\nNewClass_GetState\nq<\x00>)\x81q<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.'.replace(b"%s", __name__.encode("ascii")),
+            2:b'c%s\nNewClass_GetState\nq<\x00>)\x81q<\x01>X\x06\x00\x00\x00state1q<\x02>X\x06\x00\x00\x00state2q<\x03>\x86q<\x04>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (newinst4, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>.' % (__name__,),
-            2:'c%s\nNewClass_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>}q<\x04>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>.'.replace(b"%s", __name__.encode("ascii")),
+            2:b'c%s\nNewClass_GetNewArgs\nq\x00X\x04\x00\x00\x00arg1q\x01K\x02K\x03\x87q\x02\x81q\x03.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (newinst5, {
-            0:( 'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'name\'\np<6>\nVBob\np<7>\nsb.' % (__name__,),
-                'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVname\np<6>\nVBob\np<7>\nsb.' % (__name__,),
+            0:( b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nS\'name\'\np<6>\nVBob\np<7>\nsb.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(dp<5>\nVname\np<6>\nVBob\np<7>\nsb.'.replace(b"%s", __name__.encode("ascii")),
                 ),
-            1:( 'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>sb.' % (__name__,),
-                'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>X\x04\x00\x00\x00nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>sb.' % (__name__,),
+            1:( b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>U\x04nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>sb.'.replace(b"%s", __name__.encode("ascii")),
+                b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>}q<\x05>X\x04\x00\x00\x00nameq<\x06>X\x03\x00\x00\x00Bobq<\x07>sb.'.replace(b"%s", __name__.encode("ascii")),
                 ),
-            2:( 'c%s\nNewClass_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>}q<\x04>U\x04nameq<\x05>X\x03\x00\x00\x00Bobq<\x06>sb.' % (__name__,),
-                'c%s\nNewClass_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>}q<\x04>X\x04\x00\x00\x00nameq<\x05>X\x03\x00\x00\x00Bobq<\x06>sb.' % (__name__,),
+            2:( b'c%s\nNewClass_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>}q<\x04>U\x04nameq<\x05>X\x03\x00\x00\x00Bobq<\x06>sb.'.replace(b"%s", __name__.encode("ascii")),
+                b'c%s\nNewClass_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>}q<\x04>X\x04\x00\x00\x00nameq<\x05>X\x03\x00\x00\x00Bobq<\x06>sb.'.replace(b"%s", __name__.encode("ascii")),
                 ),
             }),
         (newinst6, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.' % (__name__,),
-            2:'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.'.replace(b"%s", __name__.encode("ascii")),
+            2:b'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         (newinst7, {
-            0:'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.' % (__name__,),
-            1:'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.' % (__name__,),
-            2:'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.' % (__name__,),
+            0:b'ccopy_reg\n_reconstructor\np<0>\n(c%s\nNewClass_GetState_GetNewArgs\np<1>\nc__builtin__\nobject\np<2>\nNtp<3>\nRp<4>\n(Vstate1\np<5>\nVstate2\np<6>\ntp<7>\nb.'.replace(b"%s", __name__.encode("ascii")),
+            1:b'ccopy_reg\n_reconstructor\nq<\x00>(c%s\nNewClass_GetState_GetNewArgs\nq<\x01>c__builtin__\nobject\nq<\x02>Ntq<\x03>Rq<\x04>(X\x06\x00\x00\x00state1q<\x05>X\x06\x00\x00\x00state2q<\x06>tq<\x07>b.'.replace(b"%s", __name__.encode("ascii")),
+            2:b'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         ]
     if is_cli: #https://github.com/IronLanguages/main/issues/853
         tests.append((0.33333333333333331,
                       {
-                       0:'F0.33333333333333331\n.',
-                       1:'G?\xd5UUUUUU.',
+                       0:b'F0.33333333333333331\n.',
+                       1:b'G?\xd5UUUUUU.',
                       }
                      ))
     else:
         tests.append((0.33333333333333331,
                       {
-                       0:'F0.3333333333333333\n.',
-                       1:'G?\xd5UUUUUU.',
+                       0:b'F0.33333333333333331\n.',
+                       1:b'G?\xd5UUUUUU.',
                       }
                      ))
 
@@ -580,7 +480,10 @@ class CPickleTest(IronPythonTestCase):
         def match(pattern, text):
             import re
 
-            patterns = re.split(r'<.*?>', pattern)
+            if isinstance(pattern, bytes):
+                patterns = re.split(br'<.*?>', pattern)
+            else:
+                patterns = re.split(r'<.*?>', pattern)
             curpos = 0
 
             if len(text) != sum([len(p) for p in patterns]) + len(patterns) - 1: return False
@@ -602,18 +505,15 @@ class CPickleTest(IronPythonTestCase):
         self.assertTrue(match('<1><1>', 'xy'))
         self.assertTrue(not match('<1><1>', 'xyz'))
 
-        s = StringIO()
+        s = BytesIO()
 
         picklers = [
             module.Pickler(s, protocol=0),
             module.Pickler(s, protocol=1),
             module.Pickler(s, protocol=2),
+            module.Pickler(s, protocol=3),
             ]
 
-        for p in picklers:
-            # This lets us test batched SETITEMS and APPENDS without generating
-            # huge (1000-item) datasets
-            p._BATCHSIZE = 8
         TestBank.selph = self
         for test in TestBank.tests:
             obj, expectations = test
@@ -625,50 +525,53 @@ class CPickleTest(IronPythonTestCase):
 
             obj, _unused, display_name = TestBank.normalize(test)
 
-            if verbose: print "Testing %s..." % display_name,
-            for proto in range(len(picklers)):
-                pickler = picklers[proto]
-
-                s.truncate(0)
+            if verbose: print("Testing %s..." % display_name.encode("utf-8"), end=" ")
+            for proto, pickler in enumerate(picklers):
+                s.seek(0)
+                s.truncate()
                 pickler.clear_memo()
                 pickler.dump(obj)
-                if verbose: print proto,
+                if verbose: print(proto, end=" ")
                 expected = get_expected(expectations, proto)
                 if not isinstance(expected, tuple):
                     expected = (expected,)
                 actual = s.getvalue()
-                if 2 == proto:
-                    # ignore protocol opcodes so that we can use the same literal
-                    # representation for protocols 1 and 2 in the test bank
+                # ignore protocol opcodes so that we can use the same literal
+                # representation in the test bank
+                if proto == 2:
+                    self.assertEqual(actual[:2], b"\x80\x02")
+                    actual = actual[2:]
+                elif proto == 3:
+                    self.assertEqual(actual[:2], b"\x80\x03")
                     actual = actual[2:]
                 for pattern in expected:
                     if match(pattern, actual):
                         break
                 else:
                     if len(expected) == 1:
-                        Fail('expected\n%r, got\n%r' % (expected[0], actual))
+                        self.fail('expected\n%r, got\n%r' % (expected[0], actual))
                     else:
-                        Fail('expected one of\n%r, got\n%r' % (expected, actual))
+                        self.fail('expected one of\n%r, got\n%r' % (expected, actual))
 
-            if verbose: print 'ok'
+            if verbose: print('ok')
 
 
-        if verbose: print "Tests completed"
+        if verbose: print("Tests completed")
 
     def test_unpickler(self, module=cPickle, verbose=True):
-        s = StringIO()
+        s = BytesIO()
         TestBank.selph = self
         for test in TestBank.tests:
             obj, pickle_lists, display_name = TestBank.normalize(test)
             expected = normalized_repr(obj)
 
-            if verbose: print "Testing %s..." % display_name,
+            if verbose: print("Testing %s..." % display_name.encode("utf-8"), end=" ")
 
             for proto in range(3):
                 if proto not in pickle_lists:
                     continue
 
-                if verbose: print proto,
+                if verbose: print(proto, end=" ")
 
                 pickles = pickle_lists[proto]
                 if not isinstance(pickles, tuple):
@@ -678,14 +581,15 @@ class CPickleTest(IronPythonTestCase):
 
                 for pickle in pickles:
                     unpickler = module.Unpickler(s)
-                    s.truncate(0)
-                    s.write(pickle.replace('<', '').replace('>', ''))
+                    s.seek(0)
+                    s.truncate()
+                    s.write(pickle.replace(b'<', b'').replace(b'>', b''))
                     s.seek(0)
                     unpickled_obj = unpickler.load()
                     actual = normalized_repr(unpickled_obj)
 
                     if expected != actual:
-                        print
+                        print()
                         self.fail('Wrong unpickled value:\n'
                             'with pickle %d %r\n'
                             'expected\n'
@@ -694,8 +598,7 @@ class CPickleTest(IronPythonTestCase):
 
                     pickle_num += 1
 
-            if verbose: print 'ok'
-
+            if verbose: print('ok')
 
     def test_persistent_load(self):
         class MyData(object):
@@ -711,77 +614,69 @@ class CPickleTest(IronPythonTestCase):
             return MyData(id[8:])
 
 
-        for binary in [True, False]:
-            src = StringIO()
-            p = cPickle.Pickler(src)
-            p.persistent_id = persistent_id
-            p.binary = binary
+        src = BytesIO()
+        p = cPickle.Pickler(src)
+        p.persistent_id = persistent_id
 
-            value = MyData('abc')
-            p.dump(value)
+        value = MyData('abc')
+        p.dump(value)
 
-            up = cPickle.Unpickler(StringIO(src.getvalue()))
-            up.persistent_load = persistent_load
-            res = up.load()
+        up = cPickle.Unpickler(BytesIO(src.getvalue()))
+        up.persistent_load = persistent_load
+        res = up.load()
 
-            self.assertEqual(res.value, value.value)
+        self.assertEqual(res.value, value.value)
 
-            # errors
-            src = StringIO()
-            p = cPickle.Pickler(src)
-            p.persistent_id = persistent_id
-            p.binary = binary
+        # errors
+        src = BytesIO()
+        p = cPickle.Pickler(src)
+        p.persistent_id = persistent_id
 
-            value = MyData('abc')
-            p.dump(value)
+        value = MyData('abc')
+        p.dump(value)
 
-            up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = cPickle.Unpickler(BytesIO(src.getvalue()))
 
-            # exceptions vary between cPickle & Pickle
-            try:
-                up.load()
-                self.assertUnreachable()
-            except Exception, e:
-                pass
-
+        # exceptions vary between cPickle & Pickle
+        try:
+            up.load()
+            self.assertUnreachable()
+        except Exception as e:
+            pass
 
     def test_pers_load(self):
-        for binary in [True, False]:
-            src = StringIO()
-            p = cPickle.Pickler(src)
-            p.persistent_id = persistent_id
-            p.binary = binary
+        src = BytesIO()
+        p = cPickle.Pickler(src)
+        p.persistent_id = persistent_id
 
-            value = MyData('abc')
-            p.dump(value)
+        value = MyData('abc')
+        p.dump(value)
 
-            up = cPickle.Unpickler(StringIO(src.getvalue()))
-            up.persistent_load = persistent_load
-            res = up.load()
+        up = cPickle.Unpickler(BytesIO(src.getvalue()))
+        up.persistent_load = persistent_load
+        res = up.load()
 
-            self.assertEqual(res.value, value.value)
+        self.assertEqual(res.value, value.value)
 
-            # errors
-            src = StringIO()
-            p = cPickle.Pickler(src)
-            p.persistent_id = persistent_id
-            p.binary = binary
+        # errors
+        src = BytesIO()
+        p = cPickle.Pickler(src)
+        p.persistent_id = persistent_id
 
-            value = MyData('abc')
-            p.dump(value)
+        value = MyData('abc')
+        p.dump(value)
 
-            up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = cPickle.Unpickler(BytesIO(src.getvalue()))
 
-            # exceptions vary betwee cPickle & Pickle
-            try:
-                up.load()
-                self.assertUnreachable()
-            except Exception, e:
-                pass
-
+        # exceptions vary betwee cPickle & Pickle
+        try:
+            up.load()
+            self.assertUnreachable()
+        except Exception as e:
+            pass
 
     def test_loads_negative(self):
-        self.assertRaises(EOFError, cPickle.loads, "")
+        self.assertRaises(EOFError, cPickle.loads, b"")
 
     def test_load_negative(self):
         if cPickle.__name__ == "cPickle":   # pickle vs. cPickle report different exceptions, even on Cpy
@@ -843,10 +738,10 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                             newname.KSubMod(), newname.FROM_SUB_MOD, newname.FROM_MOD_IN_SUBMOD,
                             newname.mod.KMod(), newname.mod.FROM_MOD, newname.mod.K(), newname.mod.FROM_INIT_IN_MOD,
                             ]:
-                    with open(pickle_file, "w") as f:
+                    with open(pickle_file, "wb") as f:
                         cPickle.dump(x, f)
 
-                    with open(pickle_file, "r") as f:
+                    with open(pickle_file, "rb") as f:
                         x_unpickled = cPickle.load(f)
 
                         self.assertEqual(x.__class__.__name__, x_unpickled.__class__.__name__)
@@ -861,26 +756,23 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                 except:
                     pass
 
-
     def test_cp945(self):
         #--sanity
         try:
             x = 1/0
             Fail("should have been division by zero error")
-        except Exception, e:
-            temp_msg = e.message
+        except Exception as e:
+            ex = e
 
-
-        x_pickled = cPickle.dumps(e)
+        x_pickled = cPickle.dumps(ex)
         x_unpickled = cPickle.loads(x_pickled)
-        self.assertEqual(x_unpickled.message, temp_msg)
+        self.assertEqual(x_unpickled.args[0], ex.args[0])
 
         #--comprehensive
-        import exceptions
+        import builtins
 
-        special_types = [ "UnicodeTranslateError", "UnicodeEncodeError", "UnicodeDecodeError"]
-        exception_types = [ x for x in exceptions.__dict__.keys() if x.startswith("__")==False and special_types.count(x)==0]
-        exception_types = [ eval("exceptions." + x) for x in exception_types]
+        special_types = [UnicodeTranslateError, UnicodeEncodeError, UnicodeDecodeError]
+        exception_types = [x for x in builtins.__dict__.values() if isinstance(x, type) and issubclass(x, BaseException) and x not in special_types]
 
         for exception_type in exception_types:
             except_list = [exception_type(), exception_type("a single param")]
@@ -888,26 +780,27 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
             for t_except in except_list:
                 try:
                     raise t_except
-                except exception_type, e:
-                    temp_msg = e.message
+                except exception_type as e:
+                    ex = e
 
-                x_pickled = cPickle.dumps(e)
+                x_pickled = cPickle.dumps(ex)
                 x_unpickled = cPickle.loads(x_pickled)
-                self.assertEqual(x_unpickled.message, temp_msg)
+                if x_unpickled.args:
+                    self.assertEqual(x_unpickled.args[0], ex.args[0])
+                else:
+                    self.assertFalse(ex.args)
 
         #--special cases
-        for e in [  exceptions.UnicodeEncodeError("1", u"2", 3, 4, "5"),
-                    exceptions.UnicodeDecodeError("1", "2", 3, 4, "5"),
-                    exceptions.UnicodeTranslateError(u"1", 2, 3, "4")
+        for e in [  UnicodeEncodeError("1", u"2", 3, 4, "5"),
+                    UnicodeDecodeError("1", b"2", 3, 4, "5"),
+                    UnicodeTranslateError(u"1", 2, 3, "4")
                     ]:
             x_pickled = cPickle.dumps(e)
             x_unpickled = cPickle.loads(x_pickled)
             self.assertEqual(x_unpickled.object, e.object)
 
-
     def test_carriage_return_round_trip(self):
         # pickler shouldn't use ASCII and strip off \r
-        import cPickle
         self.assertEqual(cPickle.loads(cPickle.dumps('\r\n')), '\r\n')
 
     def test_metaclass_mixed_new_old_style(self):
@@ -923,7 +816,6 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
         global d
         class d(c, mo): pass
 
-        import cPickle
         self.assertEqual(type(cPickle.loads(cPickle.dumps(d()))), d)
 
 run_test(__name__)

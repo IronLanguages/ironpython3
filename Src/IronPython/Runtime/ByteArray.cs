@@ -702,7 +702,7 @@ namespace IronPython.Runtime {
                 return CopyThis();
             }
 
-            return new ByteArray(_bytes.Replace(old, @new, count));
+            return new ByteArray(_bytes.Replace(old, @new, ref count));
         }
 
         public int rfind([BytesLike, NotNull]IList<byte> sub) {

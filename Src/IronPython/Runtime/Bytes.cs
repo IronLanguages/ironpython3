@@ -460,10 +460,12 @@ namespace IronPython.Runtime {
 
         public Bytes replace([BytesLike, NotNull]IList<byte> old, [BytesLike, NotNull]IList<byte> @new, int count) {
             if (count == 0) {
-                return this.AsBytes();
+                return AsBytes();
             }
 
-            return new Bytes(_bytes.Replace(old, @new, count));
+            var res = _bytes.Replace(old, @new, ref count);
+            if (count == 0) return AsBytes();
+            return new Bytes(res);
         }
 
         public int rfind([BytesLike, NotNull]IList<byte> sub)

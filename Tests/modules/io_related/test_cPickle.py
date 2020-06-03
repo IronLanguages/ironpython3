@@ -280,7 +280,7 @@ class TestBank:
             1:b'(K\x07K\x08K\tK\ntq<\x00>.',
             }),
         ((hey, hey), {
-            0:b'(Vhey\np<0>\nVhey\np<1>\ntp<2>\n.' if is_cli else b'(Vhey\np<0>\ng<0>\ntp<1>\n.',
+            0:b'(Vhey\np<0>\ng<0>\ntp<1>\n.',
             1:b'(X\x03\x00\x00\x00heyq<\x00>h<\x00>tq<\x01>.',
             2:b'X\x03\x00\x00\x00heyq<\x00>h<\x00>\x86q<\x01>.',
             }),
@@ -309,7 +309,7 @@ class TestBank:
             1:b']q\x00(K\x00K\x01K\x02K\x03K\x04K\x05K\x06K\x07K\x08K\te.',
             }),
         ([hey, hey], {
-            0:b'(lp<0>\nVhey\np<1>\naVhey\np<2>\na.' if is_cli else b'(lp<0>\nVhey\np<1>\nag<1>\na.',
+            0:b'(lp<0>\nVhey\np<1>\nag<1>\na.',
             1:b']q<\x00>(X\x03\x00\x00\x00heyq<\x01>h<\x01>e.',
             }),
         ({}, {
@@ -341,7 +341,7 @@ class TestBank:
             1:b'}q\x00(K\x00K\x00K\x01K\x01K\x02K\x02K\x03K\x03K\x04K\x04K\x05K\x05K\x06K\x06K\x07K\x07K\x08K\x08K\tK\tu.',
             }),
         ({hey: hey}, {
-            0:b'(dp<0>\nVhey\np<1>\nVhey\np<2>\ns.' if is_cli else b'(dp<0>\nVhey\np<1>\ng<1>\ns.',
+            0:b'(dp<0>\nVhey\np<1>\ng<1>\ns.',
             1:b'}q<\x00>X\x03\x00\x00\x00heyq<\x01>h<\x01>s.',
             }),
         (list_recursive, {

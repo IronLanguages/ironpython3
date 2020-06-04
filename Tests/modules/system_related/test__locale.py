@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import _locale
-import random
+import _random
 import unittest
 
 from iptest import is_cli, is_netcoreapp, is_posix, run_test
@@ -42,7 +42,7 @@ class _LocaleTest(unittest.TestCase):
         self.assertRaises(TypeError,_locale.strxfrm,i)
         
         #argument is random type
-        obj = random.Random()
+        obj = _random.Random()
         self.assertRaises(TypeError,_locale.strxfrm,obj)
     
     def collate(self,str1,str2,result):

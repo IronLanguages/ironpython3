@@ -877,6 +877,7 @@ namespace IronPython.Runtime.Operations {
             string v = self;
             int replacements = StringOps.count(v, old);
             replacements = (count < 0 || count > replacements) ? replacements : count;
+            if (replacements == 0) return self;
             int newLength = v.Length;
             newLength -= replacements * old.Length;
             newLength = checked(newLength + replacements * @new.Length);

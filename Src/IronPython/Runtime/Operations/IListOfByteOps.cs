@@ -322,7 +322,7 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        internal static List<byte> Replace(this IList<byte> bytes, IList<byte> old, IList<byte> @new, int count) {
+        internal static List<byte> Replace(this IList<byte> bytes, IList<byte> old, IList<byte> @new, ref int count) {
             if (@new == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
@@ -332,30 +332,35 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (old.Count == 0) {
-                return ReplaceEmpty(bytes, @new, count);
+                return ReplaceEmpty(bytes, @new, ref count);
             }
 
             List<byte> ret = new List<byte>(bytes.Count);
 
             int index;
             int start = 0;
+            int actualCnt = 0;
 
             while (count > 0 && (index = bytes.IndexOf(old, start)) != -1) {
                 ret.AddRange(bytes.Substring(start, index - start));
                 ret.AddRange(@new);
+                actualCnt++;
                 start = index + old.Count;
                 count--;
             }
             ret.AddRange(bytes.Substring(start));
 
+            count = actualCnt;
             return ret;
         }
 
-        private static List<byte> ReplaceEmpty(this IList<byte> self, IList<byte> @new, int count) {
+        private static List<byte> ReplaceEmpty(this IList<byte> self, IList<byte> @new, ref int count) {
             int max = count > self.Count ? self.Count : count;
             List<byte> ret = new List<byte>(self.Count * (@new.Count + 1));
+            int actualCnt = 0;
             for (int i = 0; i < max; i++) {
                 ret.AddRange(@new);
+                actualCnt++;
                 ret.Add(self[i]);
             }
             for (int i = max; i < self.Count; i++) {
@@ -363,8 +368,10 @@ namespace IronPython.Runtime.Operations {
             }
             if (count > max) {
                 ret.AddRange(@new);
+                actualCnt++;
             }
 
+            count = actualCnt;
             return ret;
         }
 

@@ -6,6 +6,7 @@
 #
 
 import os
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -42,7 +43,7 @@ class FdTest(IronPythonTestCase):
         os.closerange(fd + 1, fd + 2)
 
         # Assigning to self must be a no-op.
-        self.assertEqual(os.dup2(fd, fd), fd)
+        self.assertEqual(os.dup2(fd, fd), fd if is_cli or sys.version_info >= (3,7) else None)
         self.assertTrue(is_open(fd))
 
         # The source must be valid.
@@ -59,11 +60,11 @@ class FdTest(IronPythonTestCase):
         self.assertTrue(is_open(fd))
 
         # The destination must be valid.
-        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup2, fd, -2)
-        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup2, fd, 10000000)
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor" if is_cli or sys.version_info >= (3,5) else "[Errno 0] Error", os.dup2, fd, -2)
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor" if is_cli or sys.version_info >= (3,5) else "[Errno 0] Error", os.dup2, fd, 10000000)
 
         # Using dup2 can skip fds.
-        self.assertEqual(os.dup2(fd, fd + 2), fd + 2)
+        self.assertEqual(os.dup2(fd, fd + 2), fd + 2 if is_cli or sys.version_info >= (3,7) else None)
         self.assertTrue(is_open(fd))
         self.assertTrue(not is_open(fd + 1))
         self.assertTrue(is_open(fd + 2))
@@ -73,7 +74,7 @@ class FdTest(IronPythonTestCase):
             self.assertEqual(os.open(os.devnull, os.O_WRONLY, 0o600), fd + 1)
         else:
             self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
-        self.assertEqual(os.dup2(fd + 1, fd), fd)
+        self.assertEqual(os.dup2(fd + 1, fd), fd if is_cli or sys.version_info >= (3,7) else None)
         # null can not be stated on windows - but writes are ok
         self.assertTrue(is_open_nul(fd))
         self.assertTrue(is_open_nul(fd + 1))
@@ -81,7 +82,7 @@ class FdTest(IronPythonTestCase):
         self.assertTrue(is_open_nul(fd))
         self.assertEqual(os.write(fd, b"1"), 1)
 
-        self.assertEqual(os.dup2(fd + 2, fd), fd)
+        self.assertEqual(os.dup2(fd + 2, fd), fd if is_cli or sys.version_info >= (3,7) else None)
         self.assertEqual(os.lseek(fd, 0, os.SEEK_END), 0)
         self.assertEqual(os.write(fd + 2, b"2"), 1)
         self.assertEqual(os.lseek(fd, 0, os.SEEK_SET), 0)

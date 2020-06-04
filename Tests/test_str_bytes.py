@@ -62,9 +62,16 @@ class StrBytesTest(unittest.TestCase):
         self.run_permutations(lambda abc, a, x: abc.replace(a, x), ("abc", "a", "x"), "xbc", b"xbc")
         self.run_permutations(lambda abc, a, x: abc.replace(a, x, 1), ("abc", "a", "x"), "xbc", b"xbc")
 
-        # self.assertEqual("abc".replace(b"a", buffer("x")), "xbc")
-        # self.assertEqual("abc".replace(buffer("a"), "x"), "xbc")
-        # self.assertEqual("abc".replace(buffer("a"), buffer("x")), "xbc")
+        self.assertEqual(b"abc".replace(b"a", memoryview(b"x")), b"xbc")
+        self.assertEqual(b"abc".replace(memoryview(b"a"), b"x"), b"xbc")
+        self.assertEqual(b"abc".replace(memoryview(b"a"), memoryview(b"x")), b"xbc")
+
+        # str/bytes return the original object
+        x = "abc"
+        self.assertIs(x.replace("d", "e"), x)
+
+        x = b"abc"
+        self.assertIs(x.replace(b"d", b"e"), x)
 
     def test_rfind(self):
         self.run_permutations(lambda abc, c: abc.rfind(c), ("abc", "c"), 2, 2)

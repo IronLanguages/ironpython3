@@ -23,10 +23,8 @@ namespace IronPython.Modules {
         public const int DEBUG_STATS = 1;
         public const int DEBUG_COLLECTABLE = 2;
         public const int DEBUG_UNCOLLECTABLE = 4;
-        public const int DEBUG_INSTANCES = 8;
-        public const int DEBUG_OBJECTS = 16;
         public const int DEBUG_SAVEALL = 32;
-        public const int DEBUG_LEAK = (DEBUG_COLLECTABLE | DEBUG_UNCOLLECTABLE | DEBUG_INSTANCES | DEBUG_OBJECTS | DEBUG_SAVEALL);
+        public const int DEBUG_LEAK = (DEBUG_COLLECTABLE | DEBUG_UNCOLLECTABLE | DEBUG_SAVEALL);
 
         private static readonly object _threadholdKey = new object();
 

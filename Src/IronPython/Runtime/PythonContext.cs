@@ -1269,7 +1269,7 @@ namespace IronPython.Runtime {
             }
 
             try {
-                if (SystemState.__dict__.TryGetValue("exitfunc", out callable)) {
+                if (SystemState.__dict__.TryGetValue("_exitfunc", out callable)) {
                     PythonCalls.Call(SharedContext, callable);
                 }
             } finally {

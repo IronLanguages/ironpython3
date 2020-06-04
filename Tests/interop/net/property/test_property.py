@@ -1,18 +1,20 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
+
 '''
 Operations on property.
 '''
-#------------------------------------------------------------------------------
+
 import unittest
 
-from iptest import IronPythonTestCase, run_test
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 # from Merlin.Testing import *
 # from Merlin.Testing.Property import *  #Merlin 315120 - please do not remove/modify this line
 # from Merlin.Testing.TypeSample import *
 
+@skipUnlessIronPython()
 class PropertyTest(IronPythonTestCase):
     def setUp(self):
         super(PropertyTest, self).setUp()

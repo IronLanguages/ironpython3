@@ -32,7 +32,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
 
 if is_posix:
     import posix as _os
@@ -502,7 +502,7 @@ class ClrTypeTest(IronPythonTestCase):
                 setilgen.Emit(OpCodes.Stfld, field_builder)
                 setilgen.Emit(OpCodes.Ret)
                 #Actual property
-                prop_builder = typebld.DefineProperty("NOT_SO_DYNAMIC", PropertyAttributes.None, prop_type, None)
+                prop_builder = typebld.DefineProperty("NOT_SO_DYNAMIC", PropertyAttributes["None"], prop_type, None)
                 prop_builder.SetGetMethod(prop_getter_builder)
                 prop_builder.SetSetMethod(prop_setter_builder)
                 
@@ -534,7 +534,7 @@ class ClrTypeTest(IronPythonTestCase):
         try:
             x.NOT_SO_DYNAMIC = "0"
             Fail("TypeError should have been thrown!")
-        except TypeError, e:
+        except TypeError as e:
             self.assertEqual(e.message,
                     "expected UInt64, got str")
         finally:
@@ -633,7 +633,7 @@ class ClrTypeTest(IronPythonTestCase):
         self.assertRaisesPartialMessage(TypeError, ", got float", 
                                     type.__clrtype__, 3.14)
                             
-        for x in [None, [], (None,), Exception("message"), 3.14, 3L, 0, 5j, "string", u"string",
+        for x in [None, [], (None,), Exception("message"), 3.14, long(3), 0, 5j, "string", u"string",
                 True, System, _os, os, exit, lambda: 3.14]:
             self.assertRaises(TypeError, 
                         type.__clrtype__, x)
@@ -683,7 +683,7 @@ class ClrTypeTest(IronPythonTestCase):
                 __metaclass__ = MyType 
             Fail("Bad __clrtype__ signature!")
         
-        except TypeError, e:
+        except TypeError as e:
             self.assertEqual(e.message,
                     "__clrtype__() takes no arguments (1 given)")
                     
@@ -718,7 +718,7 @@ class ClrTypeTest(IronPythonTestCase):
                 __metaclass__ = MyType 
             Fail("Bad __clrtype__ signature!")
         
-        except TypeError, e:
+        except TypeError as e:
             self.assertEqual(e.message,
                     "__clrtype__() takes exactly 2 arguments (1 given)")
                     
@@ -740,7 +740,7 @@ class ClrTypeTest(IronPythonTestCase):
                                 [3.14, "expected Type, got float"], 
                                 ["a string", "expected Type, got str"],
                                 [System.UInt16(32), "expected Type, got UInt16"],
-                                [1L, "expected Type, got long"],
+                                [long(1), "expected Type, got long"],
                     ]:
             called = False
             
@@ -754,7 +754,7 @@ class ClrTypeTest(IronPythonTestCase):
                 class X(object):
                     __metaclass__ = MyType
                 Fail("Arbitrary return values of __clrtype__ should not be allowed: " + str(x))
-            except TypeError, e:
+            except TypeError as e:
                 self.assertEqual(e.message,
                         expected_msg)
             finally:    
@@ -774,7 +774,7 @@ class ClrTypeTest(IronPythonTestCase):
             class X(object):
                 __metaclass__ = MyType
             Fail("Arbitrary return values of __clrtype__ are not allowed: ", + str(x))
-        except ValueError, e:
+        except ValueError as e:
             self.assertEqual(e.message, "__clrtype__ must return a type, not None")
         finally:
             self.assertEqual(called, True)
@@ -807,7 +807,7 @@ class ClrTypeTest(IronPythonTestCase):
                 class X(object):
                     __metaclass__ = MyType
                 Fail("Exception was never thrown from __clrtype__: " + str(x))
-            except type(x), e:
+            except type(x) as e:
                 if (hasattr(e, "message")):
                     self.assertEqual(e.message,
                             expected_msg)
@@ -839,7 +839,7 @@ class ClrTypeTest(IronPythonTestCase):
             class X(object):
                 __metaclass__ = MyType
             Fail("type.__new__ signature is wrong")
-        except TypeError, e:
+        except TypeError as e:
             self.assertEqual(e.message,
                     "__new__() takes exactly 1 argument (4 given)")
         finally:

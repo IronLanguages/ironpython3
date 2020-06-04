@@ -5,7 +5,7 @@
 import time
 import unittest
 
-from iptest import run_test, skipUnlessIronPython
+from iptest import is_cli, run_test, skipUnlessIronPython
 
 class TimeTest(unittest.TestCase):
     def test_strftime(self):
@@ -78,14 +78,18 @@ class TimeTest(unittest.TestCase):
         self.assertEqual((1942, 1, 1, 0, 0, 0, 3, 1, -1), time.strptime("%1942", "%%%Y"))
         self.assertEqual((1900, 1, 6, 0, 0, 0, 5, 6, -1), time.strptime("%6", "%%%d"))
 
-        #self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
-        # TODO: day of the week does not work as expected
+        if is_cli: # https://github.com/IronLanguages/main/issues/239
+            # TODO: day of the week does not work as expected
+            with self.assertRaises(ValueError):
+                time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p')
+        else:
+            self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
+
         self.assertEqual((1900, 7, 9, 19, 30, 0, 0, 190, -1), time.strptime('July 9 7:30 PM', '%B %d %I:%M %p'))
         # CPY & IPY differ on daylight savings time for this parse
 
         self.assertRaises(ValueError, time.strptime, "July 3, 2006 At 0724 GMT", "%B %x, %Y At %H%M GMT")
 
-    @skipUnlessIronPython()
     def test_sleep(self):
         sleep_time = 3
         safe_deviation = 0.20
@@ -130,9 +134,9 @@ class TimeTest(unittest.TestCase):
         self.assertEqual(time.mktime(time.localtime(0)), 0)
 
     def test_asctime(self):
-        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep 04 14:57:11 2009')
-        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 1)), 'Fri Sep 04 14:57:11 2009')
-        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, -1)), 'Fri Sep 04 14:57:11 2009')
+        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep  4 14:57:11 2009')
+        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 1)), 'Fri Sep  4 14:57:11 2009')
+        self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, -1)), 'Fri Sep  4 14:57:11 2009')
 
 
 run_test(__name__)

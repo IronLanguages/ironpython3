@@ -6,7 +6,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, long, run_test
 
 GETATTRIBUTE_CALLED = False
 class myint(int): pass

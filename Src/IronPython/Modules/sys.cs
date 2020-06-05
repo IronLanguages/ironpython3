@@ -141,6 +141,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         public static void exit(object code) {
             if (code == null) {
                 throw new PythonExceptions._SystemExit().InitAndGetClrException();
+            } else if (code is PythonTuple pt) {
+                throw new PythonExceptions._SystemExit().InitAndGetClrException(pt._data);
             } else {
                 // throw as a python exception here to get the args set.
                 throw new PythonExceptions._SystemExit().InitAndGetClrException(code);

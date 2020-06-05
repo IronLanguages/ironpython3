@@ -12,12 +12,9 @@ import unittest
 
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, skipUnlessIronPython
 
-CP24381_MESSAGES = []
-
 class SysTest(IronPythonTestCase):
-    @skipUnlessIronPython()
     def test_dont_write_bytecode(self):
-        self.assertEqual(sys.dont_write_bytecode, True)
+        self.assertEqual(sys.dont_write_bytecode, is_cli)
 
     @skipUnlessIronPython()
     def test_api_version(self):
@@ -29,7 +26,6 @@ class SysTest(IronPythonTestCase):
         # settrace
         self.assertTrue(hasattr(sys, 'settrace'))
 
-        global traces
         traces = []
         def f(frame, kind, info):
             traces.append(('f', kind, frame.f_code.co_name))
@@ -71,34 +67,27 @@ class SysTest(IronPythonTestCase):
         self.assertEqual(frameobj.f_locals, {'a': 32, 'b':42})
         self.assertTrue('run_test' in frameobj.f_globals)
 
-        if is_cli:
-            # -X:Tracing should enable tracing of top-level code
-            import os
-            content = """a = "aaa"
+        # -X:Tracing should enable tracing of top-level code
+        import subprocess
+        content = """a = "aaa"
 import pdb; pdb.set_trace()
 b = "bbb"
 c = "ccc"
 final = a + b + c
-print final"""
-            f = open('temp.py', 'w+')
-            try:
-                f.write(content)
-                f.close()
+print(final)"""
+        f = open('temp.py', 'w+')
+        try:
+            f.write(content)
+            f.close()
 
-                stdin, stdout = os.popen2(sys.executable +  ' -X:Tracing -X:Frames temp.py')
-                stdin.write('n\nn\nn\nn\nn\nn\nn\nn\n')
-                stdin.flush()
-                out = [x for x in stdout]
-                self.assertTrue('-> b = "bbb"\n' in out)
-                self.assertTrue('-> c = "ccc"\n' in out)
-                self.assertTrue('-> final = a + b + c\n' in out)
-                self.assertTrue('-> print final\n' in out)
-                self.assertTrue('(Pdb) aaabbbccc\n' in out)
-                self.assertTrue('--Return--\n' in out)
-                self.assertTrue('-> print final\n' in out)
-                self.assertTrue('(Pdb) ' in out)
-            finally:
-                os.unlink('temp.py')
+            p = subprocess.Popen([sys.executable, '-X:Tracing', 'temp.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            p.stdin.write(b'n\nn\nn\nn\nn\nn\nn\nn\n')
+            #p.stdin.flush()
+            out, _ = p.communicate()
+            out = [x for x in out.splitlines() if b"<module>" not in x]
+            self.assertEqual(out, [b'-> b = "bbb"', b'-> c = "ccc"', b'-> final = a + b + c', b'-> print(final)', b'(Pdb) aaabbbccc', b'--Return--', b'-> print(final)', b'(Pdb) '])
+        finally:
+            os.unlink('temp.py')
 
     def test_call_tracing(self):
         def f(i):
@@ -132,7 +121,7 @@ print final"""
         #     2.7.10a1 DEBUG (2.7.10.0001)
         #     [.NETFramework,Version=v4.5 on .NET Framework 4.8.3752.0 (64-bit)]
         regex = r'[\w.+]+\s*(?: DEBUG)?\s+\([^)]+\)\s+\[[^\]]+ \((?:32|64)-bit\)\]'
-        self.assertTrue(re.match(regex, sys.version, re.IGNORECASE) != None)
+        self.assertTrue(re.match(regex, sys.version, re.IGNORECASE) is not None)
 
     def test_winver(self):
         import re
@@ -150,7 +139,7 @@ print final"""
         if is_cli:
             self.assertEqual(sys.getsizeof(1), sys.getsizeof(1.0))
         else:
-            self.assertTrue(sys.getsizeof(1)<sys.getsizeof(1.0))
+            self.assertTrue(sys.getsizeof(1)>sys.getsizeof(1.0))
 
     def test_gettrace(self):
         '''TODO: revisit'''
@@ -164,23 +153,24 @@ print final"""
         sys.settrace(None)
         self.assertEqual(sys.gettrace(), None)
 
-    @unittest.skipIf(is_cli, 'https://github.com/IronLanguages/main/issues/740')
+    @unittest.expectedFailure # https://github.com/IronLanguages/main/issues/740
     def test_cp24381(self):
+        CP24381_MESSAGES = []
+
         import sys
         orig_sys_trace_func = sys.gettrace()
         def f(*args):
-            global CP24381_MESSAGES
-            CP24381_MESSAGES += args[1:]
+            CP24381_MESSAGES.extend(args[1:])
             return f
 
         cp24381_file_name = "cp24381.py"
         cp24381_contents  = """
-print 'a'
-print 'b'
-print 'c'
+print('a')
+print('b')
+print('c')
 
 def f():
-    print 'hi'
+    print('hi')
 
 f()
 """
@@ -225,17 +215,17 @@ f()
 
         sys.settrace(None)
 
+    @skipUnlessIronPython()
+    @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):
         import warnings
         self.assertTrue(hasattr(sys, 'getrefcount'))
 
-        with warnings.catch_warnings(record = True) as w:
+        with warnings.catch_warnings(record=True) as w:
             count = sys.getrefcount(None)
 
         self.assertNotEqual(0, count)
         self.assertTrue(w)
         self.assertTrue('dummy result' in str(w[0].message))
 
-
 run_test(__name__)
-

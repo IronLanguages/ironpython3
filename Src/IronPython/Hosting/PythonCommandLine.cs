@@ -61,7 +61,7 @@ namespace IronPython.Hosting {
                 Language.Shutdown();
             } catch (Exception e) {
                 Console.WriteLine("", Style.Error);
-                Console.WriteLine("Error in sys.exitfunc:", Style.Error);
+                Console.WriteLine("Error in sys._exitfunc:", Style.Error);
                 Console.Write(Language.FormatException(e), Style.Error);
             }
         }

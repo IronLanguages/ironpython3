@@ -103,7 +103,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("expected struct_time or None");
             }
 
-            return dt.ToString("ddd MMM dd HH:mm:ss yyyy", CultureInfo.InvariantCulture);
+            return $"{dt.ToString("ddd MMM", CultureInfo.InvariantCulture)} {dt.Day,2} {dt.ToString("HH:mm:ss yyyy", CultureInfo.InvariantCulture)}";
         }
 
         public static double clock() {

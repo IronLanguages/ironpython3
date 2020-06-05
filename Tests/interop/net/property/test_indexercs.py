@@ -4,13 +4,13 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, run_test
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 # from Merlin.Testing import *
 # from Merlin.Testing.Indexer import *
 # from Merlin.Testing.TypeSample import *
 
-
+@skipUnlessIronPython()
 class IndexerCSTest(IronPythonTestCase):
     def setUp(self):
         super(IndexerCSTest, self).setUp()

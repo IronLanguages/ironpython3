@@ -115,14 +115,14 @@ class ThreadTest(unittest.TestCase):
         f = open('temp.py', 'w+')
         try:
             f.write("""
-import sys
+import atexit
 def f():
     print('bye bye')
 
 def f(*args):
     print('bye bye')
 
-sys.exitfunc = f
+atexit.register(f)
 from threading import Thread
 def count(n):
     while n > 0:
@@ -133,8 +133,9 @@ t1 = Thread(target=count, args=(50000000,))
 t1.start()
     """)
             f.close()
-            stdout = os.popen(sys.executable +  ' temp.py')
-            self.assertTrue('bye bye\n' in list(stdout))
+            stdout = os.popen('"' + sys.executable +  '" temp.py')
+            res = list(stdout)
+            self.assertIn('bye bye\n', res)
         finally:
             os.unlink('temp.py')
 

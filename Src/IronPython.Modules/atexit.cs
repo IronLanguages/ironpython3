@@ -45,7 +45,7 @@ Two public functions, register and unregister, are defined.
             if (!context.HasModuleState(_registry_key))
                 context.SetModuleState(_registry_key, new List<FunctionDescriptor>());
 
-            context.SetSystemStateValue("exitfunc", (Action<CodeContext>)_run_exitfuncs);
+            context.SetSystemStateValue("_exitfunc", (Action<CodeContext>)_run_exitfuncs);
         }
 
         [Documentation(@"register(func, *args, **kwargs) -> func

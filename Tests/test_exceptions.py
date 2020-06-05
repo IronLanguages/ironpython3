@@ -275,13 +275,13 @@ finally:
         try:
             a.CallVirtual()  # throws index out of range
         except IndexError as e:
-            self.assertTrue(e.__class__ == IndexError)
+            self.assertEqual(e.__class__, IndexError)
 
         # verify we can raise & catch CLR exceptions
         try:
             raise System.Exception('Hello World')
         except System.Exception as e:
-            self.assertTrue(type(e) == System.Exception)
+            self.assertEqual(type(e), System.Exception)
 
     def test_misc(self):
 
@@ -294,25 +294,29 @@ finally:
         # BUG 430 intern(None) should throw TypeError
         try:
             sys.intern(None)
-            self.assertTrue(False)
+            self.fail()
         except TypeError:
             pass
         # /BUG
 
         # BUG 393 exceptions throw when bad value passed to except
+        x = SyntaxError("foo")
         try:
             try:
-                raise SyntaxError("foo")
+                raise x
             except 12:
-                self.assertTrue(False)
-                pass
-        except TypeError:
-            pass
+                self.fail()
+        except TypeError as e:
+            if is_cli: # https://github.com/IronLanguages/ironpython3/issues/878
+                self.assertTrue(e.__context__ is None)
+            else:
+                self.assertTrue(e.__context__ is x)
         # /BUG
 
         # BUG 319 IOError not raised.
         try:
             fp = open('thisfiledoesnotexistatall.txt')
+            self.fail()
         except IOError:
             pass
         # /BUG
@@ -322,7 +326,7 @@ finally:
             raise StopIteration("BadTraceback")("somedata").with_traceback("a string is not a traceback")
             self.assertTrue (False, "fell through raise for some reason")
         except StopIteration:
-            self.assertTrue(False)
+            self.fail()
         except TypeError:
             pass
 

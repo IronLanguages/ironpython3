@@ -34,7 +34,6 @@ CPY_DIR = sys.argv[1]  #E.g., C:\Python26
 
 #CPython builtin modules
 BUILTIN_MODULES =  [
-                    "__builtin__",
                     "_ast", #CodePlex 21088
                     "_bisect", #CodePlex 21392
                     "_codecs",
@@ -46,57 +45,57 @@ BUILTIN_MODULES =  [
                     "_codecs_tw", #CodePlex 15507
                     "_collections", 
                     "_csv", #CodePlex 21395
+                    "_datetime",
                     "_functools",
                     "_heapq", #CodePlex 21396
                     "_hotshot", #CodePlex 21397
+                    "_imp",
+                    "_io",
                     "_json", #CodePlex 19581
                     "_locale",
                     "_lsprof", #CodePlex 21398
                     "_md5",
                     "_multibytecodec", #CodePlex 21399
+                    "_opcode",
+                    "_operator",
+                    "_pickle",
                     "_random",
-                    "_sha",
+                    "_sha1",
                     "_sha256",
                     "_sha512",
                     "_sre",
+                    "_stat",
+                    "_string",
                     "_struct",
                     "_symtable", #IronPython incompat
-                    "_subprocess", #CodePlex 15512
-                    #"_types",  Can't import this in CPython 2.6 either...
+                    "_thread",
+                    "_tracemalloc",
                     "_warnings", 
                     "_weakref", 
-                    "_winreg", 
-                    "array", 
-                    "aidoop", #CodePlex 21400
+                    "_winapi",
+                    "array",
+                    "atexit",
+                    "audioop", #CodePlex 21400
                     "binascii", 
-                    "cPickle", 
-                    "cStringIO", 
+                    "builtins",
                     "cmath", 
-                    "datetime", 
                     "errno",
-                    "exceptions",
-                    "future_builtins", #CodePlex 19580
+                    "faulthandler",
                     "gc",
-                    "imageop", #Deprecated in CPy 2.6.  Removed in Cpy 3.0
-                    "imp",
                     "itertools", 
                     "marshal",
                     "math", 
                     "mmap", #CodePlex 21401
                     "msvcrt", #CodePlex 21402
                     "nt", 
-                    "operator", 
                     "parser", #CodePlex 1347 - Won't fix
                     "signal", #CodePlex 16414
-                    "strop", #CodePlex 21403
                     "sys",
-                    "thread",
-                    "time", 
+                    "time",
+                    "winreg",
                     "xxsubtype",
                     "zipimport", #CodePlex 391
                     "zlib", #CodePlex 2590
-                    "_subprocess",
-                    "msvcrt",
                     ]
  
 #Most of these are standard *.py modules which IronPython overrides for one 
@@ -225,7 +224,7 @@ def get_cpython_results(name, level=0, temp_mod=None):
     #   python.exe -c 'import abc;print dir(abc.xyz)'
     proc = Process()
     proc.StartInfo.FileName = CPY_DIR + "\\python.exe"
-    proc.StartInfo.Arguments = "-c \"import " + mod_name + ";print dir(" + name + ")\""
+    proc.StartInfo.Arguments = "-c \"import " + mod_name + ";print(dir(" + name + "))\""
     proc.StartInfo.UseShellExecute = False
     proc.StartInfo.RedirectStandardOutput = True
     if (not proc.Start()):

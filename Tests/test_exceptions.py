@@ -22,20 +22,20 @@ class ExceptionTest(IronPythonTestCase):
                 raise Exception()   # this line should correspond w/ the number below
             finally:
                 pass
-        
+
         try:
             f()
         except Exception as e:
             tb = sys.exc_info()[2]
-            expected = [34, 39]
+            expected = [22, 27]
             while tb:
                 self.assertEqual(tb.tb_lineno, expected.pop()) # adding lines will require an update here
                 tb = tb.tb_next
-            
+
     @skipUnlessIronPython()
     def test_system_exception(self):
         import System
-        
+
         def RaiseSystemException():
             raise System.SystemException()
 
@@ -101,6 +101,8 @@ finally:
             except ZeroDivisionError:
                 pass
 
+            if isinstance(a, complex) or isinstance(b, complex): return
+
             try:
                 c = a % b
                 self.fail("Expected ZeroDivisionError for %r %% %r == %r" % (a, b, c))
@@ -155,182 +157,182 @@ finally:
 
         self.assertTrue(handlers == ["finally c", "finally b", "finally a", "abnormal termination"])
 
-    def test_sys_exit1(self):
-        try:
+    def test_sys_exit(self):
+        # no arg
+        with self.assertRaises(SystemExit) as cm:
             sys.exit()
-            self.assertTrue(False)
-        except SystemExit as e:
-            self.assertEqual(len(e.args), 0)
 
-    def test_sys_exit2(self):
-        try:
+        self.assertEqual(cm.exception.code, None)
+        self.assertEqual(cm.exception.args, ())
+
+        # None
+        with self.assertRaises(SystemExit) as cm:
             sys.exit(None)
-            self.assertTrue(False)
-        except SystemExit as e:
-            self.assertEqual(e.args, ())
+
+        self.assertEqual(cm.exception.code, None)
+        self.assertEqual(cm.exception.args, ())
 
         self.assertEqual(SystemExit(None).args, (None,))
 
-    def test_sys_exit3(self):
-        try:
+        # int
+        with self.assertRaises(SystemExit) as cm:
             sys.exit(-10)
-        except SystemExit as e:
-            self.assertEqual(e.code, -10)
-            self.assertEqual(e.args, (-10,))
-        else:
-            self.assertTrue(False)
+
+        self.assertEqual(cm.exception.code, -10)
+        self.assertEqual(cm.exception.args, (-10,))
+
+        # tuple
+        with self.assertRaises(SystemExit) as cm:
+            sys.exit((1,2,3))
+
+        self.assertEqual(cm.exception.code, (1,2,3))
+        self.assertEqual(cm.exception.args, (1,2,3))
 
     @skipUnlessIronPython()
     def test_interop(self):
         self.load_iron_python_test()
-        
+
         from IronPythonTest import ExceptionsTest
         import System
         import sys
-        
+
         a = ExceptionsTest()
-        
+
         try:
             a.ThrowException()  # throws index out of range
         except IndexError as e:
             self.assertTrue(e.__class__ == IndexError)
-        
+
         class MyTest(ExceptionsTest):
             def VirtualFunc(self):
                 raise ex("hello world")
-        
-        
+
+
         ex = ValueError
-        
-        
+
+
         a = MyTest()
-        
+
         # raise in python, translate into .NET, catch in Python
         try:
             a.CallVirtual()
         except ex as e:
             self.assertTrue(e.__class__ == ValueError)
             self.assertTrue(e.args[0] == "hello world")
-        
+
         # raise in python, catch in .NET, verify .NET got an ArgumentException
-        
+
         try:
             x = a.CallVirtCatch()
         except ex as e:
             self.assertTrue(False)
-        
-        
+
+
         self.assertTrue(isinstance(x, System.ArgumentException))
-        
+
         # call through the slow paths...
-        
+
         try:
             a.CallVirtualOverloaded('abc')
         except ex as e:
             self.assertTrue(e.__class__ == ex)
             self.assertTrue(e.args[0] == "hello world")
         # Note that sys.exc_info() is still set
-       
+
         try:
             a.CallVirtualOverloaded(5)
         except ex as e:
             self.assertTrue(e.__class__ == ex)
             self.assertTrue(e.args[0] == "hello world")
-        
-        
-        
+
         try:
             a.CallVirtualOverloaded(a)
         except ex as e:
             self.assertTrue(e.__class__ == ex)
             self.assertTrue(e.args[0] == "hello world")
-        
-        
+
         # catch and re-throw (both throw again and rethrow)
-        
+
         try:
             a.CatchAndRethrow()
         except ex as e:
             self.assertTrue(e.__class__ == ex)
             self.assertTrue(e.args[0] == "hello world")
-        
+
         try:
             a.CatchAndRethrow2()
         except ex as e:
             self.assertTrue(e.__class__ == ex)
             self.assertTrue(e.args[0] == "hello world")
-        
-        
-        
+
         class MyTest(ExceptionsTest):
             def VirtualFunc(self):
                 self.ThrowException()
-        
+
         a = MyTest()
-        
+
         # start in python, call CLS which calls Python which calls CLS which raises the exception
         try:
             a.CallVirtual()  # throws index out of range
         except IndexError as e:
-            self.assertTrue(e.__class__ == IndexError)
-        
-        
-        # verify we can throw arbitrary classes
-        class MyClass: pass
-        
-        try:
-            raise MyClass
-            self.assertTrue(False)
-        except MyClass as mc:
-            self.assertTrue(mc.__class__ == MyClass)
-        
-        # BUG 430 intern(None) should throw TypeError
-        try:
-            intern(None)
-            self.assertTrue(False)
-        except TypeError:
-            pass
-        # /BUG
-        
-        # BUG 393 exceptions throw when bad value passed to except
-        try:
-            try:
-                raise SyntaxError("foo")
-            except 12:
-                self.assertTrue(False)
-                pass
-        except SyntaxError:
-            pass
-        # /BUG
-        
-        # BUG 319 IOError not raised.
-        try:
-            fp = file('thisfiledoesnotexistatall.txt')
-        except IOError:
-            pass
-        # /BUG
-        
+            self.assertEqual(e.__class__, IndexError)
+
         # verify we can raise & catch CLR exceptions
         try:
             raise System.Exception('Hello World')
         except System.Exception as e:
-            self.assertTrue(type(e) == System.Exception)
-        
-        
-        
+            self.assertEqual(type(e), System.Exception)
+
+    def test_misc(self):
+
+        # verify we can throw arbitrary classes
+        class MyClass: pass
+
+        with self.assertRaises(TypeError): # TypeError: exceptions must derive from BaseException
+            raise MyClass
+
+        # BUG 430 intern(None) should throw TypeError
+        try:
+            sys.intern(None)
+            self.fail()
+        except TypeError:
+            pass
+        # /BUG
+
+        # BUG 393 exceptions throw when bad value passed to except
+        x = SyntaxError("foo")
+        try:
+            try:
+                raise x
+            except 12:
+                self.fail()
+        except TypeError as e:
+            if is_cli: # https://github.com/IronLanguages/ironpython3/issues/878
+                self.assertTrue(e.__context__ is None)
+            else:
+                self.assertTrue(e.__context__ is x)
+        # /BUG
+
+        # BUG 319 IOError not raised.
+        try:
+            fp = open('thisfiledoesnotexistatall.txt')
+            self.fail()
+        except IOError:
+            pass
+        # /BUG
+
         # BUG 481 Trying to pass raise in Traceback should cause an error until it is implemented
         try:
             raise StopIteration("BadTraceback")("somedata").with_traceback("a string is not a traceback")
             self.assertTrue (False, "fell through raise for some reason")
         except StopIteration:
-            self.assertTrue(False)
+            self.fail()
         except TypeError:
             pass
-        
+
         try:
             raise TypeError
         except:
-            import sys
             if (sys.exc_info()[2] != None):
                 x = dir(sys.exc_info()[2])
                 for name in ['tb_frame', 'tb_lasti', 'tb_lineno', 'tb_next']:
@@ -339,62 +341,50 @@ finally:
                     raise Exception("foo")("Msg").with_traceback(sys.exc_info()[2])
                 except Exception as X:
                     pass
-        
-                          
-        
+
         try:
             raise Exception(3,4,5)
         except Exception as X:
-            self.assertEqual(X[0], 3)
-            self.assertEqual(X[1], 4)
-            self.assertEqual(X[2], 5)
-        
-        
+            self.assertEqual(X.args[0], 3)
+            self.assertEqual(X.args[1], 4)
+            self.assertEqual(X.args[2], 5)
+
         try:
             raise Exception
         except:
-            import exceptions
-            self.assertEqual(sys.exc_info()[0], exceptions.Exception)
-            self.assertEqual(sys.exc_info()[1].__class__, exceptions.Exception)
-            
+            self.assertEqual(sys.exc_info()[0], Exception)
+            self.assertEqual(sys.exc_info()[1].__class__, Exception)
+
         try:
             self.fail("message")
         except AssertionError as e:
-            import exceptions
-            
-            self.assertEqual(e.__class__, exceptions.AssertionError)
+            self.assertEqual(e.__class__, AssertionError)
             self.assertEqual(len(e.args), 1)
             self.assertEqual(e.args[0], "message")
         else:
             self.fail("Expected exception")
 
-#####################################################################################
-# __str__ behaves differently for exceptions because of implementation (ExceptionConverter.ExceptionToString)
-
-# TODO: doesn't work in IronPython
-#def test_str1():
-#    AssertErrorWithMessage(TypeError, "descriptor '__str__' of 'exceptions.BaseException' object needs an argument", Exception.__str__)
-#    AssertErrorWithMessage(TypeError, "descriptor '__str__' requires a 'exceptions.BaseException' object but received a 'list'", Exception.__str__, list())
-#    AssertErrorWithMessage(TypeError, "descriptor '__str__' requires a 'exceptions.BaseException' object but received a 'list'", Exception.__str__, list(), 1)
-#    AssertErrorWithMessage(TypeError, "expected 0 arguments, got 1", Exception.__str__, Exception(), 1)
-
-    def test_str2(self):
-        # verify we can assign to sys.exc_*
-        sys.exc_info()[2] = None
-        sys.exc_info()[1] = None
-        sys.exc_info()[0] = None
-
+    def test_str(self):
         self.assertEqual(str(Exception()), '')
 
-        @skipUnlessIronPython()
-        def test_array(self):
-            import System
-            try:
-                a = System.Array()
-            except Exception as e:
-                self.assertEqual(e.__class__, TypeError)
-            else:
-                self.assertTrue(False, "FAILED!")
+        # TODO: these don't work the same in IronPython
+        self.assertRaisesMessage(TypeError, "__str__() takes exactly 1 argument (0 given)" if is_cli else "descriptor '__str__' of 'BaseException' object needs an argument", Exception.__str__)
+        if is_cli:
+            self.assertEqual(Exception.__str__(list()), 'IronPython.Runtime.PythonList')
+        else:
+            self.assertRaisesMessage(TypeError, "descriptor '__str__' requires a 'BaseException' object but received a 'list'", Exception.__str__, list())
+        self.assertRaisesMessage(TypeError, "__str__() takes exactly 1 argument (2 given)" if is_cli else "descriptor '__str__' requires a 'BaseException' object but received a 'list'", Exception.__str__, list(), 1)
+        self.assertRaisesMessage(TypeError, "__str__() takes exactly 1 argument (2 given)" if is_cli else "expected 0 arguments, got 1", Exception.__str__, Exception(), 1)
+
+    @skipUnlessIronPython()
+    def test_array(self):
+        import System
+        try:
+            a = System.Array()
+        except Exception as e:
+            self.assertEqual(e.__class__, TypeError)
+        else:
+            self.assertTrue(False, "FAILED!")
 
     def test_assert_error(self):
         self.assertRaises(ValueError, chr, -1)
@@ -410,32 +400,31 @@ finally:
         try:
             self.assertTrue(False, "Failed message")
         except AssertionError as e:
-            self.assertTrue(e.args[0] == "Failed message")
+            self.assertTrue(e.args[0].endswith("Failed message"))
         else:
             self.fail("should have thrown")
 
         try:
             self.assertTrue(False, "Failed message 2")
         except AssertionError as e:
-            self.assertTrue(e.args[0] == "Failed message 2")
+            self.assertTrue(e.args[0].endswith("Failed message 2"))
         else:
             self.fail("should have thrown")
 
-
     def test_syntax_error_exception(self):
-        try: 
+        try:
             compile('a = """\n\n', 'foo', 'single', 0x200)
-        except SyntaxError as se: 
+        except SyntaxError as se:
             self.assertEqual(se.offset, 9)
-        
-        try: 
+
+        try:
             compile('a = """\n\nxxxx\nxxx\n', 'foo', 'single', 0x200)
-        except SyntaxError as se: 
+        except SyntaxError as se:
             self.assertEqual(se.offset, 18)
 
-        try: 
+        try:
             compile('abc\na = """\n\n', 'foo', 'exec', 0x200)
-        except SyntaxError as se: 
+        except SyntaxError as se:
             self.assertEqual(se.offset, 9)
 
         try:
@@ -469,7 +458,7 @@ finally:
                 self.assertEqual(se.clsException.GetCodeLine(), "else:y=")
             self.assertEqual(se.__dict__, {})
             self.assertEqual(type(se.__dict__), dict)
-    
+
     def test_syntax_error_exception_exec(self):
         try:
             compile("if 2==2: x=", "Error", "exec")
@@ -484,7 +473,7 @@ finally:
                 self.assertEqual(se.text, "if 2==2: x=\n")
             self.assertEqual(se.__dict__, {})
             self.assertEqual(type(se.__dict__), dict)
-        
+
     def test_syntax_error_exception_eval(self):
         try:
             compile("if 2==2: x=", "Error", "eval")
@@ -496,14 +485,13 @@ finally:
             self.assertEqual(se.text, "if 2==2: x=")
             self.assertEqual(se.__dict__, {})
             self.assertEqual(type(se.__dict__), dict)
-        
+
 
     def test_user_syntax_error_exception(self):
         x = SyntaxError()
         self.assertEqual(x.lineno, None)
         self.assertEqual(x.filename, None)
         self.assertEqual(x.msg, None)
-        self.assertEqual(x.message, '')
         self.assertEqual(x.offset, None)
         self.assertEqual(x.print_file_and_line, None)
         self.assertEqual(x.text, None)
@@ -514,30 +502,28 @@ finally:
         self.assertEqual(x.__dict__["arbitrary"], 3.14)
         del x.__dict__["arbitrary"]
         self.assertEqual(x.__dict__, {})
-        
+
         x = SyntaxError('hello')
         self.assertEqual(x.lineno, None)
         self.assertEqual(x.filename, None)
         self.assertEqual(x.msg, 'hello')
-        self.assertEqual(x.message, 'hello')
         self.assertEqual(x.offset, None)
         self.assertEqual(x.print_file_and_line, None)
         self.assertEqual(x.text, None)
-        
+
         x = SyntaxError('hello', (1,2,3,4))
         self.assertEqual(x.lineno, 2)
         self.assertEqual(x.filename, 1)
         self.assertEqual(x.msg, 'hello')
-        self.assertEqual(x.message, '')
         self.assertEqual(x.offset, 3)
         self.assertEqual(x.print_file_and_line, None)
         self.assertEqual(x.text, 4)
-        
+
         self.assertRaises(IndexError, SyntaxError, 'abc', ())
         self.assertRaises(IndexError, SyntaxError, 'abc', (1,))
         self.assertRaises(IndexError, SyntaxError, 'abc', (1,2))
         self.assertRaises(IndexError, SyntaxError, 'abc', (1,2,3))
-    
+
     def test_return(self):
         def test_func():
             try: pass
@@ -545,9 +531,9 @@ finally:
                 try: raise 'foo'
                 except:
                     return 42
-                    
+
         self.assertEqual(test_func(), 42)
-                
+
         def test_func():
             try: pass
             finally:
@@ -558,7 +544,7 @@ finally:
                         return 42
 
         self.assertEqual(test_func(), 42)
-        
+
         def test_func():
             try: pass
             finally:
@@ -591,7 +577,7 @@ finally:
             def __init__(self):
                 self.loops = 0
                 self.finallyCalled = False
-                
+
         def test_break(state):
             try:
                 try:
@@ -602,8 +588,8 @@ finally:
                         break
                 return 42
             except: pass
-        
-        
+
+
         def test_continue(state):
             try:
                 try:
@@ -614,9 +600,9 @@ finally:
                         continue
                 return 42
             except: pass
-            
-        
-        
+
+
+
         def test_multi_break(state):
             try:
                 try:
@@ -625,13 +611,13 @@ finally:
                     for n in range(10):
                         state.loops += 1
                         if False: break
-                        
+
                         break
-        
+
                 return 42
             except: pass
-            
-            
+
+
         def test_multi_continue(state):
             try:
                 try:
@@ -640,28 +626,28 @@ finally:
                     for n in range(10):
                         state.loops += 1
                         if False: continue
-                        
+
                         continue
-        
+
                 return 42
             except: pass
-                
+
         state = stateobj()
         self.assertEqual(test_break(state), 42)
         self.assertEqual(state.loops, 1)
-        
+
         state = stateobj()
         self.assertEqual(test_continue(state), 42)
         self.assertEqual(state.loops, 10)
-        
+
         state = stateobj()
         self.assertEqual(test_multi_break(state), 42)
         self.assertEqual(state.loops, 1)
-        
+
         state = stateobj()
         self.assertEqual(test_multi_continue(state), 42)
         self.assertEqual(state.loops, 10)
-        
+
         def test_break_in_finally_raise(state):
             for x in range(10):
                 try:
@@ -682,7 +668,7 @@ finally:
         state = stateobj()
         self.assertEqual(test_break_in_finally_raise(state), 42)
         self.assertEqual(state.finallyCalled, True)
-        
+
         state = stateobj()
         self.assertEqual(test_break_in_finally(state), 42)
         self.assertEqual(state.finallyCalled, True)
@@ -700,15 +686,15 @@ finally:
                     pass
                 raise 'bad!!!'
             return 42
-            
+
         state = stateobj()
         self.assertEqual(test_outer_for_with_finally(state, False), 42)
         self.assertEqual(state.finallyCalled, True)
-            
+
         state = stateobj()
         self.assertEqual(test_outer_for_with_finally(state, True), 42)
         self.assertEqual(state.finallyCalled, True)
-        
+
         def test_outer_for_with_finally(state, shouldRaise):
             for x in range(10):
                 try:
@@ -722,16 +708,17 @@ finally:
                     pass
                 raise 'bad!!!'
             return 42
-        
+
         state = stateobj()
         self.assertEqual(test_outer_for_with_finally(state, False), 42)
         self.assertEqual(state.finallyCalled, True)
-            
+
         state = stateobj()
         self.assertEqual(test_outer_for_with_finally(state, True), 42)
         self.assertEqual(state.finallyCalled, True)
 
     @unittest.skipIf(is_netcoreapp, 'no System.AppDomain.CreateInstanceFromAndUnwrap')
+    @skipUnlessIronPython()
     def test_serializable_clionly(self):
         import clr
         import System
@@ -739,16 +726,13 @@ finally:
         path = clr.GetClrType(ExceptionsTest).Assembly.Location
         mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.EngineTest")
         self.assertRaises(AssertionError, mbro.Run, 'raise AssertionError')
-        import exceptions
-        
-        for eh in dir(exceptions):
-            eh = getattr(exceptions, eh)
-            if isinstance(eh, type) and issubclass(eh, BaseException):
-                # unicode exceptions require more args...
-                if (eh.__name__ != 'UnicodeDecodeError' and 
-                    eh.__name__ != 'UnicodeEncodeError' and 
-                    eh.__name__ != 'UnicodeTranslateError'):
-                    self.assertRaises(eh, mbro.Run, 'raise ' + eh.__name__)
+        import builtins
+
+        special_types = [UnicodeTranslateError, UnicodeEncodeError, UnicodeDecodeError] # unicode exceptions require more args...
+        exception_types = [x for x in builtins.__dict__.values() if isinstance(x, type) and issubclass(x, BaseException) and x not in special_types]
+
+        for eh in exception_types:
+            self.assertRaises(eh, mbro.Run, 'raise ' + eh.__name__)
 
     def test_sanity(self):
         '''
@@ -756,54 +740,54 @@ finally:
         in the standard ways.
         '''
         #build up a list of all valid exceptions
-        import exceptions
+        import builtins
+
         #special cases - do not test these like everything else
-        special_types = [ "UnicodeTranslateError", "UnicodeEncodeError", "UnicodeDecodeError"]
-        exception_types = [ x for x in list(exceptions.__dict__.keys()) if x.startswith("__")==False and special_types.count(x)==0]
-        exception_types = [ eval("exceptions." + x) for x in exception_types]
-        
+        special_types = [UnicodeTranslateError, UnicodeEncodeError, UnicodeDecodeError]
+        exception_types = [x for x in builtins.__dict__.values() if isinstance(x, type) and issubclass(x, BaseException) and x not in special_types]
+
         #run a few sanity checks
         for exception_type in exception_types:
             except_list = [exception_type(), exception_type("a single param")]
-            
+
             for t_except in except_list:
                 try:
                     raise t_except
                 except exception_type as e:
                     pass
-                
+
                 str_except = str(t_except)
-                
+
                 #there is no __getstate__ method of exceptions...
                 self.assertTrue(not hasattr(t_except, '__getstate__'))
-        
+
         #special cases
-        encode_except = exceptions.UnicodeEncodeError("1", "2", 3, 4, "5")
+        encode_except = UnicodeEncodeError("1", "2", 3, 4, "5")
         self.assertEqual(encode_except.encoding, "1")
         self.assertEqual(encode_except.object, "2")
         self.assertEqual(encode_except.start, 3)
         self.assertEqual(encode_except.end, 4)
         self.assertEqual(encode_except.reason, "5")
-        self.assertEqual(encode_except.message, "")
-        
+
         #CodePlex Work Item 356
-        #self.assertRaises(TypeError, exceptions.UnicodeDecodeError, "1", u"2", 3, 4, "e")
-        exceptions.UnicodeDecodeError("1", "2", 3, 4, "e")
-        
-        decode_except = exceptions.UnicodeDecodeError("1", "2", 3, 4, "5")
+        if is_cli:
+            UnicodeDecodeError("1", u"2", 3, 4, "e")
+        else:
+            self.assertRaises(TypeError, UnicodeDecodeError, "1", u"2", 3, 4, "e")
+        UnicodeDecodeError("1", b"2", 3, 4, "e")
+
+        decode_except = UnicodeDecodeError("1", b"2", 3, 4, "5")
         self.assertEqual(decode_except.encoding, "1")
-        self.assertEqual(decode_except.object, "2")
+        self.assertEqual(decode_except.object, b"2")
         self.assertEqual(decode_except.start, 3)
         self.assertEqual(decode_except.end, 4)
         self.assertEqual(decode_except.reason, "5")
-        self.assertEqual(decode_except.message, "")
-        
-        translate_except = exceptions.UnicodeTranslateError("1", 2, 3, "4")
+
+        translate_except = UnicodeTranslateError("1", 2, 3, "4")
         self.assertEqual(translate_except.object, "1")
         self.assertEqual(translate_except.start, 2)
         self.assertEqual(translate_except.end, 3)
         self.assertEqual(translate_except.reason, "4")
-        self.assertEqual(translate_except.message, "")
         self.assertEqual(translate_except.encoding, None)
 
     def test_nested_exceptions(self):
@@ -811,16 +795,17 @@ finally:
             raise Exception()
         except Exception as e:
             # PushException
+            ei2a = sys.exc_info()
             try:
                 raise TypeError
             except TypeError as te:
                 # PushException
                 ei = sys.exc_info()
                 # PopException
-            ei2 = sys.exc_info()
-            self.assertEqual(ei, ei2)
+            ei2b = sys.exc_info()
+            self.assertEqual(ei2a, ei2b)
         ei3 = sys.exc_info()
-        self.assertEqual(ei, ei3)
+        self.assertEqual((None, None, None), ei3)
 
     def test_swallow_from_else(self):
         def f():
@@ -832,65 +817,55 @@ finally:
                 raise AttributeError
             finally:
                 return 4
-                
+
         self.assertEqual(f(), 4)
 
     def test_newstyle_raise(self):
         # raise a new style exception via raise type, value that returns an arbitrary object
         class MyException(Exception):
             def __new__(cls, *args): return 42
-            
-        try:
-            raise MyException('abc')
-            self.assertUnreachable()
-        except Exception as e:
-            self.assertEqual(e, 42)
 
-    def test_enverror_init(self):
-        x = EnvironmentError()
-        self.assertEqual(x.message, '')
+        with self.assertRaises(TypeError): # TypeError: exceptions must derive from BaseException
+            raise MyException('abc')
+
+    @unittest.expectedFailure # https://github.com/IronLanguages/ironpython3/issues/876
+    def test_oserror_init(self):
+        x = OSError()
         self.assertEqual(x.errno, None)
         self.assertEqual(x.filename, None)
         self.assertEqual(x.strerror, None)
         self.assertEqual(x.args, ())
-        
-        x.__init__('abc')
-        self.assertEqual(x.message, 'abc')
-        self.assertEqual(x.args, ('abc', ))
-        
-        x.__init__('123', '456')
-        self.assertEqual(x.message, 'abc')
-        self.assertEqual(x.errno, '123')
-        self.assertEqual(x.strerror, '456')
-        self.assertEqual(x.args, ('123', '456'))
-        
-        x.__init__('def', 'qrt', 'foo')
-        self.assertEqual(x.message, 'abc')
-        self.assertEqual(x.errno, 'def')
-        self.assertEqual(x.strerror, 'qrt')
-        self.assertEqual(x.filename, 'foo')
-        self.assertEqual(x.args, ('def', 'qrt')) # filename not included in args
-        
+
+        # OSError.__init__ does nothing
         x.__init__()
-        self.assertEqual(x.message, 'abc')
-        self.assertEqual(x.errno, 'def')
-        self.assertEqual(x.strerror, 'qrt')
-        self.assertEqual(x.filename, 'foo')
+        self.assertEqual(x.errno, None)
+        self.assertEqual(x.filename, None)
+        self.assertEqual(x.strerror, None)
+        self.assertEqual(x.args, ())
+
+        x.__init__('abc')
+        self.assertEqual(x.errno, None)
+        self.assertEqual(x.filename, None)
+        self.assertEqual(x.strerror, None)
+        self.assertEqual(x.args, ())
+
+        x.__init__('123', '456')
+        self.assertEqual(x.errno, None)
+        self.assertEqual(x.filename, None)
+        self.assertEqual(x.strerror, None)
+        self.assertEqual(x.args, ())
+
+        x.__init__('def', 'qrt', 'foo')
+        self.assertEqual(x.errno, None)
+        self.assertEqual(x.filename, None)
+        self.assertEqual(x.strerror, None)
         self.assertEqual(x.args, ())
 
         x.__init__('1', '2', '3', '4')
-        self.assertEqual(x.message, 'abc')
-        self.assertEqual(x.errno, 'def')
-        self.assertEqual(x.strerror, 'qrt')
-        self.assertEqual(x.filename, 'foo')
-        self.assertEqual(x.args, ('1', '2', '3', '4'))
-        
-        x = EnvironmentError('a', 'b', 'c', 'd')
-        self.assertEqual(x.message, '')
         self.assertEqual(x.errno, None)
         self.assertEqual(x.filename, None)
         self.assertEqual(x.strerror, None)
-        self.assertEqual(x.args, ('a', 'b', 'c', 'd'))
+        self.assertEqual(x.args, ())
 
     def test_raise_None(self):
         lineno1, lineno2 = 0, 0
@@ -898,13 +873,13 @@ finally:
             raise None
         except:
             lineno1 = sys.exc_info()[2].tb_lineno
-        
+
         try:
             # dummy line
             raise None
         except:
             lineno2 = sys.exc_info()[2].tb_lineno
-        
+
         self.assertTrue(lineno1 != lineno2, "FAILED! Should not have reused exception")
 
     def test_exception_setstate(self):
@@ -919,9 +894,7 @@ finally:
         try:
             raise 'foo'
         except TypeError as e:
-            print(e.message)
-            # TODO: re-enable this when https://github.com/IronLanguages/ironpython2/issues/10 is fixed
-            # self.assertEqual(e.message, 'exceptions must be old-style classes or derived from BaseException, not str')
+            self.assertEqual(e.args[0], 'exceptions must derive from BaseException')
 
         class SomeClass(object):
             pass
@@ -929,9 +902,7 @@ finally:
         try:
             raise SomeClass()
         except TypeError as e:
-            print(e.message)
-            # TODO: re-enable this when https://github.com/IronLanguages/ironpython2/issues/10 is fixed
-            # self.assertEqual(e.message, 'exceptions must be old-style classes or derived from BaseException, not SomeClass')
+            self.assertEqual(e.args[0], 'exceptions must derive from BaseException')
 
 
     def test_nested_try(self):
@@ -947,11 +918,11 @@ finally:
                 l.append(2)
             else:
                 l.append(3)
-        
+
         foo()
         self.assertEqual(l, [1, 3])
         l = []
-        
+
         def bar():
             try:
                 l.append(1)
@@ -959,28 +930,26 @@ finally:
                 l.append(2)
             else:
                 l.append(3)
-                
+
         bar()
         self.assertEqual(l, [1, 3])
 
     def test_module_exceptions(self):
         """verify exceptions in modules are like user defined exception objects, not built-in types."""
-        
+
         # these modules have normal types...
-        normal_types = ['sys', 'clr', 'exceptions', '__builtin__', '_winreg', 'mmap', 'nt', 'posix']       
-        builtins = [x for x in sys.builtin_module_names if x not in normal_types ]
+        normal_types = ['sys', 'clr', 'builtins', 'winreg', 'mmap', 'nt', 'posix', '_thread']
+        builtins = [x for x in sys.builtin_module_names if x not in normal_types]
         for module in builtins:
             mod = __import__(module)
-            
+
             for attrName in dir(mod):
                 val = getattr(mod, attrName)
                 if isinstance(val, type) and issubclass(val, Exception):
-                    if "BlockingIOError" not in repr(val): 
-                        self.assertTrue(repr(val).startswith("<class "))
-                        val.x = 2
-                        self.assertEqual(val.x, 2)
-                    else:
-                        self.assertTrue(repr(val).startswith("<type "))
+                    self.assertTrue(repr(val).startswith("<class "))
+                    if val in (BlockingIOError, OSError): continue
+                    val.x = 2
+                    self.assertEqual(val.x, 2)
 
     def test_raise_inside_str(self):
         #raising an error inside the __str__ used to cause an unhandled exception.
@@ -1002,43 +971,65 @@ finally:
         class x(object):
             def __repr__(self):
                 raise StopIteration('repr should not be called')
-        
+
         try:
             sys.exit((x(), x()))
         except SystemExit:
             pass
 
-    def test_windows_error(self):
-        # int is required for 2/3 params
-        self.assertRaises(TypeError, WindowsError, 'foo', 'bar')
-        self.assertRaises(TypeError, WindowsError, 'foo', 'bar', 'baz')
-        
-        err = WindowsError('foo', 'bar', 'baz', 'quox')
-        self.assertEqual(err.errno, None)
-        self.assertEqual(err.winerror, None)
+    def test_os_error(self):
+        err = OSError('foo', 'bar')
+        self.assertEqual(err.errno, 'foo')
+        self.assertEqual(err.strerror, 'bar')
         self.assertEqual(err.filename, None)
-        self.assertEqual(err.strerror, None)
-        self.assertEqual(err.args, ('foo', 'bar', 'baz', 'quox'))
-        
-        err = WindowsError(42, 'bar', 'baz')
+        self.assertEqual(err.winerror, None)
+        self.assertEqual(err.filename2, None)
+        self.assertEqual(err.args, ('foo', 'bar'))
+
+        err = OSError('foo', 'bar', 'baz')
+        self.assertEqual(err.errno, 'foo')
+        self.assertEqual(err.strerror, 'bar')
+        self.assertEqual(err.filename, 'baz')
+        self.assertEqual(err.winerror, None)
+        self.assertEqual(err.filename2, None)
+        self.assertEqual(err.args, ('foo', 'bar'))
+
+        err = OSError('foo', 'bar', 'baz', 'qux')
+        self.assertEqual(err.errno, 'foo')
+        self.assertEqual(err.strerror, 'bar')
+        self.assertEqual(err.filename, 'baz')
+        self.assertEqual(err.winerror, 'qux')
+        self.assertEqual(err.filename2, None)
+        self.assertEqual(err.args, ('foo', 'bar'))
+
+        err = OSError('foo', 'bar', 'baz', 'qux', 'quux')
+        self.assertEqual(err.errno, 'foo')
+        self.assertEqual(err.strerror, 'bar')
+        self.assertEqual(err.filename, 'baz')
+        self.assertEqual(err.winerror, 'qux')
+        self.assertEqual(err.filename2, 'quux')
+        self.assertEqual(err.args, ('foo', 'bar'))
+
+    def test_windows_error(self):
+        err = OSError('foo', 'bar', 'baz', 42)
         self.assertEqual(err.filename, 'baz')
         self.assertEqual(err.winerror, 42)
         self.assertEqual(err.strerror, 'bar')
-        self.assertEqual(err.args, (42, 'bar'))
+        self.assertEqual(err.args, (22, 'bar'))
 
         # winerror code is passed through unmodified
         for i in range(256):
-            x = WindowsError(i, 'foo')
+            x = OSError('foo', 'bar', 'baz', i)
             self.assertEqual(x.winerror, i)
-        
+
         # winerror code is mapped to Python error code
-        self.assertEqual(WindowsError(10, 'foo').errno, 7)
+        self.assertEqual(OSError('foo', 'bar', 'baz', 10).errno, 7)
 
     def test_derived_keyword_args(self):
         class ED(Exception):
             def __init__(self, args=''):
                 pass
-        
+
         self.assertEqual(type(ED(args='')), ED)
 
     def test_cp35300(self):

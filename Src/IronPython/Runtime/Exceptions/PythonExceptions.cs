@@ -633,6 +633,16 @@ for k, v in toError.items():
             }
         }
 
+        public partial class _SystemExit : BaseException {
+            public override void __init__([NotNull]params object[] args) {
+                base.__init__(args);
+
+                if (args?.Length > 0) {
+                    code = args.Length == 1 ? args[0] : base.args;
+                }
+            }
+        }
+
         public partial class _StopIteration : BaseException {
             public override void __init__(params object[] args) {
                 base.__init__(args);

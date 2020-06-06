@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using IronPython.Runtime.Operations;
 using System;
+using System.Collections.Generic;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -43,15 +43,6 @@ namespace IronPython.Runtime.Types {
     /// </summary>
     internal static class Mro {
         public static List<PythonType> Calculate(PythonType startingType, IList<PythonType> bases) {
-            return Calculate(startingType, new List<PythonType>(bases), false);
-        }
-
-        /// <summary>
-        /// </summary>
-        public static List<PythonType> Calculate(PythonType startingType, IList<PythonType> baseTypes, bool forceNewStyle) {
-            List<PythonType> bases = new List<PythonType>();
-            foreach (PythonType dt in baseTypes) bases.Add(dt);
-
             if (bases.Contains(startingType)) {
                 throw PythonOps.TypeError("a __bases__ item causes an inheritance cycle ({0})", startingType.Name);
             }

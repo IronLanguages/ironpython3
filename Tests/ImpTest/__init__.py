@@ -1,1 +1,0 @@
-my_name = 'imp package test'

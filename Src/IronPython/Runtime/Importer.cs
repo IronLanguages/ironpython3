@@ -852,11 +852,7 @@ namespace IronPython.Runtime {
 
             foreach (object hook in pathHooks) {
                 try {
-                    object handler = PythonCalls.Call(context, hook, dirname);
-
-                    if (handler != null) {
-                        return handler;
-                    }
+                    return PythonCalls.Call(context, hook, dirname);
                 } catch (ImportException) {
                     // we can't handle the path
                 }

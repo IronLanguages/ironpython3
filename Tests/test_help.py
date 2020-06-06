@@ -14,6 +14,7 @@ class HelpTest(IronPythonTestCase):
             help(o)
         return os.linesep.join(output.messages)
 
+    @unittest.skipIf(is_mono, "https://github.com/mono/mono/issues/17192")
     @skipUnlessIronPython()
     def test_z_cli_tests(self):    # runs last to prevent tainting the module w/ CLR names
         import clr
@@ -50,6 +51,7 @@ class HelpTest(IronPythonTestCase):
         
         self.assertEqual(dir(System).count('Action'), 1)
         
+    @unittest.skipIf(is_mono, "https://github.com/mono/mono/issues/17192")
     def test_module(self):
         import time
         

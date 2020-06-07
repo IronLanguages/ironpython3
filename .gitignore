@@ -58,7 +58,6 @@ Src/StdLib/Lib/@test_*
 Src/StdLib/Lib/lib2to3/Grammar2.9.9.alpha.0.pickle
 Src/StdLib/Lib/lib2to3/PatternGrammar2.9.9.alpha.0.pickle
 Tests/ImportTestDir/
-Tests/cp15803/
 Tests/InheritanceTypes.dll
 Tests/OutterDir/
 Tests/ImpTest/

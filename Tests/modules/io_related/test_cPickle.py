@@ -648,7 +648,6 @@ class CPickleTest(IronPythonTestCase):
                 f.close()
 
     def test_cp15803(self):
-        import os
         _testdir = 'cp15803'
         pickle_file = os.path.join(self.test_dir, "cp15803.pickle")
 
@@ -682,13 +681,13 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
 """
         )
 
-        with path_modifier(self.test_dir) as p:
-            import cp15803
-            import cp15803.mod
-            import cp15803.sub.submod
-            import cp15803.sub.submod as newname
+        try:
+            with path_modifier(self.test_dir) as p:
+                import cp15803
+                import cp15803.mod
+                import cp15803.sub.submod
+                import cp15803.sub.submod as newname
 
-            try:
                 for x in [
                             cp15803.K(), cp15803.FROM_INIT,
                             cp15803.mod.KMod(), cp15803.mod.FROM_MOD, cp15803.mod.K(), cp15803.mod.FROM_INIT_IN_MOD,
@@ -708,13 +707,12 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                         self.assertEqual(x.static_member, x_unpickled.static_member)
                         self.assertEqual(x.member, x_unpickled.member)
 
-            finally:
-                import os
-                try:
-                    os.unlink(pickle_file)
-                    self.clean_directory(os.path.join(self.test_dir, _testdir))
-                except:
-                    pass
+        finally:
+            try:
+                os.unlink(pickle_file)
+                self.clean_directory(os.path.join(self.test_dir, _testdir))
+            except:
+                pass
 
     def test_cp945(self):
         #--sanity

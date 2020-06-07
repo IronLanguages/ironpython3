@@ -104,4 +104,3 @@ launchSettings.json
 /Src/StdLib/Lib/**/__pycache__
 /Src/IronPython/Lib/**/__pycache__
 /Tests/**/__pycache__
-/Tests/modules/misc/test_data.gz

@@ -50,6 +50,10 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
         self.zlib_data = zlib_compress.compress(self.text) + zlib_compress.flush()
         self.gzip_data = create_gzip(self.text)
 
+    def tearDown(self):
+        super(ZlibTest, self).tearDown()
+        os.remove("test_data.gz")
+
     def test_gzip(self):
         """decompression with gzip header"""
         do = zlib.decompressobj(zlib.MAX_WBITS | 16)

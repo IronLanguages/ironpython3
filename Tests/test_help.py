@@ -14,6 +14,7 @@ class HelpTest(IronPythonTestCase):
             help(o)
         return os.linesep.join(output.messages)
 
+    @unittest.skipIf(is_mono, "https://github.com/mono/mono/issues/17192")
     @skipUnlessIronPython()
     def test_z_cli_tests(self):    # runs last to prevent tainting the module w/ CLR names
         import clr
@@ -29,7 +30,7 @@ class HelpTest(IronPythonTestCase):
             help(System.Int64)
         
         x = self.run_help(System.String.Format)
-        self.assertTrue(x.find('Format(format: str, arg0: object) -> str') != -1)
+        self.assertIn('Format(format: str, arg0: object) -> str', x)
         
         x = self.run_help('u.u'.Split('u'))
         # requires std lib
@@ -41,7 +42,7 @@ class HelpTest(IronPythonTestCase):
 
         x_instance = self.run_help(MemoryStream().Write)
 
-        self.assertEqual(x_class, x_instance.replace("built-in function Write", "method_descriptor"))
+        self.assertEqual(x_class, x_instance.replace("built-in function Write", "method_descriptor").replace(" method of {}.MemoryStream instance".format(MemoryStream.__module__), ""))
 
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=11883
         self.assertEqual(dir(System).count('Action'), 1)
@@ -50,15 +51,16 @@ class HelpTest(IronPythonTestCase):
         
         self.assertEqual(dir(System).count('Action'), 1)
         
+    @unittest.skipIf(is_mono, "https://github.com/mono/mono/issues/17192")
     def test_module(self):
         import time
         
         x = self.run_help(time)
 
-        self.assertTrue(x.find('clock(...)') != -1)      # should have help for our stuff
-        self.assertTrue(x.find('unichr(...)') == -1)     # shouldn't have bulit-in help
-        self.assertTrue(x.find('AscTime') == -1)         # shouldn't display CLI names
-        self.assertTrue(x.find('static') == -1)          # methods shouldn't be displayed as static
+        self.assertIn('clock(...)', x)         # should have help for our stuff
+        self.assertNotIn('unichr(...)', x)     # shouldn't have bulit-in help
+        self.assertNotIn('AscTime', x)         # shouldn't display CLI names
+        self.assertNotIn('static', x)          # methods shouldn't be displayed as static
 
     def test_userfunction(self):
         def foo():
@@ -66,44 +68,44 @@ class HelpTest(IronPythonTestCase):
             
         x = self.run_help(foo)
         
-        self.assertTrue(x.find('my help is useful') != -1)
+        self.assertIn('my help is useful', x)
     
     def test_splat(self):
         def foo(*args): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(*args)') != -1)
-        self.assertTrue(x.find('Help on function foo in module __main__:') != -1)
+        self.assertIn('foo(*args)', x)
+        self.assertIn('Help on function foo in module __main__:', x)
         
         def foo(**kwargs): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(**kwargs)') != -1)
+        self.assertIn('foo(**kwargs)', x)
 
         def foo(*args, **kwargs): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(*args, **kwargs)') != -1)
+        self.assertIn('foo(*args, **kwargs)', x)
         
         def foo(a, *args): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(a, *args)') != -1)
+        self.assertIn('foo(a, *args)', x)
         
         def foo(a, *args, **kwargs): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(a, *args, **kwargs)') != -1)
+        self.assertIn('foo(a, *args, **kwargs)', x)
         
         def foo(a=7): pass
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(a=7') != -1)
+        self.assertIn('foo(a=7', x)
         
         def foo(a=[3]): a.append(7)
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(a=[3]') != -1)
+        self.assertIn('foo(a=[3]', x)
         foo()
         x = self.run_help(foo)
-        self.assertTrue(x.find('foo(a=[3, 7]') != -1)
+        self.assertIn('foo(a=[3, 7]', x)
     
     def test_builtinfunction(self):
         x = self.run_help(abs)
-        self.assertTrue(x.find('Return the absolute value of the argument') != -1)
+        self.assertIn('Return the absolute value of the argument', x)
 
     def test_user_class(self):
         class foo(object):
@@ -150,19 +152,19 @@ class HelpTest(IronPythonTestCase):
         
         x = os.linesep.join(output.messages)
             
-        self.assertTrue(x.find('this documentation is going to make the world a better place') != -1)
+        self.assertIn('this documentation is going to make the world a better place', x)
     
 
     def test_methoddescriptor(self):
         x = self.run_help(list.append)
-        self.assertTrue(x.find('append(...)') != -1)
+        self.assertIn('append(...)', x)
 
     def test_oldstyle_class(self):
         class foo:
             """the slow lazy fox jumped over the quick brown dog..."""
 
         x = self.run_help(foo)            
-        self.assertTrue(x.find('the slow lazy fox jumped over the quick brown dog...') != -1)
+        self.assertIn('the slow lazy fox jumped over the quick brown dog...', x)
 
     def test_nodoc(self):
         class foo(object): pass
@@ -185,47 +187,47 @@ class HelpTest(IronPythonTestCase):
             
         a = foo()
         x = self.run_help(a)
-        self.assertTrue(x.find('my documentation') != -1)
+        self.assertIn('my documentation', x)
     
     def test_str(self):
         x = self.run_help('abs')
-        self.assertTrue(x.find('Return the absolute value of the argument.') != -1)
+        self.assertIn('Return the absolute value of the argument.', x)
 
     def test_user_function(self):
         def f(): pass
         out = self.run_help(f)
         
-        self.assertTrue(out.find('f()') != -1)
-        self.assertTrue(out.find('in module __main__:') != -1)
+        self.assertIn('f()', out)
+        self.assertIn('in module __main__:', out)
         
         # list
         def f(*args): pass
         out = self.run_help(f)
-        self.assertTrue(out.find('f(*args)') != -1)
+        self.assertIn('f(*args)', out)
         
         # kw dict
         def f(**kw): pass
         out = self.run_help(f)
-        self.assertTrue(out.find('f(**kw)') != -1)
+        self.assertIn('f(**kw)', out)
         
         # list & kw dict
         def f(*args, **kwargs): pass
         out = self.run_help(f)
-        self.assertTrue(out.find('f(*args, **kwargs)') != -1)
+        self.assertIn('f(*args, **kwargs)', out)
         
         # default
         def f(abc = 3): pass
         out = self.run_help(f)
-        self.assertTrue(out.find('f(abc=3)') != -1)
+        self.assertIn('f(abc=3)', out)
         
         # mutating default value
         def f(a = [42]):
             a.append(23)
         out = self.run_help(f)
-        self.assertTrue(out.find('f(a=[42])') != -1)
+        self.assertIn('f(a=[42])', out)
         f()
         out = self.run_help(f)
-        self.assertTrue(out.find('f(a=[42, 23])') != -1)
+        self.assertIn('f(a=[42, 23])', out)
         
         # str vs repr
         class foo(object):
@@ -234,39 +236,39 @@ class HelpTest(IronPythonTestCase):
 
         def f(a = foo()): pass
         out = self.run_help(f)
-        self.assertTrue(out.find('f(a=abc)') != -1)
+        self.assertIn('f(a=abc)', out)
 
     def test_user_method(self):
         class x:
             def f(): pass
         out = self.run_help(x.f)
         
-        self.assertTrue(out.find('f()') != -1)
-        self.assertTrue(out.find('in module __main__:') != -1)
+        self.assertIn('f()', out)
+        self.assertIn('in module __main__:', out)
         
         # list
         class x:
             def f(*args): pass
         out = self.run_help(x.f)
-        self.assertTrue(out.find('f(*args)') != -1)
+        self.assertIn('f(*args)', out)
         
         # kw dict
         class x:
             def f(**kw): pass
         out = self.run_help(x.f)
-        self.assertTrue(out.find('f(**kw)') != -1)
+        self.assertIn('f(**kw)', out)
         
         # list & kw dict
         class x:
             def f(*args, **kwargs): pass
         out = self.run_help(x.f)
-        self.assertTrue(out.find('f(*args, **kwargs)') != -1)
+        self.assertIn('f(*args, **kwargs)', out)
         
         # default
         class x:
             def f(abc = 3): pass
         out = self.run_help(x.f)
-        self.assertTrue(out.find('f(abc=3)') != -1)
+        self.assertIn('f(abc=3)', out)
         
         # str vs repr
         class foo(object):
@@ -276,41 +278,39 @@ class HelpTest(IronPythonTestCase):
         class x:
             def f(a = foo()): pass
         out = self.run_help(x.f)
-        self.assertTrue(out.find('f(a=abc)') != -1)
-        
-        self.assertTrue(out.find('unbound __main__.x method') != -1)
+        self.assertIn('f(a=abc)', out)
     
     def test_bound_user_method(self):
         class x:
             def f(): pass
         out = self.run_help(x().f)
         
-        self.assertTrue(out.find('f()') != -1)
-        self.assertTrue(out.find('in module __main__:') != -1)
+        self.assertIn('f(...)', out)
+        self.assertIn('in module __main__:', out)
         
         # list
         class x:
             def f(*args): pass
         out = self.run_help(x().f)
-        self.assertTrue(out.find('f(*args)') != -1)
+        self.assertIn('f(*args)', out)
         
         # kw dict
         class x:
             def f(**kw): pass
         out = self.run_help(x().f)
-        self.assertTrue(out.find('f(**kw)') != -1)
+        self.assertIn('f(...)', out)
         
         # list & kw dict
         class x:
             def f(*args, **kwargs): pass
         out = self.run_help(x().f)
-        self.assertTrue(out.find('f(*args, **kwargs)') != -1)
+        self.assertIn('f(*args, **kwargs)', out)
         
         # default
         class x:
             def f(abc = 3): pass
         out = self.run_help(x().f)
-        self.assertTrue(out.find('f(abc=3)') != -1)
+        self.assertIn('f()', out)
         
         # str vs repr
         class foo(object):
@@ -320,24 +320,24 @@ class HelpTest(IronPythonTestCase):
         class x:
             def f(a = foo()): pass
         out = self.run_help(x().f)
-        self.assertTrue(out.find('f(a=abc)') != -1)
+        self.assertIn('f()', out)
 
-        self.assertTrue(out.find('method of __main__.x instance') != -1)
+        self.assertIn('method of __main__.x instance', out)
 
     #TODO: @skip("stdlib") #CodePlex 17577
     def test_bound_builtin_func(self):
         x = []
         
         out = self.run_help(x.append)
-        self.assertTrue(out.find('Help on built-in function append') != -1)
+        self.assertIn('Help on built-in function append', out)
         if is_cli:   # Cpython and IronPython display different help
-            self.assertTrue(out.find('append(self: ') != -1)
+            self.assertIn('append(self: ', out)
 
     @skipUnlessIronPython()
     def test_clr_addreference(self):
         import clr
         x = self.run_help(clr.AddReference)
-        self.assertTrue(x.find("Adds a reference to a .NET assembly.") != -1)
+        self.assertIn("Adds a reference to a .NET assembly.", x)
 
     @unittest.skipIf(is_mono, 'doc different on Mono')
     @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
@@ -351,7 +351,7 @@ class HelpTest(IronPythonTestCase):
         # help output is dependant on the console width so get rid of formatting
         x = " ".join(y.strip() for y in x.splitlines())
         
-        self.assertTrue(x.find("equivalent to the date and time contained in s") != -1)
+        self.assertIn("equivalent to the date and time contained in s", x)
 
     def test_type(self):
         """https://github.com/IronLanguages/main/issues/397"""
@@ -362,6 +362,6 @@ class HelpTest(IronPythonTestCase):
 
     def test_builtinfunc_module(self):
         self.assertEqual([].append.__module__, None)
-        self.assertEqual(min.__module__, '__builtin__')
+        self.assertEqual(min.__module__, 'builtins')
     
 run_test(__name__)

@@ -45,11 +45,26 @@ namespace IronPython.Runtime.Types {
             return res;
         }
 
-        public object keys(CodeContext context) => GetDictionary(context).keys();
+        public object keys(CodeContext context) {
+            var dict = GetDictionary(context);
+            if (dict.GetType() == typeof(PythonDictionary)) return dict.keys();
+            PythonTypeOps.TryInvokeUnaryOperator(context, dict, nameof(dict.keys), out object keys);
+            return keys;
+        }
 
-        public object values(CodeContext context) => GetDictionary(context).values();
+        public object values(CodeContext context) {
+            var dict = GetDictionary(context);
+            if (dict.GetType() == typeof(PythonDictionary)) return dict.values();
+            PythonTypeOps.TryInvokeUnaryOperator(context, dict, nameof(dict.values), out object values);
+            return values;
+        }
 
-        public object items(CodeContext context) => GetDictionary(context).items();
+        public object items(CodeContext context) {
+            var dict = GetDictionary(context);
+            if (dict.GetType() == typeof(PythonDictionary)) return dict.items();
+            PythonTypeOps.TryInvokeUnaryOperator(context, dict, nameof(dict.items), out object items);
+            return items;
+        }
 
         public PythonDictionary copy(CodeContext/*!*/ context) => new PythonDictionary(context, this);
 

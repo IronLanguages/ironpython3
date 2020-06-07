@@ -6,23 +6,23 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, path_modifier, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, path_modifier, retryOnFailure, run_test, skipUnlessIronPython
 
 class DocTest(IronPythonTestCase):
 
     def test_sanity(self):
         ## module
         global __doc__
-        
+
         self.assertEqual(__doc__, "module doc")
         __doc__ = "new module doc"
         self.assertEqual(__doc__, "new module doc")
 
         ## builtin
-        self.assertTrue(min.__doc__ <> None)
-        
+        self.assertTrue(min.__doc__ is not None)
+
         self.assertEqual(abs.__doc__, "abs(number) -> number\n\nReturn the absolute value of the argument.")
-        self.assertEqual(int.__add__.__doc__, "x.__add__(y) <==> x+y")
+        self.assertEqual(int.__add__.__doc__, "x.__add__(y) <==> x+y" if is_cli else "Return self+value.")
 
     def test_func_meth_class(self):
         def f_1():
@@ -155,7 +155,7 @@ class DocTest(IronPythonTestCase):
         self.assertTrue(System.Collections.Generic.List.__doc__.find("List[T]()") != -1)
         self.assertTrue(System.Collections.Generic.List.__doc__.find("collection: IEnumerable[T]") != -1)
 
-        # static TryParse(str s) -> (bool, float) 
+        # static TryParse(str s) -> (bool, float)
         self.assertTrue(System.Double.TryParse.__doc__.index('(bool, float)') >= 0)
         self.assertTrue(System.Double.TryParse.__doc__.index('(s: str)') >= 0)
 
@@ -177,21 +177,20 @@ class DocTest(IronPythonTestCase):
     def test_class_doc(self):
         # sanity, you can assign to __doc__
         class x(object): pass
-        
+
         class y(object):
             __slots__ = '__doc__'
-        
+
         class z(object):
             __slots__ = '__dict__'
 
         for t in (x, y, z):
             a = t()
-            a.__doc__ = 'Hello World'    
+            a.__doc__ = 'Hello World'
             self.assertEqual(a.__doc__, 'Hello World')
-        
-        
+
         class x(object): __slots__ = []
-        
+
         def f(a): a.__doc__ = 'abc'
         self.assertRaises(AttributeError, f, x())
         self.assertRaises(AttributeError, f, object())
@@ -199,12 +198,11 @@ class DocTest(IronPythonTestCase):
     def test_exception_doc_cp20251(self):
         class KExcept(Exception):
             pass
-            
+
         for e in [Exception(), KExcept(), Exception, KExcept,
                 BaseException(), IOError(), BaseException, IOError]:
             self.assertTrue(hasattr(e, "__doc__"))
             e.__doc__
-
 
     def test_module_doc_cp21360(self):
         temp_filename_empty = "cp21360_empty.py"
@@ -220,9 +218,8 @@ class DocTest(IronPythonTestCase):
                 import cp21360
                 self.assertEqual(cp21360.__doc__, None)
                 self.assertEqual(cp21360.x, 3.14)
-        
+
         finally:
             self.delete_files(temp_filename, temp_filename_empty)
-
 
 run_test(__name__)

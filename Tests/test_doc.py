@@ -6,7 +6,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, path_modifier, retryOnFailure, run_test, skipUnlessIronPython
 
 class DocTest(IronPythonTestCase):
 
@@ -204,6 +204,7 @@ class DocTest(IronPythonTestCase):
             self.assertTrue(hasattr(e, "__doc__"))
             e.__doc__
 
+    @retryOnFailure # TODO: figure out
     def test_module_doc_cp21360(self):
         temp_filename_empty = "cp21360_empty.py"
         temp_filename = "cp21360.py"

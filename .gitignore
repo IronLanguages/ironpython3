@@ -1,99 +1,28 @@
-*_name_S*
-
+# Visual Studio
 .vs/
-
-# Output directories
-obj/
-bin/
-/bin/
-/Stage
-/Packages
-/.vscode
-
-#Backup files
-*.bak
+.vscode/
 
 # Temporary VS files
 *.suo
 *.csproj.user
-*.wixproj.user
-*.pidb
-*.db
-*.opendb
-*.lock.json
-*.nuget.targets
 launchSettings.json
 
-# NuGet Packages
-packages/*
+# Build results
+obj/
+bin/
+Package/Release/
+*.binlog
 
-# Visual Studio 2015 cache/options directory
-.vs/
+# NuGet Packages
+packages/
+
+# Python cache files
+__pycache__/
 
 # Generated files
-TestResult.xml
-Solutions/TestResults/
-/Src/IronPythonTest/runsettings*.xml
-
-# TODO - testing scripts should not create these files
-Src/StdLib/Lib/@test_*
+Src/IronPythonTest/TestResults/
+Src/IronPythonTest/runsettings.*.xml
 
 # created by CPython tests
 Src/StdLib/Lib/lib2to3/Grammar*.pickle
 Src/StdLib/Lib/lib2to3/PatternGrammar*.pickle
-
-# created by side by side tests
-Tests/compat/*.log
-Tests/compat/*.pyc
-Tests/compat/*/*.pyc
-Tests/compat/sbs_library.dll
-Tests/compat/tempfile.txt
-Tests/Tools/stdmodules.py.stdout.log
-Tests/test_data.gz
-
-# created by tests
-abc.txt
-*-result.xml
-Src/StdLib/Lib/@test_*
-Src/StdLib/Lib/lib2to3/Grammar2.9.9.alpha.0.pickle
-Src/StdLib/Lib/lib2to3/PatternGrammar2.9.9.alpha.0.pickle
-Tests/cached_type_dll.dll
-Tests/_fileio*
-Tests/cp7007/
-Tests/finaltest.dll
-Tests/foo
-Tests/imfpstart.tpy
-Tests/impcp13736.py
-Tests/impmodfrmpkg/
-Tests/onlyread.tmp
-Tests/onlywrite.tmp
-Tests/tempFile1.tpy
-Tests/temp_syspath_none.py
-Tests/test.dll
-Tests/test.pyil
-Tests/test.xaml
-Tests/testfile.tmp
-Tests/testilcode.dll
-Tests/the_dir/
-Tests/vbproptest0.*.dll
-tmp/
-Src/IronPythonConsole/App.config
-Src/IronPythonConsoleAny/App.config
-Src/IronPythonWindow/App.config
-Src/IronPythonWindowAny/App.config
-Package/nuget/**/*.nupkg
-*.binlog
-Package/Release/
-build-*.ProjectImports.zip
-*.trx
-launchSettings.json
-*.un~
-/Src/ctypes_test/Win32/
-/Src/ctypes_test/x64/
-*.user
-*.o
-/Src/ctypes_test/*.pyd
-/Src/ctypes_test/*.pyd
-/Src/StdLib/Lib/**/__pycache__
-/Src/IronPython/Lib/**/__pycache__
-/Tests/**/__pycache__

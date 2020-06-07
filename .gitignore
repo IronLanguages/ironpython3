@@ -65,7 +65,6 @@ Tests/ImpTest/
 Tests/StandAlone/
 Tests/another.py
 Tests/cached_type_dll.dll
-Tests/clruse*.py
 Tests/_fileio*
 Tests/cp7007/
 Tests/finaltest.dll

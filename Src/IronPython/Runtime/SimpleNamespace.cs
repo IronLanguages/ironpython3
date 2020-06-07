@@ -49,7 +49,7 @@ namespace IronPython.Runtime {
             int index = infinite.Count;
             infinite.Add(this);
             try {
-                var attrs = Modules.Builtin.sorted(context, __dict__).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
+                var attrs = Modules.Builtin.sorted(context, __dict__, new Dictionary<string, object>()).Select(key => $"{PythonOps.ToString(context, key)}={PythonOps.Repr(context, __dict__[key])}");
                 return $"namespace({string.Join(", ", attrs)})";
             } finally {
                 System.Diagnostics.Debug.Assert(index == infinite.Count - 1);

@@ -218,8 +218,8 @@ namespace IronPython.Runtime {
         internal static int CompareToWorker(CodeContext/*!*/ context, IDictionary<object, object> left, PythonList ritems) {
             PythonList litems = ToList(left);
 
-            litems.sort(context);
-            ritems.sort(context);
+            litems.Sort(context);
+            ritems.Sort(context);
 
             return litems.CompareToWorker(ritems);
         }

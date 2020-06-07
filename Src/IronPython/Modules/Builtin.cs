@@ -255,14 +255,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static PythonList dir(CodeContext/*!*/ context) {
             PythonList res = new PythonList(context.Dict.Keys);
 
-            res.sort(context);
+            res.Sort(context);
             return res;
         }
 
         public static PythonList dir(CodeContext/*!*/ context, object? o) {
             IList<object?> ret = PythonOps.GetAttrNames(context, o);
             PythonList lret = new PythonList(ret);
-            lret.sort(context);
+            lret.Sort(context);
             return lret;
         }
 
@@ -551,7 +551,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
 
                 PythonList names = type.GetMemberNames(context);
-                names.sort(context);
+                names.Sort(context);
 
                 foreach (string? name in names) {
                     if (name == "__class__") continue;
@@ -1374,16 +1374,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static PythonType slice => DynamicHelpers.GetPythonTypeFromType(typeof(Slice));
 
         public static PythonList sorted(CodeContext/*!*/ context,
-            object? iterable = null,
-            object? key = null,
-            bool reverse = false) {
+            object? iterable,
+            [ParamDictionary, NotNull]IDictionary<string, object> kwArgs) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
             PythonList l = new PythonList(10);
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
             }
-            l.sort(context, key, reverse);
+            l.sort(context, kwArgs);
             return l;
         }
 

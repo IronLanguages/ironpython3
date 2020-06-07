@@ -232,7 +232,7 @@ namespace IronPython.Runtime.Operations {
 
             res.extend(DynamicHelpers.GetPythonTypeFromType(t).GetMemberNames(context));
 
-            res.sort(context);
+            res.Sort(context);
             return res;
         }
 

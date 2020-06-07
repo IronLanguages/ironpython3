@@ -57,15 +57,7 @@ abc.txt
 Src/StdLib/Lib/@test_*
 Src/StdLib/Lib/lib2to3/Grammar2.9.9.alpha.0.pickle
 Src/StdLib/Lib/lib2to3/PatternGrammar2.9.9.alpha.0.pickle
-Tests/ImportTestDir/
-Tests/cp15803/
-Tests/InheritanceTypes.dll
-Tests/OutterDir/
-Tests/ImpTest/
-Tests/StandAlone/
-Tests/another.py
 Tests/cached_type_dll.dll
-Tests/clruse*.py
 Tests/_fileio*
 Tests/cp7007/
 Tests/finaltest.dll
@@ -105,4 +97,3 @@ launchSettings.json
 /Src/StdLib/Lib/**/__pycache__
 /Src/IronPython/Lib/**/__pycache__
 /Tests/**/__pycache__
-/Tests/modules/misc/test_data.gz

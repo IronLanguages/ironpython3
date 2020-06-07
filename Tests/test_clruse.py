@@ -96,10 +96,10 @@ class ClrUseTest(unittest.TestCase):
             real_module = __import__(test_name.split(".py")[0])
             #for key in dir(real_module): self.assertEqual(real_module.__dict__[key], new_module.__dict__[key])
         finally:
-            pass
-            # try:
-            #     os.remove(test_name)
-            # except: pass
+            #cleanup
+            try:
+                os.remove(test_name)
+            except: pass
 
     def test_sanity(self):
         self.simpleTester(1, 2, 3)

@@ -11,7 +11,6 @@ from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test
 import imp
 
 def get_local_filename(base):
-    import os
     if __file__.count(os.sep):
         return os.path.join(__file__.rsplit(os.sep, 1)[0], base)
     else:
@@ -33,23 +32,21 @@ class ImportPkgTest(IronPythonTestCase):
         else:  self.fail("should already thrown")
 
     def test_cp7766(self):
-        import os
         if __name__=="__main__":
             self.assertEqual(type(__builtins__), type(sys))
         else:
             self.assertEqual(type(__builtins__), dict)
-            
+
         _t_test = os.path.join(self.test_dir, "cp7766.py")
         try:
-            
+
             self.write_to_file(_t_test, "temp = __builtins__")
-        
+
             import cp7766
             self.assertEqual(type(cp7766.temp), dict)
             self.assertTrue(cp7766.temp != __builtins__)
-            
+
         finally:
-            import os
             os.unlink(_t_test)
 
     def test_generated_files(self):
@@ -228,18 +225,18 @@ j = 10
         """verify re-loading an assembly causes the new type to show up"""
         if not self.has_csc():
             return
-        
+
         c1cs = get_local_filename('c1.cs')
         outp = sys.exec_prefix
-        
+
         self.compileAndRef('c1', c1cs, '/d:BAR1')
-        
+
         import Foo
         class c1Child(Foo.Bar): pass
         o = c1Child()
         self.assertEqual(o.Method(), "In bar1")
-        
-        
+
+
         self.compileAndRef('c1_b', c1cs)
         import Foo
         class c2Child(Foo.Bar): pass
@@ -255,7 +252,7 @@ j = 10
         successfully be used"""
         if not self.has_csc():
             return
-        
+
         c2cs = get_local_filename('c2.cs')
         outp = sys.exec_prefix
 
@@ -264,12 +261,12 @@ j = 10
         import ImportTestNS
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
-        
+
         # ok, now let's get a Foo<T,Y> going on...
         self.compileAndRef('c2_b', c2cs, '/d:TEST2')
         x = ImportTestNS.Foo[int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y>')
-        
+
         # that worked, let's make sure Foo<T> is still available...
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
@@ -278,13 +275,13 @@ j = 10
         self.compileAndRef('c2_c', c2cs, '/d:TEST3')
         x = ImportTestNS.Foo[int,int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y,Z>')
-        
+
         # make sure Foo<T> and Foo<T,Y> are still available
         x = ImportTestNS.Foo[int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y>')
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
-        
+
         # now let's try replacing the Foo<T> and Foo<T,Y>
         self.compileAndRef('c2_replacing_generic_Foos', c2cs, '/d:TEST6,TEST7')
         x = ImportTestNS.Foo[int]()
@@ -298,7 +295,7 @@ j = 10
         self.compileAndRef('c2_d', c2cs, '/d:TEST4')
         x = ImportTestNS.Foo()
         self.assertEqual(x.Test(), 'Foo')
-        
+
         # check the generics still work
         x = ImportTestNS.Foo[int,int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y,Z>')
@@ -306,12 +303,12 @@ j = 10
         self.assertEqual(x.Test(), 'Foo<T,Y>')
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
-        
+
         # now let's try replacing the non-generic Foo
         self.compileAndRef('c2_e', c2cs, '/d:TEST5')
         x = ImportTestNS.Foo()
         self.assertEqual(x.Test(), 'Foo2')
-        
+
         # and make sure all the generics still work
         x = ImportTestNS.Foo[int,int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y,Z>')
@@ -319,7 +316,7 @@ j = 10
         self.assertEqual(x.Test(), 'Foo<T,Y>')
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
-        
+
         # finally, let's now replace one of the
         # generic overloads...
         self.compileAndRef('c2_f', c2cs, '/d:TEST6')
@@ -333,7 +330,7 @@ j = 10
         self.assertEqual(x.Test(), 'Foo<T,Y,Z>')
         x = ImportTestNS.Foo[int,int]()
         self.assertEqual(x.Test(), 'Foo<T,Y>')
-        
+
         # Load a namespace called Foo
         self.compileAndRef('c2_with_Foo_namespace', c2cs, '/d:TEST8')
         x = ImportTestNS.Foo.Bar()
@@ -342,7 +339,7 @@ j = 10
         self.compileAndRef('c2_with_Foo_of_T_type', c2cs, '/d:TEST1')
         x = ImportTestNS.Foo[int]()
         self.assertEqual(x.Test(), 'Foo<T>')
-    
+
     def test_has_main(self):
         self.assertTrue("__main__" in sys.modules)
 
@@ -540,18 +537,18 @@ id3 = id(sys.modules['IronPythonTest'])
 self.assertEqual(id1, id2)
 self.assertEqual(id2, id3)
     ''')
-    
+
         self.write_to_file(_f_mod, 'def PythonFunc(): pass')
-        
+
         self.assertEqual(launch_ironpython_changing_extensions(_f_pkg1), 0)
         self.assertEqual(launch_ironpython_changing_extensions(_f_pkg2), 0)
-        
-        
+
+
         _imfp    = 'impmodfrmpkg'
         _f_imfp_init = os.path.join(self.test_dir, _imfp, "__init__.py")
         _f_imfp_mod  = os.path.join(self.test_dir, _imfp, "mod.py")
         _f_imfp_start = os.path.join(self.test_dir, "imfpstart.tpy")
-        
+
         self.write_to_file(_f_imfp_init, "")
         self.write_to_file(_f_imfp_mod, "")
         self.write_to_file(_f_imfp_start, """
@@ -562,9 +559,9 @@ except ImportError, e:
 else:
     raise AssertionError("Import of mod from pkg.mod unexpectedly succeeded")
     """)
-    
+
         self.assertEqual(launch_ironpython(_f_imfp_start), 0)
-        
+
         # test import of package module with name bound in __init__.py
         self.write_to_file(_f_imfp_init, """
 mod = 10
@@ -614,44 +611,50 @@ else:
         _f_recimp_a = os.path.join(self.test_dir, _recimp, "a.py")
         _f_recimp_b = os.path.join(self.test_dir, _recimp, "b.py")
         _f_recimp_start = os.path.join(self.test_dir, "recimpstart.tpy")
-        
+
         self.write_to_file(_f_recimp_init, "from a import *")
         self.write_to_file(_f_recimp_a, "import b")
         self.write_to_file(_f_recimp_b, "import a")
         self.write_to_file(_f_recimp_start, "import recimp")
-        
+
         self.assertEqual(launch_ironpython(_f_recimp_start), 0)
 
 
     def test_import_inside_exec(self):
-        _f_module = os.path.join(self.test_dir, 'another.py')
-        self.write_to_file(_f_module, 'a1, a2, a3, _a4 = 1, 2, 3, 4')
-        
-        d = {}
-        exec('from another import a2', d)
-        self.assertInAndNot(d, ['a2'], ['a1', 'a3', '_a4', 'another'])
-        self.assertInAndNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
-        
-        d = {}
-        exec('from another import *', d)
-        self.assertInAndNot(d, ['a1', 'a2', 'a3'], ['_a4', 'another'])
-        self.assertInAndNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
+        try:
+            _f_module = os.path.join(self.test_dir, 'another.py')
+            self.write_to_file(_f_module, 'a1, a2, a3, _a4 = 1, 2, 3, 4')
 
-        d = {}
-        exec('import another', d)
-        self.assertInAndNot(d, ['another'], ['a1', 'a2', 'a3', '_a4'])
-        
-        # Also a precondition for the following tests: ensure a1 a2 a3 are not in dict
-        self.assertInAndNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
-        
-        exec('from another import a2')
-        self.assertInAndNot(dir(), ['a2'], ['a1', 'a3', '_a4'])
-        
-        exec('from another import *')
-        self.assertInAndNot(dir(), ['a1', 'a2', 'a3'], ['_a4'])
+            d = {}
+            exec('from another import a2', d)
+            self.assertIn(['a2'], d)
+            self.assertNotIn(['a1', 'a3', '_a4', 'another'], d)
+            self.assertNotIn(['a1', 'a2', 'a3', '_a4', 'another'], dir())
 
-        os.unlink(_f_module)
+            d = {}
+            exec('from another import *', d)
+            self.assertIn(['a1', 'a2', 'a3'], d)
+            self.assertNotIn(['_a4', 'another'], d)
+            self.assertNotInNot(['a1', 'a2', 'a3', '_a4', 'another'], dir())
 
+            d = {}
+            exec('import another', d)
+            self.assertIn(['another'], d)
+            self.assertNotIn(['a1', 'a2', 'a3', '_a4'], d)
+
+            # Also a precondition for the following tests: ensure a1 a2 a3 are not in dict
+            self.assertNotIn(['a1', 'a2', 'a3', '_a4', 'another'], dir())
+
+            exec('from another import a2')
+            self.assertIn(['a2'], dir())
+            self.assertNotIn(['a1', 'a3', '_a4'], dir())
+
+            exec('from another import *')
+            self.assertInAndNot(['a1', 'a2', 'a3'], dir())
+            self.assertNotIn(['_a4'], dir())
+
+        finally:
+            os.unlink(_f_module)
 
     def test___import___and_packages(self):
         try:
@@ -661,30 +664,30 @@ else:
             _f_init   = os.path.join(_f_dir, '__init__.py')
             _f_pkg_y  = os.path.join(_f_dir, 'y.py')
             _f_y      = os.path.join(self.test_dir, 'y.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
             self.write_to_file(_f_module, 'import the_dir.y\n')
             self.write_to_file(_f_init, '')
             self.write_to_file(_f_pkg_y, 'a=1\ny = __import__("y")\nimport sys\n')
             self.write_to_file(_f_y, 'a=2\n')
-            
+
             import y
             self.assertEqual(y.a, 2)
-            
+
             sys.modules = mod_backup
             mod_backup = dict(sys.modules)
-            
+
             y = __import__('y', globals(), locals())
             self.assertEqual(y.a, 2)
-            
+
         finally:
             sys.modules = mod_backup
             os.unlink(_f_module)
             os.unlink(_f_init)
             os.unlink(_f_pkg_y)
             os.unlink(_f_y)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
     #TODO: @skip("multiple_execute")
     def test_relative_imports(self):
@@ -701,7 +704,7 @@ else:
             _f_subpkg_z = os.path.join(_f_subdir, 'z.py')
             _f_subpkg_a = os.path.join(_f_subdir, 'a.py')
             _f_subpkg_b = os.path.join(_f_subdir, 'b.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
             self.ensure_directory_present(_f_subdir)
@@ -715,49 +718,26 @@ else:
             self.write_to_file(_f_subpkg_z, 'from . import abc\nreload(abc)')
             self.write_to_file(_f_subpkg_a, 'from __future__ import absolute_import\ntry:\n    import abc\nexcept ImportError:\n    import sys\n    sys.foo="error"')
             self.write_to_file(_f_subpkg_b, 'import abc\nreload(abc)')
-                    
+
             import the_dir.subdir.a
             if sys.winver=="2.5":
                 self.assertEqual(sys.foo, 'error')
             else:
                 self.assertTrue(not hasattr(sys, "foo"))
-            
+
             import the_dir.x
             self.assertEqual(sys.foo, 'pkgy')
-            
+
             import the_dir.subdir.x
             self.assertEqual(sys.foo, 'pkgy')
-                    
+
             import the_dir.subdir.z
             self.assertEqual(sys.foo, 'subpkgy')
-                    
+
             import the_dir.subdir.b
             self.assertEqual(sys.foo, 'subpkgy')
-                    
+
             del sys.foo
-            
-            _d_test     = 'OutterDir'
-            _subdir     = 'RelTest'
-            _f_o_init   = os.path.join(self.test_dir, _d_test, '__init__.py')
-            _f_temp     = os.path.join(self.test_dir, _d_test, 'temp.py')
-            _f_sub_init = os.path.join(self.test_dir, _d_test, _subdir, '__init__.py')
-            
-            self.write_to_file(_f_o_init, "from temp import foo1")
-            
-            
-            self.write_to_file(_f_temp, '''
-class foo1:
-    def bar(self):
-        return "foobar"
-
-'''     )
-        
-            self.write_to_file(_f_sub_init, '''
-from ..temp import foo1
-'''     )
-
-            from OutterDir import RelTest
-            self.assertEqual(RelTest.foo1().bar(), 'foobar')
         finally:
             sys.modules = mod_backup
             os.unlink(_f_init)
@@ -769,17 +749,43 @@ from ..temp import foo1
             os.unlink(_f_subpkg_z)
             os.unlink(_f_subpkg_a)
             os.unlink(_f_subpkg_b)
-            os.rmdir(_f_subdir)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_subdir)
+            self.clean_directory(_f_dir)
+
+    def test_relative_imports_2(self):
+        try:
+            mod_backup = dict(sys.modules)
+            _d_test     = 'OutterDir'
+            _subdir     = 'RelTest'
+            _f_o_init   = os.path.join(self.test_dir, _d_test, '__init__.py')
+            _f_temp     = os.path.join(self.test_dir, _d_test, 'temp.py')
+            _f_sub_init = os.path.join(self.test_dir, _d_test, _subdir, '__init__.py')
+
+            self.write_to_file(_f_o_init, "from temp import foo1")
+
+            self.write_to_file(_f_temp, '''
+class foo1:
+    def bar(self):
+        return "foobar"
+
+'''     )
+
+            self.write_to_file(_f_sub_init, '''
+from ..temp import foo1
+'''     )
+
+            from OutterDir import RelTest
+            self.assertEqual(RelTest.foo1().bar(), 'foobar')
+        finally:
+            sys.modules = mod_backup
             os.unlink(_f_o_init)
             os.unlink(_f_temp)
             os.unlink(_f_sub_init)
-            os.rmdir(os.path.join(self.test_dir, _d_test, _subdir))
-            os.rmdir(os.path.join(self.test_dir, _d_test))
+            self.clean_directory(os.path.join(self.test_dir, _d_test, _subdir))
+            self.clean_directory(os.path.join(self.test_dir, _d_test))
 
 
     def test_import_globals(self):
-        import os
         _f_dir      = os.path.join(self.test_dir, 'the_dir2')
         _f_x        = os.path.join(_f_dir, 'x')
         _f_init     = os.path.join(_f_x, '__init__.py')
@@ -787,7 +793,7 @@ from ..temp import foo1
         _f_x_y      = os.path.join(_f_x, 'y.py')
         _f_y        = os.path.join(_f_dir, 'y.py')
         _f_test     = os.path.join(_f_dir, 'test.py')
-        
+
         backup = dict(sys.modules)
         try:
             self.write_to_file(_f_init,    '')
@@ -809,7 +815,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
 """)
             self.write_to_file(_f_y,     'a = 2')
             self.write_to_file(_f_test,  'import x.y\n')
-            
+
             import the_dir2.test
             self.assertEqual(sys.test1, 2)
             self.assertEqual(sys.test2, 1)
@@ -817,14 +823,13 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             self.assertEqual(sys.test2, 1)
         finally:
             sys.modules = backup
-            import os
             os.unlink(_f_init)
             os.unlink(_f_dir_init)
             os.unlink(_f_x_y)
             os.unlink(_f_y)
             os.unlink(_f_test)
-            os.rmdir(_f_x)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_x)
+            self.clean_directory(_f_dir)
 
     #TODO:@skip("multiple_execute")
     def test_package_back_patching(self):
@@ -835,31 +840,31 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_pkg_abc  = os.path.join(_f_dir, 'abc1.py')
             _f_pkg_xyz  = os.path.join(_f_dir, 'xyz1.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
             self.write_to_file(_f_init,    'import abc1')
             self.write_to_file(_f_pkg_abc, 'import xyz1')
             self.write_to_file(_f_pkg_xyz, 'import sys\nsys.foo = "xyz"')
-                    
+
             import the_dir
             x, y = the_dir.abc1, the_dir.xyz1
             from the_dir import abc1
             from the_dir import xyz1
-            
+
             self.assertEqual(x, abc1)
             self.assertEqual(y, xyz1)
             self.assertEqual(sys.foo, 'xyz')
-                    
+
             del sys.foo
         finally:
             sys.modules = mod_backup
             os.unlink(_f_init)
             os.unlink(_f_pkg_abc)
             os.unlink(_f_pkg_xyz)
-        
-    
+
+
     #TODO:@skip("multiple_execute")
     def test_pack_module_relative_collision(self):
         """when importing a package item the package should be updated with the child"""
@@ -870,7 +875,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_foo_dir  = os.path.join(_f_dir, 'foo')
             _f_foo_py   = os.path.join(_f_foo_dir, 'foo.py')
             _f_foo_init = os.path.join(_f_foo_dir, '__init__.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
             self.ensure_directory_present(_f_foo_dir)
@@ -878,7 +883,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             self.write_to_file(_f_init,    'from foo import bar')
             self.write_to_file(_f_foo_py, 'bar = "BAR"')
             self.write_to_file(_f_foo_init, 'from foo import bar')
-                    
+
             import test_dir
             self.assertEqual(test_dir.bar, 'BAR')
         finally:
@@ -886,8 +891,8 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             os.unlink(_f_foo_py)
             os.unlink(_f_foo_init)
             os.unlink(_f_init)
-            os.rmdir(_f_foo_dir)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_foo_dir)
+            self.clean_directory(_f_dir)
 
     #TODO: @skip("multiple_execute")
     def test_from_import_publishes_in_package(self):
@@ -896,20 +901,20 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_dir      = os.path.join(self.test_dir, 'test_dir2')
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_foo_py   = os.path.join(_f_dir, 'foo.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
             self.write_to_file(_f_init,    'from foo import bar')
             self.write_to_file(_f_foo_py, 'bar = "BAR"')
-                    
+
             import test_dir2
             self.assertEqual(type(test_dir2.foo), type(sys))
         finally:
             sys.modules = mod_backup
             os.unlink(_f_foo_py)
             os.unlink(_f_init)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
     #TODO: @skip("multiple_execute")
     def test_from_import_publishes_in_package_relative(self):
@@ -919,13 +924,13 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_dir      = os.path.join(self.test_dir, 'test_dir3')
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_foo_py   = os.path.join(_f_dir, 'foof.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
             self.write_to_file(_f_init,    'from .foof import bar')
             self.write_to_file(_f_foo_py, 'bar = "BxAR"')
-                    
+
             import test_dir3
             print(test_dir3, dir(test_dir3))
             #print test_dir2.foof, dir(test_dir2.foof), test_dir2.foof.bar
@@ -935,23 +940,22 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             sys.modules = mod_backup
             os.unlink(_f_foo_py)
             os.unlink(_f_init)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
     #TODO: @skip("multiple_execute")
     def test_from_import_publishes_in_package_relative(self):
         try:
             mod_backup = dict(sys.modules)
-            print(self.test_dir)
             _f_dir      = os.path.join(self.test_dir, 'test_dir3')
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_foo_py   = os.path.join(_f_dir, 'foof.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
             self.write_to_file(_f_init,    'from .foof import bar')
             self.write_to_file(_f_foo_py, 'bar = "BxAR"')
-                    
+
             import test_dir3
 
             self.assertEqual(test_dir3.bar, 'BxAR')
@@ -960,7 +964,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             sys.modules = mod_backup
             os.unlink(_f_foo_py)
             os.unlink(_f_init)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
     #TODO:@skip("multiple_execute")
     def test_from_import_publishes_in_package_relative_self(self):
@@ -970,7 +974,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_dir      = os.path.join(self.test_dir, 'test_dir4')
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_foo_py   = os.path.join(_f_dir, 'foof.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
@@ -985,7 +989,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             sys.modules = mod_backup
             os.unlink(_f_foo_py)
             os.unlink(_f_init)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
 
     def test_multiple_relative_imports_and_package(self):
@@ -996,7 +1000,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_init     = os.path.join(_f_dir, '__init__.py')
             _f_foo_py   = os.path.join(_f_dir, 'foo5.py')
             _f_bar_py   = os.path.join(_f_dir, 'bar5.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
 
@@ -1012,7 +1016,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             os.unlink(_f_foo_py)
             os.unlink(_f_bar_py)
             os.unlink(_f_init)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_dir)
 
 
     def test_cp34551(self):
@@ -1023,7 +1027,7 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
             _f_subdir   = os.path.join(_f_dir, 'sub')
             _f_subinit  = os.path.join(_f_subdir, '__init__.py')
             _f_foo_py   = os.path.join(_f_subdir, 'foo.py')
-                    
+
             # write the files
             self.ensure_directory_present(_f_dir)
             self.ensure_directory_present(_f_subdir)
@@ -1048,8 +1052,8 @@ def bar():
             os.unlink(_f_foo_py)
             os.unlink(_f_subinit)
             os.unlink(_f_init)
-            os.rmdir(_f_subdir)
-            os.rmdir(_f_dir)
+            self.clean_directory(_f_subdir)
+            self.clean_directory(_f_dir)
 
     def test_cp35116(self):
         try:
@@ -1101,10 +1105,9 @@ def bar():
             os.unlink(_f_pkg2init)
             os.unlink(_f_pkg1init)
             os.unlink(_f_init)
-            os.rmdir(_f_pkg1)
-            os.rmdir(_f_pkg2)
-            os.rmdir(_f_dir)
-
+            self.clean_directory(_f_pkg1)
+            self.clean_directory(_f_pkg2)
+            self.clean_directory(_f_dir)
 
 run_test(__name__)
 
@@ -1113,20 +1116,19 @@ run_test(__name__)
 # try:
 #     mod_backup = dict(sys.modules)
 #     _f_module2 = os.path.join(self.test_dir, 'the_test.py')
-    
+
 #     # write the files
 #     self.write_to_file(_f_module2, '''def foo(some_obj): return 3.14''')
-    
+
 #     from the_test import *
 #     if foo(None) != 3.14:
 #         raise AssertionError()
-    
+
 #     class Bar:
 #         foo = foo
 #     self.assertEqual(foo(None), Bar().foo())
-    
+
 # finally:
 #     sys.modules = mod_backup
-#     import os
 #     os.unlink(_f_module2)
 

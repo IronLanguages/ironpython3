@@ -858,6 +858,31 @@ namespace IronPython.Runtime {
         }
 
         public void sort(CodeContext/*!*/ context,
+            [ParamDictionary, NotNull]IDictionary<string, object> kwArgs) {
+
+            object? key = null;
+            bool reverse = false;
+
+            foreach (var arg in kwArgs) {
+                switch (arg.Key) {
+                    case "key":
+                        key = arg.Value;
+                        break;
+                    case "reverse":
+                        if (!PythonOps.CheckingConvertToBool(arg.Value) && !PythonOps.CheckingConvertToInt(arg.Value)) {
+                            throw PythonOps.TypeErrorForTypeMismatch("integer", arg.Value);
+                        }
+                        reverse = Convert.ToBoolean(arg.Value);
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0} is an invalid keyword argument for sort()", arg.Key);
+                }
+            }
+            Sort(context, key, reverse);
+        }
+
+        [PythonHidden]
+        public void Sort(CodeContext/*!*/ context,
                          object? key = null,
                          bool reverse = false) {
             // the empty list is already sorted

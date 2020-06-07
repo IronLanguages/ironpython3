@@ -12,7 +12,7 @@ Views And Iterators Instead Of Lists
 Ordering Comparisons
 ==============
 - [ ] The ordering comparison operators (`<`, `<=`, `>=`, `>`) raise a `TypeError` exception when the operands don't have a meaningful natural ordering. Thus, expressions like `1 < ''`, `0 > None` or `len <= len` are no longer valid, and e.g. `None < None` raises `TypeError` instead of returning `False`. A corollary is that sorting a heterogeneous list no longer makes sense - all the elements must be comparable to each other. Note that this does not apply to the `==` and `!=` operators: objects of different incomparable types always compare unequal to each other.
-- [ ] `builtin.sorted()` and `list.sort()` no longer accept the `cmp` argument providing a comparison function. Use the `key` argument instead. N.B. the `key` and `reverse` arguments are now "keyword-only"
+- [x] `builtin.sorted()` and `list.sort()` no longer accept the `cmp` argument providing a comparison function. Use the `key` argument instead. N.B. the `key` and `reverse` arguments are now "keyword-only"
 - [ ] The `cmp()` function should be treated as gone, and the `__cmp__()` special method is no longer supported. Use `__lt__()` for sorting, `__eq__()` with `__hash__()`, and other rich comparisons as needed. (If you really need the `cmp()` functionality, you could use the expression `(a > b) - (a < b)` as the equivalent for` cmp(a, b)`.)
 
 Integers

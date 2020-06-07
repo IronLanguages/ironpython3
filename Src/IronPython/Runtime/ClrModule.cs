@@ -815,7 +815,7 @@ import Namespace.")]
         public static PythonList Dir(object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.Default, o);
             PythonList lret = new PythonList(ret);
-            lret.sort(DefaultContext.Default);
+            lret.Sort(DefaultContext.Default);
             return lret;
         }
 
@@ -825,7 +825,7 @@ import Namespace.")]
         public static PythonList DirClr(object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, o);
             PythonList lret = new PythonList(ret);
-            lret.sort(DefaultContext.DefaultCLS);
+            lret.Sort(DefaultContext.DefaultCLS);
             return lret;
         }
 

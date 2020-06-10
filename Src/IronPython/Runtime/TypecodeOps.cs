@@ -19,7 +19,7 @@ namespace IronPython.Runtime {
         public const string ValidByteorder = "@=<>!";
         public const string ValidCodes = "xcbB?uhHiIlLqQnNfdspPrR";
 
-        public static bool TryDecomposeTypecode(ReadOnlySpan<char> format, out char byteorder, out char code) {
+        public static bool TryDecomposeTypecode(string format, out char byteorder, out char code) {
             if (format.Length == 0 || format.Length > 2) {
                 byteorder = code = default;
                 return false;
@@ -37,7 +37,7 @@ namespace IronPython.Runtime {
         }
 
         public static void DecomposeTypecode(string format, out char byteorder, out char code) {
-            if (!TryDecomposeTypecode(format.AsSpan(), out byteorder, out code)) {
+            if (!TryDecomposeTypecode(format, out byteorder, out code)) {
                 throw PythonOps.ValueError("invalid typecode");
             }
         }
@@ -75,7 +75,7 @@ namespace IronPython.Runtime {
                 case 'R': // .NET unsigned pointer
                     return UIntPtr.Size;
                 default:
-                    return 0;
+                    throw new InvalidOperationException();
             }
         }
 

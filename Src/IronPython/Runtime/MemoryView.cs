@@ -431,7 +431,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if ( !TypecodeOps.TryDecomposeTypecode(format.AsSpan(), out char byteorder, out char typecode)
+            if ( !TypecodeOps.TryDecomposeTypecode(format, out char byteorder, out char typecode)
               || !IsSupportedTypecode(typecode)
               || byteorder != '@'
             ) {

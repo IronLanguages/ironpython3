@@ -70,17 +70,23 @@ class ImpTest(IronPythonTestCase):
         sys.meta_path = self.__meta_path
 
     def test_imp_new_module(self):
-        x = imp.new_module('abc')
-        sys.modules['abc'] = x
-        x.foo = 'bar'
-        import abc
-        self.assertEqual(abc.foo, 'bar')
+        x = imp.new_module('abcd')
+        sys.modules['abcd'] = x
+        try:
+            x.foo = 'bar'
+            import abcd
+            self.assertEqual(abcd.foo, 'bar')
+        finally:
+            del sys.modules['abcd']
 
         y = imp.new_module('\r\n')
         sys.modules['xyz'] = y
-        y.foo = 'foo'
-        import xyz
-        self.assertEqual(xyz.foo, 'foo')
+        try:
+            y.foo = 'foo'
+            import xyz
+            self.assertEqual(xyz.foo, 'foo')
+        finally:
+            del sys.modules['xyz']
 
     @unittest.expectedFailure # TODO
     def test_imp_in_exec(self):
@@ -94,7 +100,7 @@ class ImpTest(IronPythonTestCase):
         self.write_to_file(_f_imfp_start, """
 try:
     from impmodfrmpkg.mod import mod
-except ImportError, e:
+except ImportError as e:
     pass
 else:
     raise AssertionError("Import of mod from pkg.mod unexpectedly succeeded")
@@ -182,7 +188,6 @@ else:
         self.assertEqual(module.value, 'imp test module')
         pf.close()
 
-    @unittest.expectedFailure # TODO
     def test_direct_module_creation(self):
         import math
 
@@ -202,11 +207,11 @@ else:
             self.assertEqual(x.__doc__, 'zzz')
 
             # can't assign to module __dict__
-            with self.assertRaises(TypeError if is_cli else AttributeError):
+            with self.assertRaises(AttributeError):
                 x.__dict__ = {}
 
             # can't delete __dict__
-            with self.assertRaises(TypeError if is_cli else AttributeError):
+            with self.assertRaises(AttributeError):
                 del(x.__dict__)
 
             # init doesn't clobber dict, it just re-initializes values
@@ -231,7 +236,7 @@ else:
             x = module.__new__(module)
 
             x.__name__ = 'module_does_not_exist_in_sys_dot_modules'
-            self.assertRaises(ImportError, reload, x)
+            self.assertRaises(ImportError, imp.reload, x)
 
     def test_redefine_import(self):
         # redefining global __import__ shouldn't change import semantics
@@ -915,12 +920,11 @@ called = 3.14
 
         import time
 
-    @unittest.expectedFailure # TODO
     def test_file_coding(self):
         try:
             import os
             with open('test_coding_mod.py', 'wb+') as f:
-                f.write(b"# coding: utf-8\nx = '\xe6ble'\n")
+                f.write(b"# coding: utf-8\nx = '\xc3\xa6ble'\n")
             with path_modifier('.'):
                 import test_coding_mod
                 self.assertEqual(test_coding_mod.x[0], '\xe6')
@@ -946,7 +950,11 @@ called = 3.14
                 with path_modifier('.'):
                     import test_coding_3
             except Exception as e:
-                self.assertEqual(sys.exc_info()[2].tb_next.tb_lineno, 2)
+                tb = sys.exc_info()[2].tb_next
+                if is_cli:
+                    self.assertNotEqual(tb.tb_next, None) # check to make sure this hasn't been changed
+                    while tb.tb_next is not None: tb = tb.tb_next # importlib has a longer traceback
+                self.assertEqual(tb.tb_lineno, 2)
         finally:
             os.unlink('test_coding_3.py')
 
@@ -1238,7 +1246,6 @@ X = 3.14
 
         self.assertEqual(mod.x, 42)
 
-    @unittest.expectedFailure # TODO
     def test_import_string_from_list_cp26098(self):
         self.assertEqual(__import__('email.mime.application', globals(), locals(), 'MIMEApplication').__name__, 'email.mime.application')
 

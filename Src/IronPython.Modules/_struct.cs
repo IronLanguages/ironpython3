@@ -154,14 +154,24 @@ namespace IronPython.Modules {
                                 WritePointer(res, _isLittleEndian, GetPointer(context, curObj++, values));
                             }
                             break;
+                        case FormatType.SignedNetPointer:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteSignedNetPointer(res, _isLittleEndian, GetSignedNetPointer(context, curObj++, values));
+                            }
+                            break;
+                        case FormatType.UnsignedNetPointer:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteUnsignedNetPointer(res, _isLittleEndian, GetUnsignedNetPointer(context, curObj++, values));
+                            }
+                            break;
                         case FormatType.SignedSizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteSignedSizeT(res, _isLittleEndian, GetSignedSizeT(context, curObj++, values));
+                                WriteInt(res, _isLittleEndian, GetSignedSizeT(context, curObj++, values));
                             }
                             break;
                         case FormatType.SizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteSizeT(res, _isLittleEndian, GetSizeT(context, curObj++, values));
+                                WriteUInt(res, _isLittleEndian, GetSizeT(context, curObj++, values));
                             }
                             break;
                         case FormatType.LongLong:
@@ -302,22 +312,32 @@ namespace IronPython.Modules {
                                 }
                             }
                             break;
-                        case FormatType.SignedSizeT:
+                        case FormatType.SignedNetPointer:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 if (IntPtr.Size == 4) {
-                                    res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
+                                    res[res_idx++] = new IntPtr(CreateIntValue(context, ref curIndex, _isLittleEndian, data));
                                 } else {
-                                    res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
+                                    res[res_idx++] = new IntPtr(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
                                 }
+                            }
+                            break;
+                        case FormatType.UnsignedNetPointer:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                if (IntPtr.Size == 4) {
+                                    res[res_idx++] = new UIntPtr(CreateUIntValue(context, ref curIndex, _isLittleEndian, data));
+                                } else {
+                                    res[res_idx++] = new UIntPtr(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
+                                }
+                            }
+                            break;
+                        case FormatType.SignedSizeT:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.SizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                if (IntPtr.Size == 4) {
-                                    res[res_idx++] = CreateUIntValue(context, ref curIndex, _isLittleEndian, data);
-                                } else {
-                                    res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
-                                }
+                                res[res_idx++] = CreateUIntValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.LongLong:
@@ -467,7 +487,7 @@ namespace IronPython.Modules {
                             res.Add(new Format(FormatType.UnsignedLongLong, count));
                             count = 1;
                             break;
-                        case 'f': // float                        
+                        case 'f': // float
                             res.Add(new Format(FormatType.Float, count));
                             count = 1;
                             break;
@@ -487,7 +507,23 @@ namespace IronPython.Modules {
                             res.Add(new Format(FormatType.Pointer, count));
                             count = 1;
                             break;
-                        case 'n': // intptr_t
+                        case 'r': // IntPtr
+                            if (fStandardized) {
+                                // r and R don't exist in standard sizes
+                                throw Error(context, "bad char in struct format");
+                            }
+                            res.Add(new Format(FormatType.SignedNetPointer, count));
+                            count = 1;
+                            break;
+                        case 'R': // UIntPtr
+                            if (fStandardized) {
+                                // r and R don't exist in standard sizes
+                                throw Error(context, "bad char in struct format");
+                            }
+                            res.Add(new Format(FormatType.UnsignedNetPointer, count));
+                            count = 1;
+                            break;
+                        case 'n': // ssize_t
                             if (fStandardized) {
                                 // n and N don't exist in standard sizes
                                 throw Error(context, "bad char in struct format");
@@ -495,7 +531,7 @@ namespace IronPython.Modules {
                             res.Add(new Format(FormatType.SignedSizeT, count));
                             count = 1;
                             break;
-                        case 'N': // uintptr_t
+                        case 'N': // size_t
                             if (fStandardized) {
                                 // n and N don't exist in standard sizes
                                 throw Error(context, "bad char in struct format");
@@ -703,6 +739,9 @@ namespace IronPython.Modules {
             PascalString,
             Pointer,
 
+            SignedNetPointer,
+            UnsignedNetPointer,
+
             SignedSizeT,
             SizeT,
         }
@@ -724,15 +763,16 @@ namespace IronPython.Modules {
                 case FormatType.UnsignedInt:
                 case FormatType.UnsignedLong:
                 case FormatType.Float:
+                case FormatType.SignedSizeT:
+                case FormatType.SizeT:
                     return 4;
                 case FormatType.LongLong:
                 case FormatType.UnsignedLongLong:
                 case FormatType.Double:
                     return 8;
                 case FormatType.Pointer:
-                case FormatType.SignedSizeT:
-                    return IntPtr.Size;
-                case FormatType.SizeT:
+                case FormatType.SignedNetPointer:
+                case FormatType.UnsignedNetPointer:
                     return UIntPtr.Size;
                 default:
                     throw new InvalidOperationException(c.ToString());
@@ -897,28 +937,20 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void WriteSignedSizeT(this MemoryStream res, bool fLittleEndian, IntPtr val) {
-            if (IntPtr.Size == 4) {
-                res.WriteInt(fLittleEndian, val.ToInt32());
+        private static void WritePointer(this MemoryStream res, bool fLittleEndian, ulong val) {
+            if (UIntPtr.Size == 4) {
+                res.WriteUInt(fLittleEndian, (uint)val);
             } else {
-                res.WriteLong(fLittleEndian, val.ToInt64());
+                res.WriteULong(fLittleEndian, val);
             }
         }
 
-        private static void WriteSizeT(this MemoryStream res, bool fLittleEndian, UIntPtr val) {
-            if (IntPtr.Size == 4) {
-                res.WriteUInt(fLittleEndian, val.ToUInt32());
-            } else {
-                res.WriteULong(fLittleEndian, val.ToUInt64());
-            }
+        private static void WriteUnsignedNetPointer(this MemoryStream res, bool fLittleEndian, UIntPtr val) {
+            res.WritePointer(fLittleEndian, val.ToUInt64());
         }
 
-        private static void WritePointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
-            if (IntPtr.Size == 4) {
-                res.WriteInt(fLittleEndian, val.ToInt32());
-            } else {
-                res.WriteLong(fLittleEndian, val.ToInt64());
-            }
+        private static void WriteSignedNetPointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
+            res.WritePointer(fLittleEndian, unchecked((ulong)val.ToInt64()));
         }
 
         private static void WriteFloat(this MemoryStream res, bool fLittleEndian, float val) {
@@ -1116,46 +1148,58 @@ namespace IronPython.Modules {
             throw Error(context, $"integer out of range for '{(type == "unsigned long" ? "L" : "I")}' format code");
         }
 
-        internal static IntPtr GetSignedSizeT(CodeContext/*!*/ context, int index, object[] args) {
+        internal static int GetSignedSizeT(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            if (IntPtr.Size == 4) {
-                if (Converter.TryConvertToInt32(val, out int res)) {
-                    return new IntPtr(res);
-                }
-            } else {
-                if (Converter.TryConvertToInt64(val, out long res)) {
-                    return new IntPtr(res);
-                }
-            }
+            if (Converter.TryConvertToInt32(val, out int res)) return res;
             throw Error(context, "expected signed size_t(aka ssize_t) value");
         }
 
-        internal static UIntPtr GetSizeT(CodeContext/*!*/ context, int index, object[] args) {
+        internal static uint GetSizeT(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            if (IntPtr.Size == 4) {
-                if (Converter.TryConvertToUInt32(val, out uint res)) {
-                    return new UIntPtr(res);
-                }
-            } else {
-                if (Converter.TryConvertToUInt64(val, out ulong res)) {
-                    return new UIntPtr(res);
-                }
-            }
+            if (Converter.TryConvertToUInt32(val, out uint res)) return res;
             throw Error(context, "expected size_t value");
         }
 
-        internal static IntPtr GetPointer(CodeContext/*!*/ context, int index, object[] args) {
+        internal static ulong GetPointer(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            if (IntPtr.Size == 4) {
-                if (Converter.TryConvertToUInt32(val, out uint res)) {
-                    return new IntPtr(res);
-                }
-            } else {
-                if (Converter.TryConvertToInt64(val, out long res)) {
-                    return new IntPtr(res);
+            if (Converter.TryConvertToBigInteger(val, out BigInteger bi)) {
+                if (UIntPtr.Size == 4) {
+                    if (bi < 0) {
+                        bi += new BigInteger(UInt32.MaxValue) + 1;
+                    }
+                    if (Converter.TryConvertToUInt32(bi, out uint res)) {
+                        return res;
+                    }
+                } else {
+                    if (bi < 0) {
+                        bi += new BigInteger(UInt64.MaxValue) + 1;
+                    }
+                    if (Converter.TryConvertToUInt64(bi, out ulong res)) {
+                        return res;
+                    }
                 }
             }
             throw Error(context, "expected pointer value");
+        }
+
+        internal static IntPtr GetSignedNetPointer(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+            if (val is IntPtr iptr) {
+                return iptr;
+            } else if (val is UIntPtr uptr) {
+                return new IntPtr(unchecked((long)uptr.ToUInt64()));
+            }
+            throw Error(context, "expected .NET pointer value");
+        }
+
+        internal static UIntPtr GetUnsignedNetPointer(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+            if (val is UIntPtr uptr) {
+                return uptr;
+            } else if (val is IntPtr iptr) {
+                return new UIntPtr(unchecked((ulong)iptr.ToInt64()));
+            }
+            throw Error(context, "expected .NET pointer value");
         }
 
         internal static long GetLongValue(CodeContext/*!*/ context, int index, object[] args) {

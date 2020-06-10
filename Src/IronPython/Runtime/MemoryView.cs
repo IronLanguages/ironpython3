@@ -22,7 +22,7 @@ namespace IronPython.Runtime {
     [PythonType("memoryview")]
     public sealed class MemoryView : ICodeFormattable, IWeakReferenceable, IBufferProtocol, IPythonBuffer {
         private const int MaximumDimensions = 64;
-        private const string ValidCodes = "cbB?hHiIlLqQnNfdP";
+        private const string ValidCodes = "cbB?hHiIlLqQnNfdPrR";
 
         private IBufferProtocol _exporter;
         private IPythonBuffer? _buffer;   // null if disposed
@@ -553,13 +553,6 @@ namespace IronPython.Runtime {
                     break;
 
                 case 'P': // void pointer
-                    if (value is UIntPtr) break;
-
-                    if (value is IntPtr iptr) {
-                        value = new UIntPtr(unchecked((UInt64)iptr.ToInt64()));
-                        break;
-                    }
-
                     if (!PythonOps.IsNumericObject(value)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
@@ -570,6 +563,23 @@ namespace IronPython.Runtime {
                     }
                     value = bi;
                     break;
+
+                case 'r': // .NET signed pointer
+                case 'R': // .NET unsigned pointer
+                    if (value is UIntPtr uptr) {
+                        if (typecode == 'r') {
+                            value = new IntPtr(unchecked((Int64)uptr.ToUInt64()));
+                        }
+                        break;
+                    }
+
+                    if (value is IntPtr iptr) {
+                        if (typecode == 'R') {
+                            value = new UIntPtr(unchecked((UInt64)iptr.ToInt64()));
+                        }
+                        break;
+                    }
+                    throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
 
                 default:
                     break; // This could be a variety of types, let the UnpackBytes decide

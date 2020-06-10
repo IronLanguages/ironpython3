@@ -17,7 +17,7 @@ namespace IronPython.Runtime {
         // TODO: integrate with PythonStruct
 
         public const string ValidByteorder = "@=<>!";
-        public const string ValidCodes = "xcbB?uhHiIlLqQnNfdspP";
+        public const string ValidCodes = "xcbB?uhHiIlLqQnNfdspPrR";
 
         public static bool TryDecomposeTypecode(ReadOnlySpan<char> format, out char byteorder, out char code) {
             if (format.Length == 0 || format.Length > 2) {
@@ -71,6 +71,8 @@ namespace IronPython.Runtime {
                 case 's': // char pointer
                 case 'p': // char pointer
                 case 'P': // void pointer
+                case 'r': // .NET signed pointer
+                case 'R': // .NET unsigned pointer
                     return UIntPtr.Size;
                 default:
                     return 0;
@@ -120,6 +122,12 @@ namespace IronPython.Runtime {
                     result = MemoryMarshal.Read<ulong>(bytes);
                     return true;
                 case 'P':
+                    if (UIntPtr.Size == 4) goto case 'L';
+                    else goto case 'Q';
+                case 'r':
+                    result = MemoryMarshal.Read<IntPtr>(bytes);
+                    return true;
+                case 'R':
                     result = MemoryMarshal.Read<UIntPtr>(bytes);
                     return true;
                 default:
@@ -171,15 +179,26 @@ namespace IronPython.Runtime {
                     var ulongVal = Convert.ToUInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref ulongVal);
                 case 'P':
-                    if (obj is UIntPtr uintptrVal) {
-                        return MemoryMarshal.TryWrite(dest, ref uintptrVal);
+                    var bi = (BigInteger)obj;
+                    if (UIntPtr.Size == 4) {
+                        if (bi < 0) {
+                            bi += new BigInteger(UInt32.MaxValue) + 1;
+                        }
+                        var ptrVal = (uint)bi;
+                        return MemoryMarshal.TryWrite(dest, ref ptrVal);
+                    } else {
+                        if (bi < 0) {
+                            bi += new BigInteger(UInt64.MaxValue) + 1;
+                        }
+                        var ptrVal = (ulong)bi;
+                        return MemoryMarshal.TryWrite(dest, ref ptrVal);
                     }
-                    var bi = Converter.ConvertToBigInteger(obj);
-                    if (bi < 0) {
-                        bi += (UIntPtr.Size == 4 ? new BigInteger(UInt32.MaxValue) : new BigInteger(UInt64.MaxValue)) + 1;
-                    }
-                    uintptrVal = new UIntPtr((ulong)bi);
-                    return MemoryMarshal.TryWrite(dest, ref uintptrVal);
+                case 'r':
+                    var iptrVal = (IntPtr)obj;
+                    return MemoryMarshal.TryWrite(dest, ref iptrVal);
+                case 'R':
+                    var uptrVal = (UIntPtr)obj;
+                    return MemoryMarshal.TryWrite(dest, ref uptrVal);
                 default:
                     return false;
             }

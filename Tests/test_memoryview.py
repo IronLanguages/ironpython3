@@ -455,32 +455,53 @@ class CastTests(unittest.TestCase):
         mv = memoryview(ba)
         mvp = mv.cast('P')
 
-        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0x0706050403020100)
-        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0x0F0E0D0C0B0A0908)
+        self.assertEqual(mvp[0], 0x0706050403020100)
+        self.assertEqual(mvp[1], 0x0F0E0D0C0B0A0908)
 
         mvp[0] = 0xFFFFFFFFFFFFFFFF
         mvp[1] = -1
-        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0xFFFFFFFFFFFFFFFF)
-        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0xFFFFFFFFFFFFFFFF)
+        self.assertEqual(mvp[0], 0xFFFFFFFFFFFFFFFF)
+        self.assertEqual(mvp[1], 0xFFFFFFFFFFFFFFFF)
 
         mvp[0] = -0x0706050403020100
         mvp[1] = -0x8000000000000000
-        self.assertEqual(mvp[0].ToUInt64() if is_cli else mvp[0], 0xF8F9FAFBFCFDFF00)
-        self.assertEqual(mvp[1].ToUInt64() if is_cli else mvp[1], 0x8000000000000000)
+        self.assertEqual(mvp[0], 0xF8F9FAFBFCFDFF00)
+        self.assertEqual(mvp[1], 0x8000000000000000)
 
         with self.assertRaises(ValueError):
             mvp[0] = 0x10000000000000000
+        with self.assertRaises(ValueError):
             mvp[0] = -0x8000000000000001
 
-        if is_cli:
-            import System
-            # https://github.com/IronLanguages/ironpython3/issues/868
-            #mvp[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
-            #self.assertIsInstance(mvp[1], System.UIntPtr)
-            #self.assertEqual(mvp[0].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
-            mvp[1] = System.IntPtr(-1)
-            self.assertIsInstance(mvp[1], System.UIntPtr)
-            self.assertEqual(mvp[1].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+    @unittest.skipUnless(is_64 and is_cli, "CLI interop, asssumes 64-bit pointers")
+    def test_cast_netpointer(self):
+        import System
+        ba = bytearray(range(16))
+        mv = memoryview(ba)
+        mvr = mv.cast('R')
+
+        # https://github.com/IronLanguages/ironpython3/issues/868
+        #mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
+        #self.assertIsInstance(mvr[1], System.UIntPtr)
+        #self.assertEqual(mvr[0].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+        mvr[1] = System.IntPtr(-1)
+        self.assertIsInstance(mvr[1], System.UIntPtr)
+        self.assertEqual(mvr[1].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+
+        with self.assertRaises(TypeError):
+            mvr[0] = 0
+
+        mvr = mv.cast('r')
+        # https://github.com/IronLanguages/ironpython3/issues/868
+        #mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
+        #self.assertIsInstance(mvr[1], System.IntPtr)
+        #self.assertEqual(mvr[0].ToInt64(), -1)
+        mvr[1] = System.IntPtr(-1)
+        self.assertIsInstance(mvr[1], System.IntPtr)
+        self.assertEqual(mvr[1].ToInt64(), -1)
+
+        with self.assertRaises(TypeError):
+            mvr[0] = 0
 
     def test_cast_double(self):
         a = array.array('b', range(8))

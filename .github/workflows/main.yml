@@ -39,7 +39,9 @@ jobs:
         name: packages
         path: Package/Release/Packages
     - name: Test (net46)
-      run: ./make.ps1 -frameworks net46 test-all
+      run: |
+        ./make.ps1 -frameworks net46 test-test_imp
+        ./make.ps1 -frameworks net46 test-all
       shell: pwsh
     - name: Test (netcoreapp2.1)
       # TODO: figure out how to test on other OSs

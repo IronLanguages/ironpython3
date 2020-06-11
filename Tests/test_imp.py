@@ -1052,7 +1052,6 @@ class Test(object):
         pkg = imp.load_package('some_new_pkg', 'some_path_that_does_not_and_never_will_exist')
         self.assertEqual(sys.modules['some_new_pkg'], pkg)
 
-    @unittest.expectedFailure # TODO
     def test_NullImporter(self):
         self.assertEqual(imp.NullImporter.__module__, 'imp')
 
@@ -1061,7 +1060,8 @@ class Test(object):
             with self.assertRaises(ImportError):
                 import SomeFileThatDoesNotExist
 
-            self.assertTrue(isinstance(sys.path_importer_cache['directory_that_does_not_exist'], imp.NullImporter))
+            # Changed in version 3.3: None is inserted into sys.path_importer_cache instead of an instance of NullImporter.
+            self.assertTrue(sys.path_importer_cache['directory_that_does_not_exist'] is None)
         finally:
             sys.path.remove('directory_that_does_not_exist')
 

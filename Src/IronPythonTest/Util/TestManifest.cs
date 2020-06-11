@@ -98,7 +98,7 @@ namespace IronPythonTest.Util {
 
         public string Arguments {
             get {
-                return this.manifest.GetValue(this.testName, "Arguments", string.Empty);
+                return this.manifest.GetValue(this.testName, "Arguments", null);
             }
         }
 

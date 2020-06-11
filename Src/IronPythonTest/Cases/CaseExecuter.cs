@@ -127,7 +127,7 @@ namespace IronPythonTest.Cases {
             }
 
             switch (isolationLevel) {
-                case TestIsolationLevel.DEFAULT:
+                case TestIsolationLevel.SCOPE:
                     return GetScopeTest(testcase);
 
                 case TestIsolationLevel.ENGINE:
@@ -170,6 +170,10 @@ namespace IronPythonTest.Cases {
         }
 
         private int GetEngineTest(TestInfo testcase) {
+            if (testcase.Options.Arguments != null) {
+                throw new Exception("Arguments have no effect with IsolationLevel=SCOPE or ENGINE, use PROCESS instead.");
+            }
+
             var engine = CreateEngine(testcase.Options);
             var source = engine.CreateScriptSourceFromFile(
                testcase.Path, System.Text.Encoding.UTF8, SourceCodeKind.File);
@@ -201,7 +205,7 @@ namespace IronPythonTest.Cases {
                 arguments.Add($"-X:MaxRecursion {testcase.Options.MaxRecursion}");
             if (testcase.Options.Tracing)
                 arguments.Add("-X:Tracing");
-            arguments.Add(ReplaceVariables(testcase.Options.Arguments, argReplacements));
+            arguments.Add(ReplaceVariables(testcase.Options.Arguments ?? "\"$(TEST_FILE)\"", argReplacements));
 
             using (Process proc = new Process()) {
                 proc.StartInfo.FileName = Executable;
@@ -258,7 +262,11 @@ namespace IronPythonTest.Cases {
                     || testcase.Options.FullFrames
                     || testcase.Options.MaxRecursion != int.MaxValue
                     || testcase.Options.Tracing) {
-                throw new Exception("Options have no effect with IsolationLevel=DEFAULT, use ENGINE or PROCESS instead.");
+                throw new Exception("Options have no effect with IsolationLevel=SCOPE, use ENGINE or PROCESS instead.");
+            }
+
+            if (testcase.Options.Arguments != null) {
+                throw new Exception("Arguments have no effect with IsolationLevel=SCOPE or ENGINE, use PROCESS instead.");
             }
 
             var source = this.defaultEngine.CreateScriptSourceFromString(

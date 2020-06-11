@@ -175,6 +175,21 @@ class ArrayTest(unittest.TestCase):
         #--b
         self.assertEqual(array.array('b', b'foo'), array.array('b', [102, 111, 111]))
 
+        #--H
+        self.assertEqual(array.array('H', b'foof'), array.array('H', [28518, 26223]))
+        self.assertEqual(array.array('H', bytearray(b'foof')), array.array('H', [28518, 26223]))
+        self.assertEqual(array.array('H', array.array('b', b'foof')), array.array('H', [102, 111, 111, 102]))
+        self.assertEqual(array.array('H', memoryview(b'foof')), array.array('H', [102, 111, 111, 102]))
+        self.assertEqual(array.array('H', memoryview(b"foof").cast('h')), array.array('H', [28518, 26223]))
+        self.assertEqual(array.array('H', memoryview(b"f.o.")[::2]), array.array('H', [102, 111]))
+        self.assertEqual(array.array('H', memoryview(b"fo\0\0of\0\0").cast('I')), array.array('H', [28518, 26223]))
+
+        self.assertRaisesRegex(ValueError, "^bytes length not a multiple of item size$", array.array, 'H', b'foo')
+        with self.assertRaisesRegex(NotImplementedError, "^multi-dimensional sub-views are not implemented$"):
+            array.array('H', memoryview(bytes(range(16))).cast('H', (4,2)))
+        with self.assertRaisesRegex(TypeError, "^invalid indexing of 0-dim memory$"):
+            array.array('H', memoryview(b"xy").cast('H', ()))
+
     def test_array___iter__(self):
         '''
         TODO
@@ -316,6 +331,19 @@ class ArrayTest(unittest.TestCase):
         TODO
         '''
         pass
+
+    def test_array_frombytes(self):
+        # TODO: add more tests
+        a = array.array('H')
+
+        a.frombytes(b"foof")
+        self.assertEqual(a, array.array('H', [28518, 26223]))
+
+        a.frombytes(memoryview(b"foof"))
+        self.assertEqual(a, array.array('H', [28518, 26223, 28518, 26223]))
+
+        with self.assertRaisesRegex(BufferError, "^memoryview: underlying buffer is not C-contiguous$"):
+            a.frombytes(memoryview(b"f.o.")[::2])
 
     def test_array_fromlist(self):
         '''

@@ -124,7 +124,11 @@ namespace IronPython.Modules {
                 _data = CreateData(_typeCode);
             }
 
-            public array([NotNull]string type, [BytesLike, NotNull]IList<byte> initializer) : this(type) {
+            public array([NotNull]string type, [NotNull]Bytes initializer) : this(type) {
+                frombytes(initializer);
+            }
+
+            public array([NotNull]string type, [NotNull]ByteArray initializer) : this(type) {
                 frombytes(initializer);
             }
 
@@ -325,15 +329,17 @@ namespace IronPython.Modules {
                 if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
             }
 
-            public void frombytes([BytesLike, NotNull]IList<byte> s) {
-                if ((s.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
+            public void frombytes([NotNull]IBufferProtocol buffer) {
+                using IPythonBuffer pb = buffer.GetBuffer();
+                if ((pb.NumBytes() % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of item size");
 
-                if (s is Bytes b) {
+                if (buffer is Bytes b) {
                     FromBytes(b);
                     return;
                 }
 
-                FromStream(new MemoryStream(s.ToArray(), false));
+                // TODO: eliminate data copy
+                FromStream(new MemoryStream(pb.ToArray(), false));
             }
 
             private void FromBytes(Bytes b) {

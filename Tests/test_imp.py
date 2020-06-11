@@ -88,7 +88,6 @@ class ImpTest(IronPythonTestCase):
         finally:
             del sys.modules['xyz']
 
-    @unittest.expectedFailure # TODO
     def test_imp_in_exec(self):
         _imfp = 'impmodfrmpkg'
         _f_imfp_init = os.path.join(self.test_dir, _imfp, "__init__.py")
@@ -96,7 +95,7 @@ class ImpTest(IronPythonTestCase):
         _f_imfp_start = os.path.join(self.test_dir, "imfpstart.tpy")
 
         self.write_to_file(_f_imfp_init, "")
-        self.write_to_file(_f_imfp_mod, "")
+        self.write_to_file(_f_imfp_mod, "value = 10")
         self.write_to_file(_f_imfp_start, """
 try:
     from impmodfrmpkg.mod import mod
@@ -114,23 +113,23 @@ else:
             glb = {'__name__' : impmodfrmpkg.__name__, '__path__' : impmodfrmpkg.__path__}
             loc = {}
 
-            exec('import mod', glb, loc)
-            self.assertTrue('mod' in loc)
+            exec('from . import mod', glb, loc)
+            self.assertIn('mod', loc)
 
             glb = {'__name__' : impmodfrmpkg.__name__, '__path__' : impmodfrmpkg.__path__}
             loc = {}
-            exec('from mod import *', glb, loc)
-            #self.assertTrue('value' in loc)         # TODO: Fix me
+            exec('from .mod import *', glb, loc)
+            self.assertIn('value', loc)
 
             if is_cli:
                 loc = {}
                 exec('from System import *', globals(), loc)
 
-                self.assertTrue('Int32' in loc)
-                self.assertTrue('Int32' not in globals())
+                self.assertIn('Int32', loc)
+                self.assertNotIn('Int32', globals())
 
                 exec('from System import *')
-                self.assertTrue('Int32' in dir())
+                self.assertIn('Int32', dir())
 
         finally:
             self.delete_files(_f_imfp_start)
@@ -818,7 +817,6 @@ called = 3.14
         finally:
             sys.meta_path.remove(mi)
 
-    @unittest.expectedFailure # TODO
     def test_custom_meta_path(self):
         """most special methods invoked by the runtime from Python only invoke on the type, not the instance.
         the import methods will invoke on instances including using __getattribute__ for resolution or on
@@ -835,43 +833,36 @@ called = 3.14
                 return object.__getattribute__(self, name)
 
         loaderInst = K()
-        sys.meta_path.append(loaderInst)
+        sys.meta_path.insert(0, loaderInst)
 
-        def ok_finder(name, path):
+        def ok_finder(name, path=None):
             loaderInst.calls.append( (name, path) )
             return loaderInst
 
         def ok_loader(name):
             loaderInst.calls.append(name)
-            return 'abc'
+            return sys.modules.setdefault('xyz', 'abc')
 
         try:
             # dynamically resolve find_module to None
-            try:
+            with self.assertRaises(TypeError):
                 import xyz
-            except TypeError:
-                self.assertEqual(loaderInst.calls[0], 'find_module')
-                loaderInst.calls = []
+            self.assertEqual(loaderInst.calls, ['find_module'] if is_cli else ['find_spec', 'find_module'])
+            loaderInst.calls = []
 
             # dynamically resolve find_module to a function,
             # and load_module to None.
             finder = ok_finder
-            try:
+            with self.assertRaises(TypeError):
                 import xyz
-            except TypeError:
-                self.assertEqual(loaderInst.calls[0], 'find_module')
-                self.assertEqual(loaderInst.calls[1], ('xyz', None))
-                loaderInst.calls = []
-
+            self.assertEqual(loaderInst.calls, ['find_module', ('xyz', None), 'load_module'] if is_cli else ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module'])
+            loaderInst.calls = []
 
             loader = ok_loader
             import xyz
 
             self.assertEqual(xyz, 'abc')
-            self.assertEqual(loaderInst.calls[0], 'find_module')
-            self.assertEqual(loaderInst.calls[1], ('xyz', None))
-            self.assertEqual(loaderInst.calls[2], 'load_module')
-            self.assertEqual(loaderInst.calls[3], 'xyz')
+            self.assertEqual(loaderInst.calls, ['find_module', ('xyz', None), 'load_module', 'xyz'] if is_cli else ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module', 'xyz'])
         finally:
             sys.meta_path.remove(loaderInst)
 
@@ -895,13 +886,12 @@ called = 3.14
             self.assertRaises(ImportError, __import__, "Lib")
         self.assertRaises(ImportError, __import__, "iptest.Assert_Util")
 
-    @unittest.expectedFailure # TODO
     def test_meta_path_before_builtins(self):
         """the meta path should be consulted before builtins are loaded"""
         class MyException(Exception): pass
 
         class K:
-            def find_module(self, name, path):
+            def find_module(self, name, path=None):
                 if name == "time": return self
                 return None
             def load_module(self, name):
@@ -911,7 +901,7 @@ called = 3.14
             del sys.modules["time"]
 
         loader = K()
-        sys.meta_path.append(loader)
+        sys.meta_path.insert(0, loader)
         try:
             with self.assertRaises(MyException):
                 import time
@@ -1043,14 +1033,13 @@ class Test(object):
         self.assertRaises(ImportError, __import__, 'iptest\\type_util')
         __import__('iptest.type_util')
 
-    @unittest.expectedFailure # TODO
     def test_load_package(self):
         import testpkg1
         pkg = imp.load_package('libcopy', testpkg1.__path__[0])
         self.assertEqual(sys.modules['libcopy'], pkg)
 
-        pkg = imp.load_package('some_new_pkg', 'some_path_that_does_not_and_never_will_exist')
-        self.assertEqual(sys.modules['some_new_pkg'], pkg)
+        with self.assertRaises(AttributeError): # AttributeError: 'NoneType' object has no attribute 'name'
+            imp.load_package('some_new_pkg', 'some_path_that_does_not_and_never_will_exist')
 
     def test_NullImporter(self):
         self.assertEqual(imp.NullImporter.__module__, 'imp')

@@ -942,7 +942,6 @@ called = 3.14
             except Exception as e:
                 tb = sys.exc_info()[2].tb_next
                 if is_cli:
-                    self.assertNotEqual(tb.tb_next, None) # check to make sure this hasn't been changed
                     while tb.tb_next is not None: tb = tb.tb_next # importlib has a longer traceback
                 self.assertEqual(tb.tb_lineno, 2)
         finally:

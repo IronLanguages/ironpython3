@@ -9,7 +9,7 @@
 import unittest
 import codecs
 
-from iptest import run_test
+from iptest import run_test, is_cli
 
 class SurrogateEscapeTest(unittest.TestCase):
     def test_ascii(self):
@@ -44,11 +44,12 @@ class SurrogateEscapeTest(unittest.TestCase):
         encoded = s_dabcd.encode("utf_16_be", errors="surrogateescape")
         self.assertEqual(encoded, b_dabcd)
 
+    @unittest.skipUnless(is_cli, "surrogateescape is not specified for non-ASCII compatible encodings (PEP 383)")
     def test_utf_32(self):
-        b_dabcdef = b'\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf'
-        s_dabcdef = b_dabcdef.decode("utf_32", errors="surrogateescape")
-        encoded = s_dabcdef.encode("utf_32", errors="surrogateescape")
+        b_89dabcdef = b'\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf'
+        s_89dabcdef = b_89dabcdef.decode("utf_32", errors="surrogateescape")
+        encoded = s_89dabcdef.encode("utf_32", errors="surrogateescape")
         # encoded will have BOM added
-        self.assertEqual(encoded, codecs.BOM_UTF32 + b_dabcdef)
+        self.assertEqual(encoded, codecs.BOM_UTF32 + b_89dabcdef)
 
 run_test(__name__)

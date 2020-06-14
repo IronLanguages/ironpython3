@@ -480,10 +480,9 @@ class CastTests(unittest.TestCase):
         mv = memoryview(ba)
         mvr = mv.cast('R')
 
-        # https://github.com/IronLanguages/ironpython3/issues/868
-        #mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
-        #self.assertIsInstance(mvr[1], System.UIntPtr)
-        #self.assertEqual(mvr[0].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
+        mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
+        self.assertIsInstance(mvr[1], System.UIntPtr)
+        self.assertEqual(mvr[0].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
         mvr[1] = System.IntPtr(-1)
         self.assertIsInstance(mvr[1], System.UIntPtr)
         self.assertEqual(mvr[1].ToUInt64(), 0xFFFFFFFFFFFFFFFF)
@@ -492,10 +491,9 @@ class CastTests(unittest.TestCase):
             mvr[0] = 0
 
         mvr = mv.cast('r')
-        # https://github.com/IronLanguages/ironpython3/issues/868
-        #mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
-        #self.assertIsInstance(mvr[1], System.IntPtr)
-        #self.assertEqual(mvr[0].ToInt64(), -1)
+        mvr[0] = System.UIntPtr(0xFFFFFFFFFFFFFFFF)
+        self.assertIsInstance(mvr[1], System.IntPtr)
+        self.assertEqual(mvr[0].ToInt64(), -1)
         mvr[1] = System.IntPtr(-1)
         self.assertIsInstance(mvr[1], System.IntPtr)
         self.assertEqual(mvr[1].ToInt64(), -1)

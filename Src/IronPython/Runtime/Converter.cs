@@ -561,7 +561,6 @@ namespace IronPython.Runtime {
 
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;
-                if (toType == typeof(float)) return true;
                 if (toType == typeof(Complex)) return true;
                 return false;
             }
@@ -770,8 +769,9 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (toType == DoubleType && fromType == DecimalType) return true;
-            if (toType == SingleType && fromType == DecimalType) return true;
+            if (toType == DoubleType || toType == SingleType) {
+                if (IsNumeric(fromType) && fromType != ComplexType) return true;
+            }
 
             if (toType.IsArray) {
                 return typeof(PythonTuple).IsAssignableFrom(fromType);

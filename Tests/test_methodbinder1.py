@@ -110,7 +110,7 @@ class MethodBinder1Test(IronPythonTestCase):
     (       "UInt64Max", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
     (      "DecimalMax", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (       "SingleMax", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMax", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (        "floatMax", TypeE, TypeE, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
     ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (        "SByteMin", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
@@ -123,7 +123,7 @@ class MethodBinder1Test(IronPythonTestCase):
     (       "UInt64Min", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (      "DecimalMin", OverF, OverF, True , True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True , True,  ),
     (       "SingleMin", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMin", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (        "floatMin", TypeE, TypeE, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
     ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (    "SBytePlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
@@ -137,7 +137,7 @@ class MethodBinder1Test(IronPythonTestCase):
     (   "UInt64PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (  "DecimalPlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE,  True,  True,  ),
     (   "SinglePlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (    "floatPlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (    "floatPlusOne", TypeE, TypeE, True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (          myfloat1, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
@@ -148,7 +148,7 @@ class MethodBinder1Test(IronPythonTestCase):
     (   "Int64MinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     ( "DecimalMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (  "SingleMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (   "floatMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (   "floatMinusOne", TypeE, TypeE, True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (          myfloat2, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     ##################################################   pass in bool   #########################################################
     ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
@@ -182,10 +182,10 @@ class MethodBinder1Test(IronPythonTestCase):
         ##################################################  pass in float   #########################################################
         ####    single/double becomes Int32, but this does not apply to other primitive types
         ####                                                           int    int?  double  bigint bool   str    sbyte i16   i64   single byte   ui16   ui32   ui64   char   decm   obj
-        matrix.append((System.Single.Parse("8.01", InvariantCulture), True,  True, True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("10.2", InvariantCulture), True,  True, True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True, True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("-1.8", InvariantCulture), True,  True, True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
+        matrix.append((System.Single.Parse("8.01", InvariantCulture), True,  True,  True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
+        matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True,  True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
         matrix = tuple(matrix)
         
         for scenario in matrix:
@@ -322,7 +322,7 @@ class MethodBinder1Test(IronPythonTestCase):
         self._helper(self.target.M411, [C6(), cp2, cp4, ], 411, [C3(), object(), C1(), cp1, cp3,], TypeError)
         
     def test_nullable_int(self):
-        self._helper(self.target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, mylong2, 3.6, ], 680, [(), 3+1j], TypeError)
+        self._helper(self.target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, mylong2, ], 680, [(), 3+1j], TypeError)
         
     def test_out_int(self):
         self._helper(self.target.M701, [], 701, [1, 10, None, System.Byte.Parse('3')], TypeError)    # not allow to pass in anything
@@ -470,8 +470,9 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         # generic method
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
-        self.target.M200[int](100.1234)
-        self.assertEqual(Flag.Value, 200); Flag.Value = 99
+        with self.assertRaises(TypeError):
+            self.target.M200[int](100.1234)
+        self.assertEqual(Flag.Value, 99)
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
         self.assertRaises(OverflowError, self.target.M200[System.Byte], 300)
@@ -596,7 +597,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         
         # GOtherConcern<T>
         self.target = GOtherConcern[int]()
-        for x in [100, 200, 4.56, myint1]:
+        for x in [100, 200, myint1]:
             self.target.M100(x)
             self.assertEqual(Flag.Value, 100); Flag.Value = 99
         
@@ -642,13 +643,19 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
                 self.assertEqual(Flag.Value, len(x))
 
             # IEnumerable<char> / IEnumerator<char>
-            self.target.M630(x)
-            self.assertEqual(Flag.Value, len(x)); Flag.Value = 0
+            if not isinstance(x, C):
+                self.target.M630(x)
+                self.assertEqual(Flag.Value, len(x)); Flag.Value = 0
+            else:
+                self.assertRaises(TypeError, self.target.M630, x)
             self.assertRaises(TypeError, self.target.M631, x)
 
             # IEnumerable<int> / IEnumerator<int>
-            self.target.M640(x)
-            self.assertEqual(Flag.Value, len(x)); Flag.Value = 0
+            if not isinstance(x, C):
+                self.target.M640(x)
+                self.assertEqual(Flag.Value, len(x)); Flag.Value = 0
+            else:
+                self.assertRaises(TypeError, self.target.M640, x)
             self.assertRaises(TypeError, self.target.M641, x)
 
         # IList / IList<char> / IList<int>
@@ -668,7 +675,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             self.assertRaises(TypeError, self.target.M642, x)
        
     def test_explicit_inheritance(self):
-        from IronPythonTest.BinderTest import *
+        from IronPythonTest.BinderTest import CInheritMany1, CInheritMany2, CInheritMany3, CInheritMany4, CInheritMany5, CInheritMany6, CInheritMany7, CInheritMany8, Flag, I1, I2, I3, I4
         self.target = CInheritMany1()
         self.assertTrue(hasattr(self.target, "M"))
         self.target.M()

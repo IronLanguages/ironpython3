@@ -365,7 +365,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (        -100, _merge(_first('M100 '), _second('M104 M105 M106 ')), 'M101 M102 M103 ', '', ),
             (   long(200), _merge(_first('M106 M105 '), _second('M100 M102 M101 ')), 'M103 M104 ', '', ),
             (      Byte10, _merge(_first('M103 '), _second('M100 M105 M106 ')), 'M101 M102 M104 ', '', ),
-            (       12.34, _merge(_first('M105 M106 '), _second('M101 M102 M100 ')), 'M103 M104 ', '', ),
+            (       12.34, _merge(_first('M104 M105 M106 '), _second('M101 M102 M100 ')), 'M103 ', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
@@ -503,7 +503,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (    SBytem10, _merge(_first('M100 M101 M102 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M103 M105 ')), '', '', ),
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M105 ')), '', '', ),
             (    Int16m20, _merge(_first('M100 M101 M102 M103 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M105 ')), '', '', ),
-            (       12.34, _merge(_first('M101 M108 M109 M110 '), _second('M100 M106 M111 M112 M102 M103 M104 M105 M107 ')), '', '', ),
+            (       12.34, _merge(_first(''), _second('M100 M106 M108 M109 M110 M111 M112 M102 M103 M104 M105 M107 ')), 'M101 ', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 

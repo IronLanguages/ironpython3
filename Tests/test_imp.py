@@ -1232,11 +1232,11 @@ X = 3.14
         with open('test.py', 'w+') as f:
             f.write('x = 42')
 
-        with open('test.py') as inp_file:
-            imp.load_module('my_module_test', inp_file, 'does_not_exist.py', ('', 'U', 1))
-
-        import os
-        os.unlink('test.py')
+        try:
+            with open('test.py') as inp_file:
+                imp.load_module('my_module_test', inp_file, 'does_not_exist.py', ('', 'U', 1))
+        finally:
+            os.unlink('test.py')
 
         self.assertEqual(mod.x, 42)
 

@@ -315,45 +315,51 @@ else:
         self.assertEqual(imp.is_builtin("builtins"), -1)
 
         imp.init_builtin("sys")
-        imp.init_builtin("__builtin__")
-        imp.init_builtin("exceptions")
+        imp.init_builtin("builtins")
 
     def test_sys_path_none_builtins(self):
         prevPath = sys.path
 
         #import some builtin modules not previously imported
-        sys.path = [None] + prevPath
-        self.assertNotIn('array', sorted(sys.modules.keys()))
-        import array
-        self.assertIn('array', sys.modules)
+        try:
+            sys.path = [None] + prevPath
+            self.assertNotIn('array', sorted(sys.modules.keys()))
+            import array
+            self.assertIn('array', sys.modules)
 
-        sys.path = prevPath + [None]
-        self.assertNotIn('cmath', sys.modules)
-        import array
-        import cmath
-        self.assertIn('array', sys.modules)
-        self.assertIn('cmath', sys.modules)
+            sys.path = prevPath + [None]
+            self.assertNotIn('cmath', sys.modules)
+            import array
+            import cmath
+            self.assertIn('array', sys.modules)
+            self.assertIn('cmath', sys.modules)
 
-        sys.path = [None]
-        self.assertNotIn('_bisect', sys.modules)
-        import array
-        import cmath
-        import _bisect
-        self.assertIn('array', sys.modules)
-        self.assertIn('cmath', sys.modules)
-        self.assertIn('_bisect', sys.modules)
+            sys.path = [None]
+            self.assertNotIn('_bisect', sys.modules)
+            import array
+            import cmath
+            import _bisect
+            self.assertIn('array', sys.modules)
+            self.assertIn('cmath', sys.modules)
+            self.assertIn('_bisect', sys.modules)
+
+        finally:
+            sys.path = prevPath
 
     def test_sys_path_none_userpy(self):
+        prevPath = sys.path
+
         #import a *.py file
         temp_syspath_none = os.path.join(self.test_dir, "temp_syspath_none.py")
         self.write_to_file(temp_syspath_none, "stuff = 3.14")
 
         try:
-            sys.path = [None] + sys.path
+            sys.path = [None] + prevPath
             import temp_syspath_none
             self.assertEqual(temp_syspath_none.stuff, 3.14)
 
         finally:
+            sys.path = prevPath
             self.delete_files(os.path.join(self.test_dir, "temp_syspath_none.py"))
 
     def test_sys_path_none_negative(self):
@@ -569,7 +575,7 @@ called = 3.14
 
     #TODO:@skip("multiple_execute") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=26829
     def test_import_relative_error(self):
-        with self.assertRaises(ValueError if is_cli else SystemError):
+        with self.assertRaises(SystemError):
             exec('from . import *')
 
     @unittest.skip('No access to CPython stdlib')
@@ -788,7 +794,7 @@ called = 3.14
         self.assertRaisesMessage(Exception, 'loader', f)
 
         def f(): import does_not_exist_loader_None
-        self.assertRaisesMessage(ImportError, 'No module named does_not_exist_loader_None' if is_cli else "No module named 'does_not_exist_loader_None'", f)
+        self.assertRaisesMessage(ImportError, "No module named 'does_not_exist_loader_None'", f)
 
         if is_cli:
             from does_not_exist_X import abc

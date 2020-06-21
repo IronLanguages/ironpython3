@@ -908,6 +908,23 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal static bool IsFloatingPoint(Type t) {
+            switch (t.GetTypeCode()) {
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.Decimal:
+                    return true;
+                case TypeCode.Object:
+                    return t == ComplexType;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool IsInteger(Type t) {
+            return IsNumeric(t) && !IsFloatingPoint(t);
+        }
+
         private static bool IsPythonType(Type t) {
             return t.FullName.StartsWith("IronPython."); //!!! this and the check below are hacks
         }

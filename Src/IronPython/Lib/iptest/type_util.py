@@ -46,9 +46,12 @@ if is_cli:
     array_object    = System.Array[object]
     array_byte      = System.Array[System.Byte]
     
-    # sample numberes?
-    clr_signed_types = (System.SByte, System.Int16, System.Int32, System.Int64, System.Decimal, System.Single, System.Double)
+    # sample numbers?
+    clr_float_types = (System.Decimal, System.Single, System.Double)
+    clr_int_signed_types = (System.SByte, System.Int16, System.Int32, System.Int64)
+    clr_signed_types = clr_int_signed_types + clr_float_types
     clr_unsigned_types = (System.Byte, System.UInt16, System.UInt32, System.UInt64)
+    clr_int_types = clr_int_signed_types + clr_unsigned_types
     clr_all_types = clr_signed_types + clr_unsigned_types
     
     clr_all_plus1  = [t.Parse("1") for t in clr_all_types]

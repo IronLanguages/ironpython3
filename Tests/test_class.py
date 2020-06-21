@@ -53,24 +53,6 @@ class ClassTest(IronPythonTestCase):
             repr(getattr(i, "__init__"))
             repr(getattr(i, "__new__"))
 
-    def test_set_dict(self):
-        class C: pass
-        setdict = C.__dict__
-        C.__dict__ = setdict
-
-        o1 = C()
-
-        class C:
-            def m(self):
-                return 42
-
-        o2 = C()
-        self.assertTrue(42 == o2.m())
-
-        self.assertTrue(o2.__class__ is C)
-        self.assertTrue(o2.__class__ is not o1.__class__)
-
-
     def test_attrs(self):
         class C:pass
 
@@ -87,7 +69,7 @@ class ClassTest(IronPythonTestCase):
 
 
     def test_type_in(self):
-        self.assertEqual(type in (None, True, False, 1, {}, [], (), 1.0, 1, (1+0j)), False)
+        self.assertEqual(type in (None, True, False, 1, {}, [], (), 1.0, long(1), (1+0j)), False)
 
     def test_init_defaults(self):
         class A:
@@ -106,7 +88,7 @@ class ClassTest(IronPythonTestCase):
     def test_getattr(self):
         class C:
             def __init__(self, name, flag):
-                self.f = file(name, flag)
+                self.f = open(name, flag)
             def __getattr__(self, name):
                 return getattr(self.f, name)
 
@@ -228,7 +210,9 @@ class ClassTest(IronPythonTestCase):
 
 
     def test_misc(self):
-        class C:
+        class B: pass
+
+        class C(B):
             def x(self):
                 return 'C.x'
             def y(self):
@@ -245,17 +229,14 @@ class ClassTest(IronPythonTestCase):
         # verify repr and str on old-style class objects have the right format:
 
         # bug# 795
-        self.assertEqual(str(C), __name__+'.C')
-        self.assertEqual(repr(C).index('<class '+__name__+'.C at 0x'), 0)
+        self.assertEqual(str(C), "<class '{}{}.C'>".format(__name__, "" if is_cli else ".ClassTest.test_misc.<locals>"))
+        self.assertTrue(repr(C), str(C))
 
-        success=0
-        try:
+        with self.assertRaises(AttributeError):
             c.z()
-        except AttributeError:
-            success=1
-        self.assertTrue(success==1)
 
-        C.__bases__+=(D,)
+        self.assertEqual(C.__bases__, (B,))
+        C.__bases__ += (D,)
 
         self.assertEqual(c.z(), "D.z")
 
@@ -274,6 +255,15 @@ class ClassTest(IronPythonTestCase):
 
         self.assertTrue('__dict__' not in str.__dict__)
 
+        class E: pass
+        class F: pass
+
+        if is_cli:
+            F.__bases__ = (E,)
+        else:
+            with self.assertRaises(TypeError):
+                F.__bases__ = (E,)
+
     def test_dir_in_init(self):
         # both of these shouldn't throw
 
@@ -282,7 +272,6 @@ class ClassTest(IronPythonTestCase):
                 dir(self)
 
         a = DirInInit()
-
 
     def test_priv_class(self):
         class _PrivClass(object):
@@ -302,43 +291,42 @@ class ClassTest(IronPythonTestCase):
             def barfunc(self):
                 return "barfunc"
 
-        class baz(foo, bar):
+        class baz(bar, foo):
             def bazfunc(self):
                 return "bazfunc"
 
-        self.assertTrue('foofunc' in dir(foo))
-        self.assertTrue(dir(foo).count('__doc__') == 1)
-        self.assertTrue(dir(foo).count('__module__') == 1)
-        self.assertTrue(len(dir(foo)) == 3)
-        self.assertTrue('foofunc' in dir(bar))
-        self.assertTrue('barfunc' in dir(bar))
-        self.assertTrue(dir(bar).count('__doc__') == 1)
-        self.assertTrue(dir(bar).count('__module__') == 1)
-        self.assertTrue(len(dir(bar)) == 4)
-        self.assertTrue('foofunc' in dir(baz))
-        self.assertTrue('barfunc' in dir(baz))
-        self.assertTrue('bazfunc' in dir(baz))
-        self.assertTrue(dir(baz).count('__doc__') == 1)
-        self.assertTrue(dir(baz).count('__module__') == 1)
-        self.assertTrue(len(dir(baz)) == 5)
+        self.assertIn('foofunc', dir(foo))
+        self.assertEqual(dir(foo).count('__doc__'), 1)
+        self.assertEqual(dir(foo).count('__module__'), 1)
+        self.assertEqual(len(dir(foo)) - len(dir(object)), 4)
+        self.assertIn('foofunc', dir(bar))
+        self.assertIn('barfunc', dir(bar))
+        self.assertEqual(dir(bar).count('__doc__'), 1)
+        self.assertEqual(dir(bar).count('__module__'), 1)
+        self.assertEqual(len(dir(bar)) - len(dir(object)), 5)
+        self.assertIn('foofunc', dir(baz))
+        self.assertIn('barfunc', dir(baz))
+        self.assertIn('bazfunc', dir(baz))
+        self.assertEqual(dir(baz).count('__doc__'), 1)
+        self.assertEqual(dir(baz).count('__module__'), 1)
+        self.assertEqual(len(dir(baz)) - len(dir(object)), 6)
 
         bz = baz()
-        self.assertTrue('foofunc' in dir(bz))
-        self.assertTrue('barfunc' in dir(bz))
-        self.assertTrue('bazfunc' in dir(bz))
-        self.assertTrue(dir(bz).count('__doc__') == 1)
-        self.assertTrue(dir(bz).count('__module__') == 1)
-        self.assertTrue(len(dir(bz)) == 5)
+        self.assertIn('foofunc', dir(bz))
+        self.assertIn('barfunc', dir(bz))
+        self.assertIn('bazfunc', dir(bz))
+        self.assertEqual(dir(bz).count('__doc__'), 1)
+        self.assertEqual(dir(bz).count('__module__'), 1)
+        self.assertEqual(len(dir(bz)) - len(dir(object)), 6)
 
         bz.__module__ = "MODULE"
-        self.assertTrue(bz.__module__ == "MODULE")
+        self.assertEqual(bz.__module__, "MODULE")
         bz.__module__ = "SOMEOTHERMODULE"
-        self.assertTrue(bz.__module__ == "SOMEOTHERMODULE")
+        self.assertEqual(bz.__module__, "SOMEOTHERMODULE")
         bz.__module__ = 33
-        self.assertTrue(bz.__module__ == 33)
+        self.assertEqual(bz.__module__, 33)
         bz.__module__ = [2, 3, 4]
-        self.assertTrue(bz.__module__ == [2, 3 , 4])
-
+        self.assertEqual(bz.__module__, [2, 3, 4])
 
     def test_oldstyle_setattr(self):
         global called
@@ -431,7 +419,7 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(str(A()), 'foo')
         self.assertEqual(repr(A()), 'foo')
         self.assertEqual(str(B()), 'foo')
-        self.assertTrue(repr(B()).find('B instance') != -1)
+        self.assertIn('B object', repr(B()))
 
 # use exec to define methods on classes:
 
@@ -488,7 +476,7 @@ class ClassTest(IronPythonTestCase):
         def f(x): x.__module__
         def g(x): getattr(x, '__module__')
         import errno
-        for thing in "", 1, errno, 1, 1+2j, (), [], {}:
+        for thing in "", 1, errno, long(1), 1+2j, (), [], {}:
             self.assertEqual(getattr(thing, '__module__', 'does_not_exist'), 'does_not_exist')
             self.assertEqual(hasattr(thing, '__module__'), False)
             self.assertRaises(AttributeError, f, thing)
@@ -504,61 +492,46 @@ class ClassTest(IronPythonTestCase):
 
     def test_check_dictionary(self):
         """tests to verify that Symbol dictionaries do the right thing in dynamic scenarios"""
-        def CheckDictionary(C):
-            # add a new attribute to the type...
-            C.newClassAttr = 'xyz'
-            self.assertEqual(C.newClassAttr, 'xyz')
-
-            # add non-string index into the class and instance dictionary
-            a = C()
-            a.__dict__[1] = '1'
-            if object in C.__bases__:
-                try:
-                    C.__dict__[2] = '2'
-                    self.fail("Unreachable code reached")
-                except TypeError: pass
-                self.assertEqual(2 in C.__dict__, False)
-
-            self.assertEqual(1 in a.__dict__, True)
-            self.assertEqual(dir(a).__contains__(1), True)
-
-            self.assertEqual(repr(a.__dict__), "{1: '1'}")
-
-            # replace a class dictionary (containing non-string keys) w/ a normal dictionary
-            C.newTypeAttr = 1
-            self.assertEqual(hasattr(C, 'newTypeAttr'), True)
-
-            class OldClass: pass
-
-            if isinstance(C, type(OldClass)):
-                C.__dict__ = dict(C.__dict__)
-                self.assertEqual(hasattr(C, 'newTypeAttr'), True)
-            else:
-                try:
-                    C.__dict__ = {}
-                    self.fail("Unreachable code reached")
-                except AttributeError:
-                    pass
-
-            # replace an instance dictionary (containing non-string keys) w/ a new one.
-            a.newInstanceAttr = 1
-            self.assertEqual(hasattr(a, 'newInstanceAttr'), True)
-            a.__dict__  = dict(a.__dict__)
-            self.assertEqual(hasattr(a, 'newInstanceAttr'), True)
-
-            a.abc = 'xyz'
-            self.assertEqual(hasattr(a, 'abc'), True)
-            self.assertEqual(getattr(a, 'abc'), 'xyz')
-
-
-        class OldClass:
+        class C(object):
             def __init__(self):  pass
 
-        class NewClass(object):
-            def __init__(self):  pass
+        # add a new attribute to the type...
+        C.newClassAttr = 'xyz'
+        self.assertEqual(C.newClassAttr, 'xyz')
 
-        CheckDictionary(OldClass)
-        CheckDictionary(NewClass)
+        # add non-string index into the class and instance dictionary
+        a = C()
+        a.__dict__[1] = '1'
+        if object in C.__bases__:
+            try:
+                C.__dict__[2] = '2'
+                self.fail("Unreachable code reached")
+            except TypeError: pass
+            self.assertEqual(2 in C.__dict__, False)
+
+        self.assertEqual(1 in a.__dict__, True)
+        with self.assertRaises(TypeError): # TypeError: unorderable types: str() < int()
+            dir(a)
+
+        self.assertEqual(repr(a.__dict__), "{1: '1'}")
+
+        # replace a class dictionary (containing non-string keys) w/ a normal dictionary
+        C.newTypeAttr = 1
+        self.assertEqual(hasattr(C, 'newTypeAttr'), True)
+
+        with self.assertRaises(AttributeError):
+            C.__dict__ = {}
+            self.assertUnreachable()
+
+        # replace an instance dictionary (containing non-string keys) w/ a new one.
+        a.newInstanceAttr = 1
+        self.assertEqual(hasattr(a, 'newInstanceAttr'), True)
+        a.__dict__  = dict(a.__dict__)
+        self.assertEqual(hasattr(a, 'newInstanceAttr'), True)
+
+        a.abc = 'xyz'
+        self.assertEqual(hasattr(a, 'abc'), True)
+        self.assertEqual(getattr(a, 'abc'), 'xyz')
 
     def test_call_type_call(self):
         for stuff in [object, int, str, bool, float]:
@@ -573,36 +546,6 @@ class ClassTest(IronPythonTestCase):
         #User-defined old/new style classes
         call_mapper = {}
 
-        class KOld0:
-            def __call__(self):
-                return 2
-        call_mapper[KOld0] = lambda: [type(KOld0()).__call__(KOld0())]
-
-        class KOld1:
-            def __call__(self, p):
-                return 2
-        call_mapper[KOld1] = lambda: [type(KOld1()).__call__(KOld1(), 3.14),
-                                    type(KOld1()).__call__(KOld1(), p=3.14),
-                                    type(KOld1()).__call__(KOld1(), **{"p":3.14}),
-                                    type(KOld1()).__call__(KOld1(), (1, 2, 3))  ]
-
-        class KOldArgs:
-            def __call__(self, *args):
-                return 2
-        call_mapper[KOldArgs] = lambda: [type(KOldArgs()).__call__(KOldArgs())]
-
-        class KOldKwargs:
-            def __call__(self, **kwargs):
-                return 2
-        call_mapper[KOldKwargs] = lambda: [type(KOldKwargs()).__call__(KOldKwargs())]
-
-        class KOldArgsKwargs:
-            def __call__(self, *args, **kwargs):
-                return 2
-        call_mapper[KOldArgsKwargs] = lambda: [type(KOldArgsKwargs()).__call__(KOldArgsKwargs())]
-
-
-
         class KNew0(object):
             def __call__(self):
                 return 2
@@ -614,7 +557,7 @@ class ClassTest(IronPythonTestCase):
         call_mapper[KNew1] = lambda: [type(KNew1()).__call__(KNew1(), 3.14),
                                     type(KNew1()).__call__(KNew1(), p=3.14),
                                     type(KNew1()).__call__(KNew1(), **{"p":3.14}),
-                                    type(KNew1()).__call__(KNew1(), []),
+                                    type(KNew1()).__call__(KNew1(), (1, 2, 3)),
                                     ]
 
         class KNewArgs(object):
@@ -709,9 +652,9 @@ class ClassTest(IronPythonTestCase):
         class foo:
             def func(self): return self
 
-        class bar(object, foo):
+        class bar(foo):
             def barfunc(self):
-                    return foo.func(self)
+                return foo.func(self)
 
         a = bar()
         self.assertEqual(a.barfunc(), a)
@@ -828,36 +771,32 @@ class ClassTest(IronPythonTestCase):
 
         class D(B, C):pass
 
-        class E(D, object): pass
+        class E(D): pass
 
         # old-style MRO of D is D, B, A, C, which should
         # be present  in E's mro
-        self.assertEqual(E.__mro__, (E, D, B, A, C, object))
+        self.assertEqual(E.__mro__, (E, D, B, C, A, object))
 
-        class F(B, C, object): pass
+        class F(B, C): pass
 
         # but when inheriting from multiple old-style classes we switch
         # to new-style MRO, and respect local ordering of classes in the MRO
         self.assertEqual(F.__mro__, (F, B, C, A, object))
 
-        class G(B, object, C): pass
+        class G(B, C): pass
 
-        self.assertEqual(G.__mro__, (G, B, object, C, A))
+        self.assertEqual(G.__mro__, (G, B, C, A, object))
 
         class H(E): pass
 
-        self.assertEqual(H.__mro__, (H, E, D, B, A, C, object))
+        self.assertEqual(H.__mro__, (H, E, D, B, C, A, object))
 
-        try:
+        with self.assertRaises(TypeError):
             class H(A,B,E): pass
-            self.fail("Unreachable code reached")
-        except TypeError:
-            pass
-
 
         class H(E,B,A): pass
 
-        self.assertEqual(H.__mro__, (H, E, D, B, A, C, object))
+        self.assertEqual(H.__mro__, (H, E, D, B, C, A, object))
 
     def test_depth_first_mro_mixed(self):
         """Verify given two large, independent class hierarchies
@@ -886,7 +825,7 @@ class ClassTest(IronPythonTestCase):
 
         class L(K,E): pass
 
-        self.assertEqual(L.__mro__, (L, K, H, I, G, E, D, B, A, C, object))
+        self.assertEqual(L.__mro__, (L, K, H, I, G, E, D, B, C, A, object))
 
 
     def test_depth_first_mro(self):
@@ -935,11 +874,6 @@ class ClassTest(IronPythonTestCase):
 
         def onearg_str(self):
             return 'abc'
-
-        # create methods that we can then stick into Strange
-        twoargs = type(Strange.uselessMethod)(twoargs, None, Strange)
-        onearg = type(Strange.uselessMethod)(onearg, None, Strange)
-
 
         class ForwardAndReverseTests:
             testCases = [
@@ -1066,39 +1000,15 @@ class ClassTest(IronPythonTestCase):
 
                 delattr(Strange, method)
 
-        class HexOctTests:
-            testCases = [
-                ('__oct__', 'oct(obj)'),
-                ('__hex__', 'hex(obj)'),
-                ]
-
-            @staticmethod
-            def NegativeTest(method, testCase):
-                setattr(obj, method, onearg)
-
-                try:
-                    eval(testCase)
-                    self.fail("Unreachable code reached")
-                except TypeError:
-                    pass
-
-                delattr(obj, method)
-
-            @staticmethod
-            def PositiveTest(method, testCase):
-                setattr(Strange, method, onearg_str)
-
-                self.assertEqual(eval(testCase), 'abc')
-
-                delattr(Strange, method)
-
         class ConversionTests:
             testCases = [
                 (('__complex__', 2+0j), 'complex(obj)'),
                 (('__int__', 1), 'int(obj)'),
-                (('__long__', 1), 'long(obj)'),
                 (('__float__', 1.0), 'float(obj)'),
             ]
+
+            if is_cli: # https://github.com/IronLanguages/ironpython3/issues/894
+                testCases.append((('__long__', long(1)), 'long(obj)'))
 
             @staticmethod
             def NegativeTest(method, testCase):
@@ -1117,14 +1027,13 @@ class ClassTest(IronPythonTestCase):
                 def testMethod(self):
                     return method[1]
 
-                testMethod = type(Strange.uselessMethod)(testMethod, None, Strange)
                 setattr(Strange, method[0], testMethod)
 
                 self.assertEqual(eval(testCase), method[1])
 
                 delattr(Strange, method[0])
 
-        allTests = [ForwardAndReverseTests, InPlaceTests, SingleArgTests, ConversionTests, HexOctTests]
+        allTests = [ForwardAndReverseTests, InPlaceTests, SingleArgTests, ConversionTests]
 
         for test in allTests:
             for method,testCase in test.testCases:
@@ -1176,7 +1085,7 @@ class ClassTest(IronPythonTestCase):
 
         class G: pass
 
-        def gmeth(self): return 'G'
+        def gmeth(): return 'G'
 
 
         class A(object):
@@ -1217,7 +1126,7 @@ class ClassTest(IronPythonTestCase):
             def meth(self):
                 return "D" + super(D, self).meth()
 
-        self.assertEqual(D.__mro__, (D,C,B,A,object,F))
+        self.assertEqual(D.__mro__, (D,C,B,A,F,object))
         self.assertEqual(D().meth(), 'DCBAF')
 
 
@@ -1226,7 +1135,7 @@ class ClassTest(IronPythonTestCase):
                 return "D" + super(D, self).meth()
 
         d = D()
-        d.meth = type(F.meth)(gmeth, d, G)
+        d.meth = gmeth
         self.assertEqual(d.meth(), 'G')
 
 
@@ -1473,32 +1382,12 @@ class ClassTest(IronPythonTestCase):
         a.__dict__['bar'] = 'abc'
         self.assertRaises(AttributeError, lambda : a.bar)
 
-        # members defined the class take precedence over slots
-        global initCalled
-        class Foo(object):
-            __slots__ = ["__init__"]
-            def __init__(self):
-                global initCalled
-                initCalled = True
-
-        initCalled = False
-        a = Foo()
-        self.assertEqual(initCalled, True)
-
-        # the member is readonly because the member slot is gone.
-        def f(): a.__init__ = 'abc'
-        self.assertRaises(AttributeError, f)
-
-        # make sure __init__ isn't special
-        class Foo(object):
-            __slots__ = ["abc"]
-            abc = 3
-
-        a = Foo()
-        self.assertEqual(a.abc, 3)
-
-        def f(): a.abc = 'abc'
-        self.assertRaises(AttributeError, f)
+        # ValueError: '__init__' in __slots__ conflicts with class variable
+        with self.assertRaises(ValueError):
+            class Foo(object):
+                __slots__ = ["__init__"]
+                def __init__(self):
+                    pass
 
         class Foo(object): __slots__ = 'abc'
 
@@ -1581,8 +1470,8 @@ class ClassTest(IronPythonTestCase):
         for stuff in [object, int, float, bool, str, int, complex, dict, set,
                     None, NotImplemented, Ellipsis, type(self.test_no_clr_attributes),
                     classmethod, staticmethod, frozenset, property, sys,
-                    BaseException, type(zip), slice, buffer, enumerate, file,
-                    range, xrange, type(x), type(x())]:
+                    BaseException, type(zip), slice, memoryview, enumerate,
+                    range, range, type(x), type(x())]:
             for dir_stuff in dir(stuff):
                 if dir_stuff[:1].isalpha():
                     self.assertTrue(dir_stuff[:1].islower(),
@@ -1781,12 +1670,9 @@ class ClassTest(IronPythonTestCase):
         self.assertRaises(TypeError, descr.__get__, None, int)
 
     def test_classmethod(self):
-        if is_cli: #http://ironpython.codeplex.com/workitem/27908
-            self.assertRaises(TypeError, classmethod, 1)
-        else:
-            cm = classmethod(1)
-            self.assertRaises(TypeError, cm.__get__, None)
-            self.assertRaises(TypeError, cm.__get__, None, None)
+        cm = classmethod(1)
+        self.assertRaises(TypeError, cm.__get__, None)
+        self.assertRaises(TypeError, cm.__get__, None, None)
 
         def foo(): pass
 
@@ -1794,33 +1680,32 @@ class ClassTest(IronPythonTestCase):
         self.assertRaises(TypeError, cm.__get__, None)
         self.assertRaises(TypeError, cm.__get__, None, None)
 
-
     def test_EmptyTypes(self):
         for x in [None, Ellipsis, NotImplemented]:
             self.assertTrue(type(x) != str)
 
         self.assertEqual(repr(Ellipsis), 'Ellipsis')
         self.assertEqual(repr(NotImplemented), 'NotImplemented')
-        self.assertEqual(repr(type(Ellipsis)), "<type 'ellipsis'>")
-        self.assertEqual(repr(type(NotImplemented)), "<type 'NotImplementedType'>")
+        self.assertEqual(repr(type(Ellipsis)), "<class 'ellipsis'>")
+        self.assertEqual(repr(type(NotImplemented)), "<class 'NotImplementedType'>")
 
     def test_property(self):
         prop = property()
-        try: prop.fget = self.test_classmethod
-        except TypeError: pass
-        else: self.fail("Unreachable code reached")
 
-        try: prop.fdel = self.test_classmethod
-        except TypeError: pass
-        else: self.fail("Unreachable code reached")
+        with self.assertRaises(AttributeError):
+            prop.fget = self.test_classmethod
 
-        try: prop.__doc__ = 'abc'
-        except TypeError: pass
-        else: self.fail("Unreachable code reached")
+        with self.assertRaises(AttributeError):
+            prop.fdel = self.test_classmethod
 
-        try: prop.fset = self.test_classmethod
-        except TypeError: pass
-        else: self.fail("Unreachable code reached")
+        with self.assertRaises(AttributeError):
+            prop.fset = self.test_classmethod
+
+        if sys.version_info >= (3,5):
+            prop.__doc__ = 'abc'
+        else:
+            with self.assertRaises(AttributeError):
+                prop.__doc__ = 'abc'
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_override_mro(self):
@@ -1913,7 +1798,6 @@ class ClassTest(IronPythonTestCase):
             if x is dict:
                 self.assertEqual(C({1:1}), {1:1})
                 d = {1:1, 2:2, 3:3}
-                self.assertEqual(C(d).__cmp__({0:0, 1:1, 2:2}), 1)
                 d[4] = 4
                 self.assertEqual(len(list(C(d).keys())), len(list(d.keys())))
             else:
@@ -1928,19 +1812,16 @@ class ClassTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, f)
 
-        class KOld: pass
         class KNew(object): pass
 
         #CodePlex 16001
         self.assertEqual(int.__dict__.get(0, 'abc'), 'abc')
         self.assertEqual(int.__dict__.get('__new__'), int.__new__)
-        self.assertEqual(KOld.__dict__.get(0, 'abc'), 'abc')
         self.assertEqual(KNew.__dict__.get(0, 'abc'), 'abc')
         self.assertEqual(KNew.__dict__.get('__new__'), None)
         #CodePlex 15702
         self.assertEqual(int.__dict__.copy(), dict(int.__dict__))
         self.assertEqual(int.__class__.__dict__.copy(), dict(int.__class__.__dict__))
-        self.assertEqual(KOld.__dict__.copy(), dict(KOld.__dict__))
         self.assertEqual(KNew.__dict__.copy(), dict(KNew.__dict__))
         #Dev10 4844754
         self.assertEqual(KNew.__class__.__dict__.copy(), dict(KNew.__class__.__dict__))
@@ -1949,7 +1830,7 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(set(KNew.__dict__.keys()), set(dict(KNew.__dict__).keys()))
         self.assertEqual(set(KNew.__dict__.values()), set(dict(KNew.__dict__).values()))
 
-        for value in [None, 'abc', 1, object(), KNew(), KOld(), KNew, KOld, property(lambda x: x)]:
+        for value in [None, 'abc', 1, object(), KNew(), KNew, property(lambda x: x)]:
             class KNew(object):
                 abc = value
 
@@ -1961,7 +1842,6 @@ class ClassTest(IronPythonTestCase):
                     if k == 'abc':
                         self.assertEqual(v, value)
 
-    #@unittest.expectedFailure('Currently throws a StackOverflowException')
     @unittest.skip('Currently throws a StackOverflowException')
     def test_getattribute_getattr(self):
         # verify object.__getattribute__(name) will call __getattr__
@@ -2042,19 +1922,9 @@ class ClassTest(IronPythonTestCase):
                 setCalled = True
                 object.__setattr__(self, name, value)
 
-        class KOld:
-            def __setattr__(self, name, value):
-                global setCalled
-                setCalled = True
-                self.__dict__[name] = value
-
         class KNewSub(KNew): pass
 
-        class KOldSub(KOld): pass
-
-        for K in [  KOld,
-                    KOldSub, #CodePlex 8018
-                    KNew,
+        for K in [  KNew,
                     KNewSub]:
             setCalled = False
             x = K()
@@ -2138,7 +2008,7 @@ class ClassTest(IronPythonTestCase):
         class C2:
             def __int__(self): return myint(100)
         class C3:
-            def __int__(self): return 100
+            def __int__(self): return long(100)
         class C4:
             def __int__(self): return mylong(100)
         class C5:
@@ -2157,7 +2027,7 @@ class ClassTest(IronPythonTestCase):
         class C2(object):
             def __int__(self): return myint(100)
         class C3(object):
-            def __int__(self): return 100
+            def __int__(self): return long(100)
         class C4(object):
             def __int__(self): return mylong(100)
         class C5(object):
@@ -2173,7 +2043,6 @@ class ClassTest(IronPythonTestCase):
 
 
     def test_type_type_is_type(self):
-        class OS: pass
         class NS(object): pass
 
         true_values = [type, NS, int, float, tuple, str]
@@ -2184,7 +2053,7 @@ class ClassTest(IronPythonTestCase):
         for x in true_values:
             self.assertTrue(type(x) is type)
 
-        false_values = [OS]
+        false_values = []
         if is_cli:
             false_values += [ System.Boolean(1), System.Int32(3), System.Version(0, 0), System.Exception() ]
 
@@ -2194,22 +2063,25 @@ class ClassTest(IronPythonTestCase):
 
     def test_hash_return_values(self):
         # new-style classes do conversion to int
-        for retval in [1, 1.0, 1.1, 1, 1<<30]:
+        for retval in [1, long(1), 1<<30]:
             for type in [object, int, str, float, int]:
                 class foo(object):
                     def __hash__(self): return retval
 
                 self.assertEqual(hash(foo()), int(retval))
 
-        # old-style classes require int or long return value
+        # classes require int or long return value
         for retval in [1.0, 1.1]:
             class foo:
                 def __hash__(self): return retval
 
-            self.assertRaises(TypeError, hash, foo())
+            if is_cli:
+                self.assertEqual(hash(foo()), int(retval))
+            else:
+                self.assertRaises(TypeError, hash, foo())
 
-        tests = {   1:1,
-                    2:2,
+        tests = {   long(1):1,
+                    long(2):2,
                 }
 
         for retval in list(tests.keys()):
@@ -2218,86 +2090,14 @@ class ClassTest(IronPythonTestCase):
 
             self.assertEqual(hash(foo()), tests[retval])
 
-    def test_cmp_notimplemented(self):
-        class foo(object):
-            def __eq__(self, other):
-                ran.append('foo.eq')
-                return NotImplemented
-            def __ne__(self, other):
-                ran.append('foo.ne')
-                return NotImplemented
-            def __le__(self, other):
-                ran.append('foo.le')
-                return NotImplemented
-            def __lt__(self, other):
-                ran.append('foo.lt')
-                return NotImplemented
-            def __gt__(self, other):
-                ran.append('foo.gt')
-                return NotImplemented
-            def __ge__(self, other):
-                ran.append('foo.ge')
-                return NotImplemented
-            def __cmp__(self, other):
-                ran.append('foo.cmp')
-                return NotImplemented
-
-
-        class bar:
-            def __eq__(self, other):
-                ran.append('bar.eq')
-                return NotImplemented
-            def __ne__(self, other):
-                ran.append('bar.ne')
-                return NotImplemented
-            def __le__(self, other):
-                ran.append('bar.le')
-                return NotImplemented
-            def __lt__(self, other):
-                ran.append('bar.lt')
-                return NotImplemented
-            def __gt__(self, other):
-                ran.append('bar.gt')
-                return NotImplemented
-            def __ge__(self, other):
-                ran.append('bar.ge')
-                return NotImplemented
-            def __cmp__(self, other):
-                ran.append('bar.cmp')
-                return NotImplemented
-
-        ran = []
-        cmp(foo(), bar())
-        #self.assertEqual(ran, ['foo.eq', 'bar.eq', 'foo.lt', 'bar.gt', 'foo.gt', 'bar.lt', 'bar.cmp'])
-
-        ran = []
-        cmp(foo(), foo())
-        #self.assertEqual(ran, ['foo.cmp', 'foo.cmp'])
-
-        ran = []
-        cmp(bar(), bar())
-        #self.assertEqual(ran, ['bar.cmp', 'bar.cmp', 'bar.eq', 'bar.eq', 'bar.eq', 'bar.eq', 'bar.lt', 'bat.gt', 'bar.gt', 'bar.lt', 'bar.gt', 'bar.lt', 'bar.lt', 'bar.gt', 'bar.cmp', 'bar.cmp'])
-
-        ran = []
-        cmp(foo(), 1)
-        #self.assertEqual(ran, ['foo.eq', 'foo.lt', 'foo.gt', 'foo.cmp'])
-
-
     def test_override_repr(self):
-        class KOld:
-            def __repr__(self):
-                return "old"
-
-        class KNew(object):
+        class K(object):
             def __repr__(self):
                 return "new"
 
-        self.assertEqual(repr(KOld()), "old")
-        self.assertEqual(str(KOld()), "old")
-        self.assertEqual(repr(KNew()), "new")
+        self.assertEqual(repr(K()), "new")
         #IP breaks here because __str__ in new style classes does not call __repr__
-        self.assertEqual(str(KNew()), "new")
-
+        self.assertEqual(str(K()), "new")
 
     def test_mutate_base(self):
             class basetype(object):
@@ -2428,19 +2228,6 @@ class ClassTest(IronPythonTestCase):
         def f(): a.dne
         self.assertRaisesMessage(AttributeError, "'foo' object has no attribute 'dne'", f)
 
-    def test_method(self):
-        class tst_oc:
-            def root(): return 2
-
-        class tst_nc:
-            def root(): return 2
-
-        self.assertRaises(TypeError, tst_oc.root)
-        self.assertRaises(TypeError, tst_nc.root)
-
-        instancemethod = type(tst_oc.root)
-        self.assertRaises(TypeError, instancemethod, lambda x:True, None)
-
     def test_descriptors_custom_attrs(self):
         """verifies the interaction between descriptors and custom attribute access works properly"""
         class mydesc(object):
@@ -2509,112 +2296,6 @@ class ClassTest(IronPythonTestCase):
         if o % o: flag = 1   # the bug was causing cast error before
         self.assertEqual(flag, 1)
 
-    def test_unbound_class_method(self):
-        class C(object):
-            def f(): return 1
-
-        x = C()
-        self.assertRaisesPartialMessage(TypeError, "unbound method f() must be called with", lambda: C.f())
-        self.assertRaisesPartialMessage(TypeError, "unbound method f() must be called with", lambda: C.f(C))
-        self.assertRaisesPartialMessage(TypeError, "arguments (1 given)", lambda: C.f(x))
-        self.assertRaisesPartialMessage(TypeError, "arguments (1 given)", lambda: x.f())
-
-    def test_oldinstance_operator_exceptions(self):
-        global called
-        def fmaker(name, ex = None):
-            def f(self, *args):
-                global called
-                called.append(name)
-                if ex:
-                    raise ex(name)
-                def g(*args):
-                    return NotImplemented
-                return g
-            return f
-
-        def fthrowingmaker(name, ex):
-            def f(self):
-                global called
-                called.append(name)
-                def g(*args):
-                    raise ex
-                return g
-            return f
-
-        class OC:
-            __eq__ = property(fmaker('oc_eq', AttributeError))
-            __ne__ = property(fmaker('oc_ne', AttributeError))
-
-        class OC2:
-            __eq__ = property(fthrowingmaker('oc_eq', AttributeError))
-            __ne__ = property(fthrowingmaker('oc_ne', AttributeError))
-
-        class OC3:
-            def __getattr__(self, name):
-                return property(fmaker(name, AttributeError)).__get__(self, OC3)
-
-        called = []
-        self.assertTrue(not OC() == OC())
-        self.assertEqual(called, ['oc_eq']*4)
-
-        called = []
-        type(OC()).__eq__(OC(), OC())
-        self.assertEqual(called, ['oc_eq']*2)
-
-        called =[]
-        self.assertTrue(OC() != OC())
-        self.assertEqual(called, ['oc_ne']*4)
-
-        called = []
-        type(OC()).__ne__(OC(), OC())
-        self.assertEqual(called, ['oc_ne']*2)
-
-
-        called = []
-        self.assertRaises(AttributeError, lambda : not OC2() == OC2())
-        self.assertEqual(called, ['oc_eq'])
-
-        called = []
-        self.assertRaises(AttributeError, lambda : type(OC2()).__eq__(OC2(), OC2()))
-        self.assertEqual(called, ['oc_eq'])
-
-        called =[]
-        self.assertRaises(AttributeError, lambda : OC2() != OC2())
-        self.assertEqual(called, ['oc_ne'])
-
-        called = []
-        self.assertRaises(AttributeError, lambda : type(OC2()).__ne__(OC2(), OC2()))
-        self.assertEqual(called, ['oc_ne'])
-
-        called = []
-        self.assertRaises(AttributeError, lambda : type(OC()).__getattribute__(OC(), '__eq__'))
-        self.assertEqual(called, ['oc_eq'])
-
-        self.assertTrue(not hasattr(OC(), '__eq__'))
-
-        # IronPython still differs on these from CPython:
-        # verify other attributes work correctly
-        #for x in ['__abs__', '__float__', '__long__', '__int__', '__hex__', '__oct__', '__pos__', '__neg__', '__invert__']:
-        #    # unary operators which pass on AttributeError
-        #    print x
-        #    self.assertRaises(AttributeError, getattr(type(OC3()), x), OC3())
-
-        for x in ['__hash__', '__nonzero__', '__str__', '__repr__']:
-            # unary operators that catch AttributeError
-            getattr(type(OC3()), x)(OC3())
-
-        # IronPython still differs on these from CPython:
-        #for x in ['__iter__']:
-        #    # unary operators that call, catch, and report another error
-        #    called = []
-        #    self.assertRaises(TypeError, getattr(type(OC3()), x), OC3())
-        #    self.assertTrue(x in called)
-
-        for x in ['__add__', '__iadd__', '__radd__', '__cmp__', '__coerce__']:
-            # binary operators catch AttributeError
-            getattr(type(OC3()), x)(OC3(), OC3())
-
-
     def test_cp10291(self):
         class K1(object):
             def __call__(self):
@@ -2624,39 +2305,23 @@ class ClassTest(IronPythonTestCase):
             def __call__(self):
                 return "K2" + K1.__call__(self)
 
-        class K1Old:
-            def __call__(self):
-                return "K1"
-
-        class K2Old(K1Old):
-            def __call__(self):
-                return "K2" + K1Old.__call__(self)
-
-
         for k1, k2 in [ (K1, K2),
-                        (K1Old, K2Old),
                         ]:
             self.assertEqual(k1()(), "K1")
             self.assertEqual(k2()(), "K2K1")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test') # should be reenabled against CPython26
     def test_cp11760(self):
-        class KNew(object):
+        class K(object):
             def __str__(self): return "KNew"
 
-        class KOld:
-            def __str__(self): return "KOld"
-
-        for K in [KNew, KOld]:
-            dir_str = dir(K().__str__)
-            for x in [  '__class__', '__delattr__', '__doc__',
-                        '__get__', '__getattribute__', '__hash__', '__init__',
-                        '__new__', '__reduce__', '__reduce_ex__', '__repr__',
-                        '__setattr__', '__str__', 'im_class',
-                        'im_func', '__func__', 'im_self', '__self__',
-                        #'__call__', '__cmp__',
-                        ]:
-                self.assertTrue(x in dir_str, x + " is not in dir(K().__str__)")
+        dir_str = dir(K().__str__)
+        for x in [  '__class__', '__delattr__', '__doc__',
+                    '__get__', '__getattribute__', '__hash__', '__init__',
+                    '__new__', '__reduce__', '__reduce_ex__', '__repr__',
+                    '__setattr__', '__str__',
+                    '__func__', '__self__', '__call__',
+                    ]:
+            self.assertTrue(x in dir_str, x + " is not in dir(K().__str__)")
 
     def test_delattr(self):
         global called
@@ -2678,15 +2343,7 @@ class ClassTest(IronPythonTestCase):
                 x = lambda: 3.17
                 return x()
 
-        class KOld:
-            p1 = property(lambda self: 3.14)
-            m1 = lambda self: 3.15
-            f1 = lambda: 3.16
-            def m2(self, a):
-                x = lambda: 3.17
-                return x()
-
-        for temp in dir(KNew) + dir(KNew()) + dir(KOld) + dir(KOld()):
+        for temp in dir(KNew) + dir(KNew()):
             self.assertTrue("lambda" not in temp)
 
     def test_oldstyle_fancycallable(self):
@@ -2734,7 +2391,7 @@ class ClassTest(IronPythonTestCase):
         global GETATTRIBUTE_CALLED
         GETATTRIBUTE_CALLED = False
 
-        class KOld:
+        class K(object):
             def __getattribute__(self, name):
                 global GETATTRIBUTE_CALLED
                 GETATTRIBUTE_CALLED = True
@@ -2753,7 +2410,7 @@ class ClassTest(IronPythonTestCase):
 
             def __hash__(self): return 1
 
-            def __bool__(self): return 1
+            def __bool__(self): return True
 
             def __get__(self, instance, owner): return 3
 
@@ -2771,71 +2428,26 @@ class ClassTest(IronPythonTestCase):
 
             def __add__(self, other): return 7
 
-            def __hex__(self): return hex(9)
+            def __index__(self): return 9
 
             def __coerce__(self, other): return None
 
             def __lt__(self, other): return True
 
-        class KNew(object):
-            def __getattribute__(self, name):
-                global GETATTRIBUTE_CALLED
-                GETATTRIBUTE_CALLED = True
-                print("__getattribute__ was called by:", name)
-                return 1
-
-            def __init__(self):
-                return
-
-            def __del__(self):
-                return
-
-            def __str__(self): return ""
-
-            def __cmp__(self, other): return 0
-
-            def __hash__(self): return 1
-
-            def __bool__(self): return 1
-
-            def __get__(self, instance, owner): return 3
-
-            def __delete__(self, instance): return
-
-            def __len__(self): return 4
-
-            def __getitem__(self, key): return 5
-
-            def __setitem__(self, key, value): return
-
-            def  __getslice__(self, i, j): return 6
-
-            def __contains__(self, obj): return True
-
-            def __add__(self, other): return 7
-
-            def __hex__(self): return hex(9)
-
-            def __coerce__(self, other): return None
-
-            def __lt__(self, other): return True
-
-        for K in [KOld, KNew]:
-            obj = K()
-            str(obj)
-            obj==3
-            hash(obj)
-            bool(obj)
-            obj[3]
-            obj[3] = 4
-            len(obj)
-            obj[1:3]
-            if K==KOld: hasattr(obj, "abc")
-            obj + 3
-            hex(obj)
-            obj<9
-            del obj
-            self.assertTrue(not GETATTRIBUTE_CALLED)
+        obj = K()
+        str(obj)
+        obj==3
+        hash(obj)
+        bool(obj)
+        obj[3]
+        obj[3] = 4
+        len(obj)
+        obj[1:3]
+        obj + 3
+        hex(obj)
+        obj<9
+        del obj
+        self.assertTrue(not GETATTRIBUTE_CALLED)
 
     def test_keyword_type_construction(self):
         """using type.__call__ should accept keyword arguments"""
@@ -2968,16 +2580,16 @@ class ClassTest(IronPythonTestCase):
                 return "__add__:" + str(type(self)) + " " + str(type(other))
 
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for +: 'K' and 'K'", lambda: K() + K())
-        self.assertEqual(K() + K0(), "__radd__:<class '" + __name__ + ".K0'> <class '" + __name__ + ".K'>")
-        self.assertEqual(K() + K1(), "__radd__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K'>")
+        self.assertEqual(K() + K0(), "__radd__:<class '{name}{cls}.K0'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K() + K1(), "__radd__:<class '{name}{cls}.K1'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for +: 'K0' and 'K'", lambda: K0() + K())
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for +: 'K0' and 'K0'", lambda: K0() + K0())
-        self.assertEqual(K0() + K1(), "__radd__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K0'>")
+        self.assertEqual(K0() + K1(), "__radd__:<class '{name}{cls}.K1'> <class '{name}{cls}.K0'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
-        self.assertEqual(K1() + K(),  "__add__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K'>")
-        self.assertEqual(K1() + K0(), "__add__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K0'>")
-        self.assertEqual(K1() + K1(), "__add__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K1'>" )
+        self.assertEqual(K1() + K(),  "__add__:<class '{name}{cls}.K1'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K1() + K0(), "__add__:<class '{name}{cls}.K1'> <class '{name}{cls}.K0'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K1() + K1(), "__add__:<class '{name}{cls}.K1'> <class '{name}{cls}.K1'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
         #--Subtraction
         class K(object): pass
@@ -2994,42 +2606,16 @@ class ClassTest(IronPythonTestCase):
                 return "__sub__:" + str(type(self)) + " " + str(type(other))
 
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for -: 'K' and 'K'", lambda: K() - K())
-        self.assertEqual(K() - K0(), "__rsub__:<class '" + __name__ + ".K0'> <class '" + __name__ + ".K'>")
-        self.assertEqual(K() - K1(), "__rsub__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K'>")
+        self.assertEqual(K() - K0(), "__rsub__:<class '{name}{cls}.K0'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K() - K1(), "__rsub__:<class '{name}{cls}.K1'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for -: 'K0' and 'K'", lambda: K0() - K())
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for -: 'K0' and 'K0'", lambda: K0() - K0())
-        self.assertEqual(K0() - K1(), "__rsub__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K0'>")
+        self.assertEqual(K0() - K1(), "__rsub__:<class '{name}{cls}.K1'> <class '{name}{cls}.K0'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
-        self.assertEqual(K1() - K(),  "__sub__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K'>")
-        self.assertEqual(K1() - K0(), "__sub__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K0'>")
-        self.assertEqual(K1() - K1(), "__sub__:<class '" + __name__ + ".K1'> <class '" + __name__ + ".K1'>" )
-
-        #--Old style
-        class K: pass
-
-        class K0:
-            def __radd__(self, other):
-                return "__radd__:" + str(type(self)) + " " + str(type(other))
-
-        class K1:
-            def __radd__(self, other):
-                return "__radd__:" + str(type(self)) + " " + str(type(other))
-
-            def __add__(self, other):
-                return "__add__:" + str(type(self)) + " " + str(type(other))
-
-        self.assertRaises(TypeError, lambda: K() + K())
-        self.assertEqual(K() + K0(), "__radd__:<type 'instance'> <type 'instance'>")
-        self.assertEqual(K() + K1(), "__radd__:<type 'instance'> <type 'instance'>")
-
-        self.assertRaises(TypeError, lambda: K0() + K())
-        self.assertEqual(K0() + K0(), "__radd__:<type 'instance'> <type 'instance'>")
-        self.assertEqual(K0() + K1(), "__radd__:<type 'instance'> <type 'instance'>")
-
-        self.assertEqual(K1() + K(),  "__add__:<type 'instance'> <type 'instance'>")
-        self.assertEqual(K1() + K0(), "__add__:<type 'instance'> <type 'instance'>")
-        self.assertEqual(K1() + K1(), "__add__:<type 'instance'> <type 'instance'>")
+        self.assertEqual(K1() - K(),  "__sub__:<class '{name}{cls}.K1'> <class '{name}{cls}.K'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K1() - K0(), "__sub__:<class '{name}{cls}.K1'> <class '{name}{cls}.K0'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
+        self.assertEqual(K1() - K1(), "__sub__:<class '{name}{cls}.K1'> <class '{name}{cls}.K1'>".format(name=__name__, cls="" if is_cli else ".ClassTest.test_cp5803.<locals>"))
 
     def test_special_type_attributes(self):
         # some attributes on new-style class are alwayed retrieved
@@ -3221,20 +2807,13 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(a + c, ('a', 'A'))
 
     def test_cp2021(self):
-        class KOld:
-            def __rmul__(self, other):
-                return 7
-
         class KNew(object):
             def __rmul__(self, other):
                 return 7
 
         for testdata in [[], [1], [1,2]]:
-            self.assertEqual(testdata * KOld(), 7)
             self.assertEqual(testdata * KNew(), 7)
-            self.assertRaisesMessage(TypeError, "object cannot be interpreted as an index",
-                                testdata.__mul__, KOld())
-            self.assertRaisesMessage(TypeError, "'KNew' object cannot be interpreted as an index",
+            self.assertRaisesMessage(TypeError, "'KNew' object cannot be interpreted as an integer",
                                 testdata.__mul__, KNew())
 
     def test_redundant_multiple_bases(self):
@@ -3266,20 +2845,6 @@ class ClassTest(IronPythonTestCase):
         a = A('empty', *('foo', ), **{'d': 'boom'})
         self.assertEqual(a.b, 'foo')
         self.assertEqual(a.d, 'boom')
-
-    def test_oldinstance_creation(self):
-        class C: pass
-
-        inst = type(C())
-
-        d = {'a': 2}
-        i = inst(C, d)
-
-        self.assertEqual(id(d), id(i.__dict__))
-        self.assertTrue(isinstance(i, C))
-
-        x = inst(C, None)
-        self.assertEqual(x.__dict__, {})
 
     def test_metaclass_getattribute(self):
         class mc(type):
@@ -3347,17 +2912,12 @@ class ClassTest(IronPythonTestCase):
         def f(): del D.__getattribute__  # AttributeError expected.
         self.assertRaises(AttributeError, f)
 
-    def test_metaclass_oldstyle_only_bases(self):
-        class C: pass
-
-        self.assertRaises(TypeError, type, 'foo', (C, ), {})
-
     def test_bad_mro_error_message(self):
         class A(object): pass
 
         class B(A): pass
 
-        self.assertRaisesPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases A, B",
+        self.assertRaisesPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases",
                                     type, "X", (A,B), {})
 
     def test_finalizer(self):
@@ -3409,17 +2969,29 @@ class ClassTest(IronPythonTestCase):
             def __int__(self):
                 return 42
 
-        vals = (l(), 42, 42.0)
+        class C(object):
+            def __init__(self, len):
+                self.len = len
+            def __len__(self):
+                return self.len
+
+        vals = (42, long(42))
         if is_cli:
-            from iptest.type_util import clr_all_types
-            vals += tuple(t(42) for t in clr_all_types)
+            from iptest.type_util import clr_int_types
+            vals += tuple(t(42) for t in clr_int_types)
 
         for x in vals:
-            class C(object):
-                def __len__(self):
-                    return x
-            self.assertEqual(len(C()), 42)
+            self.assertEqual(len(C(x)), 42)
 
+        # object cannot be interpreted as an integer
+        vals = (l(), 42.0)
+        if is_cli:
+            from iptest.type_util import clr_float_types
+            vals += tuple(t(42) for t in clr_float_types)
+
+        for x in vals:
+            with self.assertRaises(TypeError):
+                len(C(x))
 
     def test_descriptor_exception(self):
         class desc(object):
@@ -3450,17 +3022,6 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(x().a, 42)
         desc.__get__ = lambda self, value, ctx: 23
         self.assertEqual(x().a, 23)
-
-    def test_method_tuple_type(self):
-        """creates a method who's type is declared to be a tuple"""
-        class x(object):
-            def f(self): pass
-
-        def f(self): return self
-
-        self.assertEqual(type(x.f)(f, None, (int, str))(42), 42)
-        self.assertEqual(type(x.f)(f, None, (int, str))('abc'), 'abc')
-        self.assertRaises(TypeError, type(x.f)(f, None, (int, str)), 1)
 
     def test_mutate_class(self):
         def f(): object.foo = 42
@@ -3577,7 +3138,6 @@ class ClassTest(IronPythonTestCase):
             self.assertRaises(TypeError, X3)
             self.assertRaises(TypeError, X4)
 
-
     def test_oldstyle_splat_dict(self):
         class C: pass
 
@@ -3598,7 +3158,7 @@ class ClassTest(IronPythonTestCase):
         class KOld:
             KOldStuff = 3
 
-        class KNew(object, KOld):
+        class KNew(KOld):
             pass
 
         self.assertTrue("KOldStuff" in dir(KNew))
@@ -3635,7 +3195,6 @@ class ClassTest(IronPythonTestCase):
     def test_cp33622(self):
         self.assertEqual(object.__repr__ in (None,), False)
         self.assertEqual(object.__repr__ in (None,object.__repr__), True)
-        self.assertEqual(object.__repr__ in (None,object.__cmp__), False)
         self.assertEqual(object.__repr__ in (None,object.__str__), False)
 
     def test_cp24649_gh120(self):
@@ -3675,46 +3234,34 @@ class ClassTest(IronPythonTestCase):
         cc = CC(1)
         self.assertEqual(cc.x, 1)
 
-# # tests w/ special requirements that can't be run in methods..
-# #Testing the class attributes backed by globals
+    def test_global_backed_attr(self):
+        #Testing the class attributes backed by globals
+        global x
+        x = 10
 
-# x = 10
+        class C:
+             x = x
+             del x
+             x = x
 
-# class C:
-#     x = x
-#     del x
-#     x = x
+        self.assertEqual(C.x, 10)
+        self.assertEqual(x, 10)
 
-# self.assertEqual(C.x, 10)
-# self.assertEqual(x, 10)
+        with self.assertRaises(NameError):
+            class C:
+                x = x
+                del x
+                del x
 
-# try:
-#     class C:
-#         x = x
-#         del x
-#         del x
-# except NameError:
-#     pass
-# else:
-#     self.assertTrue("Expecting name error")
+        self.assertEqual(x, 10)
 
-# self.assertEqual(x, 10)
+        class C:
+            x = 10
+            del x
+            b = x
+            self.assertEqual(x, 10)
 
-# class C:
-#     x = 10
-#     del x
-#     b = x
-#     self.assertEqual(x, 10)
-
-# self.assertEqual(C.b, 10)
-# self.assertEqual(x, 10)
-
-
-# def test_suite():
-#     return unittest.makeSuite(ClassTest)
-
-# if __name__ == '__main__':
-#     unittest.main(defaultTest='test_suite')
-
+        self.assertEqual(C.b, 10)
+        self.assertEqual(x, 10)
 
 run_test(__name__)

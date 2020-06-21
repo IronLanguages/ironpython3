@@ -774,7 +774,9 @@ namespace IronPython.Runtime.Operations {
             throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
         }
 
-        internal static bool TryToIndex(object? o, [NotNullWhen(true)]out object? index) {
+        internal static bool TryToIndex(object? o, [NotNullWhen(true)] out object? index) {
+            var context = DefaultContext.Default;
+
             switch (o) {
                 case int i:
                     index = Int32Ops.__index__(i);
@@ -807,26 +809,42 @@ namespace IronPython.Runtime.Operations {
                     break;
             }
 
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__index__", out index)) {
-                if (!(index is int) && !(index is BigInteger))
-                    throw TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
-                return true;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__index__", out index)) {
+                if (index is int || index is BigInteger)
+                    return true;
+                if (index is Extensible<int> || index is Extensible<BigInteger>) {
+                    Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonTypeOps.GetName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                    return true;
+                }
+                throw TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
             }
 
             index = default;
             return false;
         }
 
-        private static bool ObjectToInt(object o, out int res, out BigInteger longRes) {
-            if (o is BigInteger bi) {
-                if (!bi.AsInt32(out res)) {
-                    longRes = bi;
-                    return false;
-                }
-            } else if (o is int i) {
-                res = i;
-            } else {
-                res = Converter.ConvertToInt32(o);
+        private static bool IndexObjectToInt(object o, out int res, out BigInteger longRes) {
+            switch (o) {
+                case int i:
+                    res = i;
+                    break;
+                case Extensible<int> ei: // deprecated
+                    res = ei;
+                    break;
+                case BigInteger bi:
+                    if (!bi.AsInt32(out res)) {
+                        longRes = bi;
+                        return false;
+                    }
+                    break;
+                case Extensible<BigInteger> ebi: // deprecated
+                    if (!ebi.Value.AsInt32(out res)) {
+                        longRes = ebi;
+                        return false;
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException();
             }
 
             longRes = default;
@@ -848,7 +866,9 @@ namespace IronPython.Runtime.Operations {
 
             object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, $"object of type '{GetPythonTypeName(o)}' has no len()");
 
-            if (ObjectToInt(len, out res, out bigRes)) {
+            var indexObj = Index(len);
+
+            if (IndexObjectToInt(indexObj, out res, out bigRes)) {
                 if (res < 0) throw ValueError("__len__() should return >= 0");
                 return true;
             } else {

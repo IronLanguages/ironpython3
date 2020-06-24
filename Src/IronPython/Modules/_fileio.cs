@@ -384,14 +384,18 @@ namespace IronPython.Modules {
 
                 int bufSize = DEFAULT_BUF_SIZE;
                 byte[] buffer = new byte[bufSize];
-                int bytesRead = _readStream.Read(buffer, 0, bufSize);
+                int totalBytes = 0;
 
-                for (; bytesRead == bufSize; bufSize *= 2) {
-                    Array.Resize(ref buffer, bufSize * 2);
-                    bytesRead += _readStream.Read(buffer, bufSize, bufSize);
+                for (var bytesRead = -1; bytesRead != 0;) {
+                    bytesRead = _readStream.Read(buffer, totalBytes, bufSize - totalBytes);
+                    totalBytes += bytesRead;
+                    if (totalBytes >= bufSize) {
+                        bufSize = bufSize * 2;
+                        Array.Resize(ref buffer, bufSize);
+                    }
                 }
 
-                Array.Resize(ref buffer, bytesRead);
+                Array.Resize(ref buffer, totalBytes);
                 return Bytes.Make(buffer);
             }
 

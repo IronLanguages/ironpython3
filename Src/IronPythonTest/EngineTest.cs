@@ -808,7 +808,6 @@ m1 = C.m1
 m2 = C.m2
 m3 = C.m3
 
-z = zip
 i = int
 
 ", SourceCodeKind.File);
@@ -821,7 +820,6 @@ i = int
             object f1 = scope.GetVariable("f1");
             object f2 = scope.GetVariable("f2");
             object f3 = scope.GetVariable("f3");
-            object zip = scope.GetVariable("z");
             object dlg = scope.GetVariable("dlg");
             object m0 = scope.GetVariable("m0");
             object m1 = scope.GetVariable("m1");
@@ -863,18 +861,6 @@ i = int
                             new { ParamName="a", ParamAttrs = ParameterFlags.None},
                             new { ParamName="b", ParamAttrs = ParameterFlags.ParamsArray},
                             new { ParamName="c", ParamAttrs = ParameterFlags.ParamsDict}
-                        }
-                    }
-                },
-                new {
-                    Obj = zip,
-                    Result = new [] {
-                        new [] {
-                            new { ParamName="s0", ParamAttrs = ParameterFlags.None },
-                            new { ParamName="s1", ParamAttrs = ParameterFlags.None },
-                        },
-                        new [] {
-                            new { ParamName="seqs", ParamAttrs = ParameterFlags.ParamsArray },
                         }
                     }
                 },

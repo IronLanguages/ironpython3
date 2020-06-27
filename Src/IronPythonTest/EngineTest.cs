@@ -204,6 +204,7 @@ namespace IronPythonTest {
         private static readonly string clspartName = "clsPart";
 
 #if FEATURE_REMOTING
+        [Test]
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -376,6 +377,7 @@ namespace IronPythonTest {
 #pragma warning restore 67
         }
 
+        [Test]
         public void ScenarioDynamicObjectAsScope() {
             var engine = Python.CreateEngine();
 
@@ -416,6 +418,7 @@ x = 42", scope);
             }
         }
 
+        [Test]
         public void ScenarioCodePlex20472() {
             try {
                 string fileName = Path.Combine(Path.Combine(System.IO.Directory.GetCurrentDirectory(), "encoded_files"), "cp20472.py");
@@ -429,6 +432,7 @@ x = 42", scope);
             catch (IronPython.Runtime.Exceptions.ImportException) { }
         }
 
+        [Test]
         public void ScenarioInterpreterNestedVariables() {
             ParameterExpression arg = Expression.Parameter(typeof(object), "tmp");
             var argBody = Expression.Lambda<Func<object, IRuntimeVariables>>(
@@ -485,6 +489,7 @@ x = 42", scope);
             }
         }
 
+        [Test]
         public void ScenarioCodePlex23562()
         {
             string pyCode = @"
@@ -499,6 +504,7 @@ test.TestMethod()
             Assert.True(temp.MethodCalled);
         }
 
+        [Test]
         public void ScenarioCodePlex18595() {
             string pyCode = @"
 str_tuple = ('ab', 'cd')
@@ -521,6 +527,7 @@ def py_func():
             Assert.AreEqual(scope.GetVariable<bool>("py_func_called"), true);
         }
 
+        [Test]
         public void ScenarioCodePlex24077()
         {
             string pyCode = @"
@@ -540,6 +547,7 @@ class K(object):
         }
 
         // Execute
+        [Test]
         public void ScenarioExecute() {
             ClsPart clsPart = new ClsPart();
 
@@ -592,6 +600,7 @@ class K(object):
             });
         }
 
+        [Test]
         public static void ScenarioTryGetMember() {
             var engine = Python.CreateEngine();
             var str = ClrModule.GetPythonType(typeof(string));
@@ -600,6 +609,7 @@ class K(object):
             Assert.AreEqual(result.ToString(), "IronPython.Runtime.Types.BuiltinFunction");
         }
 
+        [Test]
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
             engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);
@@ -753,6 +763,7 @@ class K(object):
         private void TestTarget(object sender, EventArgs args) {
         }
 
+        [Test]
         public void ScenarioDocumentation() {
             ScriptScope scope = _pe.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
@@ -983,6 +994,7 @@ i = int
             Assert.Fail("didn't find member " + name);
         }
 
+        [Test]
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
@@ -997,6 +1009,8 @@ elif not clr.IsMono:
 
 import System
 from System.Collections import ArrayList
+
+long = type(1<<64)
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
@@ -1055,7 +1069,7 @@ class ns(object):
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): return 42L
+    def __long__(self): return long(42)
     def __complex__(self): return 42j
     def __bool__(self): return False
 
@@ -1160,7 +1174,7 @@ class os:
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): return 42L
+    def __long__(self): return long(42)
     def __bool__(self): return False
     def __complex__(self): return 42j
 
@@ -1543,6 +1557,7 @@ range = range
             }
         }
 
+        [Test]
         public void ScenarioDlrInterop_ConsumeDynamicObject() {
             var scope = _pe.CreateScope();
             var dynObj = new MyDynamicObject();
@@ -1618,6 +1633,7 @@ range = range
 
         }
 
+        [Test]
         public void ScenarioEvaluateInAnonymousEngineModule() {
             ScriptScope scope1 = _env.CreateScope();
             ScriptScope scope2 = _env.CreateScope();
@@ -1638,6 +1654,7 @@ range = range
             Assert.AreEqual(2, (int)(object)scope3.GetVariable("x"));
         }
 
+        [Test]
         public void ScenarioObjectOperations() {
             var ops = _pe.Operations;
             Assert.AreEqual("(1, 2, 3)", ops.Format(new PythonTuple(new object[] { 1, 2, 3 })));
@@ -1680,6 +1697,7 @@ class foo(object):
             Assert.AreEqual(ops.GetMember<int>(foo, "y"), 444);
         }
 
+        [Test]
         public void ScenarioCP712() {
             ScriptScope scope1 = _env.CreateScope();
             _pe.CreateScriptSourceFromString("max(3, 4)", SourceCodeKind.InteractiveCode).Execute(scope1);
@@ -1690,13 +1708,16 @@ class foo(object):
             // Assert.AreEqual(4, scope1.GetVariable<int>("_"));
         }
 
+        [Test]
         public void ScenarioCP24784() {
-            var code = _pe.CreateScriptSourceFromString("def f():\r\n \r\n print 1", SourceCodeKind.InteractiveCode);
+            var code = _pe.CreateScriptSourceFromString("def f():\r\n \r\n print(1)", SourceCodeKind.InteractiveCode);
 
             Assert.AreEqual(code.GetCodeProperties(), ScriptCodeParseResult.IncompleteStatement);
         }
 
         public delegate int CP19724Delegate(double p1);
+
+        [Test]
         public void ScenarioCP19724()
         {
             ScriptScope scope1 = _env.CreateScope();
@@ -1715,8 +1736,7 @@ k = KNew()", SourceCodeKind.Statements);
             Assert.AreEqual(42, scope1.GetVariable<int>("X"));
         }
 
-
-
+        [Test]
         public void ScenarioEvaluateInPublishedEngineModule() {
             PythonContext pc = DefaultContext.DefaultPythonContext;
 
@@ -1858,6 +1878,7 @@ k = KNew()", SourceCodeKind.Statements);
             #endregion
         }
 
+        [Test]
         public void ScenarioCustomDictionary() {
             PythonDictionary customGlobals = new PythonDictionary(new StringDictionaryStorage(new CustomDictionary()));
 
@@ -1911,6 +1932,7 @@ del customSymbol", customModule);
             // Assert.AreEqual(d(1), CustomDictionary.customSymbolValue + 1);
         }
 
+        [Test]
         public void ScenarioCallClassInstance() {
             ScriptScope scope = _env.CreateScope();
             _pe.CreateScriptSourceFromString(@"
@@ -1932,6 +1954,7 @@ b = Y()", SourceCodeKind.Statements).Execute(scope);
         }
 
         // Evaluate
+        [Test]
         public void ScenarioEvaluate() {
             ScriptScope scope = _env.CreateScope();
 
@@ -1974,6 +1997,7 @@ b = Y()", SourceCodeKind.Statements).Execute(scope);
             Assert.AreEqual(d(2), 2 * 100);
         }
 
+        [Test]
         public void ScenarioMemberNames() {
             ScriptScope scope = _env.CreateScope();
 
@@ -2036,6 +2060,7 @@ ocinst = oc()
             Assert.AreEqual(ocinstnames.ToArray(), new[] { "__doc__", "__init__", "__module__", "abc", "baz", "classmethod", "foo", "staticfunc" });
         }
 
+        [Test]
         public void ScenarioTokenCategorizer() {
             var categorizer = _pe.GetService<TokenCategorizer>();
             var source = _pe.CreateScriptSourceFromString("sys", SourceCodeKind.Statements);
@@ -2071,6 +2096,7 @@ ocinst = oc()
             return res;
         }
 
+        [Test]
         public void ScenarioCallableClassToDelegate() {
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 class Test(object):
@@ -2096,6 +2122,7 @@ instOC = TestOC()
         }
 
         // ExecuteFile
+        [Test]
         public void ScenarioExecuteFile() {
             ScriptSource tempFile1, tempFile2;
 
@@ -2130,6 +2157,7 @@ instOC = TestOC()
         }
 
         // Bug: 542
+        [Test]
         public void Scenario542() {
             ScriptSource tempFile1;
 
@@ -2185,6 +2213,7 @@ instOC = TestOC()
         }
 
         // Bug: 167
+        [Test]
         public void Scenario167() {
             ScriptScope scope = _env.CreateScope();
             _pe.CreateScriptSourceFromString("a=1\r\nb=-1", SourceCodeKind.Statements).Execute(scope);
@@ -2193,7 +2222,7 @@ instOC = TestOC()
         }
 
         // AddToPath
-
+        [Test]
         public void ScenarioAddToPath() { // runs first to avoid path-order issues
             //pe.InitializeModules(ipc_path, ipc_path + "\\ipy.exe", pe.VersionString);
             string tempFile1 = Path.GetTempFileName();
@@ -2220,6 +2249,7 @@ instOC = TestOC()
         // Options.DebugMode
 
 #if FEATURE_REMOTING
+        [Test]
         public void ScenarioPartialTrust() {
             // Mono doesn't implement partial trust
             if(System.Environment.OSVersion.Platform == System.PlatformID.Unix)
@@ -2306,6 +2336,7 @@ if id(a) == id(b):
             AppDomain.Unload(newDomain);
         }
 
+        [Test]
         public void ScenarioStackFrameLineInfo() {
             const string lineNumber = "raise.py:line";
             // TODO: Should this work on Mono?
@@ -2347,6 +2378,7 @@ if id(a) == id(b):
 #endif
 
         // Compile and Run
+        [Test]
         public void ScenarioCompileAndRun() {
             ClsPart clsPart = new ClsPart();
 
@@ -2363,6 +2395,7 @@ if id(a) == id(b):
             Assert.AreEqual(20, clsPart.Field);
         }
 
+        [Test]
         public void ScenarioStreamRedirect() {
             MemoryStream stdout = new MemoryStream();
             MemoryStream stdin = new MemoryStream();
@@ -2427,6 +2460,7 @@ if id(a) == id(b):
             public DictThreadGlobalState GlobalState;
         }
 
+        [Test]
         public static void ScenarioDictionaryThreadSafety() {
             const int ThreadCount = 10;
 
@@ -2594,6 +2628,7 @@ if id(a) == id(b):
             };
         }
 
+        [Test]
         public void Scenario12() {
             ScriptScope scope = _env.CreateScope();
 
@@ -2616,12 +2651,14 @@ if r.sum != 110:
 
 // TODO: rewrite
 #if FALSE
+        [Test]
         public void ScenarioTrueDivision1() {
             TestOldDivision(pe, DefaultModule);
             ScriptScope module = pe.CreateModule("anonymous", ModuleOptions.TrueDivision);
             TestNewDivision(pe, module);
         }
 
+        [Test]
         public void ScenarioTrueDivision2() {
             TestOldDivision(pe, DefaultModule);
             ScriptScope module = pe.CreateModule("__future__", ModuleOptions.PublishModule);
@@ -2630,6 +2667,7 @@ if r.sum != 110:
             TestNewDivision(pe, module);
         }
 
+        [Test]
         public void ScenarioTrueDivision3() {
             TestOldDivision(pe, DefaultModule);
             ScriptScope future = pe.CreateModule("__future__", ModuleOptions.PublishModule);
@@ -2640,6 +2678,7 @@ if r.sum != 110:
             TestNewDivision(pe, td);  // we've polluted the DefaultModule by executing the code
         }
 
+        [Test]
         public void ScenarioTrueDivision4() {
             pe.AddToPath(Common.ScriptTestDirectory);
 
@@ -2667,6 +2706,7 @@ if r.sum != 110:
             return "tempmod" + Path.GetRandomFileName().Replace('-', '_').Replace('.', '_');
         }
 
+        [Test]
         public void ScenarioTrueDivision5() {
             pe.AddToPath(Common.ScriptTestDirectory);
 
@@ -2686,6 +2726,7 @@ if r.sum != 110:
                 } catch { }
             }
         }
+        [Test]
         public void ScenarioSystemStatePrefix() {
             Assert.AreEqual(IronPythonTest.Common.RuntimeDirectory, pe.SystemState.prefix);
         }

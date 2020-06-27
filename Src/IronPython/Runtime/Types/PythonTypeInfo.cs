@@ -1500,6 +1500,13 @@ namespace IronPython.Runtime.Types {
                 Type[] allInterfaces = t.GetInterfaces();
                 List<Type> res = new List<Type>();
                 foreach (Type intf in allInterfaces) {
+#if NET46
+                    // causes failures on Mono: https://github.com/mono/mono/issues/14712
+                    if (intf == typeof(System.Runtime.InteropServices._Type) || intf == typeof(System.Runtime.InteropServices._MethodInfo)) {
+                        continue;
+                    }
+#endif
+
                     try {
                         InterfaceMapping imap = t.GetInterfaceMap(intf);
                         foreach (MethodInfo mi in imap.TargetMethods) {

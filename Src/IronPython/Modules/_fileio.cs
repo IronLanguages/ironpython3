@@ -563,6 +563,7 @@ namespace IronPython.Modules {
             }
 
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
+                if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(2, "No such file or directory", filename: name);
                 try {
                     return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
                 } catch (UnauthorizedAccessException) {

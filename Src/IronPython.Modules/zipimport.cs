@@ -116,12 +116,16 @@ to Zip archives.";
                 path = string.Empty;
                 prefix = string.Empty;
 
-                while (!string.IsNullOrEmpty(buf)) {
-                    if (pal.FileExists(buf)) {
-                        path = buf;
-                        break;
+                try {
+                    while (!string.IsNullOrEmpty(buf)) {
+                        if (pal.FileExists(buf)) {
+                            path = buf;
+                            break;
+                        }
+                        buf = Path.GetDirectoryName(buf);
                     }
-                    buf = Path.GetDirectoryName(buf);
+                } catch {
+                    throw MakeError(context, "not a Zip file");
                 }
 
                 if (!string.IsNullOrEmpty(path)) {

@@ -1220,13 +1220,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 // don't look at interfaces - users can inherit from them, but we resolve members
                 // via methods implemented on types and defined by Python.
-                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface) {
-                    return PythonBinder.GetBinder(context).TryResolveSlot(context, dt, this, name, out slot);
-                }
-
-                if (dt.TryLookupSlot(context, name, out slot)) {
+                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface
+                        && PythonBinder.GetBinder(context).TryResolveSlot(context, dt, this, name, out slot)
+                        || dt.TryLookupSlot(context, name, out slot))
                     return true;
-                }
             }
 
             if (UnderlyingSystemType.IsInterface) {

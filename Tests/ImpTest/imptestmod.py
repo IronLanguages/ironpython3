@@ -1,1 +1,0 @@
-value = 'imp test module'

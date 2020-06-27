@@ -341,7 +341,7 @@ namespace IronPython.Runtime {
                 if (lastDot == -1) {
                     // name doesn't include dot, only absolute import possible
                     if (level > 0) {
-                        throw PythonOps.ValueError("Attempted relative import in non-package");
+                        throw PythonOps.SystemError("Parent module '{0}' not loaded, cannot perform relative import", string.Empty);
                     }
 
                     return false;
@@ -852,11 +852,7 @@ namespace IronPython.Runtime {
 
             foreach (object hook in pathHooks) {
                 try {
-                    object handler = PythonCalls.Call(context, hook, dirname);
-
-                    if (handler != null) {
-                        return handler;
-                    }
+                    return PythonCalls.Call(context, hook, dirname);
                 } catch (ImportException) {
                     // we can't handle the path
                 }

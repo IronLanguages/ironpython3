@@ -802,6 +802,10 @@ namespace IronPython.Compiler {
             var start = GetStart();
 
             int dotCount = 0;
+            while (PeekToken(TokenKind.Constant) && PeekToken().Value == Ellipsis.Value) {
+                dotCount += 3;
+                NextToken();
+            }
             while (MaybeEat(TokenKind.Dot)) {
                 dotCount++;
             }

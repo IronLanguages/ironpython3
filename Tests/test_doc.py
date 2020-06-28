@@ -204,7 +204,6 @@ class DocTest(IronPythonTestCase):
             self.assertTrue(hasattr(e, "__doc__"))
             e.__doc__
 
-    @unittest.skip("intermittent failure during CI") # https://github.com/IronLanguages/ironpython3/issues/887
     def test_module_doc_cp21360(self):
         temp_filename_empty = "cp21360_empty.py"
         temp_filename = "cp21360.py"

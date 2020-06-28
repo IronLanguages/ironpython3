@@ -366,7 +366,7 @@ namespace IronPython.Compiler.Ast {
             AddInitialiation(block);
 
             string doc = GetDocumentation(_body);
-            if (doc != null) {
+            if (doc != null || IsModule) {
                 block.Add(AssignValue(GetVariableExpression(DocVariable), Ast.Constant(doc)));
             }
 

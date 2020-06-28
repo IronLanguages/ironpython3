@@ -2003,18 +2003,6 @@ ncinst = nc()
 def f(): pass
 
 f.foo = 3
-
-class oc:
-    def __init__(self):
-        self.baz = 5
-    foo = 3
-    def abc(self): pass
-    @staticmethod
-    def staticfunc(arg1): pass
-    @classmethod
-    def classmethod(cls): pass
-
-ocinst = oc()
 ", SourceCodeKind.Statements).Execute(scope);
 
             ParameterExpression parameter = Expression.Parameter(typeof(object), "");
@@ -2022,28 +2010,19 @@ ocinst = oc()
             DynamicMetaObject nc = Microsoft.Scripting.Utils.DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("nc"), parameter);
             DynamicMetaObject ncinst = Microsoft.Scripting.Utils.DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ncinst"), parameter); ;
             DynamicMetaObject f = Microsoft.Scripting.Utils.DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("f"), parameter); ;
-            DynamicMetaObject oc = Microsoft.Scripting.Utils.DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("oc"), parameter); ;
-            DynamicMetaObject ocinst = Microsoft.Scripting.Utils.DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ocinst"), parameter); ;
 
             List<string> ncnames = new List<string>(nc.GetDynamicMemberNames());
             List<string> ncinstnames = new List<string>(ncinst.GetDynamicMemberNames());
             List<string> fnames = new List<string>(f.GetDynamicMemberNames());
-            List<string> ocnames = new List<string>(oc.GetDynamicMemberNames());
-            List<string> ocinstnames = new List<string>(ocinst.GetDynamicMemberNames());
 
             ncnames.Sort();
             ncinstnames.Sort();
-            ocnames.Sort();
-            ocinstnames.Sort();
             fnames.Sort();
 
-            Assert.AreEqual(ncnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" });
-            Assert.AreEqual(ncinstnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" });
+            Assert.AreEqual(ncnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" });
+            Assert.AreEqual(ncinstnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" });
 
             Assert.AreEqual(fnames.ToArray(), new[] { "foo" });
-
-            Assert.AreEqual(ocnames.ToArray(), new[] { "__doc__", "__init__", "__module__", "abc", "classmethod", "foo", "staticfunc" });
-            Assert.AreEqual(ocinstnames.ToArray(), new[] { "__doc__", "__init__", "__module__", "abc", "baz", "classmethod", "foo", "staticfunc" });
         }
 
         [Test]

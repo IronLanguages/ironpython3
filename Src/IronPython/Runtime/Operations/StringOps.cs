@@ -150,7 +150,7 @@ namespace IronPython.Runtime.Operations {
     /// If the user is running in a CLS aware context they will also see all of the methods
     /// defined in the CLS System.String type.
     /// </summary>
-    public static class StringOps {
+    public static partial class StringOps {
         internal static Encoding Latin1Encoding => _latin1 ??= Encoding.GetEncoding(28591, new EncoderExceptionFallback(), new DecoderExceptionFallback()); // ISO-8859-1
         [DisallowNull] private static Encoding? _latin1;
 
@@ -1852,7 +1852,7 @@ namespace IronPython.Runtime.Operations {
             return Converter.ConvertToString(res[0]);
         }
 
-        internal static class CodecsInfo {
+        internal static partial class CodecsInfo {
             internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
             internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
             internal static readonly Dictionary<string, Lazy<Encoding?>> Codecs = MakeCodecsDict();

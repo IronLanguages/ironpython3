@@ -1448,42 +1448,89 @@ namespace IronPython.Runtime.Operations {
             return b.ToString();
         }
 
-        internal static bool TryGetEncoding(string name, [NotNullWhen(true)]out Encoding? encoding) {
+        internal static bool TryGetEncoding(string name, [NotNullWhen(true)] out Encoding? encoding) {
             encoding = null;
 
             if (string.IsNullOrWhiteSpace(name)) return false;
 
             string normName = NormalizeEncodingName(name);
 
-            if (CodecsInfo.Codecs.TryGetValue(normName, out Lazy<Encoding?>? proxy)) {
-                encoding = proxy.Value;
-#if NETCOREAPP || NETSTANDARD
-            } else {
-                try {
-                    Encoding enc;
-                    if (name.StartsWith("cp") && int.TryParse(name.Substring(2), out int codepage)) {
-                        if (codepage < 0 || 65535 < codepage) return false;
-                        enc = Encoding.GetEncoding(codepage);
-                        CodecsInfo.Codecs[normName] = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
-                    } else {
-                        enc = Encoding.GetEncoding(name);
-                        var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
-                        CodecsInfo.Codecs[normName] = fac;
-                        if (enc.CodePage != 0) CodecsInfo.Codecs["cp" + enc.CodePage.ToString()] = fac;
-                    }
-                    encoding = enc;
-                } catch (Exception ex) when (ex is NotSupportedException || ex is ArgumentException) {
-                    CodecsInfo.Codecs[normName] = new Lazy<Encoding?>(() => null, isThreadSafe: false);
-                    return false;
-                }
-#endif // NETCOREAPP || NETSTANDARD
+            if (TryGetNonaliasedEncoding(normName, out encoding)) {
+                return encoding != null;
             }
+
+            string? encName;
+            if (CodecsInfo.Aliases.TryGetValue(normName, out encName)) {
+                if (TryGetNonaliasedEncoding(encName, out Encoding? enc)) {
+                    CodecsInfo.Codecs[normName] = CodecsInfo.Codecs[encName];
+                    encoding = enc;
+                    return encoding != null;
+                }
+            } else {
+                encName = normName;
+            }
+
+            if (CodecsInfo.ReverseAliases.Value.TryGetValue(encName, out List<string>? aliases)) {
+                foreach (var alias in aliases) {
+                    if (alias == normName) continue; // already tried
+                    if (TryGetNonaliasedEncoding(alias, out Encoding? enc)) {
+                        var fac = CodecsInfo.Codecs[alias];
+                        CodecsInfo.Codecs[encName] = fac;
+                        foreach (var a in aliases) {
+                            if (!CodecsInfo.Codecs.TryGetValue(a, out Lazy<Encoding?>? curfac) || curfac == NullFactory) {
+                                CodecsInfo.Codecs[a] = fac;
+                            }
+                        }
+                        encoding = enc;
+                        return encoding != null;
+                    }
+                }
+            }
+
             return encoding != null;
         }
 
         #endregion
 
         #region Private implementation details
+
+        private static readonly Lazy<Encoding?> NullFactory = new Lazy<Encoding?>(() => null, isThreadSafe: false);
+
+        private static bool TryGetNonaliasedEncoding(string name, [NotNullWhen(true)] out Encoding? encoding) {
+            encoding = null;
+
+            if (CodecsInfo.Codecs.TryGetValue(name, out Lazy<Encoding?>? proxy)) {
+                encoding = proxy.Value;
+            } else if (int.TryParse(name.Substring(name.StartsWith("cp") ? 2 : 0), out int codepage)) {
+                if (codepage < 0 || 65535 < codepage) return false;
+                try {
+                    Encoding enc = Encoding.GetEncoding(codepage);
+                    var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
+                    CodecsInfo.Codecs[name] = fac;
+                    string cps = codepage.ToString();
+                    CodecsInfo.Codecs[cps] = CodecsInfo.Codecs["cp" + cps] = fac;
+                    encoding = enc;
+                } catch (NotSupportedException) {
+                    CodecsInfo.Codecs[name] = NullFactory;
+                    return false;
+                }
+            } else {
+                try {
+                    Encoding enc = Encoding.GetEncoding(RenormalizeEncodingName(name));
+                    var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
+                    CodecsInfo.Codecs[name] = fac;
+                    if (enc.CodePage != 0) {
+                        string cps = enc.CodePage.ToString();
+                        CodecsInfo.Codecs[cps] = CodecsInfo.Codecs["cp" + cps] = fac;
+                    }
+                    encoding = enc;
+                } catch (ArgumentException) {
+                    CodecsInfo.Codecs[name] = NullFactory;
+                    return false;
+                }
+            }
+            return encoding != null;
+        }
 
         private static string ConvertForJoin(object? value, int index) {
             if (value is string strVal) {
@@ -1686,6 +1733,40 @@ namespace IronPython.Runtime.Operations {
         internal static string? NormalizeEncodingName(string? name) =>
             name?.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
 
+        // Convert a normalized name to a form recognized by .NET
+        private static string RenormalizeEncodingName(string name) {
+            // .NET uses names with dashes rather than underscores
+
+            // exceptions to the rule
+            if (DotNetNames.TryGetValue(name, out string? dotNetName)) {
+                return dotNetName;
+            }
+
+            if (name.StartsWith("iso8859_")) {
+                return "iso-8859-" + name.Substring(8);
+            }
+            if (name.StartsWith("iso2022_")) {
+                return "iso-2022-" + name.Substring(8);
+            }
+
+            if (name.StartsWith("mac_")) {
+                name = "x-" + name;
+            }
+
+            return name.Replace('_', '-');
+        }
+
+        private static IDictionary<string, string> DotNetNames = new Dictionary<string, string>(5) {
+            // names that are supposed to have underscores
+            { "ks_c_5601_1987", "ks_c_5601-1987"  },
+            { "shift_jis",      "shift_jis"       },
+
+            // irregular Mac codecs renames
+            { "mac_latin2",     "x-mac-ce"        },
+            { "mac_centeuro",   "x-mac-ce"        },
+            { "mac_iceland",    "x-mac-icelandic" },
+        };
+
         internal static string RawDecode(CodeContext/*!*/ context, IBufferProtocol data, string encoding, string? errors) {
             if (TryGetEncoding(encoding, out Encoding? e)) {
                 using var buffer = data.GetBuffer();
@@ -1853,67 +1934,88 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static partial class CodecsInfo {
+            internal static readonly Encoding MbcsEncoding;
             internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
             internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
-            internal static readonly Dictionary<string, Lazy<Encoding?>> Codecs = MakeCodecsDict();
+            internal static readonly Dictionary<string, Lazy<Encoding?>> Codecs;
+
+            static CodecsInfo() {
+#if NETCOREAPP || NETSTANDARD
+                // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+                // Use Encoding.GetEncoding(0) instead of Encoding.Default (which returns UTF-8 with .NET Core)
+                MbcsEncoding = Encoding.GetEncoding(0);
+                Codecs = MakeCodecsDict();
+            }
 
             private static Dictionary<string, Lazy<Encoding?>> MakeCodecsDict() {
                 Dictionary<string, Lazy<Encoding?>> d = new Dictionary<string, Lazy<Encoding?>>();
                 Lazy<Encoding?> makeEncodingProxy(Func<Encoding?> factory) => new Lazy<Encoding?>(factory, isThreadSafe: false);
 
-#if NETCOREAPP || NETSTANDARD
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                // TODO: add more encodings
-                d["cp1252"] = d["windows_1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
-                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = makeEncodingProxy(() => Encoding.GetEncoding(28605));
-#endif
-                EncodingInfo[] encs = Encoding.GetEncodings();
+                // set up well-known/often used mappings
+                d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]
+                    = d["cp28591"] = d["28591"] = d["cp819"] = d["819"]
+                    = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"]        = makeEncodingProxy(() => Latin1Encoding);
+                d["cp20127"] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => PythonAsciiEncoding.Instance);
+                d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"]   = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
+                d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"]                = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                d["utf_8_sig"]                                                 = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                d["utf_16le"] = d["utf_16_le"]                                 = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
+                d["cp1200"] = d["utf_16"] = d["utf16"] = d["u16"]              = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp1201"] = d["utf_16be"] = d["utf_16_be"]                   = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
+                d["utf_32le"] = d["utf_32_le"]                                 = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+                d["cp12000"] = d["utf_32"] = d["utf32"] = d["u32"]             = makeEncodingProxy(() => new UTF32Encoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp12001"] = d["utf_32be"] = d["utf_32_be"]                  = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
 
-                foreach (EncodingInfo encInfo in encs) {
-                    string normalizedName = NormalizeEncodingName(encInfo.Name);
-
-                    // setup well-known mappings, for everything else we'll store as lower case w/ _
-                    // for the common types cp* are not actual Python aliases, but GetEncodingName may return them
-                    switch (normalizedName) {
-                        case "us_ascii":
-                            d["cp" + encInfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => PythonAsciiEncoding.Instance);
-                            continue;
-                        case "utf_7":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
-                            continue;
-                        case "utf_8":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                            d["utf_8_sig"] = makeEncodingProxy(encInfo.GetEncoding); ;
-                            continue;
-                        case "utf_16":
-                            d["utf_16le"] = d["utf_16_le"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = makeEncodingProxy(encInfo.GetEncoding); ;
-                            continue;
-                        case "utf_16be":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
-                            continue;
-                        case "utf_32":
-                            d["utf_32le"] = d["utf_32_le"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = makeEncodingProxy(encInfo.GetEncoding); ;
-                            continue;
-                        case "utf_32be":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
-                            continue;
-
-                        case "iso_8859_1":
-                            d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["cp28591"] = d["28591"] =
-                                d["latin_1"] = d["latin1"] = d["latin"] = d["l1"] = d["cp819"] = d["819"] = makeEncodingProxy(() => Latin1Encoding);
-                            continue;
-                    }
-
-                    // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = //...
-                        // publish under code page number as well...
-                        d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
-                }
-
+                // set up internal codecs
                 d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);
                 d["unicode_escape"] = makeEncodingProxy(() => UnicodeEscapeEncoding);
+                d["mbcs"] = makeEncodingProxy(() => MbcsEncoding);
+
+                // TODO: revisit the exceptions to rules below once _codecs_cn, _codecs_hk, _codecs_jp, and _codecs_kr are implemented
+
+                // set up tie-breakers
+
+                // "iso-2022-jp" is ambiguous between cp50220 and cp50222
+                d["iso2022_jp"] = d["iso_2022_jp"] = d["cp50220"] = makeEncodingProxy(() => Encoding.GetEncoding(50220));
+
+                // "euc-jp" is ambiguous between cp20932 and cp51932
+                d["euc_jp"] = d["cp51932"] = makeEncodingProxy(() => Encoding.GetEncoding(51932));
+
+                // set up rule breakers
+
+                // Python StdLib aliases "csiso2022jp" to "iso2022_jp" (cp50220 or cp50222)
+                // but "csiso2022jp" in .NET is a standalone encoding (cp50221)
+                d["csiso2022jp"] = d["cp50221"] = makeEncodingProxy(() => Encoding.GetEncoding(50221));
+
+                // Python StdLib aliases "x_mac_japanese" to "shift_jis" (cp932)
+                // but .NET has a standalone encoding "x-mac-japanese" (cp10001)
+                d["x_mac_japanese"] = d["cp10001"] = makeEncodingProxy(() => Encoding.GetEncoding(10001));
+
+                // Python StdLib aliases "ks_c_5601_1987" to "euc_kr" (cp51949), which is a subset of "uhc"
+                // but "ks_c_5601-1987" in .NET is a standalone encoding equivalent to "uhc" (cp949)
+                d["ks_c_5601_1987"] = d["ks_c_5601"] = d["ksc5601"] = d["korean"] = d["uhc"] = d["cp949"] = makeEncodingProxy(() => Encoding.GetEncoding(949));
+
+                // Python StdLib aliases "x_mac_korean" to "euc_kr"
+                // but "x-mac-korean" in .NET is a standalone encoding (cp10003)
+                d["x_mac_korean"] = d["cp10003"] = makeEncodingProxy(() => Encoding.GetEncoding(10003));
+
+                // Python StdLib aliases "euc_cn" to "gb2312" (cp936)
+                // but "euc-cn" in .NET is a standalone encoding (cp51936)
+                d["euc_cn"] = d["cp51936"] = makeEncodingProxy(() => Encoding.GetEncoding(51936));
+
+                // Python StdLib aliases "x_mac_simp_chinese" to "gb2312" (cp936)
+                // but .NET has a standalone encoding "x-mac-chinesesimp" (cp10008)
+                d["x_mac_simp_chinese"] = d["cp10008"] = makeEncodingProxy(() => Encoding.GetEncoding(10008));
+
+                // Python StdLib aliases "x_mac_trad_chinese" to "big5" (cp950)
+                // but .NET has a standalone encoding "x-mac-chinesetrad" (cp10002)
+                d["x_mac_trad_chinese"] = d["cp10002"] = makeEncodingProxy(() => Encoding.GetEncoding(10002));
+
+                // Python StdLib aliases "asmo_708" to "iso8859_6" (cp28596)
+                // but "asmo-708" in .NET is a standalone encoding (cp708)
+                d["asmo_708"] = d["cp708"] = makeEncodingProxy(() => Encoding.GetEncoding(708));
 
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding?>> kvp in d) {
@@ -1925,6 +2027,18 @@ namespace IronPython.Runtime.Operations {
 #endif
                 return d;
             }
+
+            internal static readonly Lazy<IDictionary<string, List<string>>> ReverseAliases = new Lazy<IDictionary<string, List<string>>>(() => {
+                var d = new Dictionary<string, List<string>>();
+                foreach (var kvp in Aliases) {
+                    if (d.TryGetValue(kvp.Value, out List<string>? aliases)) {
+                        aliases.Add(kvp.Key);
+                    } else {
+                        d.Add(kvp.Value, new List<string>() { kvp.Key });
+                    }
+                }
+                return d;
+            });
 
             internal static Dictionary<string, object> MakeErrorHandlersDict() {
                 var d = new Dictionary<string, object>();

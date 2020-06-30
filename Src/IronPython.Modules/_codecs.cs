@@ -28,17 +28,6 @@ namespace IronPython.Modules {
         internal const int StreamReaderIndex = 2;
         internal const int StreamWriterIndex = 3;
 
-        private static readonly Encoding MbcsEncoding;
-
-        static PythonCodecs() {
-#if NETCOREAPP || NETSTANDARD
-            // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-#endif
-            // Use Encoding.GetEncoding(0) instead of Encoding.Default (which returns UTF-8 with .NET Core)
-            MbcsEncoding = Encoding.GetEncoding(0);
-        }
-
         public static PythonTuple lookup(CodeContext/*!*/ context, [NotNull]string encoding)
             => PythonOps.LookupEncoding(context, encoding);
 
@@ -226,12 +215,12 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
             using IPythonBuffer buffer = input.GetBuffer();
-            return DoDecode(context, "mbcs", MbcsEncoding, buffer, errors).ToPythonTuple();
+            return DoDecode(context, "mbcs", StringOps.CodecsInfo.MbcsEncoding, buffer, errors).ToPythonTuple();
         }
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null)
-            => DoEncode(context, "mbcs", MbcsEncoding, input, errors).ToPythonTuple();
+            => DoEncode(context, "mbcs", StringOps.CodecsInfo.MbcsEncoding, input, errors).ToPythonTuple();
 
         #endregion
 

@@ -4,12 +4,13 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 
 namespace IronPython.Runtime.Operations {
     public static partial class StringOps {
         static partial class CodecsInfo {
-            internal static readonly Dictionary<string, string> Aliases = new Dictionary<string, string> {
+            internal static readonly Lazy<Dictionary<string, string>> Aliases = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string> {
                 #region Generated encoding aliases
 
                 // *** BEGIN GENERATED CODE ***
@@ -319,7 +320,19 @@ namespace IronPython.Runtime.Operations {
                 // *** END GENERATED CODE ***
 
                 #endregion
-            };
+            });
+
+            internal static readonly Lazy<IDictionary<string, List<string>>> ReverseAliases = new Lazy<IDictionary<string, List<string>>>(() => {
+                var d = new Dictionary<string, List<string>>();
+                foreach (var kvp in Aliases.Value) {
+                    if (d.TryGetValue(kvp.Value, out List<string>? aliases)) {
+                        aliases.Add(kvp.Key);
+                    } else {
+                        d.Add(kvp.Value, new List<string>() { kvp.Key });
+                    }
+                }
+                return d;
+            });
         }
     }
 }

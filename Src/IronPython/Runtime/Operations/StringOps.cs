@@ -1460,7 +1460,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             string? encName;
-            if (CodecsInfo.Aliases.TryGetValue(normName, out encName)) {
+            if (CodecsInfo.Aliases.Value.TryGetValue(normName, out encName)) {
                 if (TryGetNonaliasedEncoding(encName, out Encoding? enc)) {
                     CodecsInfo.Codecs[normName] = CodecsInfo.Codecs[encName];
                     encoding = enc;
@@ -1501,14 +1501,11 @@ namespace IronPython.Runtime.Operations {
 
             if (CodecsInfo.Codecs.TryGetValue(name, out Lazy<Encoding?>? proxy)) {
                 encoding = proxy.Value;
-            } else if (int.TryParse(name.Substring(name.StartsWith("cp") ? 2 : 0), out int codepage)) {
+            } else if (name.StartsWith("cp") && int.TryParse(name.Substring(2), out int codepage)) {
                 if (codepage < 0 || 65535 < codepage) return false;
                 try {
                     Encoding enc = Encoding.GetEncoding(codepage);
-                    var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
-                    CodecsInfo.Codecs[name] = fac;
-                    string cps = codepage.ToString();
-                    CodecsInfo.Codecs[cps] = CodecsInfo.Codecs["cp" + cps] = fac;
+                    CodecsInfo.Codecs[name] = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
                     encoding = enc;
                 } catch (NotSupportedException) {
                     CodecsInfo.Codecs[name] = NullFactory;
@@ -1520,8 +1517,7 @@ namespace IronPython.Runtime.Operations {
                     var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
                     CodecsInfo.Codecs[name] = fac;
                     if (enc.CodePage != 0) {
-                        string cps = enc.CodePage.ToString();
-                        CodecsInfo.Codecs[cps] = CodecsInfo.Codecs["cp" + cps] = fac;
+                        CodecsInfo.Codecs[$"cp{enc.CodePage}"] = fac;
                     }
                     encoding = enc;
                 } catch (ArgumentException) {
@@ -2027,18 +2023,6 @@ namespace IronPython.Runtime.Operations {
 #endif
                 return d;
             }
-
-            internal static readonly Lazy<IDictionary<string, List<string>>> ReverseAliases = new Lazy<IDictionary<string, List<string>>>(() => {
-                var d = new Dictionary<string, List<string>>();
-                foreach (var kvp in Aliases) {
-                    if (d.TryGetValue(kvp.Value, out List<string>? aliases)) {
-                        aliases.Add(kvp.Key);
-                    } else {
-                        d.Add(kvp.Value, new List<string>() { kvp.Key });
-                    }
-                }
-                return d;
-            });
 
             internal static Dictionary<string, object> MakeErrorHandlersDict() {
                 var d = new Dictionary<string, object>();

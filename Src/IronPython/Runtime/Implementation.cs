@@ -95,7 +95,7 @@ namespace IronPython.Runtime {
 
         static CurrentVersion() {
             var assembly = typeof(CurrentVersion).Assembly;
-            var version = assembly.GetName().Version;
+            var version = new AssemblyName(assembly.FullName).Version; // don't use Assembly.GetName since it fails in partial trust scenarios
             Major = version.Major;
             Minor = version.Minor;
             Micro = version.Build;

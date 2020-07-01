@@ -2214,7 +2214,7 @@ instOC = TestOC()
         // Options.DebugMode
 
 #if FEATURE_REMOTING
-        [Test]
+        // [Test] // https://github.com/IronLanguages/ironpython3/issues/898
         public void ScenarioPartialTrust() {
             // Mono doesn't implement partial trust
             if(System.Environment.OSVersion.Platform == System.PlatformID.Unix)
@@ -2227,10 +2227,7 @@ instOC = TestOC()
             info.ApplicationName = "Test";
 
             Evidence evidence = new Evidence();
-// TODO:
-#pragma warning disable 612, 618 // obsolete API
-            evidence.AddHost(new Zone(SecurityZone.Internet));
-#pragma warning restore 612, 618
+            evidence.AddHostEvidence(new Zone(SecurityZone.Internet));
 
             PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
@@ -2691,6 +2688,7 @@ if r.sum != 110:
                 } catch { }
             }
         }
+
         [Test]
         public void ScenarioSystemStatePrefix() {
             Assert.AreEqual(IronPythonTest.Common.RuntimeDirectory, pe.SystemState.prefix);

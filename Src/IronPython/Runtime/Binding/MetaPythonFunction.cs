@@ -503,9 +503,7 @@ namespace IronPython.Runtime.Binding {
 
                 for (int i = 0; i < normalArgumentCount; i++) {
                     if (exprArgs[i] != null) {
-                        if (_userProvidedParams != null && i >= Signature.GetProvidedPositionalArgumentCount()) {
-                            exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
-                        }
+                        exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
                         continue;
                     }
 
@@ -711,18 +709,42 @@ namespace IronPython.Runtime.Binding {
             /// a params list or the dictionary (or both).
             /// </summary>
             private Expression ValidateNotDuplicate(Expression value, string name, int position) {
-                EnsureParams();
+                List<Ast> statements = new List<Ast>();
 
-                return Ast.Block(
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByPosition)),
-                        AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),    // function
-                        AstUtils.Constant(name, typeof(string)),                               // name
-                        AstUtils.Constant(position),                                           // position
-                        _paramsLen                                                        // params list length
-                        ),
-                    value
+                if (_userProvidedParams != null && position >= Signature.GetProvidedPositionalArgumentCount()) {
+                    EnsureParams();
+
+                    statements.Add(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByPosition)),
+                            AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),    // function
+                            AstUtils.Constant(name, typeof(string)),                         // name
+                            AstUtils.Constant(position),                                     // position
+                            _paramsLen                                                       // params list length
+                        )
                     );
+                }
+                if (_dict != null) {
+                    _needCodeTest = true;
+                    statements.Add(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByName)),
+                            AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)), // function
+                            AstUtils.Constant(name, typeof(string)),                      // name
+                            AstUtils.Convert(_dict, typeof(PythonDictionary))             // params dict
+                        )
+                    );
+                }
+
+                // Return the value of the argument once we know that we don't have
+                // a duplicate
+                statements.Add(value);
+
+                if (statements.Count == 1) {
+                    return value;
+                } else {
+                    return Ast.Block(statements);
+                }
             }
 
             /// <summary>

@@ -2340,10 +2340,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void AddDictionaryArgument(PythonFunction function, string name, object value, PythonDictionary dict) {
-            if (dict.ContainsKey(name)) {
-                throw MultipleKeywordArgumentError(function, name);
-            }
-
+            VerifyUnduplicatedByName(function, name, dict);
             dict[name] = value;
         }
 
@@ -2352,6 +2349,13 @@ namespace IronPython.Runtime.Operations {
                 throw MultipleKeywordArgumentError(function, name);
             }
         }
+
+        public static void VerifyUnduplicatedByName(PythonFunction function, string name, PythonDictionary dict) {
+            if (dict.ContainsKey(name)) {
+                throw MultipleKeywordArgumentError(function, name);
+            }
+        }
+
 
         public static PythonList CopyAndVerifyParamsList(PythonFunction function, object list) {
             return new PythonList(list);

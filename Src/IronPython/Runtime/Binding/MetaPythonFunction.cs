@@ -731,20 +731,21 @@ namespace IronPython.Runtime.Binding {
                             typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByName)),
                             AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)), // function
                             AstUtils.Constant(name, typeof(string)),                      // name
-                            AstUtils.Convert(_dict, typeof(PythonDictionary))             // params dict
+                            AstUtils.Convert(_dict, typeof(PythonDictionary)),            // params dict
+                            AstUtils.Constant(                                            // keywordArg
+                                position >= Signature.GetProvidedPositionalArgumentCount(), typeof(bool))
                         )
                     );
                 }
 
                 // Return the value of the argument once we know that we don't have
                 // a duplicate
-                statements.Add(value);
-
-                if (statements.Count == 1) {
+                if (statements.Count == 0) {
                     return value;
-                } else {
-                    return Ast.Block(statements);
                 }
+
+                statements.Add(value);
+                return Ast.Block(statements);
             }
 
             /// <summary>

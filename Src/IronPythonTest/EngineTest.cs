@@ -204,7 +204,7 @@ namespace IronPythonTest {
         private static readonly string clspartName = "clsPart";
 
 #if FEATURE_REMOTING
-        [Test]
+        // [Test] // https://github.com/IronLanguages/ironpython3/issues/904
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();

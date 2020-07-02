@@ -8,18 +8,21 @@ from generate import generate
 
 def gen_aliases(cw):
     cw.writeline("// Based on encodings.aliases")
+    cw.enter_block("var d = new Dictionary<string, string>")
 
-    codecs = sorted(set(encodings.aliases.aliases.values()))
-    for codec in codecs:
+    for codec in sorted(set(encodings.aliases.aliases.values())):
         e = encodings.search_function(codec)
-        if not e or not e._is_text_encoding:
+        if e is None or not e._is_text_encoding or e.name == "mbcs":
             continue
+
         cw.writeline()
         aliases = sorted(alias for alias, aliased_codec in encodings.aliases.aliases.items() if aliased_codec == codec)
         for alias in aliases:
             qalias = '"{0}"'.format(alias)
             qcodec = '"{0}"'.format(codec)
             cw.writeline('{{ {0:24} , {1:24} }},'.format(qalias, qcodec))
+
+    cw.exit_block(";")
 
 def main():
     return generate(

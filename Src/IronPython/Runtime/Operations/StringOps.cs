@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -45,7 +46,7 @@ namespace IronPython.Runtime.Operations {
             return StringOps.Quote(Value);
         }
 
-        #endregion        
+        #endregion
 
         [return: MaybeNotImplemented]
         public object __eq__(object? other) {
@@ -145,7 +146,7 @@ namespace IronPython.Runtime.Operations {
 
     /// <summary>
     /// StringOps is the static class that contains the methods defined on strings, i.e. 'abc'
-    /// 
+    ///
     /// Here we define all of the methods that a Python user would see when doing dir('abc').
     /// If the user is running in a CLS aware context they will also see all of the methods
     /// defined in the CLS System.String type.
@@ -163,7 +164,7 @@ namespace IronPython.Runtime.Operations {
                 return x;
             }
 
-            // we don't invoke PythonOps.StringRepr here because we want to return the 
+            // we don't invoke PythonOps.StringRepr here because we want to return the
             // Extensible<string> directly back if that's what we received from __str__.
             object value = PythonContext.InvokeUnaryOperator(context, UnaryOperators.String, x);
             if (value is string || value is Extensible<string>) {
@@ -740,15 +741,15 @@ namespace IronPython.Runtime.Operations {
                 prevCharCased = currCharCased;
             }
 
-            //  if we've gone through the whole string and haven't encountered any rule 
-            //  violations but also haven't seen an Uppercased char, then this is not a 
+            //  if we've gone through the whole string and haven't encountered any rule
+            //  violations but also haven't seen an Uppercased char, then this is not a
             //  title e.g. '\n', all whitespace etc.
             return containsUpper;
         }
 
         /// <summary>
-        /// Return a string which is the concatenation of the strings 
-        /// in the sequence seq. The separator between elements is the 
+        /// Return a string which is the concatenation of the strings
+        /// in the sequence seq. The separator between elements is the
         /// string providing this method
         /// </summary>
         public static string join([NotNull]this string self, object? sequence) {
@@ -983,7 +984,7 @@ namespace IronPython.Runtime.Operations {
                 return SplitInternal(self, (char[]?)null, -1);
             }
             //  rsplit works like split but needs to split from the right;
-            //  reverse the original string (and the sep), split, reverse 
+            //  reverse the original string (and the sep), split, reverse
             //  the split list and finally reverse each element of the list
             string reversed = Reverse(self);
             if (sep != null) sep = Reverse(sep);
@@ -1195,7 +1196,7 @@ namespace IronPython.Runtime.Operations {
                 return self;
             }
 
-            // List<char> is about 2/3rds as expensive as StringBuilder appending individual 
+            // List<char> is about 2/3rds as expensive as StringBuilder appending individual
             // char's so we use that instead of a StringBuilder
             List<char> res = new List<char>();
             for (int i = 0; i < self.Length; i++) {
@@ -1233,12 +1234,12 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Replaces each replacement field in the string with the provided arguments.
-        /// 
+        ///
         /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
         /// field_name        =  (identifier | integer) ("." identifier | "[" element_index "]")*
-        /// 
+        ///
         /// format_spec: [[fill]align][sign][#][0][width][,][.precision][type]
-        /// 
+        ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, [NotNull]string format_string, [NotNull]params object[] args) {
@@ -1252,12 +1253,12 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Replaces each replacement field in the string with the provided arguments.
-        /// 
+        ///
         /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
         /// field_name        =  (identifier | integer) ("." identifier | "[" element_index "]")*
-        /// 
+        ///
         /// format_spec: [[fill]align][sign][#][0][width][.precision][type]
-        /// 
+        ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, [NotNull]string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
@@ -1949,7 +1950,7 @@ namespace IronPython.Runtime.Operations {
                 Dictionary<string, Lazy<Encoding?>> d = new Dictionary<string, Lazy<Encoding?>>();
                 Lazy<Encoding?> makeEncodingProxy(Func<Encoding?> factory) => new Lazy<Encoding?>(factory, isThreadSafe: false);
 
-                // set up well-known/often used mappings
+                // set up well-known/often-used mappings
                 d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]
                     = d["cp28591"] = d["28591"] = d["cp819"] = d["819"]
                     = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"]        = makeEncodingProxy(() => Latin1Encoding);
@@ -1967,7 +1968,10 @@ namespace IronPython.Runtime.Operations {
                 // set up internal codecs
                 d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);
                 d["unicode_escape"] = makeEncodingProxy(() => UnicodeEscapeEncoding);
-                d["mbcs"] = makeEncodingProxy(() => MbcsEncoding);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    d["mbcs"] = makeEncodingProxy(() => MbcsEncoding);
+                }
 
                 // TODO: revisit the exceptions to rules below once _codecs_cn, _codecs_hk, _codecs_jp, and _codecs_kr are implemented
 
@@ -2028,13 +2032,13 @@ namespace IronPython.Runtime.Operations {
                 var d = new Dictionary<string, object>();
 
                 d["strict"] = BuiltinFunction.MakeFunction(
-                    "strict_errors", 
-                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(StrictErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
+                    "strict_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(StrictErrors), BindingFlags.Static | BindingFlags.NonPublic)),
                     typeof(StringOps));
 
                 d["ignore"] = BuiltinFunction.MakeFunction(
-                    "ignore_errors", 
-                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(IgnoreErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
+                    "ignore_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(IgnoreErrors), BindingFlags.Static | BindingFlags.NonPublic)),
                     typeof(StringOps));
 
                 d["replace"] = BuiltinFunction.MakeFunction(
@@ -2079,7 +2083,7 @@ namespace IronPython.Runtime.Operations {
                 return SplitEmptyString(seps != null);
             }
 
-            //  If the optional second argument sep is absent or None, the words are separated 
+            //  If the optional second argument sep is absent or None, the words are separated
             //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
             string[] r = StringUtils.Split(
                 self,
@@ -2251,7 +2255,7 @@ namespace IronPython.Runtime.Operations {
 
                 string res = LiteralParser.ParseString(data, _raw, GetErrorHandler());
 
-                if (res.Length < charCount) charCount = res.Length; 
+                if (res.Length < charCount) charCount = res.Length;
                 res.AsSpan().Slice(0, charCount).CopyTo(dest);
                 return charCount;
             }
@@ -2305,7 +2309,7 @@ namespace IronPython.Runtime.Operations {
         /// behavior we're ok - both of us support throwing and replacing.  For custom behaviors
         /// we define a single fallback for decoding and encoding that calls the python function to do
         /// the replacement.
-        /// 
+        ///
         /// When we do the replacement we call the provided handler w/ a UnicodeEncodeError or UnicodeDecodeError
         /// object which contains:
         ///         encoding    (string, the encoding the user requested)
@@ -2313,7 +2317,7 @@ namespace IronPython.Runtime.Operations {
         ///         start       (the start of the invalid sequence)
         ///         end         (the exclusive end of the invalid sequence)
         ///         reason      (the error message, e.g. 'unexpected byte code', not sure of others)
-        /// 
+        ///
         /// The decoder returns a tuple of (str, int) where str is the replacement string
         /// and int is an index where encoding/decoding should continue.
         /// TODO: returned int is currently ignored, assumed to be equal to end (i.e. the index is not adjusted).
@@ -2696,9 +2700,9 @@ namespace IronPython.Runtime.Operations {
                     return PythonTuple.MakeTuple(string.Empty, uee.end);
                 case PythonExceptions._UnicodeTranslateError ute:
                     return PythonTuple.MakeTuple(string.Empty, ute.end);
-                case DecoderFallbackException dfe: 
+                case DecoderFallbackException dfe:
                     return PythonTuple.MakeTuple(string.Empty, dfe.Index + dfe.BytesUnknown?.Length ?? 0);
-                case EncoderFallbackException efe: 
+                case EncoderFallbackException efe:
                     return PythonTuple.MakeTuple(string.Empty, efe.Index + (efe.CharUnknownHigh != '\0' ? 2 : 1));
                 default:
                     throw PythonOps.TypeError("codec must pass exception instance");

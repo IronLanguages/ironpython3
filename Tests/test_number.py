@@ -1967,6 +1967,16 @@ class NumberTest(IronPythonTestCase):
 
         self.assertEqual(long(Foo()), long(42))
 
+    def test_long_div(self):
+        x = int('2'*400 + '9')
+        y = int('3'*400 + '8')
+        nx = -x
+        self.assertEqual(x/y, 2/3)
+        self.assertEqual(x/(x+1), 1.0)
+        self.assertEqual((x+1)/x, 1.0)
+        self.assertEqual(nx/(x+1), -1.0)
+        self.assertEqual((x+1)/nx, -1.0)
+
     def test_pow_edges(self):
         class foo(object):
             def __pow__(self, *args): return NotImplemented

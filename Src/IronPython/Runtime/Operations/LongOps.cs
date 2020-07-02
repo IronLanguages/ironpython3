@@ -320,12 +320,21 @@ namespace IronPython.Runtime.Operations {
             BigInteger res = BigInteger.DivRem(x, y, out rem);
             if (res.TryToFloat64(out fRes)) {                
                 if(rem != BigInteger.Zero) {
-                    // try and figure out the fractional portion
-                    BigInteger fraction = y / rem;
-                    if (fraction.TryToFloat64(out fDiv)) {
-                        if (fDiv != 0) {
-                            fRes += 1 / fDiv;
+                    // scale remainder so that the fraction could be integer
+                    BigInteger fraction = BigInteger.DivRem(rem  << 56, y, out rem); // adding 7 tailing zero bytes, bigger than sys.float_info.mant_dig
+                    // round to nearest FPU
+                    if (rem.IsPositive()) {
+                        if (rem >= y / 2) {
+                            fraction += 1;
                         }
+                    } else {
+                        if (rem <= -y / 2) {
+                            fraction -= 1;
+                        }
+                    }
+
+                    if (fraction.TryToFloat64(out fDiv)) {
+                        fRes += fDiv / (1L << 56);
                     }
                 }
 
@@ -333,7 +342,7 @@ namespace IronPython.Runtime.Operations {
             }            
 
             // otherwise report an error
-            throw PythonOps.OverflowError("long/long too large for a float");
+            throw PythonOps.OverflowError("integer division result too large for a float");
         }
 
         // The op_* nomenclature is required here to avoid name collisions with the

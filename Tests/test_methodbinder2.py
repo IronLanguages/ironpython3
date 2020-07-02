@@ -65,7 +65,6 @@ if is_cli:
     arrayByte = array_byte((10, 20))
     arrayObj = array_object(['str', 10])
 
-
 @skipUnlessIronPython()
 class MethodBinder2Test(IronPythonTestCase):
     def setUp(self):
@@ -192,8 +191,6 @@ class MethodBinder2Test(IronPythonTestCase):
         target.M140(PT_C3_int(), PT_C3_int())
         self.assertEqual(Flag.Value, 140); Flag.Value = 99
 
-
-
 ######### generated python code below #########
 
     def test_arg_ClrReference(self):
@@ -318,7 +315,6 @@ class MethodBinder2Test(IronPythonTestCase):
     def test_arg_String(self):
         from IronPythonTest.BinderTest import COverloads_String
         target = COverloads_String()
-        from IronPythonTest.BinderTest import COverloads_String
         for (arg, mapping, funcTypeError, funcOverflowError) in [
             (         'a', _merge(_first('M100 M101 '), _second('M102 ')), '', '', ),
             (       'abc', _merge(_first('M100 M101 '), _second('M102 ')), '', '', ),
@@ -335,7 +331,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (        E1.A, _first('M100 '), 'M101 ', '', ),
             (        E2.A, _first('M101 '), 'M100 ', '', ),
             (           1, _second('M100 M101 '), '', '', ),
-            (     UInt163, _second('M101 '), 'M100 ', '', ),
+            (     UInt163, _second('M100 M101 '), '', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
@@ -383,45 +379,6 @@ class MethodBinder2Test(IronPythonTestCase):
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
-    #------------------------------------------------------------------------------
-    #--Boolean
-    def test_arg_boolean_overload(self):
-        '''
-        TODO:
-        In addition to test_arg_boolean_overload, we need to split up test_arg_Boolean
-        into two more functions as well - test_arg_boolean_overload_typeerror and
-        test_arg_boolean_overload_overflowerror.  This should be done for all of these
-        types of tests to make them more readable and maintainable.
-        '''
-        from IronPythonTest.BinderTest import COverloads_Boolean, Flag
-        o = COverloads_Boolean()
-        
-        param_method_map = {
-            None : [        o.M100, o.M101, o.M102, o.M103, o.M104, o.M105, o.M106, 
-                            o.M107, o.M108, o.M109, o.M110, o.M111],
-            True : [        o.M100, o.M101, o.M102, o.M103, o.M104, o.M105, o.M106, o.M107, o.M108, o.M109, o.M110, o.M111, o.M112],
-            False : [       o.M100, o.M101, o.M102, o.M103, o.M104, o.M105, o.M106, o.M107, o.M108, o.M109, o.M110, o.M111, o.M112],
-            100 : [         o.M100],
-            myint(100): [   o.M100],
-            -100 : [        o.M100],
-            UInt32Max: [    o.M100, o.M106],
-            long(200) : [   o.M100, o.M106, o.M109],
-            long(-200) : [  o.M100, o.M106, o.M109],
-            Byte10 : [      o.M100],
-            SBytem10 : [    o.M100],
-            Int1610 : [     o.M100],
-            Int16m20 : [    o.M100],
-            12.34 : [       o.M100, o.M101, o.M102, o.M103, o.M104, o.M105, o.M106, o.M107, o.M108, o.M109, o.M110],
-            
-        }
-        
-        for param in param_method_map.keys():
-            for meth in param_method_map[param]:
-                expected_flag = int(meth.__name__[1:])
-                meth(param)
-                self.assertEqual(expected_flag, Flag.Value)
-        
-
     def test_arg_Boolean(self):
         from IronPythonTest.BinderTest import COverloads_Boolean
         target = COverloads_Boolean()
@@ -429,17 +386,17 @@ class MethodBinder2Test(IronPythonTestCase):
             (        None, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 '), _second('M112 ')), '', '', ),
             (        True, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), _second('')), '', '', ),
             (       False, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), _second('')), '', '', ),
-            (         100, _merge(_first('M100 '), _second('M106 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M107 ', '', ),
+            (         100, _merge(_first('M100 '), _second('M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), '', '', ),
             (  myint(100), _merge(_first('M100 '), _second('M106 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M107 ', '', ),
-            (        -100, _merge(_first('M100 '), _second('M106 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M107 ', '', ),
-            (   UInt32Max, _merge(_first('M100 M106 '), _second('M105 M107 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 ', '', ),
-            (   long(200), _merge(_first('M100 M106 M109 '), _second('M108 M112 M110 M111 ')), 'M101 M102 M103 M104 M105 M107 ', '', ),
-            (  long(-200), _merge(_first('M100 M106 M109 '), _second('M108 M112 M110 M111 ')), 'M101 M102 M103 M104 M105 M107 ', '', ),
-            (      Byte10, _merge(_first('M100 '), _second('M101 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), 'M102 ', '', ),
-            (    SBytem10, _merge(_first('M100 '), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), 'M101 M103 M105 M107 ', '', ),
-            (     Int1610, _merge(_first('M100 '), _second('M104 M106 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M105 M107 ', '', ),
-            (    Int16m20, _merge(_first('M100 '), _second('M104 M106 M108 M109 M110 M111 M112 ')), 'M101 M102 M103 M105 M107 ', '', ),
-            (       12.34, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 '), _second('M111 M112 ')), '', '', ),
+            (        -100, _merge(_first('M100 '), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), '', 'M101 M103 M105 M107 ', ),
+            (   UInt32Max, _merge(_first('M100 '), _second('M105 M107 M108 M109 M110 M111 M112 ')), '', 'M101 M102 M103 M104 M106 ', ),
+            (   long(200), _merge(_first('M100 M109 '), _second('M101 M103 M104 M105 M106 M107 M108 M112 M110 M111 ')), '', 'M102 ', ),
+            (  long(-200), _merge(_first('M100 M109 '), _second('M104 M106 M108 M112 M110 M111 ')), '', 'M101 M102 M103 M105 M107 ', ),
+            (      Byte10, _merge(_first('M100 '), _second('M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), '', '', ),
+            (    SBytem10, _merge(_first('M100 '), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), '', 'M101 M103 M105 M107 ', ),
+            (     Int1610, _merge(_first('M100 '), _second('M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), '', '', ),
+            (    Int16m20, _merge(_first('M100 '), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), '', 'M101 M103 M105 M107 ', ),
+            (       12.34, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 '), _second('M110 M111 M112 ')), '', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
@@ -451,17 +408,17 @@ class MethodBinder2Test(IronPythonTestCase):
             (        None, _merge(_first(''), _second('M100 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 ', '', ),
             (        True, _merge(_first('M101 M102 M103 M104 M105 M107 '), _second('M100 M106 M108 M109 M110 M112 M111 ')), '', '', ),
             (        False, _merge(_first('M101 M102 M103 M104 M105 M107 '), _second('M100 M106 M108 M109 M110 M112 M111 ')), '', '', ),
-            (         100, _merge(_first('M101 M102 M103 M104 M105 M107 '), _second('M106 M108 M109 M110 M111 M112 ')), 'M100 ', '', ),
+            (         100, _merge(_first('M100 M101 M102 M103 M104 M105 M107 '), _second('M106 M108 M109 M110 M111 M112 ')), '', '', ),
             (  myint(100), _merge(_first('M101 M102 M103 M104 M105 M107 '), _second('M106 M108 M109 M110 M111 M112 ')), 'M100 ', '', ),
-            (        -100, _merge(_first(''), _second('M106 M108 M109 M110 M111 M112 ')), 'M100 ', 'M101 M102 M103 M104 M105 M107 ', ),
-            (   UInt32Max, _merge(_first(''), _second('M105 M107 M108 M109 M110 M111 M112 ')), 'M100 ', 'M101 M102 M103 M104 M106 ', ),
-            (   long(200), _merge(_first('M101 M102 M103 M104 M105 M106 M107 M109 '), _second('M108 M112 M110 M111 ')), 'M100 ', '', ),
-            (  long(-200), _merge(_first(''), _second('M108 M112 M110 M111 ')), 'M100 ', 'M101 M102 M103 M104 M105 M106 M107 M109 ', ),
+            (        -100, _merge(_first(''), _second('M106 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M104 M105 M107 ', ),
+            (   UInt32Max, _merge(_first(''), _second('M105 M107 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M104 M106 ', ),
+            (   long(200), _merge(_first('M100 M101 M102 M103 M104 M105 M106 M109 '), _second('M107 M108 M110 M111 M112 ')), '', '', ),
+            (  long(-200), _merge(_first(''), _second('M108 M112 M110 M111 ')), '', 'M100 M101 M102 M103 M104 M105 M106 M107 M109 ', ),
             (      Byte10, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
-            (    SBytem10, _merge(_first(''), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), 'M100 ', 'M101 M103 M105 M107 ', ),
-            (     Int1610, _merge(_first('M101 M102 M103 M105 M107 '), _second('M104 M106 M108 M109 M110 M111 M112 ')), 'M100 ', '', ),
-            (    Int16m20, _merge(_first(''), _second('M104 M106 M108 M109 M110 M111 M112 ')), 'M100 ', 'M101 M102 M103 M105 M107 ', ),
-            (       12.34, _merge(_first('M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 '), _second('M100 M111 M112 ')), '', '', ),
+            (    SBytem10, _merge(_first(''), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M103 M105 M107 ', ),
+            (     Int1610, _merge(_first('M100 M101 M102 M103 M105 M107 '), _second('M104 M106 M108 M109 M110 M111 M112 ')), '', '', ),
+            (    Int16m20, _merge(_first(''), _second('M104 M106 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M105 M107 ', ),
+            (       12.34, _merge(_first('M101 M102 M103 M104 M105 M106 M107 M108 '), _second('M100 M109 M110 M111 M112 ')), '', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
@@ -472,17 +429,17 @@ class MethodBinder2Test(IronPythonTestCase):
             (        None, _merge(_first(''), _second('M100 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 ', '', ),
             (        True, _merge(_first('M101 '), _second('M100 M102 M103 M104 M105 M107 M106 M108 M109 M110 M112 M111 ')), '', '', ),
             (       False, _merge(_first('M101 '), _second('M100 M102 M103 M104 M105 M107 M106 M108 M109 M110 M112 M111 ')), '', '', ),
-            (         100, _merge(_first('M101 '), _second('M102 M103 M104 M105 M107 M106 M108 M109 M110 M111 M112 ')), 'M100 ', '', ),
+            (         100, _merge(_first('M100 M101 '), _second('M102 M103 M104 M105 M107 M106 M108 M109 M110 M111 M112 ')), '', '', ),
             (  myint(100), _merge(_first('M101 '), _second('M102 M103 M104 M105 M107 M106 M108 M109 M110 M111 M112 ')), 'M100 ', '', ),
-            (        -100, _merge(_first('M101 '), _second('M103 M106 M108 M109 M110 M111 M112 ')), 'M100 ', 'M102 M104 M105 M107 ', ),
-            (   UInt32Max, _merge(_first(''), _second('M105 M107 M108 M109 M110 M111 M112 ')), 'M100 ', 'M101 M102 M103 M104 M106 ', ),
-            (   long(200), _merge(_first('M101 M106 M109 '), _second('M102 M104 M105 M107 M108 M110 M111 M112 ')), 'M100 ', 'M103 ', ),
-            (  long(-200), _merge(_first('M101 M106 M109 '), _second('M108 M110 M111 M112 ')), 'M100 ', 'M102 M103 M104 M105 M107 ', ),
+            (        -100, _merge(_first('M100 M101 '), _second('M103 M106 M108 M109 M110 M111 M112 ')), '', 'M102 M104 M105 M107 ', ),
+            (   UInt32Max, _merge(_first(''), _second('M105 M107 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M104 M106 ', ),
+            (   long(200), _merge(_first('M100 M101 M106 M109 '), _second('M102 M104 M105 M107 M108 M110 M111 M112 ')), '', 'M103 ', ),
+            (  long(-200), _merge(_first('M100 M101 M106 M109 '), _second('M108 M110 M111 M112 ')), '', 'M102 M103 M104 M105 M107 ', ),
             (      Byte10, _merge(_first('M100 M101 M103 M106 M108 M109 M110 M111 M112'), _second('M102 M104 M105 M107 ')), '', '', ),
             (    SBytem10, _merge(_first('M100 M101 M102 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), _second('M103 ')), '', '', ),
             (     Int1610, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             (    Int16m20, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
-            (       12.34, _merge(_first('M101 M106 M108 M109 M110 '), _second('M100 M111 M112 M102 M103 M104 M105 M107 ')), '', '', ),
+            (       12.34, _merge(_first('M101 M106 M108 '), _second('M100 M111 M109 M110 M112 M102 M103 M104 M105 M107 ')), '', '', ),
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
@@ -496,9 +453,9 @@ class MethodBinder2Test(IronPythonTestCase):
             (         100, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             (  myint(100), _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             (        -100, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
-            (   UInt32Max, _merge(_first(''), _second('M100 M106 M107 M108 M109 M110 M111 M112 ')), '', 'M101 M102 M103 M104 M105 ', ),
-            (   long(200), _merge(_first('M101 M109 '), _second('M100 M102 M104 M105 M106 M107 M108 M110 M111 M112 ')), '', 'M103 ', ),
-            (  long(-200), _merge(_first('M101 M109 '), _second('M100 M105 M108 M110 M111 M112 ')), '', 'M102 M103 M104 M106 M107 ', ),
+            (   UInt32Max, _merge(_first(''), _second('M106 M107 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M104 M105 ', ),
+            (   long(200), _merge(_first('M100 M101 M109 '), _second('M102 M104 M105 M106 M107 M108 M110 M111 M112 ')), '', 'M103 ', ),
+            (  long(-200), _merge(_first('M100 M101 M109 '), _second('M105 M108 M110 M111 M112 ')), '', 'M102 M103 M104 M106 M107 ', ),
             (      Byte10, _merge(_first('M100 M101 M103 M108 M109 M110 M111 M112'), _second('M102 M104 M105 M106 M107 ')), '', '', ),
             (    SBytem10, _merge(_first('M100 M101 M102 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M103 M105 ')), '', '', ),
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M105 ')), '', '', ),
@@ -518,8 +475,8 @@ class MethodBinder2Test(IronPythonTestCase):
             (  myint(100), _merge(_first('M100 M101 M102 M103 M104 M105 M106 M108 M112 '), _second('M107 M109 M111 ')), 'M110 ', '', ),
             (        -100, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M108 M112 '), _second('M107 M109 M111 ')), 'M110 ', '', ),
             (   UInt32Max, _merge(_first('M100 M101 M102 M103 M104 M105 M107 M112 '), _second('M106 M108 M109 M111 ')), 'M110 ', '', ),
-            (   long(200), _merge(_first('M101 M100 M102 M103 M104 M105 M106 M107 M108 M109 M110 M112 '), _second('M111 ')), '', '', ),
-            (  long(-200), _merge(_first('M101 M100 M102 M103 M104 M105 M106 M107 M108 M109 M110 M112 '), _second('M111 ')), '', '', ),
+            (   long(200), _merge(_first('M101 M100 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), _second('')), '', '', ),
+            (  long(-200), _merge(_first('M101 M100 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), _second('')), '', '', ),
             (      Byte10, _merge(_first('M100 M101 M103 M112 '), _second('M102 M104 M105 M106 M107 M108 M109 M111 ')), 'M110 ', '', ),
             (    SBytem10, _merge(_first('M100 M101 M102 M104 M106 M108 M112 '), _second('M103 M105 M107 M109 M111 ')), 'M110 ', '', ),
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M108 M112 '), _second('M105 M107 M109 M111 ')), 'M110 ', '', ),

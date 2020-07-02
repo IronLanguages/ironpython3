@@ -71,6 +71,26 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
+            if (Converter.IsNumeric(arg.LimitType)) {
+                if (Converter.IsFloatingPoint(arg.LimitType)) {
+                    if (Converter.IsFloatingPoint(candidateOne.Type)) {
+                        if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
+                            return Candidate.One;
+                        }
+                    } else if (Converter.IsFloatingPoint(candidateTwo.Type)) {
+                        return Candidate.Two;
+                    }
+                } else { // arg is integer
+                    if (Converter.IsInteger(candidateOne.Type)) {
+                        if (!Converter.IsInteger(candidateTwo.Type)) {
+                            return Candidate.One;
+                        }
+                    } else if (Converter.IsInteger(candidateTwo.Type)) {
+                        return Candidate.Two;
+                    }
+                }
+            }
+
             bool isBytesLikeOne = IsBytesLikeParameter(candidateOne);
             bool isBytesLikeTwo = IsBytesLikeParameter(candidateTwo);
 

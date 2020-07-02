@@ -429,6 +429,7 @@ namespace IronPython.Runtime {
         private static readonly Type DoubleType = typeof(System.Double);
         private static readonly Type DecimalType = typeof(System.Decimal);
         private static readonly Type Int64Type = typeof(System.Int64);
+        private static readonly Type UInt64Type = typeof(System.UInt64);
         private static readonly Type CharType = typeof(System.Char);
         private static readonly Type SingleType = typeof(System.Single);
         private static readonly Type BooleanType = typeof(System.Boolean);
@@ -560,7 +561,6 @@ namespace IronPython.Runtime {
 
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;
-                if (toType == typeof(float)) return true;
                 if (toType == typeof(Complex)) return true;
                 return false;
             }
@@ -769,8 +769,9 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (toType == DoubleType && fromType == DecimalType) return true;
-            if (toType == SingleType && fromType == DecimalType) return true;
+            if (toType == DoubleType || toType == SingleType) {
+                if (IsNumeric(fromType) && fromType != ComplexType) return true;
+            }
 
             if (toType.IsArray) {
                 return typeof(PythonTuple).IsAssignableFrom(fromType);
@@ -824,13 +825,14 @@ namespace IronPython.Runtime {
                 } else if (genTo == NullableOfTType) {
                     if (fromType == typeof(DynamicNull) || CanConvertFrom(fromType, toType.GetGenericArguments()[0], allowNarrowing)) {
                         return true;
-                    }                
+                    }
                 } else if (genTo == IDictOfTType) {
                     return IDictionaryOfObjectType.IsAssignableFrom(fromType);
                 }
             }
 
             if (fromType == BigIntegerType && toType == Int64Type) return true;
+            if (fromType == BigIntegerType && toType == UInt64Type) return true;
             if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
 
             return false;
@@ -904,6 +906,23 @@ namespace IronPython.Runtime {
                 default:
                     return true;
             }
+        }
+
+        internal static bool IsFloatingPoint(Type t) {
+            switch (t.GetTypeCode()) {
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.Decimal:
+                    return true;
+                case TypeCode.Object:
+                    return t == ComplexType;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool IsInteger(Type t) {
+            return IsNumeric(t) && !IsFloatingPoint(t);
         }
 
         private static bool IsPythonType(Type t) {

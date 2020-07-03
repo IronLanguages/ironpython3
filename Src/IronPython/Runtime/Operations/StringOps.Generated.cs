@@ -329,7 +329,7 @@ namespace IronPython.Runtime.Operations {
                 return d;
             });
 
-            internal static readonly Lazy<IDictionary<string, List<string>>> ReverseAliases = new Lazy<IDictionary<string, List<string>>>(() => {
+            internal static readonly Lazy<IReadOnlyDictionary<string, List<string>>> ReverseAliases = new Lazy<IReadOnlyDictionary<string, List<string>>>(() => {
                 var d = new Dictionary<string, List<string>>();
                 foreach (var kvp in Aliases.Value) {
                     if (d.TryGetValue(kvp.Value, out List<string>? aliases)) {

@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -13,6 +14,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -1495,7 +1497,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Private implementation details
 
-        private static readonly Lazy<Encoding?> NullFactory = new Lazy<Encoding?>(() => null, isThreadSafe: false);
+        private static readonly Lazy<Encoding?> NullFactory = new Lazy<Encoding?>(() => null, LazyThreadSafetyMode.PublicationOnly);
 
         private static bool TryGetNonaliasedEncoding(string name, [NotNullWhen(true)] out Encoding? encoding) {
             encoding = null;
@@ -1506,7 +1508,7 @@ namespace IronPython.Runtime.Operations {
                 if (codepage < 0 || 65535 < codepage) return false;
                 try {
                     Encoding enc = Encoding.GetEncoding(codepage);
-                    CodecsInfo.Codecs[name] = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
+                    CodecsInfo.Codecs[name] = new Lazy<Encoding?>(() => enc, LazyThreadSafetyMode.PublicationOnly);
                     encoding = enc;
                 } catch (NotSupportedException) {
                     CodecsInfo.Codecs[name] = NullFactory;
@@ -1515,7 +1517,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 try {
                     Encoding enc = Encoding.GetEncoding(RenormalizeEncodingName(name));
-                    var fac = new Lazy<Encoding?>(() => enc, isThreadSafe: false);
+                    var fac = new Lazy<Encoding?>(() => enc, LazyThreadSafetyMode.PublicationOnly);
                     CodecsInfo.Codecs[name] = fac;
                     if (enc.CodePage != 0) {
                         CodecsInfo.Codecs[$"cp{enc.CodePage}"] = fac;
@@ -1934,7 +1936,7 @@ namespace IronPython.Runtime.Operations {
             internal static readonly Encoding MbcsEncoding;
             internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
             internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
-            internal static readonly Dictionary<string, Lazy<Encoding?>> Codecs;
+            internal static readonly IDictionary<string, Lazy<Encoding?>> Codecs;
 
             static CodecsInfo() {
 #if NETCOREAPP || NETSTANDARD
@@ -1946,9 +1948,9 @@ namespace IronPython.Runtime.Operations {
                 Codecs = MakeCodecsDict();
             }
 
-            private static Dictionary<string, Lazy<Encoding?>> MakeCodecsDict() {
-                Dictionary<string, Lazy<Encoding?>> d = new Dictionary<string, Lazy<Encoding?>>();
-                Lazy<Encoding?> makeEncodingProxy(Func<Encoding?> factory) => new Lazy<Encoding?>(factory, isThreadSafe: false);
+            private static ConcurrentDictionary<string, Lazy<Encoding?>> MakeCodecsDict() {
+                var d = new ConcurrentDictionary<string, Lazy<Encoding?>>();
+                Lazy<Encoding?> makeEncodingProxy(Func<Encoding?> factory) => new Lazy<Encoding?>(factory, LazyThreadSafetyMode.PublicationOnly);
 
                 // set up well-known/often-used mappings
                 d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]

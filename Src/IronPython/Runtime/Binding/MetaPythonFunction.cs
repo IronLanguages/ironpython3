@@ -445,10 +445,12 @@ namespace IronPython.Runtime.Binding {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
                                     if (exprArgs[j] != null) {
                                         // kw-argument provided for already provided normal argument.
+                                        // Since the repeated kwargs is caught by a syntaxerror, this
+                                        // error can only occur with a positional-keyward arg conflict
                                         if (_error == null) {
                                             _error = _call.Throw(
                                                 Expression.Call(
-                                                    typeof(PythonOps).GetMethod(nameof(PythonOps.MultipleKeywordArgumentError)),
+                                                    typeof(PythonOps).GetMethod(nameof(PythonOps.MultipleArgumentError)),
                                                     GetFunctionParam(),
                                                     Expression.Constant(_func.Value.ArgNames[j])
                                                 ),
@@ -725,6 +727,8 @@ namespace IronPython.Runtime.Binding {
                     );
                 }
                 if (_dict != null) {
+                    // A code test is needed because the kwargs can only conflict
+                    // with arguments on the basis of their names
                     _needCodeTest = true;
                     statements.Add(
                         Ast.Call(

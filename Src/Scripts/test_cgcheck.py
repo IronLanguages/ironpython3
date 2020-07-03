@@ -22,6 +22,7 @@ def test_main(level='full'):
         'generate_casts',
         'generate_dict_views',
         'generate_dynsites',
+        'generate_encoding_aliases',
         'generate_exceptions',
         'generate_math',
         'generate_ops',

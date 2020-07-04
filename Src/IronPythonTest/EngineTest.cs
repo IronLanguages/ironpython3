@@ -459,7 +459,7 @@ x = 42", scope);
                 )
             );
 
-            Assert.AreEqual(body.Compile()(), null);
+            Assert.AreEqual(body.Compile()(), ClrModule.IsNetCoreApp || ClrModule.IsMono ? (object)42 : null); // https://github.com/IronLanguages/ironpython3/issues/908
             Assert.AreEqual(CompilerHelpers.LightCompile(body)(), null);
 
             body = Expression.Lambda<Func<object>>(

@@ -445,10 +445,12 @@ namespace IronPython.Runtime.Binding {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
                                     if (exprArgs[j] != null) {
                                         // kw-argument provided for already provided normal argument.
+                                        // Since the repeated kwargs is caught by a SyntaxError, this
+                                        // error can only occur with a positional-keyword arg conflict
                                         if (_error == null) {
                                             _error = _call.Throw(
                                                 Expression.Call(
-                                                    typeof(PythonOps).GetMethod(nameof(PythonOps.MultipleKeywordArgumentError)),
+                                                    typeof(PythonOps).GetMethod(nameof(PythonOps.MultipleArgumentError)),
                                                     GetFunctionParam(),
                                                     Expression.Constant(_func.Value.ArgNames[j])
                                                 ),
@@ -503,9 +505,7 @@ namespace IronPython.Runtime.Binding {
 
                 for (int i = 0; i < normalArgumentCount; i++) {
                     if (exprArgs[i] != null) {
-                        if (_userProvidedParams != null && i >= Signature.GetProvidedPositionalArgumentCount()) {
-                            exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
-                        }
+                        exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
                         continue;
                     }
 
@@ -711,18 +711,45 @@ namespace IronPython.Runtime.Binding {
             /// a params list or the dictionary (or both).
             /// </summary>
             private Expression ValidateNotDuplicate(Expression value, string name, int position) {
-                EnsureParams();
+                List<Ast> statements = new List<Ast>();
 
-                return Ast.Block(
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByPosition)),
-                        AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),    // function
-                        AstUtils.Constant(name, typeof(string)),                               // name
-                        AstUtils.Constant(position),                                           // position
-                        _paramsLen                                                        // params list length
-                        ),
-                    value
+                if (_userProvidedParams != null && position >= Signature.GetProvidedPositionalArgumentCount()) {
+                    EnsureParams();
+
+                    statements.Add(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByPosition)),
+                            AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),    // function
+                            AstUtils.Constant(name, typeof(string)),                         // name
+                            AstUtils.Constant(position),                                     // position
+                            _paramsLen                                                       // params list length
+                        )
                     );
+                }
+                if (_dict != null) {
+                    // A code test is needed because the kwargs can only conflict
+                    // with arguments on the basis of their names
+                    _needCodeTest = true;
+                    statements.Add(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.VerifyUnduplicatedByName)),
+                            AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)), // function
+                            AstUtils.Constant(name, typeof(string)),                      // name
+                            AstUtils.Convert(_dict, typeof(PythonDictionary)),            // params dict
+                            AstUtils.Constant(                                            // keywordArg
+                                position >= Signature.GetProvidedPositionalArgumentCount(), typeof(bool))
+                        )
+                    );
+                }
+
+                // Return the value of the argument once we know that we don't have
+                // a duplicate
+                if (statements.Count == 0) {
+                    return value;
+                }
+
+                statements.Add(value);
+                return Ast.Block(statements);
             }
 
             /// <summary>

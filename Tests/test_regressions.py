@@ -510,8 +510,12 @@ with open(r"%s", "w") as f:
         def f(a=None):
             pass
 
-        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'" if is_cli else "f\(\) got multiple values for argument 'a'",
+        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for argument 'a'",
                             lambda: f(1, a=3))
+        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for argument 'a'",
+                            lambda: f(1, **{"a":3}))
+        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'",
+                            lambda: f(a=1, **{"a": 3}))
 
     @unittest.skipIf(is_netcoreapp, 'requires System.Drawing.Common dependency')
     @skipUnlessIronPython()

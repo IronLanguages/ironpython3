@@ -447,11 +447,8 @@ class KwargTest(unittest.TestCase):
             testFunc_pw_kw('234', a='234')
         with self.assertRaises(TypeError):
             testFunc_pw_kw(*['234'], a='234')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             testFunc_pw_kw('234', **{"a":'234'})
-        else:
-            with self.assertRaises(TypeError):
-                testFunc_pw_kw('234', **{"a":'234'})
         with self.assertRaises(TypeError):
             testFunc_pw_kw(*['234'], **{"a":'234'})
 
@@ -460,11 +457,8 @@ class KwargTest(unittest.TestCase):
             testFunc_kw('234', a='234')
         with self.assertRaises(TypeError):
             testFunc_kw(*['234'], a='234')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             testFunc_kw('234', **{"a":'234'})
-        else:
-            with self.assertRaises(TypeError):
-                testFunc_kw('234', **{"a":'234'})
         with self.assertRaises(TypeError):
             testFunc_kw(*['234'], **{"a":'234'})
 
@@ -472,21 +466,15 @@ class KwargTest(unittest.TestCase):
         o = ObjectSubClass()
         with self.assertRaises(TypeError):
             o.testFunc_pw_kw(a='234')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             o.testFunc_pw_kw(**{"a":'234'})
-        else:
-            with self.assertRaises(TypeError):
-                o.testFunc_pw_kw(**{"a":'234'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_kw_dupArg(self):
         o = ObjectSubClass()
         with self.assertRaises(TypeError):
             o.testFunc_kw(a='234')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             o.testFunc_kw(**{"a":'234'})
-        else:
-            with self.assertRaises(TypeError):
-                o.testFunc_kw(**{"a":'234'})
 
     def test_negTestFunc_ObjectSubClass_testFunc_pw_kw_2_dupArg(self):
         o = ObjectSubClass()
@@ -508,11 +496,8 @@ class KwargTest(unittest.TestCase):
             o.testFunc_pw_kw_2('abc', b='cde')
         with self.assertRaises(TypeError):
             o.testFunc_pw_kw_2(*['abc'], b='cde')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             o.testFunc_pw_kw_2('abc', **{"b":'cde'})
-        else:
-            with self.assertRaises(TypeError):
-                o.testFunc_pw_kw_2('abc', **{"b":'cde'})
         with self.assertRaises(TypeError):
             o.testFunc_pw_kw_2(*['abc'], **{"b":'cde'})
 
@@ -522,11 +507,8 @@ class KwargTest(unittest.TestCase):
             o.testFunc_kw_2('abc', b='cde')
         with self.assertRaises(TypeError):
             o.testFunc_kw_2(*['abc'], b='cde')
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/866
+        with self.assertRaises(TypeError):
             o.testFunc_kw_2('abc', **{"b":'cde'})
-        else:
-            with self.assertRaises(TypeError):
-                o.testFunc_kw_2('abc', **{"b":'cde'})
         with self.assertRaises(TypeError):
             o.testFunc_kw_2(*['abc'], **{"b":'cde'})
 

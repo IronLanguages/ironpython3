@@ -2340,10 +2340,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void AddDictionaryArgument(PythonFunction function, string name, object value, PythonDictionary dict) {
-            if (dict.ContainsKey(name)) {
-                throw MultipleKeywordArgumentError(function, name);
-            }
-
+            VerifyUnduplicatedByName(function, name, dict, true);
             dict[name] = value;
         }
 
@@ -2352,6 +2349,17 @@ namespace IronPython.Runtime.Operations {
                 throw MultipleKeywordArgumentError(function, name);
             }
         }
+
+        public static void VerifyUnduplicatedByName(PythonFunction function, string name, PythonDictionary dict, bool keywordArg) {
+            if (dict.ContainsKey(name)) {
+                if (keywordArg) {
+                    throw MultipleKeywordArgumentError(function, name);
+                } else {
+                    throw MultipleArgumentError(function, name);
+                }
+            }
+        }
+
 
         public static PythonList CopyAndVerifyParamsList(PythonFunction function, object list) {
             return new PythonList(list);
@@ -3509,6 +3517,10 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region Exception Factories
+
+        public static Exception MultipleArgumentError(PythonFunction function, string name) {
+            return TypeError("{0}() got multiple values for argument '{1}'", function.__name__, name);
+        }
 
         public static Exception MultipleKeywordArgumentError(PythonFunction function, string name) {
             return TypeError("{0}() got multiple values for keyword argument '{1}'", function.__name__, name);

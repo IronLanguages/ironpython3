@@ -2357,7 +2357,7 @@ if id(a) == id(b):
             Assert.AreEqual(20, clsPart.Field);
         }
 
-        [Test]
+        // [Test] // https://github.com/IronLanguages/ironpython3/issues/906
         public void ScenarioStreamRedirect() {
             MemoryStream stdout = new MemoryStream();
             MemoryStream stdin = new MemoryStream();

@@ -445,8 +445,8 @@ namespace IronPython.Runtime.Binding {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
                                     if (exprArgs[j] != null) {
                                         // kw-argument provided for already provided normal argument.
-                                        // Since the repeated kwargs is caught by a syntaxerror, this
-                                        // error can only occur with a positional-keyward arg conflict
+                                        // Since the repeated kwargs is caught by a SyntaxError, this
+                                        // error can only occur with a positional-keyword arg conflict
                                         if (_error == null) {
                                             _error = _call.Throw(
                                                 Expression.Call(

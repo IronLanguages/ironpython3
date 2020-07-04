@@ -420,9 +420,13 @@ x = 42", scope);
 
         [Test]
         public void ScenarioCodePlex20472() {
+#if NETCOREAPP
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+
             try {
-                string fileName = Path.Combine(Path.Combine(System.IO.Directory.GetCurrentDirectory(), "encoded_files"), "cp20472.py");
-                _pe.CreateScriptSourceFromFile(fileName, System.Text.Encoding.GetEncoding(1251));
+                string fileName = Path.Combine(Path.Combine(Common.ScriptTestDirectory, "encoded_files"), "cp20472.py");
+                _pe.CreateScriptSourceFromFile(fileName, Encoding.GetEncoding(1251)).Compile();
 
                 //Disabled. The line above should have thrown a syntax exception or an import error,
                 //but does not.

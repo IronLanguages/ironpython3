@@ -591,7 +591,6 @@ namespace IronPythonTest {
         }
     }
     
-#if !SILVERLIGHT // TODO: this doesn't seem to be used anywhere--remove?
     public class UsePythonDictAsHashtable {
         private Hashtable table;
 
@@ -643,5 +642,4 @@ namespace IronPythonTest {
             return sum;
         }
     }
-#endif
 }

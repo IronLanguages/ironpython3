@@ -701,21 +701,18 @@ class C:
         self.assertEqual(set(t1.keys()), {'x', 'g'})
         self.assertEqual(t2, {})
 
-    @unittest.skip("TODO: import cp20472 is not failing, figure out if the original issue is still relevant")
+    @unittest.skipUnless(is_cli, "import cp20472 is not failing, regression in CPython? (https://github.com/IronLanguages/ironpython3/issues/909)")
     def test_cp24169(self):
         import os, sys
 
         orig_syspath = [x for x in sys.path]
         try:
             sys.path.append(os.path.join(self.test_dir, "encoded_files"))
-            import cp20472 #no encoding specified and has non-ascii characters
+            import cp20472 #no encoding specified and has an invalid UTF-8 sequence
             self.fail("Line above should had thrown!")
         except SyntaxError as e:
-            self.assertTrue(e.msg.startswith("Non-ASCII character '\\xcf' in file"))
-            if is_cli:
-                self.assertTrue(e.msg.endswith("on line 1, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details"))
-            else:
-                self.assertTrue(e.msg.endswith("on line 1, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details"))
+            self.assertTrue(e.msg.startswith("Non-UTF-8 code starting with '\\xcf' in file "))
+            self.assertTrue(e.msg.endswith("on line 1, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details"))
             self.assertTrue("%sencoded_files%scp20472.py" % (os.sep, os.sep) in e.msg, e.msg)
         finally:
             sys.path = orig_syspath

@@ -132,8 +132,8 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.escape_encode, "abc")
         self.assertRaises(TypeError, codecs.escape_encode, None)
         self.assertRaises(TypeError, codecs.escape_encode, None, None)
-        self.assertEquals(codecs.escape_encode(b"\\", None), (b"\\\\", 1))
-        self.assertEquals(codecs.escape_encode(b"\\", 'strict'), (b"\\\\", 1))
+        self.assertEqual(codecs.escape_encode(b"\\", None), (b"\\\\", 1))
+        self.assertEqual(codecs.escape_encode(b"\\", 'strict'), (b"\\\\", 1))
 
         self.assertRaises(TypeError, codecs.escape_encode, bytearray(b"abc"))
         self.assertRaises(TypeError, codecs.escape_encode, memoryview(b"abc"))
@@ -885,7 +885,7 @@ class CodecTest(IronPythonTestCase):
         def garbage_error2(someError): pass
         codecs.register_error("some other dummy", garbage_error2)
         self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error2)
-        return # TODO
+        #return # TODO
 
         # register under the same name, overriding the previous registration
         def garbage_error3(someError): return ("<garbage>", someError.end)
@@ -1065,7 +1065,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_be_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_be_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_be_decode, None, None)
-        self.assertEquals(codecs.utf_16_be_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_be_decode(b"", None), ("", 0))
 
     def test_utf_16_be_decode_incremental(self):
         b = b"\xff\xfe\x00\x41\xd9\x00\xdd\x00\xdc\x00\xd8\x00\xdc\x00"
@@ -1106,7 +1106,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_be_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_be_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_be_encode, None, None)
-        self.assertEquals(codecs.utf_16_be_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_16_be_encode("", None), (b"", 0))
 
     def test_utf_16_le_decode(self):
         string, num_processed = codecs.utf_16_le_decode(b'a\0b\0c\0')
@@ -1122,7 +1122,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_le_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_le_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_le_decode, None, None)
-        self.assertEquals(codecs.utf_16_le_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_le_decode(b"", None), ("", 0))
 
     def test_utf_16_le_decode_incremental(self):
         b = b"\xfe\xff\x41\x00\x00\xd9\x00\xdd\x00\xdc\x00\xd8\x00\xdc"
@@ -1163,7 +1163,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_le_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_le_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_le_encode, None, None)
-        self.assertEquals(codecs.utf_16_le_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_16_le_encode("", None), (b"", 0))
 
     def test_utf_16_ex_decode(self):
         #sanity
@@ -1186,7 +1186,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, None, None)
-        self.assertEquals(codecs.utf_16_ex_decode(b"", None), ("", 0, 0))
+        self.assertEqual(codecs.utf_16_ex_decode(b"", None), ("", 0, 0))
 
     def test_utf_16_decode(self):
         # When BOM present: it is removed and the proper UTF-16 variant is automatically selected
@@ -1208,7 +1208,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_decode, None, None)
-        self.assertEquals(codecs.utf_16_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_decode(b"", None), ("", 0))
 
     def test_utf_16_encode(self):
         # On little-endian systems, UTF-16 encodes in UTF-16-LE prefixed with BOM
@@ -1219,7 +1219,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_encode, None, None)
-        self.assertEquals(codecs.utf_16_encode("", None), (codecs.BOM_UTF16, 0))
+        self.assertEqual(codecs.utf_16_encode("", None), (codecs.BOM_UTF16, 0))
 
     def test_utf_16_le_encode_alias(self):
         for x in ('utf_16_le', 'UTF-16LE', 'utf-16le', 'utf-16-le'):
@@ -1239,7 +1239,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_be_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_be_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_be_decode, None, None)
-        self.assertEquals(codecs.utf_32_be_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_32_be_decode(b"", None), ("", 0))
 
     def test_utf_32_be_encode(self):
         data, num_processed = codecs.utf_32_be_encode("abc")
@@ -1249,7 +1249,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_be_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_32_be_encode, None)
         self.assertRaises(TypeError, codecs.utf_32_be_encode, None, None)
-        self.assertEquals(codecs.utf_32_be_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_32_be_encode("", None), (b"", 0))
 
     def test_utf_32_le_decode(self):
         string, num_processed = codecs.utf_32_le_decode(b'a\0\0\0b\0\0\0c\0\0\0')
@@ -1265,7 +1265,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_le_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_le_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_le_decode, None, None)
-        self.assertEquals(codecs.utf_32_le_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_32_le_decode(b"", None), ("", 0))
 
     def test_utf_32_le_encode(self):
         data, num_processed = codecs.utf_32_le_encode("abc")
@@ -1275,7 +1275,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_le_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_32_le_encode, None)
         self.assertRaises(TypeError, codecs.utf_32_le_encode, None, None)
-        self.assertEquals(codecs.utf_32_le_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_32_le_encode("", None), (b"", 0))
 
     def test_utf_32_ex_decode(self):
         self.utf_ex_decode_test_helper(
@@ -1292,7 +1292,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, None, None)
-        self.assertEquals(codecs.utf_32_ex_decode(b"", None), ("", 0, 0))
+        self.assertEqual(codecs.utf_32_ex_decode(b"", None), ("", 0, 0))
 
     def test_utf_32_decode(self):
         # When BOM present: it is removed and the proper UTF-32 variant is automatically selected

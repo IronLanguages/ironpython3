@@ -2030,8 +2030,8 @@ namespace IronPython.Runtime.Operations {
                 return d;
             }
 
-            internal static Dictionary<string, object> MakeErrorHandlersDict() {
-                var d = new Dictionary<string, object>();
+            internal static ConcurrentDictionary<string, object> MakeErrorHandlersDict() {
+                var d = new ConcurrentDictionary<string, object>();
 
                 d["strict"] = BuiltinFunction.MakeFunction(
                     "strict_errors",

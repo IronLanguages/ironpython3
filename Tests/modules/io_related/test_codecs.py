@@ -875,7 +875,6 @@ class CodecTest(IronPythonTestCase):
         ute = UnicodeTranslateError("abcd", 1, 3, "UnicodeTranslateError not supported with surrogatepass")
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogatepass, ute)
 
-    #TODO: @skip("multiple_execute")
     def test_lookup_error(self):
         #sanity
         self.assertRaises(LookupError, codecs.lookup_error, "blah garbage xyz")
@@ -885,13 +884,15 @@ class CodecTest(IronPythonTestCase):
         def garbage_error2(someError): pass
         codecs.register_error("some other dummy", garbage_error2)
         self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error2)
-        #return # TODO
 
         # register under the same name, overriding the previous registration
         def garbage_error3(someError): return ("<garbage>", someError.end)
         codecs.register_error("some other dummy", garbage_error3)
         self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error3)
         self.assertEqual(codecs.utf_8_decode(b"a\xffz", "some other dummy"), ("a<garbage>z", 3))
+        self.assertEqual(codecs.latin_1_encode("a\u20ACz", "some other dummy"), (b"a<garbage>z", 3))
+        self.assertEqual(codecs.encode("a\u20ACz", "iso8859-2", "some other dummy"), b"a<garbage>z")
+        return # TODO
 
         # override default 'strict'
         self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)

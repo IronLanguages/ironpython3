@@ -139,20 +139,6 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.escape_encode, memoryview(b"abc"))
         self.assertRaises(TypeError, codecs.escape_encode, array.array('I', (1633771873,)))
 
-    def test_register_error(self):
-            '''
-            TODO: test that these are actually used.
-            '''
-            #Sanity
-            def garbage_error0(): print("garbage_error0")
-            def garbage_error1(param1): print("garbage_error1:", param1)
-            def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
-
-            codecs.register_error("garbage0", garbage_error0)
-            codecs.register_error("garbage1", garbage_error1)
-            codecs.register_error("garbage2", garbage_error2)
-            codecs.register_error("garbage1dup", garbage_error1)
-
     def test_charmap_decode(self):
         self.assertEqual(codecs.charmap_decode(b""), ("", 0))
         self.assertEqual(codecs.charmap_decode(b"", 'strict', {}), ("", 0))
@@ -875,6 +861,20 @@ class CodecTest(IronPythonTestCase):
         ute = UnicodeTranslateError("abcd", 1, 3, "UnicodeTranslateError not supported with surrogatepass")
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogatepass, ute)
 
+    def test_register_error(self):
+            '''
+            TODO: test that these are actually used.
+            '''
+            #Sanity
+            def garbage_error0(): print("garbage_error0")
+            def garbage_error1(param1): print("garbage_error1:", param1)
+            def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
+
+            codecs.register_error("garbage0", garbage_error0)
+            codecs.register_error("garbage1", garbage_error1)
+            codecs.register_error("garbage2", garbage_error2)
+            codecs.register_error("garbage1dup", garbage_error1)
+
     def test_lookup_error(self):
         #sanity
         self.assertRaises(LookupError, codecs.lookup_error, "blah garbage xyz")
@@ -892,36 +892,73 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.utf_8_decode(b"a\xffz", "some other dummy"), ("a<garbage>z", 3))
         self.assertEqual(codecs.latin_1_encode("a\u20ACz", "some other dummy"), (b"a<garbage>z", 3))
         self.assertEqual(codecs.encode("a\u20ACz", "iso8859-2", "some other dummy"), b"a<garbage>z")
-        return # TODO
 
+    @unittest.skip("TODO")
+    def test_lookup_error_override(self):
         # override default 'strict'
         self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
+        def test_strict(someError): return ("<garbage>", someError.end)
         try:
-            codecs.register_error('strict', garbage_error3)
-            self.assertEqual(codecs.lookup_error('strict'), garbage_error3)
+            codecs.register_error('strict', test_strict)
+            self.assertEqual(codecs.lookup_error('strict'), test_strict)
             self.assertEqual(codecs.utf_8_decode(b"a\xffz"), ("a<garbage>z", 3))
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz", "strict"), ("a<garbage>z", 3))
+            self.assertEqual(codecs.decode(b"a\xffz", "u8", "strict"), "a<garbage>z")
+
+            # override does not work during encoding
+            self.assertRaises(UnicodeEncodeError, codecs.latin_1_encode, "a\u20ACz", "strict")
+            self.assertRaises(UnicodeEncodeError, codecs.encode, "a\u20ACz", "iso8859-2", "strict")
         finally:
             codecs.register_error('strict', codecs.strict_errors)
         self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
 
-        # override default 'ignore'
+        # try override default 'ignore'
         self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
         def test_ignore(someError): return (" " * (someError.end - someError.start), someError.end)
         try:
+            codecs.register_error('ignore with spaces', test_ignore)
+            self.assertEqual(codecs.lookup_error('ignore with spaces'), test_ignore)
+            self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore with spaces'), ("a  z", 4))
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "ignore with spaces"), (b"a  z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "ignore with spaces"), b"a  z")
+
             codecs.register_error('ignore', test_ignore)
             self.assertEqual(codecs.lookup_error('ignore'), test_ignore)
-            self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("a  z", 4))
+
+            if is_cli or sys.version_info >= (3,6):
+                # override does not work during decoding
+                self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("az", 4))
+            else:
+                self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("a  z", 4))
+
+            # override does not work during encoding
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "ignore"), (b"az", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "ignore"), b"az")
         finally:
             codecs.register_error('ignore', codecs.ignore_errors)
         self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
 
-        # override default 'replace'
+        # try override default 'replace'
         self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
         def test_replace(someError): return ("<error>", someError.end)
         try:
+            codecs.register_error('replace errors', test_replace)
+            self.assertEqual(codecs.lookup_error('replace errors'), test_replace)
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace errors'), ("a<error>z", 3))
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "replace errors"), (b"a<error>z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "replace errors"), b"a<error>z")
+
             codecs.register_error('replace', test_replace)
             self.assertEqual(codecs.lookup_error('replace'), test_replace)
-            self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a<error>z", 3))
+            if is_cli or sys.version_info >= (3,6):
+                # override does not work during decoding
+                self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a\uFFFDz", 3))
+            else:
+                self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a<error>z", 3))
+
+            # override does not work during encoding
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "replace"), (b"a??z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "replace"), b"a??z")
         finally:
             codecs.register_error('replace', codecs.replace_errors)
         self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)

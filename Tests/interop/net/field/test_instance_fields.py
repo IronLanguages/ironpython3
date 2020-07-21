@@ -194,10 +194,10 @@ class InstanceFieldsTest(IronPythonTestCase):
 
             # set values which need conversion.
             v.InstanceInt32Field = long(100)
-            self.assertEqual(v.InstanceInt32Field, 100)
+            self.assertEqual(o.InstanceInt32Field, 100)
 
             v.InstanceInt32Field = 10.01
-            self.assertEqual(v.InstanceInt32Field, 10)
+            self.assertEqual(o.InstanceInt32Field, 10)
 
         # set bad values
         def f1(): v.InstanceInt32Field = "abc"
@@ -251,8 +251,8 @@ class InstanceFieldsTest(IronPythonTestCase):
             self._test_verify(v)
 
             # set values which need conversion.
-            t.InstanceInt16Field.__set__(v, long(100));        self.assertEqual(v.InstanceInt16Field, 100)
-            t.InstanceBooleanField.__set__(v, 0);         self.assertEqual(v.InstanceBooleanField, False)
+            t.InstanceInt16Field.__set__(v, long(100));        self.assertEqual(o.InstanceInt16Field, 100)
+            t.InstanceBooleanField.__set__(v, 0);         self.assertEqual(o.InstanceBooleanField, False)
 
         # set bad values
         def f1(): t.InstanceInt16Field.__set__(v, "abc")

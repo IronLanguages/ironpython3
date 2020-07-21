@@ -7,14 +7,13 @@ Test cases try to access a .NET type.
 '''
 
 import unittest
+import re
 
 from iptest import IronPythonTestCase, skipUnlessIronPython, is_netcoreapp, is_mono, run_test
 
-keywords = ['pass', 'import', 'def', 'exec', 'except']
-bultin_funcs = ['abs', 'type', 'file']
-bultin_types = ['complex', 'StandardError']
-bultin_constants = ['None', 'False']
-modules = ['__builtin__', 'datetime', '_collections', 'site']
+keywords = ['pass', 'import', 'def', 'except', 'None', 'False']
+bultins = ['abs', 'type', 'complex']
+modules = ['datetime', '_collections', 'site']
 
 @skipUnlessIronPython()
 class ReachTypeTest(IronPythonTestCase):
@@ -24,25 +23,24 @@ class ReachTypeTest(IronPythonTestCase):
 
     def test_interesting_names_as_namespace(self):
         # import
-        for x in keywords + bultin_constants:
+        for x in keywords:
             self.assertRaises(SyntaxError, compile, "import %s" % x, "", "exec")
 
-        import abs; self.assertEqual(str(abs.A), "<type 'A'>")
-        import type; self.assertEqual(str(type.A), "<type 'A'>")
-        import file; self.assertEqual(str(file.A), "<type 'A'>")
+        import abs; self.assertEqual(str(abs.A), "<class 'A'>")
+        import type; self.assertEqual(str(type.A), "<class 'A'>")
+        import file; self.assertEqual(str(file.A), "<class 'A'>")
 
-        import complex; self.assertEqual(str(complex.A), "<type 'A'>")
-        import StandardError; self.assertEqual(str(StandardError.A), "<type 'A'>")
+        import complex; self.assertEqual(str(complex.A), "<class 'A'>")
+        import StandardError; self.assertEqual(str(StandardError.A), "<class 'A'>")
 
         # !!! no way to get clr types which have the same name as builtin modules
-        import __builtin__; self.assertRaises(AttributeError, lambda: __builtin__.A)
         import datetime; self.assertRaises(AttributeError, lambda: datetime.A)
         import _collections; self.assertRaises(AttributeError, lambda: _collections.A)
 
         # __import__
-        for x in keywords + bultin_constants + bultin_funcs + bultin_types:
+        for x in keywords + bultins:
             mod = __import__(x)
-            self.assertEqual(str(mod.A), "<type 'A'>")
+            self.assertEqual(str(mod.A), "<class 'A'>")
 
         for x in modules:
             mod = __import__(x)
@@ -53,10 +51,6 @@ class ReachTypeTest(IronPythonTestCase):
         for x in keywords:
             self.assertRaises(SyntaxError, compile, "from NSwInterestingClassName import %s" % x, "", "exec")
 
-        # !!! special None
-        self.assertRaises(SyntaxError, compile, "from NSwInterestingClassName import None", "", "exec")
-        self.assertRaises(SyntaxError, compile, "from NSwInterestingClassName import False", "", "exec")
-
         from NSwInterestingClassName import abs; self.assertEqual(abs.A, 10)
         from NSwInterestingClassName import type; self.assertEqual(type.A, 10)
         from NSwInterestingClassName import file; self.assertEqual(file.A, 10)
@@ -64,7 +58,6 @@ class ReachTypeTest(IronPythonTestCase):
         from NSwInterestingClassName import complex; self.assertEqual(complex.A, 10)
         from NSwInterestingClassName import StandardError; self.assertEqual(StandardError.A, 10)
 
-        from NSwInterestingClassName import __builtin__; self.assertEqual(__builtin__.A, 10)
         from NSwInterestingClassName import datetime; self.assertEqual(datetime.A, 10)
         from NSwInterestingClassName import _collections; self.assertEqual(_collections.A, 10)
 
@@ -73,7 +66,7 @@ class ReachTypeTest(IronPythonTestCase):
         for x in keywords:
             self.assertRaises(SyntaxError, compile, "NSwInterestingClassName.%s" % x, "", "exec")
 
-        for x in bultin_constants + bultin_funcs + bultin_types + modules:
+        for x in bultins + modules:
             x = eval("NSwInterestingClassName.%s" % x)
             self.assertEqual(x.A, 10)
 
@@ -101,8 +94,8 @@ class ReachTypeTest(IronPythonTestCase):
         self.assertEqual(G2[int].A, 30)
         self.assertEqual(G2[int, int].A, 40)
 
-        self.assertRaisesMessage(ValueError,
-                            "The number of generic arguments provided doesn't equal the arity of the generic type definition.\nParameter name: instantiation",
+        self.assertRaisesRegex(ValueError,
+                            re.compile(r"(?s)The number of generic arguments provided doesn't equal the arity of the generic type definition\..*Parameter.*instantiation", re.M),
                             lambda: G3[()])
 
         if is_mono:
@@ -115,18 +108,15 @@ class ReachTypeTest(IronPythonTestCase):
         self.assertRaisesMessage(SystemError, "MakeGenericType on non-generic type", lambda: G4[int])
 
     def test_type_without_namespace(self):
-        try:
-            from PublicRefTypeWithoutNS import *    # non static type, should fail
-            self.assertUnreachable()
-        except ImportError:
-            pass
+        self.assertRaises(ImportError, exec, 'from PublicRefTypeWithoutNS import *')    # non static type, should fail
 
-        from PublicStaticRefTypeWithoutNS import *
-        self.assertEqual(Nested.A, 10)
-        self.assertEqual(A, 20)
-        self.assertEqual(B, 20)
-        self.assertTrue(not 'C' in dir())
-        self.assertEqual(SM(), 30)
+        g = {}; l = {}
+        exec('from PublicStaticRefTypeWithoutNS import *', g, l)
+        self.assertEqual(l['Nested'].A, 10)
+        self.assertEqual(l['A'], 20)
+        self.assertEqual(l['B'], 20)
+        self.assertTrue(not 'C' in l)
+        self.assertEqual(l['SM'](), 30)
 
         import PublicRefTypeWithoutNS
         self.assertEqual(PublicRefTypeWithoutNS.Nested.A, 10)
@@ -189,12 +179,13 @@ class ReachTypeTest(IronPythonTestCase):
     #@skip("multiple_execute")
     def test_type_forward2(self):
         self.add_clr_assemblies("typeforwarder2")
-        from NSwForwardee2 import *
+        g = {}; l = {}
+        exec('from NSwForwardee2 import *', g, l)
         if is_netcoreapp:
-            self.assertTrue('Foo_SPECIAL' in dir())
+            self.assertTrue('Foo_SPECIAL' in l)
         else:
-            self.assertTrue('Foo_SPECIAL' not in dir())      # !!!
-        self.assertTrue('Bar_SPECIAL' in dir())
+            self.assertTrue('Foo_SPECIAL' not in l)      # !!!
+        self.assertTrue('Bar_SPECIAL' in l)
 
         import NSwForwardee2
         self.assertEqual(NSwForwardee2.Foo_SPECIAL.A, 620)
@@ -227,15 +218,15 @@ class ReachTypeTest(IronPythonTestCase):
 
     def test_digits_in_ns8074(self):
         import NSWithDigitsCase1
-        self.assertEqual(str(NSWithDigitsCase1.Z), "<type 'Z'>")
+        self.assertEqual(str(NSWithDigitsCase1.Z), "<class 'Z'>")
         self.assertEqual(NSWithDigitsCase1.Z.A, 10)
-        self.assertEqual(str(NSWithDigitsCase1.Z0), "<type 'Z0'>")
+        self.assertEqual(str(NSWithDigitsCase1.Z0), "<class 'Z0'>")
         self.assertEqual(NSWithDigitsCase1.Z0.A, 0)
 
         import NSWithDigits.Case2
-        self.assertEqual(str(NSWithDigits.Case2.Z), "<type 'Z'>")
+        self.assertEqual(str(NSWithDigits.Case2.Z), "<class 'Z'>")
         self.assertEqual(NSWithDigits.Case2.Z.A, 10)
-        self.assertEqual(str(NSWithDigits.Case2.Z0), "<type 'Z0'>")
+        self.assertEqual(str(NSWithDigits.Case2.Z0), "<class 'Z0'>")
         self.assertEqual(NSWithDigits.Case2.Z0.A, 0)
 
 

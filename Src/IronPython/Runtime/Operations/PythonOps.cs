@@ -3605,6 +3605,15 @@ namespace IronPython.Runtime.Operations {
             return (EncoderFallbackException)ctor.Invoke(new object[] { message, charUnknownHigh, charUnknownLow, index });
         }
 
+        public static Exception UnicodeEncodeError(string message, int runeUnknown, int index) {
+            if (runeUnknown <= char.MaxValue) {
+                return PythonOps.UnicodeEncodeError(message, (char)runeUnknown, index);
+            } else {
+                string s = char.ConvertFromUtf32(runeUnknown);
+                return PythonOps.UnicodeEncodeError(message, s[0], s[1], index);
+            }
+        }
+
         public static Exception IOError(Exception inner) {
             return OSError(inner.Message, inner);
         }

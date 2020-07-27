@@ -862,18 +862,37 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogatepass, ute)
 
     def test_register_error(self):
-            '''
-            TODO: test that these are actually used.
-            '''
-            #Sanity
-            def garbage_error0(): print("garbage_error0")
-            def garbage_error1(param1): print("garbage_error1:", param1)
-            def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
+        def garbage_error0(): print("garbage_error0")
+        def garbage_error1(param1): print("garbage_error1:", param1)
+        def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
 
-            codecs.register_error("garbage0", garbage_error0)
-            codecs.register_error("garbage1", garbage_error1)
-            codecs.register_error("garbage2", garbage_error2)
-            codecs.register_error("garbage1dup", garbage_error1)
+        codecs.register_error("garbage0", garbage_error0)
+        codecs.register_error("garbage1", garbage_error1)
+        codecs.register_error("garbage2", garbage_error2)
+        codecs.register_error("garbage1dup", garbage_error1)
+
+        # test error handler that produces a replacement string
+        def test_encoding_error_strhandler(uee): return ("*" * (uee.end - uee.start), uee.end)
+        codecs.register_error('enc_str', test_encoding_error_strhandler)
+        self.assertEqual(codecs.lookup_error('enc_str'), test_encoding_error_strhandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_str'), b"a**z")
+
+        # test encoding error handler that produces replacement bytes
+        def test_encoding_error_byteshandler(uee): return (b"*" * (uee.end - uee.start), uee.end)
+        codecs.register_error('enc_bytes', test_encoding_error_byteshandler)
+        self.assertEqual(codecs.lookup_error('enc_bytes'), test_encoding_error_byteshandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_bytes'), b"a**z")
+
+        # test encoding error handler that produces replacement bytearray
+        def test_encoding_error_bytearrayhandler(uee): return (bytearray(b"*" * (uee.end - uee.start)), uee.end)
+        codecs.register_error('enc_bytearray', test_encoding_error_bytearrayhandler)
+        self.assertEqual(codecs.lookup_error('enc_bytearray'), test_encoding_error_bytearrayhandler)
+        self.assertRaisesRegex(TypeError, r"^encoding error handler must return \(str/bytes, int\) tuple$",
+            codecs.latin_1_encode, "a\u20AC\u20AAz", 'enc_bytearray')
 
     def test_lookup_error(self):
         #sanity
@@ -1126,7 +1145,7 @@ class CodecTest(IronPythonTestCase):
         ]
         if not is_cli:
             # CPython's strings are UTF-32 so an invalid surrogate pair results in one replacement char.
-            # Therefore CPython cannot report error on a dangling low surrogate until it verifies
+            # Therefore CPython does not report error on a dangling low surrogate until it verifies
             # that the next char is not an invalid surrogate as well.
             expected[10] = expected[11] = ('\ufffeA\U00050100', 8)
 
@@ -1183,7 +1202,7 @@ class CodecTest(IronPythonTestCase):
         ]
         if not is_cli:
             # CPython's strings are UTF-32 so an invalid surrogate pair results in one replacement char.
-            # Therefore CPython cannot report error on a dangling low surrogate until it verifies
+            # Therefore CPython does not report error on a dangling low surrogate until it verifies
             # that the next char is not an invalid surrogate as well.
             expected[10] = expected[11] = ('\ufffeA\U00050100', 8)
 

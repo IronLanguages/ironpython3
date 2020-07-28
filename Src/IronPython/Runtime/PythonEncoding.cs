@@ -250,9 +250,9 @@ namespace IronPython.Runtime {
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
 
-                fbuf1?.Prepare(chars, forEncoding: false);
+                fbuf1?.PrepareIncrement(chars, forEncoding: false);
                 int numBytes = _pass1encoder.GetByteCount(chars, index, count, flush);
-                fbuf1?.ThrowIfNotEmpty(count, flush);
+                fbuf1?.FinalizeIncrement(count, flush);
 
                 return numBytes;
             }
@@ -260,7 +260,7 @@ namespace IronPython.Runtime {
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
                 var fbuf2 = GetPythonEncoderFallbackBuffer(_pass2encoder);
-                fbuf1?.Prepare(chars, forEncoding: true);
+                fbuf1?.PrepareIncrement(chars, forEncoding: true);
 
                 int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
 
@@ -281,7 +281,7 @@ namespace IronPython.Runtime {
                         fbuf2 = (PythonEncoderFallbackBuffer)_pass2encoder.FallbackBuffer;
                     }
                 }
-                fbuf2.Prepare(chars, forEncoding: true);
+                fbuf2.PrepareIncrement(chars, forEncoding: true);
 
                 // Restore original fallback bytes
                 var bytes2 = new byte[written];
@@ -302,8 +302,8 @@ namespace IronPython.Runtime {
                 }
 
                 // Check if all fallback bytes are restored properly
-                fbuf1.ThrowIfNotEmpty(charCount, flush);
-                fbuf2.ThrowIfNotEmpty(charCount, flush);
+                fbuf1.FinalizeIncrement(charCount, flush);
+                fbuf2.FinalizeIncrement(charCount, flush);
 
                 return written;
             }
@@ -322,49 +322,41 @@ namespace IronPython.Runtime {
         }
 
         protected abstract class PythonEncoderFallbackBuffer : EncoderFallbackBuffer {
-            protected struct DualInt {
-                private int _bcmValue; // used when only counting bytes
-                private int _encValue; // used during actual encoding
+            private struct RestorableInt {
+                private int _value;
+                private int _saved;
 
-                public bool EncodingMode { get; set; }
+                public static implicit operator int(RestorableInt dc) => dc._value;
 
-                public static implicit operator int(DualInt dc) => dc.EncodingMode ? dc._encValue : dc._bcmValue;
-
-                /// <summary>Selective assignment</summary>
-                public static DualInt operator << (DualInt dc, int value) {
-                    if (dc.EncodingMode) {
-                        dc._encValue = value;
-                    } else {
-                        dc._bcmValue = value;
-                    }
+                /// <summary>Assignment preserving the save</summary>
+                public static RestorableInt operator << (RestorableInt dc, int value) {
+                    dc._value = value;
                     return dc;
                 }
 
-                public static DualInt operator + (DualInt dc, int value) {
-                    if (dc.EncodingMode) {
-                        dc._encValue += value;
-                    } else {
-                        dc._bcmValue += value;
-                    }
+                public static RestorableInt operator + (RestorableInt dc, int value) {
+                    dc._value += value;
                     return dc;
                 }
 
-                public void Reset(int value) => _bcmValue = _encValue = value;
+                public void Save() => _saved = _value;
+                public void Restore() => _value = _saved;
+                public void Reset(int value) => _value = _saved = value;
             }
 
             private readonly char _marker;
 
             private readonly Queue<byte> _allFallbackBytes;  // collects all fallback bytes for the whole pass, only used during actual encoding, pass 2
             private int _fbkByteCnt; // only used during actual encoding; proxy for _fallbackBytes.Count but valid in pass 1 too
-            private DualInt _byteCnt; // counts unreported bytes in the buffer from the last fallback; used during both counting and encoding, but counts separately
+            private RestorableInt _byteCnt; // counts unreported bytes in the buffer from the last fallback; used during both counting and encoding, but counts separately
 
             private ReadOnlyMemory<char> _fallbackChars;  // fallback chars (if any) from the last fallback
             private int _charCnt; // counts unreported chars in the buffer from the last fallback
             private int _fbkNumChars; // number of all (virtual) chars in the buffer from the last fallback; proxy for _fallbackChars.Length but valid for fallback bytes too
 
             // for error reporting
-            private int _lastRuneUnknown; // in UTF-32, "rune" is an alias for "Unicode codepoint"
-            private DualInt _lastIndexUnknown;
+            private int _lastRuneUnknown; // in UTF-32; "rune" is an alias for "Unicode codepoint"
+            private RestorableInt _lastIndexUnknown;
 
             public PythonEncoderFallbackBuffer(bool isPass1, PythonEncoding encoding) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
@@ -374,13 +366,22 @@ namespace IronPython.Runtime {
                 _lastIndexUnknown.Reset(-1);
             }
 
+            protected bool EncodingMode { get; private set; }
+
             protected int EncodingCharWidth { get; }
             protected int CodePage { get; }
             protected char[] Data { get; private set; }
 
-            public virtual void Prepare(char[] data, bool forEncoding) {
+            public virtual void PrepareIncrement(char[] data, bool forEncoding) {
                 Data = data;
-                _byteCnt.EncodingMode = _lastIndexUnknown.EncodingMode = forEncoding;
+                if (EncodingMode) {
+                    _byteCnt.Save();
+                    _lastIndexUnknown.Save();
+                } else {
+                    _byteCnt.Restore();
+                    _lastIndexUnknown.Restore();
+                }
+                EncodingMode = forEncoding;
             }
 
             public abstract Tuple<ReadOnlyMemory<char>, ReadOnlyMemory<byte>> GetFallbackCharsOrBytes(int runeUnknown, int index);
@@ -428,7 +429,7 @@ namespace IronPython.Runtime {
                         throw new NotSupportedException("Encoding error handler may produce either chars or bytes, not both at the same time.");
                     }
                     // use fallback bytes
-                    if (_byteCnt.EncodingMode) {
+                    if (EncodingMode) {
                         if (_allFallbackBytes != null) { // pass 2
                             foreach (byte b in newFallbackBytes.Span) {
                                 _allFallbackBytes.Enqueue(b);
@@ -475,9 +476,9 @@ namespace IronPython.Runtime {
                 return _allFallbackBytes?.Dequeue() ?? 0;
             }
 
-            public virtual bool IsEmpty => _charCnt == 0 && (_fbkByteCnt == 0 || !_byteCnt.EncodingMode) && _byteCnt == 0;
+            public virtual bool IsEmpty => _charCnt == 0 && (_fbkByteCnt == 0 || !EncodingMode) && _byteCnt == 0;
 
-            public virtual void ThrowIfNotEmpty(int endIndex, bool flush) {
+            public virtual void FinalizeIncrement(int endIndex, bool flush) {
                 if (flush && !IsEmpty || _byteCnt > 0 && endIndex != _lastIndexUnknown + (_lastRuneUnknown > char.MaxValue ? 2 : 1)) {
                     throw PythonOps.UnicodeEncodeError($"incomplete input sequence", _lastRuneUnknown, _lastIndexUnknown);
                 }
@@ -1019,17 +1020,16 @@ namespace IronPython.Runtime {
         private class PythonHandlerEncoderFallbackBuffer : PythonEncoderFallbackBuffer {
             private readonly PythonErrorHandlerEncoding _encoding;
             private object _handler;
-            private DualInt _lastChar;
+            private char _lastSeenChar;
 
             public PythonHandlerEncoderFallbackBuffer(bool isPass1, PythonErrorHandlerEncoding encoding)
                 : base(isPass1, encoding) {
                 _encoding = encoding;
             }
 
-            public override void Prepare(char[] data, bool forEncoding) {
-                _lastChar.EncodingMode = forEncoding;
-                if (Data != null && Data.Length > 0) _lastChar <<= Data[0];
-                base.Prepare(data, forEncoding);
+            public override void PrepareIncrement(char[] data, bool forEncoding) {
+                if (Data != null && Data.Length > 0 && EncodingMode) _lastSeenChar <<= Data[0];
+                base.PrepareIncrement(data, forEncoding);
             }
 
             public override Tuple<ReadOnlyMemory<char>, ReadOnlyMemory<byte>> GetFallbackCharsOrBytes(int runeUnknown, int index) {
@@ -1044,9 +1044,9 @@ namespace IronPython.Runtime {
                     // corner case, the unknown data starts at the end of the previous increment
                     Debug.Assert(index == -1); // only one char back allowed
                     data = new char[Data.Length + 1];
-                    data[0] = (char)_lastChar;
+                    data[0] = _lastSeenChar;
                     Array.Copy(Data, 0, data, 1, Data.Length);
-                    index = 0;
+                    index++;
                 }
                 var exObj = PythonExceptions.CreatePythonThrowable(
                     PythonExceptions.UnicodeEncodeError,

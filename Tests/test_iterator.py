@@ -37,6 +37,25 @@ class Indexer:
         else:
             raise IndexError
 
+class IteratorSwitcher:
+    def __init__(self):
+        del IteratorSwitcher.__next__
+        IteratorSwitcher.__next__ = IteratorSwitcher.next1
+    def __iter__(self):
+        return self
+    def __next__(self):
+        return 0
+    def next1(self):
+        del IteratorSwitcher.__next__
+        IteratorSwitcher.__next__ = IteratorSwitcher.next2
+        return 1
+    def next2(self):
+        del IteratorSwitcher.__next__
+        IteratorSwitcher.__next__ = IteratorSwitcher.next3
+        return 2
+    def next3(self):
+        raise StopIteration()
+
 class IteratorTest(IronPythonTestCase):
     def test_simple(self):
         i = Iterator()
@@ -255,5 +274,14 @@ class IteratorTest(IronPythonTestCase):
 
         a = A()
         self.assertEqual(next(a), 2)
+
+    def test_method_changing_iterator(self):
+        switcher = IteratorSwitcher()
+        switcherElements = []
+        for i in switcher:
+            switcherElements.append(i)
+            if len(switcherElements) > 2:
+                break
+        self.assertEqual(switcherElements, [1, 2])
 
 run_test(__name__)

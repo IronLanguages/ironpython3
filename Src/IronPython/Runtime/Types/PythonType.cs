@@ -932,13 +932,22 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return _compareSite.Target(_compareSite, self, other);
         }
 
-        internal bool TryGetBoundAttr(CodeContext context, object o, string name, out object ret) {
+        internal CallSite<Func<CallSite, object, CodeContext, object>> GetTryGetMemberSite(
+                CodeContext context, string name) {
             CallSite<Func<CallSite, object, CodeContext, object>> site;
             if (IsSystemType) {
-                site = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetTryGetMemberSite(context, name);
+                site = context.LanguageContext
+                    .GetSiteCacheForSystemType(UnderlyingSystemType)
+                    .GetTryGetMemberSite(context, name);
             } else {
                 site = _siteCache.GetTryGetMemberSite(context, name);
             }
+            return site;
+        }
+
+        internal bool TryGetBoundAttr(CodeContext context, object o, string name, out object ret) {
+            CallSite<Func<CallSite, object, CodeContext, object>> site =
+                GetTryGetMemberSite(context, name);
 
             try {
                 ret = site.Target(site, o, context);

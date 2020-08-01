@@ -2962,8 +2962,8 @@ namespace IronPython.Runtime.Operations {
             return ((PythonGenerator)self).CheckThrowableAndReturnSendValue();
         }
 
-        public static ItemEnumerable CreateItemEnumerable(object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerable(callable, site);
+        public static ItemEnumerable CreateItemEnumerable(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerable(source, callable, site);
         }
 
         public static DictionaryKeyEnumerator MakeDictionaryKeyEnumerator(PythonDictionary dict) {
@@ -2974,8 +2974,8 @@ namespace IronPython.Runtime.Operations {
             return PythonEnumerable.Create(baseObject);
         }
 
-        public static IEnumerator CreateItemEnumerator(object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerator(callable, site);
+        public static IEnumerator CreateItemEnumerator(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerator(source, callable, site);
         }
 
         public static IEnumerator CreatePythonEnumerator(object baseObject) {

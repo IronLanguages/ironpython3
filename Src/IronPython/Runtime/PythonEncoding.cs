@@ -169,6 +169,8 @@ namespace IronPython.Runtime {
         }
         private static bool? _hasBugCorefx29898;
 
+        internal static int GetUtf16SequenceLength(int rune) => rune > char.MaxValue ? 2 : 1;
+
         private class ProxyEncoder : Encoder {
             private Encoding _encoding;
             private readonly Encoder _encoder;
@@ -209,17 +211,21 @@ namespace IronPython.Runtime {
 
             public PythonEncoder(PythonEncoding parentEncoding) {
                 _parentEncoding = parentEncoding;
-                _pass1encoder = parentEncoding.Pass1Encoding.GetEncoder();
+                _pass1encoder = GetEncoder(parentEncoding.Pass1Encoding);
+            }
 
-                if (!(_pass1encoder.Fallback is PythonEncoderFallback) && _parentEncoding.Pass1Encoding.EncoderFallback is PythonEncoderFallback) {
+            private static Encoder GetEncoder(Encoding encoding) {
+                Encoder encoder = encoding.GetEncoder();
+
+                if (!(encoder.Fallback is PythonEncoderFallback) && encoding.EncoderFallback is PythonEncoderFallback) {
                     // Non-conformant Encoder implementation, the challenge is to get to the fallback buffer used by such encoder.
 
                     // Possibility 1: _pass1encoder is EncoderNLS .
-                    // This weirdo (.NET Core only) doe not use Falback and FallbackBuffer properties from its Encoder base class;
+                    // This weirdo (.NET Core only) does not use Fallback and FallbackBuffer properties from its Encoder base class;
                     // it redefines them as new properties and uses them instead.
                     // Although the new FallbackBuffer is public, it is not easilly accessible because the EncoderNLS class is internal.
                     // One way of accessing it is by reflection. This will be handled by GetPythonEncoderFallbackBuffer()
-                    if (_pass1encoder.GetType().FullName == "System.Text.EncoderNLS") return;
+                    if (encoder.GetType().FullName == "System.Text.EncoderNLS") return encoder;
 
                     // Possibility 2: _pass1encoder is DefaultEncoder or another stateless encoder;
                     // This makes sense only if the encoding process of the given encoding is stateless too.
@@ -227,10 +233,11 @@ namespace IronPython.Runtime {
                     // However, such encoding may still be useful in some specifc cases, like non-incremental encoding
                     // or if the input is guaranteed to never contain surrogate pairs.
                     // We use ProxyEncoder to access EncoderFallbackBuffer used by such stateless encoder.
-                    _pass1encoder = new ProxyEncoder(parentEncoding.Pass1Encoding);
+                    encoder = new ProxyEncoder(encoding);
 
                     // Possibility 3: Some 3rd party non-compliant encoder. Too bad...
                 }
+                return encoder;
             }
 
             private static PythonEncoderFallbackBuffer GetPythonEncoderFallbackBuffer(Encoder enc) {
@@ -273,13 +280,8 @@ namespace IronPython.Runtime {
 
                 // Lazy creation of _pass2encoder
                 if (_pass2encoder == null) {
-                    _pass2encoder = _parentEncoding.Pass2Encoding.GetEncoder();
+                    _pass2encoder = GetEncoder(_parentEncoding.Pass2Encoding);
                     fbuf2 = GetPythonEncoderFallbackBuffer(_pass2encoder);
-                    if (fbuf2 == null && _parentEncoding.Pass2Encoding.EncoderFallback is PythonEncoderFallback && _pass2encoder.GetType().FullName != "System.Text.EncoderNLS") {
-                        // _pass2encoder must be DefaultEncoder or another stateless encoder
-                        _pass2encoder = new ProxyEncoder(_parentEncoding.Pass2Encoding);
-                        fbuf2 = (PythonEncoderFallbackBuffer)_pass2encoder.FallbackBuffer;
-                    }
                 }
                 fbuf2.PrepareIncrement(chars, forEncoding: true);
 
@@ -406,7 +408,7 @@ namespace IronPython.Runtime {
                 // fallback bytes must be char-aligned (to fill in marker chars)
                 if (_byteCnt > 0) {
                     // bytes are not char-aligned yet, so the fallback chars must be consecutive
-                    if (index != _lastIndexUnknown + (_lastRuneUnknown > char.MaxValue ? 2 : 1)) {
+                    if (index != _lastIndexUnknown + GetUtf16SequenceLength(_lastRuneUnknown)) {
                         throw PythonOps.UnicodeEncodeError("incomplete input sequence", _lastRuneUnknown, _lastIndexUnknown);
                     }
                 }
@@ -478,7 +480,7 @@ namespace IronPython.Runtime {
             public virtual bool IsEmpty => _charCnt == 0 && (_fbkByteCnt == 0 || !EncodingMode) && _byteCnt == 0;
 
             public virtual void FinalizeIncrement(int endIndex, bool flush) {
-                if (flush && !IsEmpty || _byteCnt > 0 && endIndex != _lastIndexUnknown + (_lastRuneUnknown > char.MaxValue ? 2 : 1)) {
+                if (flush && !IsEmpty || _byteCnt > 0 && endIndex != _lastIndexUnknown + GetUtf16SequenceLength(_lastRuneUnknown)) {
                     throw PythonOps.UnicodeEncodeError($"incomplete input sequence", _lastRuneUnknown, _lastIndexUnknown);
                 }
                 Data = null; // release input data for possible collection
@@ -1037,7 +1039,7 @@ namespace IronPython.Runtime {
                 }
 
                 // create the exception object to hand to the user-function...
-                int runeLen = runeUnknown > char.MaxValue ? 2 : 1;
+                int runeLen = GetUtf16SequenceLength(runeUnknown);
                 char[] data = Data;
                 if (index < 0) {
                     // corner case, the unknown data starts at the end of the previous increment

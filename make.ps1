@@ -6,7 +6,8 @@ Param(
     [String] $configuration = "Release",
     [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1'),
     [String] $platform = "x64",
-    [switch] $runIgnored
+    [switch] $runIgnored,
+    [int] $jobs = [System.Environment]::ProcessorCount
 )
 
 $ErrorActionPreference="Continue"
@@ -115,39 +116,102 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
     return $fileName
 }
 
-function Test([String] $target, [String] $configuration, [String[]] $frameworks, [String] $platform) {
-    foreach ($framework in $frameworks) {
-        $testname = "";
-        $filtername = $target
+function RunTestTasks($tasks) {
+    $maxJobs = $jobs
+    if ($tasks.Count -lt $maxJobs) {
+        $maxJobs = $tasks.Count
+    }
 
+    $testScript = {
+        & dotnet test $args
+        # pass the status out in case of failure
+        if($LastExitCode -ne 0) {
+            throw $LastExitCode
+        }
+    }
+
+    # create initial jobs
+    $bgJobs = @{}
+    $nextJob = 0
+    for ($i = 0; $i -lt $maxJobs; $i++) {
+        $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
+        $bgJobs[$j] = $nextJob;
+        $nextJob += 1
+    }
+
+    while ($bgJobs.values.Count -gt 0) {
+        $finished = Wait-Job -Any -Timeout 10 -Job @($bgJobs.keys)
+
+        # redirect output
+        foreach ($j in $bgJobs.keys) {
+            Receive-Job $j | ForEach-Object { "$($tasks[$bgJobs.$j].name)  $_" }
+        }
+
+        # clean up finished jobs and create new ones
+        if ($null -ne $finished) {
+            $testName = $tasks[$bgJobs.$finished].name
+            Write-Host
+            if ($finished.State -eq 'Failed') {
+                Write-Host "$testName failed"
+                $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
+            } else {
+                Write-Host "$testName succeeded"
+            }
+
+            $bgJobs.Remove($finished)
+            Remove-Job $finished
+            if ($nextJob -lt $tasks.Count) {
+                $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
+                $bgJobs[$j] = $nextJob;
+                $nextJob += 1
+            }
+            Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
+            Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
+            Write-Host
+        }
+    }
+}
+
+function Test([String] $target, [String] $configuration, [String[]] $frameworks, [String] $platform) {
+    Write-Host "Scheduling Test Tasks"
+    Write-Host
+
+    $tasks = @()
+    foreach ($framework in $frameworks) {
         # generate the runsettings file for the settings
         $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
+
+        function createTask($filtername, $filter) {
+            [Object[]] $args = @("$_BASEDIR/Src/IronPythonTest/IronPythonTest.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
+            Write-Host "Enqueue [$framework $filtername]:"
+            Write-Host "dotnet test $args"
+            Write-Host
+            return @{ name = "[$framework $filtername]"; params = $args }
+        }
 
         $filter = $target
 
         switch ($filter.ToLower()) {
-            "all"        { $filter = ""}
-            "ironpython" { $filter = "TestCategory=IronPython" }
-            "cpython"    { $filter = "TestCategory=CPython" }
+            "all"        {
+                $tasks += createTask "ironpython" "TestCategory=IronPython"
+                $tasks += createTask "cpython" "TestCategory=CPython"
+                $tasks += createTask "cs" "TestCategory!=IronPython&TestCategory!=CPython"
+            }
+            "ironpython" { $tasks += createTask "ironpython" "TestCategory=IronPython" }
+            "cpython"    { $tasks += createTask "cpython" "TestCategory=CPython" }
             default      {
-                $filtername = "query"
-                if ($filter.ToLower().StartsWith('ironpython')) { $filter = "TestCategory=IronPython&" + $filter }
-                if ($filter.ToLower().StartsWith('cpython')) { $filter = "TestCategory=CPython&" + $filter }
+                if ($filter.ToLower().StartsWith('ironpython')) {
+                    $tasks += createTask "query" "TestCategory=IronPython&$filter"
+                } elseif ($filter.ToLower().StartsWith('cpython')) {
+                    $tasks += createTask "query" "TestCategory=CPython&$filter"
+                } else {
+                    $tasks += createTask "query" $filter
+                }
             }
         }
-
-        [Object[]] $args = @("$_BASEDIR/Src/IronPythonTest/IronPythonTest.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
-
-        Write-Host "dotnet test $args"
-
-        # execute the tests
-        & dotnet test $args
-
-        # save off the status in case of failure
-        if($LastExitCode -ne 0) {
-            $global:Result = $LastExitCode
-        }
     }
+
+    RunTestTasks $tasks
 }
 
 switch -wildcard ($target) {
@@ -159,7 +223,7 @@ switch -wildcard ($target) {
     "package-debug" { Main "Package" "Debug" }
     "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks $platform; break }
     "test-debug"    { Test "" "Debug" $frameworks $platform; break }
-    
+
     # release targets
     "restore"       { Main "RestoreReferences" "Release" }
     "release"       { Main "Build" "Release" }
@@ -173,7 +237,7 @@ switch -wildcard ($target) {
     "ngen"          {
         if(!$global:isUnix) {
             $imagePath = [System.IO.Path]::Combine($_BASEDIR, "bin\$configuration\net46\ipy.exe")
-            & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath 
+            & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath
         }
     }
 

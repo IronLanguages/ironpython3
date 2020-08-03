@@ -410,7 +410,7 @@ finally:
         def server_thread():
             global EXIT_CODE
             global HAS_EXITED
-            serverFile = os.path.join(self.temporary_dir, "cp5814server.py")
+            serverFile = os.path.join(self.temporary_dir, "cp5814server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
                         (sys.executable, serverFile))
@@ -526,7 +526,7 @@ finally:
         def server_thread():
             global EXIT_CODE
             global HAS_EXITED
-            serverFile = os.path.join(self.temporary_dir, "cp7451server.py")
+            serverFile = os.path.join(self.temporary_dir, "cp7451server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
                         (sys.executable, serverFile))

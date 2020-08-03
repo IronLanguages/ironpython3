@@ -16,7 +16,7 @@ class FileTest(IronPythonTestCase):
     def setUp(self):
         super(FileTest, self).setUp()
 
-        self.temp_file = os.path.join(self.temporary_dir, "temp.dat")
+        self.temp_file = os.path.join(self.temporary_dir, "temp_%d.dat" % os.getpid())
         self.rng_seed = 0
 
         # The set of read modes we wish to test. Each tuple consists of a human readable
@@ -32,14 +32,16 @@ class FileTest(IronPythonTestCase):
     # This module tests operations on the builtin file object. It is not yet complete, the tests cover read(),
     # read(size), readline() and write() for binary, text and universal newline modes.
     def test_sanity(self):
+        onlyread_tmp = "onlyread_%d.tmp" % os.getpid()
+        onlywrite_tmp = "onlywrite_%d.tmp" os.getpid()
         for i in range(5):
             ### general file robustness tests
-            f = open("onlyread.tmp", "w")
+            f = open(onlyread_tmp, "w")
             f.write("will only be read")
             f.flush()
             f.close()
-            sin = open("onlyread.tmp", "r")
-            sout = open("onlywrite.tmp", "w")
+            sin = open(onlyread_tmp, "r")
+            sout = open(onlywrite_tmp, "w")
 
             # writer is null for sin
             self.assertRaises(IOError, sin.write, "abc")
@@ -59,7 +61,7 @@ class FileTest(IronPythonTestCase):
 
             # now close a file and try to perform other I/O operations on it...
             # should throw ValueError according to docs
-            f = open("onlywrite.tmp", "w")
+            f = open(onlywrite_tmp, "w")
             f.close()
             f.close()
             self.assertRaises(ValueError, f.__iter__)
@@ -77,8 +79,8 @@ class FileTest(IronPythonTestCase):
             self.assertRaises(ValueError, f.write, "abc")
             self.assertRaises(ValueError, f.writelines, ["abc","def"])
 
-        os.unlink("onlyread.tmp")
-        os.unlink("onlywrite.tmp")
+        os.unlink(onlyread_tmp)
+        os.unlink(onlywrite_tmp)
 
     # Test binary reading and writing fidelity using a round trip method. First
     # construct some pseudo random binary data in a string (making it long enough
@@ -114,7 +116,7 @@ class FileTest(IronPythonTestCase):
 
         # Check nothing changed.
         self.assertTrue(data == orig_data)
-        
+
     def test_cp10983(self):
         # writing non-unicode characters > 127 should be preserved
         with open(self.temp_file, 'w') as x:
@@ -161,7 +163,7 @@ class FileTest(IronPythonTestCase):
                 out += char
         return out
 
-    
+
 
     # The following is the setup for a set of pattern mode tests that will check
     # some tricky edge cases for newline translation for both reading and writing.
@@ -474,7 +476,7 @@ class FileTest(IronPythonTestCase):
             self.fail('UnicodeEncodeError should have been thrown')
         except UnicodeEncodeError:
             pass
-        
+
         if hasattr(sys, "setdefaultencoding"):
             #and verify UTF8 round trips correctly
             setenc = sys.setdefaultencoding
@@ -496,7 +498,7 @@ class FileTest(IronPythonTestCase):
         fs = System.IO.FileStream(self.temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite)
         with open(fs, "wb") as f:
             f.write('hello\rworld\ngoodbye\r\n')
-        
+
         with open(self.temp_file, 'rb') as f:
             self.assertEqual(f.read(), 'hello\rworld\ngoodbye\r\n')
 
@@ -509,10 +511,10 @@ class FileTest(IronPythonTestCase):
         def return_fd1():
             f = open(self.temp_file, 'w')
             return f.fileno()
-            
+
         def return_fd2():
             return os.open(self.temp_file, 0)
-        
+
         import System
 
         fd = return_fd1()
@@ -529,18 +531,19 @@ class FileTest(IronPythonTestCase):
 
     def test_sharing(self):
         modes = ['w', 'w+', 'a+', 'r', 'w']
+        fname = 'tempfile_%d.txt' % os.getpid()
         for xx in modes:
             for yy in modes:
-                x = open('tempfile.txt', xx)
-                y = open('tempfile.txt', yy)
-                
+                x = open(fname, xx)
+                y = open(fname, yy)
+
                 x.close()
                 y.close()
-                
-        os.unlink('tempfile.txt')
+
+        os.unlink(fname)
 
     def test_overwrite_readonly(self):
-        filename = "tmp.txt"
+        filename = "tmp_%d.txt" % os.getpid()
         f = open(filename, "w+")
         f.write("I am read-only")
         f.close()
@@ -562,17 +565,20 @@ class FileTest(IronPythonTestCase):
             def __init__(self,fname,VERBOSITY=0):
                 file.__init__(self,fname,"w",1)
                 self.VERBOSITY = VERBOSITY
-        
-        f=TEST(r'sometext.txt',VERBOSITY=1)
+
+        fname = r'sometext_%d.txt' % os.getpid()
+        f=TEST(fname, VERBOSITY=1)
         self.assertEqual(f.VERBOSITY, 1)
         f.close()
-        os.unlink('sometext.txt')
+        os.unlink(fname)
 
     # file newline handling test
     @unittest.skipIf(is_posix, "this test doesn't really make sense for posix since b doesn't change the behavior")
     def test_newline(self):
+        fname = "testfile_%d.tmp" % os.getpid()
+
         def test_newline(norm, mode):
-            f = open("testfile.tmp", mode)
+            f = open(fname, mode)
             self.assertTrue(f.read() == norm)
             for x in range(len(norm)):
                 f.seek(0)
@@ -581,102 +587,105 @@ class FileTest(IronPythonTestCase):
                 c = f.read()
                 self.assertTrue(a+b+c == norm)
             f.close()
-        
+
         self.assertRaises(TypeError, file, None) # arg must be string
         self.assertRaises(TypeError, file, [])
         self.assertRaises(TypeError, file, 1)
-        
+
         norm   = "Hi\nHello\nHey\nBye\nAhoy\n"
         unnorm = "Hi\r\nHello\r\nHey\r\nBye\r\nAhoy\r\n"
-        f = open("testfile.tmp", "wb")
+        f = open(fname, "wb")
         f.write(unnorm)
         f.close()
-        
+
         test_newline(norm, "r")
         test_newline(unnorm, "rb")
 
-        os.unlink("testfile.tmp")
+        os.unlink(fname)
 
     def test_creation(self):
         f = file.__new__(file, None)
         self.assertTrue(repr(f).startswith("<closed file '<uninitialized file>', mode '<uninitialized file>' at"))
-        
+
         self.assertRaises(TypeError, file, None)
 
 
     def test_repr(self):
         class x(file):
             def __repr__(self): return 'abc'
-            
-        f = x('repr_does_not_exist', 'w')
+
+        fname = 'repr_does_not_exist_%d' % os.getpid()
+        f = x(fname, 'w')
         self.assertEqual(repr(f), 'abc')
         f.close()
-        os.unlink('repr_does_not_exist')
+        os.unlink(fname)
 
     def test_truncate(self):
-        
+
         # truncate()
-        with open('abc.txt', 'w') as a:
+        fname = 'abc.txt'
+        with open(fname, 'w') as a:
             a.write('hello world\n')
             a.truncate()
 
-        with open('abc.txt', 'r') as a:
+        with open(fname, 'r') as a:
             self.assertEqual(a.readlines(), ['hello world\n'])
-        
-        os.unlink('abc.txt')
+
+        os.unlink(fname)
 
         # truncate(#)
-        with open('abc.txt', 'w') as a:
+        with open(fname, 'w') as a:
             a.write('hello\nworld\n')
             a.truncate(6)
-        
-        with open('abc.txt', 'r') as a:
+
+        with open(fname, 'r') as a:
             if is_posix:
                 self.assertEqual(a.readlines(), ['hello\n'])
             else:
                 self.assertEqual(a.readlines(), ['hello\r'])
 
-        os.unlink('abc.txt')
-        
+        os.unlink(fname)
+
         # truncate(#) invalid args
-        with open('abc.txt', 'w') as a:
+        with open(fname, 'w') as a:
             self.assertRaises(IOError, a.truncate, -1)
             self.assertRaises(TypeError, a.truncate, None)
-        
+
         # read-only file
-        with open('abc.txt', 'r') as a:
+        with open(fname, 'r') as a:
             self.assertRaises(IOError, a.truncate)
             self.assertRaises(IOError, a.truncate, 0)
-        os.unlink('abc.txt')
-        
+        os.unlink(fname)
+
         # std-out
         self.assertRaises(IOError, sys.stdout.truncate)
 
     def test_modes(self):
         """test various strange mode combinations and error reporting"""
+        fname = 'test_file'
         try:
-            with open('test_file', 'w') as x:
+            with open(fname, 'w') as x:
                 self.assertEqual(x.mode, 'w')
             # don't allow empty modes
             self.assertRaisesMessage(ValueError, 'empty mode string', file, 'abc', '')
-            
+
             # mode must start with valid value
             self.assertRaisesMessage(ValueError, "mode string must begin with one of 'r', 'w', 'a' or 'U', not 'p'", file, 'abc', 'p')
-            
+
             # allow anything w/ U but r and w
             self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw')
             self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua')
             self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw+')
             self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua+')
-        
-            # check invalid modes
-            self.assertRaises(ValueError, file, 'test_file', 'pU')
-            self.assertRaises(ValueError, file, 'test_file', 'pU+')
-            self.assertRaises(ValueError, file, 'test_file', 'rFOOBAR')
-        finally:
-            os.unlink('test_file')
 
-    
+            # check invalid modes
+            self.assertRaises(ValueError, file, fname, 'pU')
+            self.assertRaises(ValueError, file, fname, 'pU+')
+            self.assertRaises(ValueError, file, fname, 'rFOOBAR')
+        finally:
+            os.unlink(fname)
+
+
 
     @unittest.skipUnless(is_cli, 'Unstable with CPython')
     def test_cp16623(self):
@@ -686,14 +695,14 @@ class FileTest(IronPythonTestCase):
         '''
         global FINISHED_COUNTER
         FINISHED_COUNTER = 0
-        
+
         import time
-        
+
         expected_lines = ["a", "bbb" * 100, "cc"]
         total_threads = 50
         file_name = os.path.join(self.temporary_dir, "cp16623.txt")
         with open(file_name, "w") as f:
-            
+
             def write_stuff():
                 global FINISHED_COUNTER
                 global CP16623_LOCK
@@ -731,21 +740,21 @@ class FileTest(IronPythonTestCase):
                 with open('foo', 'w+' + mode) as foo:
                     b = buffer(b'hello world', 6)
                     foo.write(b)
-            
+
                 with open('foo', 'r') as foo:
                     self.assertEqual(foo.readlines(), ['world'])
-            
+
             with open('foo', 'w+') as foo:
                 b = buffer('hello world', 6)
                 foo.write(b)
             with open('foo', 'r') as foo:
                 self.assertEqual(foo.readlines(), ['world'])
-            
+
             with open('foo', 'w+b') as foo:
                 b = buffer('hello world', 6)
                 foo.write(b)
-            
-            
+
+
             with open('foo', 'r') as foo:
                 if is_cpython:
                     self.assertEqual(foo.readlines(), ['l\x00o\x00 \x00w\x00o\x00r\x00l\x00d\x00'])
@@ -765,57 +774,60 @@ class FileTest(IronPythonTestCase):
             self.assertUnreachable()
 
         try:
-            open('path_too_long' * 100) 
+            open('path_too_long' * 100)
         except Exception as e:
             self.assertEqual(e.errno, 2)
         else:
             self.assertUnreachable()
 
     def test_write_bytes(self):
-        f = open("temp_ip", "w+")
+        fname = "temp_ip_%d" % os.getpid()
+        f = open(fname, "w+")
         try:
             f.write(b"Hello\n")
             f.close()
-            f = open('temp_ip')
+            f = open(fname)
             self.assertEqual(f.readlines(), ['Hello\n'])
             f.close()
         finally:
             f.close()
-            os.unlink('temp_ip')
+            os.unlink(fname)
 
     def test_kw_args(self):
-        open(file = 'some_test_file.txt', mode = 'w').close()
-        os.unlink('some_test_file.txt')
+        fname = 'some_test_file_%d.txt' % os.getpid()
+        open(file =fname, mode ='w').close()
+        os.unlink(fname)
 
     def test_buffering_kwparam(self):
         #--Positive
+        fname = 'some_test_file_%d.txt' % os.getpid()
         for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647]:
-            f = open(file = 'some_test_file.txt', mode = 'w', buffering=x)
+            f = open(file =fname, mode ='w', buffering=x)
             f.close()
-            os.unlink('some_test_file.txt')
-        
+            os.unlink(fname)
+
         self.assertRaisesMessage(TypeError, "integer argument expected, got float",
-                                file, 'some_test_file.txt', 'w', 3.14)
+                                 file, fname, 'w', 3.14)
 
         #--Negative
         for x in [None, "abc", "", [], tuple()]:
-            self.assertRaises(TypeError, #"an integer is required",
-                    lambda: open(file = 'some_test_file.txt', mode = 'w', buffering=x))
-        
+            self.assertRaises(TypeError,  #"an integer is required",
+                              lambda: open(file=fname, mode='w', buffering=x))
+
         for x in [2147483648, -2147483649]:
-            self.assertRaises(OverflowError, #"long int too large to convert to int",
-                        lambda: open(file = 'some_test_file.txt', mode = 'w', buffering=x))
+            self.assertRaises(OverflowError,  #"long int too large to convert to int",
+                              lambda: open(file=fname, mode='w', buffering=x))
 
     def test_open_with_BOM(self):
         """https://github.com/IronLanguages/main/issues/1088"""
-        fileName = os.path.join(self.test_dir, "file_without_BOM.txt") 
+        fileName = os.path.join(self.test_dir, "file_without_BOM.txt")
         with open(fileName, "r") as f:
             if is_posix: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
             else: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
             self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
 
-        fileName = os.path.join(self.test_dir, "file_with_BOM.txt") 
+        fileName = os.path.join(self.test_dir, "file_with_BOM.txt")
         with open(fileName, "r") as f:
             if is_posix: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
             else: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")

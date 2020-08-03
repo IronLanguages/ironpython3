@@ -649,7 +649,7 @@ class CPickleTest(IronPythonTestCase):
 
     def test_cp15803(self):
         _testdir = 'cp15803'
-        pickle_file = os.path.join(self.test_dir, "cp15803.pickle")
+        pickle_file = os.path.join(self.test_dir, "cp15803_%d.pickle" % os.getpid())
 
         module_txt = """
 class K%s(object):

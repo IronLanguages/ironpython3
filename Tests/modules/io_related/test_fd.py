@@ -29,13 +29,14 @@ def is_open_nul(fd):
         return False
 
 def xtest_unlink():
-    fd = os.open("tmp.unlink.test-1", flags)
+    fname = "tmp_%d.unlink.test-1" % os.getpid()
+    fd = os.open(fname, flags)
     os.close(fd)
-    os.unlink("tmp.unlink.test-1")
+    os.unlink(fname)
 
 class FdTest(IronPythonTestCase):
     def test_dup2(self):
-        test_filename = "tmp.dup2.test-1"
+        test_filename = "tmp_%d.dup2.test-1" % os.getpid()
         # test inspired by gsasl dup2 test cases
         fd = os.open(test_filename, flags)
 
@@ -94,7 +95,7 @@ class FdTest(IronPythonTestCase):
         os.unlink(test_filename)
 
     def test_dup(self):
-        test_filename = "tmp.dup.test-1"
+        test_filename = "tmp_%d.dup.test-1" % os.getpid()
 
         fd1 = os.open(test_filename, flags)
 
@@ -124,7 +125,7 @@ class FdTest(IronPythonTestCase):
         os.unlink(test_filename)
 
     def test_open(self):
-        test_filename = "tmp.open.test"
+        test_filename = "tmp_%d.open.test" % os.getpid()
         fd1 = os.open(test_filename + "1", flags)
 
         # make sure fd+1 and fd+2 are closed
@@ -149,7 +150,7 @@ class FdTest(IronPythonTestCase):
             os.unlink(test_filename + str(i))
 
     def test_write(self):
-        test_filename = "tmp.write.test"
+        test_filename = "tmp_%d.write.test" % os.getpid()
 
         # trivial write
         fd = os.open(test_filename, flags)
@@ -206,7 +207,7 @@ class FdTest(IronPythonTestCase):
         # make sure the fds assigned by os.open, os.pipe and file do not collide
         # part of cp7267
         r, w = os.pipe()
-        test_filename = "tmp.pipe_fds.test"
+        test_filename = "tmp_%d.pipe_fds.test" % os.getpid()
         f = open(test_filename + "1", "w")
         self.assertNotEqual(f.fileno(), r)
         self.assertNotEqual(f.fileno(), w)

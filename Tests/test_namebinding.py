@@ -1019,13 +1019,14 @@ class NameBindingTest(IronPythonTestCase):
 
         def f():
             import os
-            with open('temptest.py', 'w+') as f:
+            fname = 'temptest_%d.py' % os.getpid()
+            with open(fname, 'w+') as f:
                 f.write('foo = 42')
 
             try:
-                execfile('temptest.py')
+                execfile(fname)
             finally:
-                os.unlink('temptest.py')
+                os.unlink(fname)
             return foo
 
         self.assertRaises(NameError, f)
@@ -1035,13 +1036,15 @@ class NameBindingTest(IronPythonTestCase):
 
         def f():
             import os
-            with open('temptest.py', 'w+') as f:
+            module_name = 'temptest_%d' % os.getpid()
+            fname = module_name + '.py'
+            with open(fname, 'w+') as f:
                 f.write('foo = 42')
             try:
                 with path_modifier('.'):
-                    from temptest import foo
+                    foo = __import__(module_name).foo
             finally:
-                os.unlink('temptest.py')
+                os.unlink(fname)
             return foo
 
         self.assertEqual(f(), 42)

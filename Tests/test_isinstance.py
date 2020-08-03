@@ -339,9 +339,10 @@ class IsInstanceTest(IronPythonTestCase):
 
     def test_kwargs_file(self):
         """can use kw-args w/ file"""
-        f = open(name='temporary.deleteme', mode='w')
+        fname = 'temporary_%d.deleteme' % os.getpid()
+        f = open(name=fname, mode='w')
         f.close()
-        os.unlink('temporary.deleteme')
+        os.unlink(fname)
 
     def test_kwargs_primitives(self):
         self.assertEqual(int(x=1), 1)
@@ -878,20 +879,20 @@ class IsInstanceTest(IronPythonTestCase):
 
         class C1(object): pass
         class C2(object): pass
-        
+
         self.assertEqual(isinstance(C1(), C2), False)
         self.assertEqual(isinstance(C1(), (C2, C2)), False)
         self.assertEqual(isinstance(C1(), (C2, C2, (C2, C2), C2)), False)
         self.assertEqual(isinstance(C1(), (C2, C2, (C2, (C2, C1), C2), C2)), True)
-        
+
         class C1: pass
         class C2: pass
-        
+
         self.assertEqual(isinstance(C1(), C2), False)
         self.assertEqual(isinstance(C1(), (C2, C2)), False)
         self.assertEqual(isinstance(C1(), (C2, C2, (C2, C2), C2)), False)
         self.assertEqual(isinstance(C1(), (C2, C2, (C2, (C2, C1), C2), C2)), True)
-        
+
         class MyInt(int): pass
 
         self.assertTrue(isinstance(MyInt(), int))

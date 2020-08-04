@@ -180,6 +180,11 @@ OTHER_GLOBALS = {"AI_ADDRCONFIG" : 32,
                  "TCP_SYNCNT" : 7,
                  "TCP_WINDOW_CLAMP" : 10}
 
+def find_free_port():
+    with socket.socket() as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 class SocketTest(IronPythonTestCase):
 
     def test_getprotobyname(self):
@@ -368,15 +373,18 @@ class SocketTest(IronPythonTestCase):
         global EXIT_CODE
         HAS_EXITED = False
 
+        port = find_free_port()
+
         #Server code
         server = """
 from time import sleep
 import _socket
 
 HOST = 'localhost'
-PORT = 50007
+PORT = {port}
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
+s.settimeout(15) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 
 try:
@@ -397,12 +405,12 @@ try:
 
 finally:
     conn.close()
-"""
+""".format(port=port)
         #Spawn off a thread to startup the server
         def server_thread():
             global EXIT_CODE
             global HAS_EXITED
-            serverFile = os.path.join(self.temporary_dir, "cp5814server.py")
+            serverFile = os.path.join(self.temporary_dir, "cp5814server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
                         (sys.executable, serverFile))
@@ -418,7 +426,7 @@ finally:
 
         #Client
         HOST = 'localhost'
-        PORT = 50007
+        PORT = port
         s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         s.connect((HOST, PORT))
         s.send(b"stuff")
@@ -456,12 +464,13 @@ class SocketMakefileTest(IronPythonTestCase):
         def echoer(port):
             s = socket.socket()
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
+            s.settimeout(15) # prevents the server from staying open if the client never connects
             s.bind(('localhost', port))
             s.listen(5)
             (s2, ignore) = s.accept()
             s2.send(s2.recv(10))
 
-        port = 50008
+        port = find_free_port()
 
         _thread.start_new_thread(echoer, (port, ))
         time.sleep(1)
@@ -481,15 +490,18 @@ class SocketMakefileTest(IronPythonTestCase):
         global EXIT_CODE
         HAS_EXITED = False
 
+        port = find_free_port()
+
         #Server code
         server = """
 from time import sleep
 import socket as _socket
 
 HOST = 'localhost'
-PORT = 50007
+PORT = {port}
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
+s.settimeout(15) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 
 try:
@@ -509,12 +521,12 @@ try:
 
 finally:
     conn.close()
-"""
+""".format(port=port)
         #Spawn off a thread to startup the server
         def server_thread():
             global EXIT_CODE
             global HAS_EXITED
-            serverFile = os.path.join(self.temporary_dir, "cp7451server.py")
+            serverFile = os.path.join(self.temporary_dir, "cp7451server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
                         (sys.executable, serverFile))
@@ -530,7 +542,7 @@ finally:
 
         #Client
         HOST = 'localhost'
-        PORT = 50007
+        PORT = port
         s = socket.socket()
         s.connect((HOST, PORT))
         s.send(b"stuff2")

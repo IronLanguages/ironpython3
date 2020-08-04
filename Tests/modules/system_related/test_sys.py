@@ -75,19 +75,20 @@ b = "bbb"
 c = "ccc"
 final = a + b + c
 print(final)"""
-        f = open('temp.py', 'w+')
+        fname = 'temp_%d.py' % os.getpid()
+        f = open(fname, 'w+')
         try:
             f.write(content)
             f.close()
 
-            p = subprocess.Popen([sys.executable, '-X:Tracing', 'temp.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            p = subprocess.Popen([sys.executable, '-X:Tracing', fname], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             p.stdin.write(b'n\nn\nn\nn\nn\nn\nn\nn\n')
             #p.stdin.flush()
             out, _ = p.communicate()
             out = [x for x in out.splitlines() if b"<module>" not in x]
             self.assertEqual(out, [b'-> b = "bbb"', b'-> c = "ccc"', b'-> final = a + b + c', b'-> print(final)', b'(Pdb) aaabbbccc', b'--Return--', b'-> print(final)', b'(Pdb) '])
         finally:
-            os.unlink('temp.py')
+            os.unlink(fname)
 
     def test_call_tracing(self):
         def f(i):
@@ -163,7 +164,8 @@ print(final)"""
             CP24381_MESSAGES.extend(args[1:])
             return f
 
-        cp24381_file_name = "cp24381.py"
+        cp24381_module = "cp24381_%d" % os.getpid()
+        cp24381_file_name = cp24381_module + ".py"
         cp24381_contents  = """
 print('a')
 print('b')
@@ -179,7 +181,7 @@ f()
             self.write_to_file(cp24381_file_name, cp24381_contents)
             sys.settrace(f)
             with path_modifier('.'):
-                import cp24381
+                __import__(cp24381_module)
         finally:
             sys.settrace(orig_sys_trace_func)
             os.unlink(cp24381_file_name)

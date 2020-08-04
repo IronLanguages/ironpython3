@@ -38,8 +38,8 @@ class RegressionTest(IronPythonTestCase):
 
     def test_cp17420(self):
         #Create a temporary Python file
-        test_file_name = os.path.join(self.temporary_dir, "cp17420.py")
-        test_log_name  = os.path.join(self.temporary_dir, "cp17420.log")
+        test_file_name = os.path.join(self.temporary_dir, "cp17420_%d.py" % os.getpid())
+        test_log_name  = os.path.join(self.temporary_dir, "cp17420_%d.log" % os.getpid())
         try:
             os.remove(test_log_name)
         except:
@@ -403,14 +403,16 @@ with open(r"%s", "w") as f:
     def test_module_alias_cp19656(self):
         old_path = [x for x in sys.path]
         sys.path.append(self.test_dir)
-        stuff_mod = os.path.join(self.test_dir, "stuff.py")
-        check_mod = os.path.join(self.test_dir, "check.py")
+        stuff_name = "stuff_%d" % os.getpid()
+        check_name = "check_%d" % os.getpid()
+        stuff_mod = os.path.join(self.test_dir, stuff_name + ".py")
+        check_mod = os.path.join(self.test_dir, check_name + ".py")
 
         try:
             self.write_to_file(stuff_mod, "Keys = 3")
             self.write_to_file(check_mod, "def check(module):\n    return module.Keys")
-            import stuff
-            from check import check
+            stuff = __import__(stuff_name)
+            check = __import__(check_name).check
             self.assertEqual(check(stuff), 3)
         finally:
             os.unlink(stuff_mod)
@@ -806,8 +808,8 @@ class C:
     @unittest.skipIf(is_netcoreapp, 'no clr.CompileModules')
     @skipUnlessIronPython()
     def test_gh1357(self):
-        filename = os.path.join(self.temporary_dir, 'gh1357.py')
-        dll = os.path.join(self.temporary_dir, "test.dll")
+        filename = os.path.join(self.temporary_dir, 'gh1357_%d.py' % os.getpid())
+        dll = os.path.join(self.temporary_dir, "test_%d.dll" % os.getpid())
         with open(filename, 'w') as f:
             f.write('{(1,): None}')
 
@@ -1163,7 +1165,7 @@ class C:
         o = SomeWeakReferenceableObject()
         x = [weakref.ref(o) for i in range(10)]
         self.assertEqual(weakref.getweakrefcount(o), 1)
-        
+
     def test_gh370(self):
         """https://github.com/IronLanguages/ironpython2/issues/370"""
         from xml.etree import ElementTree as ET
@@ -1196,10 +1198,10 @@ class C:
 
         e = Example()
         o = OrderedDict(a=1)
-        
+
         self.assertTrue(e == o, 'e != o')
         self.assertTrue(o == e, 'o != e')
-        
+
         class test(str):
             def __eq__(self,other):
                 return True

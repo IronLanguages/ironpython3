@@ -181,9 +181,9 @@ OTHER_GLOBALS = {"AI_ADDRCONFIG" : 32,
                  "TCP_WINDOW_CLAMP" : 10}
 
 def find_free_port():
-    s = socket.socket()
-    s.bind(('', 0))
-    return s.getsockname()[1]
+    with socket.socket() as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
 class SocketTest(IronPythonTestCase):
 

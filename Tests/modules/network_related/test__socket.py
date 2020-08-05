@@ -374,6 +374,7 @@ class SocketTest(IronPythonTestCase):
         server = """
 from time import sleep
 import _socket
+import os
 
 HOST = 'localhost'
 PORT = 0
@@ -381,11 +382,12 @@ s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
-with open(r"{PORTFILE}", "w") as f:
-    print(s.getsockname()[1], file=f)
+s.listen(1)
 
 try:
-    s.listen(1)
+    with open(r"{PORTFILE}", "w") as f:
+        print(s.getsockname()[1], file=f)
+
     fd, addr = s._accept()
     conn = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM, fileno=fd)
 
@@ -423,12 +425,19 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        time.sleep(10)
+        for _ in range(10):
+            time.sleep(1)
+            try:
+                with open(portFile) as f:
+                    PORT = int(f.read())
+                break
+            except:
+                pass
+        else:
+            self.fail("Server not detected")
 
         #Client
         HOST = 'localhost'
-        with open(portFile) as f:
-            PORT = int(f.read())
         s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         s.connect((HOST, PORT))
         s.send(b"stuff")
@@ -499,6 +508,7 @@ class SocketMakefileTest(IronPythonTestCase):
         server = """
 from time import sleep
 import socket as _socket
+import os
 
 HOST = 'localhost'
 PORT = 0
@@ -506,11 +516,12 @@ s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
-with open(r"{PORTFILE}", "w") as f:
-    print(s.getsockname()[1], file=f)
+s.listen(1)
 
 try:
-    s.listen(1)
+    with open(r"{PORTFILE}", "w") as f:
+        print(s.getsockname()[1], file=f)
+
     conn, addr = s.accept()
 
     #Whatever we get from the client, send it back.
@@ -547,12 +558,19 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        time.sleep(10)
+        for _ in range(10):
+            time.sleep(1)
+            try:
+                with open(portFile) as f:
+                    PORT = int(f.read())
+                break
+            except:
+                pass
+        else:
+            self.fail("Server not detected")
 
         #Client
         HOST = 'localhost'
-        with open(portFile) as f:
-            PORT = int(f.read())
         s = socket.socket()
         s.connect((HOST, PORT))
         s.send(b"stuff2")

@@ -236,6 +236,10 @@ f()
         self.assertTrue(w)
         self.assertTrue('dummy result' in str(w[0].message))
 
+    def test_builtin_module_names(self):
+        ''' Validate properly sorted module names for issue #875 '''
+        self.assertFalse(sys.builtin_module_names == tuple(sorted(sys.builtin_module_names)))
+
 
 run_test(__name__)
 

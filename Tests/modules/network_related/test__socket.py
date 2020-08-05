@@ -381,7 +381,7 @@ s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
-with open("{PORTFILE}", "w") as f:
+with open(r"{PORTFILE}", "w") as f:
     print(s.getsockname()[1], file=f)
 
 try:
@@ -403,7 +403,7 @@ try:
 finally:
     conn.close()
     try:
-        os.remove("{PORTFILE}")
+        os.remove(r"{PORTFILE}")
     except:
         pass
 """.format(PORTFILE=portFile)
@@ -506,7 +506,7 @@ s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
 s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
-with open("{PORTFILE}", "w") as f:
+with open(r"{PORTFILE}", "w") as f:
     print(s.getsockname()[1], file=f)
 
 try:
@@ -527,7 +527,7 @@ try:
 finally:
     conn.close()
     try:
-        os.remove("{PORTFILE}")
+        os.remove(r"{PORTFILE}")
     except:
         pass
 """.format(PORTFILE=portFile)

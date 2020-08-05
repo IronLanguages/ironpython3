@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -1109,12 +1110,35 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
+        /// Helper method to identify if an object has the GetHashCode method so we do not re-hash when an object has already been hashed
+        /// </summary>
+        /// <param name="objToCheck"></param>
+        /// <returns>bool</returns>
+        private bool HasHashMethod(object objToCheck) {
+            if (objToCheck != null) {
+                try {
+                    if (objToCheck.GetType().GetMethod("GetHashCode") != null) {
+                        return true;
+                    }
+                    return false;
+                }
+                catch (AmbiguousMatchException) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Helper to hash the given item w/ support for null
         /// </summary>
         private int Hash(object item) {
             if (item is string) {
                 return item.GetHashCode();
             }
+            // If an object already has a hash we should just try to get that hash - issue #848
+            if (HasHashMethod(item))
+                return item.GetHashCode();
 
             return _hashFunc(item);
         }

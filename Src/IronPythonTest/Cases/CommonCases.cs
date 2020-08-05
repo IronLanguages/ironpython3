@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
+
 using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
@@ -17,6 +19,8 @@ namespace IronPythonTest.Cases {
         public abstract int Test(TestInfo testcase);
 
         protected int TestImpl(TestInfo testcase) {
+            using var m = new Mutex(false, testcase.Name);
+            m.WaitOne();
             try {
                 TestContext.Progress.WriteLine(testcase.Name);
                 return executor.RunTest(testcase);
@@ -30,6 +34,8 @@ namespace IronPythonTest.Cases {
                     Assert.Fail(this.executor.FormatException(e));
                 }
                 return -1;
+            } finally {
+                m.ReleaseMutex();
             }
         }
     }

@@ -231,7 +231,8 @@ f()
         self.assertTrue('dummy result' in str(w[0].message))
     
     def test_builtin_module_names(self):
-        ''' Validate properly sorted module names for issue #875 '''
+        ''' Validate properly sorted module names for issue #875 
+            See issue https://github.com/IronLanguages/ironpython3/issues/875 for full details '''
         self.assertTrue(sys.builtin_module_names == tuple(sorted(sys.builtin_module_names)))
 
 run_test(__name__)

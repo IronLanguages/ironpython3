@@ -590,6 +590,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 keys[index++] = key;
             }
             //fix the sort of the keys prior to publication in sys.builtin_module_names for issue #875
+            // See issue https://github.com/IronLanguages/ironpython3/issues/875 for full details
             Array.Sort(keys);
             dict["builtin_module_names"] = PythonTuple.MakeTuple(keys);
         }

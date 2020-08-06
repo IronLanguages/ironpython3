@@ -589,6 +589,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             foreach (object key in context.BuiltinModules.Keys) {
                 keys[index++] = key;
             }
+            //fix the sort of the keys prior to publication in sys.builtin_module_names for issue #875
+            Array.Sort(keys);
             dict["builtin_module_names"] = PythonTuple.MakeTuple(keys);
         }
 

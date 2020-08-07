@@ -1889,6 +1889,10 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForNotIterable(o);
         }
 
+        internal static Exception TypeErrorForNotAnIterator(object? enumerable) {
+            return PythonOps.TypeError("'{0}' object is not an iterator", PythonTypeOps.GetName(enumerable));
+        }
+
         // Lack of type restrictions allows this method to return the direct result of __iter__ without
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object? o) {

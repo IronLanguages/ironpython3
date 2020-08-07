@@ -182,8 +182,6 @@ namespace IronPython.Runtime {
     public class PythonEnumerator : IEnumerator {
         private readonly object _baseObject;
         private object _current;
-        private CallSite<Func<CallSite, object, CodeContext, object>> _nextMemberSite;
-
         public static bool TryCastIEnumer(object baseObject, out IEnumerator enumerator) {
             if (baseObject is IEnumerator) {
                 enumerator = (IEnumerator)baseObject;
@@ -250,14 +248,11 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>True if moving was successfull</returns>
         public bool MoveNext() {
+            PythonTypeOps.TryGetOperator(DefaultContext.Default, _baseObject, "__next__", out object nextMethod);
 
-            if (_nextMemberSite == null) {
-                _nextMemberSite = DynamicHelpers
-                    .GetPythonType(_baseObject)
-                    .GetTryGetMemberSite(DefaultContext.Default, "__next__");
+            if (nextMethod == null) {
+                throw PythonOps.TypeErrorForNotAnIterator(_baseObject);
             }
-
-            object nextMethod = _nextMemberSite.Target(_nextMemberSite, _baseObject, DefaultContext.Default);
 
             try {
                 _current = DefaultContext.Default.LanguageContext.CallLightEh(DefaultContext.Default, nextMethod);
@@ -331,9 +326,9 @@ namespace IronPython.Runtime {
     [PythonType("iterator")]
     public class ItemEnumerator : IEnumerator {
         // The actual object on which we are calling __getitem__()
-        private readonly object _source;
-        private readonly object _getItemMethod;
-        private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
+        private object _source;
+        private object _getItemMethod;
+        private CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
         private object _current;
         private int _index;
 
@@ -346,10 +341,19 @@ namespace IronPython.Runtime {
         public PythonTuple __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
+            if (_index < 0) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.EMPTY);
+            }
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_source), _index);
         }
 
         public void __setstate__(int index) {
+            // If our iterator has already gone through all of the elements,
+            // then it cannot be reset as it has "released"
+            if (_index < 0) {
+                return;
+            }
+
             if (index < 0) {
                 _index = 0;
             } else {
@@ -376,10 +380,16 @@ namespace IronPython.Runtime {
                 return true;
             } catch (IndexOutOfRangeException) {
                 _current = null;
+                _site = null;
+                _source = null;
+                _getItemMethod = null;
                 _index = -1;     // this is the end
                 return false;
             } catch (StopIterationException) {
                 _current = null;
+                _site = null;
+                _source = null;
+                _getItemMethod = null;
                 _index = -1;     // this is the end
                 return false;
             }

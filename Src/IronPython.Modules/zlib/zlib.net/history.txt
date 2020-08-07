@@ -1,0 +1,34 @@
+ZLIB.NET: History of changes
+=============================
+
+version 1.10 (03/10/2010)
+
+  - Bug with the problem with inflate a stream with a dictionary is fixed. Thanks to Baptiste Pernet Mugnier.
+  - Help file is added
+
+version 1.04 (03/28/2007)
+
+  - Problem with decompressing some files is solved
+
+
+version 1.03 (03/05/2007)
+
+  - Problem with decomressing some files is solved
+
+
+version  1.02 (01/29/2007)
+
+  - Problem with decompressing large files using ZOutputStream is solved
+
+
+version 1.01 (08/17/2006)
+
+  - Demos are updated
+  - Some minor bugs are fixed
+
+
+version 1.0 (07/06/2006)
+
+
+
+

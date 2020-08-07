@@ -1886,6 +1886,10 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForNotIterable(o);
         }
 
+        internal static Exception TypeErrorForNotAnIterator(object? enumerable) {
+            return PythonOps.TypeError("'{0}' object is not an iterator", PythonTypeOps.GetName(enumerable));
+        }
+
         // Lack of type restrictions allows this method to return the direct result of __iter__ without
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object? o) {
@@ -2959,8 +2963,8 @@ namespace IronPython.Runtime.Operations {
             return ((PythonGenerator)self).CheckThrowableAndReturnSendValue();
         }
 
-        public static ItemEnumerable CreateItemEnumerable(object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerable(callable, site);
+        public static ItemEnumerable CreateItemEnumerable(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerable(source, callable, site);
         }
 
         public static DictionaryKeyEnumerator MakeDictionaryKeyEnumerator(PythonDictionary dict) {
@@ -2971,8 +2975,8 @@ namespace IronPython.Runtime.Operations {
             return PythonEnumerable.Create(baseObject);
         }
 
-        public static IEnumerator CreateItemEnumerator(object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerator(callable, site);
+        public static IEnumerator CreateItemEnumerator(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerator(source, callable, site);
         }
 
         public static IEnumerator CreatePythonEnumerator(object baseObject) {

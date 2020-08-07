@@ -1076,14 +1076,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? next(CodeContext/*!*/ context, object? iter) {
-            // TODO: throw TypeError is not an iterator
-            return PythonOps.Invoke(context, iter, "__next__");
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, iter, "__next__", out object? value))
+                return value;
+
+            throw PythonOps.TypeErrorForNotAnIterator(iter);
         }
 
         public static object? next(CodeContext/*!*/ context, object? iter, object? defaultVal) {
-            // TODO: throw TypeError is not an iterator
             try {
-                return PythonOps.Invoke(context, iter, "__next__");
+                return next(context, iter);
             } catch (StopIterationException) {
                 return defaultVal;
             }

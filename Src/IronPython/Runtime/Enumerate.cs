@@ -181,9 +181,7 @@ namespace IronPython.Runtime {
     [PythonType("enumerator")]
     public class PythonEnumerator : IEnumerator {
         private readonly object _baseObject;
-        private object _nextMethod;
         private object _current;
-
         public static bool TryCastIEnumer(object baseObject, out IEnumerator enumerator) {
             if (baseObject is IEnumerator) {
                 enumerator = (IEnumerator)baseObject;
@@ -250,14 +248,14 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>True if moving was successfull</returns>
         public bool MoveNext() {
-            if (_nextMethod == null) {
-                if (!PythonOps.TryGetBoundAttr(_baseObject, "__next__", out _nextMethod) || _nextMethod == null) {
-                    throw PythonOps.TypeError("instance has no next() method");
-                }
+            PythonTypeOps.TryGetOperator(DefaultContext.Default, _baseObject, "__next__", out object nextMethod);
+
+            if (nextMethod == null) {
+                throw PythonOps.TypeErrorForNotAnIterator(_baseObject);
             }
 
             try {
-                _current = DefaultContext.Default.LanguageContext.CallLightEh(DefaultContext.Default, _nextMethod);
+                _current = DefaultContext.Default.LanguageContext.CallLightEh(DefaultContext.Default, nextMethod);
                 Exception lightEh = LightExceptions.GetLightException(_current);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException) {
@@ -327,14 +325,40 @@ namespace IronPython.Runtime {
 
     [PythonType("iterator")]
     public class ItemEnumerator : IEnumerator {
-        private readonly object _getItemMethod;
-        private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
+        // The actual object on which we are calling __getitem__()
+        private object _source;
+        private object _getItemMethod;
+        private CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
         private object _current;
         private int _index;
 
-        internal ItemEnumerator(object getItemMethod, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+        internal ItemEnumerator(object source, object getItemMethod, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _source = source;
             _getItemMethod = getItemMethod;
             _site = site;
+        }
+
+        public PythonTuple __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            if (_index < 0) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.EMPTY);
+            }
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_source), _index);
+        }
+
+        public void __setstate__(int index) {
+            // If our iterator has already gone through all of the elements,
+            // then it cannot be reset as it has "released"
+            if (_index < 0) {
+                return;
+            }
+
+            if (index < 0) {
+                _index = 0;
+            } else {
+                _index = index;
+            }
         }
 
         #region IEnumerator members
@@ -351,15 +375,21 @@ namespace IronPython.Runtime {
             }
 
             try {
-                _current = _site.Target(_site, DefaultContext.Default,_getItemMethod,  _index);
+                _current = _site.Target(_site, DefaultContext.Default, _getItemMethod, _index);
                 _index++;
                 return true;
             } catch (IndexOutOfRangeException) {
                 _current = null;
+                _site = null;
+                _source = null;
+                _getItemMethod = null;
                 _index = -1;     // this is the end
                 return false;
             } catch (StopIterationException) {
                 _current = null;
+                _site = null;
+                _source = null;
+                _getItemMethod = null;
                 _index = -1;     // this is the end
                 return false;
             }
@@ -375,10 +405,12 @@ namespace IronPython.Runtime {
 
     [PythonType("iterable")]
     public class ItemEnumerable : IEnumerable {
+        private readonly object _source;
         private readonly object _getitem;
         private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
 
-        internal ItemEnumerable(object getitem, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+        internal ItemEnumerable(object source, object getitem, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _source = source;
             _getitem = getitem;
             _site = site;
         }
@@ -390,7 +422,7 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return new ItemEnumerator(_getitem, _site);
+            return new ItemEnumerator(_source, _getitem, _site);
         }
 
         #endregion

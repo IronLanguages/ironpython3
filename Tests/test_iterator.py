@@ -257,4 +257,54 @@ class IteratorTest(IronPythonTestCase):
         a = A()
         self.assertEqual(next(a), 2)
 
+    def test_method_changing_iterator(self):
+        class IteratorSwitcher:
+            def __init__(self):
+                IteratorSwitcher.__next__ = IteratorSwitcher.next1
+            def __iter__(self):
+                return self
+            def __next__(self):
+                return 0
+            def next1(self):
+                IteratorSwitcher.__next__ = IteratorSwitcher.next2
+                return 1
+            def next2(self):
+                IteratorSwitcher.__next__ = IteratorSwitcher.next3
+                return 2
+            def next3(self):
+                raise StopIteration()
+
+        switcher = IteratorSwitcher()
+        switcherElements = []
+        for i in switcher:
+            switcherElements.append(i)
+            if len(switcherElements) > 2:
+                break
+        self.assertEqual(switcherElements, [1, 2])
+
+    def test_bound_attr_not_used(self):
+        class NextBoundAttrIterable:
+            def __init__(self):
+                self.__next__ = lambda: 1
+            def __iter__(self):
+                return self
+            def __next__(self):
+                return 0
+
+        it = iter(NextBoundAttrIterable())
+        self.assertEqual(it.__next__(), 1)
+        self.assertEqual(next(it), 0)
+
+    def test_discarded_indexer_reduces_empty(self):
+        it = iter(Indexer())
+        list(it)
+        with self.assertRaises(StopIteration):
+            it.__next__()
+        self.assertEquals(it.__reduce__(), (iter, ()))
+        # Ensure that the iterator is discarded instead of being
+        # reset by __setstate__()
+        it.__setstate__(0)
+        with self.assertRaises(StopIteration):
+            it.__next__()
+
 run_test(__name__)

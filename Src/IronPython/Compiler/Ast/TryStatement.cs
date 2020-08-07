@@ -65,7 +65,9 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression? runElse = null;
             MSAst.ParameterExpression? previousExceptionContext = null;
 
-            if (Else != null || _handlers.Length > 0) {
+            Debug.Assert(Else is null || _handlers.Length > 0);
+
+            if (_handlers.Length > 0) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
                 if (Else != null) {
                     runElse = Ast.Variable(typeof(bool), "run_else");
@@ -93,7 +95,8 @@ namespace IronPython.Compiler.Ast {
 
             // We have else clause, must generate guard around it
             if (@else != null) {
-                Debug.Assert(@catch != null);
+                Debug.Assert(runElse != null);
+                Debug.Assert(previousExceptionContext != null && exception != null && @catch != null);
 
                 //  run_else = true;
                 //  try {
@@ -138,6 +141,8 @@ namespace IronPython.Compiler.Ast {
                 //      ... catch handling ...
                 //  }
                 //
+                Debug.Assert(previousExceptionContext != null && exception != null);
+
                 result =
                     LightExceptions.RewriteExternal(
                         AstUtils.Try(
@@ -386,7 +391,7 @@ namespace IronPython.Compiler.Ast {
                         Parent.GetSaveLineNumberExpression(exception, true),
                         Ast.Throw(
                             Ast.Call(
-                                typeof(ExceptionHelpers).GetMethod(nameof(ExceptionHelpers.UpdateForRethrow)),
+                                typeof(ExceptionHelpers).GetMethod(nameof(ExceptionHelpers.UpdateForRethrow))!,
                                 exception
                             )
                         )

@@ -124,13 +124,14 @@ class IteratorTest(IronPythonTestCase):
         l = [2, 3]
         s = set([2, 3, 4])
 
-        with open('test_file.txt', 'w+') as f:
+        import os
+        fname = 'test_file_%d.txt' % os.getpid()
+        with open(fname, 'w+') as f:
             f.write('abc\n')
             f.write('def')
 
-        f = open('test_file.txt')
+        f = open(fname)
 
-        import os
         stat = os.stat(__file__)
 
         class x(object):
@@ -176,7 +177,7 @@ class IteratorTest(IronPythonTestCase):
                     break
         finally:
             f.close()
-            os.unlink('test_file.txt')
+            os.unlink(fname)
 
     def test_iterator_closed_file(self):
         cf = open(__file__)

@@ -112,7 +112,8 @@ class ThreadTest(unittest.TestCase):
 
     def test_threading_waits_for_thread_exit(self):
         import os
-        f = open('temp.py', 'w+')
+        fname = 'temp_%d.py' % os.getpid()
+        f = open(fname, 'w+')
         try:
             f.write("""
 import atexit
@@ -133,11 +134,11 @@ t1 = Thread(target=count, args=(50000000,))
 t1.start()
     """)
             f.close()
-            stdout = os.popen('"' + sys.executable +  '" temp.py')
+            stdout = os.popen('"' + sys.executable + '" ' + fname)
             res = list(stdout)
             self.assertIn('bye bye\n', res)
         finally:
-            os.unlink('temp.py')
+            os.unlink(fname)
 
     @skipUnlessIronPython()
     def test_thread_local(self):

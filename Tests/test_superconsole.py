@@ -24,15 +24,15 @@ def getTestOutput():
             break
         print "Waiting for ip_session.log to be created..."
         time.sleep(1)
-    
+
     outlines = tfile.readlines()
     tfile.close()
-    
+
     errlines = []
     if os.path.exists('ip_session_stderr.log'):
         with open('ip_session_stderr.log', 'r') as tfile:
             errlines = tfile.readlines()
-        
+
     return (outlines, errlines)
 
 def removePrompts(lines):
@@ -43,7 +43,7 @@ def removePrompts(lines):
 class SuperConsoleTest(IronPythonTestCase):
     def setUp(self):
         super(SuperConsoleTest, self).setUp()
-        
+
         import clr
 
         #if this is a debug build and the assemblies are being saved...peverify is run.
@@ -55,7 +55,7 @@ class SuperConsoleTest(IronPythonTestCase):
             from System.IO import Path
 
             tempMauiDir = Path.GetTempPath()
-            
+
             print "Copying Maui.Core.dll to %s for peverify..." % (tempMauiDir)
             if not File.Exists(tempMauiDir + '\\Maui.Core.dll'):
                 File.Copy(testpath.rowan_root + '\\Util\\Internal\\Maui_old\\Maui.Core.dll',
@@ -90,10 +90,10 @@ class SuperConsoleTest(IronPythonTestCase):
             print "test_superconsole.py failed: cannot initialize App object (probably running as service, or in minimized remote window)"
             print "On VSLGO-MAUI machines close all remote desktop sessions using EXIT command on desktop!"
             proc.Kill()
-            sys.exit(1) 
-            
+            sys.exit(1)
+
         superConsole.SendKeys('from pretest import *{ENTER}')
-    
+
     def shutDown(self):
         super(SuperConsoleTest, self).shutDown()
         # and finally test that F6 shuts it down
@@ -122,7 +122,7 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('None{ENTER}')
         superConsole.SendKeys('{ENTER}{ENTER}{ENTER}')
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
-        
+
         #verification
         for lines in getTestOutput():
             AreEqual(removePrompts(lines), [])
@@ -133,7 +133,7 @@ class SuperConsoleTest(IronPythonTestCase):
         '''
         #setup
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
-        
+
 
         superConsole.SendKeys('raise Exception{(}"Some string exception"{)}{ENTER}')
         expected = [
@@ -152,7 +152,7 @@ class SuperConsoleTest(IronPythonTestCase):
         errlines = getTestOutput()[1]
         for i in xrange(len(errlines)):
             Assert(errlines[i].startswith(expected[i]), str(errlines) + " != " + str(expected))
-    
+
     def test_unique_prefix_completion(self):
         '''
         Ensure that an attribute with a prefix unique to the dictionary is
@@ -181,7 +181,7 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys('print y{TAB}{ENTER}')
         superConsole.SendKeys('print y{TAB}{TAB}{ENTER}')
         testRegex += '(yorickyak|yakyorick)'
@@ -231,11 +231,11 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('{BACKSPACE}except:{ENTER}')
         superConsole.SendKeys('print "EXC"{ENTER}{ENTER}{ENTER}')
         testRegex += 'EXC'
-        
+
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
-    
+
     def test_member_completion_com(self):
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         superConsole.SendKeys('import clr{ENTER}')
@@ -247,7 +247,7 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('wordapp.Activ{TAB}{ENTER}')
         sleep(15) #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24427
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
-        
+
         #Verification
         temp = getTestOutput()
         Assert(len(temp[0])==8, str(temp[0]))
@@ -275,7 +275,7 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys("def f{(}{)}:{ENTER}print 'f!'{ENTER}{ENTER}")
         superConsole.SendKeys('f{(}{)}{ENTER}')
         testRegex += 'f!'
@@ -291,7 +291,7 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys("print 'IQ{BACKSPACE}P'{ENTER}")
         testRegex += "IP"
 
@@ -313,7 +313,7 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys("print 'up'{ENTER}")
         testRegex += 'up'
         superConsole.SendKeys("print 'down'{ENTER}")
@@ -331,7 +331,7 @@ class SuperConsoleTest(IronPythonTestCase):
         testRegex += 'good'
         superConsole.SendKeys("rint 'hom'{HOME}p{END}{LEFT}e{ENTER}")
         testRegex += 'home'
-        
+
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
@@ -386,7 +386,7 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys("        while True: pass{ENTER}")
         superConsole.SendKeys("{ENTER}")
         superConsole.SendKeys("a = x{(}{)}{ENTER}")
-        
+
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
         superConsole.SendKeys("hasattr{(}a, 'abc'{)}{ENTER}")
         superConsole.SendKeys('^(c)')
@@ -400,14 +400,14 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys('print "j{TAB}{TAB}y"{ENTER}')
         testRegex += 'j    y'
 
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
-    
+
     def test_noeffect_keys(self):
         '''
         Make sure that home, delete, backspace, etc. at start have no effect
@@ -415,10 +415,10 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys('{BACKSPACE}{DELETE}{HOME}{LEFT}print "start"{ENTER}')
         testRegex += 'start'
-        
+
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
@@ -430,11 +430,11 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys('import System{ENTER}')
         superConsole.SendKeys('print System.r{TAB}{ENTER}')
         testRegex += "<type 'Random'>"
-        
+
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
@@ -446,7 +446,7 @@ class SuperConsoleTest(IronPythonTestCase):
         #setup
         superConsole.SendKeys('outputRedirectStart{(}True{)}{ENTER}')
         testRegex = ""
-        
+
         superConsole.SendKeys('print "first"{ENTER}')
         testRegex += 'first'
         superConsole.SendKeys('print "second"{ENTER}')
@@ -477,7 +477,7 @@ class SuperConsoleTest(IronPythonTestCase):
         testRegex += 'sixth'
         superConsole.SendKeys('{UP}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}')
         testRegex += 'sixth'
-        
+
         #verification
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         verifyResults(getTestOutput()[0], testRegex)
@@ -489,12 +489,12 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('x = raw_input{(}"foo"{)}{ENTER}')
         superConsole.SendKeys('{ENTER}')
         superConsole.SendKeys('print x{ENTER}')
-        
+
         superConsole.SendKeys('x = raw_input{(}"foo"{)}{ENTER}')
         superConsole.SendKeys('abc{ENTER}')
         superConsole.SendKeys('print x{ENTER}')
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
-        
+
         #verification
         lines = getTestOutput()[0]
         AreEqual(lines[2], '\n')
@@ -515,53 +515,53 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('import sys{ENTER}')
         superConsole.SendKeys('print sys.ps1{ENTER}')
         superConsole.SendKeys('print sys.ps2{ENTER}')
-        
+
         superConsole.SendKeys('sys.ps1 = "abc "{ENTER}')
         superConsole.SendKeys('sys.ps2 = "xyz "{ENTER}')
         superConsole.SendKeys('def f{(}{)}:{ENTER}    pass{ENTER}{ENTER}')
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         lines = getTestOutput()[0]
-        expected_lines = ['>>> import sys\n', 
-                        '>>> print sys.ps1\n', '>>> \n', 
-                        '>>> print sys.ps2\n', '... \n', 
-                        '>>> sys.ps1 = "abc "\n', 'abc sys.ps2 = "xyz "\n', 
-                        'abc def f():\n', 'xyz         pass\n', 'xyz         \n', 
+        expected_lines = ['>>> import sys\n',
+                        '>>> print sys.ps1\n', '>>> \n',
+                        '>>> print sys.ps2\n', '... \n',
+                        '>>> sys.ps1 = "abc "\n', 'abc sys.ps2 = "xyz "\n',
+                        'abc def f():\n', 'xyz         pass\n', 'xyz         \n',
                         'abc outputRedirectStop()\n']
-        
+
         for i in xrange(len(lines)):
             AreEqual(lines[i], expected_lines[i])
         AreEqual(len(lines), len(expected_lines))
-    
+
     def test_cp16520(self):
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
         superConsole.SendKeys('min{(}2,{ENTER}')
         superConsole.SendKeys('3{)}{ENTER}')
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
-        
+
         #verification
         lines = getTestOutput()[0]
         expected_lines = [  ">>> min(2,\n",
                             "... 3)\n",
                             "2\n",
                             ">>> outputRedirectStop()\n"]
-                    
+
         AreEqual(len(lines), len(expected_lines))
         for i in xrange(0, len(lines)):
             AreEqual(lines[i], expected_lines[i])
-    
+
     def test_decorator_cp21984(self):
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
         superConsole.SendKeys('{@}property{ENTER}')
         superConsole.SendKeys('def foo{(}{)}: pass{ENTER}{ENTER}')
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
-        
+
         #verification
         lines = getTestOutput()[0]
         expected_lines = [  ">>> @property\n",
                             "... def foo(): pass\n",
                             "... \n",
                             ">>> outputRedirectStop()\n"]
-                    
+
         AreEqual(len(lines), len(expected_lines))
         for i in xrange(0, len(lines)):
             AreEqual(lines[i], expected_lines[i])
@@ -578,7 +578,7 @@ class SuperConsoleTest(IronPythonTestCase):
                             "... hello\"\"\"\n",
                             "'\\nhello'\n",
                             ">>> outputRedirectStop()\n"]
-                    
+
         AreEqual(len(lines), len(expected_lines))
         for i in xrange(0, len(lines)):
             AreEqual(lines[i], expected_lines[i])
@@ -607,7 +607,7 @@ class SuperConsoleTest(IronPythonTestCase):
         superConsole.SendKeys('outputRedirectStop{(}{)}{ENTER}')
         lines = getTestOutput()[1]
         AreEqual(lines, ['  File "<stdin>", line 1\r\n', '    ".".\n', '\r\n', '        ^\r\n', "SyntaxError: syntax error\r\n", '\r\n'])
-                    
+
 
     def test_a_comment_newline(self):
         superConsole.SendKeys('outputRedirectStart{(}{)}{ENTER}')
@@ -619,20 +619,21 @@ class SuperConsoleTest(IronPythonTestCase):
     def test_aa_redirect_stdout(self):
         # CodePlex 25861, we should be able to return to the
         # REPL w/ output redirected.  If this doesn't work we
-        # get an exception which fails the test.    
-        f = file('test_superconsole_input.py', 'w')
+        # get an exception which fails the test.
+        module_name = 'test_superconsole_%d' % os.getpid()
+        f = file(module_name + '.py', 'w')
         f.write("""
 import sys
 
 class _StreamLog(object):
     def __init__(self, ostream):
         self.ostream = ostream
-    
+
     def write(self, *args):
         self.ostream.write("{")
         self.ostream.write(*args)
         self.ostream.write("}")
-    
+
     def flush(self):
         self.ostream.flush()
 
@@ -642,14 +643,14 @@ sys.stdout = _StreamLog(sys.stdout)
 """)
         f.close()
         try:
-            superConsole.SendKeys('import test_superconsole_input{ENTER}')
+            superConsole.SendKeys('import ' + module_name + '{ENTER}')
             lines = getTestOutput()[0]
             superConsole.SendKeys('import sys{ENTER}')
             superConsole.SendKeys('sys.stdout = sys.__stdout__{ENTER}')
             superConsole.SendKeys('sys.stderr = sys.__stderr__{ENTER}')
-            
+
         finally:
-            os.unlink('test_superconsole_input.py')
+            os.unlink(module_name + '.py')
 
 
 run_test(__name__)

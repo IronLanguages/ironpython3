@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -137,24 +138,20 @@ namespace IronPython.Runtime.Operations {
 
         [LightThrowing]
         internal static object LookupEncodingError(CodeContext/*!*/ context, string name) {
-            Dictionary<string, object> errorHandlers = context.LanguageContext.ErrorHandlers;
-            lock (errorHandlers) {
-                if (errorHandlers.ContainsKey(name))
-                    return errorHandlers[name];
-                else
-                    return LightExceptions.Throw(PythonOps.LookupError("unknown error handler name '{0}'", name));
-            }
+            ConcurrentDictionary<string, object> errorHandlers = context.LanguageContext.ErrorHandlers;
+            if (errorHandlers.TryGetValue(name, out object? handler))
+                return handler;
+            else
+                return LightExceptions.Throw(PythonOps.LookupError("unknown error handler name '{0}'", name));
         }
 
         internal static void RegisterEncodingError(CodeContext/*!*/ context, string name, object? handler) {
-            Dictionary<string, object> errorHandlers = context.LanguageContext.ErrorHandlers;
+            ConcurrentDictionary<string, object> errorHandlers = context.LanguageContext.ErrorHandlers;
 
-            lock (errorHandlers) {
-                if (!PythonOps.IsCallable(context, handler))
-                    throw PythonOps.TypeError("handler must be callable");
+            if (!PythonOps.IsCallable(context, handler))
+                throw PythonOps.TypeError("handler must be callable");
 
-                errorHandlers[name] = handler;
-            }
+            errorHandlers[name] = handler;
         }
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
@@ -3606,6 +3603,15 @@ namespace IronPython.Runtime.Operations {
             var ctor = typeof(EncoderFallbackException).GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(string), typeof(char), typeof(char), typeof(int) }, null)!;
             return (EncoderFallbackException)ctor.Invoke(new object[] { message, charUnknownHigh, charUnknownLow, index });
+        }
+
+        internal static Exception UnicodeEncodeError(string message, int runeUnknown, int index) {
+            if (runeUnknown <= char.MaxValue) {
+                return PythonOps.UnicodeEncodeError(message, (char)runeUnknown, index);
+            } else {
+                string s = char.ConvertFromUtf32(runeUnknown);
+                return PythonOps.UnicodeEncodeError(message, s[0], s[1], index);
+            }
         }
 
         public static Exception IOError(Exception inner) {

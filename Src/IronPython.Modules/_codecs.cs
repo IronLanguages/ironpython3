@@ -671,12 +671,17 @@ namespace IronPython.Modules {
         }
     }
 
+    /// <remarks>
+    /// This implementation is not suitable for incremental encoding.
+    /// </remarks>
     internal class EncodingMapEncoding : Encoding {
         private readonly EncodingMap _map;
 
         public EncodingMapEncoding(EncodingMap map) {
             _map = map;
         }
+
+        public override string EncodingName => "charmap";
 
         public override int GetByteCount(char[] chars, int index, int count)
             => GetBytes(chars, index, count, null, 0);
@@ -721,7 +726,7 @@ namespace IronPython.Modules {
                             }
                         }
                     } catch (EncoderFallbackException) {
-                        throw PythonOps.UnicodeEncodeError("charmap", new string(chars), charIndex, charIndex + 1, "character maps to <undefined>");
+                        throw PythonOps.UnicodeEncodeError(EncodingName, new string(chars), charIndex, charIndex + 1, "character maps to <undefined>");
                     }
                 } else {
                     if (bytes != null) bytes[byteIndex] = val;
@@ -787,6 +792,9 @@ namespace IronPython.Modules {
         }
     }
 
+    /// <remarks>
+    /// This implementation is not suitable for incremental encoding.
+    /// </remarks>
     internal class CharmapEncoding : Encoding {
         private readonly IDictionary<object, object> _map;
         private int _maxEncodingReplacementLength;
@@ -795,6 +803,8 @@ namespace IronPython.Modules {
         public CharmapEncoding(IDictionary<object, object> map) {
             _map = map;
         }
+
+        public override string EncodingName => "charmap";
 
         public override int GetByteCount(char[] chars, int index, int count)
             => GetBytes(chars, index, count, null, 0);
@@ -841,7 +851,7 @@ namespace IronPython.Modules {
 
                         }
                     } catch (EncoderFallbackException) {
-                        throw PythonOps.UnicodeEncodeError("charmap", new string(chars), charIndex, nextIndex, "character maps to <undefined>");
+                        throw PythonOps.UnicodeEncodeError(EncodingName, new string(chars), charIndex, nextIndex, "character maps to <undefined>");
                     }
                     charIndex = nextIndex;
                 } else {

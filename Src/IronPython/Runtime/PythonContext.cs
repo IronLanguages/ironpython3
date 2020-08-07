@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -59,7 +60,7 @@ namespace IronPython.Runtime {
         private string _initialVersionString;
         private PythonModule _clrModule;
         private PythonFileManager _fileManager;
-        private Dictionary<string, object> _errorHandlers;
+        private ConcurrentDictionary<string, object> _errorHandlers;
         private List<object> _searchFunctions;
         private Dictionary<object, object> _moduleState;
         /// <summary> stored for copyreg module, used for reduce protocol </summary>
@@ -1872,7 +1873,7 @@ namespace IronPython.Runtime {
         }
 
         /// <summary> Dictionary of error handlers for string codecs. </summary>
-        internal Dictionary<string, object> ErrorHandlers {
+        internal ConcurrentDictionary<string, object> ErrorHandlers {
             get {
                 if (_errorHandlers == null) {
                     Interlocked.CompareExchange(ref _errorHandlers, StringOps.CodecsInfo.MakeErrorHandlersDict(), null);

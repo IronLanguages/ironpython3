@@ -132,26 +132,12 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.escape_encode, "abc")
         self.assertRaises(TypeError, codecs.escape_encode, None)
         self.assertRaises(TypeError, codecs.escape_encode, None, None)
-        self.assertEquals(codecs.escape_encode(b"\\", None), (b"\\\\", 1))
-        self.assertEquals(codecs.escape_encode(b"\\", 'strict'), (b"\\\\", 1))
+        self.assertEqual(codecs.escape_encode(b"\\", None), (b"\\\\", 1))
+        self.assertEqual(codecs.escape_encode(b"\\", 'strict'), (b"\\\\", 1))
 
         self.assertRaises(TypeError, codecs.escape_encode, bytearray(b"abc"))
         self.assertRaises(TypeError, codecs.escape_encode, memoryview(b"abc"))
         self.assertRaises(TypeError, codecs.escape_encode, array.array('I', (1633771873,)))
-
-    def test_register_error(self):
-            '''
-            TODO: test that these are actually used.
-            '''
-            #Sanity
-            def garbage_error0(): print("garbage_error0")
-            def garbage_error1(param1): print("garbage_error1:", param1)
-            def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
-
-            codecs.register_error("garbage0", garbage_error0)
-            codecs.register_error("garbage1", garbage_error1)
-            codecs.register_error("garbage2", garbage_error2)
-            codecs.register_error("garbage1dup", garbage_error1)
 
     def test_charmap_decode(self):
         self.assertEqual(codecs.charmap_decode(b""), ("", 0))
@@ -875,7 +861,39 @@ class CodecTest(IronPythonTestCase):
         ute = UnicodeTranslateError("abcd", 1, 3, "UnicodeTranslateError not supported with surrogatepass")
         self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeTranslateError in error callback", surrogatepass, ute)
 
-    #TODO: @skip("multiple_execute")
+    def test_register_error(self):
+        def garbage_error0(): print("garbage_error0")
+        def garbage_error1(param1): print("garbage_error1:", param1)
+        def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
+
+        codecs.register_error("garbage0", garbage_error0)
+        codecs.register_error("garbage1", garbage_error1)
+        codecs.register_error("garbage2", garbage_error2)
+        codecs.register_error("garbage1dup", garbage_error1)
+
+        # test error handler that produces a replacement string
+        def test_encoding_error_strhandler(uee): return ("*" * (uee.end - uee.start), uee.end)
+        codecs.register_error('enc_str', test_encoding_error_strhandler)
+        self.assertEqual(codecs.lookup_error('enc_str'), test_encoding_error_strhandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_str'), b"a**z")
+
+        # test encoding error handler that produces replacement bytes
+        def test_encoding_error_byteshandler(uee): return (b"*" * (uee.end - uee.start), uee.end)
+        codecs.register_error('enc_bytes', test_encoding_error_byteshandler)
+        self.assertEqual(codecs.lookup_error('enc_bytes'), test_encoding_error_byteshandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_bytes'), b"a**z")
+
+        # test encoding error handler that produces replacement bytearray
+        def test_encoding_error_bytearrayhandler(uee): return (bytearray(b"*" * (uee.end - uee.start)), uee.end)
+        codecs.register_error('enc_bytearray', test_encoding_error_bytearrayhandler)
+        self.assertEqual(codecs.lookup_error('enc_bytearray'), test_encoding_error_bytearrayhandler)
+        self.assertRaisesRegex(TypeError, r"^encoding error handler must return \(str/bytes, int\) tuple$",
+            codecs.latin_1_encode, "a\u20AC\u20AAz", 'enc_bytearray')
+
     def test_lookup_error(self):
         #sanity
         self.assertRaises(LookupError, codecs.lookup_error, "blah garbage xyz")
@@ -883,8 +901,86 @@ class CodecTest(IronPythonTestCase):
         codecs.register_error("blah garbage xyz", garbage_error1)
         self.assertEqual(codecs.lookup_error("blah garbage xyz"), garbage_error1)
         def garbage_error2(someError): pass
-        codecs.register_error("some other", garbage_error2)
-        self.assertEqual(codecs.lookup_error("some other"), garbage_error2)
+        codecs.register_error("some other dummy", garbage_error2)
+        self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error2)
+
+        # register under the same name, overriding the previous registration
+        def garbage_error3(someError): return ("<garbage>", someError.end)
+        codecs.register_error("some other dummy", garbage_error3)
+        self.assertEqual(codecs.lookup_error("some other dummy"), garbage_error3)
+        self.assertEqual(codecs.utf_8_decode(b"a\xffz", "some other dummy"), ("a<garbage>z", 3))
+        self.assertEqual(codecs.latin_1_encode("a\u20ACz", "some other dummy"), (b"a<garbage>z", 3))
+        self.assertEqual(codecs.encode("a\u20ACz", "iso8859-2", "some other dummy"), b"a<garbage>z")
+
+    @unittest.skip("TODO")
+    def test_lookup_error_override(self):
+        # override default 'strict'
+        self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
+        def test_strict(someError): return ("<garbage>", someError.end)
+        try:
+            codecs.register_error('strict', test_strict)
+            self.assertEqual(codecs.lookup_error('strict'), test_strict)
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz"), ("a<garbage>z", 3))
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz", "strict"), ("a<garbage>z", 3))
+            self.assertEqual(codecs.decode(b"a\xffz", "u8", "strict"), "a<garbage>z")
+
+            # override does not work during encoding
+            self.assertRaises(UnicodeEncodeError, codecs.latin_1_encode, "a\u20ACz", "strict")
+            self.assertRaises(UnicodeEncodeError, codecs.encode, "a\u20ACz", "iso8859-2", "strict")
+        finally:
+            codecs.register_error('strict', codecs.strict_errors)
+        self.assertEqual(codecs.lookup_error('strict'), codecs.strict_errors)
+
+        # try override default 'ignore'
+        self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
+        def test_ignore(someError): return (" " * (someError.end - someError.start), someError.end)
+        try:
+            codecs.register_error('ignore with spaces', test_ignore)
+            self.assertEqual(codecs.lookup_error('ignore with spaces'), test_ignore)
+            self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore with spaces'), ("a  z", 4))
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "ignore with spaces"), (b"a  z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "ignore with spaces"), b"a  z")
+
+            codecs.register_error('ignore', test_ignore)
+            self.assertEqual(codecs.lookup_error('ignore'), test_ignore)
+
+            if is_cli or sys.version_info >= (3,6):
+                # override does not work during decoding
+                self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("az", 4))
+            else:
+                self.assertEqual(codecs.utf_8_decode(b"a\xff\xfez", 'ignore'), ("a  z", 4))
+
+            # override does not work during encoding
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "ignore"), (b"az", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "ignore"), b"az")
+        finally:
+            codecs.register_error('ignore', codecs.ignore_errors)
+        self.assertEqual(codecs.lookup_error('ignore'), codecs.ignore_errors)
+
+        # try override default 'replace'
+        self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
+        def test_replace(someError): return ("<error>", someError.end)
+        try:
+            codecs.register_error('replace errors', test_replace)
+            self.assertEqual(codecs.lookup_error('replace errors'), test_replace)
+            self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace errors'), ("a<error>z", 3))
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "replace errors"), (b"a<error>z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "replace errors"), b"a<error>z")
+
+            codecs.register_error('replace', test_replace)
+            self.assertEqual(codecs.lookup_error('replace'), test_replace)
+            if is_cli or sys.version_info >= (3,6):
+                # override does not work during decoding
+                self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a\uFFFDz", 3))
+            else:
+                self.assertEqual(codecs.utf_8_decode(b"a\xffz", 'replace'), ("a<error>z", 3))
+
+            # override does not work during encoding
+            self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", "replace"), (b"a??z", 4))
+            self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", "replace"), b"a??z")
+        finally:
+            codecs.register_error('replace', codecs.replace_errors)
+        self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
 
         self.assertRaises(TypeError, codecs.lookup_error, None)
         self.assertRaises(TypeError, codecs.register_error, None, garbage_error1)
@@ -1026,7 +1122,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_be_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_be_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_be_decode, None, None)
-        self.assertEquals(codecs.utf_16_be_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_be_decode(b"", None), ("", 0))
 
     def test_utf_16_be_decode_incremental(self):
         b = b"\xff\xfe\x00\x41\xd9\x00\xdd\x00\xdc\x00\xd8\x00\xdc\x00"
@@ -1049,7 +1145,7 @@ class CodecTest(IronPythonTestCase):
         ]
         if not is_cli:
             # CPython's strings are UTF-32 so an invalid surrogate pair results in one replacement char.
-            # Therefore CPython cannot report error on a dangling low surrogate until it verifies
+            # Therefore CPython does not report error on a dangling low surrogate until it verifies
             # that the next char is not an invalid surrogate as well.
             expected[10] = expected[11] = ('\ufffeA\U00050100', 8)
 
@@ -1067,7 +1163,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_be_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_be_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_be_encode, None, None)
-        self.assertEquals(codecs.utf_16_be_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_16_be_encode("", None), (b"", 0))
 
     def test_utf_16_le_decode(self):
         string, num_processed = codecs.utf_16_le_decode(b'a\0b\0c\0')
@@ -1083,7 +1179,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_le_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_le_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_le_decode, None, None)
-        self.assertEquals(codecs.utf_16_le_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_le_decode(b"", None), ("", 0))
 
     def test_utf_16_le_decode_incremental(self):
         b = b"\xfe\xff\x41\x00\x00\xd9\x00\xdd\x00\xdc\x00\xd8\x00\xdc"
@@ -1106,7 +1202,7 @@ class CodecTest(IronPythonTestCase):
         ]
         if not is_cli:
             # CPython's strings are UTF-32 so an invalid surrogate pair results in one replacement char.
-            # Therefore CPython cannot report error on a dangling low surrogate until it verifies
+            # Therefore CPython does not report error on a dangling low surrogate until it verifies
             # that the next char is not an invalid surrogate as well.
             expected[10] = expected[11] = ('\ufffeA\U00050100', 8)
 
@@ -1124,7 +1220,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_le_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_le_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_le_encode, None, None)
-        self.assertEquals(codecs.utf_16_le_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_16_le_encode("", None), (b"", 0))
 
     def test_utf_16_ex_decode(self):
         #sanity
@@ -1147,7 +1243,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_ex_decode, None, None)
-        self.assertEquals(codecs.utf_16_ex_decode(b"", None), ("", 0, 0))
+        self.assertEqual(codecs.utf_16_ex_decode(b"", None), ("", 0, 0))
 
     def test_utf_16_decode(self):
         # When BOM present: it is removed and the proper UTF-16 variant is automatically selected
@@ -1169,7 +1265,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_16_decode, None)
         self.assertRaises(TypeError, codecs.utf_16_decode, None, None)
-        self.assertEquals(codecs.utf_16_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_16_decode(b"", None), ("", 0))
 
     def test_utf_16_encode(self):
         # On little-endian systems, UTF-16 encodes in UTF-16-LE prefixed with BOM
@@ -1180,7 +1276,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_16_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_16_encode, None)
         self.assertRaises(TypeError, codecs.utf_16_encode, None, None)
-        self.assertEquals(codecs.utf_16_encode("", None), (codecs.BOM_UTF16, 0))
+        self.assertEqual(codecs.utf_16_encode("", None), (codecs.BOM_UTF16, 0))
 
     def test_utf_16_le_encode_alias(self):
         for x in ('utf_16_le', 'UTF-16LE', 'utf-16le', 'utf-16-le'):
@@ -1200,7 +1296,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_be_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_be_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_be_decode, None, None)
-        self.assertEquals(codecs.utf_32_be_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_32_be_decode(b"", None), ("", 0))
 
     def test_utf_32_be_encode(self):
         data, num_processed = codecs.utf_32_be_encode("abc")
@@ -1210,7 +1306,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_be_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_32_be_encode, None)
         self.assertRaises(TypeError, codecs.utf_32_be_encode, None, None)
-        self.assertEquals(codecs.utf_32_be_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_32_be_encode("", None), (b"", 0))
 
     def test_utf_32_le_decode(self):
         string, num_processed = codecs.utf_32_le_decode(b'a\0\0\0b\0\0\0c\0\0\0')
@@ -1226,7 +1322,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_le_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_le_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_le_decode, None, None)
-        self.assertEquals(codecs.utf_32_le_decode(b"", None), ("", 0))
+        self.assertEqual(codecs.utf_32_le_decode(b"", None), ("", 0))
 
     def test_utf_32_le_encode(self):
         data, num_processed = codecs.utf_32_le_encode("abc")
@@ -1236,7 +1332,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_le_encode, b"abc")
         self.assertRaises(TypeError, codecs.utf_32_le_encode, None)
         self.assertRaises(TypeError, codecs.utf_32_le_encode, None, None)
-        self.assertEquals(codecs.utf_32_le_encode("", None), (b"", 0))
+        self.assertEqual(codecs.utf_32_le_encode("", None), (b"", 0))
 
     def test_utf_32_ex_decode(self):
         self.utf_ex_decode_test_helper(
@@ -1253,7 +1349,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, "abc")
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, None)
         self.assertRaises(TypeError, codecs.utf_32_ex_decode, None, None)
-        self.assertEquals(codecs.utf_32_ex_decode(b"", None), ("", 0, 0))
+        self.assertEqual(codecs.utf_32_ex_decode(b"", None), ("", 0, 0))
 
     def test_utf_32_decode(self):
         # When BOM present: it is removed and the proper UTF-32 variant is automatically selected
@@ -1881,5 +1977,18 @@ class CodecTest(IronPythonTestCase):
         codecs.register_error("test_unicode_error", handler)
         res = "\xac\u1234\u20ac\u8000".encode("ptcp154", "test_unicode_error")
         self.assertEqual(res, b"\xac")
+
+        def handler1(ex):
+            print()
+            print(ex)
+            return ("", ex.end + 1)
+
+        codecs.register_error("test_unicode_error1", handler1)
+        if is_cpython:
+            res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
+            self.assertEqual(res, b"+++\xac--")
+        else:
+            with self.assertRaises(NotImplementedError):
+                res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
 
 run_test(__name__)

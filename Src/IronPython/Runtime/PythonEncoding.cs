@@ -10,6 +10,7 @@ using Microsoft.Scripting.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace IronPython.Runtime {
@@ -46,8 +47,8 @@ namespace IronPython.Runtime {
         private Encoding Pass2Encoding { get; }
 
         private readonly string _name;
+        private PythonEncoder _residentEncoder;
         private Decoder _residentDecoder;
-        private Encoder _residentEncoder;
 
         public PythonEncoding(Encoding encoding, PythonEncoderFallback encoderFallback, PythonDecoderFallback decoderFallback, string name)
             : base(0, encoderFallback, decoderFallback) {
@@ -58,11 +59,16 @@ namespace IronPython.Runtime {
 
             _name = name ?? "<unknown>";
 
-            // TODO: make lazy
             try {
-                byte[] markerBytes = encoding.GetBytes(new[] { Pass1Marker });
-                CharacterWidth = markerBytes.Length;
-                IsBigEndian = markerBytes[0] == 0;
+                unsafe {
+                    char* markerSpan = stackalloc char[] { Pass1Marker };
+                    CharacterWidth = encoding.GetByteCount(markerSpan, 1);
+                    if (1 <= CharacterWidth && CharacterWidth <= 4) {
+                        byte* markerBytes = stackalloc byte[CharacterWidth];
+                        encoding.GetBytes(markerSpan, 1, markerBytes, CharacterWidth);
+                        IsBigEndian = markerBytes[0] == 0;
+                    }
+                }
             } catch (EncoderFallbackException) {
                 // Q: What encoding cannot encode '?' A: Incomplete charmap.
                 CharacterWidth = 1;
@@ -85,22 +91,48 @@ namespace IronPython.Runtime {
             Pass2Encoding.DecoderFallback = decoderFallback;
         }
 
-        public override int GetByteCount(char[] chars, int index, int count) {
+        private void PrepareResidentEncoder() {
             if (_residentEncoder == null) {
-                _residentEncoder = GetEncoder();
+                _residentEncoder = new PythonEncoder(this);
             } else {
                 _residentEncoder.Reset();
             }
+        }
+
+        // mandatory override
+        public override int GetByteCount(char[] chars, int index, int count) {
+            PrepareResidentEncoder();
             return _residentEncoder.GetByteCount(chars, index, count, flush: true);
         }
 
+        // NLS workhorse
+        public override unsafe int GetByteCount(char* chars, int count) {
+            PrepareResidentEncoder();
+            return _residentEncoder.GetByteCount(chars, count, flush: true);
+        }
+
+        // used by IronPython
+        public override int GetByteCount(string s) {
+            PrepareResidentEncoder();
+            return _residentEncoder.GetByteCount(s, flush: true);
+        }
+
+        // mandatory override
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
-            if (_residentEncoder == null) {
-                _residentEncoder = GetEncoder();
-            } else {
-                _residentEncoder.Reset();
-            }
+            PrepareResidentEncoder();
             return _residentEncoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
+        }
+
+        // NLS workhorse
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) {
+            PrepareResidentEncoder();
+            return _residentEncoder.GetBytes(chars, charCount, bytes, byteCount, flush: true);
+        }
+
+        // used by IronPython
+        public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+            PrepareResidentEncoder();
+            return _residentEncoder.GetBytes(s, charIndex, charCount, bytes, byteIndex, flush: true);
         }
 
         public override int GetCharCount(byte[] bytes, int index, int count) {
@@ -254,22 +286,104 @@ namespace IronPython.Runtime {
                 return fbuf;
             }
 
+            // mandatory override of an abstract method
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
+                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (index < 0 || count < 0) throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
+                if (chars.Length - index < count) throw new ArgumentOutOfRangeException(nameof(chars));
+
+                unsafe {
+                    fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars)) {
+                        return GetByteCount(pChars + index, count, flush);
+                    } 
+                }
+            }
+
+            // optional override of a virtual method but preferable to the one from the base class
+            public override unsafe int GetByteCount(char* chars, int count, bool flush) {
+                if (chars == null) throw new ArgumentNullException(nameof(chars));
+
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
 
-                fbuf1?.PrepareIncrement(chars, forEncoding: false);
-                int numBytes = _pass1encoder.GetByteCount(chars, index, count, flush);
+                var s = new string(chars, 0, count);
+                fbuf1?.PrepareIncrement(s, forEncoding: false);
+                int numBytes = _pass1encoder.GetByteCount(chars, count, flush);
                 fbuf1?.FinalizeIncrement(count, flush);
 
                 return numBytes;
             }
 
+            // not declared in the base class nevertheless still useful in IronPython context, most efficient if input is a string
+            public int GetByteCount(string s, bool flush) {
+                if (s == null) throw new ArgumentNullException(nameof(s));
+
+                var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
+
+                fbuf1?.PrepareIncrement(s, forEncoding: false);
+                int numBytes;
+                unsafe {
+                    fixed (char* pChars = &MemoryMarshal.GetReference(s.AsSpan())) {
+                        numBytes = _pass1encoder.GetByteCount(pChars, s.Length, flush);
+                    }
+                }
+                fbuf1?.FinalizeIncrement(s.Length, flush);
+
+                return numBytes;
+            }
+
+            // mandatory override
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
+                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (charIndex < 0) throw new ArgumentOutOfRangeException(nameof(charIndex));
+                if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
+                if (chars.Length - charIndex < charCount) throw new ArgumentOutOfRangeException(nameof(chars));
+                if (byteIndex < 0 || byteIndex > bytes.Length) throw new ArgumentOutOfRangeException(nameof(byteIndex));
+
+                var s = new string(chars, charIndex, charCount);
+                return GetBytes(s, bytes.AsSpan(byteIndex), flush);
+            }
+
+            // NLS workhorse
+            public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush) {
+                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
+                if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount));
+
+                var s = new string(chars, 0, charCount);
+                return GetBytes(s, new Span<byte>(bytes, byteCount), flush);
+            }
+
+            // used by IronPython
+            public int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
+                if (s == null) throw new ArgumentNullException(nameof(s));
+                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (charIndex < 0) throw new ArgumentOutOfRangeException(nameof(charIndex));
+                if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
+                if (s.Length - charIndex < charCount) throw new ArgumentOutOfRangeException(nameof(s));
+                if (byteIndex < 0 || byteIndex > bytes.Length) throw new ArgumentOutOfRangeException(nameof(byteIndex));
+
+                if (charIndex != 0 || charCount != s.Length) {
+                    s = s.Substring(charIndex, charCount);
+                }
+                return GetBytes(s, bytes.AsSpan(byteIndex), flush);
+            }
+
+            private int GetBytes(string data, Span<byte> bytes, bool flush) {
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
                 var fbuf2 = GetPythonEncoderFallbackBuffer(_pass2encoder);
-                fbuf1?.PrepareIncrement(chars, forEncoding: true);
+                fbuf1?.PrepareIncrement(data, forEncoding: true);
 
-                int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
+                var chars = data.AsSpan();
+
+                int written;
+                unsafe {
+                    fixed (char* pChars = &MemoryMarshal.GetReference(chars))
+                    fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes)) {
+                        written = _pass1encoder.GetBytes(pChars, chars.Length, pBytes, bytes.Length, flush);
+                    }
+                }
 
                 // If the final increment and there were no more fallback bytes, the job is done
                 if (fbuf1 == null || flush && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
@@ -283,29 +397,33 @@ namespace IronPython.Runtime {
                     _pass2encoder = GetEncoder(_parentEncoding.Pass2Encoding);
                     fbuf2 = GetPythonEncoderFallbackBuffer(_pass2encoder);
                 }
-                fbuf2.PrepareIncrement(chars, forEncoding: true);
+                fbuf2.PrepareIncrement(data, forEncoding: true);
 
                 // Restore original fallback bytes
                 var bytes2 = new byte[written];
-                _pass2encoder.GetBytes(chars, charIndex, charCount, bytes2, 0, flush);
+                unsafe {
+                    fixed (char* pChars = &MemoryMarshal.GetReference(chars))
+                    fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes2)) {
+                        _pass2encoder.GetBytes(pChars, chars.Length, pBytes, bytes2.Length, flush);
+                    }
+                }
 
                 int cwidth = _parentEncoding.CharacterWidth;
-                for (int i = 0, j = byteIndex; i < written; i++, j++) {
-                    if (bytes[j] != bytes2[i]) {
-                        int ofs = (j / cwidth) * cwidth;
+                for (int i = 0; i < written; i++) {
+                    if (bytes[i] != bytes2[i]) {
+                        int ofs = (i / cwidth) * cwidth;
                         for (int p = 0; p < cwidth; p++) {
                             bytes[ofs++] = fbuf2.GetFallbackByte();
                             fbuf1.GetFallbackByte(); // count the byte as consumed in fbuf1 too
                         }
-                        int skip = ofs - j - 1;
+                        int skip = ofs - i - 1;
                         i += skip;
-                        j += skip;
                     }
                 }
 
                 // Check if all fallback bytes are restored properly
-                fbuf1.FinalizeIncrement(charCount, flush);
-                fbuf2.FinalizeIncrement(charCount, flush);
+                fbuf1.FinalizeIncrement(data.Length, flush);
+                fbuf2.FinalizeIncrement(data.Length, flush);
 
                 return written;
             }
@@ -371,9 +489,9 @@ namespace IronPython.Runtime {
 
             protected int EncodingCharWidth { get; }
             protected int CodePage { get; }
-            protected char[] Data { get; private set; }
+            protected string Data { get; private set; }
 
-            public virtual void PrepareIncrement(char[] data, bool forEncoding) {
+            public virtual void PrepareIncrement(string data, bool forEncoding) {
                 Data = data;
                 if (EncodingMode) {
                     _byteCnt = (int)_byteCnt;
@@ -1028,11 +1146,6 @@ namespace IronPython.Runtime {
                 _encoding = encoding;
             }
 
-            public override void PrepareIncrement(char[] data, bool forEncoding) {
-                if (Data != null && Data.Length > 0 && EncodingMode) _lastSeenChar <<= Data[0];
-                base.PrepareIncrement(data, forEncoding);
-            }
-
             public override Tuple<ReadOnlyMemory<char>, ReadOnlyMemory<byte>> GetFallbackCharsOrBytes(int runeUnknown, int index) {
                 if (_handler == null) {
                     _handler = LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(_encoding._context, _encoding._errors));
@@ -1040,19 +1153,17 @@ namespace IronPython.Runtime {
 
                 // create the exception object to hand to the user-function...
                 int runeLen = GetUtf16SequenceLength(runeUnknown);
-                char[] data = Data;
+                string data = Data;
                 if (index < 0) {
                     // corner case, the unknown data starts at the end of the previous increment
                     Debug.Assert(index == -1); // only one char back allowed
-                    data = new char[Data.Length + 1];
-                    data[0] = _lastSeenChar;
-                    Array.Copy(Data, 0, data, 1, Data.Length);
+                    data = _lastSeenChar + data;
                     index++;
                 }
                 var exObj = PythonExceptions.CreatePythonThrowable(
                     PythonExceptions.UnicodeEncodeError,
                     StringOps.GetEncodingName(_encoding, normalize: false),
-                    new string(data),
+                    data,
                     index,
                     index + runeLen,
                     "ordinal not in range for this codec");
@@ -1077,6 +1188,11 @@ namespace IronPython.Runtime {
                 }
 
                 throw PythonOps.TypeError("encoding error handler must return (str/bytes, int) tuple");
+            }
+
+            public override void FinalizeIncrement(int endIndex, bool flush) {
+                if (Data != null && Data.Length > 0 && EncodingMode) _lastSeenChar <<= Data[0];
+                base.FinalizeIncrement(endIndex, flush);
             }
         }
 

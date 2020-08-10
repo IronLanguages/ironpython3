@@ -19,9 +19,9 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - uses: actions/setup-dotnet@v1.4.0
+    - uses: actions/setup-dotnet@v1.5.0
       with:
-        dotnet-version: '3.1.100'
+        dotnet-version: '3.1.x'
     - name: Set Mono Version
       if: matrix.os == 'macos-latest'
       run: echo ::add-path::/Library/Frameworks/Mono.framework/Versions/6.4.0/bin

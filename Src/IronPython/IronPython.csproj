@@ -18,7 +18,6 @@
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="System.Xml" />
-    <Reference Include="System.Configuration" Condition=" $(Features.Contains('FEATURE_CONFIGURATION')) " />
     <Reference Include="System.Runtime.Remoting" Condition=" $(Features.Contains('FEATURE_REMOTING')) " />
   </ItemGroup>
 

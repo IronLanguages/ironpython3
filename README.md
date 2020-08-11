@@ -50,4 +50,4 @@ Since the main development is on Windows, Mono bugs may inadvertantly be introdu
 - please report them!
 
 ## Supported Platforms
-IronPython 3 targets .NET 4.5 and .NET Core 2.0/2.1.
+IronPython 3 targets .NET 4.6 and .NET Core 2.1/3.1.

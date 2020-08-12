@@ -364,8 +364,9 @@ class SocketTest(IronPythonTestCase):
         pass
 
     def test_cp5814(self):
-        global HAS_EXITED
         global EXIT_CODE
+        global HAS_EXITED
+        EXIT_CODE = -1
         HAS_EXITED = False
 
         portFile = os.path.join(self.temporary_dir, "cp5814port_%d" % os.getpid())
@@ -427,6 +428,8 @@ finally:
         #Give the server a chance to startup
         for _ in range(10):
             time.sleep(1)
+            if EXIT_CODE > 0:
+                self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())
@@ -498,8 +501,9 @@ class SocketMakefileTest(IronPythonTestCase):
         self.assertEqual(str, test_msg)
 
     def test_cp7451(self):
-        global HAS_EXITED
         global EXIT_CODE
+        global HAS_EXITED
+        EXIT_CODE = -1
         HAS_EXITED = False
 
         portFile = os.path.join(self.temporary_dir, "cp7451port_%d" % os.getpid())
@@ -560,6 +564,8 @@ finally:
         #Give the server a chance to startup
         for _ in range(10):
             time.sleep(1)
+            if EXIT_CODE > 0:
+                self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())

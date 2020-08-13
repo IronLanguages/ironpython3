@@ -90,6 +90,12 @@ namespace IronPythonTest.Util {
             }
         }
 
+        public bool NotParallelSafe {
+            get {
+                return this.manifest.GetBool(this.testName, "NotParallelSafe", false);
+            }
+        }
+
         public bool Tracing {
             get {
                 return this.manifest.GetBool(this.testName, "Tracing", false);

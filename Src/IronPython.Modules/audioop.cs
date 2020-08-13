@@ -10,13 +10,14 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
+using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 [assembly: PythonModule("audioop", typeof(IronPython.Modules.PythonAudioOp))]
 namespace IronPython.Modules {
     public static class PythonAudioOp {
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
+        public static void PerformModuleReload([NotNullOnReturn] PythonContext/*!*/ context, [NotNullOnReturn] PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("audiooperror", dict, "error", "audioop");
         }
 

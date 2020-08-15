@@ -426,7 +426,9 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        for _ in range(10):
+        portex = None
+        startTime = time.perf_counter()
+        for _ in range(20):
             time.sleep(1)
             if EXIT_CODE > 0:
                 self.fail("Server died with exit code %d" % EXIT_CODE)
@@ -434,10 +436,11 @@ finally:
                 with open(portFile) as f:
                     PORT = int(f.read())
                 break
-            except:
-                pass
+            except Exception as ex:
+                portex = ex
         else:
-            self.fail("Server not detected")
+            duration = time.perf_counter() - startTime
+            self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
         #Client
         HOST = 'localhost'
@@ -562,7 +565,9 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        for _ in range(10):
+        portex = None
+        startTime = time.perf_counter()
+        for _ in range(20):
             time.sleep(1)
             if EXIT_CODE > 0:
                 self.fail("Server died with exit code %d" % EXIT_CODE)
@@ -570,10 +575,11 @@ finally:
                 with open(portFile) as f:
                     PORT = int(f.read())
                 break
-            except:
-                pass
+            except Exception as ex:
+                portex = ex
         else:
-            self.fail("Server not detected")
+            duration = time.perf_counter() - startTime
+            self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
         #Client
         HOST = 'localhost'

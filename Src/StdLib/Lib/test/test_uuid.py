@@ -4,6 +4,7 @@ import builtins
 import io
 import os
 import shutil
+import sys
 import uuid
 
 def importable(name):
@@ -386,7 +387,10 @@ class TestUUID(unittest.TestCase):
             equal(u, uuid.UUID(v))
             equal(str(u), v)
 
-    @unittest.skipUnless(os.name == 'posix', 'requires Posix')
+    @unittest.skipUnless(
+        os.name == 'posix' and sys.implementation.name != 'ironpython',
+        'requires os.fork'
+    )
     def testIssue8621(self):
         # On at least some versions of OSX uuid.uuid4 generates
         # the same sequence of UUIDs in the parent and any

@@ -5,7 +5,7 @@
     <MinorVersion>4</MinorVersion>
     <MicroVersion>0</MicroVersion>
     <ReleaseLevel>alpha</ReleaseLevel>
-    <ReleaseSerial>0</ReleaseSerial>
+    <ReleaseSerial>1</ReleaseSerial><!-- this should only be 0 when final -->
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>

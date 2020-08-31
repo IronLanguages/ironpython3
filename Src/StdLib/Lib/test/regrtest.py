@@ -165,6 +165,8 @@ except ImportError:
 # Therefore it is necessary to absolutize manually the __file__ and __path__ of
 # the packages to prevent later imports to fail when the CWD is different.
 for module in sys.modules.values():
+    if type(module).__name__ == 'namespace#':  # namespace in IronPython
+        continue
     if hasattr(module, '__path__'):
         module.__path__ = [os.path.abspath(path) for path in module.__path__]
     if hasattr(module, '__file__'):

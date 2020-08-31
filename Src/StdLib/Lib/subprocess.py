@@ -1344,7 +1344,7 @@ class Popen(object):
             if stderr == PIPE:
                 self.stderr = io.BufferedReader(open(p.StandardError.BaseStream))
 
-            # dotnet an't redirect stdio to file/stream, thus has to feed from parent
+            # dotnet can't redirect stdio to file/stream, thus has to feed from parent
             if stdin not in (None,  DEVNULL, PIPE):
                 # assume file-like object
                 input = stdin.read()
@@ -1371,7 +1371,7 @@ class Popen(object):
             if timeout is None:
                 self._handle.WaitForExit()
             else:
-                self._handle.WaitForExit(timeout)
+                self._handle.WaitForExit(int(timeout * 1000))
             self.returncode = self._handle.ExitCode
             return self.returncode
 

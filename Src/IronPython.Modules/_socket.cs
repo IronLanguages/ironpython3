@@ -1104,10 +1104,10 @@ namespace IronPython.Modules {
             CodeContext/*!*/ context,
             string host,
             object port,
-            int family= (int)AddressFamily.Unspecified,
-            int socktype=0,
-            int proto=(int)ProtocolType.IP,
-            int flags=(int)SocketFlags.None
+            int family = (int)AddressFamily.Unspecified,
+            int socktype = 0,
+            int proto = (int)ProtocolType.IP,
+            int flags = (int)SocketFlags.None
         ) {
             int numericPort;
 
@@ -1117,26 +1117,23 @@ namespace IronPython.Modules {
                 numericPort = (int)port;
             } else if (port is Extensible<int>) {
                 numericPort = ((Extensible<int>)port).Value;
+            } else if (port is Bytes) {
+                numericPort = ParsePort(context, ((Bytes)port).MakeString());
             } else if (port is string) {
-                if (!Int32.TryParse((string)port, out numericPort)) {
-                    try{ 
-                        port = getservbyname(context,(string)port,null);
-                    }
-                    catch{
-                        throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
-                    }
-                }
+                numericPort = ParsePort(context, (string)port);
             } else if (port is ExtensibleString) {
-                if (!Int32.TryParse(((ExtensibleString)port).Value, out numericPort)) {
-                    try{
-                        port = getservbyname(context, (string)port, null);
-                    }
-                    catch{
-                        throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
-                    }
-                }
+                numericPort = ParsePort(context, ((ExtensibleString)port).Value);
             } else {
                 throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
+            }
+
+            static int ParsePort(CodeContext context, string port) {
+                if (int.TryParse(port, out var numericPort)) return numericPort;
+                try {
+                    return getservbyname(context, port, null);
+                } catch {
+                    throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
+                }
             }
 
             if (socktype != 0) {
@@ -1174,6 +1171,17 @@ namespace IronPython.Modules {
 
             return results;
         }
+
+        [Documentation("")]
+        public static PythonList getaddrinfo(
+            CodeContext/*!*/ context,
+            [NotNull] Bytes host,
+            object port,
+            int family = (int)AddressFamily.Unspecified,
+            int socktype = 0,
+            int proto = (int)ProtocolType.IP,
+            int flags = (int)SocketFlags.None
+        ) => getaddrinfo(context, host.MakeString(), port, family, socktype, proto, flags);
 
         private static PythonType gaierror(CodeContext/*!*/ context) {
             return (PythonType)context.LanguageContext.GetModuleState("socketgaierror");

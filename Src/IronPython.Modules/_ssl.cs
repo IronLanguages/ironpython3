@@ -77,7 +77,7 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {            
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             var sslError = context.EnsureModuleException("SSLError", PythonSocket.error, dict, "SSLError", "ssl");
             context.EnsureModuleException("SSLZeroReturnError", sslError, dict, "SSLZeroReturnError", "ssl");
             context.EnsureModuleException("SSLWantWriteError", sslError, dict, "SSLWantWriteError", "ssl");
@@ -112,7 +112,7 @@ namespace IronPython.Modules {
             private string _cafile;
             private int _verify_mode = SSL_VERIFY_NONE;
 
-            public _SSLContext(CodeContext context, [DefaultParameterValue(PROTOCOL_SSLv23)] int protocol) {
+            public _SSLContext(CodeContext context, int protocol = PROTOCOL_SSLv23) {
                 if (protocol != PROTOCOL_SSLv2 && protocol != PROTOCOL_SSLv23 && protocol != PROTOCOL_SSLv3 &&
                     protocol != PROTOCOL_TLSv1 && protocol != PROTOCOL_TLSv1_1 && protocol != PROTOCOL_TLSv1_2) {
                     throw PythonOps.ValueError("invalid protocol version");
@@ -141,7 +141,7 @@ namespace IronPython.Modules {
                     return _verify_mode;
                 }
                 set {
-                    if(_verify_mode != CERT_NONE && _verify_mode != CERT_OPTIONAL && _verify_mode != CERT_REQUIRED) {
+                    if (_verify_mode != CERT_NONE && _verify_mode != CERT_OPTIONAL && _verify_mode != CERT_REQUIRED) {
                         throw PythonOps.ValueError("invalid value for verify_mode");
                     }
                     _verify_mode = value;
@@ -160,24 +160,24 @@ namespace IronPython.Modules {
 
             }
 
-            public void load_cert_chain(string certfile, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] object password) {
+            public void load_cert_chain(string certfile, string keyfile = null, object password = null) {
 
             }
 
-            public void load_verify_locations(CodeContext context, [DefaultParameterValue(null)] string cafile, [DefaultParameterValue(null)] string capath, [DefaultParameterValue(null)] object cadata) {
-                if(cafile == null && capath == null && cadata == null) {
+            public void load_verify_locations(CodeContext context, string cafile = null, string capath = null, object cadata = null) {
+                if (cafile == null && capath == null && cadata == null) {
                     throw PythonOps.TypeError("cafile, capath and cadata cannot be all omitted");
                 }
 
-                if(cafile != null) {
+                if (cafile != null) {
                     _cert_store.Add(ReadCertificate(context, cafile));
                     _cafile = cafile;
                 }
 
-                if(capath != null) {
+                if (capath != null) {
                 }
 
-                if(cadata != null) {
+                if (cadata != null) {
                     var cabuf = cadata as IBufferProtocol;
                     if (cabuf != null) {
                         int pos = 0;
@@ -196,7 +196,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object _wrap_socket(CodeContext context, [DefaultParameterValue(null)] PythonSocket.socket sock, [DefaultParameterValue(false)] bool server_side, [DefaultParameterValue(null)] string server_hostname, [DefaultParameterValue(null)] object ssl_sock) {
+            public object _wrap_socket(CodeContext context, PythonSocket.socket sock = null, bool server_side = false, string server_hostname = null, object ssl_sock = null) {
                 return new PythonSocket.ssl(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store) { _serverHostName = server_hostname };
             }
         }
@@ -204,17 +204,17 @@ namespace IronPython.Modules {
         #endregion
 
         public static PythonType SSLType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonSocket.ssl));
-        
+
         public static PythonSocket.ssl sslwrap(
             CodeContext context,
-            PythonSocket.socket socket, 
-            bool server_side, 
-            string keyfile=null, 
-            string certfile=null,
-            int certs_mode=PythonSsl.CERT_NONE,
-            int protocol= (PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
-            string cacertsfile=null,
-            object ciphers=null) {
+            PythonSocket.socket socket,
+            bool server_side,
+            string keyfile = null,
+            string certfile = null,
+            int certs_mode = PythonSsl.CERT_NONE,
+            int protocol = (PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
+            string cacertsfile = null,
+            object ciphers = null) {
             return new PythonSocket.ssl(
                 context,
                 socket,
@@ -228,16 +228,15 @@ namespace IronPython.Modules {
             );
         }
 
-        public static object txt2obj(CodeContext context, string txt, [DefaultParameterValue(false)] object name) {
-            bool nam = PythonOps.IsTrue(name); // if true, we also look at short name and long name
+        public static object txt2obj(CodeContext context, string txt, bool name = false) {
             Asn1Object obj = null;
-            if(nam) {
+            if (name) {
                 obj = _asn1Objects.Where(x => txt == x.OIDString || txt == x.ShortName || txt == x.LongName).FirstOrDefault();
             } else {
                 obj = _asn1Objects.Where(x => txt == x.OIDString).FirstOrDefault();
             }
 
-            if(obj == null) {
+            if (obj == null) {
                 throw PythonOps.ValueError("unknown object '{0}'", txt);
             }
 
@@ -245,12 +244,12 @@ namespace IronPython.Modules {
         }
 
         public static object nid2obj(CodeContext context, int nid) {
-            if(nid < 0) {
+            if (nid < 0) {
                 throw PythonOps.ValueError("NID must be positive");
             }
 
             var obj = _asn1Objects.Where(x => x.NID == nid).FirstOrDefault();
-            if(obj == null) {
+            if (obj == null) {
                 throw PythonOps.ValueError("unknown NID {0}", nid);
             }
 
@@ -267,7 +266,7 @@ namespace IronPython.Modules {
                 foreach (var cert in store.Certificates) {
                     string format = cert.GetFormat();
 
-                    switch(format) {
+                    switch (format) {
                         case "X509":
                             format = "x509_asn";
                             break;
@@ -281,7 +280,7 @@ namespace IronPython.Modules {
                     foreach (var ext in cert.Extensions) {
                         var keyUsage = ext as X509EnhancedKeyUsageExtension;
                         if (keyUsage != null) {
-                            foreach(var oid in keyUsage.EnhancedKeyUsages) {
+                            foreach (var oid in keyUsage.EnhancedKeyUsages) {
                                 set.add(oid.Value);
                             }
                             found = true;
@@ -496,7 +495,7 @@ namespace IronPython.Modules {
                 if (key != null) {
                     try {
                         cert.PrivateKey = key;
-                    } catch(CryptographicException e) {
+                    } catch (CryptographicException e) {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
                 }
@@ -566,8 +565,8 @@ namespace IronPython.Modules {
             parameters.DP = ReadUnivesalIntAsBytes(x, ref offset);
             parameters.DQ = ReadUnivesalIntAsBytes(x, ref offset);
             parameters.InverseQ = ReadUnivesalIntAsBytes(x, ref offset);
-            
-            provider.ImportParameters(parameters);            
+
+            provider.ImportParameters(parameters);
             return provider;
         }
 
@@ -587,7 +586,7 @@ namespace IronPython.Modules {
             for (int i = 0; i < res.Length; i++) {
                 res[i] = x[offset++];
             }
-            
+
             return res;
 
         }
@@ -596,7 +595,7 @@ namespace IronPython.Modules {
             int versionType = x[offset++];
             if (versionType != UniversalInteger) {
                 throw new InvalidOperationException(String.Format("expected version, fonud {0}", versionType));
-            }            
+            }
         }
         private static int ReadUnivesalInt(byte[] x, ref int offset) {
             ReadIntType(x, ref offset);
@@ -629,16 +628,16 @@ namespace IronPython.Modules {
         /// BER encoding of an integer value is the number of bytes
         /// required to represent the integer followed by the bytes
         /// </summary>
-        private static int ReadInt(byte[] x, ref int offset) {            
+        private static int ReadInt(byte[] x, ref int offset) {
             int bytes = x[offset++];
-            
+
             return ReadInt(x, ref offset, bytes);
         }
 
         private static string ReadToEnd(string[] lines, ref int start, string end) {
             StringBuilder key = new StringBuilder();
             for (start++; start < lines.Length; start++) {
-                if (lines[start] == end) {                    
+                if (lines[start] == end) {
                     return key.ToString();
                 }
                 key.Append(lines[start]);
@@ -706,4 +705,5 @@ namespace IronPython.Modules {
         #endregion
     }
 }
+
 #endif

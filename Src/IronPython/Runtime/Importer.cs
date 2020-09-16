@@ -816,14 +816,13 @@ namespace IronPython.Runtime {
                 return false;
             }
             importCache[path] = importer = FindImporterForPath(context, path);
-            if (importer == null) {
+            if (importer is null || importer is PythonImport.NullImporter) {
                 return false;
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
             var syspath = context.LanguageContext.GetSystemStateValue("path") as PythonList;
             syspath?.Insert(0, path);
-            object dummy;
-            return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out dummy);
+            return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out _);
         }
 
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {

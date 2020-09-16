@@ -241,7 +241,7 @@ namespace IronPython.Modules {
 
                         var bytes = new byte[count];
 
-                        for (var i=0; i<count;i++) {
+                        for (var i = 0; i < count; i++) {
                             bytes[i] = _view.ReadByte(start);
                             start += step;
                         }
@@ -330,19 +330,19 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object find([NotNull]Bytes/*!*/ s) {
+            public object find([NotNull] Bytes/*!*/ s) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object find([NotNull]Bytes/*!*/ s, long start) {
+            public object find([NotNull] Bytes/*!*/ s, long start) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object find([NotNull]Bytes/*!*/ s, long start, long end) {
+            public object find([NotNull] Bytes/*!*/ s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, end);
                 }
@@ -512,7 +512,7 @@ namespace IronPython.Modules {
             public Bytes read(object n) {
                 // this overload is needed to prevent cast of double to int - https://github.com/IronLanguages/ironpython2/issues/547
                 if (n is null) return read(-1);
-                throw PythonOps.TypeError( $"integer argument expected, got {PythonOps.GetPythonTypeName(n)}");
+                throw PythonOps.TypeError($"integer argument expected, got {PythonOps.GetPythonTypeName(n)}");
             }
 
             public int read_byte() {
@@ -606,19 +606,19 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object rfind([NotNull]Bytes/*!*/ s) {
+            public object rfind([NotNull] Bytes/*!*/ s) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull]Bytes/*!*/ s, long start) {
+            public object rfind([NotNull] Bytes/*!*/ s, long start) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull]Bytes/*!*/ s, long start, long end) {
+            public object rfind([NotNull] Bytes/*!*/ s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, end);
                 }
@@ -724,7 +724,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void write([BytesLike]IList<byte> s) {
+            public void write([BytesLike] IList<byte> s) {
                 using (new MmapLocker(this)) {
                     EnsureWritable();
 

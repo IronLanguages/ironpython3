@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.AccessControl;
 using System.Text;
@@ -23,6 +24,9 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
+#if NET5_0
+    [SupportedOSPlatform("windows")]
+#endif
     public static class PythonWinReg {
         public const string __doc__ = "Provides access to the Windows registry.";
 

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SYSLIB0001 // UTF-7 code paths are obsolete in .NET 5
+
 #nullable enable
 
 using System;

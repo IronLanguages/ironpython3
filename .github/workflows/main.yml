@@ -27,6 +27,10 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.x'
+    - name: Setup .NET 5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.100-rc.1.20452.10'
     - name: Set Mono Version
       if: matrix.os == 'macos-latest'
       run: echo ::add-path::/Library/Frameworks/Mono.framework/Versions/6.4.0/bin

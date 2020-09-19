@@ -56,3 +56,6 @@ jobs:
     - name: Test (netcoreapp3.1)
       run: ./make.ps1 -frameworks netcoreapp3.1 test-all
       shell: pwsh
+    - name: Test (net5.0)
+      run: ./make.ps1 -frameworks net5.0 test-all
+      shell: pwsh

@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net46</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);netcoreapp3.1;net5.0</TargetFrameworks>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <StoreInDLLs>true</StoreInDLLs>
     <UseWPF Condition=" '$(OS)' == 'Windows_NT' ">true</UseWPF>

@@ -24,9 +24,7 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
-#if NET5_0
     [SupportedOSPlatform("windows")]
-#endif
     public static class PythonWinReg {
         public const string __doc__ = "Provides access to the Windows registry.";
 

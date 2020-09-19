@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0;net5.0</TargetFrameworks>
     <BaseAddress>879755264</BaseAddress>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

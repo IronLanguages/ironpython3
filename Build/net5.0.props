@@ -26,6 +26,7 @@
     <Features>$(Features);FEATURE_METADATA_READER</Features>
     <Features>$(Features);FEATURE_MMAP</Features>
     <Features>$(Features);FEATURE_NATIVE</Features>
+    <Features>$(Features);FEATURE_OSPLATFORMATTRIBUTE</Features>
     <Features>$(Features);FEATURE_PIPES</Features>
     <Features>$(Features);FEATURE_PROCESS</Features>
     <Features>$(Features);FEATURE_REFEMIT</Features>

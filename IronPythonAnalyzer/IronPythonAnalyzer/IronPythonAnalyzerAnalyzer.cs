@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -46,8 +50,6 @@ namespace IronPythonAnalyzer {
                 var codeContextSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.CodeContext");
                 var siteLocalStorageSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.SiteLocalStorage");
                 var notNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
-                var disallowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.DisallowNullAttribute");
-                var allowNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.AllowNullAttribute");
                 var bytesLikeAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.BytesLikeAttribute");
 
                 var byteType = context.Compilation.GetTypeByMetadataName("System.Byte");
@@ -59,8 +61,9 @@ namespace IronPythonAnalyzer {
 
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
                     if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol))
-                        && !parameterSymbol.Type.Equals(ibufferProtocolType)
-                        && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType) && !parameterSymbol.Type.Equals(ilistOfByteType)) {
+                            && !parameterSymbol.Type.Equals(ibufferProtocolType)
+                            && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType)
+                            && !parameterSymbol.Type.Equals(ilistOfByteType)) {
                         var diagnostic = Diagnostic.Create(Rule3, parameterSymbol.Locations[0], parameterSymbol.Name, parameterSymbol.Type.MetadataName);
                         context.ReportDiagnostic(diagnostic);
                         continue;
@@ -70,17 +73,24 @@ namespace IronPythonAnalyzer {
                     if (SymbolEqualityComparer.Default.Equals(parameterSymbol.Type.BaseType, siteLocalStorageSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
                         if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
-                            && !parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(allowNullAttributeSymbol))) {
+                            && !parameterSymbol.GetAttributes().Any(x => IsAllowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule1, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }
                     } else if (parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated) {
                         if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
-                            && !parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(disallowNullAttributeSymbol))) {
+                            && !parameterSymbol.GetAttributes().Any(x => IsDisallowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule2, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }
                     }
+                }
+
+                bool IsAllowNull(INamedTypeSymbol symbol) {
+                    return symbol.ToString() == "System.Diagnostics.CodeAnalysis.AllowNullAttribute";
+                }
+                bool IsDisallowNull(INamedTypeSymbol symbol) {
+                    return symbol.ToString() == "System.Diagnostics.CodeAnalysis.DisallowNullAttribute";
                 }
             }
 

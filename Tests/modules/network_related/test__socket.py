@@ -364,8 +364,9 @@ class SocketTest(IronPythonTestCase):
         pass
 
     def test_cp5814(self):
-        global HAS_EXITED
         global EXIT_CODE
+        global HAS_EXITED
+        EXIT_CODE = -1
         HAS_EXITED = False
 
         portFile = os.path.join(self.temporary_dir, "cp5814port_%d" % os.getpid())
@@ -425,16 +426,21 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        for _ in range(10):
+        portex = None
+        startTime = time.perf_counter()
+        for _ in range(20):
             time.sleep(1)
+            if EXIT_CODE > 0:
+                self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())
                 break
-            except:
-                pass
+            except Exception as ex:
+                portex = ex
         else:
-            self.fail("Server not detected")
+            duration = time.perf_counter() - startTime
+            self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
         #Client
         HOST = 'localhost'
@@ -498,8 +504,9 @@ class SocketMakefileTest(IronPythonTestCase):
         self.assertEqual(str, test_msg)
 
     def test_cp7451(self):
-        global HAS_EXITED
         global EXIT_CODE
+        global HAS_EXITED
+        EXIT_CODE = -1
         HAS_EXITED = False
 
         portFile = os.path.join(self.temporary_dir, "cp7451port_%d" % os.getpid())
@@ -558,16 +565,21 @@ finally:
 
         _thread.start_new_thread(server_thread, ())
         #Give the server a chance to startup
-        for _ in range(10):
+        portex = None
+        startTime = time.perf_counter()
+        for _ in range(20):
             time.sleep(1)
+            if EXIT_CODE > 0:
+                self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())
                 break
-            except:
-                pass
+            except Exception as ex:
+                portex = ex
         else:
-            self.fail("Server not detected")
+            duration = time.perf_counter() - startTime
+            self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
         #Client
         HOST = 'localhost'

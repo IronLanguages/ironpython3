@@ -300,7 +300,7 @@ class IteratorTest(IronPythonTestCase):
         list(it)
         with self.assertRaises(StopIteration):
             it.__next__()
-        self.assertEquals(it.__reduce__(), (iter, ()))
+        self.assertEquals(it.__reduce__(), (iter, ((),)))
         # Ensure that the iterator is discarded instead of being
         # reset by __setstate__()
         it.__setstate__(0)

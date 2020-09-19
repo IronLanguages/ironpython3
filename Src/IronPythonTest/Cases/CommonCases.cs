@@ -19,8 +19,8 @@ namespace IronPythonTest.Cases {
         public abstract int Test(TestInfo testcase);
 
         protected int TestImpl(TestInfo testcase) {
-            using var m = new Mutex(false, testcase.Name);
-            m.WaitOne();
+            using var m = testcase.Options.NotParallelSafe ? new Mutex(false, testcase.Name) : null;
+            m?.WaitOne();
             try {
                 TestContext.Progress.WriteLine(testcase.Name);
                 return executor.RunTest(testcase);
@@ -35,7 +35,7 @@ namespace IronPythonTest.Cases {
                 }
                 return -1;
             } finally {
-                m.ReleaseMutex();
+                m?.ReleaseMutex();
             }
         }
     }

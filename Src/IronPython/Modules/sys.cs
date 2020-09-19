@@ -3,24 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("sys", typeof(IronPython.Modules.SysModule))]
 namespace IronPython.Modules {
@@ -193,7 +189,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                     }
                 }
                 return cur;
-            } 
+            }
 
             throw PythonOps.ValueError("call stack is not deep enough");
         }
@@ -423,7 +419,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         [PythonType("long_info"), PythonHidden]
         public class longinfo : PythonTuple {
             internal longinfo(int bits_per_digit, int sizeof_digit)
-                : base(new object[] {bits_per_digit, sizeof_digit}) {
+                : base(new object[] { bits_per_digit, sizeof_digit }) {
 
                 this.bits_per_digit = bits_per_digit;
                 this.sizeof_digit = sizeof_digit;
@@ -451,13 +447,13 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             Double.MaxValue,    // DBL_MAX
             1024,               // DBL_MAX_EXP
             308,                // DBL_MAX_10_EXP
-            // DBL_MIN
+                                // DBL_MIN
             BitConverter.Int64BitsToDouble(BitConverter.IsLittleEndian ? 0x0010000000000000 : 0x0000000000001000),
             -1021,              // DBL_MIN_EXP
             -307,               // DBL_MIN_10_EXP
             15,                 // DBL_DIG
             53,                 // DBL_MANT_DIG
-           // DBL_EPSILON
+                                // DBL_EPSILON
             BitConverter.Int64BitsToDouble(BitConverter.IsLittleEndian ? 0x3cb0000000000000 : 0x000000000000b03c),
             2,                  // FLT_RADIX
             1);                 // FLT_ROUNDS
@@ -484,7 +480,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 this.rounds = rounds;
             }
 
-            public readonly double max; 
+            public readonly double max;
             public readonly int max_exp;
             public readonly int max_10_exp;
             public readonly double min;
@@ -494,7 +490,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public readonly int mant_dig;
             public readonly double epsilon;
             public readonly int radix;
-            public readonly int rounds; 
+            public readonly int rounds;
 
             public const int n_fields = 11;
             public const int n_sequence_fields = 11;
@@ -510,7 +506,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
-        public static hashinfo hash_info = new hashinfo(width: 32, modulus: int.MaxValue, inf: 314159, nan: 0, imag: 1000003, algorithm: "dotnet", hash_bits: 0, seed_bits:0, cutoff: 0);
+        public static hashinfo hash_info = new hashinfo(width: 32, modulus: int.MaxValue, inf: 314159, nan: 0, imag: 1000003, algorithm: "dotnet", hash_bits: 0, seed_bits: 0, cutoff: 0);
 
         [PythonType("hash_info"), PythonHidden]
         public class hashinfo : PythonTuple {

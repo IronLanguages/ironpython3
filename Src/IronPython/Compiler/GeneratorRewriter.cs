@@ -31,6 +31,7 @@ namespace IronPython.Compiler {
         private readonly Expression _body;
         private readonly string _name;
         private readonly StrongBox<Type> _tupleType = new StrongBox<Type>(null);
+        private readonly StrongBox<int> _tupleSize = new StrongBox<int>();
         private readonly StrongBox<ParameterExpression> _tupleExpr = new StrongBox<ParameterExpression>(null);
 
         // The one return label, or more than one if we're in a finally
@@ -101,6 +102,7 @@ namespace IronPython.Compiler {
 
             Expression newTuple = MutableTuple.Create(tupleExprs);
             Type tupleType = _tupleType.Value = newTuple.Type;
+            _tupleSize.Value = tupleExprs.Length;
             ParameterExpression tupleExpr = _tupleExpr.Value = Expression.Parameter(tupleType, "tuple");
             ParameterExpression tupleArg = Expression.Parameter(typeof(MutableTuple), "tupleArg");
             _temps.Add(_gotoRouter);
@@ -152,7 +154,7 @@ namespace IronPython.Compiler {
                     )
                 ),
                 new DelayedTupleAssign(
-                    new DelayedTupleExpression(liftedGen.Index, new StrongBox<ParameterExpression>(tupleTmp), _tupleType, typeof(PythonGenerator)),
+                    new DelayedTupleExpression(liftedGen.Index, new StrongBox<ParameterExpression>(tupleTmp), _tupleType, _tupleSize, typeof(PythonGenerator)),
                     ret
                 ),
                 ret
@@ -653,7 +655,7 @@ namespace IronPython.Compiler {
         private DelayedTupleExpression LiftVariable(ParameterExpression param) {
             DelayedTupleExpression res;
             if (!_vars.TryGetValue(param, out res)) {
-                _vars[param] = res = new DelayedTupleExpression(_vars.Count, _tupleExpr, _tupleType, param.Type);
+                _vars[param] = res = new DelayedTupleExpression(_vars.Count, _tupleExpr, _tupleType, _tupleSize, param.Type);
                 _orderedVars.Add(new KeyValuePair<ParameterExpression, DelayedTupleExpression>(param, res));
             }
 
@@ -981,19 +983,21 @@ namespace IronPython.Compiler {
     internal sealed class DelayedTupleExpression : Expression {
         public readonly int Index;
         private readonly StrongBox<Type> _tupleType;
+        private readonly StrongBox<int> _tupleSize;
         private readonly StrongBox<ParameterExpression> _tupleExpr;
         private readonly Type _type;
 
-        public DelayedTupleExpression(int index, StrongBox<ParameterExpression> tupleExpr, StrongBox<Type> tupleType, Type type) {
+        public DelayedTupleExpression(int index, StrongBox<ParameterExpression> tupleExpr, StrongBox<Type> tupleType, StrongBox<int> tupleSize, Type type) {
             Index = index;
             _tupleType = tupleType;
+            _tupleSize = tupleSize;
             _tupleExpr = tupleExpr;
             _type = type;
         }
 
         public override Expression Reduce() {
             Expression res = _tupleExpr.Value;
-            foreach (PropertyInfo pi in MutableTuple.GetAccessPath(_tupleType.Value, Index)) {
+            foreach (PropertyInfo pi in MutableTuple.GetAccessPath(_tupleType.Value, _tupleSize.Value, Index)) {
                 res = Expression.Property(res, pi);
             }
             return res;

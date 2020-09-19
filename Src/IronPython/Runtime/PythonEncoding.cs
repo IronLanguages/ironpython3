@@ -219,8 +219,14 @@ namespace IronPython.Runtime {
             public override int GetByteCount(char[] chars, int index, int count, bool flush)
                 => _encoder.GetByteCount(chars, index, count, flush);
 
+            public override unsafe int GetByteCount(char* chars, int count, bool flush)
+                => _encoder.GetByteCount(chars, count, flush);
+
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush)
                 => _encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
+
+            public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+                => _encoder.GetBytes(chars, charCount, bytes, byteCount, flush);
 
             public override void Reset() => _encoder.Reset();
 
@@ -282,7 +288,7 @@ namespace IronPython.Runtime {
                 var fbuf = enc.FallbackBuffer as PythonEncoderFallbackBuffer;
 #if NETCOREAPP
                 if (fbuf == null) {
-                    fbuf = enc.GetType().GetProperty(nameof(enc.FallbackBuffer)).GetValue(enc) as PythonEncoderFallbackBuffer;
+                    fbuf = enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonEncoderFallbackBuffer;
                 }
 #endif
                 return fbuf;
@@ -294,11 +300,7 @@ namespace IronPython.Runtime {
                 if (index < 0 || count < 0) throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
                 if (chars.Length - index < count) throw new ArgumentOutOfRangeException(nameof(chars));
 
-                unsafe {
-                    fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars)) {
-                        return GetByteCount(pChars + index, count, flush);
-                    } 
-                }
+                return this.GetByteCount(chars.AsSpan(index, count), flush);
             }
 
             // optional override of a virtual method but preferable to the one from the base class
@@ -323,11 +325,7 @@ namespace IronPython.Runtime {
 
                 fbuf1?.PrepareIncrement(s, forEncoding: false);
                 int numBytes;
-                unsafe {
-                    fixed (char* pChars = &MemoryMarshal.GetReference(s.AsSpan())) {
-                        numBytes = _pass1encoder.GetByteCount(pChars, s.Length, flush);
-                    }
-                }
+                numBytes = _pass1encoder.GetByteCount(s.AsSpan(), flush);
                 fbuf1?.FinalizeIncrement(s.Length, flush);
 
                 return numBytes;
@@ -380,12 +378,7 @@ namespace IronPython.Runtime {
                 var chars = data.AsSpan();
 
                 int written;
-                unsafe {
-                    fixed (char* pChars = &MemoryMarshal.GetReference(chars))
-                    fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes)) {
-                        written = _pass1encoder.GetBytes(pChars, chars.Length, pBytes, bytes.Length, flush);
-                    }
-                }
+                written = _pass1encoder.GetBytes(chars, bytes, flush);
 
                 // If the final increment and there were no more fallback bytes, the job is done
                 if (fbuf1 == null || flush && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
@@ -404,12 +397,7 @@ namespace IronPython.Runtime {
 
                 // Restore original fallback bytes
                 var bytes2 = new byte[written];
-                unsafe {
-                    fixed (char* pChars = &MemoryMarshal.GetReference(chars))
-                    fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes2)) {
-                        _pass2encoder.GetBytes(pChars, chars.Length, pBytes, bytes2.Length, flush);
-                    }
-                }
+                _pass2encoder.GetBytes(chars, bytes2, flush);
 
                 int cwidth = _parentEncoding.CharacterWidth;
                 for (int i = 0; i < written; i++) {
@@ -1232,4 +1220,22 @@ namespace IronPython.Runtime {
         }
 
     }
+
+#if !NETCOREAPP
+    // TODO: Move to IronPython.Runtime.Text
+    internal static class EncoderExtensions {
+        public static unsafe int GetByteCount(this Encoder encoder, ReadOnlySpan<char> chars, bool flush) {
+            fixed (char* pChars = &MemoryMarshal.GetReference(chars)) {
+                return encoder.GetByteCount(pChars, chars.Length, flush);
+            }
+        }
+
+        internal static unsafe int GetBytes(this Encoder encoder, ReadOnlySpan<char> chars, Span<byte> bytes, bool flush) {
+            fixed (char* pChars = &MemoryMarshal.GetReference(chars))
+            fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes)) {
+                return encoder.GetBytes(pChars, chars.Length, pBytes, bytes.Length, flush);
+            }
+        }
+    }
+#endif
 }

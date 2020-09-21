@@ -894,6 +894,15 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(TypeError, r"^encoding error handler must return \(str/bytes, int\) tuple$",
             codecs.latin_1_encode, "a\u20AC\u20AAz", 'enc_bytearray')
 
+        # test that error handler receives the original srring (i.e. no data copying happening)
+        s = "a\u20AC\u20AAz"
+        def test_encoding_error_nocopyhandler(uee):
+            self.assertIs(uee.object, s)
+            return ("", uee.end)
+        codecs.register_error('enc_nocopy', test_encoding_error_nocopyhandler)
+        self.assertEqual(codecs.latin_1_encode(s, 'enc_nocopy'), (b"az", 4))
+        self.assertEqual(codecs.encode(s, "iso8859-2", 'enc_nocopy'), b"az")
+
     def test_lookup_error(self):
         #sanity
         self.assertRaises(LookupError, codecs.lookup_error, "blah garbage xyz")

@@ -14,7 +14,7 @@
       <HintPath>..\..\Util\References\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
+  <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
 

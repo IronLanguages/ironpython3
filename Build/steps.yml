@@ -100,9 +100,9 @@ steps:
       testRunTitle: ${{ parameters.os }}
     condition: succeededOrFailed()
 
-  - powershell: ./make.ps1 package
-    displayName: Package
-    condition: succeededOrFailed()
+#  - powershell: ./make.ps1 package
+#    displayName: Package
+#    condition: succeededOrFailed()
 
   - task: CopyFiles@2
     displayName: Copy NuGet and Zip Packages

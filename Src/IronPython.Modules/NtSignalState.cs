@@ -4,12 +4,15 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
 using IronPython.Runtime;
 
 #if FEATURE_PROCESS
 
 namespace IronPython.Modules {
     public static partial class PythonSignal {
+        [SupportedOSPlatform("windows")]
         internal class NtSignalState : PythonSignalState {
             //We use a single Windows event handler to process all signals. This handler simply
             //delegates the work out to PySignalToPyHandler.

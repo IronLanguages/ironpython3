@@ -1845,12 +1845,10 @@ namespace IronPython.Modules {
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
 
         // Windows only
-        [SupportedOSPlatform("windows")]
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly BigInteger SIO_RCVALL = (long)IOControlCode.ReceiveAll;
 
-        [SupportedOSPlatform("windows")]
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly BigInteger SIO_KEEPALIVE_VALS = (long)IOControlCode.KeepAliveValues;
 
         public const int RCVALL_ON = 1;

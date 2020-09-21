@@ -4,7 +4,7 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "release",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1'),
+    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0'),
     [String] $platform = "x64",
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount

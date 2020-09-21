@@ -10,6 +10,9 @@ import unittest
 import codecs
 import sys
 
+import clr
+is_net50 = clr.TargetFramework == ".NETCoreApp,Version=v5.0"
+
 from iptest import run_test
 
 import test.test_re
@@ -17,7 +20,7 @@ import test.test_re
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        suite.addTest(test.test_re.ExternalTests('test_re_benchmarks'))
+        if not is_net50: suite.addTest(test.test_re.ExternalTests('test_re_benchmarks'))
         #suite.addTest(test.test_re.ExternalTests('test_re_tests'))
         suite.addTest(test.test_re.ImplementationTest('test_overlap_table'))
         #suite.addTest(test.test_re.PatternReprTests('test_bytes'))
@@ -58,7 +61,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_bug_725106'))
         suite.addTest(test.test_re.ReTests('test_bug_725149'))
         #suite.addTest(test.test_re.ReTests('test_bug_764548'))
-        suite.addTest(test.test_re.ReTests('test_bug_817234'))
+        if not is_net50: suite.addTest(test.test_re.ReTests('test_bug_817234'))
         suite.addTest(test.test_re.ReTests('test_bug_926075'))
         suite.addTest(test.test_re.ReTests('test_bug_931848'))
         suite.addTest(test.test_re.ReTests('test_bytes_str_mixing'))

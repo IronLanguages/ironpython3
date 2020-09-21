@@ -18,7 +18,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(TargetFramework)' == 'netcoreapp3.1' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(IsFullFramework)' != 'true' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
     <Content Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -27,12 +27,12 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(TargetFramework)' == 'netcoreapp3.1' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
-    <StageItem Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' "/>
-    <StageItem Include="ipy.sh" Condition=" '$(OS)' == 'Unix' "/>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(IsFullFramework)' != 'true' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
+    <StageItem Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' " />
+    <StageItem Include="ipy.sh" Condition=" '$(OS)' == 'Unix' " />
   </ItemGroup>
 
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) ">
+  <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
     <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
   </ItemGroup>
 

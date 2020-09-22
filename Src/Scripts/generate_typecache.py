@@ -44,6 +44,7 @@ data = [
     TypeData('SetCollection', entryName='Set'),
     TypeData('PythonType'),
     TypeData('String', 'str'),
+    TypeData('Bytes'),
     TypeData('PythonTuple'),
     TypeData('WeakReference'),
     TypeData('PythonList'),

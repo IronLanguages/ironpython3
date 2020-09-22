@@ -14,7 +14,7 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
 
 SSL_URL      = "www.microsoft.com"
-SSL_ISSUER   = "CN=Microsoft IT TLS CA 5, OU=Microsoft IT, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+SSL_ISSUER   = "CN=Microsoft RSA TLS CA 01, O=Microsoft Corporation, C=US"
 SSL_SERVER   = "www.microsoft.com"
 SSL_PORT     = 443
 SSL_REQUEST  = b"GET /en-us HTTP/1.0\r\nHost: www.microsoft.com\r\n\r\n"

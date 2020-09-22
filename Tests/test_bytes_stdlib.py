@@ -177,7 +177,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bytes.BytesTest('test_contains'))
         suite.addTest(test.test_bytes.BytesTest('test_copy'))
         suite.addTest(test.test_bytes.BytesTest('test_count'))
-        #suite.addTest(test.test_bytes.BytesTest('test_custom'))
+        suite.addTest(test.test_bytes.BytesTest('test_custom'))
         suite.addTest(test.test_bytes.BytesTest('test_decode'))
         suite.addTest(test.test_bytes.BytesTest('test_empty_sequence'))
         suite.addTest(test.test_bytes.BytesTest('test_encoding'))

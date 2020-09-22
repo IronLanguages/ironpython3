@@ -182,6 +182,7 @@ class BytesTest(IronPythonTestCase):
 
         self.assertEquals(bytes(A4()), b'abc')
         self.assertEquals(bytearray(A4()), bytearray(42))
+        self.assertEquals(int.from_bytes(A4(), 'big'), 0x616263)
 
         class EmptyClass: pass
         t = EmptyClass()
@@ -574,6 +575,8 @@ class BytesTest(IronPythonTestCase):
 
         x = bytearray(x)
         self.assertTrue(id(x.join(b'')) != id(x))
+
+        self.assertEqual(id(b'foo'.join([])), id(b'bar'.join([])))
 
         x = b'abc'
         self.assertEqual(id(b'foo'.join([x])), id(x))

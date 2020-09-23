@@ -62,6 +62,7 @@ namespace IronPythonTest.Cases {
                     .SetCategory(category)
                     .SetName(name)
                     .Returns(0);
+                result.Properties.Add("_CodeFilePath", testcase.Path);
 
                 var runIgnored = !string.IsNullOrWhiteSpace(TestContext.Parameters["RUN_IGNORED"]);
 

@@ -217,7 +217,7 @@ class PropertyTest(IronPythonTestCase):
         property in the class dictionary"""
         class x(object):
             def set(self, value):
-                self.assertUnreachable()
+                self.fail("Unreachable code reached")
             prop = property(lambda x:42, set)
 
         x.prop = 42

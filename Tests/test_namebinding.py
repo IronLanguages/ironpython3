@@ -914,7 +914,7 @@ class NameBindingTest(IronPythonTestCase):
 
         try:
             del pow
-            self.assertUnreachable("should have thrown")
+            self.fail("Unreachable code reached: should have thrown")
         except NameError: pass
 
     def test_class_var(self):

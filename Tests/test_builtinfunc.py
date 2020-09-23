@@ -552,22 +552,22 @@ class BuiltinsTest2(IronPythonTestCase):
 
         try:
             eval('1+')
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except Exception as exp:
             pass
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         # gh1636 - don't use self.assertRaises since it hides the error
         zzz = 1
         try:
             eval("zzz", {})
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except NameError:
             pass
         try:
             eval("zzz", {}, None)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except NameError:
             pass
 
@@ -791,11 +791,11 @@ class BuiltinsTest2(IronPythonTestCase):
 
         try:
             round(number=2.5, ndigits=1.1)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         # type implements __round__
         # correct number of arguments
@@ -814,47 +814,47 @@ class BuiltinsTest2(IronPythonTestCase):
         # too many arguments
         try:
             round(roundable, 1, 2)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         # type does not implement __round__
         # too few arguments
         try:
             round(self.NotRoundable())
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         # correct number of arguments
         try:
             round(self.NotRoundable(), 1)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(number=self.NotRoundable(), ndigits=1)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         # too many arguments
         try:
             round(self.NotRoundable(), 1, 2)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         
         self.assertEqualAndCheckType(round(3), 3, int)
         self.assertEqualAndCheckType(round(3, 0), 3, int)
@@ -892,51 +892,51 @@ class BuiltinsTest2(IronPythonTestCase):
 
         try:
             round(number=2, ndigits=1.1)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(number=111111111111111111111111111111, ndigits=1.1)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(float('nan'))
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except ValueError as err:
             self.assertEqual("cannot convert float NaN to integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(float('inf'))
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except OverflowError as err:
             self.assertEqual("cannot convert float infinity to integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(float('-inf'))
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except OverflowError as err:
             self.assertEqual("cannot convert float infinity to integer", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         try:
             round(sys.float_info.max, -307)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except OverflowError as err:
             self.assertEqual("rounded value too large to represent", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
         actual = round(float('inf'), 1)
         self.assertTrue(math.isinf(actual) and actual > 0)
@@ -981,11 +981,11 @@ class BuiltinsTest2(IronPythonTestCase):
 
         try:
             round(5.5, self.NonIntegralIndex())
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as err:
             self.assertEqual("__index__ returned non-int (type str)", str(err))
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
     def test_cp16000(self):
         class K(object):

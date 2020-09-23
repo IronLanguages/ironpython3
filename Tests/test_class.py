@@ -515,7 +515,7 @@ class ClassTest(IronPythonTestCase):
             if object in C.__bases__:
                 try:
                     C.__dict__[2] = '2'
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except TypeError: pass
                 self.assertEqual(2 in C.__dict__, False)
 
@@ -536,7 +536,7 @@ class ClassTest(IronPythonTestCase):
             else:
                 try:
                     C.__dict__ = {}
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except AttributeError:
                     pass
 
@@ -736,13 +736,13 @@ class ClassTest(IronPythonTestCase):
 
         try:
             class N(A, B,C): pass
-            self.assertUnreachable("impossible MRO created")
+            self.fail("Unreachable code reached: impossible MRO created")
         except TypeError:
             pass
 
         try:
             class N(A, A): pass
-            self.assertUnreachable("can't dervie from the same base type twice")
+            self.fail("Unreachable code reached: can't dervie from the same base type twice")
         except TypeError:
             pass
 
@@ -850,7 +850,7 @@ class ClassTest(IronPythonTestCase):
 
         try:
             class H(A,B,E): pass
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
 
@@ -978,7 +978,7 @@ class ClassTest(IronPythonTestCase):
 
                 try:
                     eval(testCase)
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except TypeError as e:
                     pass
 
@@ -1016,7 +1016,7 @@ class ClassTest(IronPythonTestCase):
 
                 try:
                     exec(testCase, globals(), locals())
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except TypeError:
                     pass
 
@@ -1049,7 +1049,7 @@ class ClassTest(IronPythonTestCase):
 
                 try:
                     eval(testCase)
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except TypeError:
                     pass
 
@@ -1078,7 +1078,7 @@ class ClassTest(IronPythonTestCase):
 
                 try:
                     eval(testCase)
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except TypeError:
                     pass
 
@@ -1106,7 +1106,7 @@ class ClassTest(IronPythonTestCase):
 
                 try:
                     eval(testCase)
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except (TypeError, ValueError) as e:
                     self.assertEqual(e.args[0].find('returned') == -1, True)    # shouldn't have returned '__complex__ returned ...'
 
@@ -1328,7 +1328,7 @@ class ClassTest(IronPythonTestCase):
             try:
                 class C(object):
                     __slots__ = x
-                self.assertUnreachable()
+                self.fail("Unreachable code reached")
             except TypeError:
                 pass
 
@@ -1546,13 +1546,13 @@ class ClassTest(IronPythonTestCase):
 
         try:
             CycleA.__bases__ = (CycleA,)
-            self.self.assertUnreachable()
+            self.self.fail("Unreachable code reached")
         except TypeError: pass
 
         try:
             CycleA.__bases__ = (CycleB,)
             CycleB.__bases__ = (CycleA,)
-            self.self.assertUnreachable()
+            self.self.fail("Unreachable code reached")
         except TypeError: pass
 
 
@@ -1624,7 +1624,7 @@ class ClassTest(IronPythonTestCase):
             a = foo()
             try:
                 a.__dict__ = x
-                self.assertUnreachable()
+                self.fail("Unreachable code reached")
             except TypeError: pass
 
     def test_default_new_init(self):
@@ -1770,7 +1770,7 @@ class ClassTest(IronPythonTestCase):
     def test_NoneSelf(seld):
         try:
             set.add(None)
-            self.self.assertUnreachable()
+            self.self.fail("Unreachable code reached")
         except TypeError:
             pass
 
@@ -1808,19 +1808,19 @@ class ClassTest(IronPythonTestCase):
         prop = property()
         try: prop.fget = self.test_classmethod
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         try: prop.fdel = self.test_classmethod
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         try: prop.__doc__ = 'abc'
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         try: prop.fset = self.test_classmethod
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_override_mro(self):

@@ -539,7 +539,7 @@ class KwargTest(unittest.TestCase):
     def test_NewSetCls(self):
         try:
             NewAll(cls=NewAll)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
 
@@ -650,7 +650,7 @@ class KwargTest(unittest.TestCase):
         # should raise because only strings are allowed
         try:
             foo(**{2:3})
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
             
@@ -669,7 +669,7 @@ class KwargTest(unittest.TestCase):
         
         try:
             f(**{'a':2, 'b':3, 'c':4})
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
     

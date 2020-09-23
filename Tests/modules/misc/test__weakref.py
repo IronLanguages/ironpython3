@@ -79,7 +79,7 @@ class _WeakrefTest(IronPythonTestCase):
         try:
             type(wr).__add__.__get__(wr, None)() # object is dead, should throw
         except: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
 
         # kwarg call
@@ -100,14 +100,14 @@ class _WeakrefTest(IronPythonTestCase):
         try:
             type(x).__sub__.__get(x, None)('abc')
         except AttributeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         if is_cli:      # cli accepts kw-args everywhere
             # calling non-existent method should raise attribute error (kw-arg version)
             try:
                 type(x).__sub__.__get(x, None)(other='abc')
             except AttributeError: pass
-            else: self.assertUnreachable()
+            else: self.fail("Unreachable code reached")
 
     def test_slot_repr(self):
         class C: pass

@@ -16,7 +16,7 @@ def run_compile_test(self, code, msg, lineno):
         self.assertEqual(e.lineno, lineno)
         self.assertEqual(e.filename, filename)
     else:
-        self.assertUnreachable("Expected exception, got none")
+        self.fail("Unreachable code reached: Expected exception, got none")
 
 def test_compile(self):
 
@@ -627,7 +627,7 @@ class HasASyntaxException:
             #print repr(input), flags
             try:
                 code3 = compile(input, "dummy", "single", flags, 1)
-                self.assertUnreachable()
+                self.fail("Unreachable code reached")
             except SyntaxError as err:
                 self.assertEqual(err.args, res)
 
@@ -637,7 +637,7 @@ class HasASyntaxException:
             def f():
                 x = 3
                     y = 5""")
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except IndentationError as e:
             self.assertEqual(e.lineno, 2)
 

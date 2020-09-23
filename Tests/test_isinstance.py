@@ -804,7 +804,7 @@ class IsInstanceTest(IronPythonTestCase):
 
         try:
             class E(C,D): pass
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
 
@@ -815,7 +815,7 @@ class IsInstanceTest(IronPythonTestCase):
     def test_bad_addition(self):
         try:
             2.0 + "2.0"
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError: pass
 
     def test_class_property(self):

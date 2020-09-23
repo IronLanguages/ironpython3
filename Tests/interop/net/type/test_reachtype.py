@@ -73,7 +73,7 @@ class ReachTypeTest(IronPythonTestCase):
     def test_nothing_public(self):
         try:
             import NothingPublic
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except ImportError:
             pass
 
@@ -129,7 +129,7 @@ class ReachTypeTest(IronPythonTestCase):
         # internal type
         try:
             import InternalRefTypeWithoutNS
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except ImportError:
             pass
 
@@ -206,7 +206,7 @@ class ReachTypeTest(IronPythonTestCase):
         B = 10
         try:
             from PossibleLoadException import B
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except ImportError:
             pass
 

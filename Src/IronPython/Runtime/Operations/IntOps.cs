@@ -545,7 +545,7 @@ namespace IronPython.Runtime.Operations {
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
-            return FromBytes((Bytes)Bytes.__new__(context, TypeCache.Bytes, bytes), isLittle, signed);
+            return FromBytes(Bytes.FromObject(context, bytes), isLittle, signed);
         }
 
         private static BigInteger FromBytes(IList<byte> bytes, bool isLittle, bool signed) {

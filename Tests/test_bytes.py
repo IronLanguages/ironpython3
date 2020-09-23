@@ -180,15 +180,66 @@ class BytesTest(IronPythonTestCase):
             def __index__(self):
                 return 42
 
-        self.assertEquals(bytes(A4()), b'abc')
-        self.assertEquals(bytearray(A4()), bytearray(42))
-        self.assertEquals(int.from_bytes(A4(), 'big'), 0x616263)
+        self.assertEqual(bytes(A4()), b'abc')
+        self.assertEqual(bytearray(A4()), bytearray(42))
+        self.assertEqual(int.from_bytes(A4(), 'big'), 0x616263)
 
         class EmptyClass: pass
         t = EmptyClass()
         t.__bytes__ = lambda: b"1"
         self.assertRaisesRegex(TypeError, "'EmptyClass' object is not iterable", bytes, t)
 
+        class BytesSubclass(bytes): pass
+        class OtherBytesSubclass(bytes): pass
+
+        class SomeClass:
+            def __bytes__(self):
+                return OtherBytesSubclass(b'SOME CLASS')
+
+        self.assertEqual(bytes(SomeClass()), b'SOME CLASS')
+        self.assertIs(type(bytes(SomeClass())), OtherBytesSubclass)
+        self.assertEqual(BytesSubclass(SomeClass()), b'SOME CLASS')
+        self.assertIs(type(BytesSubclass(SomeClass())), BytesSubclass)
+
+        class BytesBytesSubclass(bytes):
+            def __bytes__(self):
+                return BytesBytesSubclass(b"BYTES FROM BYTES")
+
+        self.assertEqual(bytes(BytesBytesSubclass(b"JUST BYTES")), b"BYTES FROM BYTES")
+        self.assertIs(type(bytes(BytesBytesSubclass(b"JUST BYTES"))), BytesBytesSubclass)
+
+        class ListSubclass(bytes):
+            def __bytes__(self):
+                return OtherBytesSubclass(b"BYTES FROM LIST")
+
+        self.assertEqual(bytes(ListSubclass([1, 2, 3])), b"BYTES FROM LIST")
+        self.assertIs(type(bytes(ListSubclass([1, 2, 3]))), OtherBytesSubclass)
+        self.assertEqual(BytesSubclass(ListSubclass([1, 2, 3])), b"BYTES FROM LIST")
+        self.assertIs(type(BytesSubclass(ListSubclass([1, 2, 3]))), BytesSubclass)
+
+        class StrSubclass(str):
+            def __bytes__(self):
+                return OtherBytesSubclass(b"BYTES FROM STR")
+
+        if sys.version_info >= (3, 5) or sys.implementation.name == 'ironpython':
+            self.assertEqual(bytes(StrSubclass("STR")), b"BYTES FROM STR")
+            self.assertIs(type(bytes(StrSubclass("STR"))), OtherBytesSubclass)
+            self.assertEqual(BytesSubclass(StrSubclass("STR")), b"BYTES FROM STR")
+            self.assertIs(type(BytesSubclass(StrSubclass("STR"))), BytesSubclass)
+        else:
+            self.assertRaises(TypeError, bytes, StrSubclass("STR"))
+
+        self.assertEqual(bytes(StrSubclass("STR"), 'ascii'), b"STR")
+        self.assertEqual(bytes(StrSubclass("STR"), 'ascii', 'ignore'), b"STR")
+
+        class IntSubclass(int):
+            def __bytes__(self):
+                return OtherBytesSubclass(b"BYTES FROM INT")
+
+        self.assertEqual(bytes(IntSubclass(-1)), b"BYTES FROM INT")
+        self.assertIs(type(bytes(IntSubclass(-1))), OtherBytesSubclass)
+        self.assertEqual(BytesSubclass(IntSubclass(-1)), b"BYTES FROM INT")
+        self.assertIs(type(BytesSubclass(IntSubclass(-1))), BytesSubclass)
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

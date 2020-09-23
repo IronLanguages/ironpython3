@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
@@ -19,7 +18,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using IronPython.Hosting;
+using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
 
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
@@ -52,7 +51,11 @@ namespace IronPython.Runtime {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] IBufferProtocol source) {
             if (cls == TypeCache.Bytes) {
-                return new Bytes(source);
+                if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
+                    return res;
+                } else {
+                    return new Bytes(source);
+                }
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, source));
             }
@@ -61,20 +64,23 @@ namespace IronPython.Runtime {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, [NotNull] PythonType cls, object? @object) {
             if (cls == TypeCache.Bytes) {
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, @object, "__bytes__", out object? res)) {
-                    if (res is Bytes) {
-                        return res;
-                    } else {
-                        throw PythonOps.TypeError("__bytes__ returned non-bytes (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(res), PythonOps.GetPythonTypeName(@object));
-                    }
-                } else if (Converter.TryConvertToIndex(@object, throwOverflowError: true, out int size)) {
-                    if (size < 0) throw PythonOps.ValueError("negative count");
-                    return new Bytes(new byte[size]);
-                } else {
-                    return new Bytes(ByteOps.GetBytes(@object, useHint: true, context).ToArray());
-                }
+                return FromObject(context, @object);
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, @object));
+            }
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] Extensible<int> size) {
+            if (cls == TypeCache.Bytes) {
+                if (TryInvokeBytesOperator(context, size, out Bytes? res)) {
+                    return res;
+                } else {
+                    if (size < 0) throw PythonOps.ValueError("negative count");
+                    return new Bytes(new byte[size]);
+                }
+            } else {
+                return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, size));
             }
         }
 
@@ -89,10 +95,22 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
+        public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] ExtensibleString @string) {
+            if (cls == TypeCache.Bytes) {
+                if (TryInvokeBytesOperator(context, @string, out Bytes? res)) {
+                    return res;
+                } else {
+                    throw PythonOps.TypeError("string argument without an encoding");
+                }
+            } else {
+                return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, @string));
+            }
+        }
+
+        [StaticExtensionMethod]
         public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] string @string) {
             throw PythonOps.TypeError("string argument without an encoding");
         }
-
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] string @string, [NotNull] string encoding) {
@@ -120,6 +138,17 @@ namespace IronPython.Runtime {
 
         internal static Bytes FromByte(byte b)
             => oneByteBytes[b];
+
+        internal static Bytes FromObject(CodeContext context, object? o) {
+            if (TryInvokeBytesOperator(context, o, out Bytes? res)) {
+                return res;
+            } else if (Converter.TryConvertToIndex(o, throwOverflowError: true, out int size)) {
+                if (size < 0) throw PythonOps.ValueError("negative count");
+                return new Bytes(new byte[size]);
+            } else {
+                return new Bytes(ByteOps.GetBytes(o, useHint: true, context).ToArray());
+            }
+        }
 
         internal static Bytes Make(byte[] bytes)
             => new Bytes(bytes);
@@ -922,6 +951,20 @@ namespace IronPython.Runtime {
 
         internal ReadOnlyMemory<byte> AsMemory() {
             return _bytes.AsMemory();
+        }
+
+        private static bool TryInvokeBytesOperator(CodeContext context, object? obj, [NotNullWhen(true)] out Bytes? bytes) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, obj, "__bytes__", out object? res)) {
+                if (res is Bytes b) {
+                    bytes = b;
+                    return true;
+                } else {
+                    throw PythonOps.TypeError("__bytes__ returned non-bytes (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(res), PythonOps.GetPythonTypeName(obj));
+                }
+            } else {
+                bytes = null;
+                return false;
+            }
         }
 
         private static Bytes JoinOne(object? curVal) {

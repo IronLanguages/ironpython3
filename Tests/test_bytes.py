@@ -31,6 +31,10 @@ class BytesTest(IronPythonTestCase):
 
     def test_init(self):
         b = bytes(b'abcd')
+        self.assertIs(bytes(b), b)
+
+        sb = BytesSubclass(b)
+        self.assertIsNot(BytesSubclass(sb), sb)
 
         for testType in types:
             self.assertEqual(testType(b), b)
@@ -189,7 +193,6 @@ class BytesTest(IronPythonTestCase):
         t.__bytes__ = lambda: b"1"
         self.assertRaisesRegex(TypeError, "'EmptyClass' object is not iterable", bytes, t)
 
-        class BytesSubclass(bytes): pass
         class OtherBytesSubclass(bytes): pass
 
         class SomeClass:

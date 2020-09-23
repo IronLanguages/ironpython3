@@ -110,7 +110,7 @@ class TupleTest(IronPythonTestCase):
     def test_sequence_assign(self):
         try:
             a, b = None
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError as e:
             self.assertEqual(e.args[0], "'NoneType' object is not iterable")
 

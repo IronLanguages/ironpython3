@@ -623,13 +623,13 @@ class FunctionTest(IronPythonTestCase):
         # invalid super cases
         try:
             x = super(B, 'abc')
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
 
         try:
             super(B,A)
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError:
             pass
 
@@ -934,12 +934,12 @@ class FunctionTest(IronPythonTestCase):
 
         try:
             f(*(1, ))
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError: pass
 
         try:
             f(**{'abc':'def'})
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
         except TypeError: pass
 
 

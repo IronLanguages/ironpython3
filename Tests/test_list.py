@@ -335,7 +335,7 @@ class ListTest(IronPythonTestCase):
         for left_operand, right_operand in neg_cases:
             try:
                 left_operand += right_operand
-                self.assertUnreachable()
+                self.fail("Unreachable code reached")
             except TypeError:
                 pass
 

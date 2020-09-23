@@ -193,7 +193,7 @@ class CliClassTestCase(IronPythonTestCase):
             else:
                 try:
                     C.__dict__ = {}
-                    self.assertUnreachable()
+                    self.fail("Unreachable code reached")
                 except AttributeError:
                     pass
 
@@ -242,12 +242,12 @@ class CliClassTestCase(IronPythonTestCase):
         try:
             System.IComparable[int, int]
         except ValueError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         try:
             System.EventHandler(None)
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         def handler():
             pass
@@ -255,7 +255,7 @@ class CliClassTestCase(IronPythonTestCase):
         try:
             System.EventHandler(handler)("sender", None)
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         def handler(s,a):
             pass
@@ -275,7 +275,7 @@ class CliClassTestCase(IronPythonTestCase):
         try:
             class MyDerivedClass(genericTypes): pass
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
         # Use a TypeGroup to index a TypeGroup
         t = genericTypes[System.IComparable]
@@ -283,7 +283,7 @@ class CliClassTestCase(IronPythonTestCase):
         try:
             System.IComparable[genericTypes]
         except TypeError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
     def test_generic_only_TypeGroup(self):
         from IronPythonTest import BinderTest
@@ -454,7 +454,7 @@ class CliClassTestCase(IronPythonTestCase):
             if prop.Name == 'abc':
                 break
         else:
-            self.assertUnreachable()
+            self.fail("Unreachable code reached")
 
     def test_char(self):
         for x in range(256):
@@ -531,7 +531,7 @@ class CliClassTestCase(IronPythonTestCase):
         try:
             IOverrideTestInterface.__setitem__(otdc, 2, 3)
         except NotImplementedError: pass
-        else: self.assertUnreachable()
+        else: self.fail("Unreachable code reached")
 
     def test_field_helpers(self):
         from IronPythonTest import OverrideTestDerivedClass
@@ -826,8 +826,8 @@ End Class""")
         from System import Single, Byte, SByte, Int16, UInt16, Int64, UInt64
         for t in [Single, Byte, SByte, Int16, UInt16, Int64, UInt64]:
             self.assertTrue(hasattr(t, '__nonzero__'))
-            if t(0): self.assertUnreachable()
-            if not t(1): self.assertUnreachable()
+            if t(0): self.fail("Unreachable code reached")
+            if not t(1): self.fail("Unreachable code reached")
 
     def test_virtual_event(self):
         from IronPythonTest import VirtualEvent, OverrideVirtualEvent, SimpleDelegate, UseEvent

@@ -507,11 +507,7 @@ namespace IronPython.Modules {
                 var bytes = buffer.AsReadOnlySpan();
 
                 EnsureWritable();
-#if NETCOREAPP
                 _writeStream.Write(bytes);
-#else
-                _writeStream.Write(bytes.ToArray(), 0, bytes.Length);
-#endif
                 SeekToEnd();
 
                 return bytes.Length;
@@ -597,5 +593,11 @@ namespace IronPython.Modules {
 
             #endregion
         }
+
+#if !NETCOREAPP
+        private static void Write(this Stream stream, ReadOnlySpan<byte> buffer) {
+            stream.Write(buffer.ToArray(), 0, buffer.Length);
+        }
+#endif
     }
 }

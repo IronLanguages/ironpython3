@@ -92,7 +92,7 @@ namespace IronPython.Runtime {
                 }
                 IEnumerator ie = PythonOps.GetEnumerator(context, source);
                 while (ie.MoveNext()) {
-                    Add(GetByte(ie.Current));
+                    Add(ByteOps.GetByte(ie.Current));
                 }
             }
         }
@@ -127,7 +127,7 @@ namespace IronPython.Runtime {
 
         public void append(object? item) {
             lock (this) {
-                _bytes.Add(GetByte(item));
+                _bytes.Add(ByteOps.GetByte(item));
             }
         }
 
@@ -138,13 +138,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend(object? seq) {
+        public void extend(CodeContext context, object? seq) {
             // We don't make use of the length hint when extending the byte array.
             // However, in order to match CPython behavior with invalid length hints we
             // we need to go through the motions and get the length hint and attempt
             // to convert it to an int.
 
-            extend(GetBytes(seq, useHint: true));
+            extend(ByteOps.GetBytes(seq, useHint: true, context));
         }
 
         public void insert(int index, int value) {
@@ -205,7 +205,7 @@ namespace IronPython.Runtime {
 
         public void remove(object? value) {
             lock (this) {
-                RemoveByte(GetByte(value));
+                RemoveByte(ByteOps.GetByte(value));
             }
         }
 
@@ -1214,7 +1214,7 @@ namespace IronPython.Runtime {
             }
             set {
                 lock (this) {
-                    _bytes[PythonOps.FixIndex(index, _bytes.Count)] = GetByte(value);
+                    _bytes[PythonOps.FixIndex(index, _bytes.Count)] = ByteOps.GetByte(value);
                 }
             }
         }
@@ -1251,7 +1251,7 @@ namespace IronPython.Runtime {
                 //      integers, longs, etc... - fill in an array of 0 bytes
                 //      list of bytes, indexables, etc...
 
-                IList<byte> list = GetBytes(value, useHint: false);
+                IList<byte> list = ByteOps.GetBytes(value, useHint: false);
 
                 lock (this) {
                     slice.indices(_bytes.Count, out int start, out int stop, out int step);
@@ -1342,41 +1342,6 @@ namespace IronPython.Runtime {
                 if (count == 0 && other.Count == 0) return;
 
                 _bytes.InsertRange(start, count, other);
-            }
-        }
-
-        private static byte GetByte(object? value) {
-            if (Converter.TryConvertToIndex(value, out object index)) {
-                switch (index) {
-                    case int i: return i.ToByteChecked();
-                    case BigInteger bi: return bi.ToByteChecked();
-                    default: throw new InvalidOperationException(); // unreachable
-                }
-            }
-            throw PythonOps.TypeError("an integer is required");
-        }
-
-        internal static IList<byte> GetBytes(object? value, bool useHint) {
-            switch (value) {
-                case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
-                    return lob;
-                case IBufferProtocol bp:
-                    using (IPythonBuffer buf = bp.GetBuffer()) {
-                        return buf.AsReadOnlySpan().ToArray();
-                    }
-                case ReadOnlyMemory<byte> rom:
-                    return rom.ToArray();
-                case Memory<byte> mem:
-                    return mem.ToArray();
-                default:
-                    int len = 0;
-                    if (useHint) PythonOps.TryInvokeLengthHint(DefaultContext.Default, value, out len);
-                    List<byte> ret = new List<byte>(len);
-                    IEnumerator ie = PythonOps.GetEnumerator(value);
-                    while (ie.MoveNext()) {
-                        ret.Add(GetByte(ie.Current));
-                    }
-                    return ret;
             }
         }
 

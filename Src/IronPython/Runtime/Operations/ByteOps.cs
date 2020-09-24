@@ -106,11 +106,31 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
         }
 
-        internal static List<byte> GetBytes(ICollection bytes) {
-            return bytes.Select(GetByte).ToList();
+        internal static IList<byte> GetBytes(object? value, bool useHint, CodeContext? context = null) {
+            switch (value) {
+                case IList<byte> lob when !(lob is ListGenericWrapper<byte>):
+                    return lob;
+                case IBufferProtocol bp:
+                    using (IPythonBuffer buf = bp.GetBuffer()) {
+                        return buf.AsReadOnlySpan().ToArray();
+                    }
+                case ReadOnlyMemory<byte> rom:
+                    return rom.ToArray();
+                case Memory<byte> mem:
+                    return mem.ToArray();
+                default:
+                    int len = 0;
+                    if (useHint) PythonOps.TryInvokeLengthHint(context ?? DefaultContext.Default, value, out len);
+                    List<byte> ret = new List<byte>(len);
+                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    while (ie.MoveNext()) {
+                        ret.Add(GetByte(ie.Current));
+                    }
+                    return ret;
+            }
         }
 
-        private static byte GetByte(object? o) {
+        internal static byte GetByte(object? o) {
             // TODO: move fast paths to TryConvertToIndex?
             switch (o) {
                 case int ii:
@@ -135,8 +155,13 @@ namespace IronPython.Runtime.Operations {
                     return ((BigInteger)ui).ToByteChecked();
             }
 
-            if (Converter.TryConvertToIndex(o, out int i))
-                return i.ToByteChecked();
+            if (Converter.TryConvertToIndex(o, out object index)) {
+                switch (index) {
+                    case int i: return i.ToByteChecked();
+                    case BigInteger bi: return bi.ToByteChecked();
+                    default: throw new InvalidOperationException(); // unreachable
+                }
+            }
 
             throw PythonOps.TypeError($"'{PythonTypeOps.GetName(o)}' object cannot be interpreted as an integer");
         }

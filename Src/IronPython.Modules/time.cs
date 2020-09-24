@@ -8,17 +8,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("time", typeof(IronPython.Modules.PythonTime))]
 namespace IronPython.Modules {
@@ -126,6 +126,13 @@ namespace IronPython.Modules {
         public static void sleep(double tm) {
             Thread.Sleep((int)(tm * 1000));
         }
+
+        public static double monotonic()
+            => (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency;
+
+        // new in Python 3.7
+        public static BigInteger monotonic_ns()
+            => (BigInteger)Stopwatch.GetTimestamp() * 1000000000 / Stopwatch.Frequency;
 
         public static double time() {
             return TicksToTimestamp(DateTime.Now.ToUniversalTime().Ticks);

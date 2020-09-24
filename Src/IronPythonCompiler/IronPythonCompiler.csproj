@@ -6,9 +6,8 @@
     <RootNamespace>IronPythonCompiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
     <StartupObject>IronPythonCompiler.Program</StartupObject>
-    <BaseAddress>885063680</BaseAddress>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

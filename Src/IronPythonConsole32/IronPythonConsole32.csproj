@@ -8,7 +8,7 @@
     <AssemblyName>ipy32</AssemblyName>
     <ApplicationIcon>..\IronPythonConsole\ipy.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

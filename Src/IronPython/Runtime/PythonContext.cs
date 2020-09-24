@@ -1785,7 +1785,7 @@ namespace IronPython.Runtime {
 
         private static string GetInitialPrefix() {
             try {
-                return typeof(PythonContext).Assembly.CodeBase;
+                return typeof(PythonContext).Assembly.Location;
             } catch (SecurityException) {
                 // we don't have permissions to get paths...
                 return string.Empty;

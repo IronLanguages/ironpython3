@@ -140,7 +140,7 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
-            public _CFuncPtr([NotNull]BigInteger handle) {
+            public _CFuncPtr([NotNull] BigInteger handle) {
                 _memHolder = new MemoryHolder(IntPtr.Size);
                 addr = new IntPtr((long)handle);
                 _id = Interlocked.Increment(ref _curId);
@@ -762,6 +762,8 @@ namespace IronPython.Modules {
                         _type = type;
                     }
 
+                    private static readonly MethodInfo StringGetPinnableReference = typeof(string).GetMethod("GetPinnableReference");
+
                     public override MarshalCleanup EmitCallStubArgument(ILGenerator/*!*/ generator, int argIndex, List<object>/*!*/ constantPool, int constantPoolArgument) {
                         if (_type == typeof(DynamicNull)) {
                             generator.Emit(OpCodes.Ldc_I4_0);
@@ -779,12 +781,18 @@ namespace IronPython.Modules {
                             // but we need the string to be pinned longer than the duration of the the CLR's
                             // p/invoke.  This is because the function could return the same pointer back 
                             // to us and we need to create a new string from it.
-                            LocalBuilder lb = generator.DeclareLocal(typeof(string), true);
-                            generator.Emit(OpCodes.Stloc, lb);
-                            generator.Emit(OpCodes.Ldloc, lb);
-                            generator.Emit(OpCodes.Conv_I);
-                            generator.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
-                            generator.Emit(OpCodes.Add);
+                            if (StringGetPinnableReference is null) {
+                                LocalBuilder lb = generator.DeclareLocal(typeof(string), true);
+                                generator.Emit(OpCodes.Stloc, lb);
+                                generator.Emit(OpCodes.Ldloc, lb);
+                                generator.Emit(OpCodes.Conv_I);
+#pragma warning disable CS0618 // Type or member is obsolete
+                                generator.Emit(OpCodes.Ldc_I4, RuntimeHelpers.OffsetToStringData);
+#pragma warning restore CS0618 // Type or member is obsolete
+                                generator.Emit(OpCodes.Add);
+                            } else {
+                                generator.Emit(OpCodes.Call, StringGetPinnableReference);
+                            }
                         } else if (_type == typeof(Bytes)) {
                             LocalBuilder lb = generator.DeclareLocal(typeof(byte).MakeByRefType(), true);
                             generator.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.GetBytes)));

@@ -4,7 +4,7 @@
     <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <BaseAddress>885063680</BaseAddress>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -14,7 +14,7 @@
       <HintPath>..\..\Util\References\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
+  <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
 

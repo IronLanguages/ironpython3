@@ -155,10 +155,11 @@ class ReachTypeTest(IronPythonTestCase):
         cab = array[sre.CustomAttributeBuilder]([sre.CustomAttributeBuilder(clr.GetClrType(System.Security.SecurityTransparentAttribute).GetConstructor(System.Type.EmptyTypes), array[object]([]))])
         if is_netcoreapp: # no System.AppDomain.DefineDynamicAssembly
             ab = sre.AssemblyBuilder.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.Run, cab)  # tracking: 291888
+            mb = ab.DefineDynamicModule("temp")
         else:
             ab = System.AppDomain.CurrentDomain.DefineDynamicAssembly(sr.AssemblyName("temp"), sre.AssemblyBuilderAccess.RunAndSave, "temp", None, None, None, None, True, cab)  # tracking: 291888
+            mb = ab.DefineDynamicModule("temp", "temp.dll")
 
-        mb = ab.DefineDynamicModule("temp", "temp.dll")
         tb = mb.DefineType("EmittedNS.EmittedType", sr.TypeAttributes.Public)
         tb.CreateType()
 

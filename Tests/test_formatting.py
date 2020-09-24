@@ -6,7 +6,7 @@ import math
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp31, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, run_test, skipUnlessIronPython
 
 class A:
     def __str__(self):
@@ -25,7 +25,7 @@ format_rounds_to_even = "%.0f" % 2.5 == "2"
 class FormattingTest(IronPythonTestCase):
     def test_format_rounds_to_even(self):
         # https://github.com/IronLanguages/ironpython2/issues/634
-        self.assertEqual(format_rounds_to_even, is_netcoreapp31 or not is_cli)
+        self.assertEqual(format_rounds_to_even, is_netcoreapp and not is_netcoreapp21 or not is_cli)
 
     def test_floats(self):
         """Formatting of floats"""

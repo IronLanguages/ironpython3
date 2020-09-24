@@ -7,7 +7,7 @@
     <AssemblyName>ipyw</AssemblyName>
     <ApplicationIcon>ipyw.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

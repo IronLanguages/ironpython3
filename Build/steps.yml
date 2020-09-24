@@ -24,17 +24,17 @@ steps:
      Write-Host ("##vso[task.setvariable variable=PackageVersion;isSecret=false;isOutput=true;]$PackageVersion")
     displayName: Grab Package Version
 
-  - task: DotNetCoreInstaller@1
+  - task: UseDotNet@2
     displayName: Install .NET Core 2.1 runtime for running tests
     inputs:
       packageType: 'runtime'
       version: '2.1.x'
 
-  - task: DotNetCoreInstaller@1
+  - task: UseDotNet@2
     displayName: Install .NET Core 3.1 SDK for build
     inputs:
       packageType: 'sdk'
-      version: '3.1.302'
+      version: '3.1.x'
 
   # Set Mono version on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:

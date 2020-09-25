@@ -91,22 +91,6 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            bool isBytesLikeOne = IsBytesLikeParameter(candidateOne);
-            bool isBytesLikeTwo = IsBytesLikeParameter(candidateTwo);
-
-            if (isBytesLikeOne) {
-                if (isBytesLikeTwo) {
-                    return basePreferred;
-                }
-                if (candidateTwo.Type.IsInterface) {
-                    return Candidate.One;
-                }
-            } else if (isBytesLikeTwo) {
-                if (candidateOne.Type.IsInterface) {
-                    return Candidate.Two;
-                }
-            }
-
             return basePreferred;
         }
 

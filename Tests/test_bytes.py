@@ -203,6 +203,7 @@ class BytesTest(IronPythonTestCase):
         self.assertIs(type(bytes(SomeClass())), OtherBytesSubclass)
         self.assertEqual(BytesSubclass(SomeClass()), b'SOME CLASS')
         self.assertIs(type(BytesSubclass(SomeClass())), BytesSubclass)
+        self.assertEqual(int.from_bytes(bytes(SomeClass()), 'big'), int.from_bytes(b"SOME CLASS", 'big'))
 
         class BytesBytesSubclass(bytes):
             def __bytes__(self):
@@ -210,6 +211,7 @@ class BytesTest(IronPythonTestCase):
 
         self.assertEqual(bytes(BytesBytesSubclass(b"JUST BYTES")), b"BYTES FROM BYTES")
         self.assertIs(type(bytes(BytesBytesSubclass(b"JUST BYTES"))), BytesBytesSubclass)
+        self.assertEqual(int.from_bytes(bytes(BytesBytesSubclass(b"JUST BYTES")), 'big'), int.from_bytes(b"BYTES FROM BYTES", 'big'))
 
         class ListSubclass(bytes):
             def __bytes__(self):
@@ -243,6 +245,7 @@ class BytesTest(IronPythonTestCase):
         self.assertIs(type(bytes(IntSubclass(-1))), OtherBytesSubclass)
         self.assertEqual(BytesSubclass(IntSubclass(-1)), b"BYTES FROM INT")
         self.assertIs(type(BytesSubclass(IntSubclass(-1))), BytesSubclass)
+        self.assertEqual(int.from_bytes(IntSubclass(555), 'big'), int.from_bytes(b"BYTES FROM INT", 'big'))
 
     def test_dunder_index(self):
         class IndexableBytes(bytes):
@@ -289,6 +292,12 @@ class BytesTest(IronPythonTestCase):
         self.assertEqual(bytearray(iba), bytearray(4))
         self.assertRaises(TypeError, bytearray, istr)
         self.assertEqual(bytearray(ii), bytes(2))
+
+        self.assertEqual(int.from_bytes(IndexableBytes(b"abc"), 'big'), 0x616263)
+        self.assertEqual(int.from_bytes(IndexableBytearray(b"abc"), 'big'), 0x616263)
+        self.assertRaises(TypeError, int.from_bytes, IndexableStr("abc"), 'big')
+        self.assertRaises(TypeError, int.from_bytes, IndexableInt(2), 'big')
+        self.assertRaises(TypeError, int.from_bytes, 2, 'big')
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

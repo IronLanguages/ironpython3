@@ -244,6 +244,52 @@ class BytesTest(IronPythonTestCase):
         self.assertEqual(BytesSubclass(IntSubclass(-1)), b"BYTES FROM INT")
         self.assertIs(type(BytesSubclass(IntSubclass(-1))), BytesSubclass)
 
+    def test_dunder_index(self):
+        class IndexableBytes(bytes):
+            def __init__(self, value):
+                self.value = len(value)
+            def __index__(self):
+                return self.value
+
+        class IndexableBytearray(bytearray):
+            def __init__(self, value):
+                super().__init__(value)
+                self.value = len(value)
+            def __index__(self):
+                return self.value
+
+        class IndexableStr(str):
+            def __init__(self, value):
+                self.value = len(value)
+            def __index__(self):
+                return self.value
+
+        class IndexableInt(int):
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value + 10
+
+        ib = IndexableBytes(b"xyz")
+        iba = IndexableBytearray(b"abcd")
+        istr = IndexableStr("abcde")
+        ii = IndexableInt(2)
+        self.assertEqual(ii.__index__(), 12)
+
+        self.assertEqual(ib, b"xyz")
+        self.assertEqual(iba, bytearray(b"abcd"))
+        self.assertEqual(istr, "abcde")
+
+        self.assertEqual(bytes(ib), bytes(3))
+        self.assertEqual(bytes(iba), bytes(4))
+        self.assertRaises(TypeError, bytes, istr)
+        self.assertEqual(bytes(ii), bytes(2))
+
+        self.assertEqual(bytearray(ib), bytearray(3))
+        self.assertEqual(bytearray(iba), bytearray(4))
+        self.assertRaises(TypeError, bytearray, istr)
+        self.assertEqual(bytearray(ii), bytes(2))
+
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),
                 (b' foo', b' foo'),

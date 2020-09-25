@@ -59,6 +59,9 @@ namespace IronPython.Runtime {
                     return source;
                 } else if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
                     return res;
+                } else if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+                    if (size < 0) throw PythonOps.ValueError("negative count");
+                    return new Bytes(new byte[size]);
                 } else {
                     return new Bytes(source);
                 }

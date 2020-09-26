@@ -8,14 +8,11 @@ using System;
 
 namespace IronPython.Runtime {
     /// <summary>
-    /// For <c>IList〈byte〉</c>, <c>IReadOnlyList〈byte〉</c>, and <c>IBufferProtocol</c> parameters:
+    /// For <c>IList〈byte〉</c> and <c>IReadOnlyList〈byte〉</c> parameters:
     /// Marks that the parameter is typed to accept a bytes-like object.
     /// <br/>
-    /// If applied on a IList〈byte〉 parameter, this attribute disallows passing
+    /// It also disallows passing
     /// a Python list object and auto-applying our generic conversion.
-    /// <br/>
-    /// The overload resolver will favor an overload with a BytesLike parameter
-    /// over an otherwise equivalent overload with a different interface parameter.
     /// </summary>
     /// <remarks>
     /// A bytes-like object is any object of type implementing IBufferProtocol.

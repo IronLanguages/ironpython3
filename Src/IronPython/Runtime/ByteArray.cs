@@ -68,24 +68,26 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void __init__([NotNull]IEnumerable<byte> source) {
-            lock (this) {
-                _bytes.Clear();
-                _bytes.AddRange(source);
-            }
-        }
-
-        public void __init__([BytesLike, NotNull]IBufferProtocol source) {
-            lock (this) {
-                _bytes.Clear();
-                using IPythonBuffer buffer = source.GetBuffer(BufferFlags.FullRO);
-                _bytes.AddRange(buffer);
+        public void __init__([NotNull]IBufferProtocol source) {
+            if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+                __init__(size);
+            } else {
+                lock (this) {
+                    _bytes.Clear();
+                    using IPythonBuffer buffer = source.GetBuffer(BufferFlags.FullRO);
+                    _bytes.AddRange(buffer);
+                }
             }
         }
 
         public void __init__(CodeContext context, object? source) {
             if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
                 __init__(size);
+            } else if (source is IEnumerable<byte> en) {
+                lock (this) {
+                    _bytes.Clear();
+                    _bytes.AddRange(en);
+                }
             } else {
                 lock (this) {
                     _bytes.Clear();

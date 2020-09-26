@@ -59,6 +59,9 @@ namespace IronPython.Runtime {
                     return source;
                 } else if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
                     return res;
+                } else if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+                    if (size < 0) throw PythonOps.ValueError("negative count");
+                    return new Bytes(new byte[size]);
                 } else {
                     return new Bytes(source);
                 }
@@ -70,7 +73,16 @@ namespace IronPython.Runtime {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, [NotNull] PythonType cls, object? @object) {
             if (cls == TypeCache.Bytes) {
-                return FromObject(context, @object);
+                if (@object?.GetType() == typeof(Bytes)) {
+                    return @object;
+                } else if (TryInvokeBytesOperator(context, @object, out Bytes? res)) {
+                    return res;
+                } else if (Converter.TryConvertToIndex(@object, throwOverflowError: true, out int size)) {
+                    if (size < 0) throw PythonOps.ValueError("negative count");
+                    return new Bytes(new byte[size]);
+                } else {
+                    return new Bytes(ByteOps.GetBytes(@object, useHint: true, context).ToArray());
+                }
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, @object));
             }
@@ -152,9 +164,6 @@ namespace IronPython.Runtime {
                 return (Bytes)o;
             } else if (TryInvokeBytesOperator(context, o, out Bytes? res)) {
                 return res;
-            } else if (Converter.TryConvertToIndex(o, throwOverflowError: true, out int size)) {
-                if (size < 0) throw PythonOps.ValueError("negative count");
-                return new Bytes(new byte[size]);
             } else {
                 return new Bytes(ByteOps.GetBytes(o, useHint: true, context).ToArray());
             }

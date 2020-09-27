@@ -76,6 +76,10 @@ namespace IronPython.Modules {
         }
 
         protected T CloneHasher() {
+            if (_hasher is ICloneable cloneable) {
+                return (T)cloneable.Clone();
+            }
+
             T clone = default(T);
             if (_memberwiseClone == null) {
                 _memberwiseClone = _hasher.GetType().GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -92,8 +96,7 @@ namespace IronPython.Modules {
                 foreach (FieldInfo field in fields) {
                     if (field.FieldType.IsArray) {
                         lock (_hasher) {
-                            Array orig = field.GetValue(_hasher) as Array;
-                            if (orig != null) {
+                            if (field.GetValue(_hasher) is Array orig) {
                                 field.SetValue(clone, orig.Clone());
                             }
                         }

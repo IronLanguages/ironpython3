@@ -52,7 +52,7 @@ namespace IronPython.Modules {
             }
 
             protected override void CreateHasher() {
-                _hasher = SHA384.Create();
+                _hasher = new Mono.Security.Cryptography.SHA384Managed();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]
@@ -72,7 +72,7 @@ namespace IronPython.Modules {
             }
 
             protected override void CreateHasher() {
-                _hasher = SHA512.Create();
+                _hasher = new Mono.Security.Cryptography.SHA512Managed();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]

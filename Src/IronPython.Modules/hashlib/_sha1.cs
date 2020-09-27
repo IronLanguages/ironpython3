@@ -41,7 +41,7 @@ namespace IronPython.Modules {
             }
 
             protected override void CreateHasher() {
-                _hasher = new SHA1Managed();
+                _hasher = new Mono.Security.Cryptography.SHA1CryptoServiceProvider();
             }
 
             [Documentation("copy() -> object (copy of this object)")]

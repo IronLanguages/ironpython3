@@ -19,11 +19,6 @@ namespace IronPython.Modules {
         private const int DIGEST_SIZE = 16;
         private const int BLOCK_SIZE = 64;
 
-        [Documentation("Size of the resulting digest in bytes (constant)")]
-        public static int digest_size {
-            get { return DIGEST_SIZE; }
-        }
-
         [Documentation("md5([data]) -> object (new md5 object)")]
         public static MD5Object md5([NotNull] IBufferProtocol data) {
             return new MD5Object(data);

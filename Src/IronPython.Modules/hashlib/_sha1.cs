@@ -17,21 +17,6 @@ namespace IronPython.Modules {
         private const int DIGEST_SIZE = 20;
         private const int BLOCK_SIZE = 64;
 
-        public static int digest_size {
-            [Documentation("Size of the resulting digest in bytes (constant)")]
-            get { return DIGEST_SIZE; }
-        }
-
-        public static int digestsize {
-            [Documentation("Size of the resulting digest in bytes (constant)")]
-            get { return digest_size; }
-        }
-
-        public static int blocksize {
-            [Documentation("Block size")]
-            get { return BLOCK_SIZE; }
-        }
-
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
         public static sha sha1([NotNull] IBufferProtocol data) {
             return new sha(data);

@@ -1893,6 +1893,7 @@ def modules_cleanup(oldmodules):
 
 def threading_setup():
     if _thread:
+        threading.current_thread() # ironpython: register the current thread if not running on a known thread
         return _thread._count(), threading._dangling.copy()
     else:
         return 1, ()

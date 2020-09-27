@@ -19,29 +19,29 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA256 hash algorithm";
 
-        public static Sha256Object sha256([NotNull] IBufferProtocol data) {
-            return new Sha256Object(data);
+        public static SHA256Type sha256([NotNull] IBufferProtocol data) {
+            return new SHA256Type(data);
         }
 
-        public static Sha256Object sha256([NotNull] string data) {
+        public static SHA256Type sha256([NotNull] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
-        public static Sha256Object sha256() {
-            return new Sha256Object();
+        public static SHA256Type sha256() {
+            return new SHA256Type();
         }
 
-        [PythonHidden]
-        public sealed class Sha256Object : HashBase<SHA256> {
-            internal Sha256Object() : base("sha256", BLOCK_SIZE, 32) { }
+        [PythonType("sha256")]
+        public sealed class SHA256Type : HashBase<SHA256> {
+            internal SHA256Type() : base("sha256", BLOCK_SIZE, 32) { }
 
-            internal Sha256Object(IBufferProtocol initialBytes) : this() {
+            internal SHA256Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
             [Documentation("copy() -> object (copy of this object)")]
             public override HashBase<SHA256> copy() {
-                Sha256Object res = new Sha256Object();
+                SHA256Type res = new SHA256Type();
                 res._hasher = CloneHasher();
                 return res;
             }
@@ -51,24 +51,24 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Sha224Object sha224([NotNull] IBufferProtocol data) {
-            return new Sha224Object(data);
+        public static SHA224Type sha224([NotNull] IBufferProtocol data) {
+            return new SHA224Type(data);
         }
 
-        public static Sha256Object sha224([NotNull] string data) {
+        public static SHA256Type sha224([NotNull] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
-        public static Sha224Object sha224() {
-            return new Sha224Object();
+        public static SHA224Type sha224() {
+            return new SHA224Type();
         }
 
-        [PythonHidden]
-        public sealed class Sha224Object : HashBase<SHA224> {
-            internal Sha224Object() : base("sha224", BLOCK_SIZE, 28) {
+        [PythonType("sha224")]
+        public sealed class SHA224Type : HashBase<SHA224> {
+            internal SHA224Type() : base("sha224", BLOCK_SIZE, 28) {
             }
 
-            internal Sha224Object(IBufferProtocol initialBytes) : this() {
+            internal SHA224Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
@@ -78,7 +78,7 @@ namespace IronPython.Modules {
 
             [Documentation("copy() -> object (copy of this object)")]
             public override HashBase<SHA224> copy() {
-                Sha224Object res = new Sha224Object();
+                SHA224Type res = new SHA224Type();
                 res._hasher = CloneHasher();
                 return res;
             }

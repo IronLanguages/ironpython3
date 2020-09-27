@@ -18,25 +18,25 @@ namespace IronPython.Modules {
         private const int BLOCK_SIZE = 64;
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1([NotNull] IBufferProtocol data) {
-            return new sha(data);
+        public static SHA1Type sha1([NotNull] IBufferProtocol data) {
+            return new SHA1Type(data);
         }
 
-        public static sha sha1([NotNull] string data) {
+        public static SHA1Type sha1([NotNull] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1() {
-            return new sha();
+        public static SHA1Type sha1() {
+            return new SHA1Type();
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        [PythonType, PythonHidden]
-        public class sha : HashBase<SHA1> {
-            public sha() : base("sha1", BLOCK_SIZE, DIGEST_SIZE) { }
+        [PythonType("sha1")]
+        public sealed class SHA1Type : HashBase<SHA1> {
+            internal SHA1Type() : base("sha1", BLOCK_SIZE, DIGEST_SIZE) { }
 
-            internal sha(IBufferProtocol initialBytes) : this() {
+            internal SHA1Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
@@ -46,7 +46,7 @@ namespace IronPython.Modules {
 
             [Documentation("copy() -> object (copy of this object)")]
             public override HashBase<SHA1> copy() {
-                sha clone = new sha();
+                SHA1Type clone = new SHA1Type();
                 clone._hasher = CloneHasher();
                 return clone;
             }

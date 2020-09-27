@@ -4,13 +4,12 @@
 
 #if FEATURE_FULL_CRYPTO // SHA384, SHA512
 
-using System.Collections.Generic;
 using System.Security.Cryptography;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_sha512", typeof(IronPython.Modules.PythonSha512))]
 namespace IronPython.Modules {
@@ -20,32 +19,24 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA512 hash algorithm";
 
-        public static Sha512Object sha512(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static Sha512Object sha512(ArrayModule.array data) {
-            return new Sha512Object(data.ToByteArray());
-        }
-
-        public static Sha512Object sha512([BytesLike]IList<byte> data) {
+        public static Sha512Object sha512([NotNull] IBufferProtocol data) {
             return new Sha512Object(data);
+        }
+
+        public static Sha512Object sha512([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha512Object sha512() {
             return new Sha512Object();
         }
 
-        public static Sha384Object sha384(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static Sha384Object sha384(ArrayModule.array data) {
-            return new Sha384Object(data.ToByteArray());
-        }
-
-        public static Sha384Object sha384([BytesLike]IList<byte> data) {
+        public static Sha384Object sha384([NotNull] IBufferProtocol data) {
             return new Sha384Object(data);
+        }
+
+        public static Sha384Object sha384([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha384Object sha384() {
@@ -56,7 +47,7 @@ namespace IronPython.Modules {
         public sealed class Sha384Object : HashBase<SHA384> {
             internal Sha384Object() : base("sha384", BLOCK_SIZE, 48) { }
 
-            internal Sha384Object(IList<byte> initialBytes) : this() {
+            internal Sha384Object(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
@@ -76,7 +67,7 @@ namespace IronPython.Modules {
         public sealed class Sha512Object : HashBase<SHA512> {
             internal Sha512Object() : base("sha512", BLOCK_SIZE, 64) { }
 
-            internal Sha512Object(IList<byte> initialBytes) : this() {
+            internal Sha512Object(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 

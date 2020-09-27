@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Security.Cryptography;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Runtime;
 
 using Mono.Security.Cryptography;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_sha256", typeof(IronPython.Modules.PythonSha256))]
 namespace IronPython.Modules {
@@ -20,16 +19,12 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA256 hash algorithm";
 
-        public static Sha256Object sha256(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static Sha256Object sha256(ArrayModule.array data) {
-            return new Sha256Object(data.ToByteArray());
-        }
-
-        public static Sha256Object sha256([BytesLike]IList<byte> data) {
+        public static Sha256Object sha256([NotNull] IBufferProtocol data) {
             return new Sha256Object(data);
+        }
+
+        public static Sha256Object sha256([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha256Object sha256() {
@@ -40,7 +35,7 @@ namespace IronPython.Modules {
         public sealed class Sha256Object : HashBase<SHA256> {
             internal Sha256Object() : base("sha256", BLOCK_SIZE, 32) { }
 
-            internal Sha256Object(IList<byte> initialBytes) : this() {
+            internal Sha256Object(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
@@ -56,16 +51,12 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Sha256Object sha224(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static Sha224Object sha224(ArrayModule.array data) {
-            return new Sha224Object(data.ToByteArray());
-        }
-
-        public static Sha224Object sha224([BytesLike]IList<byte> data) {
+        public static Sha224Object sha224([NotNull] IBufferProtocol data) {
             return new Sha224Object(data);
+        }
+
+        public static Sha256Object sha224([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha224Object sha224() {
@@ -77,7 +68,7 @@ namespace IronPython.Modules {
             internal Sha224Object() : base("sha224", BLOCK_SIZE, 28) {
             }
 
-            internal Sha224Object(IList<byte> initialBytes) : this() {
+            internal Sha224Object(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 

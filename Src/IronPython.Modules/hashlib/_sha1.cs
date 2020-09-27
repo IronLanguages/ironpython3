@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_sha1", typeof(IronPython.Modules.PythonSha))]
 namespace IronPython.Modules {
@@ -34,18 +32,13 @@ namespace IronPython.Modules {
             get { return BLOCK_SIZE; }
         }
 
-        public static sha sha1(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1(ArrayModule.array data) {
-            return new sha(data.ToByteArray());
-        }
-
-        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1([BytesLike]IList<byte> data) {
+        public static sha sha1([NotNull] IBufferProtocol data) {
             return new sha(data);
+        }
+
+        public static sha sha1([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
@@ -58,7 +51,7 @@ namespace IronPython.Modules {
         public class sha : HashBase<SHA1> {
             public sha() : base("sha1", BLOCK_SIZE, DIGEST_SIZE) { }
 
-            internal sha(IList<byte> initialBytes) : this() {
+            internal sha(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 

@@ -1797,14 +1797,10 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace":
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
-                case "ignore": e = setFallback(e, new PythonDecoderFallback(encoding, buffer, start)); break;
+                case "ignore": e = setFallback(e, new DecoderReplacementFallback(string.Empty)); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e, encoding); break;
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e, encoding); break;
-                default:
-                    e = setFallback(e, new PythonDecoderFallback(encoding,
-                        buffer, start,
-                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
-                    break;
+                default: e = new PythonErrorHandlerEncoding(context, e, encoding, errors); break;
             }
 
             string decoded = string.Empty;
@@ -1823,8 +1819,8 @@ namespace IronPython.Runtime.Operations {
                 }
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
-                ex.Data["encoding"] = encoding;
-                ex.Data["object"] = Bytes.Make(span.Slice(start, length).ToArray());
+                if (!ex.Data.Contains("encoding")) ex.Data["encoding"] = encoding;
+                if (!ex.Data.Contains("object")) ex.Data["object"] = Bytes.Make(span.Slice(start, length).ToArray()); ;
                 throw;
             }
 
@@ -2219,6 +2215,8 @@ namespace IronPython.Runtime.Operations {
                     ReprEncode(s, index, count, isUniEscape: true);
             }
 
+            public override string EncodingName => _raw ? "rawunicodeescape" : "unicodeescape";
+
             public override int GetByteCount(string s)
                 => EscapeEncode(s, 0, s.Length).Length;
 
@@ -2302,127 +2300,6 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region  Unicode Encode/Decode Fallback Support
-
-        /// When encoding or decoding strings if an error occurs CPython supports several different
-        /// behaviors, in addition it supports user-extensible behaviors as well.  For the default
-        /// behavior we're ok - both of us support throwing and replacing.  For custom behaviors
-        /// we define a single fallback for decoding and encoding that calls the python function to do
-        /// the replacement.
-        ///
-        /// When we do the replacement we call the provided handler w/ a UnicodeEncodeError or UnicodeDecodeError
-        /// object which contains:
-        ///         encoding    (string, the encoding the user requested)
-        ///         object      (the original string or bytes being encoded/decoded)
-        ///         start       (the start of the invalid sequence)
-        ///         end         (the exclusive end of the invalid sequence)
-        ///         reason      (the error message, e.g. 'unexpected byte code', not sure of others)
-        ///
-        /// The decoder returns a tuple of (str, int) where str is the replacement string
-        /// and int is an index where encoding/decoding should continue.
-        /// TODO: returned int is currently ignored, assumed to be equal to end (i.e. the index is not adjusted).
-
-        private class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
-            private readonly object? _function;
-            private readonly string _encoding;
-            private readonly IPythonBuffer _data;
-            private readonly int _offset;
-            private Bytes? _byteData;
-            private string? _buffer;
-            private int _bufferIndex;
-
-            public PythonDecoderFallbackBuffer(string encoding, IPythonBuffer data, int offset, object? callable) {
-                _encoding = encoding;
-                _data = data;
-                _offset = offset;
-                _function = callable;
-            }
-
-            public override int Remaining {
-                get {
-                    if (_buffer == null) return 0;
-                    return _buffer.Length - _bufferIndex;
-                }
-            }
-
-            public override char GetNextChar() {
-                if (_buffer == null || _bufferIndex >= _buffer.Length) return Char.MinValue;
-
-                return _buffer[_bufferIndex++];
-            }
-
-            public override bool MovePrevious() {
-                if (_bufferIndex > 0) {
-                    _bufferIndex--;
-                    return true;
-                }
-                return false;
-            }
-
-            public override void Reset() {
-                _buffer = null;
-                _bufferIndex = 0;
-                base.Reset();
-            }
-
-            public override bool Fallback(byte[] bytesUnknown, int index) {
-                if (_function != null) {
-                    // create the exception object to hand to the user-function...
-                    _byteData ??= Bytes.Make(_data.AsReadOnlySpan().Slice(_offset).ToArray());
-                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _byteData, index, index + bytesUnknown.Length, "unexpected code byte");
-
-                    // call the user function...
-                    object? res = PythonCalls.Call(_function, exObj);
-
-                    string replacement = CheckReplacementTuple(res, "decoding", index + bytesUnknown.Length);
-
-                    // finally process the user's request.
-                    _buffer = replacement;
-                    _bufferIndex = 0;
-                    return true;
-                }
-
-                return false;
-            }
-
-        }
-
-        private class PythonDecoderFallback : DecoderFallback {
-            private readonly string encoding;
-            private readonly IPythonBuffer data;
-            private readonly int offset;
-            private readonly Func<object>? lookup;
-            private object? function;
-
-            public PythonDecoderFallback(string encoding, IPythonBuffer data, int offset, Func<object>? lookup = null) {
-                this.encoding = encoding;
-                this.data = data;
-                this.offset = offset;
-                this.lookup = lookup;
-            }
-
-            public override DecoderFallbackBuffer CreateFallbackBuffer() {
-                if (function == null && lookup != null) {
-                    function = lookup.Invoke();
-                }
-                return new PythonDecoderFallbackBuffer(encoding, data, offset, function);
-            }
-
-            public override int MaxCharCount {
-                get { throw new NotImplementedException(); }
-            }
-        }
-
-        private static string CheckReplacementTuple(object? res, string encodeOrDecode, int cursorPos) {
-            // verify the result is sane...
-            if (res is PythonTuple tres && tres.__len__() == 2
-                    && Converter.TryConvertToString(tres[0], out string? replacement)
-                    && Converter.TryConvertToInt32(tres[1], out int newPos)) {
-                if (newPos != cursorPos) throw new NotImplementedException($"Moving {encodeOrDecode} cursor not implemented yet");
-                return replacement;
-            }
-
-            throw PythonOps.TypeError("{1} error handler must return tuple containing (str, int), got {0}", PythonOps.GetPythonTypeName(res), encodeOrDecode);
-        }
 
         private class BackslashEncoderReplaceFallback : EncoderFallback {
             private class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {

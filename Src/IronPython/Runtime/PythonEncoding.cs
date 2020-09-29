@@ -205,6 +205,27 @@ namespace IronPython.Runtime {
 
         internal static int GetUtf16SequenceLength(int rune) => rune > char.MaxValue ? 2 : 1;
 
+        private readonly struct MemInt {
+            private readonly int _current;
+            private readonly int _initial;
+
+            private MemInt(int current, int initial) {
+                _current = current;
+                _initial = initial;
+            }
+
+            public int Initial => _initial;
+
+            public static implicit operator int(MemInt mi) => mi._current;
+            public static implicit operator MemInt(int value) => new MemInt(value, value);
+
+            /// <summary>Assignment preserving the initial value</summary>
+            public static MemInt operator <<(MemInt mi, int value) => new MemInt(value, mi._initial);
+
+            /// <summary>Addition preserving the initial value</summary>
+            public static MemInt operator +(MemInt mi, int value) => new MemInt(mi._current + value, mi._initial);
+        }
+
         private class ProxyEncoder : Encoder {
             private Encoding _encoding;
             private readonly Encoder _encoder;
@@ -287,9 +308,7 @@ namespace IronPython.Runtime {
                 // but it requires a workaround for a design oddity in System.Text.EncoderNLS on .NET Core
                 var fbuf = enc.FallbackBuffer as PythonEncoderFallbackBuffer;
 #if NETCOREAPP
-                if (fbuf == null) {
-                    fbuf = enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonEncoderFallbackBuffer;
-                }
+                fbuf ??= enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonEncoderFallbackBuffer;
 #endif
                 return fbuf;
             }
@@ -377,8 +396,7 @@ namespace IronPython.Runtime {
 
                 var chars = data.AsSpan();
 
-                int written;
-                written = _pass1encoder.GetBytes(chars, bytes, flush);
+                int written = _pass1encoder.GetBytes(chars, bytes, flush);
 
                 // If the final increment and there were no more fallback bytes, the job is done
                 if (fbuf1 == null || flush && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
@@ -439,27 +457,6 @@ namespace IronPython.Runtime {
         }
 
         protected abstract class PythonEncoderFallbackBuffer : EncoderFallbackBuffer {
-            private readonly struct MemInt {
-                private readonly int _current;
-                private readonly int _initial;
-
-                private MemInt(int current, int initial) {
-                    _current = current;
-                    _initial = initial;
-                }
-
-                public int Initial => _initial;
-
-                public static implicit operator int(MemInt mi) => mi._current;
-                public static implicit operator MemInt(int value) => new MemInt(value, value);
-
-                /// <summary>Assignment preserving the initial value</summary>
-                public static MemInt operator <<(MemInt mi, int value) => new MemInt(value, mi._initial);
-
-                /// <summary>Addition preserving the initial value</summary>
-                public static MemInt operator +(MemInt mi, int value) => new MemInt(mi._current + value, mi._initial);
-            }
-
             private readonly char _marker;
 
             private readonly Queue<byte>? _allFallbackBytes;  // collects all fallback bytes for the whole pass, only used during actual encoding, pass 2
@@ -614,6 +611,51 @@ namespace IronPython.Runtime {
             }
         }
 
+        private class ProxyDecoder : Decoder {
+            private Encoding _encoding;
+            private readonly Decoder _decoder;
+
+            public ProxyDecoder(Encoding encoding) {
+                _encoding = (Encoding)encoding.Clone();
+                _encoding.DecoderFallback = new ProxyDecoderFallback(_encoding.DecoderFallback.CreateFallbackBuffer(), _encoding.DecoderFallback.MaxCharCount);
+                _decoder = _encoding.GetDecoder();
+                Fallback = _decoder.Fallback = _encoding.DecoderFallback;
+            }
+
+            public override int GetCharCount(byte[] bytes, int index, int count)
+                => GetCharCount(bytes, index, count, flush: true);
+
+            public override int GetCharCount(byte[] bytes, int index, int count, bool flush)
+                => _decoder.GetCharCount(bytes, index, count, flush);
+
+            public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
+                => _decoder.GetCharCount(bytes, count, flush);
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+                => GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush)
+                => _decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush);
+
+            public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush)
+                => _decoder.GetChars(bytes, byteCount, chars, charCount, flush);
+
+            public override void Reset() => _decoder.Reset();
+
+            private class ProxyDecoderFallback : DecoderFallback {
+                private readonly DecoderFallbackBuffer _buffer;
+                private readonly int _maxCharCount;
+
+                public ProxyDecoderFallback(DecoderFallbackBuffer buffer, int maxCharCount) {
+                    _buffer = buffer;
+                    _maxCharCount = maxCharCount;
+                }
+
+                public override DecoderFallbackBuffer CreateFallbackBuffer() => _buffer;
+                public override int MaxCharCount => _maxCharCount;
+            }
+        }
+
         private class PythonDecoder : Decoder {
             private readonly PythonEncoding _parentEncoding;
             private readonly Decoder _pass1decoder;
@@ -621,33 +663,61 @@ namespace IronPython.Runtime {
 
             public PythonDecoder(PythonEncoding parentEncoding) {
                 _parentEncoding = parentEncoding;
-                _pass1decoder = _parentEncoding.Pass1Encoding.GetDecoder();
+                _pass1decoder = GetDecoder(_parentEncoding.Pass1Encoding);
             }
 
+            private static Decoder GetDecoder(Encoding encoding) {
+                Decoder decoder = encoding.GetDecoder();
+
+                if (!(decoder.Fallback is PythonDecoderFallback) && encoding.DecoderFallback is PythonDecoderFallback) {
+                    // Non-conformant Decoder implementation, the challenge is to get to the fallback buffer used by such decoder.
+                    // See notes at PythonEncoder.GetEncoder(...)
+                    if (decoder.GetType().FullName == "System.Text.DecoderNLS") return decoder;
+                    decoder = new ProxyDecoder(encoding);
+                }
+                return decoder;
+            }
+
+            private static PythonDecoderFallbackBuffer? GetPythonDecoderFallbackBuffer(Decoder? enc) {
+                if (enc == null) return null;
+
+                // see also PythonEncoder.GetPythonEncoderFallbackBuffer(...)
+                var fbuf = enc.FallbackBuffer as PythonDecoderFallbackBuffer;
+#if NETCOREAPP
+                fbuf ??= enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonDecoderFallbackBuffer;
+#endif
+                return fbuf;
+            }
+
+            // mandatory override of an abstract method
             public override int GetCharCount(byte[] bytes, int index, int count)
-                => _pass1decoder.GetCharCount(bytes, index, count, flush: true);
+                => GetCharCount(bytes, index, count, flush: true);
 
             public override int GetCharCount(byte[] bytes, int index, int count, bool flush) {
                 int numChars;
 
                 var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
-                if (fbuf1 != null) fbuf1.CharCountingMode = true;
-                try {
-                    numChars = _pass1decoder.GetCharCount(bytes, index, count, flush);
-                    fbuf1?.ThrowIfNotEmpty(count, flush);
-                } finally {
-                    if (fbuf1 != null) fbuf1.CharCountingMode = false;
-                }
+                fbuf1?.PrepareIncrement(bytes, forDecoding: false);
+                numChars = _pass1decoder.GetCharCount(bytes, index, count, flush);
+                fbuf1?.FinalizeIncrement(count, flush);
+
                 return numChars;
             }
-
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
                 => GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush) {
+                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (byteIndex < 0) throw new ArgumentOutOfRangeException(nameof(byteIndex));
+                if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount));
+                if (bytes.Length - byteIndex < byteCount) throw new ArgumentOutOfRangeException(nameof(bytes));
+                if (charIndex < 0 || charIndex > chars.Length) throw new ArgumentOutOfRangeException(nameof(charIndex));
+
                 var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
                 var fbuf2 = _pass2decoder?.FallbackBuffer as PythonDecoderFallbackBuffer;
+                fbuf1?.PrepareIncrement(bytes, forDecoding: true);
                 int? surIdxStart = fbuf1?.FallbackCharCount;
 
                 int written = _pass1decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush);
@@ -659,10 +729,11 @@ namespace IronPython.Runtime {
 
                 // Lazy creation of _pass2decoder
                 if (_pass2decoder == null) {
-                    _pass2decoder = _parentEncoding.Pass2Encoding.GetDecoder();
+                    _pass2decoder = GetDecoder(_parentEncoding.Pass2Encoding);
                     fbuf2 = (PythonDecoderFallbackBuffer)_pass2decoder.FallbackBuffer;
                 }
                 // fbuf2 is not null here because fbuf1 is not null and Pass1Encoding and Pass2Encoding are identical clones
+                fbuf2!.PrepareIncrement(bytes, forDecoding: true);
 
                 // replace surrogate markers with actual surrogates
                 var chars2 = new char[written];
@@ -670,13 +741,13 @@ namespace IronPython.Runtime {
 
                 for (int i = 0, j = charIndex; i < written; i++, j++) {
                     if (chars[j] != chars2[i]) {
-                        chars[j] = fbuf2!.GetFallbackChar();
+                        chars[j] = fbuf2.GetFallbackChar();
                     }
                 }
 
                 // Check if all fallback chars are restored properly
-                fbuf1.ThrowIfNotEmpty(byteCount, flush);
-                fbuf2!.ThrowIfNotEmpty(byteCount, flush);
+                fbuf1.FinalizeIncrement(byteCount, flush);
+                fbuf2.FinalizeIncrement(byteCount, flush);
 
                 return written;
             }
@@ -701,11 +772,10 @@ namespace IronPython.Runtime {
 
         protected abstract class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly char _marker;
-            private readonly Queue<char>? _fallbackChars;
-
-            private int _fbkCnt;
-            private int _charNum;
-            private int _charCnt;
+            private readonly Queue<char>? _fallbackChars; // collects all fallback chars for the whole pass, only used during actual decoding, pass 2
+            private int _fbkCnt; // only used during actual decoding; proxy for _fallbackChars.Count but valid in pass 1 too
+            private MemInt _charCnt;  // counts unreported chars from the last fallback; used during both counting and decoding, but counts separately
+            private int _fbkNumChars; // number of all (virtual) chars in the buffer from the last fallback
 
             public PythonDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
@@ -714,25 +784,38 @@ namespace IronPython.Runtime {
                 this.CodePage = encoding.CodePage;
             }
 
+            protected bool DecodingMode { get; private set; }
             protected int EncodingCharWidth { get; }
             protected int CodePage { get; }
+            protected byte[]? Data { get; private set; }
 
-            public abstract char[] GetFallbackChars(byte[] bytesUnknown, int index);
+            public virtual void PrepareIncrement(byte[] data, bool forDecoding) {
+                Data = data;
+                if (DecodingMode) {
+                    _charCnt = (int)_charCnt;
+                } else {
+                    _charCnt = _charCnt.Initial;
+                }
+                DecodingMode = forDecoding;
+            }
+
+            public abstract ReadOnlyMemory<char> GetFallbackChars(byte[] bytesUnknown, int index);
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                if (this.CharCountingMode && this.CodePage == 65001 && PythonEncoding.HasBugCorefx29898) { // only for UTF-8
+                if (!this.DecodingMode && this.CodePage == 65001 && PythonEncoding.HasBugCorefx29898) { // only for UTF-8
                     index += bytesUnknown.Length;
                 }
-                char[] newFallbackChars = GetFallbackChars(bytesUnknown, index);
-                _charNum = newFallbackChars.Length;
+                ReadOnlyMemory<char> newFallbackChars = GetFallbackChars(bytesUnknown, index);
+                _fbkNumChars = newFallbackChars.Length;
 
                 if (_fallbackChars != null) {
-                    for (int i = 0; i < _charNum; i++) {
-                        _fallbackChars.Enqueue(newFallbackChars[i]);
+                    var chars = newFallbackChars.Span;
+                    for (int i = 0; i < _fbkNumChars; i++) {
+                        _fallbackChars.Enqueue(chars[i]);
                     }
                 }
-                _fbkCnt += _charNum;
-                _charCnt = _charNum;
+                _fbkCnt += _fbkNumChars;
+                _charCnt = _fbkNumChars;
 
                 return true;
             }
@@ -740,14 +823,14 @@ namespace IronPython.Runtime {
             public override int Remaining => _charCnt;
 
             public override char GetNextChar() {
-                if (_charCnt <= 0) return char.MinValue;
+                if (_charCnt <= 0) return '\0';
 
                 _charCnt--;
                 return _marker; // unfortunately, returning the actual fallback char here might result in an exception
             }
 
             public override bool MovePrevious() {
-                if (_charCnt >= _charNum) return false;
+                if (_charCnt >= _fbkNumChars) return false;
 
                 _charCnt++;
                 return true;
@@ -764,20 +847,21 @@ namespace IronPython.Runtime {
 
             public int FallbackCharCount => _fbkCnt;
 
-            public virtual bool CharCountingMode { get; set; }
-
-            public virtual void ThrowIfNotEmpty(int endIndex, bool flush) {
+            public virtual void FinalizeIncrement(int endIndex, bool flush) {
                 if (flush && !IsEmpty) {
                     // If this exception is being thrown, the problem is with the code, not the input sequence.
                     // Therefore, the exception does not carry any input data.
                     throw new DecoderFallbackException("internal error");
                 }
+                Data = null; // release input data for possible collection
             }
 
             public override void Reset() {
                 _fallbackChars?.Clear();
                 _fbkCnt = 0;
-                _charNum = _charCnt = 0;
+                _fbkNumChars = 0;
+                _charCnt = 0;
+                Data = null;
             }
         }
 
@@ -837,7 +921,7 @@ namespace IronPython.Runtime {
             public SurrogateEscapeDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
                 : base(isPass1, encoding) { }
 
-            public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
+            public override ReadOnlyMemory<char> GetFallbackChars(byte[] bytesUnknown, int index) {
                 int charNum = bytesUnknown.Length;
                 char[] fallbackChars = new char[charNum];
 
@@ -1008,7 +1092,7 @@ namespace IronPython.Runtime {
                 : base(isPass1, encoding) {
             }
 
-            public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
+            public override ReadOnlyMemory<char> GetFallbackChars(byte[] bytesUnknown, int index) {
                 const int bytesPerChar = 3; // UTF-8 uses 3 bytes to encode a surrogate
                 int numBytes = bytesUnknown.Length;
                 char fallbackChar = char.MinValue;
@@ -1088,19 +1172,16 @@ namespace IronPython.Runtime {
 
             public override bool IsEmpty => base.IsEmpty && (_buffer?.Length ?? 0) == 0;
 
-            public override bool CharCountingMode {
-                get => base.CharCountingMode;
-                set {
-                    base.CharCountingMode = value;
-                    if (value) {
-                        _buffer?.Save();
-                    } else {
-                        _buffer?.Restore();
-                    }
+            public override void PrepareIncrement(byte[] data, bool forDecoding) {
+                if (DecodingMode) {
+                    _buffer?.Save();
+                } else {
+                    _buffer?.Restore();
                 }
+                base.PrepareIncrement(data, forDecoding);
             }
 
-            public override void ThrowIfNotEmpty(int endIndex, bool flush) {
+            public override void FinalizeIncrement(int endIndex, bool flush) {
                 if (_buffer != null) {
                     if (_buffer.Length != 0 && (_buffer.EndIndex != endIndex || flush)) {
                         // leftover bytes not consumed
@@ -1109,7 +1190,7 @@ namespace IronPython.Runtime {
                     // Prepare for next incremental decode step (if any)
                     _buffer.Index = -_buffer.Length;
                 }
-                base.ThrowIfNotEmpty(endIndex, flush);
+                base.FinalizeIncrement(endIndex, flush);
             }
 
             public override void Reset() {
@@ -1155,7 +1236,7 @@ namespace IronPython.Runtime {
                     _handler = LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(_encoding._context, _encoding._errors));
                 }
 
-                // create the exception object to hand to the user-function...
+                // create exception object to hand over to the user-function...
                 int runeLen = GetUtf16SequenceLength(runeUnknown);
                 string? data = Data;
                 if (index < 0) {
@@ -1182,7 +1263,7 @@ namespace IronPython.Runtime {
                 // verify the result is sane...
                 if (res is PythonTuple tres && tres.__len__() == 2 && Converter.TryConvertToInt32(tres[1], out int newPos)) {
 
-                    if (newPos != cursorPos) throw new NotImplementedException($"Moving encoding cursor not implemented yet");
+                    if (newPos != cursorPos) throw new NotImplementedException("Moving an encoding cursor not implemented yet");
 
                     if (Converter.TryConvertToString(tres[0], out string? str)) {
                         return new Tuple<ReadOnlyMemory<char>, ReadOnlyMemory<byte>>(str.AsMemory(), default);
@@ -1205,17 +1286,90 @@ namespace IronPython.Runtime {
             public override int MaxCharCount => int.MaxValue;
 
             public override DecoderFallbackBuffer CreateFallbackBuffer()
-                => new PythonHandlerDecoderFallbackBuffer(this.IsPass1, this.Encoding);
+                => new PythonHandlerDecoderFallbackBuffer(this.IsPass1, (PythonErrorHandlerEncoding)this.Encoding);
 
             private class PythonHandlerDecoderFallbackBuffer : PythonDecoderFallbackBuffer {
+                private const int MinNumLookbackBytes = 10;
 
-                public PythonHandlerDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
-                    : base(isPass1, encoding) { }
+                private readonly PythonErrorHandlerEncoding _encoding;
+                private object? _handler;
+                private byte[]? _previousData;
 
-                public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
-                    throw new NotImplementedException();
+                public PythonHandlerDecoderFallbackBuffer(bool isPass1, PythonErrorHandlerEncoding encoding)
+                    : base(isPass1, encoding) {
+                    _encoding = encoding;
                 }
 
+                public override ReadOnlyMemory<char> GetFallbackChars(byte[] bytesUnknown, int index) {
+                    if (_handler == null) {
+                        _handler = LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(_encoding._context, _encoding._errors));
+                    }
+
+                    // create exception object to hand over to the user-function...
+                    byte[]? data = Data;
+                    if (index < 0) {
+                        // corner case, the unknown data starts at the end of the previous increment (or earlier)
+                        Debug.Assert(_previousData != null);
+                        Debug.Assert(data != null);
+                        Debug.Assert(_previousData!.Length >= -index, "Not enough lookback bytes to process decoding of this increment");
+                        data = new byte[data!.Length - index];
+                        Array.Copy(data, 0, data, -index, data.Length);
+                        Array.Copy(_previousData!, _previousData.Length + index, data, -index, -index);
+                        index = 0;
+                    }
+                    var exObj = PythonExceptions.CreatePythonThrowable(
+                        PythonExceptions.UnicodeDecodeError,
+                        StringOps.GetEncodingName(_encoding, normalize: false),
+                        data,
+                        index,
+                        index + bytesUnknown.Length,
+                        "invalid bytes");
+
+                    // call the user function...
+                    object? res = PythonCalls.Call(_handler, exObj);
+
+                    return ExtractDecodingReplacement(res, index + bytesUnknown.Length);
+                }
+
+                private static ReadOnlyMemory<char> ExtractDecodingReplacement(object? res, int cursorPos) {
+                    // verify the result is sane...
+                    if (res is PythonTuple tres && tres.__len__() == 2 && Converter.TryConvertToInt32(tres[1], out int newPos)) {
+
+                        if (newPos != cursorPos) throw new NotImplementedException("Moving a decoding cursor not implemented yet");
+
+                        if (Converter.TryConvertToString(tres[0], out string? str)) {
+                            return str.AsMemory();
+                        }
+                    }
+
+                    throw PythonOps.TypeError("decoding error handler must return (str, int) tuple");
+                }
+
+                public override void FinalizeIncrement(int endIndex, bool flush) {
+                    if (DecodingMode) {
+                        if (flush) {
+                            _previousData = null;
+                        } else {
+                            if (_previousData == null || Data != null && Data.Length >= MinNumLookbackBytes) {
+                                _previousData = Data;
+                            } else if (Data != null && Data.Length > 0) {
+                                int oldlen = _previousData.Length;
+                                int newlen = Math.Min(oldlen + Data.Length, MinNumLookbackBytes);
+                                int savlen = newlen - Data.Length;
+                                var newPrevious = new byte[newlen];
+                                Array.Copy(_previousData, oldlen - savlen, newPrevious, 0, savlen);
+                                Array.Copy(Data, 0, newPrevious, savlen, Data.Length);
+                                _previousData = newPrevious;
+                            }
+                        }
+                    }
+                    base.FinalizeIncrement(endIndex, flush);
+                }
+
+                public override void Reset() {
+                    base.Reset();
+                    _previousData = null;
+                }
             }
         }
 
@@ -1234,6 +1388,21 @@ namespace IronPython.Runtime {
             fixed (char* pChars = &MemoryMarshal.GetReference(chars))
             fixed (byte* pBytes = &MemoryMarshal.GetReference(bytes)) {
                 return encoder.GetBytes(pChars, chars.Length, pBytes, bytes.Length, flush);
+            }
+        }
+    }
+
+    internal static class DecoderExtensions {
+        public static unsafe int GetCharCount(this Decoder decoder, ReadOnlySpan<byte> bytes, bool flush) {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes)) {
+                return decoder.GetCharCount(bytesPtr, bytes.Length, flush);
+            }
+        }
+
+        internal static unsafe int GetChars(this Decoder decoder, ReadOnlySpan<byte> bytes, Span<char> chars, bool flush) {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars)) {
+                return decoder.GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length, flush);
             }
         }
     }

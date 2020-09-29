@@ -1780,6 +1780,9 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 
         internal static string DoDecode(CodeContext context, IPythonBuffer buffer, string? errors, string encoding, Encoding e, int numBytes = -1) {
+            // Precondition: only bytes-like buffers accepted
+            Debug.Assert(buffer.IsCContiguous());
+
             var span = buffer.AsReadOnlySpan();
             int start = GetStartingOffset(span, e);
             int length = (numBytes >= 0 ? numBytes : span.Length) - start;
@@ -1791,6 +1794,7 @@ namespace IronPython.Runtime.Operations {
                 enc.DecoderFallback = fb;
                 return enc;
             }
+            PythonEncoding? pe = null; // to avoid downcasting later
             switch (errors) {
                 case null:
                 case "backslashreplace":
@@ -1798,21 +1802,25 @@ namespace IronPython.Runtime.Operations {
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
                 case "ignore": e = setFallback(e, new DecoderReplacementFallback(string.Empty)); break;
-                case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e, encoding); break;
-                case "surrogatepass": e =  new PythonSurrogatePassEncoding(e, encoding); break;
-                default: e = new PythonErrorHandlerEncoding(context, e, encoding, errors); break;
+                case "surrogateescape": e = pe = new PythonSurrogateEscapeEncoding(e, encoding); break;
+                case "surrogatepass": e = pe = new PythonSurrogatePassEncoding(e, encoding); break;
+                default: e = pe = new PythonErrorHandlerEncoding(context, e, encoding, errors); break;
             }
 
             string decoded = string.Empty;
             try {
-                unsafe {
-                    fixed (byte* ptr = span.Slice(start)) {
-                        if (ptr != null) {
-                            if (e is UnicodeEscapeEncoding ue) {
-                                // This overload is not virtual, but the base implementation is inefficient for this encoding
-                                decoded = ue.GetString(ptr, length);
-                            } else {
-                                decoded = e.GetString(ptr, length);
+                if (pe != null) {
+                    decoded = pe.GetString(buffer, start, length);
+                } else {
+                    unsafe {
+                        fixed (byte* ptr = span.Slice(start)) {
+                            if (ptr != null) {
+                                if (e is UnicodeEscapeEncoding ue) {
+                                    // This overload is not virtual, but the base implementation is inefficient for this encoding
+                                    decoded = ue.GetString(ptr, length);
+                                } else {
+                                    decoded = e.GetString(ptr, length);
+                                }
                             }
                         }
                     }

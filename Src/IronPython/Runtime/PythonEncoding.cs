@@ -794,17 +794,10 @@ namespace IronPython.Runtime {
                 int len = _pass1decoder.GetCharCount(span, flush: true);
                 if (len == 0) return string.Empty;
 
-#if NETCOREAPP
-                return string.Create(len, Tuple.Create(input, index, count), (dest, arg) => {
+                return StringExtensions.Create(len, Tuple.Create(input, index, count), (dest, arg) => {
                     var src = arg.Item1.AsReadOnlySpan().Slice(arg.Item2, arg.Item3);
                     GetChars(src, dest, flush: true);
                 });
-#else
-                // data copy on NET46/NETSTANDARD2
-                var dest = new char[len];
-                GetChars(span, dest, flush: true);
-                return new string(dest);
-#endif
             }
 
             public override void Reset() {
@@ -1455,6 +1448,61 @@ namespace IronPython.Runtime {
 
     }
 
+    // TODO: Move to IronPython.Runtime.StringOps
+    internal static class StringExtensions {
+#if NETCOREAPP
+
+        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action)
+            => string.Create(length, state, action);
+
+#else
+
+        public delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
+
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action) {
+            var enc = new StringCreateHelperEncoding<TState>(length, state, action);
+            unsafe {
+                byte* dummy = stackalloc byte[1];
+                return enc.GetString(dummy, 1);
+            }
+        }
+
+        /// <summary>
+        /// Helper class to access unsafe static internal String CreateStringFromEncoding(byte*, int, Encoding)
+        /// in .NET Framework
+        /// </summary>
+        private class StringCreateHelperEncoding<TState> : Encoding {
+            private int _length;
+            private TState _state;
+            private SpanAction<char, TState> _action;
+
+            public StringCreateHelperEncoding(int length, TState state, SpanAction<char, TState> action) {
+                _length = length;
+                _state = state;
+                _action = action;
+            }
+
+            public override unsafe int GetCharCount(byte* bytes, int count) {
+                return _length;
+            }
+
+            public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount) {
+                var dest = new Span<char>(chars, charCount);
+                _action(dest, _state);
+                return _length;
+            }
+
+            // Mandatory overrides, unused
+            public override int GetByteCount(char[] chars, int index, int count) => throw new NotImplementedException();
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) => throw new NotImplementedException();
+            public override int GetCharCount(byte[] bytes, int index, int count) => throw new NotImplementedException();
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) => throw new NotImplementedException();
+            public override int GetMaxByteCount(int charCount) => throw new NotImplementedException();
+            public override int GetMaxCharCount(int byteCount) => throw new NotImplementedException();
+        }
+#endif
+    }
+
 #if !NETCOREAPP
     // TODO: Move to IronPython.Runtime.Text
     internal static class EncoderExtensions {
@@ -1486,5 +1534,6 @@ namespace IronPython.Runtime {
             }
         }
     }
+
 #endif
 }

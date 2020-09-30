@@ -31,7 +31,6 @@
 #if FEATURE_FULL_CRYPTO
 
 using System;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Mono.Security.Cryptography {

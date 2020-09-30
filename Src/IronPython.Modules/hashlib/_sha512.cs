@@ -4,13 +4,12 @@
 
 #if FEATURE_FULL_CRYPTO // SHA384, SHA512
 
-using System.Collections.Generic;
 using System.Security.Cryptography;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_sha512", typeof(IronPython.Modules.PythonSha512))]
 namespace IronPython.Modules {
@@ -20,73 +19,65 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA512 hash algorithm";
 
-        public static Sha512Object sha512(string data) {
+        public static SHA384Type sha384([NotNull] IBufferProtocol data) {
+            return new SHA384Type(data);
+        }
+
+        public static SHA384Type sha384([NotNull] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
-        public static Sha512Object sha512(ArrayModule.array data) {
-            return new Sha512Object(data.ToByteArray());
+        public static SHA384Type sha384() {
+            return new SHA384Type();
         }
 
-        public static Sha512Object sha512([BytesLike]IList<byte> data) {
-            return new Sha512Object(data);
-        }
+        [PythonType("sha384")]
+        public sealed class SHA384Type : HashBase<SHA384> {
+            internal SHA384Type() : base("sha384", BLOCK_SIZE, 48) { }
 
-        public static Sha512Object sha512() {
-            return new Sha512Object();
-        }
-
-        public static Sha384Object sha384(string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static Sha384Object sha384(ArrayModule.array data) {
-            return new Sha384Object(data.ToByteArray());
-        }
-
-        public static Sha384Object sha384([BytesLike]IList<byte> data) {
-            return new Sha384Object(data);
-        }
-
-        public static Sha384Object sha384() {
-            return new Sha384Object();
-        }
-
-        [PythonHidden]
-        public sealed class Sha384Object : HashBase<SHA384> {
-            internal Sha384Object() : base("sha384", BLOCK_SIZE, 48) { }
-
-            internal Sha384Object(IList<byte> initialBytes) : this() {
+            internal SHA384Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
             protected override void CreateHasher() {
-                _hasher = SHA384.Create();
+                _hasher = new Mono.Security.Cryptography.SHA384Managed();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]
             public override HashBase<SHA384> copy() {
-                Sha384Object res = new Sha384Object();
+                SHA384Type res = new SHA384Type();
                 res._hasher = CloneHasher();
                 return res;
             }
         }
 
-        [PythonHidden]
-        public sealed class Sha512Object : HashBase<SHA512> {
-            internal Sha512Object() : base("sha512", BLOCK_SIZE, 64) { }
+        public static SHA512Type sha512([NotNull] IBufferProtocol data) {
+            return new SHA512Type(data);
+        }
 
-            internal Sha512Object(IList<byte> initialBytes) : this() {
+        public static SHA512Type sha512([NotNull] string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
+        }
+
+        public static SHA512Type sha512() {
+            return new SHA512Type();
+        }
+
+        [PythonType("sha512")]
+        public sealed class SHA512Type : HashBase<SHA512> {
+            internal SHA512Type() : base("sha512", BLOCK_SIZE, 64) { }
+
+            internal SHA512Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
             protected override void CreateHasher() {
-                _hasher = SHA512.Create();
+                _hasher = new Mono.Security.Cryptography.SHA512Managed();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]
             public override HashBase<SHA512> copy() {
-                Sha512Object res = new Sha512Object();
+                SHA512Type res = new SHA512Type();
                 res._hasher = CloneHasher();
                 return res;
             }

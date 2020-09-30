@@ -4,13 +4,12 @@
 
 #if FEATURE_FULL_CRYPTO // MD5
 
-using System.Collections.Generic;
 using System.Security.Cryptography;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_md5", typeof(IronPython.Modules.PythonMD5))]
 namespace IronPython.Modules {
@@ -20,35 +19,26 @@ namespace IronPython.Modules {
         private const int DIGEST_SIZE = 16;
         private const int BLOCK_SIZE = 64;
 
-        [Documentation("Size of the resulting digest in bytes (constant)")]
-        public static int digest_size {
-            get { return DIGEST_SIZE; }
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5([NotNull] IBufferProtocol data) {
+            return new MD5Type(data);
         }
 
-        public static MD5Object md5(string data) {
+        public static MD5Type md5([NotNull] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
-        public static MD5Object md5(ArrayModule.array data) {
-            return new MD5Object(data.ToByteArray());
-        }
-
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5([BytesLike]IList<byte> data) {
-            return new MD5Object(data);
-        }
-
-        [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5() {
-            return new MD5Object();
+        public static MD5Type md5() {
+            return new MD5Type();
         }
 
         [Documentation("md5([data]) -> object (object used to calculate MD5 hash)")]
-        [PythonHidden]
-        public class MD5Object : HashBase<MD5> {
-            public MD5Object() : base("md5", BLOCK_SIZE, DIGEST_SIZE) { }
+        [PythonType("md5")]
+        public sealed class MD5Type : HashBase<MD5> {
+            internal MD5Type() : base("md5", BLOCK_SIZE, DIGEST_SIZE) { }
 
-            internal MD5Object(IList<byte> initialBytes) : this() {
+            internal MD5Type(IBufferProtocol initialBytes) : this() {
                 update(initialBytes);
             }
 
@@ -58,7 +48,7 @@ namespace IronPython.Modules {
 
             [Documentation("copy() -> object (copy of this md5 object)")]
             public override HashBase<MD5> copy() {
-                MD5Object res = new MD5Object();
+                MD5Type res = new MD5Type();
                 res._hasher = CloneHasher();
                 return res;
             }

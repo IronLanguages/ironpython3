@@ -9,10 +9,10 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 //[assembly: PythonModule("_hashlib", typeof(IronPython.Modules.PythonHashlib))]
 namespace IronPython.Modules {
@@ -39,11 +39,15 @@ namespace IronPython.Modules {
         protected abstract void CreateHasher();
 
         [Documentation("update(string) -> None (update digest with string data)")]
-        public void update([BytesLike]IList<byte> newBytes) {
-            byte[] bytes = newBytes.ToArray();
+        public void update([NotNull]IBufferProtocol data) {
+            using var buffer = data.GetBuffer();
+            byte[] bytes = buffer.ToArray();
             lock (_hasher) {
                 _hasher.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
             }
+        }
+        public void update([NotNull]string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         [Documentation("digest() -> int (current digest value)")]
@@ -72,6 +76,10 @@ namespace IronPython.Modules {
         }
 
         protected T CloneHasher() {
+            if (_hasher is ICloneable cloneable) {
+                return (T)cloneable.Clone();
+            }
+
             T clone = default(T);
             if (_memberwiseClone == null) {
                 _memberwiseClone = _hasher.GetType().GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -88,8 +96,7 @@ namespace IronPython.Modules {
                 foreach (FieldInfo field in fields) {
                     if (field.FieldType.IsArray) {
                         lock (_hasher) {
-                            Array orig = field.GetValue(_hasher) as Array;
-                            if (orig != null) {
+                            if (field.GetValue(_hasher) is Array orig) {
                                 field.SetValue(clone, orig.Clone());
                             }
                         }

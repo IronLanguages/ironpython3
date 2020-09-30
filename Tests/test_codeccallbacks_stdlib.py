@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 import test.test_codeccallbacks
 
@@ -34,7 +34,8 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_decoding_callbacks')) # Moving cursor not implemented
         #suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_encodehelper')) # Moving cursor not implemented
         suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_fake_error_class'))
-        suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_longstrings'))
+        if not is_mono: # https://github.com/mono/mono/issues/20445
+            suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_longstrings'))
         suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_lookup'))
         #suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_mutatingdecodehandler')) # Moving cursor not implemented
         suite.addTest(test.test_codeccallbacks.CodecCallbackTest('test_translatehelper'))

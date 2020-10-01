@@ -12,6 +12,7 @@ using Microsoft.Scripting.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -823,7 +824,8 @@ namespace IronPython.Runtime {
             private readonly Queue<char>? _fallbackChars; // collects all fallback chars for the whole pass, only used during actual decoding, pass 2
             private int _fbkCnt; // only used during actual decoding; proxy for _fallbackChars.Count but valid in pass 1 too
             private MemInt _charCnt;  // counts unreported chars from the last fallback; used during both counting and decoding, but counts separately
-            private int _fbkNumChars; // number of all (virtual) chars in the buffer from the last fallback
+            private int _fbkNumChars; // number of all virtual chars in the buffer from the last fallback
+            private ReadOnlyMemory<char> _safeFallbackChars; // chars from the last fallback that are safe to report; only used during actual decoding
 
             public PythonDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
@@ -855,13 +857,18 @@ namespace IronPython.Runtime {
                 ReadOnlyMemory<char> newFallbackChars = GetFallbackChars(bytesUnknown, index);
                 _fbkNumChars = newFallbackChars.Length;
 
-                if (_fallbackChars != null) {
-                    var chars = newFallbackChars.Span;
-                    for (int i = 0; i < _fbkNumChars; i++) {
-                        _fallbackChars.Enqueue(chars[i]);
+                if (DecodingMode && MemoryMarshal.ToEnumerable(newFallbackChars).All(ch => !char.IsSurrogate(ch))) {
+                    _safeFallbackChars = newFallbackChars;
+                } else {
+                    _safeFallbackChars = default;
+                    _fbkCnt += _fbkNumChars;
+                    if (_fallbackChars != null) {
+                        var chars = newFallbackChars.Span;
+                        for (int i = 0; i < _fbkNumChars; i++) {
+                            _fallbackChars.Enqueue(chars[i]);
+                        }
                     }
                 }
-                _fbkCnt += _fbkNumChars;
                 _charCnt = _fbkNumChars;
 
                 return true;
@@ -872,8 +879,12 @@ namespace IronPython.Runtime {
             public override char GetNextChar() {
                 if (_charCnt <= 0) return '\0';
 
-                _charCnt--;
-                return _marker; // unfortunately, returning the actual fallback char here might result in an exception
+                if (_safeFallbackChars.IsEmpty) {
+                    _charCnt--;
+                    return _marker; // unfortunately, returning the actual fallback char here might result in an exception 
+                } else {
+                    return _safeFallbackChars.Span[_safeFallbackChars.Length - _charCnt--];
+                }
             }
 
             public override bool MovePrevious() {
@@ -900,6 +911,7 @@ namespace IronPython.Runtime {
                     // Therefore, the exception does not carry any input data.
                     throw new DecoderFallbackException("internal error");
                 }
+                _safeFallbackChars = default;
                 Data = null; // release input data for possible collection
             }
 
@@ -908,6 +920,7 @@ namespace IronPython.Runtime {
                 _fbkCnt = 0;
                 _fbkNumChars = 0;
                 _charCnt = 0;
+                _safeFallbackChars = default;
                 Data = null;
             }
         }

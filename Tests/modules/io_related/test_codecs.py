@@ -921,6 +921,7 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.utf_8_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
         self.assertEqual(codecs.ascii_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
         self.assertEqual(codecs.charmap_decode(b"a\xFF\xFEz", 'test_dec_sur', {ord('a'): 'a', ord('z'): 'z'}), ("a\uDDEE\uDDEEz", 4))
+        self.assertEqual(b"a\x81\x82z".decode('iso-2022-jp', 'test_dec_sur'), "a\uDDEE\uDDEEz")
 
         # test encoding error handler that produces replacement bytes
         def test_encoding_error_byteshandler(uee): return (b"*" * (uee.end - uee.start), uee.end)

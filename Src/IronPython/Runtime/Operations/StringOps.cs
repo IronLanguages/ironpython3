@@ -1812,17 +1812,11 @@ namespace IronPython.Runtime.Operations {
                 if (pe != null) {
                     decoded = pe.GetString(buffer, start, length);
                 } else {
-                    unsafe {
-                        fixed (byte* ptr = span.Slice(start)) {
-                            if (ptr != null) {
-                                if (e is UnicodeEscapeEncoding ue) {
-                                    // This overload is not virtual, but the base implementation is inefficient for this encoding
-                                    decoded = ue.GetString(ptr, length);
-                                } else {
-                                    decoded = e.GetString(ptr, length);
-                                }
-                            }
-                        }
+                    if (e is UnicodeEscapeEncoding ue) {
+                        // This overload is not virtual, but the base implementation is inefficient for this encoding
+                        decoded = ue.GetString(span.Slice(start, length));
+                    } else {
+                        decoded = e.GetString(span.Slice(start, length));
                     }
                 }
             } catch (DecoderFallbackException ex) {
@@ -2246,10 +2240,12 @@ namespace IronPython.Runtime.Operations {
             public override string GetString(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler());
 
-            public new unsafe string GetString(byte* bytes, int byteCount) {
-                var data = new ReadOnlySpan<byte>(bytes, byteCount);
-                return LiteralParser.ParseString(data, _raw, GetErrorHandler());
-            }
+#if NETCOREAPP
+            public new string GetString(ReadOnlySpan<byte> bytes)
+#else
+            public string GetString(ReadOnlySpan<byte> bytes)
+#endif
+                => LiteralParser.ParseString(bytes, _raw, GetErrorHandler());
 
             public override unsafe int GetCharCount(byte* bytes, int count)
                 => LiteralParser.ParseString(new ReadOnlySpan<byte>(bytes, count), _raw, GetErrorHandler()).Length;
@@ -2816,6 +2812,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        #endregion
+#endregion
     }
 }

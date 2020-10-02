@@ -296,12 +296,14 @@ namespace IronPython.Runtime {
                 if (!(encoder.Fallback is PythonEncoderFallback) && encoding.EncoderFallback is PythonEncoderFallback) {
                     // Non-conformant Encoder implementation, the challenge is to get to the fallback buffer used by such encoder.
 
-                    // Possibility 1: _pass1encoder is EncoderNLS .
+                    // Possibility 1: _pass1encoder is EncoderNLS (or its subclass).
                     // This weirdo (.NET Core only) does not use Fallback and FallbackBuffer properties from its Encoder base class;
                     // it redefines them as new properties and uses them instead.
                     // Although the new FallbackBuffer is public, it is not easilly accessible because the EncoderNLS class is internal.
                     // One way of accessing it is by reflection. This will be handled by GetPythonEncoderFallbackBuffer()
-                    if (encoder.GetType().FullName == "System.Text.EncoderNLS") return encoder;
+                    for (Type? et = encoder.GetType(); et != null && et.FullName != "System.Text.Encoder"; et = et.BaseType) {
+                        if (et.FullName == "System.Text.EncoderNLS") return encoder;
+                    }
 
                     // Possibility 2: _pass1encoder is DefaultEncoder or another stateless encoder;
                     // This makes sense only if the encoding process of the given encoding is stateless too.
@@ -309,7 +311,7 @@ namespace IronPython.Runtime {
                     // However, such encoding may still be useful in some specifc cases, like non-incremental encoding
                     // or if the input is guaranteed to never contain surrogate pairs.
                     // We use ProxyEncoder to access EncoderFallbackBuffer used by such stateless encoder.
-                    encoder = new ProxyEncoder(encoding);
+                    return new ProxyEncoder(encoding);
 
                     // Possibility 3: Some 3rd party non-compliant encoder. Too bad...
                 }
@@ -322,7 +324,7 @@ namespace IronPython.Runtime {
                 // This should be as simple as enc.FallbackBuffer as PythonEncoderFallbackBuffer
                 // but it requires a workaround for a design oddity in System.Text.EncoderNLS on .NET Core
                 var fbuf = enc.FallbackBuffer as PythonEncoderFallbackBuffer;
-#if NETCOREAPP
+#if NETCOREAPP || NETSTANDARD
                 fbuf ??= enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonEncoderFallbackBuffer;
 #endif
                 return fbuf;
@@ -687,19 +689,22 @@ namespace IronPython.Runtime {
                 if (!(decoder.Fallback is PythonDecoderFallback) && encoding.DecoderFallback is PythonDecoderFallback) {
                     // Non-conformant Decoder implementation, the challenge is to get to the fallback buffer used by such decoder.
                     // See notes at PythonEncoder.GetEncoder(...)
-                    if (decoder.GetType().FullName == "System.Text.DecoderNLS") return decoder;
-                    decoder = new ProxyDecoder(encoding);
+                    for (Type? dt = decoder.GetType(); dt != null && dt.FullName != "System.Text.Decoder"; dt = dt.BaseType) {
+                        if (dt.FullName == "System.Text.DecoderNLS") return decoder;
+                    }
+
+                    return new ProxyDecoder(encoding);
                 }
                 return decoder;
             }
 
-            private static PythonDecoderFallbackBuffer? GetPythonDecoderFallbackBuffer(Decoder? enc) {
-                if (enc == null) return null;
+            private static PythonDecoderFallbackBuffer? GetPythonDecoderFallbackBuffer(Decoder? dec) {
+                if (dec == null) return null;
 
                 // see also PythonEncoder.GetPythonEncoderFallbackBuffer(...)
-                var fbuf = enc.FallbackBuffer as PythonDecoderFallbackBuffer;
-#if NETCOREAPP
-                fbuf ??= enc.GetType().GetProperty(nameof(enc.FallbackBuffer))?.GetValue(enc) as PythonDecoderFallbackBuffer;
+                var fbuf = dec.FallbackBuffer as PythonDecoderFallbackBuffer;
+#if NETCOREAPP || NETSTANDARD
+                fbuf ??= dec.GetType().GetProperty(nameof(dec.FallbackBuffer))?.GetValue(dec) as PythonDecoderFallbackBuffer;
 #endif
                 return fbuf;
             }
@@ -715,7 +720,7 @@ namespace IronPython.Runtime {
             public override unsafe int GetCharCount(byte* bytes, int count, bool flush) {
                 int numChars;
 
-                var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
+                var fbuf1 = GetPythonDecoderFallbackBuffer(_pass1decoder);
                 fbuf1?.PrepareIncrement(forDecoding: false);
                 numChars = _pass1decoder.GetCharCount(bytes, count, flush);
                 fbuf1?.FinalizeIncrement(count, flush);
@@ -746,8 +751,8 @@ namespace IronPython.Runtime {
 #else
             public int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool flush) {
 #endif
-                var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
-                var fbuf2 = _pass2decoder?.FallbackBuffer as PythonDecoderFallbackBuffer;
+                var fbuf1 = GetPythonDecoderFallbackBuffer(_pass1decoder);
+                var fbuf2 = GetPythonDecoderFallbackBuffer(_pass2decoder);
                 fbuf1?.PrepareIncrement(forDecoding: true);
                 int? surIdxStart = fbuf1?.FallbackCharCount;
 
@@ -761,7 +766,7 @@ namespace IronPython.Runtime {
                 // Lazy creation of _pass2decoder
                 if (_pass2decoder == null) {
                     _pass2decoder = GetDecoder(_parentEncoding.Pass2Encoding);
-                    fbuf2 = (PythonDecoderFallbackBuffer)_pass2decoder.FallbackBuffer;
+                    fbuf2 = GetPythonDecoderFallbackBuffer(_pass2decoder);
                 }
                 // fbuf2 is not null here because fbuf1 is not null and Pass1Encoding and Pass2Encoding are identical clones
                 fbuf2!.Data = fbuf1.Data;
@@ -786,7 +791,7 @@ namespace IronPython.Runtime {
 
             // used by IronPython
             public string GetString(IPythonBuffer input, int index, int count) {
-                var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
+                var fbuf1 = GetPythonDecoderFallbackBuffer(_pass1decoder);
 
                 // This allows for UnicodeDecodeError, if occurred, to contain the whole input
                 if (fbuf1 != null) fbuf1.Data = input;
@@ -1349,7 +1354,9 @@ namespace IronPython.Runtime {
                 => new PythonHandlerDecoderFallbackBuffer(this.IsPass1, (PythonErrorHandlerEncoding)this.Encoding);
 
             private class PythonHandlerDecoderFallbackBuffer : PythonDecoderFallbackBuffer {
-                private const int MinNumLookbackBytes = 10;
+                // This constant should be small but at least as large
+                // as the longest encoded sequence generated by any codec for any rune, minus one
+                private const int MinNumLookbackBytes = 8;
 
                 private readonly PythonErrorHandlerEncoding _encoding;
                 private object? _handler;
@@ -1373,7 +1380,8 @@ namespace IronPython.Runtime {
                         if (Data != null) {
                             if (index < 0) {
                                 // corner case, the unknown data starts at the end of the previous increment (or earlier)
-                                if (_previousData.Length < -index) throw new NotImplementedException("Not enough lookback bytes to process decoding of this increment");
+                                if (_previousData.Length < -index)
+                                    throw new NotImplementedException($"Not enough lookback bytes to process decoding of this increment, increase '{nameof(MinNumLookbackBytes)}'");
                                 var dataSpan = Data.AsReadOnlySpan();
                                 var extData = new byte[-index + dataSpan.Length];
                                 Array.Copy(_previousData, _previousData.Length + index, extData, 0, -index);
@@ -1518,6 +1526,16 @@ namespace IronPython.Runtime {
 
 #if !NETCOREAPP
     // TODO: Move to IronPython.Runtime.Text
+
+    internal static class EncodingExtensions {
+        public static unsafe string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes) {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes)) {
+                return encoding.GetString(bytesPtr, bytes.Length);
+            }
+
+        }
+    }
+
     internal static class EncoderExtensions {
         public static unsafe int GetByteCount(this Encoder encoder, ReadOnlySpan<char> chars, bool flush) {
             fixed (char* pChars = &MemoryMarshal.GetReference(chars)) {

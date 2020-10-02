@@ -588,7 +588,7 @@ class CodecTest(IronPythonTestCase):
             ('abc€xyzabc₭₮xyzabc₯₰₱', 38),
             ('abc€xyzabc₭₮xyzabc₯₰₱x', 39),
             ('abc€xyzabc₭₮xyzabc₯₰₱xy', 40),
-            ('abc€xyzabc₭₮xyzabc₯₰₱xyz', 41)            
+            ('abc€xyzabc₭₮xyzabc₯₰₱xyz', 41)
         ]
 
         for i in range(len(b) + 1):
@@ -921,7 +921,8 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.utf_8_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
         self.assertEqual(codecs.ascii_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
         self.assertEqual(codecs.charmap_decode(b"a\xFF\xFEz", 'test_dec_sur', {ord('a'): 'a', ord('z'): 'z'}), ("a\uDDEE\uDDEEz", 4))
-        self.assertEqual(b"a\x81\x82z".decode('iso-2022-jp', 'test_dec_sur'), "a\uDDEE\uDDEEz")
+        if not is_mono: # 'iso-2022-jp' is not working well on Mono
+            self.assertEqual(b"a\x81\x82z".decode('iso-2022-jp', 'test_dec_sur'), "a\uDDEE\uDDEEz")
 
         # test encoding error handler that produces replacement bytes
         def test_encoding_error_byteshandler(uee): return (b"*" * (uee.end - uee.start), uee.end)

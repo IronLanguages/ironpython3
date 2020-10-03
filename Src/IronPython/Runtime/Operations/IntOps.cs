@@ -528,7 +528,7 @@ namespace IronPython.Runtime.Operations {
             return Bytes.Make(res.ToArray());
         }
 
-        public static BigInteger from_bytes([BytesLike]IList<byte> bytes, string byteorder, bool signed=false) {
+        public static BigInteger from_bytes([NotNull, BytesLike]IList<byte> bytes, string byteorder, bool signed=false) {
             // TODO: signed should be a keyword only argument
             // TODO: return int when possible?
 

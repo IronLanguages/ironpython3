@@ -336,6 +336,13 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.raw_unicode_escape_decode(b"", None), ("", 0))
         self.assertRaises(UnicodeDecodeError, codecs.raw_unicode_escape_decode, b"\\u", None)
 
+    def test_raw_unicode_escape_decode_errors_custom(self):
+        def test_encoding_error_plushandler(ue):
+            return ("+" * (ue.end - ue.start), ue.end)
+
+        codecs.register_error('test_plus', test_encoding_error_plushandler)
+        self.assertEqual(codecs.raw_unicode_escape_decode(b"abc\\uxyz", 'test_plus'), ("abc++xyz", 8))
+
     def test_raw_unicode_escape_encode(self):
         new_str, num_processed = codecs.raw_unicode_escape_encode("abc")
         self.assertEqual(new_str, b'abc')
@@ -471,6 +478,30 @@ class CodecTest(IronPythonTestCase):
         for sample in test_data:
             self.assertEqual(codecs.unicode_escape_decode(sample[0], 'replace')[0], sample[1])
 
+    def test_unicode_escape_decode_errors_custom(self):
+        def test_encoding_error_starhandler(ue):
+            return ("*" * (ue.end - ue.start), ue.end)
+        codecs.register_error('test_star', test_encoding_error_starhandler)
+
+        test_data = [
+            (b"abc\\xyz", "abc**yz"),
+            (b"abc\\x0xyz", "abc***xyz"),
+            (b"abc\\u20klm\xffxyz", "abc****klm\xffxyz"),
+            (b"abc\\U0001F44xyz", "abc*********xyz"),
+            (b"abc\\U00110011xyz", "abc**********xyz"),
+            (b"abc\\N{EURO}xyz", "abc********xyz"),
+            (b"abc\\Nxyz", "abc**xyz"),
+            (b"abc\\N", "abc**"),
+            (b"abc\\N{xyz", "abc******"),
+            (b"abc\\N{", "abc***"),
+            (b"abc\\N{}xyz", "abc***}xyz"),
+            (b"abc\\N{}", "abc***}"),
+            (b"abc\\", "abc*"),
+        ]
+
+        for sample in test_data:
+            self.assertEqual(codecs.unicode_escape_decode(sample[0], 'test_star')[0], sample[1], sample[0])
+
     def test_unicode_escape_encode(self):
         new_str, num_processed = codecs.unicode_escape_encode("\\a\tbc\r\n")
         self.assertEqual(new_str, b'\\\\a\\tbc\\r\\n')
@@ -557,7 +588,7 @@ class CodecTest(IronPythonTestCase):
             ('abc€xyzabc₭₮xyzabc₯₰₱', 38),
             ('abc€xyzabc₭₮xyzabc₯₰₱x', 39),
             ('abc€xyzabc₭₮xyzabc₯₰₱xy', 40),
-            ('abc€xyzabc₭₮xyzabc₯₰₱xyz', 41)            
+            ('abc€xyzabc₭₮xyzabc₯₰₱xyz', 41)
         ]
 
         for i in range(len(b) + 1):
@@ -872,36 +903,60 @@ class CodecTest(IronPythonTestCase):
         codecs.register_error("garbage1dup", garbage_error1)
 
         # test error handler that produces a replacement string
-        def test_encoding_error_strhandler(uee): return ("*" * (uee.end - uee.start), uee.end)
-        codecs.register_error('enc_str', test_encoding_error_strhandler)
-        self.assertEqual(codecs.lookup_error('enc_str'), test_encoding_error_strhandler)
-        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_str'), (b"a**z", 4))
-        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_str'), (b"a**z", 4))
-        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_str'), b"a**z")
+        def test_encoding_error_strhandler(ue): return ("*" * (ue.end - ue.start), ue.end)
+        codecs.register_error('test_enc_str', test_encoding_error_strhandler)
+        self.assertEqual(codecs.lookup_error('test_enc_str'), test_encoding_error_strhandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'test_enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'test_enc_str'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'test_enc_str'), b"a**z")
+
+        self.assertEqual(codecs.utf_8_decode(b"a\xFF\xFEz", 'test_enc_str'), ("a**z", 4))
+        self.assertEqual(codecs.ascii_decode(b"a\xFF\xFEz", 'test_enc_str'), ("a**z", 4))
+        self.assertEqual(codecs.charmap_decode(b"a\xFF\xFEz", 'test_enc_str', {ord('a'): 'a', ord('z'): 'z'}), ("a**z", 4))
+
+        # test error handler that produces a replacement string containing surrogates
+        def test_encoding_error_surhandler(ue): return ("\uDDEE" * (ue.end - ue.start), ue.end)
+        codecs.register_error('test_dec_sur', test_encoding_error_surhandler)
+        self.assertEqual(codecs.lookup_error('test_dec_sur'), test_encoding_error_surhandler)
+        self.assertEqual(codecs.utf_8_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
+        self.assertEqual(codecs.ascii_decode(b"a\xFF\xFEz", 'test_dec_sur'), ("a\uDDEE\uDDEEz", 4))
+        self.assertEqual(codecs.charmap_decode(b"a\xFF\xFEz", 'test_dec_sur', {ord('a'): 'a', ord('z'): 'z'}), ("a\uDDEE\uDDEEz", 4))
+        if not is_mono: # 'iso-2022-jp' is not working well on Mono
+            self.assertEqual(b"a\x81\x82z".decode('iso-2022-jp', 'test_dec_sur'), "a\uDDEE\uDDEEz")
 
         # test encoding error handler that produces replacement bytes
         def test_encoding_error_byteshandler(uee): return (b"*" * (uee.end - uee.start), uee.end)
-        codecs.register_error('enc_bytes', test_encoding_error_byteshandler)
-        self.assertEqual(codecs.lookup_error('enc_bytes'), test_encoding_error_byteshandler)
-        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'enc_bytes'), (b"a**z", 4))
-        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'enc_bytes'), (b"a**z", 4))
-        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'enc_bytes'), b"a**z")
+        codecs.register_error('test_enc_bytes', test_encoding_error_byteshandler)
+        self.assertEqual(codecs.lookup_error('test_enc_bytes'), test_encoding_error_byteshandler)
+        self.assertEqual(codecs.latin_1_encode("a\u20AC\u20AAz", 'test_enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.utf_8_encode("a\uDDDD\uD800z", 'test_enc_bytes'), (b"a**z", 4))
+        self.assertEqual(codecs.encode("a\u20AC\u20AAz", "iso8859-2", 'test_enc_bytes'), b"a**z")
 
         # test encoding error handler that produces replacement bytearray
         def test_encoding_error_bytearrayhandler(uee): return (bytearray(b"*" * (uee.end - uee.start)), uee.end)
-        codecs.register_error('enc_bytearray', test_encoding_error_bytearrayhandler)
-        self.assertEqual(codecs.lookup_error('enc_bytearray'), test_encoding_error_bytearrayhandler)
+        codecs.register_error('test_enc_bytearray', test_encoding_error_bytearrayhandler)
+        self.assertEqual(codecs.lookup_error('test_enc_bytearray'), test_encoding_error_bytearrayhandler)
         self.assertRaisesRegex(TypeError, r"^encoding error handler must return \(str/bytes, int\) tuple$",
-            codecs.latin_1_encode, "a\u20AC\u20AAz", 'enc_bytearray')
+            codecs.latin_1_encode, "a\u20AC\u20AAz", 'test_enc_bytearray')
 
-        # test that error handler receives the original srring (i.e. no data copying happening)
-        s = "a\u20AC\u20AAz"
-        def test_encoding_error_nocopyhandler(uee):
-            self.assertIs(uee.object, s)
-            return ("", uee.end)
-        codecs.register_error('enc_nocopy', test_encoding_error_nocopyhandler)
-        self.assertEqual(codecs.latin_1_encode(s, 'enc_nocopy'), (b"az", 4))
-        self.assertEqual(codecs.encode(s, "iso8859-2", 'enc_nocopy'), b"az")
+        # test that error handler receives the original string (i.e. no data copying happening)
+        data = "a\u20AC\u20AAz"
+        def test_encoding_error_nocopyhandler(ue):
+            self.assertIs(ue.object, data)
+            return ("", ue.end)
+        codecs.register_error('test_enc_nocopy', test_encoding_error_nocopyhandler)
+        self.assertEqual(codecs.latin_1_encode(data, 'test_enc_nocopy'), (b"az", 4))
+        self.assertEqual(codecs.encode(data, "iso8859-2", 'test_enc_nocopy'), b"az")
+
+        # test that error handler receives the equivalent bytes object
+        data = b"a\xFF\xFEz"
+        def test_encoding_error_eqhandler(ue):
+            self.assertEqual(ue.object, data)
+            return ("", ue.end)
+        codecs.register_error('test_dec_eq', test_encoding_error_eqhandler)
+        self.assertEqual(codecs.utf_8_decode(data, 'test_dec_eq'), ("az", 4))
+        self.assertEqual(codecs.ascii_decode(data, 'test_dec_eq'), ("az", 4))
+        self.assertEqual(codecs.charmap_decode(data, 'test_dec_eq', {ord('a'): 'a', ord('z'): 'z'}), ("az", 4))
 
     def test_lookup_error(self):
         #sanity
@@ -992,7 +1047,7 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.lookup_error('replace'), codecs.replace_errors)
 
         self.assertRaises(TypeError, codecs.lookup_error, None)
-        self.assertRaises(TypeError, codecs.register_error, None, garbage_error1)
+        self.assertRaises(TypeError, codecs.register_error, None, test_replace)
         self.assertRaises(TypeError, codecs.register_error, "blah none garbage", None)
 
     #TODO: @skip("multiple_execute")

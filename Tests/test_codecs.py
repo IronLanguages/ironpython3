@@ -120,7 +120,7 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual(codecs.latin_1_decode(mem), ("abc", 3))
         self.assertEqual(codecs.latin_1_decode(rom), ("abc", 3))
 
-    def test_interop_ascii_encode_exeption(self):
+    def test_interop_ascii_encode_exception(self):
         def check_error1(encoding, name):
             # exception on a single character
             with self.assertRaises(UnicodeEncodeError) as uee:
@@ -151,7 +151,7 @@ class CodecsTest(unittest.TestCase):
         if not is_cli: # TODO: Replace PythonAsciiEncoding with ASCIIEncoding
             check_error2('ascii', 'ascii')
 
-    def test_interop_utf8_encode_exeption(self):
+    def test_interop_utf8_encode_exception(self):
         def check_error(encoding, name):
             # exception on a lone surrogate
             with self.assertRaises(UnicodeEncodeError) as uee:
@@ -172,7 +172,7 @@ class CodecsTest(unittest.TestCase):
         else:
             check_error('utf-8-sig', 'utf-8')
 
-    def test_interop_utf16_encode_exeption(self):
+    def test_interop_utf16_encode_exception(self):
         def check_error(encoding, name):
             # exception on a lone surrogate
             with self.assertRaises(UnicodeEncodeError) as uee:
@@ -188,7 +188,7 @@ class CodecsTest(unittest.TestCase):
 
         check_error('utf-16', 'utf-16') # TODO: should be 'utf-16LE' (CPython: 'utf-16-le')
 
-    def test_interop_ascii_decode_exeption(self):
+    def test_interop_ascii_decode_exception(self):
         def check_error(encoding, name):
             with self.assertRaises(UnicodeDecodeError) as ude:
                 b"abc\xffxyz".decode(encoding)
@@ -203,7 +203,7 @@ class CodecsTest(unittest.TestCase):
 
         check_error('ascii', 'ascii')
 
-    def test_interop_utf8_decode_exeption(self):
+    def test_interop_utf8_decode_exception(self):
         def check_error(encoding, name):
             with self.assertRaises(UnicodeDecodeError) as ude:
                 # broken input (� is 0xff): "abć�ẋyz"
@@ -221,7 +221,7 @@ class CodecsTest(unittest.TestCase):
 
         check_error('utf-8', 'utf-8')
 
-    def test_interop_utf8bom_decode_exeption(self):
+    def test_interop_utf8bom_decode_exception(self):
         def check_error(encoding, name):
             with self.assertRaises(UnicodeDecodeError) as ude:
                 # broken input (� is 0xff): BOM + "abć�ẋyz"
@@ -238,7 +238,7 @@ class CodecsTest(unittest.TestCase):
 
         check_error('utf-8', 'utf-8')
 
-    def test_interop_utf8sigbom_decode_exeption(self):
+    def test_interop_utf8sigbom_decode_exception(self):
         def check_error(encoding, name):
             with self.assertRaises(UnicodeDecodeError) as ude:
                 # broken input (� is 0xff): BOM_UTF8 + "abć�ẋyz"

@@ -164,6 +164,8 @@ namespace IronPython.Runtime {
                 return (Bytes)o;
             } else if (TryInvokeBytesOperator(context, o, out Bytes? res)) {
                 return res;
+            } else if (o is string || o is ExtensibleString) {
+                throw PythonOps.TypeError("cannot convert unicode object to bytes");
             } else {
                 return new Bytes(ByteOps.GetBytes(o, useHint: true, context).ToArray());
             }

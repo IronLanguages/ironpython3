@@ -45,11 +45,11 @@ namespace IronPython.Modules {
 
         public static PythonTuple ascii_decode(CodeContext context, [NotNull]IBufferProtocol input, string? errors = null) {
             using var buffer = input.GetBuffer();
-            return DoDecode(context, "ascii", PythonAsciiEncoding.Instance, buffer, errors).ToPythonTuple();
+            return DoDecode(context, "ascii", Encoding.ASCII, buffer, errors).ToPythonTuple();
         }
 
         public static PythonTuple ascii_encode(CodeContext context, [NotNull]string input, string? errors = null)
-            => DoEncode(context, "ascii", PythonAsciiEncoding.Instance, input, errors).ToPythonTuple();
+            => DoEncode(context, "ascii", Encoding.ASCII, input, errors).ToPythonTuple();
 
         #endregion
 

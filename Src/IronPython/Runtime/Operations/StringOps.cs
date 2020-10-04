@@ -1951,7 +1951,7 @@ namespace IronPython.Runtime.Operations {
                 d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]
                     = d["cp28591"] = d["28591"] = d["cp819"] = d["819"]
                     = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"]        = makeEncodingProxy(() => Latin1Encoding);
-                d["cp20127"] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => PythonAsciiEncoding.Instance);
+                d["cp20127"] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => Encoding.ASCII);
                 d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"]   = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
                 d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"]                = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 d["utf_8_sig"]                                                 = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));

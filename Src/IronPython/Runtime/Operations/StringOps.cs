@@ -1682,12 +1682,27 @@ namespace IronPython.Runtime.Operations {
             return ch == '+' || ch == '-';
         }
 
-        internal static string GetEncodingName(Encoding encoding, bool normalize = true) {
+        internal static string GetEncodingName(Encoding encoding, bool normalize = true, string defaultName = "unknown") {
             string? name = null;
 
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays tend to match CPython's terse names
             if (encoding.CodePage != 0) {
+                switch (encoding.CodePage) {
+
+                    // recognize a few common cases
+                    case 1200: name = (defaultName == "utf-16" && BitConverter.IsLittleEndian) ? defaultName : "utf-16-le"; break;
+                    case 1201: name = (defaultName == "utf-16" && !BitConverter.IsLittleEndian) ? defaultName : "utf-16-be"; break;
+
+                    case 12000: name = (defaultName == "utf-32" && BitConverter.IsLittleEndian) ? defaultName : "utf-32-le"; break;
+                    case 12001: name = (defaultName == "utf-32" && !BitConverter.IsLittleEndian) ? defaultName : "utf-32-be"; break;
+
+                    case 20127: name = "ascii"; break;
+                    case 28591: name = "latin-1"; break;
+
+                    case 65000: name = "utf-7"; break;
+                    case 65001: name = "utf-8"; break;
+                }
 #if !NETCOREAPP && !NETSTANDARD
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
@@ -1699,30 +1714,18 @@ namespace IronPython.Runtime.Operations {
 #endif
 
                 if (name == null) {
-                    switch (encoding.CodePage) {
-
-                        // recognize a few common cases
-                        case 1200: name = "utf-16LE"; break;
-                        case 1201: name = "utf-16BE"; break;
-
-                        case 12000: name = "utf-32LE"; break;
-                        case 12001: name = "utf-32BE"; break;
-
-                        case 20127: name = "us-ascii"; break;
-                        case 28591: name = "iso-8859-1"; break;
-
-                        case 65000: name = "utf-7"; break;
-                        case 65001: name = "utf-8"; break;
-
-                        // otherwise use a code page number which also matches CPython
-                        default: name = "cp" + encoding.CodePage; break;
-                    }
+                    // otherwise use a code page number which also matches CPython
+                    name = "cp" + encoding.CodePage;
                 }
             }
 
             if (name == null) {
                 // otherwise just finally fall back to the human readable name
-                name = encoding.EncodingName;
+                try {
+                    name = encoding.EncodingName; // may throw on .NET Core for some encodings
+                } catch (NotSupportedException) {
+                    name = defaultName;
+                }
             }
 
             return normalize ? NormalizeEncodingName(name) : name;
@@ -1802,9 +1805,9 @@ namespace IronPython.Runtime.Operations {
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
                 case "ignore": e = setFallback(e, new DecoderReplacementFallback(string.Empty)); break;
-                case "surrogateescape": e = pe = new PythonSurrogateEscapeEncoding(e, encoding); break;
-                case "surrogatepass": e = pe = new PythonSurrogatePassEncoding(e, encoding); break;
-                default: e = pe = new PythonErrorHandlerEncoding(context, e, encoding, errors); break;
+                case "surrogateescape": e = pe = new PythonSurrogateEscapeEncoding(e); break;
+                case "surrogatepass": e = pe = new PythonSurrogatePassEncoding(e); break;
+                default: e = pe = new PythonErrorHandlerEncoding(context, e, errors); break;
             }
 
             string decoded = string.Empty;
@@ -1821,7 +1824,7 @@ namespace IronPython.Runtime.Operations {
                 }
             } catch (DecoderFallbackException ex) {
                 // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
-                if (!ex.Data.Contains("encoding")) ex.Data["encoding"] = encoding;
+                if (!ex.Data.Contains("encoding")) ex.Data["encoding"] = GetEncodingName(e, normalize: false, defaultName: encoding);
                 if (!ex.Data.Contains("object")) ex.Data["object"] = Bytes.Make(span.Slice(start, length).ToArray()); ;
                 throw;
             }
@@ -1878,9 +1881,9 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace": e = setFallback(e, new BackslashEncoderReplaceFallback()); break;
                 case "xmlcharrefreplace": e = setFallback(e, new XmlCharRefEncoderReplaceFallback()); break;
                 case "ignore": e = setFallback(e, new EncoderReplacementFallback(string.Empty)); break;
-                case "surrogateescape": e = new PythonSurrogateEscapeEncoding(e, encoding); break;
-                case "surrogatepass": e = new PythonSurrogatePassEncoding(e, encoding); break;
-                default: e = new PythonErrorHandlerEncoding(context, e, encoding, errors); break;
+                case "surrogateescape": e = new PythonSurrogateEscapeEncoding(e); break;
+                case "surrogatepass": e = new PythonSurrogatePassEncoding(e); break;
+                default: e = new PythonErrorHandlerEncoding(context, e, errors); break;
             }
 
             byte[]? preamble = includePreamble ? e.GetPreamble() : null;
@@ -1893,7 +1896,7 @@ namespace IronPython.Runtime.Operations {
                 }
                 e.GetBytes(s, 0, s.Length, bytes, preambleLen);
             } catch (EncoderFallbackException ex) {
-                if (!ex.Data.Contains("encoding")) ex.Data["encoding"] = encoding;
+                if (!ex.Data.Contains("encoding")) ex.Data["encoding"] = GetEncodingName(e, normalize: false, defaultName: encoding);
                 if (!ex.Data.Contains("object")) ex.Data["object"] = s;
                 throw;
             }

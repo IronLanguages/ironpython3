@@ -140,11 +140,11 @@ class SourceEncodingTest(unittest.TestCase):
         with self.assertRaises(SyntaxError) as c:
             compile(input, "<string>", "exec")
         if sys.implementation.name == 'ironpython':
-            expected = "'us-ascii' codec can't decode byte 0xe2 in position 16: " \
-                "Unable to translate bytes"
+            expected = "'ascii' codec can't decode byte 0xe2 in position 16: " \
+                       "Unable to translate bytes"
         else:
             expected = "'ascii' codec can't decode byte 0xe2 in position 16: " \
-                    "ordinal not in range(128)"
+                       "ordinal not in range(128)"
         self.assertTrue(c.exception.args[0].startswith(expected),
                         msg=c.exception.args[0])
 

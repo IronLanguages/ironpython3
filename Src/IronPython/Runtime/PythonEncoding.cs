@@ -49,18 +49,15 @@ namespace IronPython.Runtime {
         private Encoding Pass1Encoding { get; }
         private Encoding Pass2Encoding { get; }
 
-        private readonly string _name;
         private PythonEncoder? _residentEncoder;
         private PythonDecoder? _residentDecoder;
 
-        public PythonEncoding(Encoding encoding, PythonEncoderFallback encoderFallback, PythonDecoderFallback decoderFallback, string name)
+        public PythonEncoding(Encoding encoding, PythonEncoderFallback encoderFallback, PythonDecoderFallback decoderFallback)
             : base(0, encoderFallback, decoderFallback) {
 
             if (encoding == null) throw new ArgumentNullException(nameof(encoding));
             if (encoderFallback == null) throw new ArgumentNullException(nameof(encoderFallback));
             if (decoderFallback == null) throw new ArgumentNullException(nameof(decoderFallback));
-
-            _name = name ?? "<unknown>";
 
             try {
                 unsafe {
@@ -185,8 +182,7 @@ namespace IronPython.Runtime {
         public override int CodePage => Pass1Encoding.CodePage;
         public override int WindowsCodePage => Pass1Encoding.WindowsCodePage;
 
-        public string PythonEncodingName => _name;
-        public override string EncodingName => Pass1Encoding.EncodingName ?? _name;
+        public override string EncodingName => StringOps.GetEncodingName(Pass1Encoding, normalize: false);
 
         public override string HeaderName => Pass1Encoding.HeaderName;
         public override string BodyName => Pass1Encoding.BodyName;
@@ -936,8 +932,8 @@ namespace IronPython.Runtime {
         // Defined in PEP 383
         private const ushort LoneSurrogateBase = 0xdc00;
 
-        public PythonSurrogateEscapeEncoding(Encoding encoding, string? name = null)
-            : base(encoding, new SurrogateEscapeEncoderFallback(), new SurrogateEscapeDecoderFallback(), name ?? encoding.WebName) { }
+        public PythonSurrogateEscapeEncoding(Encoding encoding)
+            : base(encoding, new SurrogateEscapeEncoderFallback(), new SurrogateEscapeDecoderFallback()) { }
 
         public class SurrogateEscapeEncoderFallback : PythonEncoderFallback {
             public override int MaxCharCount => 1;
@@ -1016,8 +1012,8 @@ namespace IronPython.Runtime {
         private const byte Utf8ContByte = 0b_10_000000;
         private const byte Utf8ContBytePayload = 0b_111111;
 
-        public PythonSurrogatePassEncoding(Encoding encoding, string? name = null)
-            : base(encoding, new SurrogatePassEncoderFallback(), new SurrogatePassDecoderFallback(), name ?? encoding.WebName) { }
+        public PythonSurrogatePassEncoding(Encoding encoding)
+            : base(encoding, new SurrogatePassEncoderFallback(), new SurrogatePassDecoderFallback()) { }
 
         public class SurrogatePassEncoderFallback : PythonEncoderFallback {
             public override int MaxCharCount => 1;
@@ -1272,8 +1268,8 @@ namespace IronPython.Runtime {
         private readonly CodeContext _context;
         private readonly string _errors;
 
-        public PythonErrorHandlerEncoding(CodeContext context, Encoding encoding, string name, string errors)
-            : base(encoding, new PythonHandlerEncoderFallback(), new PythonHandlerDecoderFallback(), name) {
+        public PythonErrorHandlerEncoding(CodeContext context, Encoding encoding, string errors)
+            : base(encoding, new PythonHandlerEncoderFallback(), new PythonHandlerDecoderFallback()) {
             _context = context;
             _errors = errors;
         }

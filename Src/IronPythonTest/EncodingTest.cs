@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 using NUnit.Framework;
 using System.Linq;
 using System.Text;
@@ -26,7 +27,7 @@ namespace IronPythonTest {
             }
 
             [Test] public void Test256WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
-            [Test] public void Test256WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
+            [Test] public void Test256WithLatin1() => TestRoundTrip(StringOps.Latin1Encoding, _bytes);
             [Test] public void Test256WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void Test256WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
         }
@@ -43,7 +44,7 @@ namespace IronPythonTest {
             }
 
             [Test] public void TestValidUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
-            [Test] public void TestValidUtf8WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
+            [Test] public void TestValidUtf8WithLatin1() => TestRoundTrip(StringOps.Latin1Encoding, _bytes);
             [Test] public void TestValidUtf8WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void TestValidUtf8WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
         }
@@ -62,7 +63,7 @@ namespace IronPythonTest {
             }
 
             [Test] public void TestBrokenUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
-            [Test] public void TestBrokenUtf8WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
+            [Test] public void TestBrokenUtf8WithLatin1() => TestRoundTrip(StringOps.Latin1Encoding, _bytes);
             [Test] public void TestBrokenUtf8WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void TestBrokenUtf8WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
         }
@@ -115,10 +116,10 @@ namespace IronPythonTest {
 
 
             [Test]
-            public void TestCompare256WithPythonAscii() {
-                Encoding penc = new PythonSurrogateEscapeEncoding(PythonAsciiEncoding.Instance);
+            public void TestCompare256WithLatin1() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(StringOps.Latin1Encoding);
                 char[] chars = penc.GetChars(bytes);
-                string python_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\udc80\udc81\udc82\udc83\udc84\udc85\udc86\udc87\udc88\udc89\udc8a\udc8b\udc8c\udc8d\udc8e\udc8f\udc90\udc91\udc92\udc93\udc94\udc95\udc96\udc97\udc98\udc99\udc9a\udc9b\udc9c\udc9d\udc9e\udc9f\udca0\udca1\udca2\udca3\udca4\udca5\udca6\udca7\udca8\udca9\udcaa\udcab\udcac\udcad\udcae\udcaf\udcb0\udcb1\udcb2\udcb3\udcb4\udcb5\udcb6\udcb7\udcb8\udcb9\udcba\udcbb\udcbc\udcbd\udcbe\udcbf\udcc0\udcc1\udcc2\udcc3\udcc4\udcc5\udcc6\udcc7\udcc8\udcc9\udcca\udccb\udccc\udccd\udcce\udccf\udcd0\udcd1\udcd2\udcd3\udcd4\udcd5\udcd6\udcd7\udcd8\udcd9\udcda\udcdb\udcdc\udcdd\udcde\udcdf\udce0\udce1\udce2\udce3\udce4\udce5\udce6\udce7\udce8\udce9\udcea\udceb\udcec\udced\udcee\udcef\udcf0\udcf1\udcf2\udcf3\udcf4\udcf5\udcf6\udcf7\udcf8\udcf9\udcfa\udcfb\udcfc\udcfd\udcfe\udcff";
+                string python_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0¡¢£¤¥¦§¨©ª«¬\xad®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ";
                 Assert.AreEqual(python_chars, chars);
             }
 
@@ -227,7 +228,7 @@ namespace IronPythonTest {
             }
 
             [Test]
-            public void TesWithtUtf16() {
+            public void TesWithUtf16() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
                 char[] chars = penc.GetChars(bytes);
                 char[] python_chars = (new[] { 0x0000dcd8, 0x0000dcd9, 0x001069dc, 0x0000dcde, 0x0000dcdf })
@@ -267,7 +268,7 @@ namespace IronPythonTest {
             }
 
             [Test]
-            public void TestIncrementalWithtAscii() {
+            public void TestIncrementalWithAscii() {
                 // intersperse with ASCII letters
                 _bytes = _bytes.SelectMany((b, i) => new[] { (byte)('A' + i), b }).Concat(new[] { (byte)'Z' }).ToArray();
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.ASCII);
@@ -275,15 +276,15 @@ namespace IronPythonTest {
             }
 
             [Test]
-            public void TestIncrementalWithtPythonAscii() {
+            public void TestIncrementalWithLatin1() {
                 // intersperse with ASCII letters
                 _bytes = _bytes.SelectMany((b, i) => new[] { (byte)('A' + i), b }).Concat(new[] { (byte)'Z' }).ToArray();
-                Encoding penc = new PythonSurrogateEscapeEncoding(PythonAsciiEncoding.Instance);
+                Encoding penc = new PythonSurrogateEscapeEncoding(StringOps.Latin1Encoding);
                 SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
 
             [Test]
-            public void TestIncrementalWithtUtf16() {
+            public void TestIncrementalWithUtf16() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
                 SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
@@ -315,28 +316,28 @@ namespace IronPythonTest {
             }
 
             [Test]
-            public void TestEndiannessWithtUtf16LE() {
+            public void TestEndiannessWithUtf16LE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
                 Assert.AreEqual("\u000a\u0000", penc.GetChars(_bytes1));
                 Assert.AreEqual("\u0000\u0a00", penc.GetChars(_bytes2));
             }
 
             [Test]
-            public void TestEndiannessWithtUtf16BE() {
+            public void TestEndiannessWithUtf16BE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.BigEndianUnicode);
                 Assert.AreEqual("\u0a00\u0000", penc.GetChars(_bytes1));
                 Assert.AreEqual("\u0000\u000a", penc.GetChars(_bytes2));
             }
 
             [Test]
-            public void TestEndiannessWithtUtf32LE() {
+            public void TestEndiannessWithUtf32LE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: false, byteOrderMark: false));
                 Assert.AreEqual("\u000a", penc.GetChars(_bytes1));
                 Assert.Throws<DecoderFallbackException>(() => penc.GetChars(_bytes2));
             }
 
             [Test]
-            public void TestEndiannessWithtUtf32BE() {
+            public void TestEndiannessWithUtf32BE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: true, byteOrderMark: false));
                 Assert.Throws<DecoderFallbackException>(() => penc.GetChars(_bytes1));
                 Assert.AreEqual("\u000a", penc.GetChars(_bytes2));
@@ -353,11 +354,11 @@ namespace IronPythonTest {
                 _chars = "+++\udc41++".ToCharArray();
             }
 
-            [Test] public void TestAsciiByteWithtUtf8() => TestAsciiByte(Encoding.UTF8, 1);
-            [Test] public void TestAsciiByteWithtUtf16LE() => TestAsciiByte(Encoding.Unicode, 2);
-            [Test] public void TestAsciiByteWithtUtf16BE() => TestAsciiByte(Encoding.BigEndianUnicode, 2);
-            [Test] public void TestAsciiByteWithtUtf32LE() => TestAsciiByte(new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4);
-            [Test] public void TestAsciiByteWithtUtf32BE() => TestAsciiByte(new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4);
+            [Test] public void TestAsciiByteWithUtf8() => TestAsciiByte(Encoding.UTF8, 1);
+            [Test] public void TestAsciiByteWithUtf16LE() => TestAsciiByte(Encoding.Unicode, 2);
+            [Test] public void TestAsciiByteWithUtf16BE() => TestAsciiByte(Encoding.BigEndianUnicode, 2);
+            [Test] public void TestAsciiByteWithUtf32LE() => TestAsciiByte(new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4);
+            [Test] public void TestAsciiByteWithUtf32BE() => TestAsciiByte(new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4);
 
             public void TestAsciiByte(Encoding codec, int charWidth) {
                 Encoding penc = new PythonSurrogateEscapeEncoding(codec);

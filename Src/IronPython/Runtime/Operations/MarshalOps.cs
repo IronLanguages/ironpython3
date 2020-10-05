@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Operations {
         // True: 'T'
         // False: 'F'
         // Float: 'f', str len, float in str
-        // string: 't', int len, bytes  (ascii)
+        // string: 't', int len, bytes  (ascii) - obsolete, Python 2 legacy, never used for writing
         // string: 'u', int len, bytes (unicode)
         // string: 'R' <id> - refer to interned string
         // StopIteration: 'S'   
@@ -485,7 +485,7 @@ namespace IronPython.Runtime.Operations {
             private double ReadFloatStr () {
                 MoveNext ();
 
-                string str = DecodeString (PythonAsciiEncoding.Instance, ReadBytes (_myBytes.Current));
+                string str = DecodeString (Encoding.ASCII, ReadBytes (_myBytes.Current));
 
                 double res = 0;
                 if (double.TryParse (str, out res)) {
@@ -536,7 +536,8 @@ namespace IronPython.Runtime.Operations {
             }
 
             private object ReadAsciiString () {
-                string res = DecodeString (PythonAsciiEncoding.Instance, ReadBytes (ReadInt32 ()));
+                // Legacy IronPython 2 behavior, accepts Latin-1
+                string res = DecodeString (StringOps.Latin1Encoding, ReadBytes (ReadInt32 ()));
                 _strings[_strings.Count] = res;
                 return res;
             }

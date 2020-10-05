@@ -958,6 +958,14 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.ascii_decode(data, 'test_dec_eq'), ("az", 4))
         self.assertEqual(codecs.charmap_decode(data, 'test_dec_eq', {ord('a'): 'a', ord('z'): 'z'}), ("az", 4))
 
+        # Test that BOM is properly accounted for
+        data = b"a\x00\xDD\xDDz\x00"
+        def test_encoding_error_bomhandler(ue):
+            self.assertEqual(ue.object[ue.start:ue.end], b"\xDD\xDD")
+            return ("", ue.end)
+        codecs.register_error('test_bom', test_encoding_error_bomhandler)
+        self.assertEqual(codecs.utf_16_decode(codecs.BOM_UTF16_LE + data, 'test_bom'), ("az", 8))
+
     def test_lookup_error(self):
         #sanity
         self.assertRaises(LookupError, codecs.lookup_error, "blah garbage xyz")

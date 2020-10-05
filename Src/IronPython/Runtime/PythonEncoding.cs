@@ -790,7 +790,7 @@ namespace IronPython.Runtime {
                 var fbuf1 = GetPythonDecoderFallbackBuffer(_pass1decoder);
 
                 // This allows for UnicodeDecodeError, if occurred, to contain the whole input
-                if (fbuf1 != null) fbuf1.Data = input;
+                if (fbuf1 != null) fbuf1.Data = Tuple.Create(input, index);
 
                 var span = input.AsReadOnlySpan().Slice(index, count);
                 int len = _pass1decoder.GetCharCount(span, flush: true);
@@ -838,7 +838,7 @@ namespace IronPython.Runtime {
             protected bool DecodingMode { get; private set; }
             protected int EncodingCharWidth { get; }
             protected int CodePage { get; }
-            public IPythonBuffer? Data { get; set; }
+            public Tuple<IPythonBuffer, int>? Data { get; set; }
 
             public virtual void PrepareIncrement(bool forDecoding) {
                 if (DecodingMode) {
@@ -1374,22 +1374,24 @@ namespace IronPython.Runtime {
                     int pos;
                     if (_bytesData == null) {
                         if (Data != null) {
+                            IPythonBuffer buf = Data.Item1;
+                            int dataOffset = Data.Item2;
                             if (index < 0) {
                                 // corner case, the unknown data starts at the end of the previous increment (or earlier)
                                 if (_previousData.Length < -index)
                                     throw new NotImplementedException($"Not enough lookback bytes to process decoding of this increment, increase '{nameof(MinNumLookbackBytes)}'");
-                                var dataSpan = Data.AsReadOnlySpan();
+                                var dataSpan = buf.AsReadOnlySpan().Slice(dataOffset);
                                 var extData = new byte[-index + dataSpan.Length];
                                 Array.Copy(_previousData, _previousData.Length + index, extData, 0, -index);
                                 dataSpan.CopyTo(extData.AsSpan(-index));
                                 bytesObj = _bytesData = Bytes.Make(extData);
                                 pos = 0;
                             } else {
-                                if (Data.Object is Bytes bytes && bytes.Count == Data.NumBytes()) {
+                                if (buf.Object is Bytes bytes && bytes.Count == buf.NumBytes() && dataOffset == 0) {
                                     // fast track, no data copy
                                     bytesObj = _bytesData = new Bytes(bytes);
                                 } else {
-                                    bytesObj = _bytesData = Bytes.Make(Data.AsReadOnlySpan().ToArray());
+                                    bytesObj = _bytesData = Bytes.Make(buf.AsReadOnlySpan().Slice(dataOffset).ToArray());
                                 }
                                 pos = index;
                             }
@@ -1402,7 +1404,9 @@ namespace IronPython.Runtime {
                     } else {
                         bytesObj = _bytesData;
                         // if _bytesData is not null, Data is not null also
-                        pos = index + _bytesData.Count - Data!.NumBytes();
+                        IPythonBuffer buf = Data!.Item1;
+                        int dataOffset = Data.Item2;
+                        pos = index + _bytesData.Count - buf.NumBytes() + dataOffset;
                     }
 
                     // create exception object to hand over to the user-function...
@@ -1440,7 +1444,9 @@ namespace IronPython.Runtime {
                         if (flush) {
                             _previousDataLen = 0;
                         } else if (Data != null) {
-                            var span = Data.AsReadOnlySpan();
+                            IPythonBuffer buf = Data!.Item1;
+                            int dataOffset = Data.Item2;
+                            var span = buf.AsReadOnlySpan().Slice(dataOffset);
                             int retain = _previousData.Length - span.Length;
                             if (retain <= 0) {
                                 _previousDataLen = 0;

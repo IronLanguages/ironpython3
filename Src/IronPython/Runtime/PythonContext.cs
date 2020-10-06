@@ -892,7 +892,13 @@ namespace IronPython.Runtime {
 
             if (sourceEncoding == null) {
                 // not autodetected and not declared, hence use default
-                sourceEncoding = defaultEncoding;
+                if (ReferenceEquals(defaultEncoding, StringUtils.DefaultEncoding)) {
+                    // Override DLR default encoding with Python default
+                    sourceEncoding = DefaultEncoding;
+                } else {
+                    // user-provided encoding
+                    sourceEncoding = defaultEncoding;
+                }
             } else {
                 sourceEncoding = (Encoding)sourceEncoding.Clone();
                 sourceEncoding.DecoderFallback = DecoderFallback.ExceptionFallback;

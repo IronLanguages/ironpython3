@@ -36,7 +36,7 @@ Text Vs. Data Instead Of Unicode Vs. 8-bit
 - [ ] Filenames are passed to and returned from APIs as (Unicode) strings. This can present platform-specific problems because on some platforms filenames are arbitrary byte strings. (On the other hand, on Windows filenames are natively stored as Unicode.) As a work-around, most APIs (e.g. `open()` and many functions in the `os` module) that take filenames accept bytes objects as well as strings, and a few APIs have a way to ask for a `bytes` return value. Thus, `os.listdir()` returns a list of `bytes` instances if the argument is a `bytes` instance, and `os.getcwdb()` returns the current working directory as a `bytes` instance. Note that when `os.listdir()` returns a list of strings, filenames that cannot be decoded properly are omitted rather than raising `UnicodeError`.
 - [ ] Some system APIs like `os.environ` and `sys.argv` can also present problems when the bytes made available by the system is not interpretable using the default encoding. Setting the `LANG` variable and rerunning the program is probably the best approach.
 - [x] [PEP 3138][]: The `repr()` of a string no longer escapes non-ASCII characters. It still escapes control characters and code points with non-printable status in the Unicode standard, however.
-- [ ] [PEP 3120][]: The default source encoding is now UTF-8.
+- [x] [PEP 3120][]: The default source encoding is now UTF-8.
 - [x] [PEP 3131][]: Non-ASCII letters are now allowed in identifiers. (However, the standard library remains ASCII-only with the exception of contributor names in comments.)
 - [x] The `StringIO` and `cStringIO` modules are gone. Instead, import the `io` module and use `io.StringIO` or `io.BytesIO` for text and data respectively.
 

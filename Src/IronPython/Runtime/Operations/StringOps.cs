@@ -2085,8 +2085,7 @@ namespace IronPython.Runtime.Operations {
 
             //  If the optional second argument sep is absent or None, the words are separated
             //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
-            string[] r = StringUtils.Split(
-                self,
+            string[] r = self.Split(
                 seps,
                 (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
                 (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
@@ -2100,7 +2099,7 @@ namespace IronPython.Runtime.Operations {
             if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(separator != null);
             } else {
-                string[] r = StringUtils.Split(self, separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, StringSplitOptions.None);
+                string[] r = self.Split(new[] { separator }, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, StringSplitOptions.None);
 
                 PythonList ret = new PythonList(r.Length);
                 foreach (string s in r) ret.AddNoLock(s);

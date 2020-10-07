@@ -1615,7 +1615,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Gets the default encoding for this system state / engine.
         /// </summary>
-        public Encoding DefaultEncoding { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        public override Encoding DefaultEncoding { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         public string GetDefaultEncodingName()
             => DefaultEncoding.WebName.ToLower().Replace('-', '_');

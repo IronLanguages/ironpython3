@@ -6,6 +6,7 @@
 import os
 import sys
 import unittest
+import warnings
 
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
@@ -53,6 +54,37 @@ class StrTest(IronPythonTestCase):
         self.assertEqual('ä', str('ä')) # StringOps.__new__(..., string)
         if is_cli:
             self.assertEqual('ä', str('ä'.Chars[0])) # StringOps.__new__(..., char)
+
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytes instance$"):
+                self.assertEqual(str(b'abc'), "b'abc'")
+            self.assertEqual(str(b'abc', 'ascii'), 'abc')
+
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytearray instance$"):
+                self.assertEqual(str(bytearray(b'abc')), "bytearray(b'abc')")
+            self.assertEqual(str(bytearray(b'abc'), 'ascii'), 'abc')
+
+            self.assertRegex(str(memoryview(b'abc')), r"^<memory at .+>$")
+            self.assertEqual(str(memoryview(b'abc'), 'ascii'), 'abc')
+            self.assertRaises(TypeError, str, memoryview(b'abc')[::2], 'ascii')
+
+            import array
+            self.assertEqual(str(array.array('B', b'abc')), "array('B', [97, 98, 99])")
+            self.assertEqual(str(array.array('B', b'abc'), 'ascii'), 'abc')
+
+            class B(bytes):
+                def __str__(self):
+                    return "This is B"
+
+            self.assertEqual(str(B(b'abc')), "This is B") # no warning
+
+            class B2(bytes): pass
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytes instance$"):
+                self.assertEqual(str(B2(b'abc')), "b'abc'")
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
 
     def test_add_mul(self):
         self.assertRaises(TypeError, lambda: "a" + 3)

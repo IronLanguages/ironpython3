@@ -35,7 +35,11 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
-            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(Pattern))] = dict["_pickle"];
+            var module = context.GetCopyRegModule();
+            if (module != null) {
+                var pickle = PythonOps.GetBoundAttr(context.SharedContext, module, "pickle");
+                PythonOps.CallWithContext(context.SharedContext, pickle, DynamicHelpers.GetPythonTypeFromType(typeof(Pattern)), dict["_pickle"]);
+            }
         }
 
         private static readonly Random r = new Random(DateTime.Now.Millisecond);

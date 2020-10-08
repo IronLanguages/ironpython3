@@ -1111,6 +1111,15 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        private object copyRegModule;
+
+        internal object GetCopyRegModule() {
+            if (copyRegModule is null) {
+                copyRegModule = Importer.ImportModule(SharedContext, new PythonDictionary(), "copyreg", false, 0);
+            }
+            return copyRegModule;
+        }
+
         public object GetWarningsModule() {
             object warnings = null;
             try {

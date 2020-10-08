@@ -423,17 +423,22 @@ x = 42", scope);
 #if NETCOREAPP
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
-
+            // This test file is encoded in Windows codepage 1251 (Cyrilic) but lacks a magic comment (PEP-263)
+            string fileName = Path.Combine(Path.Combine(Common.ScriptTestDirectory, "encoded_files"), "cp20472.py");
             try {
-                string fileName = Path.Combine(Path.Combine(Common.ScriptTestDirectory, "encoded_files"), "cp20472.py");
-                _pe.CreateScriptSourceFromFile(fileName, Encoding.GetEncoding(1251)).Compile();
+                _pe.CreateScriptSourceFromFile(fileName).Compile();
 
-                //Disabled. The line above should have thrown a syntax exception or an import error,
-                //but does not.
+                // The line above should have thrown a syntax exception or an import error
+                // because the default source file encoding is UTF-8 and there are decoding errors
 
-                //throw new Exception("ScenarioCodePlex20472");
+                throw new Exception("ScenarioCodePlex20472");
             }
-            catch (IronPython.Runtime.Exceptions.ImportException) { }
+            catch (SyntaxErrorException) { }
+
+            // Opening the file with explicitly specifying the correct encoding should work
+            CompiledCode prog = _pe.CreateScriptSourceFromFile(fileName, Encoding.GetEncoding(1251)).Compile();
+            prog.Execute();
+            Assert.AreEqual(prog.DefaultScope.GetVariable("s"), "\u041F\u0436\u0451");
         }
 
         [Test]

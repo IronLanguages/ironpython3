@@ -254,7 +254,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.MemoryError();
             }
 
-            object?[] ret = ArrayOps.CopyArray(data, newCount);
+            var ret = ArrayOps.CopyArray(data, newCount);
             if (count > 0) {
                 // this should be extremely fast for large count as it uses the same algoithim as efficient integer powers
                 // ??? need to test to see how large count and n need to be for this to be fastest approach

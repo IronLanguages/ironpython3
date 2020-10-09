@@ -449,7 +449,6 @@ namespace IronPython.Runtime {
         }
 
         public SetCollection union([NotNull] params object[]/*!*/ sets) {
-
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -481,7 +480,6 @@ namespace IronPython.Runtime {
         }
 
         public SetCollection intersection([NotNull] params object[]/*!*/ sets) {
-
             if (sets.Length == 0) {
                 return copy();
             }
@@ -539,7 +537,6 @@ namespace IronPython.Runtime {
         }
 
         public SetCollection difference([NotNull] params object[]/*!*/ sets) {
-
             if (sets.Length == 0) {
                 return copy();
             }
@@ -1074,7 +1071,6 @@ namespace IronPython.Runtime {
         }
 
         public FrozenSetCollection union([NotNull] params object[]/*!*/ sets) {
-
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -1106,7 +1102,6 @@ namespace IronPython.Runtime {
         }
 
         public FrozenSetCollection intersection([NotNull] params object[]/*!*/ sets) {
-
             if (sets.Length == 0) {
                 return Make(_items);
             }
@@ -1164,7 +1159,6 @@ namespace IronPython.Runtime {
         }
 
         public FrozenSetCollection difference([NotNull] params object[]/*!*/ sets) {
-
             if (sets.Length == 0) {
                 return Make(_items);
             }

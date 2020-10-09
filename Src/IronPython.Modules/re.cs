@@ -1228,52 +1228,6 @@ namespace IronPython.Modules {
             return text;
         }
 
-        private static string ValidateArguments(object pattern, object @string) {
-            if (pattern is Pattern p) {
-                pattern = p.pattern;
-            }
-
-            string str;
-            if (pattern is Bytes) {
-                switch (@string) {
-                    case IBufferProtocol bufferProtocol:
-                        using (IPythonBuffer buf = bufferProtocol.GetBuffer()) {
-                            str = buf.AsReadOnlySpan().MakeString();
-                        }
-                        break;
-                    case IList<byte> b:
-                        str = b.MakeString();
-                        break;
-                    case MmapModule.MmapDefault mmapFile:
-                        str = mmapFile.GetSearchString().MakeString();
-                        break;
-                    case string _:
-                    case ExtensibleString _:
-                        throw PythonOps.TypeError("cannot use a bytes pattern on a string-like object");
-                    default:
-                        throw PythonOps.TypeError("expected string or bytes-like object");
-                }
-            } else if (pattern is string) {
-                switch (@string) {
-                    case string s:
-                        str = s;
-                        break;
-                    case ExtensibleString es:
-                        str = es;
-                        break;
-                    case IBufferProtocol _:
-                    case IList<byte> _:
-                    case MmapModule.MmapDefault _:
-                        throw PythonOps.TypeError("cannot use a string pattern on a bytes-like object");
-                    default:
-                        throw PythonOps.TypeError("expected string or bytes-like object");
-                }
-            } else {
-                throw PythonOps.TypeError("pattern must be a string or compiled pattern");
-            }
-            return str;
-        }
-
         private static PythonType error(CodeContext/*!*/ context) => (PythonType)context.LanguageContext.GetModuleState("reerror");
 
         private readonly struct PatternKey : IEquatable<PatternKey> {

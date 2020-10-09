@@ -162,7 +162,6 @@ namespace IronPython.Runtime.Operations {
                 return "None";
             }
             if (x is string) {
-                // check ascii
                 return x;
             }
 
@@ -287,10 +286,13 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [BytesLike, NotNull]IList<byte> @object, [NotNull]string encoding, [NotNull]string errors = "strict") {
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]IBufferProtocol @object, [NotNull]string encoding, [NotNull]string errors = "strict") {
             if (cls == TypeCache.String) {
-                if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
-                return new Bytes(@object).decode(context, encoding, errors);
+                try {
+                    return RawDecode(context, @object, encoding, errors);
+                } catch (BufferException) {
+                    throw PythonOps.TypeErrorForBadInstance("decoding to str: need a bytes-like object, {0} found", @object);
+                }
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, @object, encoding, errors));
             }

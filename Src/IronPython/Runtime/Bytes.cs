@@ -16,6 +16,7 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
@@ -852,6 +853,13 @@ namespace IronPython.Runtime {
                 ),
                 GetType() == typeof(Bytes) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
             );
+        }
+
+        public virtual string __str__(CodeContext context) {
+            if (context.LanguageContext.PythonOptions.BytesWarning) {
+                PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytes instance");
+            }
+            return _bytes.BytesRepr();
         }
 
         public virtual string __repr__(CodeContext context) {

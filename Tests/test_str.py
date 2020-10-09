@@ -6,6 +6,7 @@
 import os
 import sys
 import unittest
+import warnings
 
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
@@ -53,6 +54,14 @@ class StrTest(IronPythonTestCase):
         self.assertEqual('ä', str('ä')) # StringOps.__new__(..., string)
         if is_cli:
             self.assertEqual('ä', str('ä'.Chars[0])) # StringOps.__new__(..., char)
+
+        self.assertRegex(str(memoryview(b'abc')), r"^<memory at .+>$")
+        self.assertEqual(str(memoryview(b'abc'), 'ascii'), 'abc')
+        self.assertRaises(TypeError, str, memoryview(b'abc')[::2], 'ascii')
+
+        import array
+        self.assertEqual(str(array.array('B', b'abc')), "array('B', [97, 98, 99])")
+        self.assertEqual(str(array.array('B', b'abc'), 'ascii'), 'abc')
 
     def test_add_mul(self):
         self.assertRaises(TypeError, lambda: "a" + 3)

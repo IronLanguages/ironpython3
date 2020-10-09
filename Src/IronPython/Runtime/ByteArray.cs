@@ -15,6 +15,7 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -1076,6 +1077,13 @@ namespace IronPython.Runtime {
             lock (this) {
                 return "bytearray(" + _bytes.BytesRepr() + ")";
             }
+        }
+
+        public virtual string __str__(CodeContext context) {
+            if (context.LanguageContext.PythonOptions.BytesWarning) {
+                PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytearray instance");
+            }
+            return Repr();
         }
 
         public virtual string __repr__(CodeContext context) => Repr();

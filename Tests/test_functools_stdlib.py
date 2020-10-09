@@ -17,7 +17,7 @@ def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
         #suite.addTest(test.test_functools.TestCmpToKeyC('test_bad_cmp')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #uite.addTest(test.test_functools.TestCmpToKeyC('test_cmp_to_key')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        #suite.addTest(test.test_functools.TestCmpToKeyC('test_cmp_to_key')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
         #suite.addTest(test.test_functools.TestCmpToKeyC('test_cmp_to_key_arguments')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
         #suite.addTest(test.test_functools.TestCmpToKeyC('test_hash')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
         #suite.addTest(test.test_functools.TestCmpToKeyC('test_obj_field')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
@@ -47,12 +47,12 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_keyword'))
         suite.addTest(test.test_functools.TestPartialC('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialC('test_no_side_effects'))
-        #suite.addTest(test.test_functools.TestPartialC('test_pickle')) # StackOverflowException
+        suite.addTest(test.test_functools.TestPartialC('test_pickle'))
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialC('test_repr')) # AssertionError
         #suite.addTest(test.test_functools.TestPartialC('test_setstate_refcount')) # AttributeError: 'partial' object has no attribute '__setstate__'
-        #suite.addTest(test.test_functools.TestPartialC('test_weakref')) # AssertionError: ReferenceError not raised by getattr
+        suite.addTest(test.test_functools.TestPartialC('test_weakref'))
         suite.addTest(test.test_functools.TestPartialC('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_arg_combinations'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_argument_checking'))
@@ -63,12 +63,12 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_keyword'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_no_side_effects'))
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle')) # StackOverflowException
+        suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_repr')) # AssertionError
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_refcount')) # AttributeError: 'PartialSubclass' object has no attribute '__setstate__'
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref')) # AssertionError: ReferenceError not raised by getattr
+        suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialMethod('test_abstract'))
         suite.addTest(test.test_functools.TestPartialMethod('test_arg_combinations'))
@@ -90,7 +90,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialPy('test_no_side_effects'))
         suite.addTest(test.test_functools.TestPartialPy('test_positional'))
         suite.addTest(test.test_functools.TestPartialPy('test_protection_of_callers_dict_argument'))
-        #suite.addTest(test.test_functools.TestPartialPy('test_weakref')) # AssertionError: ReferenceError not raised by getattr
+        suite.addTest(test.test_functools.TestPartialPy('test_weakref'))
         suite.addTest(test.test_functools.TestPartialPy('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestReduce('test_iterator_usage'))
         suite.addTest(test.test_functools.TestReduce('test_reduce'))
@@ -105,11 +105,11 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestSingleDispatch('test_register_decorator'))
         suite.addTest(test.test_functools.TestSingleDispatch('test_simple_overloads'))
         suite.addTest(test.test_functools.TestSingleDispatch('test_wrapping_attributes'))
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_no_operations_defined')) # AssertionError: ValueError not raised
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_ge')) # TypeError: unsupported operand type(s) for <: 'A' and 'A'
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_gt')) # TypeError: unsupported operand type(s) for <=: 'A' and 'A'
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_le')) # TypeError: unsupported operand type(s) for <: 'A' and 'A'
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_lt')) # TypeError: unsupported operand type(s) for <=: 'A' and 'A'
+        suite.addTest(test.test_functools.TestTotalOrdering('test_no_operations_defined'))
+        suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_ge'))
+        suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_gt'))
+        suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_le'))
+        suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_lt'))
         #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_no_overwrite')) # ValueError: must define at least one ordering operation: < > <= >=
         suite.addTest(test.test_functools.TestTotalOrdering('test_type_error_when_not_implemented'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_builtin_update'))

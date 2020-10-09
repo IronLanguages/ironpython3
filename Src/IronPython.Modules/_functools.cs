@@ -74,12 +74,11 @@ namespace IronPython.Modules {
             private const string _defaultDoc = "partial(func, *args, **keywords) - new function with partial application\n    of the given arguments and keywords.\n";
 
             private readonly CodeContext/*!*/ _context;                                             // code context from the caller who created us
-            private readonly object/*!*/ _function;                                                 // the callable function to dispatch to
-            private readonly object[]/*!*/ _args;                                                   // the initially provided arguments
-            private readonly IDictionary<object, object> _keywordArgs;                              // the initially provided keyword arguments or null
+            private object?[]/*!*/ _args;                                                           // the initially provided arguments
+            private IDictionary<object, object?> _keywordArgs;                                      // the initially provided keyword arguments
 
-            private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>? _dictSite; // the dictionary call site if ever called w/ keyword args
-            private CallSite<Func<CallSite, CodeContext, object, object[], object>>? _splatSite;    // the position only call site
+            private CallSite<Func<CallSite, CodeContext, object, object?[], IDictionary<object, object?>, object>>? _dictSite; // the dictionary call site if ever called w/ keyword args
+            private CallSite<Func<CallSite, CodeContext, object, object?[], object>>? _splatSite;   // the position only call site
             private PythonDictionary? _dict;                                                        // dictionary for storing extra attributes
             private WeakRefTracker? _tracker;                                                       // tracker so users can use Python weak references
             private string? _doc;                                                                   // A custom docstring, if used
@@ -101,8 +100,8 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
 
-                _function = func;
-                _keywordArgs = keywords;
+                this.func = func;
+                _keywordArgs = new PythonDictionary(keywords);
                 _args = args;
                 _context = context;
             }
@@ -122,25 +121,17 @@ namespace IronPython.Modules {
             }
 
             /// <summary>
-            /// Gets the function which will be called
+            /// Gets the function which will be called.
             /// </summary>
-            public object func {
-                get {
-                    return _function;
-                }
-            }
+            public object func { get; private set; }
 
             /// <summary>
             /// Gets the initially provided positional arguments.
             /// </summary>
-            public object args {
-                get {
-                    return PythonTuple.MakeTuple(_args);
-                }
-            }
+            public object args => PythonTuple.MakeTuple(_args);
 
             /// <summary>
-            /// Gets the initially provided keyword arguments or None.
+            /// Gets the initially provided keyword arguments.
             /// </summary>
             public object keywords {
                 get {
@@ -178,9 +169,26 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(partial)),
                     PythonTuple.MakeTuple(func),
-                    PythonTuple.MakeTuple(func,  args, keywords),
-                    null // TODO: what should this be?
+                    PythonTuple.MakeTuple(func, args, keywords, __dict__)
                 );
+            }
+
+            public void __setstate__(CodeContext context, [NotNull] PythonTuple state) {
+                if (state.Count == 4
+                        && PythonOps.IsCallable(context, state[0])
+                        && state[1] is PythonTuple args
+                        && state[2] is PythonDictionary keywords) {
+                    func = state[0]!;
+                    _args = args._data;
+                    _keywordArgs = keywords;
+                    if (state[3] is PythonDictionary dict)
+                        __dict__.update(context, dict);
+                    else if (!(state[3] is null)) {
+                        throw PythonOps.TypeError("invalid partial state");
+                    }
+                } else {
+                    throw PythonOps.TypeError("invalid partial state");
+                }
             }
 
             #endregion
@@ -191,23 +199,23 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [NotNull]params object[] args) {
+            public object? Call(CodeContext/*!*/ context, [NotNull]params object?[] args) {
                 if (_keywordArgs == null) {
                     EnsureSplatSite();
-                    return _splatSite!.Target(_splatSite, context, _function, ArrayUtils.AppendRange(_args, args));
+                    return _splatSite!.Target(_splatSite, context, func, ArrayUtils.AppendRange(_args, args));
                 }
 
                 EnsureDictSplatSite();
-                return _dictSite!.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), _keywordArgs);
+                return _dictSite!.Target(_dictSite, context, func, ArrayUtils.AppendRange(_args, args), _keywordArgs);
             }
 
             /// <summary>
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<object, object> dict, [NotNull]params object[] args) {
+            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<object, object?> dict, [NotNull]params object?[] args) {
 
-                IDictionary<object, object> finalDict;
+                IDictionary<object, object?> finalDict;
                 if (_keywordArgs != null) {
                     PythonDictionary pd = new PythonDictionary();
                     pd.update(context, _keywordArgs);
@@ -219,7 +227,7 @@ namespace IronPython.Modules {
                 }
 
                 EnsureDictSplatSite();
-                return _dictSite!.Target(_dictSite, context, _function, ArrayUtils.AppendRange(_args, args), finalDict);
+                return _dictSite!.Target(_dictSite, context, func, ArrayUtils.AppendRange(_args, args), finalDict);
             }
 
             /// <summary>
@@ -267,7 +275,7 @@ namespace IronPython.Modules {
                 if (_splatSite == null) {
                     Interlocked.CompareExchange(
                         ref _splatSite,
-                        CallSite<Func<CallSite, CodeContext, object, object[], object>>.Create(
+                        CallSite<Func<CallSite, CodeContext, object, object?[], object>>.Create(
                             Binders.InvokeSplat(_context.LanguageContext)
                         ),
                         null
@@ -279,7 +287,7 @@ namespace IronPython.Modules {
                 if (_dictSite == null) {
                     Interlocked.CompareExchange(
                         ref _dictSite,
-                        CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(
+                        CallSite<Func<CallSite, CodeContext, object, object?[], IDictionary<object, object?>, object>>.Create(
                             Binders.InvokeKeywords(_context.LanguageContext)
                         ),
                         null

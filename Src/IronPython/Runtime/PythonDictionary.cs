@@ -49,6 +49,15 @@ namespace IronPython.Runtime {
             _storage = storage;
         }
 
+        internal PythonDictionary(IDictionary<object, object> dict) {
+            var storage = new CommonDictionaryStorage();
+
+            foreach (var pair in dict) {
+                storage.AddNoLock(pair.Key, pair.Value);
+            }
+            _storage = storage;
+        }
+
         internal PythonDictionary(PythonDictionary dict) {
             _storage = dict._storage.Clone();
         }

@@ -528,7 +528,7 @@ namespace IronPython.Runtime.Operations {
             return Bytes.Make(res.ToArray());
         }
 
-        public static BigInteger from_bytes([NotNull, BytesLike]IList<byte> bytes, string byteorder, bool signed=false) {
+        public static BigInteger from_bytes([NotNull] byte[] bytes, [NotNull] string byteorder, bool signed=false) {
             // TODO: signed should be a keyword only argument
             // TODO: return int when possible?
 
@@ -538,20 +538,22 @@ namespace IronPython.Runtime.Operations {
             return FromBytes(bytes, isLittle, signed);
         }
 
-        public static BigInteger from_bytes(CodeContext context, object bytes, string byteorder, bool signed = false) {
+        public static BigInteger from_bytes(CodeContext context, object bytes, [NotNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
             // TODO: return int when possible?
 
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
-            return FromBytes(Bytes.FromObject(context, bytes), isLittle, signed);
+            return FromBytes(Bytes.FromObject(context, bytes).UnsafeByteArray, isLittle, signed);
         }
 
-        private static BigInteger FromBytes(IList<byte> bytes, bool isLittle, bool signed) {
-            if (!bytes.Any()) return 0;
+        private static BigInteger FromBytes(byte[] bytesArr, bool isLittle, bool signed) {
+            if (bytesArr.Length == 0) return 0;
 
-            byte[] bytesArr = bytes as byte[] ?? ((bytes is Bytes) ? ((Bytes)bytes).UnsafeByteArray : bytes.ToArray());
+#if NETCOREAPP
+            return new BigInteger(bytesArr.AsSpan(), isUnsigned: !signed, isBigEndian: !isLittle);
+#else
 
             if (isLittle) {
                 bool msbSet = (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80;
@@ -562,6 +564,7 @@ namespace IronPython.Runtime.Operations {
                 if (!msbSet) return new BigInteger(bytesArr.Reverse());
                 return new BigInteger(bytesArr.Reverse().Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray());
             }
+#endif
         }
 
         public static int __round__(int self) {

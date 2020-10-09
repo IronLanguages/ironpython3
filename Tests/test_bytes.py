@@ -213,6 +213,7 @@ class BytesTest(IronPythonTestCase):
         self.assertEqual(bytes(BytesBytesSubclass(b"JUST BYTES")), b"BYTES FROM BYTES")
         self.assertIs(type(bytes(BytesBytesSubclass(b"JUST BYTES"))), BytesBytesSubclass)
         self.assertEqual(int.from_bytes(bytes(BytesBytesSubclass(b"JUST BYTES")), 'big'), int.from_bytes(b"BYTES FROM BYTES", 'big'))
+        self.assertEqual(int.from_bytes(BytesBytesSubclass(b"JUST BYTES"), 'big'), int.from_bytes(b"BYTES FROM BYTES", 'big'))
 
         class ListSubclass(bytes):
             def __bytes__(self):

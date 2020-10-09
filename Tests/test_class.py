@@ -503,10 +503,8 @@ class ClassTest(IronPythonTestCase):
         a = C()
         a.__dict__[1] = '1'
         if object in C.__bases__:
-            try:
+            with self.assertRaises(TypeError):
                 C.__dict__[2] = '2'
-                self.fail("Unreachable code reached")
-            except TypeError: pass
             self.assertEqual(2 in C.__dict__, False)
 
         self.assertEqual(1 in a.__dict__, True)
@@ -521,7 +519,6 @@ class ClassTest(IronPythonTestCase):
 
         with self.assertRaises(AttributeError):
             C.__dict__ = {}
-            self.assertUnreachable()
 
         # replace an instance dictionary (containing non-string keys) w/ a new one.
         a.newInstanceAttr = 1
@@ -677,17 +674,11 @@ class ClassTest(IronPythonTestCase):
 
         self.assertEqual(N.__mro__, (N, C, B, A, object))
 
-        try:
+        with self.assertRaises(TypeError, msg="impossible MRO created"):
             class N(A, B,C): pass
-            self.fail("Unreachable code reached: impossible MRO created")
-        except TypeError:
-            pass
 
-        try:
+        with self.assertRaises(TypeError, msg="can't derive from the same base type twice"):
             class N(A, A): pass
-            self.fail("Unreachable code reached: can't dervie from the same base type twice")
-        except TypeError:
-            pass
 
     def test_mro_bases(self):
         """verify replacing base classes also updates MRO"""
@@ -910,11 +901,8 @@ class ClassTest(IronPythonTestCase):
             def NegativeTest(method, testCase):
                 setattr(obj, method, twoargs)
 
-                try:
+                with self.assertRaises(TypeError):
                     eval(testCase)
-                    self.fail("Unreachable code reached")
-                except TypeError as e:
-                    pass
 
                 delattr(obj, method)
 
@@ -948,11 +936,8 @@ class ClassTest(IronPythonTestCase):
             def NegativeTest(method, testCase):
                 setattr(obj, method, twoargs)
 
-                try:
+                with self.assertRaises(TypeError):
                     exec(testCase, globals(), locals())
-                    self.fail("Unreachable code reached")
-                except TypeError:
-                    pass
 
                 delattr(obj, method)
 
@@ -981,11 +966,8 @@ class ClassTest(IronPythonTestCase):
             def NegativeTest(method, testCase):
                 setattr(obj, method, onearg)
 
-                try:
+                with self.assertRaises(TypeError):
                     eval(testCase)
-                    self.fail("Unreachable code reached")
-                except TypeError:
-                    pass
 
                 delattr(obj, method)
 
@@ -1234,12 +1216,9 @@ class ClassTest(IronPythonTestCase):
 
         # invalid __slots__ values
         for x in ['', None, '3.5']:
-            try:
+            with self.assertRaises(TypeError):
                 class C(object):
                     __slots__ = x
-                self.fail("Unreachable code reached")
-            except TypeError:
-                pass
 
         # including __dict__ in slots allows accessing __dict__
         class A(object): __slots__ = '__dict__'
@@ -1433,17 +1412,12 @@ class ClassTest(IronPythonTestCase):
         class CycleA: pass
         class CycleB: pass
 
-        try:
+        with self.assertRaises(TypeError):
             CycleA.__bases__ = (CycleA,)
-            self.self.fail("Unreachable code reached")
-        except TypeError: pass
 
-        try:
+        with self.assertRaises(TypeError):
             CycleA.__bases__ = (CycleB,)
             CycleB.__bases__ = (CycleA,)
-            self.self.fail("Unreachable code reached")
-        except TypeError: pass
-
 
     def test_hexoct(self):
         """returning non-string from hex & oct should throw"""
@@ -1511,10 +1485,8 @@ class ClassTest(IronPythonTestCase):
         for x in [None, 'abc', 3]:
             class foo(object): pass
             a = foo()
-            try:
+            with self.assertRaises(TypeError):
                 a.__dict__ = x
-                self.fail("Unreachable code reached")
-            except TypeError: pass
 
     def test_default_new_init(self):
         """test cases to verify we do the right thing for the default new & init
@@ -1657,11 +1629,8 @@ class ClassTest(IronPythonTestCase):
             def __hash__(self): return 1<<35
 
     def test_NoneSelf(seld):
-        try:
+        with self.assertRaises(TypeError):
             set.add(None)
-            self.self.fail("Unreachable code reached")
-        except TypeError:
-            pass
 
     def test_builtin_classmethod(self):
         descr = dict.__dict__["fromkeys"]
@@ -1709,28 +1678,22 @@ class ClassTest(IronPythonTestCase):
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_override_mro(self):
-        try:
+        with self.assertRaises(NotImplementedError):
             class C(object):
                 def __mro__(self): pass
-        except NotImplementedError: pass
-        else: self.fail("Expected NotImplementedError, got none")
 
         class C(object):
             def mro(self): pass
 
-        try:
+        with self.assertRaises(NotImplementedError):
             class C(type):
                 def mro(self): pass
-        except NotImplementedError: pass
-        else: self.fail("Expected NotImplementedError, got none")
 
         class D(type): pass
 
-        try:
+        with self.assertRaises(NotImplementedError):
             class E(D):
                 def mro(self): pass
-        except NotImplementedError: pass
-        else: self.fail("Expected NotImplementedError, got none")
 
     def test_type_mro(self):
         self.assertRaises(TypeError, type.mro)

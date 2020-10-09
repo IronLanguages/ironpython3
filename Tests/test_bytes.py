@@ -7,6 +7,7 @@ import ctypes
 import itertools
 import sys
 import unittest
+import warnings
 
 from iptest import IronPythonTestCase, is_cli, is_cpython, long, run_test, skipUnlessIronPython
 
@@ -298,6 +299,40 @@ class BytesTest(IronPythonTestCase):
         self.assertRaises(TypeError, int.from_bytes, IndexableStr("abc"), 'big')
         self.assertRaises(TypeError, int.from_bytes, IndexableInt(2), 'big')
         self.assertRaises(TypeError, int.from_bytes, 2, 'big')
+
+    @unittest.skipUnless(sys.flags.bytes_warning, "Run Python with the '-b' flag on command line for this test")
+    def test_byteswarning(self):
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytes instance$"):
+                self.assertEqual(str(b'abc'), "b'abc'")
+            self.assertEqual(str(b'abc', 'ascii'), 'abc')
+
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytearray instance$"):
+                self.assertEqual(str(bytearray(b'abc')), "bytearray(b'abc')")
+            self.assertEqual(str(bytearray(b'abc'), 'ascii'), 'abc')
+
+            class B(bytes):
+                def __str__(self):
+                    return "This is B"
+
+            self.assertEqual(str(B(b'abc')), "This is B") # no warning
+
+            class B2(bytes): pass
+            with self.assertWarnsRegex(BytesWarning, r"^str\(\) on a bytes instance$"):
+                self.assertEqual(str(B2(b'abc')), "b'abc'")
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
+
+    def test_byteswarning_user(self):
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(BytesWarning, r"^test warning$"):
+                warnings.warn("test warning", BytesWarning)
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
 
     def test_capitalize(self):
         tests = [(b'foo', b'Foo'),

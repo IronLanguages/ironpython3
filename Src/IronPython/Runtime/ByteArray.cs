@@ -1080,7 +1080,9 @@ namespace IronPython.Runtime {
         }
 
         public virtual string __str__(CodeContext context) {
-            PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytearray instance");
+            if (context.LanguageContext.PythonOptions.BytesWarning) {
+                PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytearray instance");
+            }
             return Repr();
         }
 

@@ -528,27 +528,15 @@ namespace IronPython.Runtime.Operations {
             return Bytes.Make(res.ToArray());
         }
 
-        public static BigInteger from_bytes([NotNull] byte[] bytes, [NotNull] string byteorder, bool signed=false) {
-            // TODO: signed should be a keyword only argument
-            // TODO: return int when possible?
-
-            bool isLittle = byteorder == "little";
-            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
-
-            return FromBytes(bytes, isLittle, signed);
-        }
-
         public static BigInteger from_bytes(CodeContext context, object bytes, [NotNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
             // TODO: return int when possible?
+            // TODO: if called on a subclass of Extensible<BigInteger>, return that subclass
 
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
-            return FromBytes(Bytes.FromObject(context, bytes).UnsafeByteArray, isLittle, signed);
-        }
-
-        private static BigInteger FromBytes(byte[] bytesArr, bool isLittle, bool signed) {
+            byte[] bytesArr = Bytes.FromObject(context, bytes).UnsafeByteArray;
             if (bytesArr.Length == 0) return 0;
 
 #if NETCOREAPP

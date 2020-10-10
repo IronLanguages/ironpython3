@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -22,7 +24,7 @@ namespace IronPython.Runtime.Operations {
     public static class ObjectOps {
         /// <summary> Types for which the pickle module has built-in support (from PEP 307 case 2)  </summary>
         [MultiRuntimeAware]
-        private static HashSet<PythonType> _nativelyPickleableTypes;
+        private static HashSet<PythonType>? _nativelyPickleableTypes;
 
         /// <summary>
         /// __class__, a custom slot so that it works for both objects and types.
@@ -60,8 +62,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self) {
-        }
+        public static void __init__(CodeContext/*!*/ context, object self) { }
 
         /// <summary>
         /// Initializes the object.  The base class does nothing.
@@ -136,13 +137,12 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static object __reduce_ex__(CodeContext/*!*/ context, object self, object protocol) {
             object objectReduce = PythonOps.GetBoundAttr(context, DynamicHelpers.GetPythonTypeFromType(typeof(object)), "__reduce__");
-            object myReduce;
-            if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), "__reduce__", out myReduce)) {
+            if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), "__reduce__", out object? myReduce)) {
                 if (!PythonOps.IsRetBool(myReduce, objectReduce)) {
                     // A derived class overrode __reduce__ but not __reduce_ex__, so call
                     // specialized __reduce__ instead of generic __reduce_ex__.
                     // (see the "The __reduce_ex__ API" section of PEP 307)
-                    return PythonOps.CallWithContext(context, myReduce, self);
+                    return PythonOps.CallWithContext(context, myReduce, self)!;
                 }
             }
 
@@ -158,9 +158,7 @@ namespace IronPython.Runtime.Operations {
         /// a string which consists of the type and a unique numerical identifier.
         /// </summary>
         public static string __repr__(object self) {
-            return String.Format("<{0} object at {1}>",
-                DynamicHelpers.GetPythonType(self).Name,
-                PythonOps.HexId(self));
+            return $"<{DynamicHelpers.GetPythonType(self).Name} object at {PythonOps.HexId(self)}>";
         }
 
         /// <summary>
@@ -186,9 +184,8 @@ namespace IronPython.Runtime.Operations {
         /// Returns the number of bytes of memory required to allocate the object.
         /// </summary>
         public static int __sizeof__(object self) {
-            IPythonObject ipo = self as IPythonObject;
             int res = AdjustPointerSize(8); // vtable, sync blk
-            if (ipo != null) {
+            if (self is IPythonObject) {
                 res += AdjustPointerSize(12); // class, dict, slots 
             }
 
@@ -268,18 +265,19 @@ namespace IronPython.Runtime.Operations {
         private static HashSet<PythonType> NativelyPickleableTypes {
             get {
                 if (_nativelyPickleableTypes == null) {
-                    var hashSet = new HashSet<PythonType>();
-                    hashSet.Add(TypeCache.Null);
-                    hashSet.Add(TypeCache.Boolean);
-                    hashSet.Add(TypeCache.Int32);
-                    hashSet.Add(TypeCache.BigInteger);
-                    hashSet.Add(TypeCache.Double);
-                    hashSet.Add(TypeCache.Complex);
-                    hashSet.Add(TypeCache.String);
-                    hashSet.Add(TypeCache.PythonTuple);
-                    hashSet.Add(TypeCache.PythonList);
-                    hashSet.Add(TypeCache.Dict);
-                    hashSet.Add(TypeCache.Function);
+                    var hashSet = new HashSet<PythonType> {
+                        TypeCache.Null,
+                        TypeCache.Boolean,
+                        TypeCache.Int32,
+                        TypeCache.BigInteger,
+                        TypeCache.Double,
+                        TypeCache.Complex,
+                        TypeCache.String,
+                        TypeCache.PythonTuple,
+                        TypeCache.PythonList,
+                        TypeCache.Dict,
+                        TypeCache.Function
+                    };
 
                     // type dict needs to be ensured to be fully initialized before assigning back
                     Thread.MemoryBarrier();
@@ -298,19 +296,17 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// Return null if the object has no __slots__, or empty dict if it has __slots__ but none are initialized.
         /// </summary>
-        private static PythonDictionary GetInitializedSlotValues(object obj) {
+        private static PythonDictionary? GetInitializedSlotValues(object obj) {
             PythonDictionary initializedSlotValues = new PythonDictionary();
             IList<PythonType> mro = DynamicHelpers.GetPythonType(obj).ResolutionOrder;
-            object slots;
-            object slotValue;
             foreach (object type in mro) {
-                if (PythonOps.TryGetBoundAttr(type, "__slots__", out slots)) {
+                if (PythonOps.TryGetBoundAttr(type, "__slots__", out object? slots)) {
                     List<string> slotNames = PythonType.SlotsToList(slots);
                     foreach (string slotName in slotNames) {
                         if (slotName == "__dict__") continue;
                         // don't reassign same-named slots from types earlier in the MRO
                         if (initializedSlotValues.__contains__(slotName)) continue;
-                        if (PythonOps.TryGetBoundAttr(obj, slotName, out slotValue)) {
+                        if (PythonOps.TryGetBoundAttr(obj, slotName, out object? slotValue)) {
                             initializedSlotValues[slotName] = slotValue;
                         }
                     }
@@ -329,11 +325,10 @@ namespace IronPython.Runtime.Operations {
             PythonType myType = DynamicHelpers.GetPythonType(self); // PEP 307 calls this "D"
             ThrowIfNativelyPickable(myType);
 
-            object getState;
+            object? getState;
             bool hasGetState = PythonOps.TryGetBoundAttr(context, self, "__getstate__", out getState);
 
-            object slots;
-            if (PythonOps.TryGetBoundAttr(context, myType, "__slots__", out slots) && PythonOps.Length(slots) > 0 && !hasGetState) {
+            if (PythonOps.TryGetBoundAttr(context, myType, "__slots__", out object? slots) && PythonOps.Length(slots) > 0 && !hasGetState) {
                 // ??? does this work with superclass slots?
                 throw PythonOps.TypeError("a class that defines __slots__ without defining __getstate__ cannot be pickled with protocols 0 or 1");
             }
@@ -348,7 +343,7 @@ namespace IronPython.Runtime.Operations {
                 TypeCache.Object == closestNonPythonBase ? null : PythonCalls.Call(context, closestNonPythonBase, self)
             );
 
-            object state;
+            object? state;
             if (hasGetState) {
                 state = PythonOps.CallWithContext(context, getState);
             } else {
@@ -387,13 +382,12 @@ namespace IronPython.Runtime.Operations {
         private static PythonTuple ReduceProtocol2(CodeContext/*!*/ context, object self) {
             PythonType myType = DynamicHelpers.GetPythonType(self);
 
-            object state;
-            object[] funcArgs;
+            object? state;
+            object?[] funcArgs;
 
             object func = context.LanguageContext.NewObject;
 
-            object getNewArgsCallable;
-            if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out getNewArgsCallable)) {
+            if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out object? getNewArgsCallable)) {
                 // TypeError will bubble up if __getnewargs__ isn't callable
                 if (!(PythonOps.CallWithContext(context, getNewArgsCallable, self) is PythonTuple newArgs)) {
                     throw PythonOps.TypeError("__getnewargs__ should return a tuple");
@@ -409,14 +403,14 @@ namespace IronPython.Runtime.Operations {
                     self,
                     "__getstate__",
                     out state)) {
-                object dict;
+                object? dict;
                 if (self is IPythonObject ipo) {
                     dict = ipo.Dict;
                 } else if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out dict)) {
                     dict = null;
                 }
 
-                PythonDictionary initializedSlotValues = GetInitializedSlotValues(self);
+                PythonDictionary? initializedSlotValues = GetInitializedSlotValues(self);
                 if (initializedSlotValues != null && initializedSlotValues.Count == 0) {
                     initializedSlotValues = null;
                 }
@@ -427,12 +421,12 @@ namespace IronPython.Runtime.Operations {
                 else   /*dict == null && initializedSlotValues != null*/ state = PythonTuple.MakeTuple(null, initializedSlotValues);
             }
 
-            object listIterator = null;
+            object? listIterator = null;
             if (self is PythonList) {
                 listIterator = PythonOps.GetEnumerator(self);
             }
 
-            object dictIterator = null;
+            object? dictIterator = null;
             if (self is PythonDictionary) {
                 dictIterator = Modules.Builtin.iter(context, PythonOps.Invoke(context, self, nameof(PythonDictionary.items)));
             }

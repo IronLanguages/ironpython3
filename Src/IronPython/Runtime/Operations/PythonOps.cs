@@ -3580,7 +3580,7 @@ namespace IronPython.Runtime.Operations {
             return new ValueErrorException(string.Format(format, args));
         }
 
-        public static Exception KeyError(object key) {
+        public static Exception KeyError(object? key) {
             return PythonExceptions.CreateThrowable(PythonExceptions.KeyError, key);
         }
 

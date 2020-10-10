@@ -197,7 +197,7 @@ namespace IronPython.Runtime {
         internal static PythonList FromArrayNoCopy(params object[] data)
             => new PythonList(data);
 
-        internal object[] GetObjectArray() {
+        internal object?[] GetObjectArray() {
             lock (this) {
                 return ArrayOps.CopyArray(_data, _size);
             }
@@ -404,7 +404,7 @@ namespace IronPython.Runtime {
         private static PythonList InPlaceMultiplyWorker(PythonList self, int count)
             => self.InPlaceMultiply(count);
 
-        internal object[] GetSliceAsArray(int start, int stop) {
+        internal object?[] GetSliceAsArray(int start, int stop) {
             if (start < 0) start = 0;
             if (stop > Count) stop = Count;
 
@@ -422,7 +422,7 @@ namespace IronPython.Runtime {
                 if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) return new PythonList();
 
                 if (step == 1) {
-                    object[] ret;
+                    object?[] ret;
                     lock (this) ret = ArrayOps.GetSlice(_data, start, stop);
                     return new PythonList(ret);
                 } else {

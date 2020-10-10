@@ -4,6 +4,9 @@
 
 from generate import generate
 
+def add_not_null(arg_t):
+    return arg_t if arg_t.endswith("?") else "[NotNull] " + arg_t
+
 def get_type(mutable):
     if mutable:
         return 'SetCollection'
@@ -11,13 +14,13 @@ def get_type(mutable):
         return 'FrozenSetCollection'
 
 def get_arg_ts(mutable):
-    return [get_type(mutable), get_type(not mutable), 'object']
+    return [get_type(mutable), get_type(not mutable), 'object?']
 
 def get_clrname(name):
     return ''.join(map(str.capitalize, name.split('_')))
 
 def get_items(arg_t):
-    if arg_t == 'object':
+    if arg_t == 'object?':
         return 'SetStorage.GetItems(set)'
     else:
         return 'set._items'
@@ -39,7 +42,7 @@ def copy_op(cw, mutable, name):
 def simple_op(cw, t, arg_t, name):
     clrname = get_clrname(name)
 
-    cw.enter_block('public %s %s(%s set)' % (t, name, arg_t))
+    cw.enter_block('public %s %s(%s set)' % (t, name, add_not_null(arg_t)))
     simple_op_worker(cw, t, arg_t, name)
     cw.exit_block()
     cw.writeline()
@@ -47,7 +50,7 @@ def simple_op(cw, t, arg_t, name):
 def simple_op_worker(cw, t, arg_t, name):
     clrname = get_clrname(name)
 
-    if arg_t == 'object':
+    if arg_t == 'object?':
         cw.writeline('SetStorage items;')
         cw.enter_block('if (SetStorage.GetItems(set, out items))')
         cw.writeline('items = SetStorage.%s(_items, items);' % clrname)
@@ -61,9 +64,7 @@ def simple_op_worker(cw, t, arg_t, name):
         )
 
 def enter_multiarg_op(cw, t, name):
-    cw.enter_block('public %s %s([NotNull]params object[]/*!*/ sets)' % (t, name))
-    cw.writeline('Debug.Assert(sets != null);')
-    cw.writeline()
+    cw.enter_block('public %s %s([NotNull] params object[]/*!*/ sets)' % (t, name))
 
 def union_multiarg(cw, mutable):
     t = get_type(mutable)
@@ -121,7 +122,7 @@ def intersection_multiarg(cw, mutable):
 def difference(cw, t, arg_t):
     items = get_items(arg_t)
 
-    cw.enter_block('public %s difference(%s set)' % (t, arg_t))
+    cw.enter_block('public %s difference(%s set)' % (t, add_not_null(arg_t)))
 
     if (t == arg_t):
         cw.enter_block('if (object.ReferenceEquals(set, this))')
@@ -169,7 +170,7 @@ def difference_multiarg(cw, mutable):
     cw.writeline()
 
 def symmetric_difference(cw, t, arg_t):
-    cw.enter_block('public %s symmetric_difference(%s set)' % (t, arg_t))
+    cw.enter_block('public %s symmetric_difference(%s set)' % (t, add_not_null(arg_t)))
 
     if (t == arg_t):
         cw.enter_block('if (object.ReferenceEquals(set, this))')
@@ -189,21 +190,21 @@ def gen_setops(mutable):
 
         for arg_t in arg_ts:
             items = get_items(arg_t)
-            cw.enter_block('public bool isdisjoint(%s set)' % arg_t)
+            cw.enter_block('public bool isdisjoint(%s set)' % add_not_null(arg_t))
             cw.writeline('return _items.IsDisjoint(%s);' % items)
             cw.exit_block()
             cw.writeline()
 
         for arg_t in arg_ts:
             items = get_items(arg_t)
-            cw.enter_block('public bool issubset(%s set)' % arg_t)
+            cw.enter_block('public bool issubset(%s set)' % add_not_null(arg_t))
             cw.writeline('return _items.IsSubset(%s);' % items)
             cw.exit_block()
             cw.writeline()
 
         for arg_t in arg_ts:
             items = get_items(arg_t)
-            cw.enter_block('public bool issuperset(%s set)' % arg_t)
+            cw.enter_block('public bool issuperset(%s set)' % add_not_null(arg_t))
             cw.writeline('return %s.IsSubset(_items);' % items)
             cw.exit_block()
             cw.writeline()
@@ -236,7 +237,7 @@ op_clrnames = [ 'BitwiseOr', 'BitwiseAnd', 'ExclusiveOr', 'Subtract' ]
 def gen_op(cw, t_left, t_right, symbol, name):
     cw.enter_block(
         'public static %s operator %s(%s x, %s y)' %
-        (t_left, symbol, t_left, t_right)
+        (t_left, symbol, add_not_null(t_left), add_not_null(t_right))
     )
     cw.writeline('return x.%s(y);' % name)
     cw.exit_block()
@@ -257,9 +258,9 @@ def gen_ops(mutable):
 
 def gen_mutating_op(cw, t, arg_t, symbol, upname, clrname):
     cw.writeline('[SpecialName]')
-    cw.enter_block('public %s InPlace%s(%s set)' % (t, clrname, arg_t))
+    cw.enter_block('public %s InPlace%s(%s set)' % (t, clrname, add_not_null(arg_t)))
 
-    if arg_t == 'object':
+    if arg_t == 'object?':
         cw.enter_block(
             'if (set is %s || set is %s)' %
             tuple(map(get_type, [False, True]))
@@ -268,7 +269,7 @@ def gen_mutating_op(cw, t, arg_t, symbol, upname, clrname):
     cw.writeline('%s(set);' % upname)
     cw.writeline('return this;')
 
-    if arg_t == 'object':
+    if arg_t == 'object?':
         cw.exit_block()
         cw.writeline()
 
@@ -304,7 +305,7 @@ def is_strict(compare):
 def gen_comparison(cw, t, compare):
     cw.writeline('[return: MaybeNotImplemented]')
     cw.enter_block(
-        'public static object operator %s(%s self, object other)' %
+        'public static object operator %s([NotNull] %s self, object? other)' %
         (compare, t)
     )
 
@@ -363,10 +364,10 @@ def gen_ienumerable(cw, mutable):
 
     cw.writeline('#endregion')
     cw.writeline()
-    cw.writeline('#region IEnumerable<object> Members')
+    cw.writeline('#region IEnumerable<object?> Members')
     cw.writeline()
 
-    cw.enter_block('IEnumerator<object> IEnumerable<object>.GetEnumerator()')
+    cw.enter_block('IEnumerator<object?> IEnumerable<object?>.GetEnumerator()')
     cw.writeline('return new SetIterator(_items, %s);' % str(mutable).lower())
     cw.exit_block()
     cw.writeline()
@@ -392,7 +393,7 @@ def gen_icollection(cw):
 
     cw.enter_block('void ICollection.CopyTo(Array array, int index)')
     cw.writeline('int i = 0;')
-    cw.enter_block('foreach (object o in this)')
+    cw.enter_block('foreach (var o in this)')
     cw.writeline('array.SetValue(o, index + i++);')
     cw.exit_block()
     cw.exit_block()
@@ -421,10 +422,10 @@ def gen_iweakreferenceable(cw):
     cw.writeline('#region IWeakReferenceable Members')
     cw.writeline()
 
-    cw.writeline('private WeakRefTracker _tracker;')
+    cw.writeline('private WeakRefTracker? _tracker;')
     cw.writeline()
 
-    cw.enter_block('WeakRefTracker IWeakReferenceable.GetWeakRef()')
+    cw.enter_block('WeakRefTracker? IWeakReferenceable.GetWeakRef()')
     cw.writeline('return _tracker;')
     cw.exit_block()
     cw.writeline()

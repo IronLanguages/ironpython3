@@ -638,11 +638,12 @@ namespace IronPython.Runtime {
         private static string ReplaceUnicodeCharacters(string text) {
             StringBuilder replacement = null;
             for (int i = 0; i < text.Length; i++) {
-                if (text[i] >= '\x660' && text[i] <= '\x669') {
+                char ch = text[i];
+                if (ch >= '\x660' && ch <= '\x669') {
                     // replace unicode digits
                     if (replacement == null) replacement = new StringBuilder(text);
-                    replacement[i] = (char)(text[i] - '\x660' + '0');
-                } else if (text[i] >= '\x80' && char.IsWhiteSpace(text[i])) {
+                    replacement[i] = (char)(ch - '\x660' + '0');
+                } else if (ch >= '\x80' && char.IsWhiteSpace(ch)) {
                     // replace unicode whitespace
                     if (replacement == null) replacement = new StringBuilder(text);
                     replacement[i] = ' ';

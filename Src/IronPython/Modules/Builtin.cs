@@ -625,10 +625,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static string hex(object? o) {
             object res = PythonOps.Index(o);
             if (res is BigInteger b) {
-                if (b < 0) {
-                    return "-0x" + (-b).ToString("x");
+                if (b == 0) {
+                    return "0x0";
+                } else if (b < 0) {
+                    var val = (-b).ToString("x");
+                    if (val[0] == '0') val = val.TrimStart('0');
+                    return "-0x" + val;
                 } else {
-                    return "0x" + b.ToString("x");
+                    var val = b.ToString("x");
+                    if (val[0] == '0') val = val.TrimStart('0');
+                    return "0x" + val;
                 }
             }
 

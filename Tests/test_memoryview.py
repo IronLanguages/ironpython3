@@ -247,6 +247,11 @@ class MemoryViewTests(unittest.TestCase):
             with self.assertRaisesRegex(TypeError, "^memoryview: cannot cast between two non-byte formats$"):
                 mv.cast('H')
 
+    def test_conv(self):
+        self.assertEqual(int.from_bytes(memoryview(b'abcd'), 'big'), 0x61626364)
+        self.assertEqual(int.from_bytes(memoryview(b'abcd')[::2], 'big'), 0x6163)
+        self.assertEqual(int.from_bytes(memoryview(b'abcd')[::-2], 'big'), 0x6462)
+
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
         a = array.array('b', range(8))

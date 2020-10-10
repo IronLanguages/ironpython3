@@ -354,7 +354,7 @@ namespace IronPython.Runtime.Operations {
                 }
                 return LiteralParser.ParseFloat(x);
             } catch (FormatException) {
-                throw PythonOps.ValueError("invalid literal for float(): {0}", x);
+                throw PythonOps.ValueError("could not convert string to float: '{0}'", x);
             }
         }
 

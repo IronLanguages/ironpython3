@@ -486,16 +486,13 @@ namespace IronPython.Modules {
                 return CompareToWorker(otherDeque);
             }
 
-            private int CompareToWorker(deque otherDeque) {
-                return CompareToWorker(otherDeque, null);
-            }
-
-            private int CompareToWorker(deque otherDeque, IComparer comparer) {
+            private int CompareToWorker(deque otherDeque, IComparer comparer = null) {
                 Assert.NotNull(otherDeque);
 
-                if (otherDeque._itemCnt == 0 && _itemCnt == 0) {
-                    // comparing two empty deques
-                    return 0;
+                if (_itemCnt == 0) {
+                    return otherDeque._itemCnt == 0 ? 0 : -1;
+                } else if (otherDeque._itemCnt == 0) {
+                    return 1;
                 }
 
                 if (CompareUtil.Check(this)) return 0;

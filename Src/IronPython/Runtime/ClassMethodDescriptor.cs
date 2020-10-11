@@ -18,7 +18,7 @@ namespace IronPython.Runtime {
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             owner = CheckGetArgs(context, instance, owner);
-            value = new Method(_func, owner);
+            value = new BuiltinFunction(owner, _func._data);
             return true;
         }
 

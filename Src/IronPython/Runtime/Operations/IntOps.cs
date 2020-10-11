@@ -528,10 +528,9 @@ namespace IronPython.Runtime.Operations {
             return Bytes.Make(res.ToArray());
         }
 
-        public static BigInteger from_bytes(CodeContext context, object bytes, [NotNull] string byteorder, bool signed = false) {
+        [ClassMethod, StaticExtensionMethod]
+        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
-            // TODO: return int when possible?
-            // TODO: if called on a subclass of Extensible<BigInteger>, return that subclass
 
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
@@ -540,19 +539,13 @@ namespace IronPython.Runtime.Operations {
             if (bytesArr.Length == 0) return 0;
 
 #if NETCOREAPP
-            return new BigInteger(bytesArr.AsSpan(), isUnsigned: !signed, isBigEndian: !isLittle);
+            var val = new BigInteger(bytesArr.AsSpan(), isUnsigned: !signed, isBigEndian: !isLittle);
 #else
-
-            if (isLittle) {
-                bool msbSet = (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80;
-                if (!msbSet) return new BigInteger(bytesArr);
-                return new BigInteger(bytesArr.Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray());
-            } else {
-                bool msbSet = (bytesArr[0] & 0x80) == 0x80;
-                if (!msbSet) return new BigInteger(bytesArr.Reverse());
-                return new BigInteger(bytesArr.Reverse().Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray());
-            }
+            if (!isLittle) bytesArr = bytesArr.Reverse();
+            if (!signed && (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80) Array.Resize(ref bytesArr, bytesArr.Length + 1);
+            var val = new BigInteger(bytesArr);
 #endif
+            return __new__(context, type, val);
         }
 
         public static int __round__(int self) {

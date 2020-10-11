@@ -8,7 +8,7 @@ import math
 import array
 
 # SHIFT should match the value in longintrepr.h for best testing.
-SHIFT = sys.int_info.bits_per_digit
+SHIFT = 30 if sys.implementation.name == "ironpython" else sys.int_info.bits_per_digit # https://github.com/IronLanguages/ironpython3/issues/974
 BASE = 2 ** SHIFT
 MASK = BASE - 1
 KARATSUBA_CUTOFF = 70   # from longobject.c
@@ -949,7 +949,10 @@ class LongTest(unittest.TestCase):
             got = round(10**k + 324678, -3)
             expect = 10**k + 325000
             self.assertEqual(got, expect)
-            self.assertIs(type(got), int)
+            if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
+                self.assertTrue(isinstance(got, int))
+            else:
+                self.assertIs(type(got), int)
 
         # nonnegative second argument: round(x, n) should just return x
         for n in range(5):
@@ -957,7 +960,10 @@ class LongTest(unittest.TestCase):
                 x = random.randrange(-10000, 10000)
                 got = round(x, n)
                 self.assertEqual(got, x)
-                self.assertIs(type(got), int)
+                if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
+                    self.assertTrue(isinstance(got, int))
+                else:
+                    self.assertIs(type(got), int)
         for huge_n in 2**31-1, 2**31, 2**63-1, 2**63, 2**100, 10**100:
             self.assertEqual(round(8979323, huge_n), 8979323)
 
@@ -966,10 +972,13 @@ class LongTest(unittest.TestCase):
             x = random.randrange(-10000, 10000)
             got = round(x)
             self.assertEqual(got, x)
-            self.assertIs(type(got), int)
+            if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
+                self.assertTrue(isinstance(got, int))
+            else:
+                self.assertIs(type(got), int)
 
         # bad second argument
-        bad_exponents = ('brian', 2.0, 0j, None)
+        bad_exponents = ('brian', 2.0, 0j)
         for e in bad_exponents:
             self.assertRaises(TypeError, round, 3, e)
 

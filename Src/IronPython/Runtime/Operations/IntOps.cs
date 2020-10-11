@@ -154,6 +154,22 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
+        public static object __new__(PythonType cls, string s, object @base) {
+            switch (PythonOps.Index(@base)) {
+                case int i:
+                    return __new__(cls, s, i);
+                case BigInteger bi:
+                    try {
+                        return __new__(cls, s, (int)bi);
+                    } catch (OverflowException) {
+                        return __new__(cls, s, int.MaxValue);
+                    }
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int @base=10) {
             object value;
             IPythonObject po = s as IPythonObject;
@@ -516,7 +532,7 @@ namespace IronPython.Runtime.Operations {
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
-            var reqLength = (bit_length(value) + (signed ? 1 : 0)) / 8;
+            var reqLength = (bit_length(value) + (value > 0 && signed ? 1 : 0) + 7) / 8;
             if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
 
             var bytes = new BigInteger(value).ToByteArray();

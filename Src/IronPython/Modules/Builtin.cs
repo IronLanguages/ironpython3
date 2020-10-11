@@ -628,13 +628,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (b == 0) {
                     return "0x0";
                 } else if (b < 0) {
-                    var val = (-b).ToString("x");
-                    if (val[0] == '0') val = val.TrimStart('0');
-                    return "-0x" + val;
+                    return "-0x" + ToHexString(-b);
                 } else {
-                    var val = b.ToString("x");
-                    if (val[0] == '0') val = val.TrimStart('0');
-                    return "0x" + val;
+                    return "0x" + ToHexString(b);
                 }
             }
 
@@ -643,6 +639,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return "-0x" + Convert.ToString(-x, 16);
             } else {
                 return "0x" + Convert.ToString(x, 16);
+            }
+
+            static string ToHexString(BigInteger b) {
+                var val = b.ToString("x");
+                if (val[0] == '0') val = val.TrimStart('0'); // BigInteger.ToString("x") sometimes pads with 0 so we need to trim it (https://github.com/dotnet/runtime/issues/43269)
+                return val;
             }
         }
 

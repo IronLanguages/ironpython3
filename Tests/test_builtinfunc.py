@@ -1068,6 +1068,10 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertEqual([(2147483647, 2), (2147483648, 3), (2147483649, 4)], list(enumerate([2,3,4], value_maker(int((1<<31) - 1)))))
             self.assertEqual([(2147483648, 2), (2147483649, 3), (2147483650, 4)], list(enumerate([2,3,4], value_maker(1<<31))))
 
+    def test_hex_long(self):
+        """https://github.com/IronLanguages/ironpython3/pull/973"""
+        self.assertEqual(hex(0x800000000), '0x800000000')
+
 # temp_func = in_main()
 # locals_globals = 7
 # temp_func()

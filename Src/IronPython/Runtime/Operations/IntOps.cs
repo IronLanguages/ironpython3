@@ -531,7 +531,6 @@ namespace IronPython.Runtime.Operations {
         [ClassMethod, StaticExtensionMethod]
         public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
-            // TODO: return int when possible?
 
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
@@ -542,12 +541,9 @@ namespace IronPython.Runtime.Operations {
 #if NETCOREAPP
             var val = new BigInteger(bytesArr.AsSpan(), isUnsigned: !signed, isBigEndian: !isLittle);
 #else
-
             if (!isLittle) bytesArr = bytesArr.Reverse();
-            bool msbSet = (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80;
-            var val = msbSet
-                ? new BigInteger(bytesArr.Concat(Enumerable.Repeat<byte>(signed ? (byte)0xff : (byte)0, 1)).ToArray())
-                : new BigInteger(bytesArr);
+            if (!signed && (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80) Array.Resize(ref bytesArr, bytesArr.Length + 1);
+            var val = new BigInteger(bytesArr);
 #endif
             return __new__(context, type, val);
         }

@@ -1374,7 +1374,7 @@ namespace IronPython.Runtime {
         #region Pickling
 
         public object __reduce__(CodeContext context) {
-            object iter;
+            object? iter;
             context.TryLookupBuiltin("iter", out iter);
             if (_iterating) {
                 return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_list), _index + 1);
@@ -1452,7 +1452,7 @@ namespace IronPython.Runtime {
             if (_iterating) {
                 return PythonTuple.MakeTuple(Modules.Builtin.reversed, PythonTuple.MakeTuple(_list), _list._size - _index - 1);
             }
-            object iter;
+            object? iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
         }

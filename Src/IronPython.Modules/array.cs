@@ -1113,7 +1113,7 @@ namespace IronPython.Modules {
             public object __iter__() => this;
 
             public object __reduce__(CodeContext context) {
-                object iter;
+                object? iter;
                 context.TryLookupBuiltin("iter", out iter);
                 if (_iterating) {
                     return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_array), _index + 1);

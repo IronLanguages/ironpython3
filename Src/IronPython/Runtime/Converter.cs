@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
@@ -315,10 +316,6 @@ namespace IronPython.Runtime {
             return _ienumerableSite.Target(_ienumerableSite, o);
         }
 
-        internal static bool TryConvertToIndex(object value, out int index) {
-            return TryConvertToIndex(value, true, out index);
-        }
-
         /// <summary>
         /// Attempts to convert value into a index usable for slicing and return the integer
         /// value.  If the conversion fails false is returned.
@@ -326,18 +323,10 @@ namespace IronPython.Runtime {
         /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
         /// result in an OverflowError.
         /// </summary>
-        internal static bool TryConvertToIndex(object value, bool throwOverflowError, out int index) {
-            int? res = ConvertToSliceIndexHelper(value, throwOverflowError);
-            if (!res.HasValue) {
-                object callable;
-                if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                    res = ConvertToSliceIndexHelper(PythonCalls.Call(callable), throwOverflowError);
-                }
-            }
-
-            index = res ?? default;
-            return res.HasValue;
-        }
+        internal static bool TryConvertToIndex(object value, out int index, bool throwOverflowError = true)
+            => TryGetInt(value, out index, throwOverflowError)
+                || PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object res)
+                    && TryGetInt(res, out index, throwOverflowError);
 
         /// <summary>
         /// Attempts to convert value into an index usable for slicing and return the integer or BigInteger
@@ -346,9 +335,8 @@ namespace IronPython.Runtime {
         internal static bool TryConvertToIndex(object value, out object index) {
             index = ConvertToSliceIndexHelper(value);
             if (index == null) {
-                object callable;
-                if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable));
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object res)) {
+                    index = ConvertToSliceIndexHelper(res);
                 }
             }
 
@@ -356,17 +344,13 @@ namespace IronPython.Runtime {
         }
 
         public static int ConvertToIndex(object value) {
-            int? res = ConvertToSliceIndexHelper(value, false);
-            if (res.HasValue) {
-                return res.Value;
+            if (TryGetInt(value, out int res, throwOverflowError: false)) {
+                return res;
             }
 
-            object callable;
-            if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                object index = PythonCalls.Call(callable);
-                res = ConvertToSliceIndexHelper(index, false);
-                if (res.HasValue) {
-                    return res.Value;
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object index)) {
+                if (TryGetInt(index, out res, throwOverflowError: false)) {
+                    return res;
                 }
 
                 throw PythonOps.TypeError("__index__ returned non-int (type {0})", DynamicHelpers.GetPythonType(index).Name);
@@ -375,27 +359,32 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("expected index value, got {0}", DynamicHelpers.GetPythonType(value).Name);
         }
 
-        private static int? ConvertToSliceIndexHelper(object value, bool throwOverflowError) {
-            if (value is int) return (int)value;
-            if (value is Extensible<int>) return ((Extensible<int>)value).Value;
-
-            BigInteger bi;
-            if (value is BigInteger) {
-                bi = (BigInteger)value;
-            } else if (value is Extensible<BigInteger> ebi) {
-                bi = ebi.Value;
+        internal static bool TryGetInt(object o, out int value, bool throwOverflowError) {
+            if (o is int i) {
+                value = i;
+            } else if (o is Extensible<int> ei) {
+                value = ei.Value;
             } else {
-                return null;
+                BigInteger bi;
+                if (o is BigInteger) {
+                    bi = (BigInteger)o;
+                } else if (o is Extensible<BigInteger> ebi) {
+                    bi = ebi.Value;
+                } else {
+                    value = default;
+                    return false;
+                }
+
+                if (bi.AsInt32(out value)) return true;
+
+                if (throwOverflowError) {
+                    throw PythonOps.OverflowError("can't fit long into index");
+                }
+
+                Debug.Assert(bi != 0);
+                value = bi > 0 ? int.MaxValue : int.MinValue;
             }
-
-            int res;
-            if (bi.AsInt32(out res)) return res;
-
-            if (throwOverflowError) {
-                throw PythonOps.OverflowError("can't fit long into index");
-            }
-
-            return bi == BigInteger.Zero ? 0 : bi > 0 ? Int32.MaxValue : Int32.MinValue;
+            return true;
         }
 
         private static object ConvertToSliceIndexHelper(object value) {

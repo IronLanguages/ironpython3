@@ -118,15 +118,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, object o) {
-            return __new__(context, TypeCache.Int32, o);
+        public static object __new__(CodeContext context, object x) {
+            return __new__(context, TypeCache.Int32, x);
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, Extensible<double> o) {
+        public static object __new__(CodeContext context, PythonType cls, Extensible<double> x) {
             object value;
             // always succeeds as float defines __int__
-            PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out value);
+            PythonTypeOps.TryInvokeUnaryOperator(context, x, "__int__", out value);
             if (cls == TypeCache.Int32) {
                 return (int)value;
             } else {
@@ -140,29 +140,29 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(PythonType cls, string s, int @base) {
+        public static object __new__(PythonType cls, string x, int @base) {
             ValidateType(cls);
 
             // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
             // integer parser, or special case it here.
             int start = 0;
             if (@base == 16 || @base == 8 || @base == 2) {
-                start = s.Length - TrimRadix(s, @base).Length;
+                start = x.Length - TrimRadix(x, @base).Length;
             }
 
-            return LiteralParser.ParseIntegerSign(s, @base, start);
+            return LiteralParser.ParseIntegerSign(x, @base, start);
         }
 
         [StaticExtensionMethod]
-        public static object __new__(PythonType cls, string s, object @base) {
+        public static object __new__(PythonType cls, string x, object @base) {
             switch (PythonOps.Index(@base)) {
                 case int i:
-                    return __new__(cls, s, i);
+                    return __new__(cls, x, i);
                 case BigInteger bi:
                     try {
-                        return __new__(cls, s, (int)bi);
+                        return __new__(cls, x, (int)bi);
                     } catch (OverflowException) {
-                        return __new__(cls, s, int.MaxValue);
+                        return __new__(cls, x, int.MaxValue);
                     }
                 default:
                     throw new InvalidOperationException();
@@ -170,12 +170,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int @base=10) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, int @base = 10) {
             object value;
-            IPythonObject po = s as IPythonObject;
-            if (po == null ||
-                !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
-                value = FastNew(context, s.MakeString(), @base);
+            if (!(x is IPythonObject po) || !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
+                using IPythonBuffer buf = x.GetBufferNoThrow()
+                    ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
+                value = FastNew(context, buf.AsReadOnlySpan().MakeString(), @base);
             }
 
             if (cls == TypeCache.Int32) {

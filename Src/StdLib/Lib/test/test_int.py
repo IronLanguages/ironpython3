@@ -298,7 +298,7 @@ class IntTestCases(unittest.TestCase):
             x = f(b'100')
             with self.subTest(type(x)):
                 self.assertEqual(int(x), 100)
-                if isinstance(x, (str, bytes, bytearray)):
+                if isinstance(x, (str, bytes, bytearray)) or sys.implementation.name == "ironpython":
                     self.assertEqual(int(x, 2), 4)
                 else:
                     msg = "can't convert non-string"

@@ -70,7 +70,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]IBufferProtocol source) {
-            if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size)) {
                 __init__(size);
             } else {
                 lock (this) {
@@ -82,7 +82,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object? source) {
-            if (Converter.TryConvertToIndex(source, throwOverflowError: true, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size)) {
                 __init__(size);
             } else if (source is IEnumerable<byte> en) {
                 lock (this) {

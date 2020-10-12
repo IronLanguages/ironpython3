@@ -51,10 +51,10 @@ namespace IronPython.Runtime.Operations {
                         // TODO: should also raise DeprecationWarning
                         value = ((Extensible<double>)d).Value;
                     } else {
-                        throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
+                        throw PythonOps.TypeErrorForBadInstance("__float__ returned non-float (type {0})", d);
                     }
                 } else {
-                    throw PythonOps.TypeError("float() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(x));
+                    throw PythonOps.TypeErrorForBadInstance("float() argument must be a string or a number, not '{0}'", x);
                 }
             }
 
@@ -66,13 +66,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [BytesLike, NotNull]IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x) {
             // First, check for subclasses of bytearray/bytes
             object value;
-            if (!(s is IPythonObject po) ||
+            if (!(x is IPythonObject po) ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
                 // If __float__ does not exist, just parse the string normally
-                value = ParseFloat(s.MakeString());
+                using IPythonBuffer buf = x.GetBufferNoThrow()
+                    ?? throw PythonOps.TypeErrorForBadInstance("float() argument must be a string or a number, not '{0}'", x);
+                value = ParseFloat(buf.AsReadOnlySpan().MakeString());
             }
 
             if (cls == TypeCache.Double) {
@@ -1172,23 +1174,24 @@ namespace IronPython.Runtime.Operations {
 
             object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
             if (d is double) return (float)(double)d;
-            throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
+            throw PythonOps.TypeErrorForBadInstance("__float__ returned non-float (type {0})", d);
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x) {
             // First, check for subclasses of bytearray/bytes
             object value;
-            IPythonObject po = s as IPythonObject;
-            if (po == null ||
+            if (!(x is IPythonObject po) ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
                 // If __float__ does not exist, just parse the string normally
-                value = ParseFloat(s.MakeString());
+                using IPythonBuffer buf = x.GetBufferNoThrow()
+                    ?? throw PythonOps.TypeErrorForBadInstance("float() argument must be a string or a number, not '{0}'", x);
+                value = ParseFloat(buf.AsReadOnlySpan().MakeString());
             }
 
             if (!(value is double)) {
                 // The check for double is correct, because that's all Python types should be using
-                throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(value));
+                throw PythonOps.TypeErrorForBadInstance("__float__ returned non-float (type {0})", value);
             }
 
             if (cls == TypeCache.Single) {

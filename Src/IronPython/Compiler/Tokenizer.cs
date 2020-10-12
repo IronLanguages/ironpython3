@@ -808,11 +808,6 @@ namespace IronPython.Compiler {
                             iVal = iVal << 1 | (ch - '0');
                         }
                         break;
-                    case 'l':
-                    case 'L':
-                        MarkTokenEnd();
-
-                        return new ConstantValueToken(useBigInt ? bigInt : iVal);
                     default:
                         BufferBack();
                         MarkTokenEnd();
@@ -845,13 +840,6 @@ namespace IronPython.Compiler {
                     case '6':
                     case '7':
                         break;
-
-                    case 'l':
-                    case 'L':
-                        MarkTokenEnd();
-
-                        // TODO: parse in place
-                        return new ConstantValueToken(LiteralParser.ParseBigInteger(GetTokenSubstring(2, TokenLength - 2), 8));
 
                     default:
                         BufferBack();
@@ -900,13 +888,6 @@ namespace IronPython.Compiler {
                     case 'E':
                     case 'F':
                         break;
-
-                    case 'l':
-                    case 'L':
-                        MarkTokenEnd();
-
-                        // TODO: parse in place
-                        return new ConstantValueToken(LiteralParser.ParseBigInteger(GetTokenSubstring(2, TokenLength - 3), 16));
 
                     default:
                         BufferBack();

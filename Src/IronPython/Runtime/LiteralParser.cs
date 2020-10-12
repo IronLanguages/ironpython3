@@ -447,9 +447,6 @@ namespace IronPython.Runtime {
                     }
                     if (!HexValue(text[start], out digit)) break;
                     if (!(digit < b)) {
-                        if (text[start] == 'l' || text[start] == 'L') {
-                            break;
-                        }
                         throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
                     }
 
@@ -535,7 +532,6 @@ namespace IronPython.Runtime {
             BigInteger m = BigInteger.One;
 
             int i = text.Length - 1;
-            if (text[i] == 'l' || text[i] == 'L') i -= 1;
 
             int groupMax = 7;
             if (b <= 10) groupMax = 9;// 2 147 483 647
@@ -581,16 +577,9 @@ namespace IronPython.Runtime {
                 }
                 if (!HexValue(text[start], out digit)) break;
                 if (!(digit < b)) {
-                    if (text[start] == 'l' || text[start] == 'L') {
-                        break;
-                    }
                     throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
                 }
                 ret = ret * b + digit;
-                start++;
-            }
-
-            if (start < end && (text[start] == 'l' || text[start] == 'L')) {
                 start++;
             }
 

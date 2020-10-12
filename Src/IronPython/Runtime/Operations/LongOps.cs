@@ -1016,7 +1016,7 @@ namespace IronPython.Runtime.Operations {
 
             // see https://bugs.python.org/issue4707#msg78141
             var i = BigInteger.Pow(10, -intNDigits);
-            var r = self % (2 * i);
+            var r = Mod(self, 2 * i);
             var o = i / 2;
             self -= r;
 

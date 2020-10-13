@@ -27,11 +27,11 @@ namespace IronPython.Zlib
         public const string __doc__ = @"The functions in this module allow compression and decompression using the
 zlib library, which is based on GNU zip.
 
-adler32(string[, start]) -- Compute an Adler-32 checksum.
-compress(string[, level]) -- Compress string, with compression level in 1-9.
+adler32(data[, value]) -- Compute an Adler-32 checksum.
+compress(data[, level]) -- Compress data, with compression level 1-9.
 compressobj([level]) -- Return a compressor object.
-crc32(string[, start]) -- Compute a CRC-32 checksum.
-decompress(string,[wbits],[bufsize]) -- Decompresses a compressed string.
+crc32(data[, value]) -- Compute a CRC-32 checksum.
+decompress(data,[wbits],[bufsize]) -- Decompresses compressed data.
 decompressobj([wbits]) -- Return a decompressor object.
 
 'wbits' is window buffer size.
@@ -69,7 +69,7 @@ objects support decompress() and flush().";
 
         internal const int DEFAULTALLOC = 16 * 1024;
 
-        [Documentation(@"adler32(data[, value]) -- Compute an Adler-32 checksum of string.
+        [Documentation(@"adler32(data[, value]) -- Compute an Adler-32 checksum of data.
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
@@ -79,7 +79,7 @@ a signed integer.")]
             return (int)Adler32.GetAdler32Checksum(value, buffer.AsUnsafeArray() ?? buffer.ToArray(), 0, buffer.NumBytes());
         }
 
-        [Documentation(@"crc32(data[, value]) -- Compute a CRC-32 checksum of string.
+        [Documentation(@"crc32(data[, value]) -- Compute a CRC-32 checksum of data.
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
@@ -87,7 +87,7 @@ a signed integer.")]
             // TODO: [PythonIndex(overflow=mask)] uint value = 0
             => IronPython.Modules.PythonBinaryAscii.crc32(data, value);
 
-        [Documentation(@"compress(data[, level]) -- Returned compressed string.
+        [Documentation(@"compress(data[, level]) -- Returns a bytes object containing compressed data.
 
 Optional arg level is the compression level, in 1-9.")]
         public static Bytes compress([NotNull] IBufferProtocol data,
@@ -152,7 +152,7 @@ Optional arg level is the compression level, in 1-9.")]
             return new Compress(level, method, wbits, memlevel, strategy);
         }
 
-        [Documentation(@"decompress(data[, wbits[, bufsize]]) -- Return decompressed string.
+        [Documentation(@"decompress(data[, wbits[, bufsize]]) -- Returns a bytes object containing the uncompressed data.
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]

@@ -374,7 +374,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region crc32
 
-        [Documentation("crc32(data[, crc]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
+        [Documentation("crc32(data[, crc]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of data.")]
         public static object crc32([NotNull]IBufferProtocol data, uint crc = 0) {
             // TODO: [PythonIndex(overflow=mask)] uint crc = 0
             using var buffer = data.GetBuffer();

@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Exceptions;
 
@@ -271,6 +272,24 @@ namespace IronPython.Runtime {
                     dest[i++] = b;
                 }
             }
+        }
+
+        internal static byte[]? AsUnsafeArray(this IPythonBuffer buffer) {
+            if (!buffer.IsCContiguous())
+                return null;
+
+            if (buffer.Object is Bytes b)
+                return b.UnsafeByteArray;
+
+            if (buffer.Object is Memory<byte> mem) {
+                if (MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> seg) && seg.Array != null && seg.Offset == 0 && seg.Count == seg.Array.Length)
+                    return seg.Array;
+            } else if (buffer.Object is ReadOnlyMemory<byte> rom) {
+                if (MemoryMarshal.TryGetArray(rom, out ArraySegment<byte> seg) && seg.Array != null && seg.Offset == 0 && seg.Count == seg.Array.Length)
+                    return seg.Array;
+            }
+
+            return null;
         }
     }
 

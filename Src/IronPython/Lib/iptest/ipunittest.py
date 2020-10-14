@@ -111,7 +111,7 @@ def load_ironpython_test(*args):
 class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     def setUp(self):
-        self._temporary_dir = os.path.join(self.temp_dir, "IronPythonTest", clr.TargetFramework)
+        self._temporary_dir = os.path.join(self.temp_dir, "IronPythonTest", clr.TargetFramework.translate(str.maketrans(" ,=", "_--")))
         self.ensure_directory_present(self._temporary_dir)
 
         self._iron_python_test_dll = _iron_python_test_dll

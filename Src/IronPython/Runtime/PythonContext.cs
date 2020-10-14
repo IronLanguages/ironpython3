@@ -722,7 +722,13 @@ namespace IronPython.Runtime {
             }
             flags.verbose = PythonOptions.Verbose ? 1 : 0;
             flags.unicode = 1;
-            flags.bytes_warning = PythonOptions.BytesWarning ? 1 : 0;
+            flags.bytes_warning = PythonOptions.BytesWarning switch {
+                Severity.Ignore => 0,
+                Severity.Warning => 1,
+                Severity.Error => 2,
+                Severity.FatalError => 3,
+                _ => (int)PythonOptions.BytesWarning
+            };
             flags.quiet = PythonOptions.Quiet ? 1 : 0;
         }
 

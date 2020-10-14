@@ -27,11 +27,11 @@ namespace IronPython.Zlib
         public const string __doc__ = @"The functions in this module allow compression and decompression using the
 zlib library, which is based on GNU zip.
 
-adler32(string[, start]) -- Compute an Adler-32 checksum.
-compress(string[, level]) -- Compress string, with compression level in 1-9.
+adler32(data[, value]) -- Compute an Adler-32 checksum.
+compress(data[, level]) -- Compress data, with compression level 1-9.
 compressobj([level]) -- Return a compressor object.
-crc32(string[, start]) -- Compute a CRC-32 checksum.
-decompress(string,[wbits],[bufsize]) -- Decompresses a compressed string.
+crc32(data[, value]) -- Compute a CRC-32 checksum.
+decompress(data,[wbits],[bufsize]) -- Decompresses compressed data.
 decompressobj([wbits]) -- Return a decompressor object.
 
 'wbits' is window buffer size.
@@ -69,34 +69,32 @@ objects support decompress() and flush().";
 
         internal const int DEFAULTALLOC = 16 * 1024;
 
-        [Documentation(@"adler32(string[, start]) -- Compute an Adler-32 checksum of string.
+        [Documentation(@"adler32(data[, value]) -- Compute an Adler-32 checksum of data.
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int adler32([BytesLike]IList<byte> data, long baseValue=1L)
+        public static int adler32([NotNull] IBufferProtocol data, long value=1L)
         {
-            return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count);
+            using var buffer = data.GetBuffer();
+            return (int)Adler32.GetAdler32Checksum(value, buffer.AsUnsafeArray() ?? buffer.ToArray(), 0, buffer.NumBytes());
         }
 
-        [Documentation(@"crc32(string[, start]) -- Compute a CRC-32 checksum of string.
+        [Documentation(@"crc32(data[, value]) -- Compute a CRC-32 checksum of data.
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static BigInteger crc32([BytesLike]IList<byte> data, long baseValue=0L)
-        {
-            if(baseValue < int.MinValue || baseValue > uint.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(baseValue));
+        public static object crc32([NotNull] IBufferProtocol data, uint value = 0)
+            // TODO: [PythonIndex(overflow=mask)] uint value = 0
+            => IronPython.Modules.PythonBinaryAscii.crc32(data, value);
 
-            return IronPython.Modules.PythonBinaryAscii.crc32(data, 0, data.Count, (uint)baseValue);
-        }
-
-        [Documentation(@"compress(string[, level]) -- Returned compressed string.
+        [Documentation(@"compress(data[, level]) -- Returns a bytes object containing compressed data.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static Bytes compress([BytesLike]IList<byte> data,
+        public static Bytes compress([NotNull] IBufferProtocol data,
             int level=Z_DEFAULT_COMPRESSION)
         {
-            byte[] input = data.ToArray();
+            using var buffer = data.GetBuffer();
+            byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
             byte[] output = new byte[input.Length + input.Length / 1000 + 12 + 1];
 
             ZStream zst = new ZStream();
@@ -154,15 +152,16 @@ Optional arg level is the compression level, in 1-9.")]
             return new Compress(level, method, wbits, memlevel, strategy);
         }
 
-        [Documentation(@"decompress(string[, wbits[, bufsize]]) -- Return decompressed string.
+        [Documentation(@"decompress(data[, wbits[, bufsize]]) -- Returns a bytes object containing the uncompressed data.
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static Bytes decompress([BytesLike]IList<byte> data,
+        public static Bytes decompress([NotNull] IBufferProtocol data,
             int wbits=MAX_WBITS,
             int bufsize=DEFAULTALLOC)
         {
-            var bytes = Decompress(data.ToArray(), wbits, bufsize);
+            using var buffer = data.GetBuffer();
+            var bytes = Decompress(buffer.AsUnsafeArray() ?? buffer.ToArray(), wbits, bufsize);
             return Bytes.Make(bytes);
         }
 

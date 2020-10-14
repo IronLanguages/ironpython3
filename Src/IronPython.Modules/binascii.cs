@@ -374,20 +374,19 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region crc32
 
-        [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static object crc32([NotNull]IBufferProtocol data, uint crc = 0)
-            => crc32_impl(data.ToBytes(), crc);
-
-        private static object crc32_impl(IList<byte> bytes, uint crc) {
-            var res = crc32(bytes, 0, bytes.Count, crc);
+        [Documentation("crc32(data[, crc]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of data.")]
+        public static object crc32([NotNull]IBufferProtocol data, uint crc = 0) {
+            // TODO: [PythonIndex(overflow=mask)] uint crc = 0
+            using var buffer = data.GetBuffer();
+            var res = crc32(buffer.AsReadOnlySpan(), crc);
             if (res <= int.MaxValue) return (int)res;
             return (BigInteger)res;
         }
 
-        internal static uint crc32(IList<byte> buffer, int offset, int count, uint baseValue) {
+        private static uint crc32(ReadOnlySpan<byte> buffer, uint baseValue) {
             uint remainder = (baseValue ^ 0xffffffff);
-            for (int i = offset; i < offset + count; i++) {
-                remainder ^= buffer[i];
+            foreach (byte val in buffer) {
+                remainder ^= val;
                 for (int j = 0; j < 8; j++) {
                     if ((remainder & 0x01) != 0) {
                         remainder = (remainder >> 1) ^ 0xEDB88320;

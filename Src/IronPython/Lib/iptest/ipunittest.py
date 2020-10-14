@@ -111,16 +111,16 @@ def load_ironpython_test(*args):
 class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     def setUp(self):
-        self._temporary_dir = os.path.join(self.temp_dir, "IronPython")
+        self._temporary_dir = os.path.join(self.temp_dir, "IronPythonTest", clr.TargetFramework)
         self.ensure_directory_present(self._temporary_dir)
-        
+
         self._iron_python_test_dll = _iron_python_test_dll
         self._test_dir = os.path.join(_root, 'Tests')
         self._test_inputs_dir = os.path.join(_root, 'Tests', 'Inputs')
 
     def add_reference_to_dlr_core(self):
         _add_reference_to_dlr_core()
-        
+
     def load_iron_python_test(self, *args):
         if not is_cli: return
         if args:
@@ -216,7 +216,7 @@ def run_test(name):
 #     else: 
 #         ipython_executable  = path_combine(sys.prefix, 'ipy.exe')
 #         cpython_executable  = sys.executable
-    
+
 #     #team_dir            = path_combine(ip_root, r'Team')
 #     #team_profile        = path_combine(team_dir, r'settings.py')
 #     #

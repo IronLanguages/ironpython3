@@ -26,11 +26,14 @@ namespace IronPython.Hosting {
 
             switch (arg) {
                 case "-B": break; // dont_write_bytecode always true in IronPython
-                case "-U": break; // unicode always true in IronPython
                 case "-d": break; // debug output from parser, always False in IronPython
 
-                case "-b": // Not shown in help on CPython
-                    LanguageSetup.Options["BytesWarning"] = ScriptingRuntimeHelpers.True;
+                case "-b":
+                    LanguageSetup.Options["BytesWarning"] = LanguageSetup.Options.ContainsKey("BytesWarning") ? Severity.Error : Severity.Warning;
+                    break;
+
+                case "-bb":
+                    LanguageSetup.Options["BytesWarning"] = Severity.Error;
                     break;
 
                 case "-c":
@@ -232,6 +235,7 @@ namespace IronPython.Hosting {
 #if !IRONPYTHON_WINDOW
                 { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
 #endif
+                { "-b",                     "issue warnings about str(bytes_instance), str(bytearray_instance) and comparing bytes/bytearray with str. (-bb: issue errors)"},
                 { "-m module",              "run library module as a script"},
                 { "-x",                     "Skip first line of the source" },
                 { "-u",                     "Unbuffered stdout & stderr" },

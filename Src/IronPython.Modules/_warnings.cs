@@ -33,7 +33,13 @@ namespace IronPython.Modules {
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0));
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.ImportWarning, null, 0));
-            defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.BytesWarning, null, 0));
+
+            string bytesWarningAction = context.PythonOptions.BytesWarning switch {
+                Severity.Ignore => "ignore",
+                Severity.Warning => "default",
+                _ => "error"
+            };
+            defaultFilters.AddNoLock(PythonTuple.MakeTuple(bytesWarningAction, null, PythonExceptions.BytesWarning, null, 0));
 
             context.GetOrCreateModuleState(_keyFields, () => {
                 dict.Add(_keyDefaultAction, "default");

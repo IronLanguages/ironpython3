@@ -33,7 +33,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public ReadOnlyCollection<string>/*!*/ WarningFilters { get; }
 
-        public bool BytesWarning { get; }
+        public Severity BytesWarning { get; }
 
         /// <summary>
         /// Enables debugging support.  When enabled a .NET debugger can be attached
@@ -130,7 +130,7 @@ namespace IronPython.Runtime {
             Arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             WarningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
 
-            BytesWarning = GetOption(options, "BytesWarning", false);
+            BytesWarning = GetOption(options, "BytesWarning", Severity.Ignore);
             Debug = GetOption(options, "Debug", false);
             Inspect = GetOption(options, "Inspect", false);
             NoUserSite = GetOption(options, "NoUserSite", false);

@@ -234,4 +234,10 @@ class IronMathTest(IronPythonTestCase):
         self.assertEqual(BigInteger(1).CompareTo(None), 1)
         self.assertEqual(BigInteger(1).CompareTo(True), 0)
 
+    def test_rightshiftby32_negative_bug(self):
+        # test workaround for https://github.com/dotnet/runtime/issues/43396
+        from System.Numerics import BigInteger
+        self.assertEqual(BigInteger.Parse("-18446744073709543424") >> 32, -4294967296)
+        self.assertEqual(BigInteger.Parse("-79228162514264337593543917568") >> 32, -18446744073709551616)
+
 run_test(__name__)

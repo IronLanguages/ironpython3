@@ -369,10 +369,18 @@ namespace IronPython.Runtime.Operations {
             return x << y;
         }
 
+        private static readonly bool hasShiftBug = BigInteger.Parse("-18446744073709543424") >> 32 == 0; // https://github.com/dotnet/runtime/issues/43396
+
         [SpecialName]
         public static BigInteger op_RightShift(BigInteger x, int y) {
             if (y < 0) {
                 throw PythonOps.ValueError("negative shift count");
+            }
+            if (hasShiftBug && x.IsNegative()) {
+                if (y == 0) return x;
+                if (y % 32 == 0) {
+                    return (x >> (y - 1)) >> 1;
+                }
             }
             return x >> y;
         }

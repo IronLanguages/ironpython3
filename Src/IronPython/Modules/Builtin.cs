@@ -643,7 +643,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             static string ToHexString(BigInteger b) {
                 var val = b.ToString("x");
-                if (val[0] == '0') val = val.TrimStart('0'); // BigInteger.ToString("x") sometimes pads with 0 so we need to trim it (https://github.com/dotnet/runtime/issues/43269)
+                if (val[0] == '0') val = val.TrimStart('0'); // positive values with the most significant bit set are padded with a 0
                 return val;
             }
         }

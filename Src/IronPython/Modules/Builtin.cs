@@ -187,19 +187,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNull]IBufferProtocol source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
             var sourceCodeKind = ValidateCompileMode(mode);
 
-            byte[] bytes = source as byte[] ?? ((source is Bytes b) ? b.UnsafeByteArray : source.ToArray());
+            using var buffer = source.GetBuffer();
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
             var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, filename);
             var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, filename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
-
-        public static object compile(CodeContext/*!*/ context, [NotNull]MemoryView source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1)
-            => compile(context, source.tobytes(), filename, mode, flags, dont_inherit, optimize);
 
         [Documentation("")] // provided by first overload
         public static object compile(CodeContext/*!*/ context, [NotNull]string source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
@@ -296,12 +294,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> expression, PythonDictionary? globals = null, object? locals = null) {
+        public static object eval(CodeContext/*!*/ context, [NotNull]IBufferProtocol expression, PythonDictionary? globals = null, object? locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
-            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.UnsafeByteArray : expression.ToArray());
+            using var buffer = expression.GetBuffer();
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
 
             // Count number of whitespace characters to skip at the beginning.
             // It assumes an ASCII compatible encoding (like UTF-8 or Latin-1) but excludes UTF-16 or UTF-32.
@@ -373,8 +372,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [BytesLike, NotNull]IList<byte> code, PythonDictionary? globals = null, object? locals = null) {
-            byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.UnsafeByteArray : code.ToArray());
+        public static void exec(CodeContext/*!*/ context, [NotNull]IBufferProtocol code, PythonDictionary? globals = null, object? locals = null) {
+            using var buffer = code.GetBuffer();
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
             SourceUnit source = context.LanguageContext.CreateSourceUnit(
                 new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),
                 "<string>",

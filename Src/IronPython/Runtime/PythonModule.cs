@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -30,6 +31,7 @@ namespace IronPython.Runtime {
     public class PythonModule : IDynamicMetaObjectProvider, IPythonMembersList {
         private readonly PythonDictionary _dict;
         private Scope _scope;
+        private bool _cleanedUp = false;
 
         public PythonModule() {
             _dict = new PythonDictionary();
@@ -49,7 +51,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Creates a new PythonModule with the specified dictionary.
-        /// 
+        ///
         /// Used for creating modules for builtin modules which don't have any code associated with them.
         /// </summary>
         internal PythonModule(PythonDictionary dict) {
@@ -253,7 +255,7 @@ namespace IronPython.Runtime {
 
             private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder binder, DynamicMetaObject codeContext) {
                 string name = GetGetMemberName(binder);
-                var tmp = Expression.Variable(typeof(object), "res");                
+                var tmp = Expression.Variable(typeof(object), "res");
 
                 return new DynamicMetaObject(
                     Expression.Block(
@@ -355,7 +357,7 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-        
+
         internal class DebugProxy {
             private readonly PythonModule _module;
 
@@ -375,6 +377,30 @@ namespace IronPython.Runtime {
             }
         }
 
-        
+        /// <summary>
+        /// Cleanup globals so that they could be garbage collected.
+        /// Note that it cleans python sourced modules only,
+        /// because C# modules are more fundamental and their globals may be required when other python object's finalizer is executing.
+        /// </summary>
+        public void Cleanup(CodeContext context) {
+            if (_cleanedUp) {
+                return;
+            }
+
+            _cleanedUp = true;
+
+            if (!_dict.ContainsKey("__file__")) {
+                return; // not from Python source, skip clean up
+            }
+
+            foreach (var key in _dict.Keys.ToList()) {
+                var obj = _dict[key];
+                if (obj is PythonModule module) {
+                    module.Cleanup(context);
+                } else if (key is string name) {
+                    __delattr__(context, name);
+                }
+            }
+        }
     }
 }

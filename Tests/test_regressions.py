@@ -17,6 +17,7 @@ Work Item number.
 import os
 import sys
 import unittest
+from subprocess import check_output
 
 from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython, stdout_trapper
 
@@ -1466,5 +1467,45 @@ class C:
         o = test__class__keyword()
         self.assertEqual(o.get_self_class(), o.get_class())
         self.assertEqual(o.get_class(), o.get_class_class())
+
+    @unittest.skipIf(is_mono, 'https://github.com/IronLanguages/ironpython3/issues/937')
+    def test_ipy3_gh985(self):
+        """https://github.com/IronLanguages/ironpython3/issues/985"""
+        code = """
+import sys
+
+
+class Foo:
+    def __init__(self, name):
+        self.name = name
+
+    def __del__(self):
+        sys.stdout.write(self.name + '\\n')
+
+
+def func():
+    foo = Foo('Foo 1')
+    bar = Foo('Foo 2')
+    del bar
+
+
+func()
+
+
+foo = Foo('Foo 3')
+foo = Foo('Foo 4')
+        """
+
+        test_script_name = os.path.join(self.test_dir, 'ipy3_gh985.py')
+        f = open(test_script_name, 'w')
+        try:
+            f.write(code)
+            f.close()
+
+            output = check_output([sys.executable, test_script_name]).decode(sys.stdout.encoding).strip()
+            self.assertEqual(set(output.split(os.linesep)), {'Foo 1', 'Foo 2', 'Foo 3', 'Foo 4'})
+        finally:
+            os.unlink(test_script_name)
+
 
 run_test(__name__)

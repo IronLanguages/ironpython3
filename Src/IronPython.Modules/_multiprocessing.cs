@@ -1,9 +1,9 @@
-using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+
+using Microsoft.Scripting.Runtime;
+using Microsoft.Win32.SafeHandles;
 
 using IronPython.Runtime;
 
@@ -33,23 +33,26 @@ namespace IronPython.Modules {
                                      );
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static IList<byte> recv(int handle, int size) {
+        public static Bytes recv(int handle, int size) {
             var buf = new byte[size];
             recv(new IntPtr(handle), buf, size, 0);
-            return buf;
+            return Bytes.Make(buf);
         }
 
         [DllImport("ws2_32.dll", SetLastError = true)]
         private static extern int send(
                                          [In] IntPtr socketHandle,
-                                         [In] byte[] pinnedBuffer,
+                                         [In] IntPtr pinnedBuffer, // const char*
                                          [In] int len,
                                          [In] SocketFlags socketFlags
                                          );
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static int send(int handle, [BytesLike]IList<byte> buf) {
-            return send(new IntPtr(handle), buf.ToArray(), buf.Count, 0);
+        public static unsafe int send(int handle, [NotNull] IBufferProtocol data) {
+            using var buffer = data.GetBuffer();
+            var span = buffer.AsReadOnlySpan();
+            fixed (byte* ptr = &MemoryMarshal.GetReference(span))
+                return send(new IntPtr(handle), new IntPtr(ptr), span.Length, 0);
         }
     }
 }

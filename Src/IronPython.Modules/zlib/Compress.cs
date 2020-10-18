@@ -44,14 +44,15 @@ namespace IronPython.Zlib
             }
         }
 
-        [Documentation(@"compress(data) -- Return a string containing data compressed.
+        [Documentation(@"compress(data) -- Return a bytes object containing compressed data.
 
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public Bytes compress([BytesLike]IList<byte> data)
+        public Bytes compress([NotNull] IBufferProtocol data)
         {
-            byte[] input = data.ToArray();
+            using var buffer = data.GetBuffer();
+            byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
 
             long start_total_out = zst.total_out;
@@ -83,7 +84,7 @@ Call the flush() method to clear these buffers.")]
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
-        [Documentation(@"flush( [mode] ) -- Return a string containing any remaining compressed data.
+        [Documentation(@"flush( [mode] ) -- Return a bytes object containing any remaining compressed data.
 
 mode can be one of the constants Z_SYNC_FLUSH, Z_FULL_FLUSH, Z_FINISH; the
 default value used when mode is not specified is Z_FINISH.

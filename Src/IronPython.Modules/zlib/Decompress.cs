@@ -50,7 +50,7 @@ namespace IronPython.Zlib
         public Bytes unused_data { get; private set; }
         public Bytes unconsumed_tail { get; private set; }
 
-        [Documentation(@"decompress(data, max_length) -- Return a string containing the decompressed
+        [Documentation(@"decompress(data, max_length) -- Return a bytes object containing the decompressed
 version of the data.
 
 After calling this function, some of the input data may still be stored in
@@ -59,11 +59,12 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public Bytes decompress([BytesLike]IList<byte> value, int max_length=0)
+        public Bytes decompress([NotNull] IBufferProtocol data, int max_length=0)
         {
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
-            byte[] input = value.ToArray();
+            using var buffer = data.GetBuffer();
+            byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
             byte[] output = new byte[max_length > 0 && ZlibModule.DEFAULTALLOC > max_length ? max_length : ZlibModule.DEFAULTALLOC];
 
             long start_total_out = zst.total_out;
@@ -109,7 +110,7 @@ the unconsumed_tail attribute.")]
 
         public bool eof { get; set; }
 
-        [Documentation(@"flush( [length] ) -- Return a string containing any remaining
+        [Documentation(@"flush( [length] ) -- Return a bytes object  containing any remaining
 decompressed data. length, if given, is the initial size of the
 output buffer.
 

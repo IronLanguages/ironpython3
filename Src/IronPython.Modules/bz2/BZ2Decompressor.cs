@@ -46,7 +46,7 @@ decompress() function instead.
                 }
             }
 
-            [Documentation(@"decompress(data) -> string
+            [Documentation(@"decompress(data) -> bytes
 
 Provide more data to the decompressor object. It will return chunks
 of decompressed data whenever possible. If you try to decompress data
@@ -54,11 +54,12 @@ after the end of stream is found, EOFError will be raised. If any data
 was found after the end of stream, it'll be ignored and saved in
 unused_data attribute.
 ")]
-            public Bytes decompress([BytesLike]IList<byte> data) {
+            public Bytes decompress([NotNull] IBufferProtocol data) {
                 if (_finished)
                     throw PythonOps.EofError("End of stream was already found");
 
-                var bytes = data.ToArrayNoCopy();
+                using var buffer = data.GetBuffer();
+                byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
 
                 if (!InitializeMemoryStream(bytes))
                     AddData(bytes);

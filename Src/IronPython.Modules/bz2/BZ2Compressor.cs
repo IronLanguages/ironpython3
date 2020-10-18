@@ -40,22 +40,25 @@ must be a number between 1 and 9.
                 this.bz2Output = new BZip2OutputStream(this.output, true);
             }
 
-            [Documentation(@"compress(data) -> string
+            [Documentation(@"compress(data) -> bytes
 
 Provide more data to the compressor object. It will return chunks of
-compressed data whenever possible. When you've finished providing data
+compressed data whenever possible, or b'' otherwise.
+
+When you've finished providing data
 to compress, call the flush() method to finish the compression process,
 and return what is left in the internal buffers.
 ")]
-            public Bytes compress([BytesLike]IList<byte> data) {
-                byte[] bytes = data.ToArrayNoCopy();
+            public Bytes compress([NotNull] IBufferProtocol data) {
+                using var buffer = data.GetBuffer();
+                byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
 
                 this.bz2Output.Write(bytes, 0, bytes.Length);
 
                 return Bytes.Make(this.GetLatestData());
             }
 
-            [Documentation(@"flush() -> string
+            [Documentation(@"flush() -> bytes
 
 Finish the compression process and return what is left in internal buffers.
 You must not use the compressor object after calling this method.

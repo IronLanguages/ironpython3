@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition=" '$(TargetFramework)' == 'net5.0-windows' ">$(BaseOutputPath)\net5.0</OutputPath>
+  </PropertyGroup>
+
+  <Import Project="net5.0.props" />
+</Project>

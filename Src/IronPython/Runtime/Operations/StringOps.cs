@@ -454,11 +454,11 @@ namespace IronPython.Runtime.Operations {
             return count(self, sub, istart, iend);
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]string encoding = "utf-8", [NotNull, DisallowNull]string? errors = null) {
+        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]string encoding = "utf-8", [NotNull, DisallowNull]string? errors = null!) {
             return RawEncode(context, s, encoding, errors);
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]Encoding encoding, [NotNull, DisallowNull]string? errors = null) {
+        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]Encoding encoding, [NotNull, DisallowNull]string? errors = null!) {
             return DoEncode(context, s, errors, GetEncodingName(encoding, normalize: false), encoding, includePreamble: true);
         }
 

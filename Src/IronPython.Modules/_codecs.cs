@@ -103,7 +103,7 @@ namespace IronPython.Modules {
 
         #region Generic Encoding
 
-        public static object decode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null, [NotNull]string errors = "strict") {
+        public static object decode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null!, [NotNull]string errors = "strict") {
             if (encoding == null) {
                 PythonContext lc = context.LanguageContext;
                 if (obj is IBufferProtocol bp) {
@@ -121,7 +121,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object encode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null, [NotNull]string errors = "strict") {
+        public static object encode(CodeContext/*!*/ context, object? obj, [NotNull, DisallowNull]string? encoding = null!, [NotNull]string errors = "strict") {
             if (encoding == null) {
                 if (obj is string str) {
                     PythonContext lc = context.LanguageContext;
@@ -870,7 +870,7 @@ namespace IronPython.Modules {
                     if (bytes != null) {
                         for (int i = 0; i < b.Count; i++, byteIndex++) {
                             bytes[byteIndex] = b[i];
-                        } 
+                        }
                     }
                     return b.Count;
 

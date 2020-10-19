@@ -583,50 +583,46 @@ namespace IronPython.Modules {
 
             private Encoder _encoder;
 
-            public void Parse(CodeContext context, string data, bool isfinal = false) {
+            public void Parse(CodeContext context, [NotNull] string data, bool isfinal = false) {
                 // CPython converts to UTF-8 via PyUnicode_AsUTF8AndSize
                 _encoder ??= context.LanguageContext.DefaultEncoding.GetEncoder();
-#if NETCOREAPP
+
                 var chars = data.AsSpan();
                 byte[] bytes = new byte[_encoder.GetByteCount(chars, flush: isfinal)];
                 _encoder.GetBytes(chars, bytes.AsSpan(), flush: isfinal);
-#else
-                var chars = data.ToCharArray();
-                byte[] bytes = new byte[_encoder.GetByteCount(chars, 0, chars.Length, flush: isfinal)];
-                _encoder.GetBytes(chars, 0, chars.Length, bytes, 0, flush: isfinal);
-#endif
-                Parse(context, bytes, isfinal);
-            }
 
-            public void Parse(CodeContext context, [BytesLike]IList<byte> data, bool isfinal = false) {
                 CheckParsingDone(context);
-
-                if (data.Any()) {
-                    byte[] bytes;
-                    switch (data) {
-                        case Bytes b:
-                            bytes = b.UnsafeByteArray;
-                            break;
-                        case byte[] b:
-                            bytes = b;
-                            break;
-                        default:
-                            bytes = data.ToArray();
-                            break;
-                    }
-
-                    buffer.Write(bytes, 0, bytes.Length);
-                }
+                buffer.Write(bytes, 0, bytes.Length);
 
                 if (isfinal) {
-                    buffer.Seek(0, SeekOrigin.Begin);
-                    var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
-                    xmlReader = XmlReader.Create(buffer, settings);
-                    parse(context);
-                    _parsing_done = true;
-                    xmlReader.Dispose();
-                    buffer.Dispose();
+                    ParseBuffer(context);
                 }
+            }
+
+            public void Parse(CodeContext context, [NotNull] IBufferProtocol data, bool isfinal = false) {
+                CheckParsingDone(context);
+                using var pybuf = data.GetBuffer();
+
+#if NETCOREAPP
+                buffer.Write(pybuf.AsReadOnlySpan());
+#else
+                byte[] bytes = pybuf.AsUnsafeArray() ?? pybuf.ToArray();
+                buffer.Write(bytes, 0, bytes.Length);
+#endif
+
+                if (isfinal) {
+                    ParseBuffer(context);
+                }
+            }
+
+            private void ParseBuffer(CodeContext context) {
+                buffer.Seek(0, SeekOrigin.Begin);
+                var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
+                xmlReader = XmlReader.Create(buffer, settings);
+                parse(context);
+                _parsing_done = true;
+                xmlReader.Dispose();
+                buffer.Dispose();
             }
 
             public void ParseFile(CodeContext context, object file) {
@@ -637,7 +633,7 @@ namespace IronPython.Modules {
 
                 object readResult = PythonOps.CallWithContext(context, _readMethod);
                 if (readResult is Bytes b) {
-                    using (var stream = new MemoryStream(b.UnsafeByteArray)) {
+                    using (var stream = new MemoryStream(b.UnsafeByteArray, writable: false)) {
                         var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
                         using (xmlReader = XmlReader.Create(stream, settings)) {
                             parse(context);

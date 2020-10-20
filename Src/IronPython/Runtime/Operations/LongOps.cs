@@ -21,16 +21,12 @@ namespace IronPython.Runtime.Operations {
     public static partial class BigIntegerOps {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, string s, int radix) {
-            int start = 0;
-            if (radix == 16 || radix == 8 || radix == 2) {
-                start = s.Length - Int32Ops.TrimRadix(s, radix).Length;
-            }
+            var value = ParseBigIntegerSign(s, radix, Int32Ops.FindStart(s, radix));
 
             if (cls == TypeCache.BigInteger) {
-                return ParseBigIntegerSign(s, radix, start);
+                return value;
             } else {
-                BigInteger res = ParseBigIntegerSign(s, radix);
-                return cls.CreateInstance(context, res);
+                return cls.CreateInstance(context, value);
             }
         }
 
@@ -51,13 +47,8 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static BigInteger ParseBigIntegerSign(string s, int radix, int start = 0) {
-            try {
-                return LiteralParser.ParseBigIntegerSign(s, radix, start);
-            } catch (ArgumentException e) {
-                throw PythonOps.ValueError(e.Message);
-            }
-        }
+        private static BigInteger ParseBigIntegerSign(string s, int radix, int start = 0)
+            => LiteralParser.ParseBigIntegerSign(s, radix, start);
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, object x) {

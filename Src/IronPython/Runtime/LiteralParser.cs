@@ -424,12 +424,19 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseIntegerSign(string text, int b, int start = 0) {
+            if (TryParseIntegerSign(text, b, start, out object val))
+                return val;
+
+            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+        }
+
+        internal static bool TryParseIntegerSign(string text, int b, int start, out object val) {
             int end = text.Length, saveb = b, savestart = start;
             if (start < 0 || start > end) throw new ArgumentOutOfRangeException(nameof(start));
             short sign = 1;
 
             if (b < 0 || b == 1 || b > 36) {
-                throw new ValueErrorException("base must be >= 2 and <= 36");
+                throw new ValueErrorException("int() base must be >= 2 and <= 36, or 0");
             }
 
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
@@ -441,13 +448,15 @@ namespace IronPython.Runtime {
                     int digit;
                     if (start >= end) {
                         if (saveStart == start) {
-                            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+                            val = default;
+                            return false;
                         }
                         break;
                     }
                     if (!HexValue(text[start], out digit)) break;
                     if (!(digit < b)) {
-                        throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+                        val = default;
+                        return false;
                     }
 
                     checked {
@@ -457,12 +466,23 @@ namespace IronPython.Runtime {
                     start++;
                 }
             } catch (OverflowException) {
-                return ParseBigIntegerSign(text, saveb, savestart);
+                if (TryParseBigIntegerSign(text, saveb, savestart, out var bi)) {
+                    val = bi;
+                    return true;
+                }
+                val = default;
+                return false;
             }
 
-            ParseIntegerEnd(text, start, end);
+            ParseIntegerEnd(text, ref start, ref end);
 
-            return ScriptingRuntimeHelpers.Int32ToObject(ret);
+            if (start < end) {
+                val = default;
+                return false;
+            }
+
+            val = ScriptingRuntimeHelpers.Int32ToObject(ret);
+            return true;
         }
 
         private static void ParseIntegerStart(string text, ref int b, ref int start, int end, ref short sign) {
@@ -517,16 +537,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static void ParseIntegerEnd(string text, int start, int end) {
+        private static void ParseIntegerEnd(string text, ref int start, ref int end) {
             //  Skip whitespace
-            while (start < end && Char.IsWhiteSpace(text, start)) start++;
-
-            if (start < end) {
-                throw new ValueErrorException("invalid integer number literal");
-            }
+            while (start < end && char.IsWhiteSpace(text, start)) start++;
         }
 
-        public static BigInteger ParseBigInteger(string text, int b) {
+        internal static BigInteger ParseBigInteger(string text, int b) {
             Debug.Assert(b != 0);
             BigInteger ret = BigInteger.Zero;
             BigInteger m = BigInteger.One;
@@ -554,13 +570,20 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public static BigInteger ParseBigIntegerSign(string text, int b, int start = 0) {
+        internal static BigInteger ParseBigIntegerSign(string text, int b, int start = 0) {
+            if (TryParseBigIntegerSign(text, b, start, out var val))
+                return val;
+
+            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+        }
+
+        private static bool TryParseBigIntegerSign(string text, int b, int start, out BigInteger val) {
             int end = text.Length;
             if (start < 0 || start > end) throw new ArgumentOutOfRangeException(nameof(start));
             short sign = 1;
 
             if (b < 0 || b == 1 || b > 36) {
-                throw new ValueErrorException("base must be >= 2 and <= 36");
+                throw new ValueErrorException("int() base must be >= 2 and <= 36, or 0");
             }
 
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
@@ -571,23 +594,30 @@ namespace IronPython.Runtime {
                 int digit;
                 if (start >= end) {
                     if (start == saveStart) {
-                        throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+                        val = default;
+                        return false;
                     }
                     break;
                 }
                 if (!HexValue(text[start], out digit)) break;
                 if (!(digit < b)) {
-                    throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+                    val = default;
+                    return false;
                 }
                 ret = ret * b + digit;
                 start++;
             }
 
-            ParseIntegerEnd(text, start, end);
+            ParseIntegerEnd(text, ref start, ref end);
 
-            return sign < 0 ? -ret : ret;
+            if (start < end) {
+                val = default;
+                return false;
+            }
+
+            val = sign < 0 ? -ret : ret;
+            return true;
         }
-
 
         public static double ParseFloat(string text) {
             try {

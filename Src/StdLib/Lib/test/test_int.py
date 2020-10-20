@@ -444,7 +444,10 @@ class IntTestCases(unittest.TestCase):
         good_int = TruncReturnsIntSubclass()
         n = int(good_int)
         self.assertEqual(n, 1)
-        self.assertIs(type(n), bool)
+        if sys.implementation.name == "ironpython" or sys.version >= (3, 6):
+            self.assertIs(type(n), int)
+        else:
+            self.assertIs(type(n), bool)
         n = IntSubclass(good_int)
         self.assertEqual(n, 1)
         self.assertIs(type(n), IntSubclass)

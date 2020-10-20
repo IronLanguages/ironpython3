@@ -12,6 +12,7 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
@@ -19,10 +20,10 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime.Operations {
 
     public static partial class Int32Ops {
-        private static object FastNew(CodeContext/*!*/ context, object o, int @base=10) {
+        private static object FastNew(CodeContext/*!*/ context, object o) {
             Extensible<BigInteger> el;
 
-            if (o is string) return __new__(null, (string)o, @base);
+            if (o is string) return LiteralParser.ParseIntegerSign((string)o, 10);
             if (o is double) return DoubleOps.__int__((double)o);
             if (o is int) return o;
             if (o is bool) return ((bool)o) ? 1 : 0;
@@ -86,52 +87,62 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 // otherwise call __new__ on the string value
-                return __new__(null, es.Value, @base);
+                return LiteralParser.ParseIntegerSign(es.Value, 10);
+            }
+
+            static bool TryResultToInt(CodeContext context, object o, out object result) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result)) {
+                    switch (result) {
+                        case int _:
+                        case BigInteger _:
+                            return true;
+                        case bool b:
+                            Warn(context, result);
+                            result = b ? 1 : 0; // Python 3.6: return the int value
+                            return true;
+                        case Extensible<int> ei:
+                            Warn(context, result);
+                            result = ei.Value; // Python 3.6: return the int value
+                            return true;
+                        case Extensible<BigInteger> ebi:
+                            Warn(context, result);
+                            result = ebi.Value; // Python 3.6: return the int value
+                            return true;
+                        default:
+                            throw PythonOps.TypeError("__int__ returned non-int (type {0})", PythonTypeOps.GetName(result));
+                    }
+
+                    static void Warn(CodeContext context, object result) {
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__int__ returned non-int (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                    }
+                }
+                return false;
             }
 
             object result;
-            int intRes;
-            BigInteger bigintRes;
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result) &&
-                !Object.ReferenceEquals(result, NotImplementedType.Value)) {
-                if (result is int || result is BigInteger ||
-                    result is Extensible<int> || result is Extensible<BigInteger>) {
-                    return result;
-                } else {
-                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
-                }
-            } else if (PythonOps.TryGetBoundAttr(context, o, "__trunc__", out result)) {
-                result = PythonOps.CallWithContext(context, result);
-                if (result is int || result is BigInteger ||
-                    result is Extensible<int> || result is Extensible<BigInteger>) {
-                    return result;
-                } else if (Converter.TryConvertToInt32(result, out intRes)) {
-                    return intRes;
-                } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
-                    return bigintRes;
-                } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
+            if (TryResultToInt(context, o, out result)) {
+                return result;
+            } else if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__trunc__", out result)) {
+                switch (result) {
+                    case int _:
+                    case BigInteger _:
+                        return result;
+                    case bool b:
+                        return b ? 1 : 0; // Python 3.6: return the int value
+                    case Extensible<int> ei:
+                        return ei.Value; // Python 3.6: return the int value
+                    case Extensible<BigInteger> ebi:
+                        return ebi.Value; // Python 3.6: return the int value
+                    default: {
+                            if (TryResultToInt(context, result, out var intResult)) {
+                                return intResult;
+                            }
+                            throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
+                        }
                 }
             }
 
             throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, object x) {
-            return __new__(context, TypeCache.Int32, x);
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, Extensible<double> x) {
-            object value;
-            // always succeeds as float defines __int__
-            PythonTypeOps.TryInvokeUnaryOperator(context, x, "__int__", out value);
-            if (cls == TypeCache.Int32) {
-                return (int)value;
-            } else {
-                return cls.CreateInstance(context, value);
-            }
         }
 
         private static void ValidateType(PythonType cls) {
@@ -140,29 +151,28 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(PythonType cls, string x, int @base) {
+        public static object __new__(CodeContext context, PythonType cls, string x, int @base = 10) {
             ValidateType(cls);
 
-            // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
-            // integer parser, or special case it here.
-            int start = 0;
-            if (@base == 16 || @base == 8 || @base == 2) {
-                start = x.Length - TrimRadix(x, @base).Length;
-            }
+            var res = LiteralParser.ParseIntegerSign(x, @base, FindStart(x, @base));
 
-            return LiteralParser.ParseIntegerSign(x, @base, start);
+            if (cls == TypeCache.Int32) {
+                return res;
+            } else {
+                return cls.CreateInstance(context, res);
+            }
         }
 
         [StaticExtensionMethod]
-        public static object __new__(PythonType cls, string x, object @base) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, string x, object @base) {
             switch (PythonOps.Index(@base)) {
                 case int i:
-                    return __new__(cls, x, i);
+                    return __new__(context, cls, x, i);
                 case BigInteger bi:
                     try {
-                        return __new__(cls, x, (int)bi);
+                        return __new__(context, cls, x, (int)bi);
                     } catch (OverflowException) {
-                        return __new__(cls, x, int.MaxValue);
+                        return __new__(context, cls, x, int.MaxValue);
                     }
                 default:
                     throw new InvalidOperationException();
@@ -171,61 +181,61 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, int @base = 10) {
+            ValidateType(cls);
+
             object value;
             if (!(x is IPythonObject po) || !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
                 using IPythonBuffer buf = x.GetBufferNoThrow()
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
-                value = FastNew(context, buf.AsReadOnlySpan().MakeString(), @base);
+
+                var text = buf.AsReadOnlySpan().MakeString();
+                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
+                    throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
             }
 
             if (cls == TypeCache.Int32) {
                 return value;
             } else {
-                ValidateType(cls);
-                // derived int creation...
                 return cls.CreateInstance(context, value);
             }
         }
 
-        internal static string TrimRadix(string s, int radix) {
-            for (int i = 0; i < s.Length; i++) {
-                if (Char.IsWhiteSpace(s[i])) continue;
+        internal static int FindStart(string s, int radix) {
+            int i = 0;
 
-                if (s[i] == '0' && i < s.Length - 1) {
-                    switch(radix) {
-                        case 16:
-                            if (s[i + 1] == 'x' || s[i + 1] == 'X') {
-                                s = s.Substring(i + 2);
-                            }
-                            break;
-                        case 8:
-                            if (s[i + 1] == 'o' || s[i + 1] == 'O') {
-                                s = s.Substring(i + 2);
-                            }
-                            break;
-                        case 2:
-                            if (s[i + 1] == 'b' || s[i + 1] == 'B') {
-                                s = s.Substring(i + 2);
-                            }
-                            break;
-                        default:
-                            break;
-                    }
+            // skip whitespace
+            while (i < s.Length && char.IsWhiteSpace(s, i)) i++;
+
+            // skip possible radix prefix
+            if (i + 1 < s.Length && s[i] == '0') {
+                switch (radix) {
+                    case 16:
+                        if (s[i + 1] == 'x' || s[i + 1] == 'X')
+                            i += 2;
+                        break;
+                    case 8:
+                        if (s[i + 1] == 'o' || s[i + 1] == 'O')
+                            i += 2;
+                        break;
+                    case 2:
+                        if (s[i + 1] == 'b' || s[i + 1] == 'B')
+                            i += 2;
+                        break;
+                    default:
+                        break;
                 }
-                break;
             }
-            return s;
+            return i;
         }
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, object x) {
+            ValidateType(cls);
+
             object value = FastNew(context, x);
             if (cls == TypeCache.Int32) {
                 return value;
             } else {
-                ValidateType(cls);
-
-                // derived int creation...
                 return cls.CreateInstance(context, value);
             }
         }
@@ -233,11 +243,8 @@ namespace IronPython.Runtime.Operations {
         // "int()" calls ReflectedType.Call(), which calls "Activator.CreateInstance" and return directly.
         // this is for derived int creation or direct calls to __new__...
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls) {
-            if (cls == TypeCache.Int32) return 0;
-
-            return cls.CreateInstance(context);
-        }
+        public static object __new__(CodeContext context, PythonType cls)
+            => __new__(context, cls, ScriptingRuntimeHelpers.Int32ToObject(0));
 
         #region Binary Operators
         

@@ -21,7 +21,7 @@ namespace IronPython.Runtime.Operations {
     public static partial class BigIntegerOps {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, string s, int radix) {
-            var value = ParseBigIntegerSign(s, radix, Int32Ops.FindStart(s, radix));
+            var value = LiteralParser.ParseBigIntegerSign(s, radix, Int32Ops.FindStart(s, radix));
 
             if (cls == TypeCache.BigInteger) {
                 return value;
@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Operations {
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), @base);
+                    value = LiteralParser.ParseBigIntegerSign(s.MakeString(), @base);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -47,22 +47,19 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static BigInteger ParseBigIntegerSign(string s, int radix, int start = 0)
-            => LiteralParser.ParseBigIntegerSign(s, radix, start);
-
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, object x) {
             Extensible<string> es;
 
             if (x is string) {
-                return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
+                return ReturnObject(context, cls, LiteralParser.ParseBigIntegerSign((string)x, 10));
             } else if ((es = x as Extensible<string>) != null) {
                 object value;
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out value)) {
                     return ReturnObject(context, cls, (BigInteger)value);
                 }
 
-                return ReturnObject(context, cls, ParseBigIntegerSign(es.Value, 10));
+                return ReturnObject(context, cls, LiteralParser.ParseBigIntegerSign(es.Value, 10));
             }
             if (x is double) return ReturnObject(context, cls, DoubleOps.__long__((double)x));
             if (x is int) return ReturnObject(context, cls, (BigInteger)(int)x);

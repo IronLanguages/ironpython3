@@ -241,7 +241,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __int__(Complex self) {
-            throw PythonOps.TypeError(" can't convert complex to int; use int(abs(z))");
+            throw PythonOps.TypeError("can't convert complex to int; use int(abs(z))");
         }
 
         public static BigInteger __long__(Complex self) {

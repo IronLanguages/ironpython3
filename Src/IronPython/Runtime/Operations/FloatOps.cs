@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Operations {
                         value = d;
                     } else if (d is Extensible<double>) {
                         // returning the underlying double is the behavior starting with Python 3.6
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonOps.GetPythonTypeName(d)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonTypeOps.GetName(d)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
                         value = ((Extensible<double>)d).Value;
                     } else {
                         throw PythonOps.TypeErrorForBadInstance("__float__ returned non-float (type {0})", d);

@@ -343,13 +343,13 @@ namespace IronPython.Runtime {
             return index != null;
         }
 
-        public static int ConvertToIndex(object value) {
-            if (TryGetInt(value, out int res, throwOverflowError: false)) {
+        public static int ConvertToIndex(object value, bool throwOverflowError = false) {
+            if (TryGetInt(value, out int res, throwOverflowError)) {
                 return res;
             }
 
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object index)) {
-                if (TryGetInt(index, out res, throwOverflowError: false)) {
+                if (TryGetInt(index, out res, throwOverflowError)) {
                     return res;
                 }
 

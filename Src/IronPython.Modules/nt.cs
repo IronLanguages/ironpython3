@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// Checks for the specific permissions, provided by the mode parameter, are available for the provided path.  Permissions can be:
-        /// 
+        ///
         /// F_OK: Check to see if the file exists
         /// R_OK | W_OK | X_OK: Check for the specific permissions.  Only W_OK is respected.
         /// </summary>
@@ -381,8 +381,8 @@ namespace IronPython.Modules {
             try {
                 return pal.GetFullPath(dir);
             } catch (ArgumentException) {
-                // .NET validates the path, CPython doesn't... so we replace invalid chars with 
-                // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/ 
+                // .NET validates the path, CPython doesn't... so we replace invalid chars with
+                // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/
                 // their original value.
                 string newdir = dir;
 
@@ -524,7 +524,7 @@ namespace IronPython.Modules {
         }
 
         /// <summary>
-        /// lstat(path) -> stat result 
+        /// lstat(path) -> stat result
         /// Like stat(path), but do not follow symbolic links.
         /// </summary>
         [LightThrowing]
@@ -821,7 +821,7 @@ namespace IronPython.Modules {
 
         public static void replace(object src, object dst)
             => replace(ConvertToFsString(src, nameof(src)), ConvertToFsString(dst, nameof(dst)));
-        
+
 
         public static void rmdir([NotNull] string path) {
             try {
@@ -841,10 +841,10 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// spawns a new process.
-        /// 
+        ///
         /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
         /// is the exit code.
-        /// 
+        ///
         /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
         /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
         /// in a handle leak.
@@ -861,10 +861,10 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// spawns a new process.
-        /// 
+        ///
         /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
         /// is the exit code.
-        /// 
+        ///
         /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
         /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
         /// in a handle leak.
@@ -1002,9 +1002,11 @@ namespace IronPython.Modules {
             }
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile([NotNull] Bytes filename, string operation = "open")
             => startfile(filename.ToFsString(), operation);
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile([NotNull] IBufferProtocol filename, string operation = "open")
             => startfile(filename.ToFsBytes(), operation);
 
@@ -1081,7 +1083,7 @@ namespace IronPython.Modules {
 
             public stat_result(IEnumerable<object> sequence, PythonDictionary dict = null)
                 : this(sequence.ToArray(), dict) { }
- 
+
             private static bool TryGetDictValue(PythonDictionary dict, string name, out object value) {
                 value = null;
                 return dict != null && dict.TryGetValue(name, out value);
@@ -1541,9 +1543,11 @@ namespace IronPython.Modules {
             }
         }
 
+        [Documentation("")]
         public static void utime([NotNull] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
             => utime(path.ToFsString(), kwargs, args);
 
+        [Documentation("")]
         public static void utime([NotNull] IBufferProtocol path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
             => utime(path.ToFsBytes(), kwargs, args);
 
@@ -1583,7 +1587,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
 
-        [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
+        [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||

@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 import test.test_dict
 
@@ -20,7 +20,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_dict.DictTest('test_bool'))
         suite.addTest(test.test_dict.DictTest('test_clear'))
         suite.addTest(test.test_dict.DictTest('test_constructor'))
-        suite.addTest(test.test_dict.DictTest('test_container_iterator'))
+        if not is_mono: # https://github.com/IronLanguages/ironpython3/issues/544
+            suite.addTest(test.test_dict.DictTest('test_container_iterator'))
         suite.addTest(test.test_dict.DictTest('test_contains'))
         suite.addTest(test.test_dict.DictTest('test_copy'))
         suite.addTest(test.test_dict.DictTest('test_dictview_mixed_set_operations'))
@@ -28,6 +29,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_dict.DictTest('test_dictview_set_operations_on_keys'))
         suite.addTest(test.test_dict.DictTest('test_empty_presized_dict_in_freelist'))
         suite.addTest(test.test_dict.DictTest('test_eq'))
+        #suite.addTest(test.test_dict.DictTest('test_equal_operator_modifying_operand'))
         #suite.addTest(test.test_dict.DictTest('test_errors_in_view_containment_check'))
         suite.addTest(test.test_dict.DictTest('test_fromkeys'))
         suite.addTest(test.test_dict.DictTest('test_get'))
@@ -46,6 +48,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_dict.DictTest('test_mutating_iteration'))
         suite.addTest(test.test_dict.DictTest('test_mutating_lookup'))
         suite.addTest(test.test_dict.DictTest('test_object_set_item_single_instance_non_str_key'))
+        #suite.addTest(test.test_dict.DictTest('test_oob_indexing_dictiter_iternextitem'))
         suite.addTest(test.test_dict.DictTest('test_pop'))
         suite.addTest(test.test_dict.DictTest('test_popitem'))
         suite.addTest(test.test_dict.DictTest('test_reentrant_insertion'))

@@ -376,13 +376,12 @@ namespace IronPython.Runtime.Operations {
             if (y < 0) {
                 throw PythonOps.ValueError("negative shift count");
             }
-            if (hasShiftBug && x.IsNegative()) {
-                if (y == 0) return x;
-                if (y % 32 == 0) {
-                    return (x >> (y - 1)) >> 1;
-                }
+            var res = x >> y;
+            if (hasShiftBug && res.IsZero && x.IsNegative()) {
+                Debug.Assert(y > 0); // bug does not occur when y is 0
+                res = (x >> (y - 1)) >> 1;
             }
-            return x >> y;
+            return res;
         }
 
         [SpecialName]

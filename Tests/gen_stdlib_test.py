@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import importlib
+import os
 import sys
 import unittest
 
@@ -36,6 +37,7 @@ run_test(__name__)
 if __name__ == "__main__":
     name = sys.argv[1]
 
+    sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../Src/StdLib/Lib")))
     module = importlib.import_module("test.{name}".format(name=name))
 
     tests = []

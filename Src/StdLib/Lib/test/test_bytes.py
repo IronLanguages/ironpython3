@@ -1498,4 +1498,4 @@ class BytesSubclassTest(SubclassTest, unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    test.support.run_unittest(__name__)

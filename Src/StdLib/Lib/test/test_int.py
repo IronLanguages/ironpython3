@@ -298,7 +298,7 @@ class IntTestCases(unittest.TestCase):
             x = f(b'100')
             with self.subTest(type(x)):
                 self.assertEqual(int(x), 100)
-                if isinstance(x, (str, bytes, bytearray)):
+                if isinstance(x, (str, bytes, bytearray)) or sys.implementation.name == "ironpython":
                     self.assertEqual(int(x, 2), 4)
                 else:
                     msg = "can't convert non-string"
@@ -444,7 +444,10 @@ class IntTestCases(unittest.TestCase):
         good_int = TruncReturnsIntSubclass()
         n = int(good_int)
         self.assertEqual(n, 1)
-        self.assertIs(type(n), bool)
+        if sys.implementation.name == "ironpython" or sys.version >= (3, 6):
+            self.assertIs(type(n), int)
+        else:
+            self.assertIs(type(n), bool)
         n = IntSubclass(good_int)
         self.assertEqual(n, 1)
         self.assertIs(type(n), IntSubclass)

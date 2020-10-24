@@ -1903,15 +1903,10 @@ namespace IronPython.Compiler {
 
                 if (t.Value is BigInteger bi) {
                     if (bi.AsUInt32(out uint iVal) && iVal == 0x80000000) {
-                        string tokenString = _tokenizer.GetTokenString(); ;
+                        string tokenString = _tokenizer.GetTokenString();
                         Debug.Assert(tokenString.Length > 0);
-
-                        if (tokenString[tokenString.Length - 1] != 'L' &&
-                            tokenString[tokenString.Length - 1] != 'l') {
-                            NextToken();
-                            return new ConstantExpression(-2147483648);
-
-                        }
+                        NextToken();
+                        return new ConstantExpression(int.MinValue);
                     }
                 }
             }

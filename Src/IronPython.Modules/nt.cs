@@ -39,10 +39,10 @@ namespace IronPython.Modules {
     public static class PythonNT {
         public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
-        /* TODO: missing functions:
+        /* TODO: missing functions/classes:
          * Windows:
          * {'execve', '_isdir', 'getlogin', 'get_inheritable', 'statvfs_result', 'readlink', 'stat_float_times', 'getppid',
-         * 'uname_result', '_getdiskusage', 'execv', 'set_inheritable', 'device_encoding', 'isatty', '_getvolumepathname',
+         * '_getdiskusage', 'execv', 'set_inheritable', 'device_encoding', 'isatty', '_getvolumepathname',
          * 'times_result', 'cpu_count', 'get_handle_inheritable', 'set_handle_inheritable'}
          */
 
@@ -620,7 +620,6 @@ namespace IronPython.Modules {
         public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
             => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
 
-        [PythonType("uname_result"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public class uname_result : PythonTuple {
             // TODO: posix: support constructor with a sequence, see construction of stat_result
             public uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :

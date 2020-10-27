@@ -287,6 +287,27 @@ class FunctionTest(IronPythonTestCase):
 
         foo.__init__(a, target='baz')
 
+    def test_kwargs3(self):
+        """verify keyword args with keys of subtypes of str"""
+
+        class mystr(str): pass
+
+        class mymapping:
+            def keys(self):
+                return mystr("bla"),
+            def __len__(self):
+                return 1
+            def __getitem__(self, x):
+                return 2
+
+        def foo(**kwargs):
+            res = type(list(kwargs.keys())[0]) == mystr and kwargs["bla"] == 2 and kwargs[mystr("bla")] == 2
+            kwargs["blip"] = 2
+            return res and kwargs["blip"] == 2
+
+        self.assertTrue(foo(**{mystr("bla"): 2}))
+        self.assertTrue(foo(**mymapping()))
+
     @skipUnlessIronPython()
     def test_params_method_no_params(self):
         """call a params method w/ no params"""

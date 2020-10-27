@@ -52,10 +52,11 @@ namespace IronPython.Runtime {
         }
 
         public abstract bool Contains(object key);
-        
+
         public abstract bool TryGetValue(object key, out object value);
 
         public abstract int Count { get; }
+
         public virtual bool HasNonStringAttributes() {
             foreach (KeyValuePair<object, object> o in GetItems()) {
                 if (!(o.Key is string)) {

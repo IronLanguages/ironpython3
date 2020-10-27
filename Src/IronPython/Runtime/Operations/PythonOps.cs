@@ -2280,7 +2280,9 @@ namespace IronPython.Runtime.Operations {
         public static PythonDictionary CopyAndVerifyDictionary(PythonFunction function, IDictionary dict) {
             foreach (object? o in dict.Keys) {
                 if (!(o is string)) {
-                    throw TypeError("{0}() keywords must be strings", function.__name__);
+                    if (!(o is Extensible<string> es)) {
+                        throw TypeError("{0}() keywords must be strings", function.__name__);
+                    }
                 }
             }
             return new PythonDictionary(dict);

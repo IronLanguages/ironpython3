@@ -5,8 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Microsoft.Scripting;
-using System.Threading;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [Serializable]
@@ -149,12 +150,17 @@ namespace IronPython.Runtime {
         public override bool HasNonStringAttributes() {
             if (_data != null) {
                 lock (this) {
-                    if (TryGetObjectDictionary() != null) {
-                        return true;
+                    Dictionary<object, object> dataDict = TryGetObjectDictionary();
+                    if (dataDict != null) {
+                        foreach (object o in dataDict.Keys) {
+                            if (!(o is Extensible<string> es)) {
+                                return true;
+                            }
+                        }
                     }
                 }
             }
-            
+
             return false;
         }
 

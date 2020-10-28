@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
@@ -12,9 +13,9 @@ using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
@@ -38,7 +39,7 @@ namespace IronPython.Modules {
                 : base(context) {
             }
 
-            public BytesIO(CodeContext/*!*/ context, params object[] args)
+            public BytesIO(CodeContext/*!*/ context, [ParamDictionary, NotNull] IDictionary<object, object> kwArgs\u00F8, params object[] args)
                 : base(context) {
             }
 
@@ -139,6 +140,7 @@ namespace IronPython.Modules {
             }
 
             public override bool readable(CodeContext/*!*/ context) {
+                _checkClosed();
                 return true;
             }
 
@@ -151,6 +153,7 @@ namespace IronPython.Modules {
 
                 _checkClosed();
 
+                if (_pos >= _length) return 0;
                 var span = pythonBuffer.AsSpan();
                 int len = Math.Min(_length - _pos, span.Length);
                 _data.AsSpan(_pos, len).CopyTo(span);
@@ -277,6 +280,7 @@ namespace IronPython.Modules {
             }
 
             public override bool seekable(CodeContext/*!*/ context) {
+                _checkClosed();
                 return true;
             }
 
@@ -321,19 +325,20 @@ namespace IronPython.Modules {
             }
 
             public override bool writable(CodeContext/*!*/ context) {
+                _checkClosed();
                 return true;
             }
 
             [Documentation("write(bytes) -> int.  Write bytes to file.\n\n"
                 + "Return the number of bytes written."
                 )]
-            public override BigInteger write(CodeContext/*!*/ context, object bytes) {
+            public override BigInteger write(CodeContext/*!*/ context, [NotNull] object bytes) {
                 _checkClosed();
                 if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
                 throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(bytes));
             }
 
-            public BigInteger write(CodeContext/*!*/ context, IBufferProtocol bytes) {
+            public BigInteger write(CodeContext/*!*/ context, [NotNull] IBufferProtocol bytes) {
                 _checkClosed();
                 return DoWrite(bytes);
             }
@@ -350,6 +355,40 @@ namespace IronPython.Modules {
                 while (en.MoveNext()) {
                     DoWrite(en.Current);
                 }
+            }
+
+            #endregion
+
+            #region Pickling
+
+            public PythonTuple __getstate__(CodeContext context) {
+                return PythonTuple.MakeTuple(getvalue(), tell(context), __dict__);
+            }
+
+            public void __setstate__(CodeContext context, PythonTuple tuple) {
+                _checkClosed();
+
+                if (tuple.__len__() != 3) {
+                    throw PythonOps.TypeError("_io.BytesIO.__setstate__ argument should be 3-tuple, got tuple");
+                }
+                if (!(tuple[0] is IBufferProtocol bp)) {
+                    throw PythonOps.TypeError($"'{PythonTypeOps.GetName(tuple[0])}' does not support the buffer interface");
+                }
+                if (!(tuple[1] is int i)) {
+                    throw PythonOps.TypeError($"second item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
+                }
+                if (i < 0) {
+                    throw PythonOps.ValueError("position value cannot be negative");
+                }
+                if (!(tuple[2] is PythonDictionary || tuple[2] is null)) {
+                    throw PythonOps.TypeError($"third item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
+                }
+                using var buffer = bp.GetBuffer();
+                _data = buffer.ToArray();
+                _pos = i;
+
+                if (tuple[2] is PythonDictionary dict)
+                    __dict__.update(context, dict);
             }
 
             #endregion

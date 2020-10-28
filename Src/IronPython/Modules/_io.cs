@@ -362,24 +362,26 @@ namespace IronPython.Modules {
 
             #region IPythonExpandable Members
 
-            private IDictionary<string, object> _customAttributes;
 
-            IDictionary<string, object> IPythonExpandable.EnsureCustomAttributes() {
-                return _customAttributes = new Dictionary<string, object>();
+            private PythonDictionary _dict;
+
+            private PythonDictionary EnsureCustomAttributes() {
+                if (_dict is null) _dict = new PythonDictionary();
+                return _dict;
             }
 
-            IDictionary<string, object> IPythonExpandable.CustomAttributes {
-                get { return _customAttributes; }
-            }
+            public PythonDictionary __dict__ => EnsureCustomAttributes();
 
-            CodeContext/*!*/ IPythonExpandable.Context {
-                get { return context; }
-            }
+            IDictionary<object, object> IPythonExpandable.EnsureCustomAttributes() => EnsureCustomAttributes();
+
+            IDictionary<object, object> IPythonExpandable.CustomAttributes => __dict__;
+
+            CodeContext IPythonExpandable.Context => context;
 
             #endregion
 
             #region IDynamicMetaObjectProvider Members
-            
+
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
                 return new MetaExpandable<_IOBase>(parameter, this);
             }
@@ -1847,6 +1849,8 @@ namespace IronPython.Modules {
             ) : base(context) {
             }
 
+            private string newline;
+
             public void __init__(
                 CodeContext/*!*/ context,
                 string initial_value="",
@@ -1856,6 +1860,7 @@ namespace IronPython.Modules {
                 buf.__init__(null);
                 base.__init__(context, buf, "utf-8", null, newline, false);
 
+                this.newline = newline;
                 if (newline == null) {
                     _writeTranslate = false;
                 }
@@ -1875,6 +1880,50 @@ namespace IronPython.Modules {
             public string getvalue(CodeContext/*!*/ context) {
                 flush(context);
                 return ((BytesIO)(object)_bufferTyped).getvalue().decode(context, _encoding, _errors);
+            }
+
+            #endregion
+
+            #region Pickling
+
+            public PythonTuple __getstate__(CodeContext context) {
+                return PythonTuple.MakeTuple(getvalue(context), newline, tell(context), __dict__);
+            }
+
+            public void __setstate__(CodeContext context, PythonTuple tuple) {
+                _checkClosed();
+
+                if (tuple.__len__() != 4) {
+                    throw PythonOps.TypeError("_io.StringIO.__setstate__ argument should be 4-tuple, got tuple");
+                }
+
+                var initial_value = tuple[0] as string;
+                if (!(tuple[0] is string || tuple[0] is null)) {
+                    throw PythonOps.TypeError($"initial_value must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                }
+
+                var newline = tuple[1] as string;
+                if (!(tuple[1] is string || tuple[1] is null)) {
+                    throw PythonOps.TypeError($"newline must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                }
+
+                if (!(tuple[2] is int i)) {
+                    throw PythonOps.TypeError($"third item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
+                }
+                if (i < 0) {
+                    throw PythonOps.ValueError("position value cannot be negative");
+                }
+
+                var dict = tuple[3] as PythonDictionary;
+                if (!(tuple[3] is PythonDictionary || tuple[3] is null)) {
+                    throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
+                }
+
+                __init__(context, initial_value, newline);
+                seek(context, i);
+
+                if (!(dict is null))
+                    __dict__.update(context, dict);
             }
 
             #endregion
@@ -2010,7 +2059,9 @@ namespace IronPython.Modules {
             }
 
             public override bool seekable(CodeContext/*!*/ context) {
-                return _seekable;
+                return _bufferTyped != null ?
+                    _bufferTyped.seekable(context) :
+                    PythonOps.IsTrue(PythonOps.Invoke(context, _buffer, "seekable"));
             }
 
             public override bool readable(CodeContext/*!*/ context) {

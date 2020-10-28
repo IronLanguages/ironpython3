@@ -2306,14 +2306,12 @@ namespace IronPython.Runtime.Operations {
             IEnumerator enumerator = GetEnumerator(keys);
             while (enumerator.MoveNext()) {
                 object? o = enumerator.Current;
-                if (!(o is string s)) {
-                    if (!(o is Extensible<string> es)) {
-                        throw PythonOps.TypeError("{0}() keywords must be strings, not {0}",
+                if (!(o is string)) {
+                    if (!(o is Extensible<string>)) {
+                        throw PythonOps.TypeError("{0}() keywords must be strings, not {1}",
                             funcName,
-                            PythonTypeOps.GetName(dict));
+                            PythonTypeOps.GetName(o));
                     }
-
-                    s = es.Value;
                 }
 
                 res[o] = PythonOps.GetIndex(context, dict, o);

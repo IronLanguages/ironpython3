@@ -37,17 +37,13 @@ namespace IronPython.Modules {
 
             internal BytesIO(CodeContext/*!*/ context)
                 : base(context) {
+                _data = new byte[DEFAULT_BUF_SIZE];
             }
 
             public BytesIO(CodeContext/*!*/ context, [ParamDictionary, NotNull] IDictionary<object, object> kwArgs\u00F8, params object[] args)
-                : base(context) {
-            }
+                : this(context) { }
 
             public void __init__(IBufferProtocol initial_bytes = null) {
-                if (Object.ReferenceEquals(_data, null)) {
-                    _data = new byte[DEFAULT_BUF_SIZE];
-                }
-
                 _pos = _length = 0;
                 if (initial_bytes != null) {
                     DoWrite(initial_bytes);
@@ -362,7 +358,7 @@ namespace IronPython.Modules {
             #region Pickling
 
             public PythonTuple __getstate__(CodeContext context) {
-                return PythonTuple.MakeTuple(getvalue(), tell(context), __dict__);
+                return PythonTuple.MakeTuple(getvalue(), tell(context), new PythonDictionary(__dict__));
             }
 
             public void __setstate__(CodeContext context, PythonTuple tuple) {
@@ -371,7 +367,8 @@ namespace IronPython.Modules {
                 if (tuple.__len__() != 3) {
                     throw PythonOps.TypeError("_io.BytesIO.__setstate__ argument should be 3-tuple, got tuple");
                 }
-                if (!(tuple[0] is IBufferProtocol bp)) {
+                var initial_bytes = tuple[0] as IBufferProtocol;
+                if (!(tuple[0] is IBufferProtocol)) {
                     throw PythonOps.TypeError($"'{PythonTypeOps.GetName(tuple[0])}' does not support the buffer interface");
                 }
                 if (!(tuple[1] is int i)) {
@@ -383,8 +380,8 @@ namespace IronPython.Modules {
                 if (!(tuple[2] is PythonDictionary || tuple[2] is null)) {
                     throw PythonOps.TypeError($"third item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
                 }
-                using var buffer = bp.GetBuffer();
-                _data = buffer.ToArray();
+
+                __init__(initial_bytes);
                 _pos = i;
 
                 if (tuple[2] is PythonDictionary dict)

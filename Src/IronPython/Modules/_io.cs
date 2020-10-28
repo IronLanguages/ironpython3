@@ -374,7 +374,7 @@ namespace IronPython.Modules {
 
             IDictionary<object, object> IPythonExpandable.EnsureCustomAttributes() => EnsureCustomAttributes();
 
-            IDictionary<object, object> IPythonExpandable.CustomAttributes => __dict__;
+            IDictionary<object, object> IPythonExpandable.CustomAttributes => _dict;
 
             CodeContext IPythonExpandable.Context => context;
 
@@ -1887,7 +1887,7 @@ namespace IronPython.Modules {
             #region Pickling
 
             public PythonTuple __getstate__(CodeContext context) {
-                return PythonTuple.MakeTuple(getvalue(context), newline, tell(context), __dict__);
+                return PythonTuple.MakeTuple(getvalue(context), newline, tell(context), new PythonDictionary(__dict__));
             }
 
             public void __setstate__(CodeContext context, PythonTuple tuple) {
@@ -1919,7 +1919,7 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
                 }
 
-                __init__(context, initial_value, newline);
+                __init__(context, initial_value: initial_value, newline: newline);
                 seek(context, i);
 
                 if (!(dict is null))

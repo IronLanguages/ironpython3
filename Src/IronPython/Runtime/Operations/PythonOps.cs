@@ -2279,10 +2279,8 @@ namespace IronPython.Runtime.Operations {
 
         public static PythonDictionary CopyAndVerifyDictionary(PythonFunction function, IDictionary dict) {
             foreach (object? o in dict.Keys) {
-                if (!(o is string)) {
-                    if (!(o is Extensible<string> es)) {
-                        throw TypeError("{0}() keywords must be strings", function.__name__);
-                    }
+                if (!(o is string) && !(o is Extensible<string> es)) {
+                    throw TypeError("{0}() keywords must be strings", function.__name__);
                 }
             }
             return new PythonDictionary(dict);
@@ -2295,7 +2293,7 @@ namespace IronPython.Runtime.Operations {
         public static PythonDictionary UserMappingToPythonDictionary(CodeContext/*!*/ context, object dict, string funcName) {
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, "keys", out object keys)) {
-                throw PythonOps.TypeError("{0}() argument after ** must be a mapping, not {1}",
+                throw TypeError("{0}() argument after ** must be a mapping, not {1}",
                     funcName,
                     PythonTypeOps.GetName(dict));
             }
@@ -2306,17 +2304,13 @@ namespace IronPython.Runtime.Operations {
             IEnumerator enumerator = GetEnumerator(keys);
             while (enumerator.MoveNext()) {
                 object? o = enumerator.Current;
-                if (!(o is string)) {
-                    if (!(o is Extensible<string>)) {
-                        throw PythonOps.TypeError("{0}() keywords must be strings, not {1}",
-                            funcName,
-                            PythonTypeOps.GetName(o));
-                    }
+                if (!(o is string) && !(o is Extensible<string>)) {
+                    throw TypeError("{0}() keywords must be strings, not {1}",
+                        funcName,
+                        PythonTypeOps.GetName(o));
                 }
-
                 res[o] = PythonOps.GetIndex(context, dict, o);
             }
-
             return res;
         }
 

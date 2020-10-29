@@ -153,7 +153,7 @@ namespace IronPython.Runtime {
                     Dictionary<object, object> dataDict = TryGetObjectDictionary();
                     if (dataDict != null) {
                         foreach (object o in dataDict.Keys) {
-                            if (!(o is Extensible<string> es)) {
+                            if (!(o is Extensible<string>)) {
                                 return true;
                             }
                         }

@@ -293,15 +293,14 @@ class FunctionTest(IronPythonTestCase):
         class mystr(str): pass
 
         class mymapping:
-            def __init__(self, key, val):
-                self.key = key
-                self.val = val
+            def __init__(self, d):
+                self.d = d
             def keys(self):
-                return self.key,
+                return self.d.keys()
             def __len__(self):
-                return 1
+                return self.d.__len__()
             def __getitem__(self, x):
-                return self.val
+                return self.d.__getitem__(x)
 
         def foo(**kwargs):
             res = type(list(kwargs.keys())[0]) == mystr and kwargs["bla"] == 2 and kwargs[mystr("bla")] == 2
@@ -309,7 +308,7 @@ class FunctionTest(IronPythonTestCase):
             return res and kwargs["blip"] == 2
 
         self.assertTrue(foo(**{mystr("bla"): 2}))
-        self.assertTrue(foo(**mymapping(mystr("bla"), 2)))
+        self.assertTrue(foo(**mymapping({mystr("bla"): 2})))
 
         if is_cli:
             from iptest.ipunittest import load_ironpython_test
@@ -319,32 +318,32 @@ class FunctionTest(IronPythonTestCase):
             self.assertTrue(SplatTest1.FuncWithIDictKwargs(**{mystr("bla"): "bla"}))
             self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**{mystr("bla"): "bla"}))
             self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**{mystr("bla"): "bla"}))
-            self.assertTrue(SplatTest1.FuncWithIDictKwargs(**mymapping(mystr("bla"), "bla")))
-            self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**mymapping(mystr("bla"), "bla")))
-            self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**mymapping(mystr("bla"), "bla")))
+            self.assertTrue(SplatTest1.FuncWithIDictKwargs(**mymapping({mystr("bla"): "bla"})))
+            self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**mymapping({mystr("bla"): "bla"})))
+            self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**mymapping({mystr("bla"): "bla"})))
 
             self.assertTrue(SplatTest1.FuncWithIDictKwargs(**{"bla": "bla"}))
             self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**{"bla": "bla"}))
             self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**{"bla": "bla"}))
-            self.assertTrue(SplatTest1.FuncWithIDictKwargs(**mymapping("bla", "bla")))
-            self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**mymapping("bla", "bla")))
-            self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**mymapping("bla", "bla")))
+            self.assertTrue(SplatTest1.FuncWithIDictKwargs(**mymapping({"bla": "bla"})))
+            self.assertTrue(SplatTest1.FuncWithIDictGenOOKwargs(**mymapping({"bla": "bla"})))
+            self.assertTrue(SplatTest1.FuncWithIDictGenSOKwargs(**mymapping({"bla": "bla"})))
 
             # now create the sites in the reverse order of key types
 
             self.assertTrue(SplatTest2.FuncWithIDictKwargs(**{"bla": "bla"}))
             self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**{"bla": "bla"}))
             self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**{"bla": "bla"}))
-            self.assertTrue(SplatTest2.FuncWithIDictKwargs(**mymapping("bla", "bla")))
-            self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**mymapping("bla", "bla")))
-            self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**mymapping("bla", "bla")))
+            self.assertTrue(SplatTest2.FuncWithIDictKwargs(**mymapping({"bla": "bla"})))
+            self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**mymapping({"bla": "bla"})))
+            self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**mymapping({"bla": "bla"})))
 
             self.assertTrue(SplatTest2.FuncWithIDictKwargs(**{mystr("bla"): "bla"}))
             self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**{mystr("bla"): "bla"}))
             self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**{mystr("bla"): "bla"}))
-            self.assertTrue(SplatTest2.FuncWithIDictKwargs(**mymapping(mystr("bla"), "bla")))
-            self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**mymapping(mystr("bla"), "bla")))
-            self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**mymapping(mystr("bla"), "bla")))
+            self.assertTrue(SplatTest2.FuncWithIDictKwargs(**mymapping({mystr("bla"): "bla"})))
+            self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**mymapping({mystr("bla"): "bla"})))
+            self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**mymapping({mystr("bla"): "bla"})))
 
     @skipUnlessIronPython()
     def test_params_method_no_params(self):

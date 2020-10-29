@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 # from iptest.type_util import *
+import os
 import sys
 import unittest
 
@@ -102,7 +103,6 @@ class ClassTest(IronPythonTestCase):
         c.close()
 
         try:
-            import os
             os.unlink(tmpfile)
         except:
             pass
@@ -1628,7 +1628,7 @@ class ClassTest(IronPythonTestCase):
         class foo:
             def __hash__(self): return 1<<35
 
-    def test_NoneSelf(seld):
+    def test_NoneSelf(self):
         with self.assertRaises(TypeError):
             set.add(None)
 

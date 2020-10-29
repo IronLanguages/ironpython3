@@ -367,16 +367,20 @@ namespace IronPython.Modules {
                 if (tuple.__len__() != 3) {
                     throw PythonOps.TypeError("_io.BytesIO.__setstate__ argument should be 3-tuple, got tuple");
                 }
+
                 var initial_bytes = tuple[0] as IBufferProtocol;
                 if (!(tuple[0] is IBufferProtocol)) {
                     throw PythonOps.TypeError($"'{PythonTypeOps.GetName(tuple[0])}' does not support the buffer interface");
                 }
+
                 if (!(tuple[1] is int i)) {
                     throw PythonOps.TypeError($"second item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
                 }
                 if (i < 0) {
                     throw PythonOps.ValueError("position value cannot be negative");
                 }
+
+                var dict = tuple[2] as PythonDictionary;
                 if (!(tuple[2] is PythonDictionary || tuple[2] is null)) {
                     throw PythonOps.TypeError($"third item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
                 }
@@ -384,7 +388,7 @@ namespace IronPython.Modules {
                 __init__(initial_bytes);
                 _pos = i;
 
-                if (tuple[2] is PythonDictionary dict)
+                if (!(dict is null))
                     __dict__.update(context, dict);
             }
 

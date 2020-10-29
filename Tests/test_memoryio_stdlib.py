@@ -29,7 +29,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_memoryio.CBytesIOTest('test_getstate'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_getvalue'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_init'))
-        suite.addTest(test.test_memoryio.CBytesIOTest('test_instance_dict_leak')) # https://github.com/IronLanguages/ironpython3/issues/1004
+        #suite.addTest(test.test_memoryio.CBytesIOTest('test_instance_dict_leak')) # https://github.com/IronLanguages/ironpython3/issues/1004
         suite.addTest(test.test_memoryio.CBytesIOTest('test_issue5449'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_iterator'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_overseek'))

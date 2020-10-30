@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -52,13 +53,14 @@ namespace IronPython.Runtime {
         }
 
         public abstract bool Contains(object key);
-        
+
         public abstract bool TryGetValue(object key, out object value);
 
         public abstract int Count { get; }
+
         public virtual bool HasNonStringAttributes() {
             foreach (KeyValuePair<object, object> o in GetItems()) {
-                if (!(o.Key is string)) {
+                if (!(o.Key is string) && !(o.Key is Extensible<string>)) {
                     return true;
                 }
             }

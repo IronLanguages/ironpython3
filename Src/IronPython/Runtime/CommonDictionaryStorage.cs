@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
@@ -642,14 +643,14 @@ namespace IronPython.Runtime {
         public override bool HasNonStringAttributes() {
             lock (this) {
                 var nullValue = _nullValue;
-                if (nullValue != null && !(nullValue.Value is string)) {
+                if (nullValue != null && !(nullValue.Value is string) && !(nullValue.Value is Extensible<string>)) {
                     return true;
                 }
-                if (_keyType != typeof(string) && _keyType != null && _count > 0) {
+                if (_keyType != typeof(string) && _keyType != null && _count > 0 && _keyType != typeof(Extensible<string>) && !_keyType.IsSubclassOf(typeof(Extensible<string>))) {
                     for (int i = 0; i < _buckets.Length; i++) {
                         Bucket curBucket = _buckets[i];
-                        
-                        if (curBucket.Key != null && curBucket.Key != _removed && !(curBucket.Key is string)) {
+
+                        if (curBucket.Key != null && curBucket.Key != _removed && !(curBucket.Key is string) && !(curBucket.Key is Extensible<string>)) {
                             return true;
                         }
                     }

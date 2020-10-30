@@ -311,6 +311,8 @@ class FunctionTest(IronPythonTestCase):
         self.assertTrue(foo(**mymapping({mystr("bla"): 2})))
 
         if is_cli:
+            # Tests for https://github.com/IronLanguages/dlr/pull/242
+
             from iptest.ipunittest import load_ironpython_test
             load_ironpython_test()
             from IronPythonTest import SplatTest1, SplatTest2

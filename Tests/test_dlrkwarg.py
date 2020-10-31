@@ -13,8 +13,8 @@ if is_cli:
     from IronPythonTest import DefaultParams, Variadics
 
 
+@skipUnlessIronPython()
 class DlrKwargTest(IronPythonTestCase):
-    @skipUnlessIronPython()
     def test_defaults(self):
         self.assertEqual(DefaultParams.FuncWithDefaults(1100, z=82), 1184)
 
@@ -25,35 +25,27 @@ class DlrKwargTest(IronPythonTestCase):
         self.assertEqual(func(arg1='bad', arg2='arg2'), 'arg1')
         self.assertEqual(func(arg1='arg1', arg2='bad'), 'arg2')
 
-    @skipUnlessIronPython()
     def test_idict(self):
         self.call_kwargs_func(Variadics.FuncWithIDictKwargs)
 
-    @skipUnlessIronPython()
     def test_odict(self):
         self.call_kwargs_func(Variadics.FuncWithDictGenOOKwargs)
 
-    @skipUnlessIronPython()
     def test_sdict(self):
         self.call_kwargs_func(Variadics.FuncWithDictGenSOKwargs)
 
-    @skipUnlessIronPython()
     def test_iodict(self):
         self.call_kwargs_func(Variadics.FuncWithIDictGenOOKwargs)
 
-    @skipUnlessIronPython()
     def test_isdict(self):
         self.call_kwargs_func(Variadics.FuncWithIDictGenSOKwargs)
 
-    @skipUnlessIronPython()
     def test_irosdict(self):
         self.call_kwargs_func(Variadics.FuncWithIRoDictGenSOKwargs)
 
-    @skipUnlessIronPython()
     def test_iroodict(self):
         self.call_kwargs_func(Variadics.FuncWithIRoDictGenOOKwargs)
 
-    @skipUnlessIronPython()
     def test_isidict(self):
         self.assertEqual(Variadics.FuncWithIDictGenSIKwargs(), 0)
         self.assertEqual(Variadics.FuncWithIDictGenSIKwargs(arg1=1), 1)
@@ -64,7 +56,6 @@ class DlrKwargTest(IronPythonTestCase):
             Variadics.FuncWithIDictGenSIKwargs(arg1=1.0)
         self.assertRegex(cm.exception.args[0], r"^Unable to cast keyword argument of type System\.Double to System\.Int32\.$")
 
-    @skipUnlessIronPython()
     def test_irosidict(self):
         self.assertEqual(Variadics.FuncWithIRoDictGenSIKwargs(), 0)
         self.assertEqual(Variadics.FuncWithIRoDictGenSIKwargs(arg1=1), 1)
@@ -75,7 +66,6 @@ class DlrKwargTest(IronPythonTestCase):
             Variadics.FuncWithIRoDictGenSIKwargs(arg1=1.0)
         self.assertRegex(cm.exception.args[0], r"^Unable to cast keyword argument of type System\.Double to System\.Int32\.$")
 
-    @skipUnlessIronPython()
     def test_bad(self):
         self.assertRaisesMessage(TypeError, "FuncWithIRoDictGenSOKwargs() takes no arguments (1 given)",
             Variadics.FuncWithIRoDictGenSOKwargs, {})
@@ -88,7 +78,6 @@ class DlrKwargTest(IronPythonTestCase):
         #self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs={}), 'kwargs')
         #self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs=clrdict), 'kwargs')
 
-    @skipUnlessIronPython()
     def test_attribcol(self):
         self.assertRaisesMessage(SystemError, "Unsupported param dictionary type: System.ComponentModel.AttributeCollection",
          Variadics.FuncWithAttribColKwargs)

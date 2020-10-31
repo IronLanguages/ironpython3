@@ -1295,6 +1295,19 @@ namespace IronPython.Runtime {
                 }
 #endif
             }
+
+            Flush(SharedContext, SystemStandardOut);
+            Flush(SharedContext, SystemStandardError);
+
+            static void Flush(CodeContext context, object obj) {
+                if (obj is PythonIOModule._IOBase pf) {
+                    if (!pf.closed)
+                        pf.flush(context);
+                } else if (PythonOps.TryGetBoundAttr(context, obj, "closed", out object closed)) {
+                    if (!PythonOps.IsTrue(closed))
+                        PythonTypeOps.TryInvokeUnaryOperator(context, obj, "flush", out _);
+                }
+            }
         }
 
         // TODO: ExceptionFormatter service

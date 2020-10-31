@@ -24,6 +24,10 @@ class DlrKwargTest(IronPythonTestCase):
         self.assertEqual(func(arg1='arg1', arg2='arg2'), 2)
         self.assertEqual(func(arg1='bad', arg2='arg2'), 'arg1')
         self.assertEqual(func(arg1='arg1', arg2='bad'), 'arg2')
+        self.assertEqual(func(**{'arg1':'arg1'}), 1)
+        self.assertEqual(func(**{'arg1':'arg1', 'arg2':'arg2'}), 2)
+        self.assertEqual(func(**{'arg1':'bad', 'arg2':'arg2'}), 'arg1')
+        self.assertEqual(func(**{'arg1':'arg1', 'arg2':'bad'}), 'arg2')
 
     def test_idict(self):
         self.call_kwargs_func(Variadics.FuncWithIDictKwargs)

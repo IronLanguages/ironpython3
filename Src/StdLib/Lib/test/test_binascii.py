@@ -14,10 +14,8 @@ a2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_hqx', 'a2b_qp', 'a2b_uu',
 
 if sys.implementation.name == "ironpython":
     # these are not yet implemented in IronPython
-    b2a_functions.remove('b2a_qp')
     b2a_functions.remove('b2a_hqx')
     b2a_functions.remove('rlecode_hqx')
-    a2b_functions.remove('a2b_qp')
     a2b_functions.remove('a2b_hqx')
     a2b_functions.remove('rledecode_hqx')
     
@@ -190,7 +188,6 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.hexlify(self.type2test(s)), t)
         self.assertEqual(binascii.unhexlify(self.type2test(t)), u)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: not implemented")
     def test_qp(self):
         binascii.a2b_qp(data=b"", header=False)  # Keyword arguments allowed
 

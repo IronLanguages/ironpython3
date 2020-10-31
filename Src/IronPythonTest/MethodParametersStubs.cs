@@ -36,4 +36,101 @@ namespace IronPythonTest {
         public static object FuncWithIDictGenSOKwargs([ParamDictionary] IDictionary<string, object> kwargs)
             => kwargs.Count == 1 && (string)kwargs["bla"] == "bla";
     }
+
+    public static class Variadics {
+        public static object FuncWithIDictKwargs([ParamDictionary] IDictionary kwargs) {
+            foreach (DictionaryEntry kvp in kwargs) {
+                if (kvp.Value is string val && (string)kvp.Key != val) return kvp.Key;
+            }
+            int num = kwargs.Count;
+
+            // check that kwargs is mutable
+            kwargs["$"] = 1;
+            if ((int)kwargs["$"] != 1) return "$";
+
+            kwargs.Remove("$");
+            if (kwargs.Count != num) return "$-";
+
+            return num;
+        }
+
+        public static object FuncWithDictGenOOKwargs([ParamDictionary] Dictionary<object, object> kwargs)
+            => FuncWithIDictGenOOKwargs(kwargs);
+
+        public static object FuncWithIDictGenOOKwargs([ParamDictionary] IDictionary<object, object> kwargs) {
+            foreach (KeyValuePair<object, object> kvp in kwargs) {
+                if (kvp.Value is string val && (string)kvp.Key != val) return kvp.Key;
+            }
+            int num = kwargs.Count;
+
+            // check that kwargs is mutable
+            kwargs["$"] = 1;
+            if ((int)kwargs["$"] != 1) return "$";
+
+            kwargs.Remove("$");
+            if (kwargs.Count != num) return "$-";
+
+            return num;
+        }
+
+        public static object FuncWithDictGenSOKwargs([ParamDictionary] Dictionary<string, object> kwargs)
+            => FuncWithIDictGenSOKwargs(kwargs);
+
+        public static object FuncWithIDictGenSOKwargs([ParamDictionary] IDictionary<string, object> kwargs) {
+            foreach (KeyValuePair<string, object> kvp in kwargs) {
+                if (kvp.Value is string val && kvp.Key != val) return kvp.Key;
+            }
+            int num = kwargs.Count;
+
+            // check that kwargs is mutable
+            kwargs["$"] = 1;
+            if ((int)kwargs["$"] != 1) return "$";
+
+            kwargs.Remove("$");
+            if (kwargs.Count != num) return "$-";
+
+            return num;
+        }
+
+        public static object FuncWithIDictGenSIKwargs([ParamDictionary] IDictionary<string, int> kwargs) {
+            foreach (KeyValuePair<string, int> kvp in kwargs) {
+                if (kvp.Key != $"arg{kvp.Value}") return kvp.Key;
+            }
+            int num = kwargs.Count;
+
+            // check that kwargs is mutable
+            kwargs["$"] = 1;
+            if ((int)kwargs["$"] != 1) return "$";
+
+            kwargs.Remove("$");
+            if (kwargs.Count != num) return "$-";
+
+            return num;
+        }
+
+        public static object FuncWithIRoDictGenSOKwargs([ParamDictionary] IReadOnlyDictionary<string, object> kwargs) {
+            foreach (KeyValuePair<string, object> kvp in kwargs) {
+                if (kvp.Value is string val && kvp.Key != val) return kvp.Key;
+            }
+            return kwargs.Count;
+        }
+
+        public static object FuncWithIRoDictGenOOKwargs([ParamDictionary] IReadOnlyDictionary<object, object> kwargs) {
+            foreach (KeyValuePair<object, object> kvp in kwargs) {
+                if (kvp.Value is string val && (string)kvp.Key != val) return kvp.Key;
+            }
+            return kwargs.Count;
+        }
+
+        public static object FuncWithIRoDictGenSIKwargs([ParamDictionary] IReadOnlyDictionary<string, int> kwargs) {
+            foreach (KeyValuePair<string, int> kvp in kwargs) {
+                if (kvp.Key != $"arg{kvp.Value}") return kvp.Key;
+            }
+            return kwargs.Count;
+        }
+
+        public static object FuncWithAttribColKwargs([ParamDictionary] /*unsupported*/ AttributeCollection kwargs) {
+            return kwargs.Count;
+        }
+    }
 }

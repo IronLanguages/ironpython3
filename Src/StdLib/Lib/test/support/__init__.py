@@ -1891,6 +1891,12 @@ def modules_cleanup(oldmodules):
 # __bootstrap() method has returned, which gives us reliable reference counts
 # at the end of a test run.
 
+if sys.implementation.name == "ironpython":
+    # disable reap_threads on Mono due to https://github.com/IronLanguages/ironpython3/issues/1005
+    import clr
+    if clr.IsMono:
+        _thread = None
+
 def threading_setup():
     if _thread:
         threading.current_thread() # ironpython: register the current thread if not running on a known thread

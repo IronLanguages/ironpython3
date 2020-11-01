@@ -199,7 +199,7 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz''')
 
     def test_scriptdecode(self):
         (p, e) = self.STRINGS[-1]
-        process = subprocess.Popen([sys.executable, "-mquopri", "-d"],
+        process = subprocess.Popen([sys.executable, "-m", "quopri", "-d"], # https://github.com/IronLanguages/ironpython3/issues/1009
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         self.addCleanup(process.stdout.close)
         cout, cerr = process.communicate(e)

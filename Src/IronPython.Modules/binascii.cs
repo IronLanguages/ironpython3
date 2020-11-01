@@ -9,12 +9,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {
@@ -159,93 +159,84 @@ namespace IronPython.Modules {
 
         private const int MAXLINESIZE = 76;
 
-        public static object a2b_qp(object data) {
-            throw new NotImplementedException();
+        [Documentation("a2b_qp(data, header=False)\n    Decode a string of qp-encoded data.")]
+        public static Bytes a2b_qp([NotNull] IBufferProtocol data, bool header = false) {
+            using var buffer = data.GetBuffer();
+            return a2b_qp_impl(buffer.AsReadOnlySpan(), header);
         }
 
-        [LightThrowing]
-        public static object a2b_qp(object data, object header) {
-            return LightExceptions.Throw(new NotImplementedException());
+        public static Bytes a2b_qp([NotNull] string data, bool header = false) {
+            var bytes = data.ToBytes();
+            return a2b_qp_impl(bytes.UnsafeByteArray.AsSpan(), header);
         }
 
-        [Documentation(@"b2a_qp(data, quotetabs=0, istext=1, header=0) -> s; 
- Encode a string using quoted-printable encoding. 
+        private static Bytes a2b_qp_impl(ReadOnlySpan<byte> ascii_data, bool header) {
+            var datalen = ascii_data.Length;
 
-On encoding, when istext is set, newlines are not encoded, and white 
-space at end of lines is.  When istext is not set, \\r and \\n (CR/LF) are 
-both encoded.  When quotetabs is set, space and tabs are encoded.")]
-        public static object b2a_qp(string data, int quotetabs = 0, int istext = 1, int header = 0) {
-            bool crlf = data.Contains("\r\n");
-            int linelen = 0, odatalen = 0;
-            int incount = 0, outcount = 0;
+            var incount = 0;
 
-            bool quotetabs_ = quotetabs != 0;
-            bool header_ = header != 0;
-            bool istext_ = istext != 0;
+            MemoryStream odata = new MemoryStream();
 
-            while(incount < data.Length) {
-                if ((data[incount] > 126) || (data[incount] == '=') ||
-                    (header_ && data[incount] == '_') || ((data[incount] == '.') && (linelen == 0) &&
-                    (data[incount+1] == '\n' || data[incount+1] == '\r' || data[incount+1] == 0)) ||
-                    (!istext_ && ((data[incount] == '\r') || (data[incount] == '\n'))) ||
-                    ((data[incount] == '\t' || data[incount] == ' ') && (incount +1 == data.Length)) ||
-                    ((data[incount] < 33) && (data[incount] != '\r') && (data[incount] != '\n') &&
-                    (quotetabs_ || (!quotetabs_ && ((data[incount] != '\t') && (data[incount] != ' ')))))) {
-
-                    if ((linelen + 3) >= MAXLINESIZE) {
-                        linelen = 0;
-                        if (crlf)
-                            odatalen += 3;
-                        else
-                            odatalen += 2;
+            while (incount < datalen) {
+                if (ascii_data[incount] == '=') {
+                    incount++;
+                    if (incount >= datalen) break;
+                    // Soft line breaks
+                    if ((ascii_data[incount] == '\n') || (ascii_data[incount] == '\r')) {
+                        if (ascii_data[incount] != '\n') {
+                            while (incount < datalen && ascii_data[incount] != '\n') incount++;
+                        }
+                        if (incount < datalen) incount++;
+                    } else if (ascii_data[incount] == '=') {
+                        // broken case from broken python qp
+                        odata.WriteByte((byte)'=');
+                        incount++;
+                    } else if ((incount + 1 < datalen) && TryParseHex(ascii_data[incount], out byte x) && TryParseHex(ascii_data[incount + 1], out byte x2)) {
+                        // hexval
+                        odata.WriteByte(unchecked((byte)((x << 4) | x2)));
+                        incount += 2;
+                    } else {
+                        odata.WriteByte((byte)'=');
                     }
-                    linelen += 3;
-                    odatalen += 3;
+                } else if (header && ascii_data[incount] == '_') {
+                    odata.WriteByte((byte)' ');
                     incount++;
                 } else {
-                    if (istext_ &&
-                        ((data[incount] == '\n') ||
-                         ((incount + 1 < data.Length) && (data[incount] == '\r') &&
-                         (data[incount + 1] == '\n')))) {
-                        linelen = 0;
-                        /* Protect against whitespace on end of line */
-                        if (incount > 0 && ((data[incount - 1] == ' ') || (data[incount - 1] == '\t')))
-                            odatalen += 2;
-                        if (crlf)
-                            odatalen += 2;
-                        else
-                            odatalen += 1;
-                        if (data[incount] == '\r')
-                            incount += 2;
-                        else
-                            incount++;
-                    } else {
-                        if ((incount + 1 != data.Length) &&
-                           (data[incount + 1] != '\n') &&
-                           (linelen + 1) >= MAXLINESIZE) {
-                            linelen = 0;
-                            if (crlf)
-                                odatalen += 3;
-                            else
-                                odatalen += 2;
-                        }
-                        linelen++;
-                        odatalen++;
-                        incount++;
-                    }
+                    odata.WriteByte(ascii_data[incount]);
+                    incount++;
                 }
             }
 
+            return Bytes.Make(odata.ToArray());
+        }
+
+        [Documentation(@"b2a_qp(data, quotetabs=False, istext=True, header=False) -> s;
+ Encode a string using quoted-printable encoding.
+
+On encoding, when istext is set, newlines are not encoded, and white
+space at end of lines is.  When istext is not set, \\r and \\n (CR/LF) are
+both encoded.  When quotetabs is set, space and tabs are encoded.")]
+        public static Bytes b2a_qp([NotNull] IBufferProtocol data, bool quotetabs = false, bool istext = true, bool header = false) {
+            using var buffer = data.GetBuffer();
+            return b2a_qp_impl(buffer.AsReadOnlySpan().MakeString(), quotetabs, istext, header);
+        }
+
+        private static Bytes b2a_qp_impl(string data, bool quotetabs, bool istext, bool header) {
+            bool crlf = data.Contains("\r\n");
+
             StringBuilder odata = new StringBuilder();
 
-            incount = outcount = linelen = 0;
+            var incount = 0;
+            var outcount = 0;
+            var linelen = 0;
+
             while (incount < data.Length) {
-                if ((data[incount] > 126) || (data[incount] == '=') || (header_ && data[incount] == '_') ||
-                    ((data[incount] == '.') && (linelen == 0) && (data[incount + 1] == '\n' || data[incount + 1] == '\r' || data[incount + 1] == 0)) ||
-                    (!istext_ && ((data[incount] == '\r') || (data[incount] == '\n'))) ||
+                if ((data[incount] > 126) || (data[incount] == '=') || (header && data[incount] == '_') ||
+                    ((data[incount] == '.') && (linelen == 0) && (incount + 1 == data.Length || data[incount + 1] == '\n' || data[incount + 1] == '\r' || data[incount + 1] == 0)) ||
+                    (!istext && ((data[incount] == '\r') || (data[incount] == '\n'))) ||
                     ((data[incount] == '\t' || data[incount] == ' ') && (incount + 1 == data.Length)) ||
                    ((data[incount] < 33) && (data[incount] != '\r') && (data[incount] != '\n') &&
-                    (quotetabs_ || (!quotetabs_ && ((data[incount] != '\t') && (data[incount] != ' ')))))) {
+                    (quotetabs || (!quotetabs && ((data[incount] != '\t') && (data[incount] != ' ')))))) {
 
                     if ((linelen + 3) >= MAXLINESIZE) {
                         odata.Append('=');
@@ -259,7 +250,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
                     incount++;
                     linelen += 3;
                 } else {
-                    if (istext_ &&
+                    if (istext &&
                         ((data[incount] == '\n') ||
                          ((incount + 1 < data.Length) && (data[incount] == '\r') &&
                          (data[incount + 1] == '\n')))) {
@@ -272,33 +263,33 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
                             outcount += 2;
                         }
 
-                        if (crlf) odata[outcount++] = '\r';
-                        odata[outcount++] = '\n';
+                        if (crlf) { odata.Append('\r'); outcount++; }
+                        odata.Append('\n'); outcount++;
                         if (data[incount] == '\r')
                             incount += 2;
                         else
                             incount++;
                     } else {
-                        if ((incount +1 != data.Length) &&
+                        if ((incount + 1 != data.Length) &&
                            (data[incount + 1] != '\n') &&
                            (linelen + 1) >= MAXLINESIZE) {
-                            odata[outcount++] = '=';
-                            if (crlf) odata[outcount++] = '\r';
-                            odata[outcount++] = '\n';
+                            odata.Append('='); outcount++;
+                            if (crlf) { odata.Append('\r'); outcount++; }
+                            odata.Append('\n'); outcount++;
                             linelen = 0;
                         }
                         linelen++;
-                        if (header_ && data[incount] == ' ') {
-                            odata[outcount++] = '_';
+                        if (header && data[incount] == ' ') {
+                            odata.Append('_'); outcount++;
                             incount++;
                         } else {
-                            odata[outcount++] = data[incount++];
+                            odata.Append(data[incount++]); outcount++;
                         }
                     }
                 }
             }
 
-            return odata.ToString();
+            return odata.ToString().ToBytes();
 
             static void to_hex(char ch, StringBuilder s, int index) {
                 int uvalue = ch, uvalue2 = ch / 16;
@@ -440,15 +431,10 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return Bytes.Make(res);
 
             static byte ParseHex(CodeContext/*!*/ context, byte b) {
-                if (b.IsDigit()) {
-                    return (byte)(b - '0');
-                } else if (b >= 'A' && b <= 'F') {
-                    return (byte)(b - 'A' + 10);
-                } else if (b >= 'a' && b <= 'f') {
-                    return (byte)(b - 'a' + 10);
-                } else {
-                    throw Error(context, "Non-hexadecimal digit found");
+                if (TryParseHex(b, out byte x)) {
+                    return x;
                 }
+                throw Error(context, "Non-hexadecimal digit found");
             }
         }
 
@@ -649,6 +635,19 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return new Bytes(buffer);
         }
 
+        private static bool TryParseHex(byte b, out byte x) {
+            if (b.IsDigit()) {
+                x = (byte)(b - '0');
+            } else if (b >= 'A' && b <= 'F') {
+                x = (byte)(b - 'A' + 10);
+            } else if (b >= 'a' && b <= 'f') {
+                x = (byte)(b - 'a' + 10);
+            } else {
+                x = default;
+                return false;
+            }
+            return true;
+        }
         #endregion
     }
 }

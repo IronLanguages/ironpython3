@@ -30,8 +30,6 @@ class BinasciiTest(unittest.TestCase):
     @skipUnlessIronPython()
     def test_not_implemented(self):
         test_cases = [
-                        lambda: binascii.a2b_qp(None),
-                        lambda: binascii.a2b_qp(None, None),
                         lambda: binascii.a2b_hqx(None),
                         lambda: binascii.rledecode_hqx(None),
                         lambda: binascii.rlecode_hqx(None),

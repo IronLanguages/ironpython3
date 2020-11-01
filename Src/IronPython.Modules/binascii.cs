@@ -160,12 +160,12 @@ namespace IronPython.Modules {
         private const int MAXLINESIZE = 76;
 
         [Documentation("a2b_qp(data, header=False)\n    Decode a string of qp-encoded data.")]
-        public static Bytes a2b_qp(IBufferProtocol data, bool header = false) {
+        public static Bytes a2b_qp([NotNull] IBufferProtocol data, bool header = false) {
             using var buffer = data.GetBuffer();
             return a2b_qp_impl(buffer.AsReadOnlySpan(), header);
         }
 
-        public static Bytes a2b_qp(string data, bool header = false) {
+        public static Bytes a2b_qp([NotNull] string data, bool header = false) {
             var bytes = data.ToBytes();
             return a2b_qp_impl(bytes.UnsafeByteArray.AsSpan(), header);
         }
@@ -216,7 +216,7 @@ namespace IronPython.Modules {
 On encoding, when istext is set, newlines are not encoded, and white
 space at end of lines is.  When istext is not set, \\r and \\n (CR/LF) are
 both encoded.  When quotetabs is set, space and tabs are encoded.")]
-        public static Bytes b2a_qp(IBufferProtocol data, bool quotetabs = false, bool istext = true, bool header = false) {
+        public static Bytes b2a_qp([NotNull] IBufferProtocol data, bool quotetabs = false, bool istext = true, bool header = false) {
             using var buffer = data.GetBuffer();
             return b2a_qp_impl(buffer.AsReadOnlySpan().MakeString(), quotetabs, istext, header);
         }

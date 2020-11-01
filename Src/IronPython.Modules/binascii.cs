@@ -170,37 +170,9 @@ namespace IronPython.Modules {
             return a2b_qp_impl(bytes.UnsafeByteArray.AsSpan(), header);
         }
 
-        /// <summary>
-        /// Table of digit values for 8-bit string -> integer conversion.
-        /// '0' maps to 0, ..., '9' maps to 9.
-        /// 'a' and 'A' map to 10, ..., 'z' and 'Z' map to 35.
-        /// All other indices map to 37.
-        /// Note that when converting a base B string, a char c is a legitimate
-        /// base B digit iff _PyLong_DigitValue[Py_CHARPyLong_MASK(c)] &lt; B.
-        /// </summary>
-        private static readonly ushort[] _PyLong_DigitValue = new ushort[256] {
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  37, 37, 37, 37, 37, 37,
-            37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
-            37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-            37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-        };
-
         private static Bytes a2b_qp_impl(ReadOnlySpan<byte> ascii_data, bool header) {
             var datalen = ascii_data.Length;
 
-            char ch;
             var incount = 0;
 
             MemoryStream odata = new MemoryStream();
@@ -219,19 +191,10 @@ namespace IronPython.Modules {
                         // broken case from broken python qp
                         odata.WriteByte((byte)'=');
                         incount++;
-                    } else if ((incount + 1 < datalen) &&
-                              ((ascii_data[incount] >= 'A' && ascii_data[incount] <= 'F') ||
-                               (ascii_data[incount] >= 'a' && ascii_data[incount] <= 'f') ||
-                               (ascii_data[incount] >= '0' && ascii_data[incount] <= '9')) &&
-                              ((ascii_data[incount + 1] >= 'A' && ascii_data[incount + 1] <= 'F') ||
-                               (ascii_data[incount + 1] >= 'a' && ascii_data[incount + 1] <= 'f') ||
-                               (ascii_data[incount + 1] >= '0' && ascii_data[incount + 1] <= '9'))) {
+                    } else if ((incount + 1 < datalen) && TryParseHex(ascii_data[incount], out byte x) && TryParseHex(ascii_data[incount + 1], out byte x2)) {
                         // hexval
-                        ch = (char)(_PyLong_DigitValue[ascii_data[incount]] << 4);
-                        incount++;
-                        ch |= (char)_PyLong_DigitValue[ascii_data[incount]];
-                        incount++;
-                        odata.WriteByte((byte)ch);
+                        odata.WriteByte(unchecked((byte)((x << 4) | x2)));
+                        incount += 2;
                     } else {
                         odata.WriteByte((byte)'=');
                     }
@@ -468,15 +431,10 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return Bytes.Make(res);
 
             static byte ParseHex(CodeContext/*!*/ context, byte b) {
-                if (b.IsDigit()) {
-                    return (byte)(b - '0');
-                } else if (b >= 'A' && b <= 'F') {
-                    return (byte)(b - 'A' + 10);
-                } else if (b >= 'a' && b <= 'f') {
-                    return (byte)(b - 'a' + 10);
-                } else {
-                    throw Error(context, "Non-hexadecimal digit found");
+                if (TryParseHex(b, out byte x)) {
+                    return x;
                 }
+                throw Error(context, "Non-hexadecimal digit found");
             }
         }
 
@@ -677,6 +635,19 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return new Bytes(buffer);
         }
 
+        private static bool TryParseHex(byte b, out byte x) {
+            if (b.IsDigit()) {
+                x = (byte)(b - '0');
+            } else if (b >= 'A' && b <= 'F') {
+                x = (byte)(b - 'A' + 10);
+            } else if (b >= 'a' && b <= 'f') {
+                x = (byte)(b - 'a' + 10);
+            } else {
+                x = default;
+                return false;
+            }
+            return true;
+        }
         #endregion
     }
 }

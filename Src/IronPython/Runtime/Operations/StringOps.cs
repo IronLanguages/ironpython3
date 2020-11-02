@@ -1226,7 +1226,7 @@ namespace IronPython.Runtime.Operations {
                 var idx = self[i];
                 try {
                     ret.AppendValueForTranslate(PythonCalls.Call(context, getitem, (int)idx));
-                } catch (Exception e) when (e is LookupException || e is IndexOutOfRangeException || e is KeyNotFoundException) {
+                } catch (Exception e) when (e is LookupException || e is IndexOutOfRangeException || e is KeyNotFoundException || PythonOps.IsInstance(e.GetPythonException(), PythonExceptions.LookupError)) {
                     ret.Append(idx);
                 }
             }

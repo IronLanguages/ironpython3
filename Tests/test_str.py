@@ -491,4 +491,12 @@ class StrTest(IronPythonTestCase):
             self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate(t({ord('a') : 65536})))
             self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate(t({ord('a') : 2.0})))
 
+        class MyError(IndexError): pass
+
+        class IndexableUserError:
+            def __getitem__(self, idx):
+                raise MyError
+
+        self.assertEqual(u"abcd".translate(IndexableUserError()), u"abcd")
+
 run_test(__name__)

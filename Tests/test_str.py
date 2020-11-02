@@ -480,10 +480,7 @@ class StrTest(IronPythonTestCase):
             def __init__(self, d):
                 self.d = d
             def __getitem__(self, idx):
-                try:
-                    return self.d[idx]
-                except:
-                    raise KeyError
+                return self.d[idx]
 
         for t in (dict, indexable):
             self.assertEqual(u"abcd".translate(t({})), u"abcd")
@@ -491,12 +488,17 @@ class StrTest(IronPythonTestCase):
             self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate(t({ord('a') : 65536})))
             self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate(t({ord('a') : 2.0})))
 
-        class MyError(IndexError): pass
-
-        class IndexableUserError:
+        class ThrowingIndexable:
+            def __init__(self, err):
+                self.err = err
             def __getitem__(self, idx):
-                raise MyError
+                raise self.err
 
-        self.assertEqual(u"abcd".translate(IndexableUserError()), u"abcd")
+        for err in (LookupError, IndexError, KeyError):
+            self.assertEqual(u"abcd".translate(ThrowingIndexable(err)), u"abcd")
+
+            class UserError(err): pass
+
+            self.assertEqual(u"abcd".translate(ThrowingIndexable(UserError(err))), u"abcd")
 
 run_test(__name__)

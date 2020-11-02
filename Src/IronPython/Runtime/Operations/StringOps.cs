@@ -1160,7 +1160,7 @@ namespace IronPython.Runtime.Operations {
         //translate on a unicode string differs from that on an ascii
         //for unicode, the table argument is actually a dictionary with
         //character ordinals as keys and the replacement strings as values
-        public static string translate([NotNull]this string self, [NotNull]PythonDictionary table) {
+        public static string translate([NotNull] string self, [NotNull] PythonDictionary table) {
             if (self.Length == 0) {
                 return self;
             }
@@ -1169,21 +1169,7 @@ namespace IronPython.Runtime.Operations {
             for (int i = 0, idx = 0; i < self.Length; i++) {
                 idx = (int)self[i];
                 if (table.__contains__(idx)) {
-                    var mapped = table[idx];
-                    if (mapped == null) {
-                        continue;
-                    }
-                    if (mapped is int) {
-                        var mappedInt = (int)mapped;
-                        if (mappedInt > 0xFFFF) {
-                            throw PythonOps.TypeError("character mapping must be in range(0x10000)");
-                        }
-                        ret.Append((char)(int)mapped);
-                    } else if (mapped is String) {
-                        ret.Append(mapped);
-                    } else {
-                        throw PythonOps.TypeError("character mapping must return integer, None or str");
-                    }
+                    ret.AppendValueForTranslate(table[idx]);
                 } else {
                     ret.Append(self[i]);
                 }
@@ -1191,29 +1177,60 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
-        public static string translate([NotNull]this string self, string? table) {
-            if (table == null) {
-                throw PythonOps.TypeError("'NoneType' object is not subscriptable");
-            } else if (table.Length != 256) {
-                throw PythonOps.ValueError("translation table must be 256 characters long");
-            } else if (self.Length == 0) {
+        private static void AppendValueForTranslate(this StringBuilder ret, object? mapped) {
+            switch (mapped) {
+                case null:
+                    return;
+                case int mappedInt:
+                    if (mappedInt > 0xFFFF) {
+                        throw PythonOps.TypeError("character mapping must be in range(0x10000)");
+                    }
+                    ret.Append((char)mappedInt);
+                    break;
+                case string _:
+                    ret.Append(mapped);
+                    break;
+                default:
+                    throw PythonOps.TypeError("character mapping must return integer, None or str");
+            }
+        }
+
+        public static string translate([NotNull] string self, [NotNull] string table) {
+            if (self.Length == 0) {
                 return self;
             }
 
-            // List<char> is about 2/3rds as expensive as StringBuilder appending individual
-            // char's so we use that instead of a StringBuilder
-            List<char> res = new List<char>();
+            StringBuilder ret = new StringBuilder();
             for (int i = 0; i < self.Length; i++) {
-                if (table != null) {
-                    int idx = (int)self[i];
-                    if (idx >= 0 && idx < 256) {
-                        res.Add(table[idx]);
-                    }
+                var idx = self[i];
+                if (idx < table.Length) {
+                    ret.Append(table[idx]);
                 } else {
-                    res.Add(self[i]);
+                    ret.Append(idx);
                 }
             }
-            return new String(res.ToArray());
+            return ret.ToString();
+        }
+
+        public static string translate(CodeContext context, [NotNull] string self, object? table) {
+            if (self.Length == 0) {
+                return self;
+            }
+
+            if (!PythonTypeOps.TryGetOperator(context, table, "__getitem__", out object getitem)) {
+                throw PythonOps.TypeError($"'{PythonTypeOps.GetName(table)}' object is not subscriptable");
+            }
+
+            StringBuilder ret = new StringBuilder();
+            for (int i = 0; i < self.Length; i++) {
+                var idx = self[i];
+                try {
+                    ret.AppendValueForTranslate(PythonCalls.Call(context, getitem, (int)idx));
+                } catch (Exception e) when (e is LookupException || e is IndexOutOfRangeException || e is KeyNotFoundException || PythonOps.IsInstance(e.GetPythonException(), PythonExceptions.LookupError)) {
+                    ret.Append(idx);
+                }
+            }
+            return ret.ToString();
         }
 
         public static string upper([NotNull]this string self) {

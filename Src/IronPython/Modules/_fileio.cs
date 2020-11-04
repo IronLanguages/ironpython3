@@ -508,7 +508,7 @@ namespace IronPython.Modules {
 
                 EnsureWritable();
                 _writeStream.Write(bytes);
-                _writeStream.Flush(); // Mono does not allow no buffering via a 1 byte buffer size so we need to flush.
+                _writeStream.Flush(); // FileIO is not supposed to buffer so we need to call Flush.
                 SeekToEnd();
 
                 return bytes.Length;

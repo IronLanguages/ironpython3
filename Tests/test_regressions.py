@@ -1473,10 +1473,13 @@ class C:
     def test_ipy3_gh392(self):
         """https://github.com/IronLanguages/ironpython3/issues/392"""
         filename = "test_ipy3_gh392.{}.txt".format(os.getpid())
-        with open(filename, 'w') as test:
-          test.write('hi')
-          test.flush()
-          with open(filename, 'r') as r:
-              self.assertEqual(r.read(), 'hi')
+        try:
+            with open(filename, 'w') as test:
+              test.write('hi')
+              test.flush()
+              with open(filename, 'r') as r:
+                  self.assertEqual(r.read(), 'hi')
+        finally:
+            os.remove(filename)
 
 run_test(__name__)

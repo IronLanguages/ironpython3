@@ -508,6 +508,7 @@ namespace IronPython.Modules {
 
                 EnsureWritable();
                 _writeStream.Write(bytes);
+                _writeStream.Flush(); // FileIO is not supposed to buffer so we need to call Flush.
                 SeekToEnd();
 
                 return bytes.Length;
@@ -564,7 +565,7 @@ namespace IronPython.Modules {
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(2, "No such file or directory", filename: name);
                 try {
-                    return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
+                    return pal.OpenFileStream(name, fileMode, fileAccess, fileShare, 1); // Use a 1 byte buffer size to disable buffering (if the FileStream implementation supports it).
                 } catch (UnauthorizedAccessException) {
                     throw PythonOps.OSError(13, "Permission denied", name);
                 } catch (FileNotFoundException) {

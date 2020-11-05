@@ -970,10 +970,9 @@ class NtTest(IronPythonTestCase):
         self.assertEqual(nt.read(fd2, 1), b'')
 
         nt.write(fd, b'1')
-        if is_cli:
-            self.assertEqual(nt.read(fd2, 1), b'') # this should be visible right away, but is not
-        nt.fsync(fd)
         self.assertEqual(nt.read(fd2, 1), b'1')
+        nt.fsync(fd)
+        self.assertEqual(nt.read(fd2, 1), b'')
 
         nt.close(fd)
         nt.close(fd2)

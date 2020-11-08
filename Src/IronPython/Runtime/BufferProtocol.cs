@@ -246,7 +246,7 @@ namespace IronPython.Runtime {
             => new BufferBytesEnumerator(buffer);
 
         public static bool IsCContiguous(this IPythonBuffer buffer) {
-            Debug.Assert(buffer.Offset == 0);
+            Debug.Assert(buffer.Strides != null || buffer.Offset == 0);
             return buffer.Strides == null;
         }
 

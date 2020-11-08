@@ -90,11 +90,11 @@ class VariantType:
 
     def write_accessor_propertyinfo(self, cw):
         if self.emitAccessors == True :
-            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetProperty("%s");' % (self.variantType, self.accessorName))
+            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetProperty(nameof(Variant.%s));' % (self.variantType, self.accessorName))
 
     def write_byref_setters(self, cw):
         if self.emitAccessors == True :
-            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetMethod("SetAsByref%s");' % (self.variantType, self.name))
+            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetMethod(nameof(Variant.SetAsByref%s));' % (self.variantType, self.name))
 
     def write_ComToManagedPrimitiveTypes(self, cw):
         wrapper_types = ["CY", "DISPATCH", "UNKNOWN", "ERROR"]

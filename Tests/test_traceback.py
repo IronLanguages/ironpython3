@@ -467,7 +467,6 @@ def f():
                             (line_num + 3, 3, FILE, 'a'),
                             (line_num + 9, 3, FILE, 'f')])
 
-    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     def test_cp11923_second(self):
         try:
             #Test setup

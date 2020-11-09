@@ -944,7 +944,7 @@ class TestPEP380Operation(unittest.TestCase):
         for stack in spam(eggs(gen())):
             self.assertTrue('spam' in stack and 'eggs' in stack)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "nonlocal not working properly")
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/11")
     def test_custom_iterator_return(self):
         # See issue #15568
         class MyIter:
@@ -998,7 +998,7 @@ class TestPEP380Operation(unittest.TestCase):
             del inner_gen
             gc_collect()
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "nonlocal not working properly")
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/11")
     def test_send_tuple_with_custom_generator(self):
         # See issue #21209.
         class MyGen:

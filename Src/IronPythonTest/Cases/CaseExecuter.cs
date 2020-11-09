@@ -12,14 +12,15 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting;
-
+using IronPython;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
+
 using IronPythonTest.Util;
-using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
     internal class CaseExecuter {
@@ -27,7 +28,6 @@ namespace IronPythonTest.Cases {
             get {
                 var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string runner;
-#if NETCOREAPP
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     runner = Path.Combine(folder, "ipy.exe");
                     if (File.Exists(runner)) return runner;
@@ -39,12 +39,7 @@ namespace IronPythonTest.Cases {
                     runner = Path.Combine(folder, "ipy.sh");
                     if (File.Exists(runner)) return runner;
                 }
-#else
-                runner = Path.Combine(folder, "ipy.exe");
-                if (File.Exists(runner)) return runner;
-#endif
                 throw new FileNotFoundException();
-
             }
         }
 

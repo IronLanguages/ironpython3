@@ -1912,8 +1912,6 @@ class CodecTest(IronPythonTestCase):
         finally:
             sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
 
-    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
-    @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
     def test_cp11334(self):
         def run_python(filename):
             p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", filename)], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1997,7 +1995,6 @@ class CodecTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, codecs.lookup, None)
 
-    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     def test_cp1019(self):
         #--Test that bogus encodings fail properly
         # https://github.com/IronLanguages/main/issues/255

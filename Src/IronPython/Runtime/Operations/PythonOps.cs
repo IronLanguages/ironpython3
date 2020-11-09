@@ -2876,9 +2876,10 @@ namespace IronPython.Runtime.Operations {
             return func.Defaults[index];
         }
 
-        public static object? FunctionGetKeywordOnlyDefaultValue(PythonFunction func, string name) {
-            if (func.__kwdefaults__ == null) return null;
-            func.__kwdefaults__.TryGetValue(name, out object res);
+        public static object? FunctionGetKeywordOnlyDefaultValue(PythonFunction func, int index) {
+            if (func.__kwdefaults__ is null) return null;
+            var argName = func.ArgNames[index];
+            func.__kwdefaults__.TryGetValue(argName, out object res);
             return res;
         }
 

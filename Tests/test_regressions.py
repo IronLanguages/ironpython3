@@ -1472,13 +1472,39 @@ class C:
 
     def test_ipy3_gh392(self):
         """https://github.com/IronLanguages/ironpython3/issues/392"""
-        filename = "test_ipy3_gh392.{}.txt".format(os.getpid())
+        filename = os.path.join(self.temporary_dir, "test_ipy3_gh392.{}.txt".format(os.getpid()))
         try:
             with open(filename, 'w') as test:
               test.write('hi')
               test.flush()
               with open(filename, 'r') as r:
                   self.assertEqual(r.read(), 'hi')
+        finally:
+            os.remove(filename)
+
+    def test_ipy3_gh1015(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1015"""
+        filename = os.path.join(self.temporary_dir, "test_ipy3_gh1015_{}.py".format(os.getpid()))
+        try:
+            with open(filename, 'w') as f:
+                f.write("""
+def f1(*, a=1):
+    return a
+
+assert f1() == 1
+
+def f2(*, b=2):
+    return b
+
+assert f2() == 2
+
+import plistlib
+plistlib.loads(plistlib.dumps({})) # check that this does not fail
+""")
+            import subprocess
+            res = subprocess.call([sys.executable, '-S', filename])
+            self.assertEqual(res, 0)
+
         finally:
             os.remove(filename)
 

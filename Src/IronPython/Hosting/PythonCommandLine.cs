@@ -243,28 +243,25 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
-#if NETCOREAPP || NETSTANDARD
-                if (Path.GetExtension(executable) == ".dll") {
-                    var name = Path.GetFileNameWithoutExtension(executable);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        var runner = Path.Combine(prefix, name + ".exe");
-                        if (File.Exists(runner)) {
-                            executable = runner;
-                        } else {
-                            runner = Path.Combine(prefix, name + ".bat");
-                            if (File.Exists(runner)) executable = runner;
-                        }
-                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                        var runner = Path.Combine(prefix, name);
-                        if (File.Exists(runner)) {
-                            executable = runner;
-                        } else {
-                            runner = Path.Combine(prefix, name + ".sh");
-                            if (File.Exists(runner)) executable = runner;
-                        }
+
+                var name = Path.GetFileNameWithoutExtension(executable);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    var runner = Path.Combine(prefix, name + ".exe");
+                    if (File.Exists(runner)) {
+                        executable = runner;
+                    } else {
+                        runner = Path.Combine(prefix, name + ".bat");
+                        if (File.Exists(runner)) executable = runner;
+                    }
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    var runner = Path.Combine(prefix, name);
+                    if (File.Exists(runner)) {
+                        executable = runner;
+                    } else {
+                        runner = Path.Combine(prefix, name + ".sh");
+                        if (File.Exists(runner)) executable = runner;
                     }
                 }
-#endif
             }
 
             // Make sure there an IronPython Lib directory, and if not keep looking up

@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-from iptest import is_cli, is_mono, run_test
+from iptest import is_cli, run_test
 
 FILE = __file__
 
@@ -467,7 +467,6 @@ def f():
                             (line_num + 3, 3, FILE, 'a'),
                             (line_num + 9, 3, FILE, 'f')])
 
-    @unittest.skipIf(is_mono, "https://github.com/IronLanguages/ironpython3/issues/937")
     def test_cp11923_second(self):
         try:
             #Test setup

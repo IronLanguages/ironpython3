@@ -27,6 +27,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' AND !$([MSBuild]::IsOSPlatform('WINDOWS')) ">
+    <Content Include="ipy-mono.sh" Link="ipy.sh" Condition=" '$(OS)' == 'Unix' ">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(IsFullFramework)' != 'true' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
     <StageItem Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' " />
     <StageItem Include="ipy.sh" Condition=" '$(OS)' == 'Unix' " />

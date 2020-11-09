@@ -44,7 +44,6 @@ namespace IronPythonTest.Cases {
                 if (File.Exists(runner)) return runner;
 #endif
                 throw new FileNotFoundException();
-
             }
         }
 

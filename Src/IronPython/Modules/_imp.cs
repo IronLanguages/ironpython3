@@ -5,11 +5,12 @@
 using System;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
@@ -61,8 +62,11 @@ namespace IronPython.Modules {
             }            
         }
 
-        public static object init_builtin(CodeContext/*!*/ context, string/*!*/ name) {
+        public static object init_builtin(CodeContext/*!*/ context, [NotNull] string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("init_builtin() argument 1 must be string, not None");
+            PythonContext pc = context.LanguageContext;
+            if (pc.SystemStateModules.TryGetValue(name, out var module))
+                return module;
             return LoadBuiltinModule(context, name);
         }
 

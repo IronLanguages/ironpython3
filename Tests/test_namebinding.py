@@ -5,7 +5,7 @@
 import collections
 import unittest
 
-from iptest import IronPythonTestCase, path_modifier, run_test
+from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 
 glb = 0
 res = ''
@@ -85,7 +85,7 @@ def get_n(n):
 
 def fooCheck():
     exec("foo = 42")
-    return foo
+    return locals()["foo"]
 
 selph = None
 
@@ -106,7 +106,10 @@ def execAddExistingArgs(c):
 def execDel():
     a = 5
     exec('del(a)')
-    selph.assertEqual(locals(), {})
+    if is_cli:
+        selph.assertEqual(locals(), {})
+    else:
+        selph.assertEqual(locals(), {'a': 5})
 
 def nolocals():
     selph.assertEqual(locals(), {})
@@ -207,7 +210,10 @@ def test_namebinding_locals_and_class_impl():
         locals()["xyz"] = True
         passed = xyz
 
-    selph.assertTrue(C.passed == True)
+    if is_cli:
+        selph.assertTrue(C.passed == False)
+    else:
+        selph.assertTrue(C.passed == True)
 
 def localsAfterExpr():
     exec("pass")
@@ -270,7 +276,6 @@ class NameBindingTest(IronPythonTestCase):
         nested_locals()
         nested_locals2()
 
-    @unittest.expectedFailure # this also fails on CPython, scoping rules
     def test_namebinding_locals_and_class(self):
         """Test that namebinding uses name lookup when locals() is accessed inside a class"""
         test_namebinding_locals_and_class_impl()
@@ -287,7 +292,10 @@ class NameBindingTest(IronPythonTestCase):
                 abc = a
             return c
 
-        self.assertEqual(f().abc, 2)
+        if is_cli:
+            self.assertEqual(f().abc, 2)
+        else:
+            self.assertEqual(f().abc, 42)
 
     def test_DelBuiltin(self):
         # Check that "pow" is defined
@@ -340,7 +348,7 @@ class NameBindingTest(IronPythonTestCase):
         testIt()
         FullCollect()
 
-        self.assertTrue(res == 'Hello finalizer')
+        self.assertTrue(res == 'Foo finalizer')
 
     def test_PerInstOverrideAndRemove(self):
         """per-instance override & remove"""
@@ -423,7 +431,7 @@ class NameBindingTest(IronPythonTestCase):
         inner()
         FullCollect()
 
-        self.assertTrue(res == 'Hello finalizer')
+        self.assertTrue(res == '')
 
 
     def test_NoFinAddToInstanceAndRemove(self):
@@ -935,7 +943,8 @@ class NameBindingTest(IronPythonTestCase):
         finally:
             reload(builtins)
             # make sure we still have access to builtins' after reloading
-            # self.assertEqual(pow(2,2), 4) # bug 359890
+            if not is_cli:
+                self.assertEqual(pow(2,2), 4) # bug 359890
             dir('abc')
 
     def test_override_builtin_method(self):
@@ -964,7 +973,7 @@ class NameBindingTest(IronPythonTestCase):
             def foo(self):
                 return codeplex_20956
 
-        self.assertRaisesMessage(NameError, "global name 'codeplex_20956' is not defined",
+        self.assertRaisesMessage(NameError, "name 'codeplex_20956' is not defined",
                             C().foo)
 
     def test_import_as(self):
@@ -1084,8 +1093,8 @@ class NameBindingTest(IronPythonTestCase):
         X = (42, 43)
         class Y:
             def outer_f(self):
-                def f(X):
-                    (a, b) = X
+                def f(z=X):
+                    (a, b) = z
                     return a, b
                 return f
 
@@ -1096,7 +1105,7 @@ class NameBindingTest(IronPythonTestCase):
 run_test(__name__)
 
 if __name__ == '__main__':
-    selph.assertTrue('builtins' in locals())
+    selph.assertTrue('__builtins__' in locals()) # __builtins__ is an implementation detail of CPython
     a = 5
     selph.assertTrue('a' in locals())
 

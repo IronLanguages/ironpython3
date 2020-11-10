@@ -40,7 +40,6 @@ steps:
     displayName: Install .NET Core 5.0 SDK for build
     inputs:
       packageType: 'sdk'
-      includePreviewVersions: true
       version: '5.0.x'
 
   # Set Mono version on macOS

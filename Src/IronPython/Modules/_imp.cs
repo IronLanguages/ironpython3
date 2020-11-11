@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using IronPython.Runtime;
@@ -64,10 +65,17 @@ namespace IronPython.Modules {
 
         public static object init_builtin(CodeContext/*!*/ context, [NotNull] string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("init_builtin() argument 1 must be string, not None");
+
             PythonContext pc = context.LanguageContext;
-            if (pc.SystemStateModules.TryGetValue(name, out var module))
+
+            // check if the module is already in sys.modules and reload it if it is
+            if (pc.SystemStateModules.TryGetValue(name, out var moduleObj) && moduleObj is PythonModule module && module.GetName() == name && module.IsBuiltin) {
+                Debug.Assert(module.__dict__._storage is ModuleDictionaryStorage);
+                ((ModuleDictionaryStorage)module.__dict__._storage).Reload();
                 return module;
-            return LoadBuiltinModule(context, name);
+            }
+
+            return Importer.ImportBuiltin(context, name);
         }
 
         public static object init_frozen(string name) {
@@ -105,15 +113,6 @@ namespace IronPython.Modules {
         public static void _fix_co_filename() {
             throw new NotImplementedException();
         }
-
-        #region Implementation
-
-        private static object LoadBuiltinModule(CodeContext/*!*/ context, string/*!*/ name) {
-            Assert.NotNull(context, name);
-            return Importer.ImportBuiltin(context, name);
-        }
-
-        #endregion
 
         private static long GetLockCount(CodeContext/*!*/ context) {
             return (long)context.LanguageContext.GetModuleState(_lockCountKey);

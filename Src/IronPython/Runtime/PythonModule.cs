@@ -317,6 +317,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal bool IsBuiltin => GetFile() is null;
+
         internal string GetFile() {
             object res;
             if (_dict.TryGetValue("__file__", out res)) {

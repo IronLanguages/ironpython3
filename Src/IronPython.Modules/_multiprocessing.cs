@@ -1,6 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Win32.SafeHandles;
@@ -17,7 +22,7 @@ namespace IronPython.Modules {
         [DllImport("ws2_32.dll", ExactSpelling = true, SetLastError = true)]
         private static extern SocketError closesocket([In] IntPtr socketHandle);
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static object closesocket(int handle) {
             var error = closesocket(new IntPtr(handle));
             // TODO: raise error
@@ -32,7 +37,7 @@ namespace IronPython.Modules {
                                      [In] SocketFlags socketFlags
                                      );
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static Bytes recv(int handle, int size) {
             var buf = new byte[size];
             recv(new IntPtr(handle), buf, size, 0);
@@ -47,7 +52,7 @@ namespace IronPython.Modules {
                                          [In] SocketFlags socketFlags
                                          );
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static unsafe int send(int handle, [NotNull] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             var span = buffer.AsReadOnlySpan();

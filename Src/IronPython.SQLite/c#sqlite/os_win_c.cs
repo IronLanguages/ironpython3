@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using DWORD = System.UInt64;
@@ -1249,6 +1250,9 @@ return SQLITE_OK;
       int res = 0;
       if ( isNT() )
       {
+#if FEATURE_RUNTIMEINFORMATION
+        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
         res = lockingStrategy.SharedLockFile( pFile, SHARED_FIRST, SHARED_SIZE );
       }
       /* isNT() is 1 if SQLITE_OS_WINCE==1, so this else is never executed.
@@ -3708,6 +3712,9 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
             pFile.fs.Lock( offset, length );
         }
 
+#if FEATURE_OSPLATFORMATTRIBUTE
+      [SupportedOSPlatform("windows")]
+#endif
       public virtual int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
@@ -3782,6 +3789,6 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
         }
         return exists;
     }
-#endif 
+#endif
   }
 }

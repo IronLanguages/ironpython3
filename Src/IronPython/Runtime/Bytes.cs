@@ -778,7 +778,7 @@ namespace IronPython.Runtime {
         }
 
         private void ValidateTable(IList<byte>? table) {
-            if (table != null && table.Count != 256) {
+            if (table is not null && table.Count != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
             }
         }

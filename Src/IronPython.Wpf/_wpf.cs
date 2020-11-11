@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_WPF || NETCOREAPP3_1
+#if FEATURE_WPF || NETCOREAPP3_1 || NET5_0
 
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -15,7 +15,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
 using Microsoft.Internal.Scripting.Runtime; // TODO: get rid of this once DynamicXamlReader is in the DLR
 #endif
 

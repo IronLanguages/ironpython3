@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0;net5.0</TargetFrameworks>
     <BaseAddress>885063680</BaseAddress>
     <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -47,6 +47,10 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0 " />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

@@ -186,6 +186,7 @@ namespace IronPython.Runtime {
             } catch {}
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void CheckBuffer() {
             if (_buffer == null) throw PythonOps.ValueError("operation forbidden on released memoryview object");
         }
@@ -351,7 +352,7 @@ namespace IronPython.Runtime {
         public PythonTuple suboffsets {
             get {
                 CheckBuffer();
-                Debug.Assert(_buffer!.SubOffsets == null); // TODO: implement suboffsets support
+                Debug.Assert(_buffer.SubOffsets == null); // TODO: implement suboffsets support
                 return PythonTuple.EMPTY;
             }
         }
@@ -363,7 +364,7 @@ namespace IronPython.Runtime {
                 return Bytes.Empty;
             }
 
-            var buf = _buffer!.AsReadOnlySpan();
+            var buf = _buffer.AsReadOnlySpan();
 
             if (_isCContig) {
                 return Bytes.Make(buf.Slice(_offset, _numItems * _itemSize).ToArray());
@@ -382,7 +383,7 @@ namespace IronPython.Runtime {
             CheckBuffer();
             TypecodeOps.DecomposeTypecode(_format, out char byteorder, out char typecode);
 
-            return subdimensionToList(_buffer!.AsReadOnlySpan(), _offset, dim: 0);
+            return subdimensionToList(_buffer.AsReadOnlySpan(), _offset, dim: 0);
 
             object subdimensionToList(ReadOnlySpan<byte> source, int ofs, int dim) {
                 if (dim >= _shape.Count) {

@@ -2,19 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#pragma warning disable SYSLIB0001 // UTF-7 code paths are obsolete in .NET 5
+
 #nullable enable
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
 
@@ -212,13 +215,13 @@ namespace IronPython.Modules {
 
         #region MBCS Functions
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
             using IPythonBuffer buffer = input.GetBuffer();
             return DoDecode(context, "mbcs", StringOps.CodecsInfo.MbcsEncoding, buffer, errors).ToPythonTuple();
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, [NotNull]string input, string? errors = null)
             => DoEncode(context, "mbcs", StringOps.CodecsInfo.MbcsEncoding, input, errors).ToPythonTuple();
 
@@ -226,7 +229,7 @@ namespace IronPython.Modules {
 
         #region Code Page Functions
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple code_page_decode(CodeContext context, int codepage, [NotNull]IBufferProtocol input, string? errors = null, bool final = false) {
             // TODO: Use Win32 API MultiByteToWideChar https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-multibytetowidechar
             string encodingName = $"cp{codepage}";
@@ -235,7 +238,7 @@ namespace IronPython.Modules {
             return DoDecode(context, encodingName, encoding, buffer, errors).ToPythonTuple();
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple code_page_encode(CodeContext context, int codepage, [NotNull]string input, string? errors = null) {
             // TODO: Use Win32 API WideCharToMultiByte https://docs.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte
             string encodingName = $"cp{codepage}";

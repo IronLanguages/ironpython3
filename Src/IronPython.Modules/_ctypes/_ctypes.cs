@@ -12,17 +12,18 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Permissions;
 using System.Threading;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
 namespace IronPython.Modules {
@@ -171,23 +172,22 @@ namespace IronPython.Modules {
             return new Win32Exception(errorCode).Message;
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(int handle) {
             FreeLibrary(new IntPtr(handle));
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(BigInteger handle) {
             FreeLibrary(new IntPtr((long)handle));
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(IntPtr handle) {
             NativeFunctions.FreeLibrary(handle);
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static object LoadLibrary(string library, int mode = 0) {
+        private static object LoadDLL(string library, int mode) {
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError($"cannot load library {library}");
@@ -196,10 +196,13 @@ namespace IronPython.Modules {
             return res.ToPython();
         }
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static object LoadLibrary(string library, int mode = 0)
+            => LoadDLL(library, mode);
+
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static object dlopen(string library, int mode = 0) {
-            return LoadLibrary(library, mode);
-        }
+        public static object dlopen(string library, int mode = 0)
+            => LoadDLL(library, mode);
 
         /// <summary>
         /// Returns a new type which represents a pointer given the existing type.
@@ -448,7 +451,7 @@ namespace IronPython.Modules {
             // we can't support this without a native library
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static int set_last_error(int errorCode) {
             int old_errno = NativeFunctions.GetLastError();
             NativeFunctions.SetLastError(errorCode);

@@ -94,12 +94,15 @@
     <Configuration Condition="'$(Configuration)' == 'Release'">Release</Configuration>
   </PropertyGroup>
 
-  <!-- References -->
-  <Import Project="$(BuildSysDir)\$(TargetFramework).props" Condition="'$(TargetFramework)' != ''" />
-  
   <PropertyGroup>
     <BaseOutputPath>$(RootDir)bin\$(Configuration)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
+  </PropertyGroup>
+
+  <!-- References -->
+  <Import Project="$(BuildSysDir)\$(TargetFramework).props" Condition="'$(TargetFramework)' != ''" />
+
+  <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>1573;1591</NoWarn>
     <ErrorReport>prompt</ErrorReport>

@@ -17,9 +17,11 @@ namespace IronPythonAnalyzer {
     public class IronPythonAnalyzerAnalyzer : DiagnosticAnalyzer {
         public const string DiagnosticId = "IronPythonAnalyzer";
 
+#pragma warning disable RS2008 // Enable analyzer release tracking
         private static readonly DiagnosticDescriptor Rule1 = new DiagnosticDescriptor("IPY01", title: "Parameter which is marked not nullable does not have the NotNullAttribute", messageFormat: "Parameter '{0}' does not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Non-nullable reference type parameters should have the NotNullAttribute.");
         private static readonly DiagnosticDescriptor Rule2 = new DiagnosticDescriptor("IPY02", title: "Parameter which is marked nullable has the NotNullAttribute", messageFormat: "Parameter '{0}' should not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Nullable reference type parameters should not have the NotNullAttribute.");
         private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type IReadOnlyList<byte>, or IList<byte>.");
+#pragma warning restore RS2008 // Enable analyzer release tracking
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3); } }
 

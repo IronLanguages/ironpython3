@@ -7,7 +7,6 @@
 ##
 
 import unittest
-import codecs
 import sys
 
 from iptest import run_test
@@ -124,7 +123,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_unlimited_zero_width_repeat'))
         suite.addTest(test.test_re.ReTests('test_weakref'))
         return suite
-        
+
     else:
         return loader.loadTestsFromModule(test.test_re, pattern)
 

@@ -71,7 +71,9 @@ namespace IronPython.Modules {
         public static void interrupt_main(CodeContext context) {
             var thread = context.LanguageContext.MainThread;
             if (thread != null) {
+#pragma warning disable SYSLIB0006 // Thread.Abort is not supported and throws PlatformNotSupportedException on .NET Core.
                 thread.Abort(new KeyboardInterruptException(""));
+#pragma warning restore SYSLIB0006
             } else {
                 throw PythonOps.SystemError("no main thread has been registered");
             }

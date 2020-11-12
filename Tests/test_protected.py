@@ -67,9 +67,9 @@ class ProtectedTest(IronPythonTestCase):
         self.assertTrue('ProtectedProperty' in dir(a))
         self.assertTrue(hasattr(a, 'ProtectedMethod'))
         
-        # hasattr returns false if the getter raises...
-        self.assertTrue(not hasattr(a, 'ProtectedProperty'))
-        self.assertRaisesMessage(TypeError, "cannot access protected member ProtectedProperty without a python subclass of Inherited", lambda : a.ProtectedProperty)
+        # hasattr raises if the getter raises...
+        self.assertRaisesMessage(TypeError, "cannot access protected member ProtectedProperty without a python subclass of Inherited", lambda: hasattr(a, 'ProtectedProperty'))
+        self.assertRaisesMessage(TypeError, "cannot access protected member ProtectedProperty without a python subclass of Inherited", lambda: a.ProtectedProperty)
         
         class WrapInherited(Inherited): pass
         a = WrapInherited()

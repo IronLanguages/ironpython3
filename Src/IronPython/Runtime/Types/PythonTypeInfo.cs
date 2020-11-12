@@ -598,6 +598,24 @@ namespace IronPython.Runtime.Types {
                 // these members are visible but only accept derived types.
                 foreach (Type t in binder.GetContributingTypes(type)) {
                     foreach (MemberInfo mi in t.GetMembers(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic)) {
+                        if (mi.MemberType == MemberTypes.Method) {
+                            MethodInfo meth = (MethodInfo)mi;
+
+                            if (meth.IsSpecialName) {
+                                if (meth.IsDefined(typeof(PropertyMethodAttribute), true)) {
+                                    if (ProtectedOnly(mi)) {
+                                        if (meth.Name.StartsWith("Get") || meth.Name.StartsWith("Set")) {
+                                            yield return meth.Name.Substring(3);
+                                        } else {
+                                            Debug.Assert(meth.Name.StartsWith("Delete"));
+                                            yield return meth.Name.Substring(6);
+                                        }
+                                    }
+                                }
+                                continue;
+                            }
+                        }
+
                         if (ProtectedOnly(mi)) {
                             yield return mi.Name;
                         }
@@ -1795,6 +1813,9 @@ namespace IronPython.Runtime.Types {
                     return ((FieldInfo)input).IsProtected();
                 case MemberTypes.NestedType:
                     return ((Type)input).IsProtected();
+                case MemberTypes.Event:
+                    MethodInfo emi = ((EventInfo)input).GetAddMethod(true);
+                    return emi != null && ProtectedOnly(emi);
                 default:
                     return false;
             }

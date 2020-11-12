@@ -499,8 +499,6 @@ namespace IronPython.Runtime {
                         break;
                 }
             }
-            //  Skip whitespace
-            while (start < end && Char.IsWhiteSpace(text, start)) start++;
 
             //  Determine base
             if (b == 0) {

@@ -106,7 +106,7 @@ def execAddExistingArgs(c):
 def execDel():
     a = 5
     exec('del(a)')
-    if is_cli:
+    if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1029
         selph.assertEqual(locals(), {})
     else:
         selph.assertEqual(locals(), {'a': 5})
@@ -210,7 +210,7 @@ def test_namebinding_locals_and_class_impl():
         locals()["xyz"] = True
         passed = xyz
 
-    if is_cli:
+    if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1030
         selph.assertTrue(C.passed == False)
     else:
         selph.assertTrue(C.passed == True)
@@ -292,7 +292,7 @@ class NameBindingTest(IronPythonTestCase):
                 abc = a
             return c
 
-        if is_cli:
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1030
             self.assertEqual(f().abc, 2)
         else:
             self.assertEqual(f().abc, 42)
@@ -943,7 +943,7 @@ class NameBindingTest(IronPythonTestCase):
         finally:
             reload(builtins)
             # make sure we still have access to builtins' after reloading
-            if not is_cli:
+            if not is_cli: # https://github.com/IronLanguages/ironpython3/issues/1028
                 self.assertEqual(pow(2,2), 4) # bug 359890
             dir('abc')
 

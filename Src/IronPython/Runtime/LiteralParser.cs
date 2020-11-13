@@ -441,6 +441,11 @@ namespace IronPython.Runtime {
 
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
 
+            if (start < end && char.IsWhiteSpace(text, start)) {
+                val = default;
+                return false;
+            }
+
             int ret = 0;
             try {
                 int saveStart = start;
@@ -499,8 +504,6 @@ namespace IronPython.Runtime {
                         break;
                 }
             }
-            //  Skip whitespace
-            while (start < end && Char.IsWhiteSpace(text, start)) start++;
 
             //  Determine base
             if (b == 0) {
@@ -587,6 +590,11 @@ namespace IronPython.Runtime {
             }
 
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
+
+            if (start < end && char.IsWhiteSpace(text, start)) {
+                val = default;
+                return false;
+            }
 
             BigInteger ret = BigInteger.Zero;
             int saveStart = start;

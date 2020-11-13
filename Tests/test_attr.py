@@ -265,6 +265,7 @@ class AttrTest(IronPythonTestCase):
                 self.assertEqual(getattr(mod, "__name__"), mod_names[mod])
                 setattr(mod, "__name__", "badname")
                 self.assertEqual(getattr(mod, "__name__"), "badname")
+                mod.__name__ = mod_names[mod] # restore the name
 
             if is_cli:
                 import System

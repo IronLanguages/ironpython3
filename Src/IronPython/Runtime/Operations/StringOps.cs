@@ -288,7 +288,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]IBufferProtocol @object, [NotNull]string encoding, [NotNull]string errors = "strict") {
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]IBufferProtocol @object, [NotNull]string encoding = null!, [NotNull]string errors = null!) {
+            if (encoding is null && errors is null) return __new__(context, cls, (object)@object);
+            encoding ??= "utf-8";
+            errors ??= "strict";
             if (cls == TypeCache.String) {
                 try {
                     return RawDecode(context, @object, encoding, errors);

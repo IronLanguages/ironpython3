@@ -6,49 +6,43 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, path_modifier, run_test, skipUnlessIronPython
-
-long = type(sys.maxsize + 1)
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, long, path_modifier, run_test, skipUnlessIronPython
 
 class IsInstanceTest(IronPythonTestCase):
     def test_file_io(self):
-        def verify_file(ff):
+        fname = "testfile.tmp"
+
+        def verify_file(ff, val="Hello"):
             cnt = 0
             for i in ff:
-                self.assertTrue(i[0:5] == "Hello")
+                self.assertTrue(i[0:5] == val)
                 cnt += 1
             ff.close()
             self.assertTrue(cnt == 10)
 
-        f = open("testfile.tmp", "w")
+        f = open(fname, "w")
         for i in range(10):
             f.write("Hello " + str(i) + "\n")
         f.close()
 
-        f = open("testfile.tmp")
+        f = open(fname)
         verify_file(f)
-        f = open("testfile.tmp", "r")
+        f = open(fname, "r")
         verify_file(f)
-        f = open("testfile.tmp", "r", -1)
+        f = open(fname, "r", -1)
         verify_file(f)
-        f = open("testfile.tmp")
-        verify_file(f)
-        f = open("testfile.tmp", "r")
-        verify_file(f)
-        f = open("testfile.tmp", "r", -1)
-        verify_file(f)
-        f = open("testfile.tmp", "r", 0)
-        verify_file(f)
+        with self.assertRaises(ValueError):
+            open(fname, "r", 0)
 
         if is_cli:
             import System
-            fs = System.IO.FileStream("testfile.tmp", System.IO.FileMode.Open, System.IO.FileAccess.Read)
+            fs = System.IO.FileStream(fname, System.IO.FileMode.Open, System.IO.FileAccess.Read)
             f = open(fs)
-            verify_file(f)
+            verify_file(f, b"Hello")
 
             ms = System.IO.MemoryStream(30)
             f = open(ms)
-            f.write("hello")
+            f.write(b"hello")
             f.flush()
             self.assertEqual(ms.Length, 5)
             self.assertEqual(ms.GetBuffer()[0], ord('h'))
@@ -56,12 +50,11 @@ class IsInstanceTest(IronPythonTestCase):
             ms.Close()
 
         import os
-        os.remove("testfile.tmp")
+        os.remove(fname)
 
     def test_open(self):
         self.assertRaises(TypeError, open, None) # arg must be string
         self.assertRaises(TypeError, open, [])
-        self.assertRaises(TypeError, open, 1)
 
     def test_compile(self):
         def max(a,b):
@@ -72,8 +65,9 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertTrue(eval(code) == 15)
 
         code = compile("x = [1,2,3,4,5]\nx.reverse()\nself.assertTrue(x == [5,4,3,2,1])", "<string>", "exec")
-        exec(code)
-        self.assertTrue(x == [5,4,3,2,1])
+        d = {"self": self}
+        exec(code, d)
+        self.assertTrue(d["x"] == [5,4,3,2,1])
 
         self.assertRaises(ValueError, compile, "2+2", "<string>", "invalid")
         self.assertRaises(SyntaxError, compile, "if 1 < 2: pass", "<string>", "eval")
@@ -145,8 +139,10 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(hex(-long(1)), "-0x1")
         self.assertEqual(long("-01"), -1)
         self.assertEqual(int(" 1 "), 1)
-        self.assertEqual(int(" -   1  "), -1)
-        self.assertEqual(long("   -   1 "), -1)
+        with self.assertRaises(ValueError):
+            int(" -   1  ")
+        with self.assertRaises(ValueError):
+            long(" -   1  ")
 
         for f in [ long, int ]:
             self.assertRaises(ValueError, f, 'p')
@@ -169,7 +165,7 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(type(type), type.__class__)
 
     def test_reload_sys(self):
-        import imp
+        import importlib
         import sys
 
         (old_copyright, old_byteorder) = (sys.copyright, sys.byteorder)
@@ -178,7 +174,7 @@ class IsInstanceTest(IronPythonTestCase):
         old_argv = sys.argv
         sys.argv = "foo"
 
-        reloaded_sys = imp.reload(sys)
+        reloaded_sys = importlib.reload(sys)
 
         # Most attributes get reset
         self.assertEqual((old_copyright, old_byteorder), (reloaded_sys.copyright, reloaded_sys.byteorder))
@@ -286,8 +282,11 @@ class IsInstanceTest(IronPythonTestCase):
             for attrname in ('field', 'method', '__init__', '__getattr__', 'lambda', '__doc__', '__module__'):
                 self.assertEqual(hasattr(o, attrname), True)
 
-            for attrname in ("myassert", "anything", "else"):
-                self.assertEqual(hasattr(o,attrname), False)
+            with self.assertRaises(AssertionError):
+                hasattr(o,"myassert")
+
+            for attrname in ("anything", "else"):
+                self.assertEqual(hasattr(o, attrname), False)
 
         getattrhelper(C1)
         getattrhelper(C2)
@@ -317,6 +316,7 @@ class IsInstanceTest(IronPythonTestCase):
             self.assertEqual(type(inst), nt)
 
     def test_subclassing_builtins(self):
+        """sub classing built-ins works correctly.."""
         class C(list):
             def __eq__(self, other):
                 return 'Passed'
@@ -337,22 +337,31 @@ class IsInstanceTest(IronPythonTestCase):
                 if x != complex and x != float:
                     self.assertEqual(~foo(y), ~y)
 
-    def test_kwargs_file(self):
-        """can use kw-args w/ file"""
+    def test_kwargs_open(self):
+        """can use kw-args w/ open"""
         fname = 'temporary_%d.deleteme' % os.getpid()
-        f = open(name=fname, mode='w')
+        f = open(file=fname, mode='w')
         f.close()
         os.unlink(fname)
 
     def test_kwargs_primitives(self):
-        self.assertEqual(int(x=1), 1)
-        self.assertEqual(float(x=2), 2.0)
-        self.assertEqual(long(x=3), 3)
+        if sys.version_info >= (3,7):
+            # starting with 3.7 these are no longer valid keyword arguments
+            with self.assertRaises(TypeError): int(x=1)
+            with self.assertRaises(TypeError): float(x=2)
+            with self.assertRaises(TypeError): long(x=3)
+            with self.assertRaises(TypeError): tuple(sequence=range(3))
+            with self.assertRaises(TypeError): list(sequence=(0,1))
+        else:
+            self.assertEqual(int(x=1), 1)
+            self.assertEqual(float(x=2), 2.0)
+            self.assertEqual(long(x=3), 3)
+            self.assertEqual(tuple(sequence=range(3)), (0,1,2))
+            self.assertEqual(list(sequence=(0,1)), [0,1])
+
         self.assertEqual(complex(imag=4, real=3), 3 + 4j)
         self.assertEqual(str(object=5), '5')
-        self.assertEqual(str(string='a', errors='strict'), 'a')
-        self.assertEqual(tuple(sequence=range(3)), (0,1,2))
-        self.assertEqual(list(sequence=(0,1)), [0,1])
+        self.assertEqual(str(object=b'a', errors='strict'), 'a')
 
     def test_issubclass(self):
         for (x, y) in [("2", int), (2, int), ("string", str), (None, int), (str, None), (int, 3), (int, (6, 7))]:
@@ -371,10 +380,10 @@ class IsInstanceTest(IronPythonTestCase):
             pass
         self.assertTrue(issubclass(basestring_subclass, str))
 
-        self.assertTrue(str(None) == "None")
+        self.assertEqual(str(None), "None")
         self.assertTrue(issubclass(type(None),type(None)))
-        self.assertTrue(str(type(None)) == "<type 'NoneType'>")
-        self.assertTrue(str(1) == "1")
+        self.assertEqual(str(type(None)), "<class 'NoneType'>")
+        self.assertEqual(str(1), "1")
         self.assertTrue('__str__' in dir(None))
 
         def tryAssignToNoneAttr():
@@ -388,7 +397,7 @@ class IsInstanceTest(IronPythonTestCase):
         v = None.__doc__
         v = None.__new__
         v = None.__hash__
-        self.assertEqual("<type 'NoneType'>", str(type(None)))
+        self.assertEqual("<class 'NoneType'>", str(type(None)))
 
         import sys
         self.assertEqual(str(sys), "<module 'sys' (built-in)>")
@@ -856,7 +865,7 @@ class IsInstanceTest(IronPythonTestCase):
         metaCalled = []
         class C(A,B): pass
 
-        self.assertEqual(metaCalled, [BaseMeta, DerivedMeta])
+        self.assertEqual(metaCalled, [DerivedMeta])
         self.assertEqual(type(C).__name__, 'DerivedMeta')
 
 

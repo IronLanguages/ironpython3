@@ -2849,6 +2849,8 @@ namespace IronPython.Modules {
                 mode += '+';
             }
 
+            if (buffering == 0 && !binary) throw PythonOps.ValueError("can't have unbuffered text I/O");
+
             FileIO fio = fname != null
                     ? new FileIO(context, fname, mode, closefd, opener)
                     : new FileIO(context, fd, mode, closefd, opener);
@@ -2862,10 +2864,8 @@ namespace IronPython.Modules {
                 buffering = DEFAULT_BUFFER_SIZE;
             }
             if (buffering == 0) {
-                if (binary) {
-                    return fio;
-                }
-                throw PythonOps.ValueError("can't have unbuffered text I/O");
+                Debug.Assert(binary);
+                return fio;
             }
 
             _BufferedIOBase buffer;

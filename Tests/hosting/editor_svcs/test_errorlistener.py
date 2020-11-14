@@ -59,7 +59,7 @@ class ErrorListenerTest(IronPythonTestCase):
         errorlistener = ErrorListenerTest.MyErrorListener()
         try:
             source.Compile(errorlistener)
-        except System.Exception, e:
+        except System.Exception as e:
             pass
         return errorlistener.errors
 
@@ -76,18 +76,18 @@ class ErrorListenerTest(IronPythonTestCase):
 
     def test_unexpected_token(self):
         expected = [
-            ("unexpected token 'foo'", "foo", 16, self.FatalError)
+            ("invalid syntax", "foo", 16, self.FatalError)
         ]
         actual = self.compile_expression("1.foo")
         self.assertEqual(expected, actual)
 
     def test_multiple_errors(self):
         expected = [
-            ("unexpected token 'print'", "print", 16, self.FatalError),
-            ("EOL while scanning single-quoted string", '"hello', 16, self.FatalError),
-            ("unexpected token 'print'", "print", 16, self.FatalError),
+            ("invalid syntax", "assert", 16, self.FatalError),
+            ("EOL while scanning string literal", '"hello', 16, self.FatalError),
+            ("invalid syntax", "assert", 16, self.FatalError),
         ]
-        actual = self.compile_expression("""print "hello""")
+        actual = self.compile_expression("""assert "hello""")
         self.assertEqual(expected, actual)
 
     def test_not_indented_class(self):
@@ -120,15 +120,15 @@ break"""
 
     def test_assignment_to_none(self):
         expected = [
-            ("cannot assign to None", "None", 80, self.FatalError),
+            ("can't assign to keyword", "None", 80, self.FatalError),
         ]
         actual = self.compile_file("None = 42")
         self.assertEqual(expected, actual)
 
     def test_multiple_erroneous_statements(self):
         expected = [
-            ("cannot assign to None", "None", 80, self.FatalError),
-            ("cannot assign to None", "None", 80, self.FatalError),
+            ("can't assign to keyword", "None", 80, self.FatalError),
+            ("can't assign to keyword", "None", 80, self.FatalError),
         ]
         code = """\
 None = 2
@@ -137,7 +137,7 @@ None = 3"""
 
     def test_warning(self):
         expected = [
-            ("name 'a' is assigned to before global declaration", "global a", -1, self.Warning),
+            ("name 'a' is assigned to before global declaration", "global a", -1, self.FatalError), # reports as error since 3.6
         ]
         code = """\
 def foo():
@@ -164,7 +164,7 @@ def bar():
     def test_should_report_both_errors_and_warnings_negative(self):
         "Bug #17541, http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=17541"
         expected = [
-            ("cannot assign to None", "None", -1, self.Error),
+            ("can't assign to keyword", "None", -1, self.Error),
             ("Variable a assigned before global declaration", "global a", -1, self.Warning),
         ]
         code = """\
@@ -176,7 +176,7 @@ def foo():
 
     def test_all_together(self):
         expected = [
-            ('cannot assign to None', 'None', 80, self.FatalError),
+            ("can't assign to keyword", "None", 80, self.FatalError),
         ]
         code = """\
 None = 2

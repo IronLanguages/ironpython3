@@ -1,6 +1,7 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
+
 '''
 Operations on enum type and its' members
 '''
@@ -21,14 +22,18 @@ class FieldMiscTest(IronPythonTestCase):
         o = Misc()
         o.Set()
         self.assertEqual(o.PublicField, 100)
-        self.assertTrue(not hasattr(o, 'ProtectedField'))
-        self.assertRaisesRegex(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
+        self.assertIn('ProtectedField', dir(o))
+        with self.assertRaises(TypeError):
+            hasattr(o, 'ProtectedField')
+        self.assertRaisesRegexp(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
         self.assertEqual(o.InterfaceField.PublicStaticField, 500)
         
         o = DerivedMisc()
         o.Set()
         self.assertEqual(o.PublicField, 400)
-        self.assertTrue(not hasattr(o, 'ProtectedField'))
+        self.assertIn('ProtectedField', dir(o))
+        with self.assertRaises(TypeError):
+            hasattr(o, 'ProtectedField')
 
 run_test(__name__)
 

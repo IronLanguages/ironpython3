@@ -676,6 +676,7 @@ namespace IronPython.Compiler.Ast {
             foreach (string n in node.Names) {
                 PythonVariable conflict;
                 // Check current scope for conflicting variable
+                bool assignedGlobal = false;
                 if (_currentScope.TryGetVariable(n, out conflict)) {
                     // conflict?
                     switch (conflict.Kind) {
@@ -683,6 +684,7 @@ namespace IronPython.Compiler.Ast {
                             break;
 
                         case VariableKind.Local:
+                            assignedGlobal = true;
                             ReportSyntaxError($"name '{n}' is assigned to before global declaration", node);
                             break;
 
@@ -693,7 +695,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 // Check for the name being referenced previously
-                if (_currentScope.IsReferenced(n)) {
+                if (_currentScope.IsReferenced(n) && !assignedGlobal) {
                     ReportSyntaxError($"name '{n}' is used prior to global declaration", node);
                 }
 

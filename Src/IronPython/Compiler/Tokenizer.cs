@@ -233,7 +233,11 @@ namespace IronPython.Compiler {
                     break;
 
                 case TokenKind.Constant:
-                    category = (token.Value is string) ? TokenCategory.StringLiteral : TokenCategory.NumericLiteral;
+                    category = token.Value switch {
+                        string => TokenCategory.StringLiteral,
+                        bool or null => TokenCategory.Keyword,
+                        _ => TokenCategory.NumericLiteral,
+                    };
                     break;
 
                 case TokenKind.LeftParenthesis:

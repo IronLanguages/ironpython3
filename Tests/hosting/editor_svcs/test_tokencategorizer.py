@@ -4,7 +4,6 @@
 
 import unittest
 
-
 from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 # from System import Enum
@@ -14,13 +13,14 @@ from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 def pt(tokens):
     from Microsoft.Scripting import TokenTriggers
+    TokenTriggersNone = getattr(TokenTriggers, "None")
     for token in tokens:
-        print "t.%s(From(%d,%d,%d), To(%d,%d,%d)%s)," % \
+        print("t.%s(From(%d,%d,%d), To(%d,%d,%d)%s)," % \
         (token.Category.ToString(), token.SourceSpan.Start.Index,
         token.SourceSpan.Start.Line, token.SourceSpan.Start.Column,
         token.SourceSpan.End.Index, token.SourceSpan.End.Line,
         token.SourceSpan.End.Column,
-        "" if token.Trigger == TokenTriggers.None else token.Trigger)
+        "" if token.Trigger == TokenTriggersNone else token.Trigger))
 
 def get_tokens(engine, src, charcount = -1):
     from Microsoft.Scripting import SourceLocation
@@ -36,10 +36,12 @@ class TokenBuilder(object):
     def __getattr__(self, name):
         def callable(*args):
             from Microsoft.Scripting import SourceSpan, TokenCategory, TokenInfo, TokenTriggers
+            TokenTriggersNone = getattr(TokenTriggers, "None")
+            TokenCategoryNone = getattr(TokenCategory, "None")
             from System import Enum
-            triggers = args[2] if len(args)>2  else TokenTriggers.None
+            triggers = args[2] if len(args)>2  else TokenTriggersNone
             return TokenInfo(SourceSpan(args[0], args[1]),
-                    Enum.Parse(TokenCategory.None.GetType(), name), triggers)
+                    Enum.Parse(TokenCategoryNone.GetType(), name), triggers)
         return callable
 
 @skipUnlessIronPython()
@@ -56,7 +58,7 @@ class TokenCategorizerTest(IronPythonTestCase):
 
     def test_categorizer_print(self):
         expected = [
-            self.t.Keyword(self.From(0,1,1), self.To(5,1,6)),
+            self.t.Identifier(self.From(0,1,1), self.To(5,1,6)),
             self.t.StringLiteral(self.From(6,1,7), self.To(11,1,12)),
             self.t.Comment(self.From(12,1,13), self.To(20,1,21)),
         ]
@@ -78,7 +80,7 @@ class TokenCategorizerTest(IronPythonTestCase):
             self.t.Delimiter(self.From(27,1,28), self.To(28,1,29)),
             self.t.WhiteSpace(self.From(28,1,29), self.To(33,2,5)),
             self.t.Operator(self.From(28,1,29), self.To(33,2,5)),
-            self.t.Keyword(self.From(33,2,5), self.To(38,2,10)),
+            self.t.Identifier(self.From(33,2,5), self.To(38,2,10)),
             self.t.Identifier(self.From(39,2,11), self.To(43,2,15)),
             self.t.Delimiter(self.From(43,2,15), self.To(44,2,16), TokenTriggers.ParameterNext)
         ]
@@ -166,7 +168,7 @@ class TokenCategorizerTest(IronPythonTestCase):
     def test_categorizer_if_else(self):
         expected = [
             self.t.Keyword(self.From(0,1,1), self.To(2,1,3)),
-            self.t.Identifier(self.From(3,1,4), self.To(7,1,8)),
+            self.t.Keyword(self.From(3,1,4), self.To(7,1,8)),
             self.t.Delimiter(self.From(7,1,8), self.To(8,1,9)),
             self.t.WhiteSpace(self.From(8,1,9), self.To(13,2,5)),
             self.t.Operator(self.From(8,1,9), self.To(13,2,5)),

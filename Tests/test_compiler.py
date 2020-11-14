@@ -29,7 +29,7 @@ class CompilerTest(IronPythonTestCase):
         packagePath = os.path.join(self.temporary_dir, packageName)
         self.ensure_directory_present(packagePath)
         fileList = []
-        for fileName, code in codeDict.iteritems():
+        for fileName, code in codeDict.items():
             filePath = os.path.join(packagePath, fileName)
             self.ensure_directory_present(os.path.dirname(filePath))
             self.write_to_file(filePath, code)
@@ -58,7 +58,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertRaises(SyntaxError, self.compileCode, "syntaxerrTest", "def f() pass")
         
     def test_runtime_error(self):
-        self.compileCode("runtimeError", "def f(): print a")
+        self.compileCode("runtimeError", "def f(): print(a)")
         
         from runtimeError import f
         self.assertRaises(NameError, f)
@@ -193,7 +193,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(cyclic_package.cyclic_submodules1.cyclic_package.cyclic_submodules0.A, 2)
 
     def test_system_core_cp20623(self):
-        self.compileCode("cp20623", "import System\nA=System.DateTime(350000000).Second\nprint A")
+        self.compileCode("cp20623", "import System\nA=System.DateTime(350000000).Second\nprint(A)")
         import cp20623
         self.assertEqual(cp20623.A, 35)
         #TODO: need to also generate a standalone exe from cp20623 and try running it

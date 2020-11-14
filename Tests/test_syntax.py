@@ -8,15 +8,14 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython, stderr_trapper
 
 def run_compile_test(self, code, msg, lineno):
+    if sys.version_info >= (3,8): msg = msg.replace("can't", "cannot")
     filename = "the file name"
-    try:
+    with self.assertRaises(SyntaxError) as cm:
         compile(code, filename, "exec")
-    except SyntaxError as e:
-        self.assertEqual(e.msg, msg)
-        self.assertEqual(e.lineno, lineno)
-        self.assertEqual(e.filename, filename)
-    else:
-        self.fail("Unreachable code reached: Expected exception, got none")
+    e = cm.exception
+    self.assertEqual(e.msg, msg)
+    self.assertEqual(e.lineno, lineno)
+    self.assertEqual(e.filename, filename)
 
 def test_compile(self):
 
@@ -32,18 +31,17 @@ def test_compile(self):
     self.assertRaises(SyntaxError, compile, "x=10\ny=x.", "Error", "exec")
 
     compile_tests = [
-        ("for x notin []:\n    pass", "unexpected token 'notin'" if is_cli else "invalid syntax", 1),
-        ("global 1", "unexpected token '1'" if is_cli else "invalid syntax", 1),
+        ("for x notin []:\n    pass", "invalid syntax", 1),
+        ("global 1", "invalid syntax", 1),
         ("x=10\nyield x\n", "'yield' outside function", 2),
         ("return\n", "'return' outside function", 1),
-        ("print >> 1 ,\n", "unexpected token '<newline>'" if is_cli else "invalid syntax", 1),
         ("def f(x=10, y):\n    pass", "non-default argument follows default argument", 1),
-        ("def f(for):\n    pass", "unexpected token 'for'" if is_cli else "invalid syntax", 1),
-        ("f(3 = )", "expected name" if is_cli else "invalid syntax", 1),
-        ("dict(a=1,a=2)", "keyword argument repeated", 1),
+        ("def f(for):\n    pass", "invalid syntax", 1),
+        ("f(3 = )", 'expression cannot contain assignment, perhaps you meant "=="?' if sys.version_info >= (3,9) else "expected name" if is_cli else "invalid syntax", 1),
+        ("dict(a=1,a=2)", "keyword argument repeated: a" if sys.version_info >= (3,9) else "keyword argument repeated", 1),
         ("def f(a,a): pass", "duplicate argument 'a' in function definition", 1),
-        ("def f((a,b),(c,b)): pass", "duplicate argument 'b' in function definition", 1),
-        ("x = 10\nx = x[]", "unexpected token ']'" if is_cli else "invalid syntax", 2),
+        ("def f((a,b),(c,b)): pass", "invalid syntax", 1),
+        ("x = 10\nx = x[]", "invalid syntax", 2),
         ("break", "'break' outside loop", 1),
         ("if 1:\n\tbreak", "'break' outside loop", 2),
         ("if 1:\n\tx+y=22", "can't assign to operator", 2),
@@ -61,7 +59,7 @@ def test_compile(self):
         ("x = 'abc'\nx 1.0", "invalid syntax", 2),
         ("x = 'abc'\nx 0j", "invalid syntax", 2),
         ('def f():\n    del (yield 5)\n', "can't delete yield expression", 2),
-        ('a,b,c += 1,2,3', "illegal expression for augmented assignment", 1),
+        ('a,b,c += 1,2,3', "'tuple' is an illegal expression for augmented assignment" if sys.version_info >= (3,9) else "illegal expression for augmented assignment", 1),
         ('def f():\n    a = yield 3 = yield 4', "can't assign to yield expression" if is_cli else "assignment to yield expression not possible", 2),
         ('((yield a), 2,3) = (2,3,4)', "can't assign to yield expression", 1),
         ('(2,3) = (3,4)', "can't assign to literal", 1),
@@ -70,21 +68,21 @@ def test_compile(self):
         ("def g():\n    for x in range(10):\n        print(x)\n    if True:\n        break\n", "'break' outside loop", 5),
         ("def z():\n    if True:\n        break\n", "'break' outside loop", 3),
         ('from import abc', "invalid syntax", 1),
-        ('() = 1', "can't assign to ()", 1),
-        ("""for x in range(100):\n"""
+        ("'abc'.", "unexpected EOF while parsing" if is_cli else "invalid syntax", 1),
+        ("None = 2", "cannot assign to None" if sys.version_info >= (3,8) else "can't assign to keyword", 1),
+    ]
+
+    if sys.version_info < (3,6):
+        compile_tests.append(('() = 1', "can't assign to ()", 1))
+
+    if sys.version_info < (3,8):
+        compile_tests.append(("""for x in range(100):\n"""
         """    try:\n"""
         """        [1,2][3]\n"""
         """    except IndexError:\n"""
         """        pass\n"""
         """    finally:\n"""
-        """        continue\n""", "'continue' not supported inside 'finally' clause", 7),
-        ("'abc'.", "syntax error" if is_cli else "invalid syntax", 1),
-        ("None = 2", "cannot assign to None", 1),
-    ]
-
-    if is_cli:
-        # CPython does no have a filename and line number
-        compile_tests.append(("def a(x):\n    def b():\n        print(x)\n    del x", "can not delete variable 'x' referenced in nested scope", 2))
+        """        continue\n""", "'continue' not supported inside 'finally' clause", 7))
 
     # different error messages, ok
     for test in compile_tests:
@@ -124,8 +122,8 @@ def test_compile(self):
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "eval")
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "single")
     #indentation errors - BUG 864
-    self.assertRaises(IndentationError, compile, "class C:\nx=2\n", "Error", "exec")
-    self.assertRaises(IndentationError, compile, "class C:\n\n", "Error", "single")
+    self.assertRaises(IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, compile, "class C:\nx=2\n", "Error", "exec")
+    self.assertRaises(IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, compile, "class C:\n\n", "Error", "single")
 
     #allow \f
     compile('\f\f\f\f\fclass C:\f\f\f pass', 'ok', 'exec')
@@ -157,7 +155,6 @@ self.assertEqual(x, 7)
 
     self.assertRaises(SyntaxError, compile, s, "<string>", "single", 0x200)
 
-
     # Assignment to None and constant
 
     def NoneAssign():
@@ -176,18 +173,18 @@ self.assertEqual(x, 7)
     self.assertRaises(SyntaxError, compile, "    x = 10\n\n", "", "exec")
     self.assertRaises(SyntaxError, compile, "    \n   #comment\n   x = 10\n\n", "", "exec")
 
-    if is_cli:
-        c = compile(u"\u0391 = 10\nif \u0391 != 10: 1/0", "", "exec")
-        exec(c)
+    c = compile(u"\u0391 = 10\nif \u0391 != 10: 1/0", "", "exec")
+    exec(c)
 
     # from __future__ tests
     self.assertRaises(SyntaxError, compile, "def f():\n    from __future__ import division", "", "exec")
     self.assertRaises(SyntaxError, compile, "'doc'\n'doc2'\nfrom __future__ import division", "", "exec")
 
-    # del x
-    self.assertRaises(SyntaxError, compile, "def f():\n    del x\n    def g():\n        return x\n", "", "exec")
-    self.assertRaises(SyntaxError, compile, "def f():\n    def g():\n        return x\n    del x\n", "", "exec")
-    self.assertRaises(SyntaxError, compile, "def f():\n    class g:\n        def h(self):\n            print(x)\n        pass\n    del x\n", "", "exec")
+    # del x - used to fail with Python 2
+    compile("def a(x):\n    def b():\n        print(x)\n    del x", "ok", "exec")
+    compile("def f():\n    del x\n    def g():\n        return x\n", "ok", "exec")
+    compile("def f():\n    def g():\n        return x\n    del x\n", "ok", "exec")
+    compile("def f():\n    class g:\n        def h(self):\n            print(x)\n        pass\n    del x\n", "ok", "exec")
     # add global to the picture
     c = compile("def f():\n    x=10\n    del x\n    def g():\n        global x\n        return x\n    return g\nf()()\n", "", "exec")
     self.assertRaises(NameError, eval, c)
@@ -200,8 +197,8 @@ self.assertEqual(x, 7)
 
     c = compile("def f():\n    global a\n    global a\n    a = 1\n", "", "exec")
 
-    # unqualified exec in nested function
-    self.assertRaises(SyntaxError, compile, "def f():\n    x = 1\n    def g():\n        exec('pass')\n        print(x)", "", "exec")
+    # unqualified exec in nested function - used to fail with Python 2
+    compile("def f():\n    x = 1\n    def g():\n        exec('pass')\n        print(x)", "", "exec")
     # correct case - qualified exec in nested function
     c = compile("def f():\n    x = 10\n    def g():\n        exec('pass') in {}\n        print(x)\n", "", "exec")
 
@@ -307,7 +304,7 @@ og\
     self.assertEqual(x, y)
 
     self.assertEqual("\101", "A")
-    x=b'\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\y\z'
+    x=b'\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\y\z'.decode("ascii")
     y=u'\u0007\u0008\\\u0063\\\u0064\\\u0065\u000C\\\u0067\\\u0068\\\u0069\\\u006a\\\u006b\\\u006c\\\u006d\u000A\\\u006f\\\u0070\\\u0071\u000D\\\u0073\u0009\\\u0075\u000B\\\u0077\\\u0079\\\u007a'
 
     self.assertTrue(x == y)
@@ -339,7 +336,8 @@ def test_private_names(self):
     self.assertEqual(B().method("__a passed in"), "__a passed in")
 
     class B(object):
-        def method(self, (__a, )):
+        def method(self, X):
+            (__a, ) = X
             return __a
 
     self.assertEqual(B().method(("__a passed in", )), "__a passed in")
@@ -431,7 +429,7 @@ class SyntaxTest(IronPythonTestCase):
             else:
                 self.fail("multiline_compound stmt test did not raise exception. test = " + test)
 
-    # Generators cannot have return statements with values in them. SyntaxError is thrown in those cases.
+    # Generators couldn't have return statements with values in them in Python 2. Verify that these now work.
     def test_generator_with_nonempty_return(self):
         tests = [
             "def f():\n     return 42\n     yield 3",
@@ -442,7 +440,7 @@ class SyntaxTest(IronPythonTestCase):
             ]
 
         for test in tests:
-            self.assertRaisesMessage(SyntaxError, "'return' with argument inside generator", compile, test, "", "exec")
+            compile(test, "", "exec")
 
         #Verify that when there is no return value error is not thrown.
         def f():
@@ -603,20 +601,20 @@ class HasASyntaxException:
                 self.assertEqual(e.text, expectedText)
 
     def test_error_parameters(self):
-        tests = [("if 1:", 0x200, ('unexpected EOF while parsing', ('dummy', 1, 6 if is_cli else 5, 'if 1:')) ),
-                ("if 1:\n", 0x200, ('unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
-                ("if 1:", 0x000, ('unexpected EOF while parsing', ('dummy', 1, 6 if is_cli else 5, 'if 1:')) ),
-                ("if 1:\n", 0x000, ('unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
-                ("if 1:\n\n", 0x200, ('expected an indented block', ('dummy', 2, 1, '\n')) ),
-                ("if 1:\n\n", 0x000, ('expected an indented block', ('dummy', 2, 1, '\n')) ),
-                ("if 1:\n  if 1:", 0x200, ('unexpected EOF while parsing' if is_cli else 'expected an indented block', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
-                ("if 1:\n  if 1:\n", 0x200, ('expected an indented block', ('dummy', 2, 8, '  if 1:\n')) ),
-                ("if 1:\n  if 1:", 0x000, ('expected an indented block', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
-                ("if 1:\n  if 1:\n", 0x000, ('expected an indented block', ('dummy', 2, 8, '  if 1:\n')) ),
-                ("if 1:\n  if 1:\n\n", 0x200, ('expected an indented block', ('dummy', 3, 1, '\n')) ),
-                ("if 1:\n  if 1:\n\n", 0x000, ('expected an indented block', ('dummy', 3, 1, '\n')) ),
-                ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x200, ('expected an indented block', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
-                ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x000, ('expected an indented block', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
+        tests = [("if 1:", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6 if is_cli else 5, 'if 1:')) ),
+                ("if 1:\n", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
+                ("if 1:", 0x000, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6 if is_cli else 5, 'if 1:')) ),
+                ("if 1:\n", 0x000, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
+                ("if 1:\n\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 1, '\n')) ),
+                ("if 1:\n\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 1, '\n')) ),
+                ("if 1:\n  if 1:", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
+                ("if 1:\n  if 1:\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n')) ),
+                ("if 1:\n  if 1:", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
+                ("if 1:\n  if 1:\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n')) ),
+                ("if 1:\n  if 1:\n\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 1, '\n')) ),
+                ("if 1:\n  if 1:\n\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 1, '\n')) ),
+                ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
+                ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
                 ("def  Foo():\n\n    # comment\n\n    Something = -1\n\n\n\n  ", 0x000, ('unindent does not match any outer indentation level', ('dummy', 9, 2, '  '))),
                 ("def  Foo():\n\n    # comment\n\n    Something = -1\n\n\n\n  ", 0x200, ('unindent does not match any outer indentation level', ('dummy', 9, 2, '  '))),
                 ("def  Foo():\n\n    # comment\n\n    Something = -1\n\n\n\n   ", 0x000, ('unindent does not match any outer indentation level', ('dummy', 9, 3, '   '))),
@@ -656,7 +654,7 @@ class HasASyntaxException:
             )
         from Microsoft.Scripting.Runtime import CompilerContext
 
-        from IronPython import PythonOptions
+        from IronPython.Runtime import PythonOptions
         from IronPython.Compiler import Parser, Tokenizer, PythonCompilerOptions, Ast
         from System.IO import StringReader
         from System.Text import Encoding
@@ -721,26 +719,26 @@ class HasASyntaxException:
         def PrintErrors(text):
             """helper for creating new tests"""
             errors = parse_text(text)
-            print
+            print()
             for err in errors.Errors:
                 print(err)
 
         TestErrors("""class
 
 def x(self):
-    pass""", ["unexpected token '<newline>'"])
+    pass""", ["invalid syntax"])
 
 
         TestErrors("""class x
 
 def x(self):
     pass
-    """, ["unexpected token '<newline>'"])
+    """, ["invalid syntax"])
 
         TestErrors("""class x(
 
 def x(self):
-    pass""", ["unexpected token 'def'"])
+    pass""", ["invalid syntax", "invalid syntax", "invalid syntax"]) # https://github.com/IronLanguages/ironpython3/issues/1034
 
         TestErrors("""class X:
     if x:
@@ -751,67 +749,96 @@ def x(self):
     if x is None:
         x =
 
-    def x(self): pass""", ["unexpected token '<newline>'"])
+    def x(self): pass""", ["invalid syntax"])
 
         TestErrors("""class X:
 
     def f(
 
-    def g(self): pass""", ["unexpected token 'def'"])
+    def g(self): pass""", ["invalid syntax"])
 
         TestErrors("""class X:
 
     def f(*
 
-    def g(self): pass""", ["unexpected token 'def'"])
+    def g(self): pass""", ["invalid syntax"])
 
         TestErrors("""class X:
 
     def f(**
 
-    def g(self): pass""", ["unexpected token 'def'"])
+    def g(self): pass""", ["invalid syntax"])
 
         TestErrors("""class X:
 
     def f(*a, **
 
-    def g(self): pass""", ["unexpected token 'def'"])
+    def g(self): pass""", ["invalid syntax"])
 
         TestErrors("""f() += 1""", ["can't assign to function call"])
 
     def test_syntax_warnings(self):
-        # syntax error warnings are outputted using warnings.showwarning.  our own warning trapper therefore
-        # doesn't see them.  So we trap stderr here instead.  We could use CPython's warning trapper if we
-        # checked for the presence of the stdlib.
-        with stderr_trapper() as trapper:
-            compile("def f():\n    a = 1\n    global a\n", "", "exec")
-        self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+        if is_cli or sys.version_info >= (3,6):
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is assigned to before global declaration") as cm:
+                compile("def f():\n    a = 1\n    global a\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 3)
 
-        with stderr_trapper() as trapper:
-            compile("def f():\n    def a(): pass\n    global a\n", "", "exec")
-        self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is assigned to before global declaration") as cm:
+                compile("def f():\n    def a(): pass\n    global a\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 3)
 
-        with stderr_trapper() as trapper:
-            compile("def f():\n    for a in []: pass\n    global a\n", "", "exec")
-        self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is assigned to before global declaration") as cm:
+                compile("def f():\n    for a in []: pass\n    global a\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 3)
 
-        with stderr_trapper() as trapper:
-            compile("def f():\n    global a\n    a = 1\n    global a\n", "", "exec")
-        self.assertEqual(trapper.messages, [":4: SyntaxWarning: name 'a' is assigned to before global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is used prior to global declaration" if is_cli else "name 'a' is assigned to before global declaration") as cm:
+                compile("def f():\n    global a\n    a = 1\n    global a\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 4)
 
-        with stderr_trapper() as trapper:
-            compile("def f():\n    print(a)\n    global a\n", "", "exec")
-        self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is used prior to global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is used prior to global declaration") as cm:
+                compile("def f():\n    print(a)\n    global a\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 3)
 
-        with stderr_trapper() as trapper:
-            compile("def f():\n    a = 1\n    global a\n    global a\n    a = 1", "", "exec")
-        self.assertEqual(trapper.messages,
-                [":3: SyntaxWarning: name 'a' is assigned to before global declaration",
-                ":4: SyntaxWarning: name 'a' is assigned to before global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'a' is assigned to before global declaration") as cm:
+                compile("def f():\n    a = 1\n    global a\n    global a\n    a = 1", "", "exec")
+            self.assertEqual(cm.exception.lineno, 3)
 
-        with stderr_trapper() as trapper:
-            compile("x = 10\nglobal x\n", "", "exec")
-        self.assertEqual(trapper.messages, [":2: SyntaxWarning: name 'x' is assigned to before global declaration"])
+            with self.assertRaisesRegex(SyntaxError, "name 'x' is assigned to before global declaration") as cm:
+                compile("x = 10\nglobal x\n", "", "exec")
+            self.assertEqual(cm.exception.lineno, 2)
+        else:
+            # syntax error warnings are outputted using warnings.showwarning.  our own warning trapper therefore
+            # doesn't see them.  So we trap stderr here instead.  We could use CPython's warning trapper if we
+            # checked for the presence of the stdlib.
+            with stderr_trapper() as trapper:
+                compile("def f():\n    a = 1\n    global a\n", "", "exec")
+            self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("def f():\n    def a(): pass\n    global a\n", "", "exec")
+            self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("def f():\n    for a in []: pass\n    global a\n", "", "exec")
+            self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is assigned to before global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("def f():\n    global a\n    a = 1\n    global a\n", "", "exec")
+            self.assertEqual(trapper.messages, [":4: SyntaxWarning: name 'a' is assigned to before global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("def f():\n    print(a)\n    global a\n", "", "exec")
+            self.assertEqual(trapper.messages, [":3: SyntaxWarning: name 'a' is used prior to global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("def f():\n    a = 1\n    global a\n    global a\n    a = 1", "", "exec")
+            self.assertEqual(trapper.messages,
+                    [":3: SyntaxWarning: name 'a' is assigned to before global declaration",
+                    ":4: SyntaxWarning: name 'a' is assigned to before global declaration"])
+
+            with stderr_trapper() as trapper:
+                compile("x = 10\nglobal x\n", "", "exec")
+            self.assertEqual(trapper.messages, [":2: SyntaxWarning: name 'x' is assigned to before global declaration"])
 
 
 run_test(__name__)

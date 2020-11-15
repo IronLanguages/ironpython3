@@ -44,7 +44,7 @@ class SystemTimersTest(unittest.TestCase):
 
         try:
             #create and run the timer
-            if aTimer==None:
+            if aTimer is None:
                 aTimer = System.Timers.Timer()
 
             for i in range(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
@@ -89,8 +89,6 @@ class SystemTimersTest(unittest.TestCase):
         '''
         Multiple event handlers hooked up to a single Timer object
         '''
-        global COUNT
-        COUNT=0
         self.timer_helper(num_handlers=5)
         self.timer_helper(num_handlers=500)
 

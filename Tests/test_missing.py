@@ -230,7 +230,7 @@ def TestCalls(t):
         r = getattr(t, n)()
         if trace: print(r)
 
-@unittest.skipIf(is_netcoreapp, "TODO: figure out")
+@unittest.skipIf(is_netcoreapp, "TODO: figure out, make parallel-safe")
 @skipUnlessIronPython()
 class MissingTest(unittest.TestCase):
     def test_main(self):

@@ -13,9 +13,7 @@ import unittest
 
 from _io import FileIO
 
-from iptest import run_test
-
-TEMP_READINTO_NAME = "_fileio__FileIO_readinto%d.tmp"
+from iptest import IronPythonTestCase, run_test
 
 def bytesio_helper():
     return (bytes(bytearray(b'')),
@@ -30,18 +28,18 @@ def bytesio_helper():
             bytes(bytearray(b'abcdefghi'))
             )
 
-def fileio_helper():
+def fileio_helper(temp_readinto_name_template):
     bytes_io_list = bytesio_helper()
     file_io_list  = []
     for i in range(len(bytes_io_list)):
-        with FileIO(TEMP_READINTO_NAME % i, "w") as f:
+        with FileIO(temp_readinto_name_template % i, "w") as f:
             f.write(bytes_io_list[i])
 
-        file_io_list.append(FileIO(TEMP_READINTO_NAME % i, "r"))
+        file_io_list.append(FileIO(temp_readinto_name_template % i, "r"))
 
     return file_io_list
 
-class FileIOTest(unittest.TestCase):
+class FileIOTest(IronPythonTestCase):
 
     def test__FileIO___class__(self):
         '''
@@ -415,8 +413,9 @@ class FileIOTest(unittest.TestCase):
                         ]
 
         #Cases working correctly under IronPython
+        temp_readinto_name_template = os.path.join(self.temporary_dir, "_fileio__FileIO_readinto%d.tmp")
         for a_params, a_expected, f_expected in readinto_cases:
-            f_list = fileio_helper()
+            f_list = fileio_helper(temp_readinto_name_template)
 
             for i in range(len(f_list)):
                 a = array.array(*a_params)
@@ -439,7 +438,7 @@ class FileIOTest(unittest.TestCase):
 
             for i in range(len(f_list)):
                 try:
-                    os.remove(TEMP_READINTO_NAME % i)
+                    os.remove(temp_readinto_name_template % i)
                 except:
                     pass
 

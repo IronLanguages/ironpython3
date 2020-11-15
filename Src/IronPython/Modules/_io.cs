@@ -397,6 +397,9 @@ namespace IronPython.Modules {
                 );
             }
 
+            internal Exception UnsupportedOperationWithMessage(CodeContext/*!*/ context, string msg)
+                => PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey), msg);
+
             internal Exception AttributeError(string attrName) {
                 throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(this), attrName);
             }
@@ -2452,7 +2455,7 @@ namespace IronPython.Modules {
             public override object read(CodeContext/*!*/ context, object length=null) {
                 _checkClosed();
                 if (!readable(context)) {
-                    throw PythonOps.IOError("not readable");
+                    throw UnsupportedOperationWithMessage(context, "not readable");
                 }
 
                 int size = GetInt(length, -1);
@@ -2497,6 +2500,9 @@ namespace IronPython.Modules {
 
             public override object readline(CodeContext/*!*/ context, int limit=-1) {
                 _checkClosed("read from closed file");
+                if (!readable(context)) {
+                    throw UnsupportedOperationWithMessage(context, "not readable");
+                }
 
                 string line = GetDecodedChars();
 
@@ -2635,13 +2641,19 @@ namespace IronPython.Modules {
 
             #region ICodeFormattable Members
 
+#nullable enable
             public string __repr__(CodeContext/*!*/ context) {
-                if (PythonOps.TryGetBoundAttr(buffer, "name", out object nameObj)) {
-                    return $"<_io.TextIOWrapper name={PythonOps.Repr(context, nameObj)} encoding='{_encoding}'>";
-                }
+                string name = string.Empty;
+                if (PythonOps.TryGetBoundAttr(buffer, "name", out var nameObj))
+                    name = $" name={PythonOps.Repr(context, nameObj)}";
 
-                return $"<_io.TextIOWrapper encoding='{_encoding}'>";
+                string mode = string.Empty;
+                if (PythonOps.TryGetBoundAttr(this, "mode", out var modeObj))
+                    mode = $" mode={PythonOps.Repr(context, modeObj)}";
+
+                return $"<_io.TextIOWrapper{name}{mode} encoding='{_encoding}'>";
             }
+#nullable restore
 
             #endregion
 

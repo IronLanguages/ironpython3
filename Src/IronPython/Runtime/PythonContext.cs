@@ -294,6 +294,7 @@ namespace IronPython.Runtime {
             _mainThreadFunctionStack = PythonOps.GetFunctionStack();
 
             // bootstrap importlib
+            if (PythonOptions.NoImportLib) return;
             try {
                 var sourceUnit = CreateSourceUnit(new BootstrapStreamContentProvider(), null, DefaultEncoding, SourceCodeKind.File);
 

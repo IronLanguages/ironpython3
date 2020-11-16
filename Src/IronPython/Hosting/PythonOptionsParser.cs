@@ -190,6 +190,12 @@ namespace IronPython.Hosting {
                     ConsoleOptions.BasicConsole = true;
                     break;
 
+#if DEBUG
+                case "-X:NoImportLib":
+                    LanguageSetup.Options["NoImportLib"] = ScriptingRuntimeHelpers.True;
+                    break;
+#endif
+
                 default:
                     if(arg.StartsWith("-W")) {
                         if (_warningFilters == null) {
@@ -261,6 +267,9 @@ namespace IronPython.Hosting {
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
                 { "-X:BasicConsole",        "Use only the basic console features" },
+#if DEBUG
+                { "-X:NoImportLib",         "Don't bootstrap importlib" },
+#endif
             };
 
             // Ensure the combined options come out sorted

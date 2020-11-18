@@ -347,6 +347,20 @@ class FunctionTest(IronPythonTestCase):
             self.assertTrue(SplatTest2.FuncWithIDictGenOOKwargs(**mymapping({mystr("bla"): "bla"})))
             self.assertTrue(SplatTest2.FuncWithIDictGenSOKwargs(**mymapping({mystr("bla"): "bla"})))
 
+    def test_kwargs4(self):
+        """verify args/kwargs are not bindable by name or position"""
+
+        def foo(*args, **kwargs):
+            return args, kwargs
+
+        self.assertEqual(foo(), ((), {}))
+        self.assertEqual(foo(args=()), ((), {'args': ()}))
+        self.assertEqual(foo(kwargs={}), ((), {'kwargs': {}}))
+        self.assertEqual(foo(args=(), kwargs={}), ((), {'args': (), 'kwargs': {}}))
+        self.assertEqual(foo(()), (((),), {}))
+        self.assertEqual(foo({}), (({},), {}))
+        self.assertEqual(foo((), {}), (((), {}), {}))
+
     @skipUnlessIronPython()
     def test_params_method_no_params(self):
         """call a params method w/ no params"""

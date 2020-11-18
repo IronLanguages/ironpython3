@@ -60,6 +60,8 @@ function Main([String] $target, [String] $configuration) {
     }
 
     if (!$global:isUnix -And ($target -eq "Package")) {
+        msbuild -version
+        write-host ""
         msbuild Build.proj /m /t:$target /p:Configuration=$configuration /verbosity:minimal /nologo /p:Platform="Any CPU" /bl:build-$target-$configuration.binlog
     }
     else {

@@ -34,7 +34,7 @@ jobs:
     - name: Version Information
       run: |
         dotnet --info
-        msbuild -version
+        try { msbuild -version } catch { }
         try { mono --version } catch { }
       shell: pwsh
     - name: Build

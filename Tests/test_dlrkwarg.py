@@ -74,13 +74,10 @@ class DlrKwargTest(IronPythonTestCase):
         self.assertRaisesMessage(TypeError, "FuncWithIRoDictGenSOKwargs() takes no arguments (1 given)",
             Variadics.FuncWithIRoDictGenSOKwargs, {})
 
-        # TODO: this should not work, 'kwargs' should be a key in 'kwargs' dict passed to the builtin function
+    def test_keyword_arg(self):
         clrdict = System.Collections.Generic.Dictionary[System.String, System.Object]()
-        self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs=clrdict), 0)
-
-        # TODO: This should work
-        #self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs={}), 'kwargs')
-        #self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs=clrdict), 'kwargs')
+        self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs=clrdict), 1) # no binding by keyword
+        self.assertEqual(Variadics.FuncWithIRoDictGenSOKwargs(kwargs={}), 1)
 
     def test_attribcol(self):
         self.assertRaisesMessage(SystemError, "Unsupported param dictionary type: System.ComponentModel.AttributeCollection",

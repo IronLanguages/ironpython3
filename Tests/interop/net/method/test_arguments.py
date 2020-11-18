@@ -23,6 +23,8 @@ class ArgumentsTest(IronPythonTestCase):
         self.o = VariousParameters()
 
     def test_0_1_args(self):
+        import System
+        from Merlin.Testing import Flag
 
         # public void M100() { Flag.Set(10); }
         f = self.o.M100
@@ -95,6 +97,9 @@ class ArgumentsTest(IronPythonTestCase):
         self.assertRaisesMessage(TypeError, "M202() got an unexpected keyword argument 'arg'", lambda: f(**{'arg': 3}))# msg
         self.assertRaisesMessage(TypeError, "M202() got an unexpected keyword argument 'other'", lambda: f(**{'other': 4}))
 
+        ar_int = System.Array[System.Int32](3)
+        f(ar_int); Flag.Check(3)
+
         # public void M203([ParamDictionaryAttribute] IDictionary<object, object> arg) { Flag.Set(arg.Count); }
         f = self.o.M203
         f()
@@ -106,8 +111,17 @@ class ArgumentsTest(IronPythonTestCase):
         f(**{'a':2, 'b':3})
         f(a=1, **{'b':2, 'c':5})
         self.assertRaisesMessage(TypeError, "M203() got multiple values for keyword argument 'a'", lambda: f(a=1, **{'a':2, 'c':5}))
-        self.assertRaisesMessage(TypeError, "M203() takes no arguments (3 given)", lambda: f(*(1,2,3)))
+        self.assertRaisesMessage(TypeError, "M203() takes no arguments (3 given)", lambda: f(*(1,2,3))) # msg: no positional arguments
+        dict_obj = System.Collections.Generic.Dictionary[System.Object, System.Object]()
+        self.assertRaisesMessage(TypeError, "M203() takes no arguments (1 given)", lambda: f(dict_obj)) # msg: no positional arguments
 
+        # public void M204(params object[] arg)
+        f = self.o.M204
+
+        ar_obj = System.Array[System.Object](3)
+        f(ar_obj); Flag.Check(3)
+        f(ar_obj, ar_obj); Flag.Check(2)
+        f(ar_int); Flag.Check(1)
 
     def test_optional(self):
         import System
@@ -230,7 +244,7 @@ class ArgumentsTest(IronPythonTestCase):
         # TODO: mixed
         f(x = 1)  # check the value
 
-        #public void M351(int x, [ParamDictionary] IDictionary<object, object> arg) { Flag<object>.Set(arg); }
+        #public void M351(int x, [ParamDictionary] IDictionary<object, object> y) { Flag<object>.Set(y); }
         f = self.o.M351
         self.assertRaisesMessage(TypeError, "M351() takes exactly 1 argument (0 given)", lambda: f())
         f(1); self.assertEqual(Flag[object].Value1, {})
@@ -240,7 +254,7 @@ class ArgumentsTest(IronPythonTestCase):
         f(x=1); self.assertEqual(Flag[object].Value1, {})
         f(**{'x' : 1}); self.assertEqual(Flag[object].Value1, {})
 
-        #public void M352([ParamDictionary] IDictionary<object, object> arg, params int[] x) { Flag<object>.Set(arg); }
+        #public void M352([ParamDictionary] IDictionary<object, object> x, params object[] y) { Flag<object>.Set(x); }
 
         f=self.o.M352
         f(); self.assertEqual(Flag[object].Value1, {})
@@ -269,20 +283,22 @@ class ArgumentsTest(IronPythonTestCase):
 
         f(1, **{'y':2}); Flag.Check(3)
 
-        # public void M320([DefaultParameterValue(40)] int y, int x) { Flag.Set(x + y); }
+        # public void M320([DefaultParameterValue(40)] int x, int y) { Flag.Set(x + y); }
         f = self.o.M320
         self.assertRaisesMessage(TypeError, "M320() takes at least 1 argument (0 given)", f)
         f(1); Flag.Check(41)  # !!!
         f(2, 3); Flag.Check(5)
         self.assertRaisesMessage(TypeError, "M320() takes at most 2 arguments (3 given)", lambda : f(1, 2, 3))
 
-        f(x = 2); Flag.Check(42)
+        f(y = 2); Flag.Check(42)
+        f(y = 2, x = 3); Flag.Check(5)
         f(x = 2, y = 3); Flag.Check(5)
         f(*(1,)); Flag.Check(41)
         f(*(1, 2)); Flag.Check(3)
 
-        self.assertRaisesMessage(TypeError, "Argument for M320() given by name ('y') and position (1)", lambda : f(5, y = 6)) # !!!
-        f(6, x = 7); Flag.Check(13)
+        self.assertRaisesMessage(TypeError, "Argument for M320() given by name ('x') and position (1)", lambda : f(5, x = 6)) # !!!
+        self.assertRaisesMessage(TypeError, "M320() got an unexpected keyword argument 'x'", lambda : f(x = 6)) # !!!
+        f(6, y = 7); Flag.Check(13)
 
         # public void M330([DefaultParameterValue(50)] int x, [DefaultParameterValue(60)] int y) { Flag.Set(x + y); }
         f = self.o.M330
@@ -361,6 +377,13 @@ class ArgumentsTest(IronPythonTestCase):
         #f(1, 2, **{'z':3, 'y':4}) # FIXME: M550() takes at least 2 arguments (4 given) => e.g. Argument for M550() given by name ('y') and position (2)
         #f(*(1, 2, 0, 1), **{'z':3, 'y':4}) # FIXME: M550() takes at least 2 arguments (6 given) => e.g. Argument for M550() given by name ('x') and position (1)
         #f(*(1, 2, 0, 1), **{'z':3, 'x':4}) # FIXME: M550() takes at least 2 arguments (6 given) => e.g. Argument for M550() given by name ('x') and position (1)
+
+        # public void M560(int x, [ParamDictionary] IDictionary<string, int> y, params int[] z) { Flag.Set(x * 100 + y.Count * 10 + z.Length); }
+        f = self.o.M560
+        f(2, 3, 4, a=5, b=6, c=7); Flag.Check(2 * 100 + 3 * 10 + 2)
+        self.assertRaisesMessage(TypeError, "Argument for M560() given by name ('x') and position (1)", lambda: f(2, 3, 4, x=4, b=6, c=7))
+        f(2, 3, 4, y=5, b=6, c=7); Flag.Check(2 * 100 + 3 * 10 + 2)
+        f(2, 3, 4, z=5, b=6, c=7); Flag.Check(2 * 100 + 3 * 10 + 2)
 
     def test_many_args(self):
         from Merlin.Testing import Flag

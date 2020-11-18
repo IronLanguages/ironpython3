@@ -41,12 +41,12 @@ jobs:
       shell: pwsh
     - name: Build
       run: pwsh make.ps1
-#    - name: Package
-#      run: pwsh make.ps1 package
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: packages
-#        path: Package/Release/Packages
+    - name: Package
+      run: pwsh make.ps1 package
+    - uses: actions/upload-artifact@v2
+      with:
+        name: packages
+        path: Package/Release/Packages
     - name: Test (net46)
       run: ./make.ps1 -frameworks net46 test-all
       shell: pwsh

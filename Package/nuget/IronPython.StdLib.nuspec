@@ -7,14 +7,14 @@
     <authors>IronPython Contributors,Python Contributors</authors>
     <owners>IronPython Community</owners>
     <projectUrl>http://ironpython.net</projectUrl>
-    <licenseUrl>http://docs.python.org/license.html</licenseUrl>
+    <license type="expression">PSF-2.0</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The Python Standard Library, for use with IronPython.</description>
     <summary>The Python Standard Library, for use with IronPython.</summary>
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>
-      <dependency id="IronPython" version="[3.4.0-alpha0,3.5)" />
+      <dependency id="IronPython" version="[3.4.0-alpha1,3.5)" />
     </dependencies>
     <contentFiles>
       <files include="**\*" buildAction="None" copyToOutput="true" />

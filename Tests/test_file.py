@@ -161,8 +161,6 @@ class FileTest(IronPythonTestCase):
                 out += char
         return out
 
-
-
     # The following is the setup for a set of pattern mode tests that will check
     # some tricky edge cases for newline translation for both reading and writing.
     # The entry point is the test_patterns() function.
@@ -260,7 +258,6 @@ class FileTest(IronPythonTestCase):
     #                                                               (text mode result strings) (text mode result tell() result)
     #                                                               (universal mode result strings) (universal mode result tell() results)
 
-    #@unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_read_size(self):
         read_size_tests = [(b"Hello", 1, (b"H", b"e", b"l", b"l", b"o"), (1,2,3,4,5),
                                         ("H", "e", "l", "l", "o"), (1,2,3,4,5),
@@ -269,20 +266,12 @@ class FileTest(IronPythonTestCase):
                                         ("He", "ll", "o"), (2,4,5),
                                         ("He", "ll", "o"), (2,4,5))]
 
-        if is_posix:
-            read_size_tests.append((b"H\re\n\r\nllo", 1, (b"H", b"\r", b"e", b"\n", b"\r", b"\n", b"l", b"l", b"o"), (1,2,3,4,5,6,7, 8, 9),
-                                                ("H", "\n", "e", "\n", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 5, 6, 7, 8, 9),
-                                                ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9)))
-            read_size_tests.append((b"H\re\n\r\nllo", 2, (b"H\r", b"e\n", b"\r\n", b"ll", b"o"), (2, 4, 6, 8, 9),
-                                                ("H\r", "e\n", "\r\n", "ll", "o"), (2, 4, 6, 8, 9),
-                                                ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9)))
-        else:
-            read_size_tests.append((b"H\re\n\r\nllo", 1, (b"H", b"\r", b"e", b"\n", b"\r", b"\n", b"l", b"l", b"o"), (1,2,3,4,5,6,7, 8, 9),
-                                                ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1,2,3,4,6,7,8,9),
-                                                ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1,2,3,4,6,7,8,9)))
-            read_size_tests.append((b"H\re\n\r\nllo", 2, (b"H\r", b"e\n", b"\r\n", b"ll", b"o"), (2, 4, 6, 8, 9),
-                                                ("H\n", "e\n", "\nl", "lo"), (2,4,7, 9),
-                                                ("H\n", "e\n", "\nl", "lo"), (2,4,7, 9)))
+        read_size_tests.append((b"H\re\n\r\nllo", 1, (b"H", b"\r", b"e", b"\n", b"\r", b"\n", b"l", b"l", b"o"), (1, 2, 3, 4, 5, 6, 7, 8, 9),
+                                            ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9),
+                                            ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9)))
+        read_size_tests.append((b"H\re\n\r\nllo", 2, (b"H\r", b"e\n", b"\r\n", b"ll", b"o"), (2, 4, 6, 8, 9),
+                                            ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9),
+                                            ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9)))
 
         for test in read_size_tests:
             # Write the test pattern to disk in binary mode.
@@ -330,14 +319,10 @@ class FileTest(IronPythonTestCase):
                                                         ("Mary had a \n", "little lamb\n"))]
 
         # wb doesn't change the output to just \n like on Windows (binary mode means nothing on POSIX)
-        if is_posix:
-            readline_tests.append(("Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
-                                                        ("Mary \r\n", "had \n", "a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb")))
-        else:
-            readline_tests.append(("Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb")))
+        readline_tests.append(("Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
+                                                    ("Mary \n", "had \n", "a little lamb"),
+                                                    ("Mary \n", "had \n", "a little lamb")))
+
         for test in readline_tests:
             # Write the test pattern to disk in binary mode.
             with open(self.temp_file, "wb") as f:
@@ -375,12 +360,12 @@ class FileTest(IronPythonTestCase):
     # of newlines expected after each line is read from the file in universal newline mode.
     def test_newlines_attribute(self):
         newlines_tests = (("123", (None, )),
-                        ("1\r\n2\r3\n", (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\r2\n3\r\n", (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\n2\r\n3\r", (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\r\n2\r\n3\r\n", (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
+                        ("1\r\n2\r3\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
+                        ("1\r2\n3\r\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
+                        ("1\n2\r\n3\r", (('\n', '\r\n'), ('\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
+                        ("1\r\n2\r\n3\r\n", ("\r\n", "\r\n", "\r\n") if is_posix else (('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'))),
                         ("1\r2\r3\r", ("\r", "\r", "\r")),
-                        ("1\n2\n3\n", ("\r\n", "\r\n", "\r\n")))
+                        ("1\n2\n3\n", ("\n", "\n", "\n") if is_posix else ("\r\n", "\r\n", "\r\n")))
 
         for test in newlines_tests:
             # Write the test pattern to disk in binary mode.
@@ -392,7 +377,7 @@ class FileTest(IronPythonTestCase):
             # Verify that reading the file sets newlines.
             with open(self.temp_file, "r") as f:
                 data = f.read()
-                self.assertEqual(f.newlines, test[1][0])
+                self.assertEqual(f.newlines, test[1][-1])
 
             # Read file in universal mode line by line and verify we see the expected output at each stage.
             expected = test[1]
@@ -406,7 +391,6 @@ class FileTest(IronPythonTestCase):
                     self.assertTrue(count < len(expected))
                     self.assertEqual(f.newlines, expected[count])
                     count = count + 1
-
 
     ## coverage: a sequence of file operation
     @unittest.skipIf(is_posix, 'file sequence specific to windows (because of newlines)')
@@ -470,29 +454,16 @@ class FileTest(IronPythonTestCase):
         os.unlink(self.temp_file)
 
     def test_encoding(self):
-        f = open(self.temp_file, 'w')
-        # we throw on flush, CPython throws on write, so both write & close need to catch
-        try:
-            f.write('\u6211')
-            f.close()
-            self.fail('UnicodeEncodeError should have been thrown')
-        except UnicodeEncodeError:
-            pass
-
-        if hasattr(sys, "setdefaultencoding"):
-            #and verify UTF8 round trips correctly
-            setenc = sys.setdefaultencoding
-            saved = sys.getdefaultencoding()
+        import locale
+        with open(self.temp_file, 'w') as f:
+            # succeeds or failes depending on the locale encoding
             try:
-                setenc('utf8')
-                with open(self.temp_file, 'w') as f:
+                '\u6211'.encode(locale.getpreferredencoding())
+            except UnicodeEncodeError:
+                with self.assertRaises(UnicodeEncodeError):
                     f.write('\u6211')
-
-                with open(self.temp_file, 'r') as f:
-                    txt = f.read()
-                self.assertEqual(txt, '\u6211')
-            finally:
-                setenc(saved)
+            else:
+                f.write('\u6211')
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_net_stream(self):
@@ -593,7 +564,6 @@ class FileTest(IronPythonTestCase):
         os.unlink(fname)
 
     def test_truncate(self):
-
         # truncate()
         fname = 'abc.txt'
         with open(fname, 'w') as a:
@@ -612,10 +582,7 @@ class FileTest(IronPythonTestCase):
             a.truncate(6)
 
         with open(fname, 'r') as a:
-            if is_posix:
-                self.assertEqual(a.readlines(), ['hello\n'])
-            else:
-                self.assertEqual(a.readlines(), ['hello\n'])
+            self.assertEqual(a.readlines(), ['hello\n'])
 
         os.unlink(fname)
 
@@ -737,7 +704,7 @@ class FileTest(IronPythonTestCase):
             if is_cli:
                 self.assertTrue(isinstance(e, SystemError))
             else:
-                self.assertEqual(e.errno, 22 if sys.version_info >= (3,6) else 2)
+                self.assertEqual(e.errno, (36 if is_posix else 22) if sys.version_info >= (3,6) else 2)
         else:
             self.fail("Unreachable code reached")
 
@@ -786,15 +753,13 @@ class FileTest(IronPythonTestCase):
         """https://github.com/IronLanguages/main/issues/1088"""
         fileName = os.path.join(self.test_dir, "file_without_BOM.txt")
         with open(fileName, "r", encoding="latin") as f:
-            if is_posix: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
-            else: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
+            self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
             self.assertEqual(f.read(), b"\x42\xc3\x93\x4d\x0d\x0a")
 
         fileName = os.path.join(self.test_dir, "file_with_BOM.txt")
         with open(fileName, "r", encoding="latin") as f:
-            if is_posix: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
-            else: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
+            self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
             self.assertEqual(f.read(), b"\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
 

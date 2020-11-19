@@ -733,11 +733,12 @@ namespace IronPython.Runtime.Types {
                             switch (xr.Name) {
                                 case "see":
                                     if (xr.MoveToFirstAttribute() && xr.ReadAttributeValue()) {
+                                        int prefixlen = xr.Value.IndexOf(':') + 1;
                                         int arity = xr.Value.IndexOf(ReflectionUtils.GenericArityDelimiter);
                                         if (arity != -1)
-                                            text.Append(xr.Value, 2, arity - 2);
+                                            text.Append(xr.Value, prefixlen, arity - prefixlen);
                                         else
-                                            text.Append(xr.Value, 2, xr.Value.Length - 2);
+                                            text.Append(xr.Value, prefixlen, xr.Value.Length - prefixlen);
                                     }
                                     break;
                                 case "paramref":

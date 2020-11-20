@@ -92,7 +92,7 @@ namespace IronPython.Modules {
 
             public void _checkReadable(string msg) {
                 if (!readable(context)) {
-                    throw PythonOps.ValueError(msg ?? "File or stream is not readable.");
+                    throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not readable.");
                 }
             }
 
@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
             public void _checkWritable(string msg) {
                 if (!writable(context)) {
-                    throw PythonOps.ValueError(msg ?? "File or stream is not writable.");
+                    throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not writable.");
                 }
             }
 
@@ -2818,7 +2818,7 @@ namespace IronPython.Modules {
 
             HashSet<char> modes = MakeSet(mode);
             if (modes.Count < mode.Length || !_validModes.IsSupersetOf(modes)) {
-                throw PythonOps.ValueError("invalid mode: {0}", mode);
+                throw PythonOps.ValueError("invalid mode: '{0}'", mode);
             }
 
             bool reading = modes.Contains('r');

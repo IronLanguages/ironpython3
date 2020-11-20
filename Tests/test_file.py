@@ -47,13 +47,12 @@ class FileTest(IronPythonTestCase):
             self.assertRaises(IOError, sin.writelines, ["abc","def"])
 
             # reader is null for sout
-            if is_cli:
-                self.assertRaises(IOError, sout.read)
-                self.assertRaises(IOError, sout.read, 10)
-                self.assertRaises(IOError, sout.readline)
-                self.assertRaises(IOError, sout.readline, 10)
-                self.assertRaises(IOError, sout.readlines)
-                self.assertRaises(IOError, sout.readlines, 10)
+            self.assertRaises(IOError, sout.read)
+            self.assertRaises(IOError, sout.read, 10)
+            self.assertRaises(IOError, sout.readline)
+            self.assertRaises(IOError, sout.readline, 10)
+            self.assertRaises(IOError, sout.readlines)
+            self.assertRaises(IOError, sout.readlines, 10)
 
             sin.close()
             sout.close()
@@ -478,9 +477,10 @@ class FileTest(IronPythonTestCase):
         with open(self.temp_file, 'rU') as f:
             self.assertEqual(f.read(), 'hello\nworld\ngoodbye\n')
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
-    @unittest.skipIf(is_mono, 'Mono has a different GC setup, so we can not rely on the Collect to work the same')
+#    @unittest.skipIf(is_mono, 'Mono has a different GC setup, so we can not rely on the Collect to work the same')
     def test_file_manager(self):
+        import gc
+
         def return_fd1():
             f = open(self.temp_file, 'w')
             return f.fileno()
@@ -488,16 +488,12 @@ class FileTest(IronPythonTestCase):
         def return_fd2():
             return os.open(self.temp_file, 0)
 
-        import System
-
         fd = return_fd1()
-        System.GC.Collect()
-        System.GC.WaitForPendingFinalizers()
+        gc.collect()
         self.assertRaises(OSError, os.fdopen, fd)
 
         fd = return_fd2()
-        System.GC.Collect()
-        System.GC.WaitForPendingFinalizers()
+        gc.collect()
         f = os.fdopen(fd)
         f.close()
         self.assertRaises(OSError, os.fdopen, fd)
@@ -588,12 +584,12 @@ class FileTest(IronPythonTestCase):
 
         # truncate(#) invalid args
         with open(fname, 'w') as a:
-            self.assertRaises(ValueError if is_cli else IOError, a.truncate, -1)
+            self.assertRaises(ValueError if is_cli else OSError, a.truncate, -1)
 
         # read-only file
         with open(fname, 'r') as a:
-            self.assertRaises(ValueError if is_cli else IOError, a.truncate)
-            self.assertRaises(ValueError if is_cli else IOError, a.truncate, 0)
+            self.assertRaises(ValueError, a.truncate)
+            self.assertRaises(ValueError, a.truncate, 0)
         os.unlink(fname)
 
         # std-out
@@ -609,7 +605,7 @@ class FileTest(IronPythonTestCase):
             self.assertRaisesMessage(ValueError, 'must have exactly one of read/write/append mode' if is_cli else "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
 
             # mode must start with valid value
-            self.assertRaisesMessage(ValueError, "invalid mode: p" if is_cli else "invalid mode: 'p'", open, 'abc', 'p')
+            self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
 
             # allow anything w/ U but r and w
             err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
@@ -771,24 +767,23 @@ class FileTest(IronPythonTestCase):
         with open(self.temp_file, "r", opener=os.open) as f:
             self.assertEqual(f.read(), data)
 
-        if not is_cli:
-            os.unlink(self.temp_file)
+        os.unlink(self.temp_file)
 
     def test_opener_negative_fd(self):
         def negative_opener(path, flags):
             return -1
 
-        self.assertRaises(FileNotFoundError if is_cli else ValueError if sys.version_info >= (3,5) else SystemError, open, "", "r", opener=negative_opener)
+        self.assertRaises(ValueError if is_cli or sys.version_info >= (3,5) else SystemError, open, "", "r", opener=negative_opener)
 
     def test_opener_none_fd(self):
         def none_opener(path, flags):
             return None
 
-        self.assertRaises(FileNotFoundError if is_cli else TypeError, open, "", "r", opener=none_opener)
+        self.assertRaises(TypeError, open, "", "r", opener=none_opener)
 
     def test_opener_uncallable(self):
         uncallable_opener = "uncallable_opener"
 
-        self.assertRaises(FileNotFoundError if is_cli else TypeError, open, "", "r", opener=uncallable_opener)
+        self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
 
 run_test(__name__)

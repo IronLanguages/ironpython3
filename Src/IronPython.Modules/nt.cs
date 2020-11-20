@@ -1571,9 +1571,9 @@ the 'status' value."),
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private static Exception ToPythonException(Exception e, string filename = null) {
-            if (e is IPythonAwareException) {
+            // already a Python Exception
+            if (e.GetPythonException() is not null)
                 return e;
-            }
 
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions

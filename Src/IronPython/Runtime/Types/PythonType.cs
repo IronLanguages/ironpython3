@@ -127,9 +127,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="underlyingSystemType"></param>
         internal PythonType(Type underlyingSystemType) {
-            if (underlyingSystemType.IsGenericParameter)
-                throw new ArgumentException($"Generic parameter type {underlyingSystemType} cannot be represented by a Python type", nameof(underlyingSystemType));
-
             _underlyingSystemType = underlyingSystemType;
 
             InitializeSystemType();
@@ -182,10 +179,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         internal PythonType(PythonType[] baseTypes, Type underlyingType, string name, Func<string, Exception, Exception> exceptionMaker)
             : this(baseTypes, name) {
-
-            if (underlyingType.IsGenericParameter)
-                throw new ArgumentException($"Generic parameter type {underlyingType} cannot be represented by a Python type", nameof(underlyingType));
-
             _underlyingSystemType = underlyingType;
             _makeException = exceptionMaker;
         }
@@ -776,10 +769,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        internal static PythonType GetPythonType(Type type) {
-            if (type.IsGenericParameter) return null;
-
-            if (!_pythonTypes.TryGetValue(type, out object res)) {
+        internal static PythonType/*!*/ GetPythonType(Type type) {
+            object res;
+            
+            if (!_pythonTypes.TryGetValue(type, out res)) {
                 lock (_pythonTypes) {
                     if (!_pythonTypes.TryGetValue(type, out res)) {
                         res = new PythonType(type);

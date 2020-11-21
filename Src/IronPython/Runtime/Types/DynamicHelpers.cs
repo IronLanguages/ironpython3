@@ -17,7 +17,7 @@ namespace IronPython.Runtime.Types {
 
             PerfTrack.NoteEvent(PerfTrack.Categories.DictInvoke, "TypeLookup " + type.FullName);
 
-            return PythonType.GetPythonType(type) ?? throw Operations.PythonOps.TypeError("Type {0} cannot be represented as a Python type", type);
+            return PythonType.GetPythonType(type);
         }
 
         public static PythonType GetPythonType(object? o) {

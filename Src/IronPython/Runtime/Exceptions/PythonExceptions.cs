@@ -785,8 +785,7 @@ for k, v in toError.items():
             if (clrException is InvalidCastException || clrException is ArgumentNullException) {
                 // explicit extra conversions outside the generated hierarchy
                 pyExcep = new BaseException(TypeError);
-            } else if (clrException is Win32Exception) {
-                Win32Exception win32 = (Win32Exception)clrException;
+            } else if (clrException is Win32Exception win32) {
                 int errorCode = win32.ErrorCode;
 
                 pyExcep = new _OSError();
@@ -794,6 +793,15 @@ for k, v in toError.items():
                     errorCode &= 0xffff;
                 }
                 pyExcep.__init__(errorCode, win32.Message, null, errorCode);
+                return pyExcep;
+            } else if (clrException is IOException) {
+                var errorCode = Marshal.GetHRForException(clrException);
+
+                pyExcep = new _OSError();
+                if ((errorCode & 0x80070000) == 0x80070000) {
+                    errorCode &= 0xffff;
+                }
+                pyExcep.__init__(errorCode, clrException.Message, null, errorCode);
                 return pyExcep;
             } else if (clrException is DirectoryNotFoundException) {
                 pyExcep = new _OSError(FileNotFoundError);

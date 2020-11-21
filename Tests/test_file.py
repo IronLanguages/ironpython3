@@ -9,7 +9,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_cpython, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, run_test
 
 class FileTest(IronPythonTestCase):
 
@@ -297,8 +297,8 @@ class FileTest(IronPythonTestCase):
                         self.assertTrue(count <= len(strings))
                         self.assertEqual(data, strings[count - 1])
                         t = f.tell()
-                        if not (is_cpython and t == 340282367000166625996085689099021713410):
-                            self.assertEqual(t, lengths[count-1])
+                        # looks like a bug in CPython?
+                        self.assertEqual(2 if is_cpython and t == 340282367000166625996085689099021713410 else t, lengths[count-1])
                     f.close()
                     self.assertTrue(f.closed)
 
@@ -477,7 +477,6 @@ class FileTest(IronPythonTestCase):
         with open(self.temp_file, 'rU') as f:
             self.assertEqual(f.read(), 'hello\nworld\ngoodbye\n')
 
-#    @unittest.skipIf(is_mono, 'Mono has a different GC setup, so we can not rely on the Collect to work the same')
     def test_file_manager(self):
         import gc
 
@@ -621,7 +620,6 @@ class FileTest(IronPythonTestCase):
         finally:
             os.unlink(fname)
 
-    @unittest.skipUnless(is_cli, 'Unstable with CPython')
     def test_cp16623(self):
         '''
         If this test ever fails randomly, there is a problem around file thread
@@ -685,24 +683,14 @@ class FileTest(IronPythonTestCase):
         finally:
             self.delete_files("foo")
 
-    @unittest.skipIf(is_netcoreapp, "https://github.com/IronLanguages/ironpython2/issues/348")
     def test_errors(self):
-        try:
+        with self.assertRaises(OSError) as cm:
             open('some_file_that_really_does_not_exist')
-        except Exception as e:
-            self.assertEqual(e.errno, 2)
-        else:
-            self.fail("Unreachable code reached")
+        self.assertEqual(cm.exception.errno, 2)
 
-        try:
+        with self.assertRaises(OSError) as cm:
             open('path_too_long' * 100)
-        except Exception as e:
-            if is_cli:
-                self.assertTrue(isinstance(e, SystemError))
-            else:
-                self.assertEqual(e.errno, (36 if is_posix else 22) if sys.version_info >= (3,6) else 2)
-        else:
-            self.fail("Unreachable code reached")
+        self.assertEqual(cm.exception.errno, (36 if is_posix else 22) if is_cli or sys.version_info >= (3,6) else 2)
 
     def test_write_bytes(self):
         fname = "temp_ip_%d" % os.getpid()

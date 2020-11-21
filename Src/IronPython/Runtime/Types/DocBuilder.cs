@@ -398,12 +398,12 @@ namespace IronPython.Runtime.Types {
         }
 
         private static string GetPythonTypeName(Type type) {
-            if (type.IsGenericParameter) {
-                return type.Name;
-            }
-
             if (type.IsByRef) {
                 type = type.GetElementType();
+            }
+
+            if (type.IsGenericParameter) {
+                return type.Name;
             }
 
             return DynamicHelpers.GetPythonTypeFromType(type).Name;

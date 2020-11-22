@@ -305,7 +305,7 @@ namespace IronPython.Runtime.Types {
                 paramDoc.Add(
                     new ParameterDoc(
                         pi.Name ?? "",  // manufactured methods, such as string[].ctor(int) can have no parameter names.
-                        pi.ParameterType.IsGenericParameter ? pi.ParameterType.Name : GetPythonTypeName(pi.ParameterType),
+                        GetPythonTypeName(pi.ParameterType),
                         paramDocString,
                         flags
                     )
@@ -400,6 +400,10 @@ namespace IronPython.Runtime.Types {
         private static string GetPythonTypeName(Type type) {
             if (type.IsByRef) {
                 type = type.GetElementType();
+            }
+
+            if (type.IsGenericParameter) {
+                return type.Name;
             }
 
             return DynamicHelpers.GetPythonTypeFromType(type).Name;

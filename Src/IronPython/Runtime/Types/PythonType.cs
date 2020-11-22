@@ -764,7 +764,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Gets the dynamic type that corresponds with the provided static type. 
         /// 
-        /// Returns null if no type is available.  TODO: In the future this will
+        /// TODO: In the future this will
         /// always return a PythonType created by the DLR.
         /// </summary>
         /// <param name="type"></param>
@@ -777,7 +777,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     if (!_pythonTypes.TryGetValue(type, out res)) {
                         res = new PythonType(type);
 
-                        _pythonTypes.Add(type, res);
+                       _pythonTypes.Add(type, res);
                     }
                 }
             }
@@ -2325,7 +2325,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             lock (_bases) {
                 _bases = bases;
             }
-            
+
+            if (_underlyingSystemType.IsGenericParameter) {
+                // add all interfaces into the MRO
+                foreach (Type t in interfaces) {
+                    Debug.Assert(t.IsInterface);
+
+                    mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
+                }
+                return; // end of story for generic parameter types
+            }
+
             foreach (Type iface in interfaces) {
 #if NET46
                 // causes failures on Mono: https://github.com/mono/mono/issues/14712

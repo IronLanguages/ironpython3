@@ -307,25 +307,25 @@ class FileTest(IronPythonTestCase):
     #                                                    (text mode result strings)
     #                                                    (universal mode result strings))
     def test_readline(self):
-        readline_tests = [("Mary had a little lamb", (b"Mary had a little lamb", ),
+        readline_tests = [(b"Mary had a little lamb", (b"Mary had a little lamb", ),
                                                     ("Mary had a little lamb", ),
                                                     ("Mary had a little lamb", )),
-                        ("Mary had a little lamb\r", (b"Mary had a little lamb\r", ),
+                        (b"Mary had a little lamb\r", (b"Mary had a little lamb\r", ),
                                                     ("Mary had a little lamb\n", ),
                                                     ("Mary had a little lamb\n", )),
-                        ("Mary had a \rlittle lamb\r", (b"Mary had a \rlittle lamb\r", ),
+                        (b"Mary had a \rlittle lamb\r", (b"Mary had a \rlittle lamb\r", ),
                                                         ("Mary had a \n", "little lamb\n", ),
                                                         ("Mary had a \n", "little lamb\n"))]
 
         # wb doesn't change the output to just \n like on Windows (binary mode means nothing on POSIX)
-        readline_tests.append(("Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
+        readline_tests.append((b"Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
                                                     ("Mary \n", "had \n", "a little lamb"),
                                                     ("Mary \n", "had \n", "a little lamb")))
 
         for test in readline_tests:
             # Write the test pattern to disk in binary mode.
             with open(self.temp_file, "wb") as f:
-                f.write(test[0].encode("ascii"))
+                f.write(test[0])
 
             # Read the data back in each of the read modes we test.
             for mode in range(3):
@@ -358,20 +358,20 @@ class FileTest(IronPythonTestCase):
     # Format of the test data is the raw data written to the test file followed by a tuple representing the values
     # of newlines expected after each line is read from the file in universal newline mode.
     def test_newlines_attribute(self):
-        newlines_tests = (("123", (None, )),
-                        ("1\r\n2\r3\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\r2\n3\r\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\n2\r\n3\r", (('\n', '\r\n'), ('\n', '\r\n'), ('\r', '\n', '\r\n')) if is_posix else (("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"), ("\r", "\r\n"))),
-                        ("1\r\n2\r\n3\r\n", ("\r\n", "\r\n", "\r\n") if is_posix else (('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'), ('\r', '\r\n'))),
-                        ("1\r2\r3\r", ("\r", "\r", "\r")),
-                        ("1\n2\n3\n", ("\n", "\n", "\n") if is_posix else ("\r\n", "\r\n", "\r\n")))
+        newlines_tests = ((b"123", (None, )),
+                        (b"1\r\n2\r3\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\r2\n3\r\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\n2\r\n3\r", (('\n', '\r\n'), ('\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\r\n2\r\n3\r\n", ("\r\n", "\r\n", "\r\n")),
+                        (b"1\r2\r3\r", ("\r", "\r", "\r")),
+                        (b"1\n2\n3\n", ("\n", "\n", "\n")))
 
         for test in newlines_tests:
             # Write the test pattern to disk in binary mode.
-            with open(self.temp_file, "w") as f:
+            with open(self.temp_file, "wb") as f:
                 f.write(test[0])
                 # Verify newlines isn't set while writing.
-                self.assertTrue(f.newlines is None)
+                self.assertFalse(hasattr(f, "newlines"))
 
             # Verify that reading the file sets newlines.
             with open(self.temp_file, "r") as f:

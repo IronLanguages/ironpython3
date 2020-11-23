@@ -9,7 +9,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_cpython, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, run_test
 
 class FileTest(IronPythonTestCase):
 
@@ -28,12 +28,11 @@ class FileTest(IronPythonTestCase):
         # universal newline mode.
         self.write_modes = (("binary", "wb"), ("text", "w"))
 
-
     # This module tests operations on the builtin file object. It is not yet complete, the tests cover read(),
     # read(size), readline() and write() for binary, text and universal newline modes.
     def test_sanity(self):
         onlyread_tmp = "onlyread_%d.tmp" % os.getpid()
-        onlywrite_tmp = "onlywrite_%d.tmp" os.getpid()
+        onlywrite_tmp = "onlywrite_%d.tmp" % os.getpid()
         for i in range(5):
             ### general file robustness tests
             f = open(onlyread_tmp, "w")
@@ -48,13 +47,12 @@ class FileTest(IronPythonTestCase):
             self.assertRaises(IOError, sin.writelines, ["abc","def"])
 
             # reader is null for sout
-            if is_cli:
-                self.assertRaises(IOError, sout.read)
-                self.assertRaises(IOError, sout.read, 10)
-                self.assertRaises(IOError, sout.readline)
-                self.assertRaises(IOError, sout.readline, 10)
-                self.assertRaises(IOError, sout.readlines)
-                self.assertRaises(IOError, sout.readlines, 10)
+            self.assertRaises(IOError, sout.read)
+            self.assertRaises(IOError, sout.read, 10)
+            self.assertRaises(IOError, sout.readline)
+            self.assertRaises(IOError, sout.readline, 10)
+            self.assertRaises(IOError, sout.readlines)
+            self.assertRaises(IOError, sout.readlines, 10)
 
             sin.close()
             sout.close()
@@ -92,8 +90,6 @@ class FileTest(IronPythonTestCase):
     # random number generator with a fixed value. Use a simple linear congruential
     # method to generate the random byte values.
 
-
-
     def test_read_write_fidelity(self):
         def randbyte():
             self.rng_seed = (1664525 * self.rng_seed) + 1013904223
@@ -102,6 +98,7 @@ class FileTest(IronPythonTestCase):
         data = ""
         for i in range(10 * 1024):
             data += chr(randbyte())
+        data = data.encode("latin")
 
         # Keep a copy of the data safe.
         orig_data = data
@@ -128,22 +125,22 @@ class FileTest(IronPythonTestCase):
         self.assertEqual(ord(data[0]), 163)
         self.assertEqual(ord(data[1]), 51)
 
-        with open(self.temp_file, 'w') as x:
+        with open(self.temp_file, 'w', encoding="latin") as x:
             x.write("a2\xa33\\u0163\x0F\x0FF\t\\\x0FF\x0FE\x00\x01\x7F\x7E\x80")
 
-        with open(self.temp_file) as x:
+        with open(self.temp_file, encoding="latin") as x:
             data = x.read()
 
         self.assertEqual(data, 'a2\xa33\\u0163\x0f\x0fF\t\\\x0fF\x0fE\x00\x01\x7F\x7E\x80')
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_cp27179(self):
-        # file.write() accepting Array[Byte]
+        # write() accepting Array[Byte]
         from System import Array, Byte
         data_string = 'abcdef\nghijkl\n\n'
         data = Array[Byte](list(map(Byte, list(map(ord, data_string)))))
 
-        with open(self.temp_file, 'w+') as f:
+        with open(self.temp_file, 'wb+') as f:
             f.write(data)
 
         with open(self.temp_file, 'r') as f:
@@ -163,8 +160,6 @@ class FileTest(IronPythonTestCase):
                 out += char
         return out
 
-
-
     # The following is the setup for a set of pattern mode tests that will check
     # some tricky edge cases for newline translation for both reading and writing.
     # The entry point is the test_patterns() function.
@@ -175,34 +170,34 @@ class FileTest(IronPythonTestCase):
         # start with (which also doubles as the value we should get back when we read in
         # binary mode) then the value we expect to get when reading in text mode and
         # finally the value we expect to get in universal newline mode.
-        read_patterns = (("\r", "\r", "\n"),
-                        ("\n", "\n", "\n"),
-                        ("\r\n", "\n", "\n"),
-                        ("\n\r", "\n\r", "\n\n"),
-                        ("\r\r", "\r\r", "\n\n"),
-                        ("\n\n", "\n\n", "\n\n"),
-                        ("\r\n\r\n", "\n\n", "\n\n"),
-                        ("\n\r\n\r", "\n\n\r", "\n\n\n"),
-                        ("The quick brown fox", "The quick brown fox", "The quick brown fox"),
-                        ("The \rquick\n brown fox\r\n", "The \rquick\n brown fox\n", "The \nquick\n brown fox\n"),
-                        ("The \r\rquick\r\n\r\n brown fox", "The \r\rquick\n\n brown fox", "The \n\nquick\n\n brown fox"))
+        read_patterns = ((b"\r", "\n", "\n"),
+                        (b"\n", "\n", "\n"),
+                        (b"\r\n", "\n", "\n"),
+                        (b"\n\r", "\n\n", "\n\n"),
+                        (b"\r\r", "\n\n", "\n\n"),
+                        (b"\n\n", "\n\n", "\n\n"),
+                        (b"\r\n\r\n", "\n\n", "\n\n"),
+                        (b"\n\r\n\r", "\n\n\n", "\n\n\n"),
+                        (b"The quick brown fox", "The quick brown fox", "The quick brown fox"),
+                        (b"The \rquick\n brown fox\r\n", "The \nquick\n brown fox\n", "The \nquick\n brown fox\n"),
+                        (b"The \r\rquick\r\n\r\n brown fox", "The \n\nquick\n\n brown fox", "The \n\nquick\n\n brown fox"))
 
         # Write mode test cases. Same deal as above but with one less member in each
         # tuple due to the lack of a universal newline write mode. The first value
         # represents the in-memory value we start with (and expect to write in binary
         # write mode) and the next value indicates the value we expect to end up on disk
         # in text mode.
-        write_patterns = (("\r", "\r"),
-                        ("\n", "\r\n"),
-                        ("\r\n", "\r\r\n"),
-                        ("\n\r", "\r\n\r"),
-                        ("\r\r", "\r\r"),
-                        ("\n\n", "\r\n\r\n"),
-                        ("\r\n\r\n", "\r\r\n\r\r\n"),
-                        ("\n\r\n\r", "\r\n\r\r\n\r"),
-                        ("The quick brown fox", "The quick brown fox"),
-                        ("The \rquick\n brown fox\r\n", "The \rquick\r\n brown fox\r\r\n"),
-                        ("The \r\rquick\r\n\r\n brown fox", "The \r\rquick\r\r\n\r\r\n brown fox"))
+        write_patterns = ((b"\r", b"\r"),
+                        (b"\n", b"\r\n"),
+                        (b"\r\n", b"\r\r\n"),
+                        (b"\n\r", b"\r\n\r"),
+                        (b"\r\r", b"\r\r"),
+                        (b"\n\n", b"\r\n\r\n"),
+                        (b"\r\n\r\n", b"\r\r\n\r\r\n"),
+                        (b"\n\r\n\r", b"\r\n\r\r\n\r"),
+                        (b"The quick brown fox", b"The quick brown fox"),
+                        (b"The \rquick\n brown fox\r\n", b"The \rquick\r\n brown fox\r\r\n"),
+                        (b"The \r\rquick\r\n\r\n brown fox", b"The \r\rquick\r\r\n\r\r\n brown fox"))
 
         # Test a specific read mode pattern.
         def test_read_pattern(pattern):
@@ -223,7 +218,7 @@ class FileTest(IronPythonTestCase):
                 contents = f.read()
 
             # Check it equals what we expected for this mode.
-            self.assertTrue(contents == pattern[mode])
+            self.assertEqual(contents, pattern[mode])
 
         # Test a specific write mode pattern.
         def test_write_pattern(pattern):
@@ -234,7 +229,10 @@ class FileTest(IronPythonTestCase):
         def test_write_mode(pattern, mode):
             # Write the raw data using the given mode.
             with open(self.temp_file, self.write_modes[mode][1]) as f:
-                f.write(pattern[0])
+                if self.write_modes[mode][0] == "binary":
+                    f.write(pattern[0])
+                else:
+                    f.write(pattern[0].decode("ascii"))
 
             # Read the data back in using binary mode (we tested this gets us back
             # unaltered data earlier).
@@ -242,7 +240,7 @@ class FileTest(IronPythonTestCase):
                 contents = f.read()
 
             # Check it equals what we expected for this mode.
-            self.assertTrue(contents == pattern[mode])
+            self.assertEqual(contents, pattern[mode])
 
         # Run through the read and write mode tests for all patterns.
         def test_patterns():
@@ -259,29 +257,20 @@ class FileTest(IronPythonTestCase):
     #                                                               (text mode result strings) (text mode result tell() result)
     #                                                               (universal mode result strings) (universal mode result tell() results)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_read_size(self):
-        read_size_tests = [("Hello", 1, ("H", "e", "l", "l", "o"), (1,2,3,4,5),
+        read_size_tests = [(b"Hello", 1, (b"H", b"e", b"l", b"l", b"o"), (1,2,3,4,5),
                                         ("H", "e", "l", "l", "o"), (1,2,3,4,5),
                                         ("H", "e", "l", "l", "o"), (1,2,3,4,5)),
-                        ("Hello", 2, ("He", "ll", "o"), (2,4,5),
+                        (b"Hello", 2, (b"He", b"ll", b"o"), (2,4,5),
                                         ("He", "ll", "o"), (2,4,5),
                                         ("He", "ll", "o"), (2,4,5))]
 
-        if is_posix:
-            read_size_tests.append(("H\re\n\r\nllo", 1, ("H", "\r", "e", "\n", "\r", "\n", "l", "l", "o"), (1,2,3,4,5,6,7, 8, 9),
-                                                ("H", "\r", "e", "\n", "\r", "\n", "l", "l", "o"), (1, 2, 3, 4, 5, 6, 7, 8, 9),
-                                                ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9)))
-            read_size_tests.append(("H\re\n\r\nllo", 2, ("H\r", "e\n", "\r\n", "ll", "o"), (2, 4, 6, 8, 9),
-                                                ("H\r", "e\n", "\r\n", "ll", "o"), (2, 4, 6, 8, 9),
-                                                ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9)))
-        else:
-            read_size_tests.append(("H\re\n\r\nllo", 1, ("H", "\r", "e", "\n", "\r", "\n", "l", "l", "o"), (1,2,3,4,5,6,7, 8, 9),
-                                                ("H", "\r", "e", "\n", "\n", "l", "l", "o"), (1,2,3,4,6,7,8,9),
-                                                ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1,2,3,4,6,7,8,9)))
-            read_size_tests.append(("H\re\n\r\nllo", 2, ("H\r", "e\n", "\r\n", "ll", "o"), (2, 4, 6, 8, 9),
-                                                ("H\r", "e\n", "\nl", "lo"), (2,4,7, 9),
-                                                ("H\n", "e\n", "\nl", "lo"), (2,4,7, 9)))
+        read_size_tests.append((b"H\re\n\r\nllo", 1, (b"H", b"\r", b"e", b"\n", b"\r", b"\n", b"l", b"l", b"o"), (1, 2, 3, 4, 5, 6, 7, 8, 9),
+                                            ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9),
+                                            ("H", "\n", "e", "\n", "\n", "l", "l", "o"), (1, 2, 3, 4, 6, 7, 8, 9)))
+        read_size_tests.append((b"H\re\n\r\nllo", 2, (b"H\r", b"e\n", b"\r\n", b"ll", b"o"), (2, 4, 6, 8, 9),
+                                            ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9),
+                                            ("H\n", "e\n", "\nl", "lo"), (2, 4, 7, 9)))
 
         for test in read_size_tests:
             # Write the test pattern to disk in binary mode.
@@ -301,13 +290,15 @@ class FileTest(IronPythonTestCase):
                     count = 0
                     while True:
                         data = f.read(size)
-                        if data == "":
+                        if not data:
                             self.assertTrue(count == len(strings))
                             break
                         count = count + 1
                         self.assertTrue(count <= len(strings))
-                        self.assertTrue(data == strings[count - 1])
-                        self.assertEqual(f.tell(), lengths[count-1])
+                        self.assertEqual(data, strings[count - 1])
+                        t = f.tell()
+                        # looks like a bug in CPython?
+                        self.assertEqual(2 if is_cpython and t == 340282367000166625996085689099021713410 else t, lengths[count-1])
                     f.close()
                     self.assertTrue(f.closed)
 
@@ -316,25 +307,21 @@ class FileTest(IronPythonTestCase):
     #                                                    (text mode result strings)
     #                                                    (universal mode result strings))
     def test_readline(self):
-        readline_tests = [("Mary had a little lamb", ("Mary had a little lamb", ),
+        readline_tests = [(b"Mary had a little lamb", (b"Mary had a little lamb", ),
                                                     ("Mary had a little lamb", ),
                                                     ("Mary had a little lamb", )),
-                        ("Mary had a little lamb\r", ("Mary had a little lamb\r", ),
-                                                    ("Mary had a little lamb\r", ),
+                        (b"Mary had a little lamb\r", (b"Mary had a little lamb\r", ),
+                                                    ("Mary had a little lamb\n", ),
                                                     ("Mary had a little lamb\n", )),
-                        ("Mary had a \rlittle lamb\r", ("Mary had a \rlittle lamb\r", ),
-                                                        ("Mary had a \rlittle lamb\r", ),
+                        (b"Mary had a \rlittle lamb\r", (b"Mary had a \rlittle lamb\r", ),
+                                                        ("Mary had a \n", "little lamb\n", ),
                                                         ("Mary had a \n", "little lamb\n"))]
 
         # wb doesn't change the output to just \n like on Windows (binary mode means nothing on POSIX)
-        if is_posix:
-            readline_tests.append(("Mary \r\nhad \na little lamb", ("Mary \r\n", "had \n", "a little lamb"),
-                                                        ("Mary \r\n", "had \n", "a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb")))
-        else:
-            readline_tests.append(("Mary \r\nhad \na little lamb", ("Mary \r\n", "had \n", "a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb"),
-                                                        ("Mary \n", "had \n", "a little lamb")))
+        readline_tests.append((b"Mary \r\nhad \na little lamb", (b"Mary \r\n", b"had \n", b"a little lamb"),
+                                                    ("Mary \n", "had \n", "a little lamb"),
+                                                    ("Mary \n", "had \n", "a little lamb")))
+
         for test in readline_tests:
             # Write the test pattern to disk in binary mode.
             with open(self.temp_file, "wb") as f:
@@ -348,13 +335,13 @@ class FileTest(IronPythonTestCase):
                     count = 0
                     while True:
                         data = f.readline()
-                        if data == "":
+                        if not data:
                             self.assertEqual(count, len(strings))
                             break
                         count = count + 1
+
                         self.assertTrue(count <= len(strings))
                         self.assertEqual(data, strings[count - 1])
-
 
     def format_tuple(self, tup):
         if tup == None:
@@ -370,51 +357,46 @@ class FileTest(IronPythonTestCase):
     # Test the 'newlines' attribute.
     # Format of the test data is the raw data written to the test file followed by a tuple representing the values
     # of newlines expected after each line is read from the file in universal newline mode.
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_newlines_attribute(self):
-        newlines_tests = (("123", (None, )),
-                        ("1\r\n2\r3\n", ("\r\n", ("\r\n", "\r"), ("\r\n", "\r", "\n"))),
-                        ("1\r2\n3\r\n", ("\r", ("\r", "\n"), ("\r\n", "\r", "\n"))),
-                        ("1\n2\r\n3\r", ("\n", ("\r\n", "\n"), ("\r\n", "\r", "\n"))),
-                        ("1\r\n2\r\n3\r\n", ("\r\n", "\r\n", "\r\n")),
-                        ("1\r2\r3\r", ("\r", "\r", "\r")),
-                        ("1\n2\n3\n", ("\n", "\n", "\n")))
+        newlines_tests = ((b"123", (None, )),
+                        (b"1\r\n2\r3\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\r2\n3\r\n", (('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\n2\r\n3\r", (('\n', '\r\n'), ('\n', '\r\n'), ('\r', '\n', '\r\n'))),
+                        (b"1\r\n2\r\n3\r\n", ("\r\n", "\r\n", "\r\n")),
+                        (b"1\r2\r3\r", ("\r", "\r", "\r")),
+                        (b"1\n2\n3\n", ("\n", "\n", "\n")))
 
         for test in newlines_tests:
             # Write the test pattern to disk in binary mode.
             with open(self.temp_file, "wb") as f:
                 f.write(test[0])
                 # Verify newlines isn't set while writing.
-                self.assertTrue(f.newlines == None)
+                self.assertFalse(hasattr(f, "newlines"))
 
-            # Verify that reading the file in binary or text mode won't set newlines.
-            with open(self.temp_file, "rb") as f:
-                data = f.read()
-                self.assertTrue(f.newlines == None)
-
+            # Verify that reading the file sets newlines.
             with open(self.temp_file, "r") as f:
                 data = f.read()
-                self.assertTrue(f.newlines == None)
+                self.assertEqual(f.newlines, test[1][-1])
 
             # Read file in universal mode line by line and verify we see the expected output at each stage.
             expected = test[1]
             with open(self.temp_file, "rU") as f:
-                self.assertTrue(f.newlines == None)
+                self.assertTrue(f.newlines is None)
                 count = 0
                 while True:
                     data = f.readline()
-                    if data == "":
+                    if not data:
                         break
                     self.assertTrue(count < len(expected))
-                    self.assertTrue(f.newlines == expected[count])
+                    self.assertEqual(f.newlines, expected[count])
                     count = count + 1
-
 
     ## coverage: a sequence of file operation
     @unittest.skipIf(is_posix, 'file sequence specific to windows (because of newlines)')
     def test_coverage(self):
         with open(self.temp_file, 'w') as f:
-            self.assertTrue(str(f).startswith("<open file '%s', mode 'w'" % self.temp_file))
+            self.assertTrue(str(f).startswith(("<_io.TextIOWrapper name=%r mode='w'") % self.temp_file), str(f))
+            self.assertFalse(f.closed)
             self.assertTrue(f.fileno() != -1)
             self.assertTrue(f.fileno() != 0)
 
@@ -423,20 +405,22 @@ class FileTest(IronPythonTestCase):
             f.writelines(["firstline\n"])
 
             f.close()
-            self.assertTrue(str(f).startswith("<closed file '%s', mode 'w'" % self.temp_file))
+            self.assertTrue(str(f).startswith(("<_io.TextIOWrapper name=%r mode='w'") % self.temp_file))
+            self.assertTrue(f.closed)
 
         # append
         with open(self.temp_file, 'a+') as f:
             f.writelines(['\n', 'secondline\n'])
 
             pos = len('secondline\n') + 1
-            f.seek(-1 * pos, 1)
+            f.seek(f.tell() - pos, 0)
 
             f.writelines(['thirdline\n'])
 
         # read
         with open(self.temp_file, 'r+', 512) as f:
-            f.seek(-1 * pos - 2, 2)
+            f.seek(0, 2)
+            f.seek(f.tell() - pos - 2, 0)
             self.assertEqual(f.readline(), 'e\n')
             self.assertEqual(f.readline(5), 'third')
             self.assertEqual(f.read(-1), 'line\n')
@@ -444,70 +428,58 @@ class FileTest(IronPythonTestCase):
 
         # read
         with open(self.temp_file, 'rb', 512) as f:
-            f.seek(-1 * pos - 2, 2)
-            self.assertEqual(f.readline(), 'e\r\n')
-            self.assertEqual(f.readline(5), 'third')
-            self.assertEqual(f.read(-1), 'line\r\n')
-            self.assertEqual(f.read(-1), '')
+            f.seek(0, 2)
+            f.seek(f.tell() - pos - 2, 0)
+            self.assertEqual(f.readline(), b'e\r\n')
+            self.assertEqual(f.readline(5), b'third')
+            self.assertEqual(f.read(-1), b'line\r\n')
+            self.assertEqual(f.read(-1), b'')
 
         ## file op in os
         os.unlink(self.temp_file)
 
         fd = os.open(self.temp_file, os.O_CREAT | os.O_WRONLY)
-        os.write(fd, "hello ")
+        os.write(fd, b"hello ")
         os.close(fd)
 
         fd = os.open(self.temp_file, os.O_APPEND | os.O_WRONLY)
-        os.write(fd, "world")
+        os.write(fd, b"world")
         os.close(fd)
 
         fd = os.open(self.temp_file, 0)
-        self.assertEqual(os.read(fd, 1024), "hello world")
+        self.assertEqual(os.read(fd, 1024), b"hello world")
         os.close(fd)
 
         os.unlink(self.temp_file)
 
     def test_encoding(self):
-        f = open(self.temp_file, 'w')
-        # we throw on flush, CPython throws on write, so both write & close need to catch
-        try:
-            f.write('\u6211')
-            f.close()
-            self.fail('UnicodeEncodeError should have been thrown')
-        except UnicodeEncodeError:
-            pass
-
-        if hasattr(sys, "setdefaultencoding"):
-            #and verify UTF8 round trips correctly
-            setenc = sys.setdefaultencoding
-            saved = sys.getdefaultencoding()
+        import locale
+        with open(self.temp_file, 'w') as f:
+            # succeeds or fails depending on the locale encoding
             try:
-                setenc('utf8')
-                with open(self.temp_file, 'w') as f:
+                '\u6211'.encode(locale.getpreferredencoding())
+            except UnicodeEncodeError:
+                with self.assertRaises(UnicodeEncodeError):
                     f.write('\u6211')
-
-                with open(self.temp_file, 'r') as f:
-                    txt = f.read()
-                self.assertEqual(txt, '\u6211')
-            finally:
-                setenc(saved)
+            else:
+                f.write('\u6211')
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_net_stream(self):
         import System
         fs = System.IO.FileStream(self.temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite)
-        with open(fs, "wb") as f:
-            f.write('hello\rworld\ngoodbye\r\n')
+        with open(fs) as f:
+            f.write(b'hello\rworld\ngoodbye\r\n')
 
         with open(self.temp_file, 'rb') as f:
-            self.assertEqual(f.read(), 'hello\rworld\ngoodbye\r\n')
+            self.assertEqual(f.read(), b'hello\rworld\ngoodbye\r\n')
 
         with open(self.temp_file, 'rU') as f:
             self.assertEqual(f.read(), 'hello\nworld\ngoodbye\n')
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
-    @unittest.skipIf(is_mono, 'Mono has a different GC setup, so we can not rely on the Collect to work the same')
     def test_file_manager(self):
+        import gc
+
         def return_fd1():
             f = open(self.temp_file, 'w')
             return f.fileno()
@@ -515,16 +487,12 @@ class FileTest(IronPythonTestCase):
         def return_fd2():
             return os.open(self.temp_file, 0)
 
-        import System
-
         fd = return_fd1()
-        System.GC.Collect()
-        System.GC.WaitForPendingFinalizers()
+        gc.collect()
         self.assertRaises(OSError, os.fdopen, fd)
 
         fd = return_fd2()
-        System.GC.Collect()
-        System.GC.WaitForPendingFinalizers()
+        gc.collect()
         f = os.fdopen(fd)
         f.close()
         self.assertRaises(OSError, os.fdopen, fd)
@@ -560,18 +528,6 @@ class FileTest(IronPythonTestCase):
             self.fail("Unreachable code reached") # should throw
         #any other exceptions fail
 
-    def test_inheritance_kwarg_override(self):
-        class TEST(file):
-            def __init__(self,fname,VERBOSITY=0):
-                file.__init__(self,fname,"w",1)
-                self.VERBOSITY = VERBOSITY
-
-        fname = r'sometext_%d.txt' % os.getpid()
-        f=TEST(fname, VERBOSITY=1)
-        self.assertEqual(f.VERBOSITY, 1)
-        f.close()
-        os.unlink(fname)
-
     # file newline handling test
     @unittest.skipIf(is_posix, "this test doesn't really make sense for posix since b doesn't change the behavior")
     def test_newline(self):
@@ -588,12 +544,11 @@ class FileTest(IronPythonTestCase):
                 self.assertTrue(a+b+c == norm)
             f.close()
 
-        self.assertRaises(TypeError, file, None) # arg must be string
-        self.assertRaises(TypeError, file, [])
-        self.assertRaises(TypeError, file, 1)
+        self.assertRaises(TypeError, open, None) # arg must be string
+        self.assertRaises(TypeError, open, [])
 
         norm   = "Hi\nHello\nHey\nBye\nAhoy\n"
-        unnorm = "Hi\r\nHello\r\nHey\r\nBye\r\nAhoy\r\n"
+        unnorm = b"Hi\r\nHello\r\nHey\r\nBye\r\nAhoy\r\n"
         f = open(fname, "wb")
         f.write(unnorm)
         f.close()
@@ -603,30 +558,13 @@ class FileTest(IronPythonTestCase):
 
         os.unlink(fname)
 
-    def test_creation(self):
-        f = file.__new__(file, None)
-        self.assertTrue(repr(f).startswith("<closed file '<uninitialized file>', mode '<uninitialized file>' at"))
-
-        self.assertRaises(TypeError, file, None)
-
-
-    def test_repr(self):
-        class x(file):
-            def __repr__(self): return 'abc'
-
-        fname = 'repr_does_not_exist_%d' % os.getpid()
-        f = x(fname, 'w')
-        self.assertEqual(repr(f), 'abc')
-        f.close()
-        os.unlink(fname)
-
     def test_truncate(self):
-
         # truncate()
         fname = 'abc.txt'
         with open(fname, 'w') as a:
             a.write('hello world\n')
             a.truncate()
+            a.truncate(None) # same as undefined
 
         with open(fname, 'r') as a:
             self.assertEqual(a.readlines(), ['hello world\n'])
@@ -639,22 +577,18 @@ class FileTest(IronPythonTestCase):
             a.truncate(6)
 
         with open(fname, 'r') as a:
-            if is_posix:
-                self.assertEqual(a.readlines(), ['hello\n'])
-            else:
-                self.assertEqual(a.readlines(), ['hello\r'])
+            self.assertEqual(a.readlines(), ['hello\n'])
 
         os.unlink(fname)
 
         # truncate(#) invalid args
         with open(fname, 'w') as a:
-            self.assertRaises(IOError, a.truncate, -1)
-            self.assertRaises(TypeError, a.truncate, None)
+            self.assertRaises(ValueError if is_cli else OSError, a.truncate, -1)
 
         # read-only file
         with open(fname, 'r') as a:
-            self.assertRaises(IOError, a.truncate)
-            self.assertRaises(IOError, a.truncate, 0)
+            self.assertRaises(ValueError, a.truncate)
+            self.assertRaises(ValueError, a.truncate, 0)
         os.unlink(fname)
 
         # std-out
@@ -667,27 +601,25 @@ class FileTest(IronPythonTestCase):
             with open(fname, 'w') as x:
                 self.assertEqual(x.mode, 'w')
             # don't allow empty modes
-            self.assertRaisesMessage(ValueError, 'empty mode string', file, 'abc', '')
+            self.assertRaisesMessage(ValueError, 'must have exactly one of read/write/append mode' if is_cli else "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
 
             # mode must start with valid value
-            self.assertRaisesMessage(ValueError, "mode string must begin with one of 'r', 'w', 'a' or 'U', not 'p'", file, 'abc', 'p')
+            self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
 
             # allow anything w/ U but r and w
-            self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw')
-            self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua')
-            self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw+')
-            self.assertRaisesMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua+')
+            err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
+            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw')
+            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua')
+            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw+')
+            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua+')
 
             # check invalid modes
-            self.assertRaises(ValueError, file, fname, 'pU')
-            self.assertRaises(ValueError, file, fname, 'pU+')
-            self.assertRaises(ValueError, file, fname, 'rFOOBAR')
+            self.assertRaises(ValueError, open, fname, 'pU')
+            self.assertRaises(ValueError, open, fname, 'pU+')
+            self.assertRaises(ValueError, open, fname, 'rFOOBAR')
         finally:
             os.unlink(fname)
 
-
-
-    @unittest.skipUnless(is_cli, 'Unstable with CPython')
     def test_cp16623(self):
         '''
         If this test ever fails randomly, there is a problem around file thread
@@ -733,56 +665,36 @@ class FileTest(IronPythonTestCase):
         #for line in lines:
         #    self.assertTrue(line in expected_lines, line)
 
-
-    def test_write_buffer(self):
+    def test_write_memoryview(self):
         try:
-            for mode in ('b', ''):
-                with open('foo', 'w+' + mode) as foo:
-                    b = buffer(b'hello world', 6)
-                    foo.write(b)
-
-                with open('foo', 'r') as foo:
-                    self.assertEqual(foo.readlines(), ['world'])
-
-            with open('foo', 'w+') as foo:
-                b = buffer('hello world', 6)
+            with open('foo', 'wb+') as foo:
+                b = memoryview(b'hello world')[6:]
                 foo.write(b)
             with open('foo', 'r') as foo:
                 self.assertEqual(foo.readlines(), ['world'])
 
             with open('foo', 'w+b') as foo:
-                b = buffer('hello world', 6)
+                b = memoryview(b'hello world')[6:]
                 foo.write(b)
 
-
             with open('foo', 'r') as foo:
-                if is_cpython:
-                    self.assertEqual(foo.readlines(), ['l\x00o\x00 \x00w\x00o\x00r\x00l\x00d\x00'])
-                else:
-                    self.assertEqual(foo.readlines(), ['world'])
+                self.assertEqual(foo.readlines(), ['world'])
 
         finally:
             self.delete_files("foo")
 
-    @unittest.skipIf(is_netcoreapp, "https://github.com/IronLanguages/ironpython2/issues/348")
     def test_errors(self):
-        try:
+        with self.assertRaises(OSError) as cm:
             open('some_file_that_really_does_not_exist')
-        except Exception as e:
-            self.assertEqual(e.errno, 2)
-        else:
-            self.fail("Unreachable code reached")
+        self.assertEqual(cm.exception.errno, 2)
 
-        try:
+        with self.assertRaises(OSError) as cm:
             open('path_too_long' * 100)
-        except Exception as e:
-            self.assertEqual(e.errno, 2)
-        else:
-            self.fail("Unreachable code reached")
+        self.assertEqual(cm.exception.errno, (36 if is_posix else 22) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else 2)
 
     def test_write_bytes(self):
         fname = "temp_ip_%d" % os.getpid()
-        f = open(fname, "w+")
+        f = open(fname, "wb+")
         try:
             f.write(b"Hello\n")
             f.close()
@@ -795,19 +707,22 @@ class FileTest(IronPythonTestCase):
 
     def test_kw_args(self):
         fname = 'some_test_file_%d.txt' % os.getpid()
-        open(file =fname, mode ='w').close()
+        open(file=fname, mode ='w').close()
         os.unlink(fname)
 
     def test_buffering_kwparam(self):
         #--Positive
         fname = 'some_test_file_%d.txt' % os.getpid()
-        for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647]:
-            f = open(file =fname, mode ='w', buffering=x)
+        for x in [-2147483648, -1, 1, 2, 1024, 2147483646, 2147483647]:
+            f = open(file=fname, mode='w', buffering=x)
             f.close()
             os.unlink(fname)
 
-        self.assertRaisesMessage(TypeError, "integer argument expected, got float",
-                                 file, fname, 'w', 3.14)
+        with self.assertRaises(ValueError): # can't have unbuffered text I/O
+            open(file=fname, mode='w', buffering=0)
+
+        self.assertRaisesMessage(TypeError, "expected int, got float" if is_cli else "integer argument expected, got float",
+                                 open, fname, 'w', 3.14)
 
         #--Negative
         for x in [None, "abc", "", [], tuple()]:
@@ -821,18 +736,16 @@ class FileTest(IronPythonTestCase):
     def test_open_with_BOM(self):
         """https://github.com/IronLanguages/main/issues/1088"""
         fileName = os.path.join(self.test_dir, "file_without_BOM.txt")
-        with open(fileName, "r") as f:
-            if is_posix: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
-            else: self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
+        with open(fileName, "r", encoding="latin") as f:
+            self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
-            self.assertEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
+            self.assertEqual(f.read(), b"\x42\xc3\x93\x4d\x0d\x0a")
 
         fileName = os.path.join(self.test_dir, "file_with_BOM.txt")
-        with open(fileName, "r") as f:
-            if is_posix: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
-            else: self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
+        with open(fileName, "r", encoding="latin") as f:
+            self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
-            self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
+            self.assertEqual(f.read(), b"\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
 
     def test_opener(self):
         data = "test message\n"
@@ -848,7 +761,7 @@ class FileTest(IronPythonTestCase):
         def negative_opener(path, flags):
             return -1
 
-        self.assertRaises(ValueError, open, "", "r", opener=negative_opener)
+        self.assertRaises(ValueError if is_cli or sys.version_info >= (3,5) else SystemError, open, "", "r", opener=negative_opener)
 
     def test_opener_none_fd(self):
         def none_opener(path, flags):
@@ -860,6 +773,5 @@ class FileTest(IronPythonTestCase):
         uncallable_opener = "uncallable_opener"
 
         self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
-
 
 run_test(__name__)

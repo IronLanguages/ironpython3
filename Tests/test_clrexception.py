@@ -92,7 +92,7 @@ class ClrExceptionTest(unittest.TestCase):
         # Tests for inexact mappings
 
         # These used to have exact mappings with IronPython 2
-        self.clr_to_py_positive(System.IO.IOException, SystemError, msg = "System.IO.IOException -> SystemError")
+        self.clr_to_py_positive(System.IO.IOException, IOError, msg = "System.IO.IOException -> IOError")
         self.clr_to_py_positive(System.ComponentModel.Win32Exception, WindowsError, msg ="System.ComponentModel.Win32Exception -> WindowsError")
 
         # Let CLR exception class A map to Python error type B;

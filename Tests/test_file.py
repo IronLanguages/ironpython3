@@ -455,7 +455,7 @@ class FileTest(IronPythonTestCase):
     def test_encoding(self):
         import locale
         with open(self.temp_file, 'w') as f:
-            # succeeds or failes depending on the locale encoding
+            # succeeds or fails depending on the locale encoding
             try:
                 '\u6211'.encode(locale.getpreferredencoding())
             except UnicodeEncodeError:

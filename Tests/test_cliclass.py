@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -12,6 +12,13 @@ if is_cli:
 
 @skipUnlessIronPython()
 class CliClassTestCase(IronPythonTestCase):
+
+    def assertNotWarns(self, warning, callable, *args, **kwds):
+        import warnings
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter('always')
+            result = callable(*args, **kwds)
+            self.assertFalse(any(item.category == warning for item in warning_list))
 
     def setUp(self):
         super(CliClassTestCase, self).setUp()
@@ -106,14 +113,11 @@ class CliClassTestCase(IronPythonTestCase):
         MyDerivedExceptionComparer.__bases__ = (System.Exception, System.Collections.IComparer)
         MyDerivedExceptionComparer.__bases__ = (MyExceptionComparer,)
 
-        class OldType:
-            def OldTypeMethod(self): return "OldTypeMethod"
         class NewType:
             def NewTypeMethod(self): return "NewTypeMethod"
-        class MyOtherExceptionComparer(System.Exception, System.Collections.IComparer, OldType, NewType):
+        class MyOtherExceptionComparer(System.Exception, System.Collections.IComparer, NewType):
             def Compare(self, x, y): return 0
         MyExceptionComparer.__bases__ = MyOtherExceptionComparer.__bases__
-        self.assertEqual(e.OldTypeMethod(), "OldTypeMethod")
         self.assertEqual(e.NewTypeMethod(), "NewTypeMethod")
         self.assertTrue(isinstance(e, System.Exception))
         self.assertTrue(isinstance(e, System.Collections.IComparer))
@@ -134,7 +138,7 @@ class CliClassTestCase(IronPythonTestCase):
             class Foo(System.Collections.Generic.IEnumerable): pass
         except TypeError:
             (exc_type, exc_value, exc_traceback) = sys.exc_info()
-            self.assertTrue(exc_value.message.__contains__("cannot inhert from open generic instantiation"))
+            self.assertTrue(str(exc_value).__contains__("cannot inhert from open generic instantiation"))
 
     def test_interface_slots(self):
 
@@ -185,17 +189,11 @@ class CliClassTestCase(IronPythonTestCase):
             C.newTypeAttr = 1
             self.assertEqual(hasattr(C, 'newTypeAttr'), True)
 
-            class OldClass: pass
-
-            if isinstance(C, type(OldClass)):
-                C.__dict__ = dict(C.__dict__)
-                self.assertEqual(hasattr(C, 'newTypeAttr'), True)
-            else:
-                try:
-                    C.__dict__ = {}
-                    self.fail("Unreachable code reached")
-                except AttributeError:
-                    pass
+            try:
+                C.__dict__ = {}
+                self.fail("Unreachable code reached")
+            except AttributeError:
+                pass
 
             # replace an instance dictionary (containing non-string keys) w/ a new one.
             a.newInstanceAttr = 1
@@ -207,14 +205,9 @@ class CliClassTestCase(IronPythonTestCase):
             self.assertEqual(hasattr(a, 'abc'), True)
             self.assertEqual(getattr(a, 'abc'), 'xyz')
 
-
-        class OldClass:
-            def __init__(self):  pass
-
         class NewClass(object):
             def __init__(self):  pass
 
-        CheckDictionary(OldClass)
         CheckDictionary(NewClass)
 
     def test_generic_TypeGroup(self):
@@ -423,7 +416,7 @@ class CliClassTestCase(IronPythonTestCase):
         self.assertTrue(test.TestProperties(a, [], ['bar']))
 
         x = test.GetClassName(a)
-        self.assertEqual(x, 'classobj')
+        self.assertEqual(x, 'IronPython.Runtime.Types.PythonType')
 
         x = test.CallCanConvertToForInt(a)
         self.assertEqual(x, False)
@@ -444,7 +437,7 @@ class CliClassTestCase(IronPythonTestCase):
         self.assertEqual(x.Count, 0)
 
         x = test.GetProperties(a)
-        self.assertTrue(x.Count > 0)
+        self.assertTrue(x.Count == 0)
 
         # Ensure GetProperties checks the attribute dictionary
         a = foo()
@@ -657,7 +650,7 @@ End Class""")
 
         try:
             name = os.path.join(self.temporary_dir, 'vbproptest%f.dll' % (r.random()))
-            x = self.run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)
+            x = self.run_vbc('/target:library %s "/out:%s"' % (fname, name))
             self.assertEqual(x, 0)
 
             clr.AddReferenceToFileAndPath(name)
@@ -738,7 +731,7 @@ End Class""")
 
         try:
             name = os.path.join(self.temporary_dir, 'vbproptest%f.dll' % (r.random()))
-            self.assertEqual(self.run_vbc('/target:library vbproptest1.vb /out:"%s"' % name), 0)
+            self.assertEqual(self.run_vbc('/target:library %s /out:"%s"' % (fname, name)), 0)
 
             clr.AddReferenceToFileAndPath(name)
             import VbPropertyTest, VbPropertyTest2
@@ -825,7 +818,7 @@ End Class""")
     def test_nonzero(self):
         from System import Single, Byte, SByte, Int16, UInt16, Int64, UInt64
         for t in [Single, Byte, SByte, Int16, UInt16, Int64, UInt64]:
-            self.assertTrue(hasattr(t, '__nonzero__'))
+            self.assertTrue(hasattr(t, '__bool__'))
             if t(0): self.fail("Unreachable code reached")
             if not t(1): self.fail("Unreachable code reached")
 
@@ -1061,17 +1054,18 @@ End Class""")
 
     def test_enum_truth(self):
         # zero enums are false, non-zero enums are true
-        self.assertTrue(not System.StringSplitOptions.None)
+        StringSplitOptionsNone = getattr(System.StringSplitOptions, "None")
+        self.assertTrue(not StringSplitOptionsNone)
         self.assertTrue(System.StringSplitOptions.RemoveEmptyEntries)
-        self.assertEqual(System.StringSplitOptions.None.__nonzero__(), False)
-        self.assertEqual(System.StringSplitOptions.RemoveEmptyEntries.__nonzero__(), True)
+        self.assertEqual(StringSplitOptionsNone.__bool__(), False)
+        self.assertEqual(System.StringSplitOptions.RemoveEmptyEntries.__bool__(), True)
 
     def test_enum_repr(self):
         clr.AddReference('IronPython')
         from IronPython.Runtime import ModuleOptions
-        self.assertEqual(repr(ModuleOptions.WithStatement), 'IronPython.Runtime.ModuleOptions.WithStatement')
-        self.assertEqual(repr(ModuleOptions.WithStatement | ModuleOptions.TrueDivision),
-                '<enum IronPython.Runtime.ModuleOptions: TrueDivision, WithStatement>')
+        self.assertEqual(repr(ModuleOptions.ShowClsMethods), 'IronPython.Runtime.ModuleOptions.ShowClsMethods')
+        self.assertEqual(repr(ModuleOptions.ShowClsMethods | ModuleOptions.Optimized),
+                '<enum IronPython.Runtime.ModuleOptions: ShowClsMethods, Optimized>')
 
     def test_bad_inheritance(self):
         """verify a bad inheritance reports the type name you're inheriting from"""
@@ -1083,7 +1077,7 @@ End Class""")
         self.assertRaisesPartialMessage(TypeError, 'System.Single', f)
         self.assertRaisesPartialMessage(TypeError, 'System.Version', g)
 
-    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
+    @unittest.skipIf(is_netcoreapp21, "TODO: figure out")
     def test_disposable(self):
         """classes implementing IDisposable should automatically support the with statement"""
         from IronPythonTest import DisposableTest
@@ -1238,7 +1232,7 @@ End Class""")
                     self.assertEqual(newVal, value)
                 except RuntimeError as e:
                     # we hit one of our recursive structures...
-                    self.assertEqual(e.message, "maximum recursion depth exceeded in cmp")
+                    self.assertEqual(str(e), "maximum recursion depth exceeded in cmp")
                     self.assertTrue(type(newVal) is list or type(newVal) is dict)
 
         # passing an unknown format raises...
@@ -1277,12 +1271,10 @@ End Class""")
 
         try:
             exec(" print 1")
-        except Exception as tempX:
-            pass
+        except Exception as err:
+            tempX = err
         newX = pickle.loads(pickle.dumps(tempX))
-        for attr in ['args', 'filename', 'text', 'lineno', 'msg', 'offset', 'print_file_and_line',
-                    'message',
-                    ]:
+        for attr in ['args', 'filename', 'text', 'lineno', 'msg', 'offset', 'print_file_and_line']:
             self.assertEqual(eval("newX.%s" % attr),
                     eval("tempX.%s" % attr))
 
@@ -1330,8 +1322,9 @@ End Class""")
         self.assertEqual(System.Char.Parse('a') + 'bc', 'abc')
 
     def test_import_star_enum(self):
-        from System.AttributeTargets import *
-        self.assertTrue('ReturnValue' in dir())
+        d = {}
+        exec("from System.AttributeTargets import *", d, d)
+        self.assertTrue('ReturnValue' in d)
 
     def test_cp11971(self):
         import os
@@ -1453,7 +1446,6 @@ if not hasattr(A, 'Rank'):
         # make sure you can do dir on everything in System which
         # includes special types like ArgIterator and Func
         for attr in dir(System):
-            if is_netcoreapp and attr in ["ArgIterator", "ReadOnlySpan"]: continue # TODO: https://github.com/IronLanguages/dlr/issues/74
             dir(getattr(System, attr))
 
         if is_netcoreapp:
@@ -1479,8 +1471,8 @@ if not hasattr(A, 'Rank'):
         d["a"] = "foo"
         d["b"] = "bar"
         it = iter(d)
-        self.assertEqual(it.next().Key, 'a')
-        self.assertEqual(it.next().Key, 'b')
+        self.assertEqual(it.__next__().Key, 'a')
+        self.assertEqual(it.__next__().Key, 'b')
 
     def test_abstract_class_no_interface_implself(self):
         # this can't be defined in C# or VB, it's a class which is
@@ -1566,7 +1558,7 @@ if not hasattr(A, 'Rank'):
         try:
             self.run_ilasm("/dll " + testilcode)
 
-            clr.AddReferenceToFileAndPath(os.path.join(self.temporary_dir, 'testilcode.dll'))
+            clr.AddReferenceToFileAndPath(os.path.join(self.temporary_dir, 'testilcode_%d.dll' % os.getpid()))
             import AbstractILTest
 
             class x(AbstractILTest):
@@ -1655,9 +1647,7 @@ if not hasattr(A, 'Rank'):
 
     def test_weird_compare(self):
         from IronPythonTest import WithCompare
-        a, b = WithCompare(), WithCompare()
-        self.assertEqual(cmp(a, b), cmp(id(a), id(b)))
-        self.assertTrue('__cmp__' not in WithCompare.__dict__)
+        self.assertTrue('__cmp__' not in WithCompare.__dict__) # TODO: revisit this once we decide how to map CompareTo to Python
 
     def test_convert_int64_to_float(self):
         self.assertEqual(float(System.Int64(42)), 42.0)
@@ -1905,7 +1895,7 @@ class Product(object):
 class TheTestCase(IronPythonTestCase):
     def test_extension_method(self):
         products = [Product(prod[0], prod[1], prod[2]) for prod in
-            ('DrillRod', 'DR123', 45), ('Flange', 'F423', 12), ('Gizmo', 'G9872', 214), ('Sprocket', 'S534', 42)]
+            (('DrillRod', 'DR123', 45), ('Flange', 'F423', 12), ('Gizmo', 'G9872', 214), ('Sprocket', 'S534', 42))]
 
         pd = products.Where(lambda prod: prod.Q < 40).Select(lambda prod: (prod.Cat, prod.ID) )
         self.assertEqual(''.join(str(prod) for prod in pd), "('Flange', 'F423')")

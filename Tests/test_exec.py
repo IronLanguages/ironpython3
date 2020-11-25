@@ -252,11 +252,11 @@ class MyDict(dict):
 TryExecG("tc.assertEqual(x, 'global_x')", None)
 TryExecGL("tc.assertEqual(x, 'global_x')", None, None)
 
-tc.assertRaises(TypeError, TryExecG, "print x", Nothing())
-tc.assertRaises(TypeError, TryExecGL, "print x", Nothing(), None)
+tc.assertRaises(TypeError, TryExecG, "print(x)", Nothing())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", Nothing(), None)
 
-tc.assertRaises(TypeError, TryExecG, "print x", Mapping())
-tc.assertRaises(TypeError, TryExecGL, "print x", Mapping(), None)
+tc.assertRaises(TypeError, TryExecG, "print(x)", Mapping())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", Mapping(), None)
 
 TryExecG("AreEqual(x, 17)", MakeDict(17))
 TryExecGL("AreEqual(x, 19)", MakeDict(19), None)
@@ -265,7 +265,7 @@ TryExecGL("AreEqual(x, 19)", MakeDict(19), None)
 #TryExecGL("AreEqual(x, 29)", MyDict(29), None)
 
 TryExecGL("AreEqual(x, 31)", None, MakeDict(31))
-tc.assertRaises(TypeError, TryExecGL, "print x", None, Nothing())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", None, Nothing())
 
 TryExecGL("AreEqual(x, 37)", None, Mapping(37))
 #TryExecGL("AreEqual(x, 41)", None, MyDict(41))

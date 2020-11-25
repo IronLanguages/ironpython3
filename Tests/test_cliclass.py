@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -1474,6 +1474,7 @@ if not hasattr(A, 'Rank'):
         self.assertEqual(it.__next__().Key, 'a')
         self.assertEqual(it.__next__().Key, 'b')
 
+    @unittest.skipIf(is_mono, "Causes an abort on mono, needs debug")
     def test_abstract_class_no_interface_implself(self):
         # this can't be defined in C# or VB, it's a class which is
         # abstract and therefore doesn't implement the interface method

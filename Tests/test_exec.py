@@ -2,19 +2,24 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-from iptest.assert_util import *
+import os
+
+from iptest import IronPythonTestCase, is_cli, run_test
+
+tc = IronPythonTestCase('__init__')
+tc.setUp()
 
 ##
 ## to test how exec related to globals/locals
 ##
 
 def _contains(large, small):
-    for (key, value) in list(small.items()):
-        Assert(large[key] == value)
+    for (key, value) in small.items():
+        tc.assertEqual(large[key], value)
 
 def _not_contains(dict, *keylist):
     for key in keylist:
-        Assert(key not in dict)
+        tc.assertTrue(key not in dict)
 
 ## exec without in something
 x = 1
@@ -54,7 +59,7 @@ g2 = {'x':3}
 try:
     exec("x, y", g2)
 except NameError: pass
-else:  Assert(False, "should throw NameError exception")
+else:  tc.assertTrue(False, "should throw NameError exception")
 
 exec("y = 'ironpython'", g2)
 _contains(g2, {"x":3, "y":"ironpython"})
@@ -138,7 +143,7 @@ class C:
     exec('a = unique_global_name')
     exec("if unique_global_name != 987654321: raise AssertionError('cannott see unique_global_name')")
 
-AreEqual(C.a, 987654321)
+tc.assertEqual(C.a, 987654321)
 
 def f():
     exec("if unique_global_name != 987654321: raise AssertionError('cannot see unique_global_name')")
@@ -155,27 +160,11 @@ f()
 try:
     exec(3)
 except TypeError:    pass
-else: Fail("Should already thrown (3)")
+else: tc.fail("Should already thrown (3)")
 
 # verify exec(...) takes a code object
 codeobj = compile ('1+1', '<compiled code>', 'exec')
 exec(codeobj)
-
-# verify exec(...) takes a file...
-fn = path_combine(testpath.temporary_dir, 'testfile.tmp')
-write_to_file(fn, "x = [1,2,3,4,5]\nx.reverse()\nAssert(x == [5,4,3,2,1])\n")
-
-f = file(fn, "r")
-exec(f)
-Assert(x == [5,4,3,2,1])
-f.close()
-
-# and now verify it'll take a .NET Stream as well...
-if is_cli:
-    import System
-    f = System.IO.FileStream(fn, System.IO.FileMode.Open)
-    exec(f)
-    f.Close()
 
 # verify that exec'd code has access to existing locals
 qqq = 3
@@ -185,7 +174,7 @@ exec('qqq+1')
 del qqq
 try:   exec('qqq+1')
 except NameError:   pass
-else:  Fail("should already thrown (qqq+1)")
+else:  tc.fail("should already thrown (qqq+1)")
 
 exec('qqq+1', {'qqq':99})
 
@@ -197,19 +186,19 @@ exec('qqq+1', {'qqq':99})
 myloc = {}
 myglob = {}
 exec("a = 1; global b; b = 1", myglob, myloc)
-Assert("a" in myloc)
-Assert("a" not in myglob)
-Assert("b" in myglob)
-Assert("b" not in myloc)
+tc.assertTrue("a" in myloc)
+tc.assertTrue("a" not in myglob)
+tc.assertTrue("b" in myglob)
+tc.assertTrue("b" not in myloc)
 
 # Statement form of exec.
 myloc = {}
 myglob = {}
 exec("a = 1; global b; b = 1", myglob, myloc)
-Assert("a" in myloc)
-Assert("a" not in myglob)
-Assert("b" in myglob)
-Assert("b" not in myloc)
+tc.assertTrue("a" in myloc)
+tc.assertTrue("a" not in myglob)
+tc.assertTrue("b" in myglob)
+tc.assertTrue("b" not in myloc)
 
 
 # Explicit global scope implies the same local scope.
@@ -218,19 +207,19 @@ Assert("b" not in myloc)
 myloc = {}
 myglob = {}
 exec("a = 1; global b; b = 1", myglob)
-Assert("a" in myglob)
-Assert("a" not in myloc)
-Assert("b" in myglob)
-Assert("b" not in myloc)
+tc.assertTrue("a" in myglob)
+tc.assertTrue("a" not in myloc)
+tc.assertTrue("b" in myglob)
+tc.assertTrue("b" not in myloc)
 
 # Statement form of exec.
 myloc = {}
 myglob = {}
 exec("a = 1; global b; b = 1", myglob)
-Assert("a" in myglob)
-Assert("a" not in myloc)
-Assert("b" in myglob)
-Assert("b" not in myloc)
+tc.assertTrue("a" in myglob)
+tc.assertTrue("a" not in myloc)
+tc.assertTrue("b" in myglob)
+tc.assertTrue("b" not in myloc)
 
 # Testing interesting exec cases
 
@@ -246,7 +235,7 @@ class Nothing:
     pass
 
 def MakeDict(value):
-    return { 'AreEqual' : AreEqual, 'AssertError' : AssertError, 'x' : value, 'str' : str }
+    return { 'AreEqual' : tc.assertEqual, 'AssertError' : tc.assertRaises, 'x' : value, 'str' : str }
 
 class Mapping:
     def __init__(self, value = None):
@@ -260,14 +249,14 @@ class MyDict(dict):
     def __getitem__(self, item):
         return self.values[item]
 
-TryExecG("AreEqual(x, 'global_x')", None)
-TryExecGL("AreEqual(x, 'global_x')", None, None)
+TryExecG("tc.assertEqual(x, 'global_x')", None)
+TryExecGL("tc.assertEqual(x, 'global_x')", None, None)
 
-AssertError(TypeError, TryExecG, "print x", Nothing())
-AssertError(TypeError, TryExecGL, "print x", Nothing(), None)
+tc.assertRaises(TypeError, TryExecG, "print(x)", Nothing())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", Nothing(), None)
 
-AssertError(TypeError, TryExecG, "print x", Mapping())
-AssertError(TypeError, TryExecGL, "print x", Mapping(), None)
+tc.assertRaises(TypeError, TryExecG, "print(x)", Mapping())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", Mapping(), None)
 
 TryExecG("AreEqual(x, 17)", MakeDict(17))
 TryExecGL("AreEqual(x, 19)", MakeDict(19), None)
@@ -276,7 +265,7 @@ TryExecGL("AreEqual(x, 19)", MakeDict(19), None)
 #TryExecGL("AreEqual(x, 29)", MyDict(29), None)
 
 TryExecGL("AreEqual(x, 31)", None, MakeDict(31))
-AssertError(TypeError, TryExecGL, "print x", None, Nothing())
+tc.assertRaises(TypeError, TryExecGL, "print(x)", None, Nothing())
 
 TryExecGL("AreEqual(x, 37)", None, Mapping(37))
 #TryExecGL("AreEqual(x, 41)", None, MyDict(41))
@@ -289,7 +278,7 @@ def f(l):
 
 l = []
 exec("pass", f(l))
-AreEqual(l, ["called f"])
+tc.assertEqual(l, ["called f"])
 
 def g(l):
     l.append("called g")
@@ -297,47 +286,50 @@ def g(l):
 
 l = []
 exec("pass", f(l), g(l))
-AreEqual(l, ["called f", "called g"])
+tc.assertEqual(l, ["called f", "called g"])
 
-# testing exec accepts \n eolns only
-def test_eolns():
-    def f1(sep): exec('x = 2$y=4$'.replace('$', sep))
-    def f2(sep): exec('''x = 3$y = 5$'''.replace('$', sep))
-    def f3(sep): exec("exec '''x = 3$y = 5$'''".replace('$', sep))
+class ExecTestCase(IronPythonTestCase):
 
-    for x in [f1, f2, f3]:
-        if is_cli: #http://ironpython.codeplex.com/workitem/27991
-            AssertError(SyntaxError, x, '\r\n')
-            AssertError(SyntaxError, x, '\r')
-        else:
-            temp = x('\r\n')
-            temp = x('\r')
-        
-        AssertError(SyntaxError, x, '\a')
-        x('\n')
+    # testing exec accepts \n eolns only
+    def test_eolns(self):
+        def f1(sep): exec('x = 2$y=4$'.replace('$', sep))
+        def f2(sep): exec('''x = 3$y = 5$'''.replace('$', sep))
+        def f3(sep): exec("exec('''x = 3$y = 5$''')".replace('$', sep))
 
-def test_set_builtins():
-    g = {}
-    exec("", g, None)
-    Assert('__builtins__' in list(g.keys()))
+        for x in [f1, f2, f3]:
+            if is_cli: #http://ironpython.codeplex.com/workitem/27991
+                self.assertRaises(SyntaxError, x, '\r\n')
+                self.assertRaises(SyntaxError, x, '\r')
+            else:
+                temp = x('\r\n')
+                temp = x('\r')
 
-def test_builtins_type():
-    x, y = {}, {}
-    exec('abc = 42', x, y)
-    AreEqual(type(x['__builtins__']), dict)
+            self.assertRaises(SyntaxError, x, '\a')
+            x('\n')
 
-def test_exec_locals():
-    exec("""    
+    def test_set_builtins(self):
+        g = {}
+        exec("", g, None)
+        self.assertTrue('__builtins__' in g.keys())
+
+    def test_builtins_type(self):
+        x, y = {}, {}
+        exec('abc = 42', x, y)
+        self.assertEqual(type(x['__builtins__']), dict)
+
+    def test_exec_locals(self):
+        tc = self
+        exec("""
 def body():
-    AreEqual('anythingatall' in locals(), False)
+    tc.assertEqual('anythingatall' in locals(), False)
 
 body()
 foozbab = 2
 def body():
-    AreEqual('foozbab' in locals(), False)
+    tc.assertEqual('foozbab' in locals(), False)
 
 body()
-    
+
 """)
 
 run_test(__name__)

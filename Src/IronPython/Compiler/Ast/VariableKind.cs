@@ -25,6 +25,13 @@ namespace IronPython.Compiler.Ast {
         /// 
         /// Should only appear in global (top level) lambda.
         /// </summary>
-        Global
+        Global,
+
+        /// <summary>
+        /// Nonlocal variable.
+        ///
+        /// Provides a by-reference access to a local variable in an outer scope.
+        /// </summary>
+        Nonlocal
     }
 }

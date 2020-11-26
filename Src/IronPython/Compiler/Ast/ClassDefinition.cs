@@ -114,12 +114,15 @@ namespace IronPython.Compiler.Ast {
                     return null;
                 }
 
-                return variable;
+                if (variable.Kind != VariableKind.Nonlocal) {
+                    return variable;
+                }
             }
 
             // Try to bind in outer scopes, if we have an unqualified exec we need to leave the
             // variables as free for the same reason that locals are accessed by name.
-            for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
+            bool stopAtGlobal = variable?.Kind == VariableKind.Nonlocal;
+            for (ScopeStatement parent = Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = parent.Parent) {
                 if (parent.TryBindOuter(this, reference, out variable)) {
                     return variable;
                 }

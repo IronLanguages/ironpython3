@@ -30,6 +30,7 @@ namespace IronPython.Compiler.Ast {
         private ClosureInfo[] _closureVariables;                        // closed over variables, bool indicates if we accessed it in this scope.
         private List<PythonVariable> _freeVars;                         // list of variables accessed from outer scopes
         private List<string> _globalVars;                               // global variables accessed from this scope
+        private List<string> _nonlocalVars;                             // nonlocal variables accessed from this scope
         private List<string> _cellVars;                                 // variables accessed from nested scopes
         private Dictionary<string, PythonReference> _references;        // names of all variables referenced, null after binding completes
 
@@ -184,12 +185,17 @@ namespace IronPython.Compiler.Ast {
 
 
         internal void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
+            Debug.Assert(variable?.Kind is VariableKind.Local or VariableKind.Parameter);
+
             if (_freeVars == null) {
                 _freeVars = new List<PythonVariable>();
             }
 
             if (!_freeVars.Contains(variable)) {
                 _freeVars.Add(variable);
+                if (TryGetVariable(variable.Name, out PythonVariable nonlocal) && nonlocal.Kind is VariableKind.Nonlocal) {
+                    variable.Deleted = variable.Deleted || nonlocal.Deleted;
+                }
             }
         }
 
@@ -273,6 +279,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        // TODO: add NonlocalVariables for the benefit of FunctionCode
+
         internal Type GetClosureTupleType() {
             if (TupleCells > 0) {
                 Type[] args = new Type[TupleCells];
@@ -331,6 +339,9 @@ namespace IronPython.Compiler.Ast {
             if (_references != null) {
                 foreach (var reference in _references.Values) {
                     reference.PythonVariable = BindReference(binder, reference);
+                    if (reference.PythonVariable is null && IsReferencedNonlocal(reference.Name)) {
+                        binder.ReportSyntaxError($"no binding for nonlocal '{reference.Name}' found", this); // TODO: provide correct node
+                    }
                 }
             }
         }
@@ -350,10 +361,10 @@ namespace IronPython.Compiler.Ast {
             if (FreeVariables != null && FreeVariables.Count > 0) {
                 LocalParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
 
-                foreach (var variable in _freeVars) {
-                    var parentClosure = Parent._closureVariables;
-                    Debug.Assert(parentClosure != null);
+                var parentClosure = Parent._closureVariables;
+                Debug.Assert(parentClosure != null);
 
+                foreach (var variable in FreeVariables) {
                     for (int i = 0; i < parentClosure.Length; i++) {
                         if (parentClosure[i].Variable == variable) {
                             _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(LocalParentTuple, String.Format("Item{0:D3}", i)), null);
@@ -372,7 +383,10 @@ namespace IronPython.Compiler.Ast {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
                     if (!HasClosureVariable(closureVariables, variable) &&
-                        !variable.IsGlobal && (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
+                        !variable.IsGlobal &&
+                        variable.Kind != VariableKind.Nonlocal &&
+                        (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
+
                         if (closureVariables == null) {
                             closureVariables = new List<ClosureInfo>();
                         }
@@ -440,6 +454,10 @@ namespace IronPython.Compiler.Ast {
             return _references != null && _references.TryGetValue(name, out reference);
         }
 
+        private bool IsReferencedNonlocal(string name) {
+            return _nonlocalVars != null && _nonlocalVars.Contains(name);
+        }
+
         internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind) {
             EnsureVariables();
             Debug.Assert(!Variables.ContainsKey(name));
@@ -454,6 +472,26 @@ namespace IronPython.Compiler.Ast {
                 return CreateVariable(name, VariableKind.Local);
             }
             return variable;
+        }
+
+        private PythonVariable CreateNonlocalVariable(string name) {
+            EnsureVariables();
+            Debug.Assert(!Variables.ContainsKey(name));
+            Debug.Assert(!IsReferenced(name));
+            PythonReference reference = Reference(name);
+            PythonVariable variable;
+            Variables[name] = variable = new PythonReferenceVariable(reference, this);
+            return variable;
+        }
+
+        internal void EnsureNonlocalVariable(string name) {
+            if (_nonlocalVars == null) {
+                _nonlocalVars = new List<string>();
+            }
+            if (!_nonlocalVars.Contains(name)) {
+                CreateNonlocalVariable(name);
+                _nonlocalVars.Add(name);
+            }
         }
 
         internal PythonVariable DefineParameter(string name) {
@@ -660,14 +698,14 @@ namespace IronPython.Compiler.Ast {
                 return GlobalParent.ModuleVariables[variable];
             }
 
-            Debug.Assert(_variableMapping.ContainsKey(variable));
-            return _variableMapping[variable];
+            Debug.Assert(_variableMapping.ContainsKey(variable.LimitVariable));
+            return _variableMapping[variable.LimitVariable];
         }
 
         internal void CreateVariables(ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
-                    if (variable.Kind != VariableKind.Global) {
+                    if (variable.Kind is VariableKind.Local or VariableKind.Parameter) {
                         if (GetVariableExpression(variable) is ClosureExpression closure) {
                             init.Add(closure.Create());
                             locals.Add((MSAst.ParameterExpression)closure.ClosureCell);

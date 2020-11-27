@@ -30,7 +30,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_scope.ScopeTests('testGlobalInParallelNestedFunctions'))
         suite.addTest(test.test_scope.ScopeTests('testInteractionWithTraceFunc'))
         suite.addTest(test.test_scope.ScopeTests('testLambdas'))
-        suite.addTest(test.test_scope.ScopeTests('testLeaks'))
+        #suite.addTest(test.test_scope.ScopeTests('testLeaks')) # https://github.com/IronLanguages/ironpython3/issues/1056
         suite.addTest(test.test_scope.ScopeTests('testListCompLocalVars'))
         suite.addTest(test.test_scope.ScopeTests('testLocalsClass'))
         suite.addTest(test.test_scope.ScopeTests('testLocalsClass_WithTrace'))

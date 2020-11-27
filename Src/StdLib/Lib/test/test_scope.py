@@ -422,10 +422,6 @@ class ScopeTests(unittest.TestCase):
         for i in range(100):
             f1()
 
-        import sys
-        if sys.implementation.name == 'ironpython':
-            import gc
-            gc.collect()
         self.assertEqual(Foo.count, 0)
 
     def testClassAndGlobal(self):

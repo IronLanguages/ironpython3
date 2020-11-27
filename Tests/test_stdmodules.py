@@ -87,7 +87,7 @@ class StdModulesTest(IronPythonTestCase):
         #from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT
         from os import unlink
 
-        f_name = "fake_stdout.txt"
+        f_name = os.path.join(self.temporary_dir, "fake_stdout.txt")
         test_list = [
                         ("print(1)",
                             "single", ["1\n"]),
@@ -146,7 +146,7 @@ class StdModulesTest(IronPythonTestCase):
         import os
         import shutil
 
-        dir1 = "temp_test_stdmodules_dir"
+        dir1 = os.path.join(self.temporary_dir, "temp_test_stdmodules_dir")
         dir2 = dir1 + "2"
 
         os.mkdir(dir1)
@@ -242,9 +242,12 @@ class StdModulesTest(IronPythonTestCase):
 
     def test_cp21929(self):
         import os
+        save_dir = os.getcwd()
+        os.chdir("..") # other tests run in parallel are creating/deleting files in "."
         self.assertEqual(os.listdir("."),
                 os.listdir(os.getcwd()))
         self.assertRaises(WindowsError, os.listdir, "")
+        os.chdir(save_dir)
 
     def test_cp34188(self):
         import locale

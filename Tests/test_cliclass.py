@@ -1404,7 +1404,10 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
     def test_array_contains(self):
-        self.assertRaises(KeyError, lambda : System.Array[str].__dict__['__contains__'])
+        if is_mono: # for whatever reason this is defined on Mono
+            System.Array[str].__dict__['__contains__']
+        else:
+            self.assertRaises(KeyError, lambda : System.Array[str].__dict__['__contains__'])
 
     def test_a_override_patching(self):
         from IronPythonTest import TestHelpers

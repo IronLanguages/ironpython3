@@ -2890,7 +2890,7 @@ namespace IronPython.Runtime {
                         SystemState.__dict__["meta_path"] = lstPath = new PythonList();
                     }
 
-                    lstPath.append(_compiledLoader);
+                    lstPath.insert(0, _compiledLoader);
                 }
             }
 

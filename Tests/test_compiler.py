@@ -112,7 +112,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(initPackage.f(), 42)
 
     def test_package_simple(self):
-        self.compilePackage("simplePackage", { "__init__.py" : "import a\nimport b\ndef f(): return a.f() + b.f()",
+        self.compilePackage("simplePackage", { "__init__.py" : "from . import a\nfrom . import b\ndef f(): return a.f() + b.f()",
                                         "a.py" : "def f() : return 10",
                                         "b.py" : "def f() : return 20"})
                                         
@@ -122,7 +122,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(simplePackage.b.f(), 20)
     
     def test_package_subpackage(self):
-        self.compilePackage("subPackage", { "__init__.py" : "import a\nimport b.c\ndef f(): return a.f() + b.c.f()",
+        self.compilePackage("subPackage", { "__init__.py" : "from . import a\nfrom .b import c\ndef f(): return a.f() + c.f()",
                                     "a.py" : "def f(): return 10",
                                     "b/__init__.py" : "def f(): return 'kthxbye'",
                                     "b/c.py" : "def f(): return 20"})
@@ -133,8 +133,8 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(subPackage.b.c.f(), 20)
 
     def test_package_subpackage_relative_imports(self):
-        self.compilePackage("subPackage_relative", { "__init__.py" : "from foo import bar",
-                                    "foo/__init__.py" : "from foo import bar",
+        self.compilePackage("subPackage_relative", { "__init__.py" : "from .foo import bar",
+                                    "foo/__init__.py" : "from .foo import bar",
                                     "foo/foo.py" : "bar = 'BAR'"})
 
         import subPackage_relative
@@ -181,7 +181,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(cyclic_modules1.cyclic_modules.A, 0)
 
     def test_cyclic_pkg(self):
-        self.compilePackage("cyclic_package", { "__init__.py" : "import cyclic_submodules0\nimport cyclic_submodules1",
+        self.compilePackage("cyclic_package", { "__init__.py" : "from . import cyclic_submodules0\nfrom . import cyclic_submodules1",
                                         "cyclic_submodules0.py" : "import cyclic_package.cyclic_submodules1\nA = 2",
                                         "cyclic_submodules1.py" : "import cyclic_package.cyclic_submodules0\nA = 3"})
                                         

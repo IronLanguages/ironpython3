@@ -229,6 +229,7 @@ namespace IronPython.Modules {
                     ImportStatement s => new Import(s),
                     FromImportStatement s => new ImportFrom(s),
                     GlobalStatement s => new Global(s),
+                    NonlocalStatement s => new Nonlocal(s),
                     ClassDefinition s => new ClassDef(s),
                     BreakStatement _ => new Break(),
                     ContinueStatement _ => new Continue(),
@@ -2182,6 +2183,34 @@ namespace IronPython.Modules {
             }
 
             public object value { get; set; }
+        }
+
+        [PythonType]
+        public class Nonlocal : stmt {
+            public Nonlocal() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(names), });
+            }
+
+            public Nonlocal(PythonList names, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.names = names;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal Nonlocal(NonlocalStatement stmt)
+                : this() {
+                names = new PythonList(stmt.Names);
+            }
+
+            internal override Statement Revert() {
+                string[] newNames = new string[names.Count];
+                for (int i = 0; i < names.Count; i++)
+                    newNames[i] = (string)names[i];
+                return new NonlocalStatement(newNames);
+            }
+
+            public PythonList names { get; set; }
         }
 
         [PythonType]

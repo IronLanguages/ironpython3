@@ -173,7 +173,6 @@ class FunctionalTests(IronPythonTestCase):
 
     def test_nonlocal_del(self):
         # Test that a nonlocal does not rebind to an unshadowed variable after del
-        # TODO: align error messages and types
         def foo():
             x1, x2 = 'foo:x1', 'foo:x2' # local in foo
             x3 = 'foo:x3'
@@ -184,11 +183,7 @@ class FunctionalTests(IronPythonTestCase):
 
                 with self.assertRaises(NameError) as cm:
                     dummy = x4 # x4 is local in foo but unassigned
-                if is_cli:
-                    # FIXME: IronPython throws UnboundLocalError rather than just NameError
-                    self.assertEqual(cm.exception.args[0], "local variable 'x4' referenced before assignment")
-                else:
-                    self.assertEqual(cm.exception.args[0], "free variable 'x4' referenced before assignment in enclosing scope")
+                self.assertEqual(cm.exception.args[0], "free variable 'x4' referenced before assignment in enclosing scope")
 
                 x1, x2 = 'bar:x1', 'bar:x2' # local in bar, shadowing foo
 
@@ -201,22 +196,14 @@ class FunctionalTests(IronPythonTestCase):
                     del x1 # deletes a local in bar
                     with self.assertRaises(NameError) as cm:
                         del x1 # x1 in bar is already deleted
-                    if is_cli:
-                        # FIXME: IronPython throws UnboundLocalError rather than just NameError
-                        self.assertEqual(cm.exception.args[0], "local variable 'x1' referenced before assignment")
-                    else:
-                        self.assertEqual(cm.exception.args[0], "free variable 'x1' referenced before assignment in enclosing scope")
+                    self.assertEqual(cm.exception.args[0], "free variable 'x1' referenced before assignment in enclosing scope")
 
                     del x2 # deletes a local in bar
                     x2 = 'gek:x2+' # reassigns a variable in bar, bringing it back to life
-                    
+
                     with self.assertRaises(NameError) as cm:
                         dummy = x3 # x3 in bar is not yet assigned
-                    if is_cli:
-                        # FIXME: IronPython throws UnboundLocalError rather than just NameError
-                        self.assertEqual(cm.exception.args[0], "local variable 'x3' referenced before assignment")
-                    else:
-                        self.assertEqual(cm.exception.args[0], "free variable 'x3' referenced before assignment in enclosing scope")
+                    self.assertEqual(cm.exception.args[0], "free variable 'x3' referenced before assignment in enclosing scope")
                 gek()
 
                 x3 = 'bar:x3' # finally x3 is assigned and declared local in bar
@@ -269,11 +256,7 @@ class FunctionalTests(IronPythonTestCase):
         self.assertEqual(del_bar(), None) # delete class Bar
         with self.assertRaises(NameError) as cm:
             get_bar() # cannot instantiate a nonexistent class
-        if is_cli:
-            # FIXME: IronPython throws UnboundLocalError rather than just NameError
-            self.assertEqual(cm.exception.args[0], "local variable 'Bar' referenced before assignment")
-        else:
-            self.assertEqual(cm.exception.args[0], "free variable 'Bar' referenced before assignment in enclosing scope")
+        self.assertEqual(cm.exception.args[0], "free variable 'Bar' referenced before assignment in enclosing scope")
 
     @unittest.skipIf(is_cli, "https://github.com/IronLanguages/ironpython3/issues/30")
     def test_nonlocal_names(self):

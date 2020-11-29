@@ -455,6 +455,10 @@ namespace IronPython.Compiler.Ast {
             return _references != null && _references.TryGetValue(name, out reference);
         }
 
+        internal bool IsFreeVariable(PythonVariable variable) {
+            return FreeVariables?.Contains(variable?.LimitVariable) ?? false;
+        }
+
         private bool TryGetNonlocalStatement(string name, out NonlocalStatement node) {
             node = null;
             return _nonlocalVars?.TryGetValue(name, out node) ?? false;
@@ -694,6 +698,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal virtual MSAst.Expression GetVariableExpression(PythonVariable variable) {
+            Assert.NotNull(variable?.LimitVariable);
             if (variable.IsGlobal) {
                 return GlobalParent.ModuleVariables[variable];
             }

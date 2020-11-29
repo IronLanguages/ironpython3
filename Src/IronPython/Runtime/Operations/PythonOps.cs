@@ -3000,7 +3000,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         [NoSideEffects]
-        public static object CheckUninitialized(object value, string name) {
+        public static object CheckUninitializedFree(object value, string name) {
+            if (value == Uninitialized.Instance) {
+                throw new UnboundNameException($"free variable '{name}' referenced before assignment in enclosing scope");
+            }
+            return value;
+        }
+
+        [NoSideEffects]
+        public static object CheckUninitializedLocal(object value, string name) {
             if (value == Uninitialized.Instance) {
                 throw new UnboundLocalException($"local variable '{name}' referenced before assignment");
             }

@@ -63,7 +63,6 @@ namespace IronPython.Compiler.Ast {
         public bool AccessedInNestedScope { get; set; }
     }
 
-    // TODO: can be abolished?
     internal class PythonReferenceVariable : PythonVariable {
 
         internal PythonReferenceVariable(PythonReference reference, ScopeStatement scope)
@@ -73,10 +72,6 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonReference Reference { get; }
 
-        public override PythonVariable LimitVariable => Reference.PythonVariable?.LimitVariable
-            // TODO: choose one of:
-            // ?? this;
-            ?? throw new InvalidOperationException($"unbound reference variable {Name} in scope {Scope.Name}");
-            // ; // may return null
+        public override PythonVariable LimitVariable => Reference.PythonVariable?.LimitVariable;
     }
 }

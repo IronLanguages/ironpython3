@@ -31,7 +31,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
         public static readonly MethodInfo DictAddForComprehension = GetMethod((Action<PythonDictionary, object, object>)PythonOps.DictAddForComprehension);
-        public static readonly MethodInfo CheckUninitialized = GetMethod((Func<object, string, object>)PythonOps.CheckUninitialized);
+        public static readonly MethodInfo CheckUninitializedFree = GetMethod((Func<object, string, object>)PythonOps.CheckUninitializedFree);
+        public static readonly MethodInfo CheckUninitializedLocal = GetMethod((Func<object, string, object>)PythonOps.CheckUninitializedLocal);
         public static readonly MethodInfo PublishModule = GetMethod((Func<CodeContext, string, object>)PythonOps.PublishModule);
         public static readonly MethodInfo RemoveModule = GetMethod((Action<CodeContext, string, object>)PythonOps.RemoveModule);
         public static readonly MethodInfo ModuleStarted = GetMethod((Action<CodeContext, ModuleOptions>)PythonOps.ModuleStarted);

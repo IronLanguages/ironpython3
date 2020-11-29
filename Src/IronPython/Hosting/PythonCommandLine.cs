@@ -148,6 +148,12 @@ namespace IronPython.Hosting {
             InitializeModules();
             InitializeExtensionDLLs();
 
+            // ensure the warnings module loads
+            var warnOptions = PythonContext.GetSystemStateValue("warnoptions") as PythonList;
+            if (warnOptions?.Count > 0) {
+                PythonContext.GetWarningsModule();
+            }
+
             ImportSite();
 
             // Equivalent to -i command line option

@@ -150,7 +150,7 @@ class StdConsoleTest(IronPythonTestCase):
 
         # Test exit code with sys.exit(non-int)
         self.TestCommandLine(("-c", "import sys; sys.exit(None)"),       "",         0)
-        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n",1)
+        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n", 1)
         self.TestCommandLine(("-c", "import sys; sys.exit(2147483647)"), "", 2147483647)
         if is_cli: # raises an OSError with CPython
             self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "OverflowError: Arithmetic operation resulted in an overflow.\n\n", 1)
@@ -281,13 +281,15 @@ class StdConsoleTest(IronPythonTestCase):
         os.unlink(tmpscript)
         os.unlink(tmpscript2)
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
     def test_W(self):
         """Test -W (set warning filters) option."""
         self.TestCommandLine(("-c", "import sys; print(sys.warnoptions)"), "[]\n")
-        self.TestCommandLine(("-W", "foo", "-c", "import sys; print(sys.warnoptions)"), "['foo']\n" if is_cli else "Invalid -W option ignored: invalid action: 'foo'\n['foo']\n")
+        self.TestCommandLine(("-W", "foo", "-c", "import sys; print(sys.warnoptions)"), "Invalid -W option ignored: invalid action: 'foo'\n['foo']\n" if is_cli else "['foo']\nInvalid -W option ignored: invalid action: 'foo'\n")
         self.TestCommandLine(("-W", "always", "-W", "once", "-c", "import sys; print(sys.warnoptions)"), "['always', 'once']\n")
-        self.TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
+        if is_cli:
+            self.TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
+        else:
+            self.TestCommandLine(("-W",), ("firstline", "Argument expected for the -W option\n"), 2)
 
     @skipUnlessIronPython()
     def test_X_Interpret(self):
@@ -323,14 +325,16 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestCommandLine(('-x', tmpxoptscript), "4\n")
         os.unlink(tmpxoptscript)
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
     def test_nonexistent_file(self):
         """Test invocation of a nonexistent file"""
         try:
             os.unlink("nonexistent.py")
         except OSError:
             pass
-        self.TestCommandLine(("nonexistent.py",), "File nonexistent.py does not exist.\n\n", 1)
+        if is_cli:
+            self.TestCommandLine(("nonexistent.py",), "File nonexistent.py does not exist.\n\n", 1)
+        else:
+            self.TestCommandLine(("nonexistent.py",), "{}: can't open file 'nonexistent.py': [Errno 2] No such file or directory\n".format(sys.executable), 2)
 
     @skipUnlessIronPython()
     def test_MTA(self):

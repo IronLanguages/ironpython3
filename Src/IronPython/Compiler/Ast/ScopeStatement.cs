@@ -30,9 +30,9 @@ namespace IronPython.Compiler.Ast {
         private ClosureInfo[] _closureVariables;                        // closed over variables, bool indicates if we accessed it in this scope.
         private List<PythonVariable> _freeVars;                         // list of variables accessed from outer scopes
         private List<string> _globalVars;                               // global variables accessed from this scope
-        private List<string> _nonlocalVars;                             // nonlocal variables accessed from this scope
         private List<string> _cellVars;                                 // variables accessed from nested scopes
         private Dictionary<string, PythonReference> _references;        // names of all variables referenced, null after binding completes
+        private Dictionary<string, NonlocalStatement> _nonlocalVars;    // nonlocal variables declared in this scope, null after binding completes
 
         internal Dictionary<PythonVariable, MSAst.Expression> _variableMapping = new Dictionary<PythonVariable, MSAst.Expression>();
         private readonly DelayedFunctionCode _funcCodeExpr = new DelayedFunctionCode();             // expression that refers to the function code for this scope
@@ -339,8 +339,8 @@ namespace IronPython.Compiler.Ast {
             if (_references != null) {
                 foreach (var reference in _references.Values) {
                     reference.PythonVariable = BindReference(binder, reference);
-                    if (reference.PythonVariable is null && IsReferencedNonlocal(reference.Name)) {
-                        binder.ReportSyntaxError($"no binding for nonlocal '{reference.Name}' found", this); // TODO: provide correct node
+                    if (reference.PythonVariable is null && TryGetNonlocalStatement(reference.Name, out NonlocalStatement node)) {
+                        binder.ReportSyntaxError($"no binding for nonlocal '{reference.Name}' found", node);
                     }
                 }
             }
@@ -411,6 +411,7 @@ namespace IronPython.Compiler.Ast {
 
             // no longer needed
             _references = null;
+            _nonlocalVars = null;
         }
 
         private static bool HasClosureVariable(List<ClosureInfo> closureVariables, PythonVariable variable) {
@@ -454,8 +455,9 @@ namespace IronPython.Compiler.Ast {
             return _references != null && _references.TryGetValue(name, out reference);
         }
 
-        private bool IsReferencedNonlocal(string name) {
-            return _nonlocalVars != null && _nonlocalVars.Contains(name);
+        private bool TryGetNonlocalStatement(string name, out NonlocalStatement node) {
+            node = null;
+            return _nonlocalVars?.TryGetValue(name, out node) ?? false;
         }
 
         internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind) {
@@ -484,13 +486,11 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal void EnsureNonlocalVariable(string name) {
-            if (_nonlocalVars == null) {
-                _nonlocalVars = new List<string>();
-            }
-            if (!_nonlocalVars.Contains(name)) {
+        internal void EnsureNonlocalVariable(string name, NonlocalStatement node) {
+           _nonlocalVars ??= new();
+            if (!_nonlocalVars.ContainsKey(name)) {
                 CreateNonlocalVariable(name);
-                _nonlocalVars.Add(name);
+                _nonlocalVars[name] = node;
             }
         }
 

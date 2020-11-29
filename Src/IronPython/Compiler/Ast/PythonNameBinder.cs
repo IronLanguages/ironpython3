@@ -760,7 +760,7 @@ namespace IronPython.Compiler.Ast {
                     ReportSyntaxError($"name '{n}' is used prior to nonlocal declaration", node);
                 }
 
-                _currentScope.EnsureNonlocalVariable(n);
+                _currentScope.EnsureNonlocalVariable(n, node);
             }
             return true;
         }

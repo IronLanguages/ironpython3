@@ -3002,7 +3002,7 @@ namespace IronPython.Runtime.Operations {
         [NoSideEffects]
         public static object CheckUninitialized(object value, string name) {
             if (value == Uninitialized.Instance) {
-                throw new UnboundLocalException(string.Format("Local variable '{0}' referenced before assignment.", name));
+                throw new UnboundLocalException($"local variable '{name}' referenced before assignment");
             }
             return value;
         }

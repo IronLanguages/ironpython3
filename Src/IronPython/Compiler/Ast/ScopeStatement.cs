@@ -193,8 +193,11 @@ namespace IronPython.Compiler.Ast {
 
             if (!_freeVars.Contains(variable)) {
                 _freeVars.Add(variable);
-                if (TryGetVariable(variable.Name, out PythonVariable nonlocal) && nonlocal.Kind is VariableKind.Nonlocal) {
-                    variable.Deleted = variable.Deleted || nonlocal.Deleted;
+                if (TryGetVariable(variable.Name, out PythonVariable nonlocal) &&
+                    nonlocal.Kind is VariableKind.Nonlocal &&
+                    nonlocal.MaybeDeleted) {
+
+                    variable.RegisterDeletion();
                 }
             }
         }
@@ -278,8 +281,6 @@ namespace IronPython.Compiler.Ast {
                 return _cellVars;
             }
         }
-
-        // TODO: add NonlocalVariables for the benefit of FunctionCode
 
         internal Type GetClosureTupleType() {
             if (TupleCells > 0) {

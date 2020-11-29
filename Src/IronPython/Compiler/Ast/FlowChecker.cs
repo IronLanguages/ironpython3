@@ -193,7 +193,7 @@ namespace IronPython.Compiler.Ast {
             _bits.Set(variable.Index * 2 + 1, value);
         }
         private bool IsAssigned(PythonVariable/*!*/ variable) {
-            return _bits.Get(variable.Index * 2) && !variable.Deleted;
+            return _bits.Get(variable.Index * 2) && !variable.MaybeDeleted;
         }
 
         private bool IsInitialized(PythonVariable/*!*/ variable) {

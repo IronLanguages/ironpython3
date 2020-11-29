@@ -949,7 +949,7 @@ namespace IronPython.Runtime {
                 Expression.Constant(_lambda.Filename),
                 GetGeneratorOrNormalLambda(),
                 TupleToStringArray(co_freevars),
-                TupleToStringArray(co_names), // TODO: handle nonlocals
+                TupleToStringArray(co_names),
                 TupleToStringArray(co_cellvars),
                 TupleToStringArray(co_varnames),
                 Expression.Constant(_localCount)

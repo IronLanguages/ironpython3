@@ -192,7 +192,7 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable DefineDeleted(string name) {
             PythonVariable variable = _currentScope.EnsureVariable(name);
-            variable.Deleted = true;
+            variable.RegisterDeletion();
             return variable;
         }
 

@@ -25,6 +25,16 @@ class SyntaxTests(IronPythonTestCase):
             """
         self.check_compile_error(source, "no binding for nonlocal 'x' found", 3)
 
+    def test_no_binding_func_global(self):
+        source = """if True:
+            x = 1
+            def foo():
+                nonlocal x
+                return x
+            f()
+            """
+        self.check_compile_error(source, "no binding for nonlocal 'x' found", 4)
+
     def test_no_binding_class(self):
         source = """if True:
             class Foo():

@@ -7,7 +7,7 @@ import re
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -36,7 +36,7 @@ class IronPythonVariableContext(object):
         from System import Environment
         Environment.SetEnvironmentVariable(self._variable, self._oldval)
 
-@unittest.skipIf(is_netcoreapp, "TODO: figure out")
+@unittest.skipIf(is_netcoreapp21, "TODO: figure out")
 @unittest.skipIf(is_posix, 'Relies on batchfiles')
 class StdConsoleTest(IronPythonTestCase):
     """Test that IronPython console behaves as expected (command line argument processing etc.)."""
@@ -48,7 +48,7 @@ class StdConsoleTest(IronPythonTestCase):
         # This is relative to working directory so the path related tests (e.g.'print __name__')
         # return predictable results.
 
-        self.tmpdir = "tmp" #os.path.join(self.temp_dir, "tmp")
+        self.tmpdir = os.path.join(self.temp_dir, "tmp")
         if not os.path.exists(self.tmpdir):
             os.mkdir(self.tmpdir)
 
@@ -100,7 +100,7 @@ class StdConsoleTest(IronPythonTestCase):
             # normalize \r\n to \n
             if type(output) == list:
                 output = [x.replace('\r\n', '\n') for x in output]
-                if is_cli and output[-1] == "\n": output.pop()
+                if is_cli and output[-1] == "\n": output.pop() # https://github.com/IronLanguages/ironpython3/issues/1061
             else:
                 output = output.replace('\r\n', '\n')
 
@@ -150,7 +150,7 @@ class StdConsoleTest(IronPythonTestCase):
 
         # Test exit code with sys.exit(non-int)
         self.TestCommandLine(("-c", "import sys; sys.exit(None)"),       "",         0)
-        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n", 1)
+        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n", 1) # https://github.com/IronLanguages/ironpython3/issues/1061
         self.TestCommandLine(("-c", "import sys; sys.exit(2147483647)"), "", 2147483647)
         if is_cli: # raises an OSError with CPython
             self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "OverflowError: Arithmetic operation resulted in an overflow.\n\n", 1)
@@ -375,7 +375,7 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestCommandLine(("", "-c", "print(__doc__)"), "None\n", 0)
 
     def test_cp11922(self):
-        if is_cli:
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1061
             self.TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
 
   File "-c", line 1, in <module>
@@ -467,16 +467,16 @@ def foo():
 warnings.warn('warning 2')
 foo()
 """
-        expected=r"""tmp\script_cp35263.py:5: UserWarning: warning 2
+        expected=r"""{filename}:5: UserWarning: warning 2
   warnings.warn('warning 2')
-tmp\script_cp35263.py:4: UserWarning: warning 1
+{filename}:4: UserWarning: warning 1
   warnings.warn('warning 1')
 """
         scriptFileName = os.path.join(self.tmpdir, "script_cp35263.py")
         with open(scriptFileName, "w") as f:
             f.write(script)
 
-        self.TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected, 0)
+        self.TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected.format(filename=scriptFileName), 0)
 
     def test_cp35322(self):
         self.TestCommandLine(("-c", "print(__name__)"), "__main__\n", 0)
@@ -490,7 +490,7 @@ print(__name__)"""
         with ZipFile(zipname, 'w') as myzip:
             myzip.writestr('__main__.py', script1)
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_1.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 0)
 
         script2 = r"""
 import sys
@@ -502,7 +502,7 @@ sys.exit(42)"""
         with ZipFile(zipname, 'w') as myzip:
             myzip.writestr('__main__.py', script2)
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_2.zip\\__main__.py\n__main__\n", 42)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 42)
 
         zipname = os.path.join(self.tmpdir, 'script_cp35379_3.zip')
         # get some padding in front of 1st zip content
@@ -511,11 +511,10 @@ sys.exit(42)"""
             with open(os.path.join(self.tmpdir, "script_cp35379_1.zip"), "rb") as firstZip:
                 padded.write(firstZip.read())
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 0)
 
         # it should not matter if relative path is given with \ or /
-        zipname = zipname.replace('\\', '/')
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname.replace('\\', '/'),), zipname + "\\__main__.py\n__main__\n", 0)
 
 run_test(__name__)
 

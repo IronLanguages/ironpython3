@@ -1073,15 +1073,12 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.register, "abc")
         self.assertRaises(TypeError, codecs.register, 3.14)
 
-        global decode_input
-        global mv_decode_input
-
         def my_test_decode(b, errors = None):
-            global decode_input
+            nonlocal decode_input
             decode_input = b
             if type(b) == memoryview:
                 # clone memoryview for inspection, since the original may get released in the meantime
-                global mv_decode_input
+                nonlocal mv_decode_input
                 mv_decode_input = memoryview(b)
             return ('*' * len(b), len(b))
 

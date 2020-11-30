@@ -242,6 +242,7 @@ namespace IronPython.Compiler.Ast {
                 if (variable.Kind == VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
                 }
+                Debug.Assert(variable.Kind != VariableKind.Nonlocal, "there should be no nonlocals in a comprehension");
                 return variable;
             }
 

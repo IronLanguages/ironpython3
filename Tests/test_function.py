@@ -1357,6 +1357,27 @@ class FunctionTest(IronPythonTestCase):
         CompareCodeVars(f.__code__, ('a', 'g'), (), (), ('a', ))
         CompareCodeVars(f(42).__code__, (), (), ('a', ), ())
 
+        # closed as nonlocal
+        def f():
+            a = 1
+            def g():
+                nonlocal a
+                return a
+            return g
+
+        CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+        CompareCodeVars(f().__code__, (), (), ('a', ), ())
+
+        # closed over parameter as nonlocal
+        def f(a):
+            def g():
+                nonlocal a
+                return a
+            return g
+
+        CompareCodeVars(f.__code__, ('a', 'g'), (), (), ('a', ))
+        CompareCodeVars(f(42).__code__, (), (), ('a', ), ())
+
     def test_delattr(self):
         def f(): pass
         f.abc = 42

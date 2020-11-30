@@ -124,8 +124,10 @@ class Test_Assertions(unittest.TestCase):
                     self.foo()
 
         Foo("test_functional").run()
+        import gc; gc.collect() # ironpython requires a GC to release the reference
         self.assertIsNone(wr())
         Foo("test_with").run()
+        gc.collect() # ironpython requires a GC to release the reference
         self.assertIsNone(wr())
 
     def testAssertNotRegex(self):

@@ -1,24 +1,23 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
 
 #if FEATURE_NATIVE
 [assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
+    [SupportedOSPlatform("windows")]
     public static class PythonWinsoundModule {
         public static readonly string __doc__ = @"PlaySound(sound, flags) - play a sound
 SND_FILENAME - sound is a wav file name

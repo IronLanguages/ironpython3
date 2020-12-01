@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -27,9 +25,9 @@ namespace IronPython.Runtime.Binding {
         /// Ensures that a non-null IDictionary instance is created for CustomAttributes and
         /// returns it.
         /// </summary>
-        IDictionary<string, object> EnsureCustomAttributes();
+        IDictionary<object, object> EnsureCustomAttributes();
 
-        IDictionary<string, object> CustomAttributes {
+        IDictionary<object, object> CustomAttributes {
             get;
         }
 
@@ -156,7 +154,7 @@ namespace IronPython.Runtime.Binding {
 
             IList<object> names = DynamicHelpers.GetPythonType(Value).GetMemberNames(Value.Context);
             List<string> res = new List<string>(dict.Keys.Count + names.Count);
-            res.AddRange(dict.Keys);
+            res.AddRange(dict.Keys.OfType<string>());
             for (int i = 0; i < names.Count; i++) {
                 if (!(names[i] is string name)) {
                     if (!(names[i] is Extensible<string> es)) {

@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -485,11 +486,9 @@ namespace IronPython.Modules {
 
             }
 
-
             public int recv_into(object buffer, int nbytes = 0, int flags = 0) {
                 throw PythonOps.TypeError(string.Format("recv_into() argument 1 must be read-write buffer, not {0}", PythonOps.GetPythonTypeName(buffer)));
             }
-
 
             [Documentation("recvfrom(bufsize[, flags]) -> (string, address)\n\n"
                 + "Receive data from the socket, up to bufsize bytes. string is the data\n"
@@ -911,6 +910,9 @@ namespace IronPython.Modules {
             public int proto => (int)_socket.ProtocolType;
 
             public int ioctl(BigInteger cmd, object option) {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    throw PythonOps.ValueError(string.Format("invalid ioctl command {0}", cmd));
+
                 if (cmd == SIO_KEEPALIVE_VALS) {
                     if (!(option is PythonTuple))
                         throw PythonOps.TypeError("option must be 3-item sequence, not int");
@@ -935,8 +937,9 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("option integer required");
 
                     return _socket.IOControl((IOControlCode)(long)cmd, BitConverter.GetBytes((int)option), null);
-                } else
+                } else {
                     throw PythonOps.ValueError(string.Format("invalid ioctl command {0}", cmd));
+                }
             }
 
             public override string ToString() {
@@ -1841,9 +1844,13 @@ namespace IronPython.Modules {
         public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        // Windows only
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly BigInteger SIO_RCVALL = (long)IOControlCode.ReceiveAll;
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly BigInteger SIO_KEEPALIVE_VALS = (long)IOControlCode.KeepAliveValues;
+
         public const int RCVALL_ON = 1;
         public const int RCVALL_OFF = 0;
         public const int RCVALL_SOCKETLEVELONLY = 2;

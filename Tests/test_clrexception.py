@@ -47,18 +47,11 @@ class ClrExceptionTest(unittest.TestCase):
 
         # Tests for exact mappings
 
-        # BUG 515 System.SystemException not mapped to StandardError
-        self.clr_to_py_positive(System.SystemException, Exception)
-        # /BUG
-
-        self.clr_to_py_positive(System.IO.IOException, IOError, msg = "System.IO.IOException -> IOError")
-        self.py_to_clr_positive(IOError, System.IO.IOException, msg = "IOError -> System.IO.IOException")
+        self.clr_to_py_positive(System.SystemException, SystemError, msg = "System.SystemException -> SystemError")
+        self.py_to_clr_positive(SystemError, System.SystemException, msg = "SystemError -> System.SystemException")
 
         self.clr_to_py_positive(System.MissingMemberException, AttributeError, msg ="System.MissingMemberException -> AttributeError")
         self.py_to_clr_positive(AttributeError, System.MissingMemberException, msg = "AttributeError -> System.MissingMemberException")
-
-        self.clr_to_py_positive(System.ComponentModel.Win32Exception, WindowsError, msg ="System.ComponentModel.Win32Exception -> WindowsError")
-        self.py_to_clr_positive(WindowsError, System.ComponentModel.Win32Exception, msg = "WindowsError -> System.ComponentModel.Win32Exception")
 
         self.clr_to_py_positive(System.IO.EndOfStreamException, EOFError, msg="System.IO.EndOfStreamException -> EOFError")
         self.py_to_clr_positive(EOFError, System.IO.EndOfStreamException, msg = "EOFError -> System.IO.EndOfStreamException")
@@ -95,7 +88,12 @@ class ClrExceptionTest(unittest.TestCase):
 
         self.clr_to_py_positive(System.Collections.Generic.KeyNotFoundException, KeyError, msg = "System.Collections.Generic.KeyNotFoundException -> KeyError")
         self.py_to_clr_positive(KeyError, System.Collections.Generic.KeyNotFoundException, msg = "KeyError -> System.Collections.Generic.KeyNotFoundException")
+
         # Tests for inexact mappings
+
+        # These used to have exact mappings with IronPython 2
+        self.clr_to_py_positive(System.IO.IOException, IOError, msg = "System.IO.IOException -> IOError")
+        self.clr_to_py_positive(System.ComponentModel.Win32Exception, WindowsError, msg ="System.ComponentModel.Win32Exception -> WindowsError")
 
         # Let CLR exception class A map to Python error type B;
         #  let A' be a direct subclass of A, with *no* direct mapping to a Python error type;

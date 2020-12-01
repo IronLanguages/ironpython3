@@ -71,25 +71,10 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("fd must be >= 0");
                 }
 
-                PythonContext pc = context.LanguageContext;
+                _context = context.LanguageContext;
+                this.mode = NormalizeMode(mode, out _);
 
-                _context = pc;
-                switch (StandardizeMode(mode)) {
-                    case "r": this.mode = "rb"; break;
-                    case "w": this.mode = "wb"; break;
-                    case "a": this.mode = "w"; break;
-                    case "r+":
-                    case "+r": this.mode = "rb+"; break;
-                    case "w+":
-                    case "+w": this.mode = "rb+"; break;
-                    case "a+":
-                    case "+a": this.mode = "r+"; break;
-                    default:
-                        BadMode(mode);
-                        break;
-                }
-
-                object fileObject = pc.FileManager.GetObjectFromId(fd); // OSError here if no such fd
+                object fileObject = _context.FileManager.GetObjectFromId(fd); // OSError here if no such fd
 
                 // FileManager interface guarantees fileObject is
                 // one of these two types
@@ -117,55 +102,38 @@ namespace IronPython.Modules {
                 this.name = name;
                 PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
-                int flags = 0;
-                switch (StandardizeMode(mode)) {
-                    case "r":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        this.mode = "rb";
-                        flags |= O_RDONLY;
-                        break;
-                    case "w":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-                        this.mode = "wb";
-                        flags |= O_CREAT | O_TRUNC | O_WRONLY;
-                        break;
-                    case "a":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                        _readStream.Seek(0L, SeekOrigin.End);
-                        this.mode = "ab";
-                        flags |= O_APPEND | O_CREAT;
-                        break;
-                    case "r+":
-                    case "+r":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        this.mode = "rb+";
-                        flags |= O_RDWR;
-                        break;
-                    case "w+":
-                    case "+w":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        this.mode = "rb+";
-                        flags |= O_CREAT | O_TRUNC | O_RDWR;
-                        break;
-                    case "a+":
-                    case "+a":
-                        _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                        _readStream.Seek(0L, SeekOrigin.End);
-                        _writeStream.Seek(0L, SeekOrigin.End);
-                        this.mode = "ab+";
-                        flags |= O_APPEND | O_CREAT | O_RDWR;
-                        break;
-                    default:
-                        BadMode(mode);
-                        break;
-                }
-
-                _closefd = true;
-
                 _context = context.LanguageContext;
+                this.mode = NormalizeMode(mode, out int flags);
 
-                if (opener != null) {
+                if (opener is null) {
+                    switch (this.mode) {
+                        case "rb":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            break;
+                        case "wb":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                            break;
+                        case "ab":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                            _readStream.Seek(0L, SeekOrigin.End);
+                            break;
+                        case "rb+":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            break;
+                        case "wb+":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            break;
+                        case "ab+":
+                            _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                            _readStream.Seek(0L, SeekOrigin.End);
+                            _writeStream.Seek(0L, SeekOrigin.End);
+                            break;
+                        default:
+                            throw new InvalidOperationException();
+                    }
+                }
+                else {
                     object fdobj = PythonOps.CallWithContext(context, opener, name, flags);
                     if (fdobj is int fd) {
                         if (fd < 0) {
@@ -183,58 +151,86 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("expected integer from opener");
                     }
                 }
+
+                _closefd = true;
             }
 
-            /// <summary>
-            /// Remove all 'b's from mode string to simplify parsing
-            /// </summary>
-            private static string StandardizeMode(string mode) {
-                int index = mode.IndexOf('b');
+            private static string NormalizeMode(string mode, out int flags) {
+                switch (StandardizeMode(mode)) {
+                    case "r":
+                        flags = O_RDONLY;
+                        return "rb";
+                    case "w":
+                        flags = O_CREAT | O_TRUNC | O_WRONLY;
+                        return "wb";
+                    case "a":
+                        flags = O_APPEND | O_CREAT;
+                        return "ab";
+                    case "r+":
+                    case "+r":
+                        flags = O_RDWR;
+                        return "rb+";
+                    case "w+":
+                    case "+w":
+                        flags = O_CREAT | O_TRUNC | O_RDWR;
+                        return "wb+";
+                    case "a+":
+                    case "+a":
+                        flags = O_APPEND | O_CREAT | O_RDWR;
+                        return "ab+";
+                    default:
+                        throw BadMode(mode);
+                }
 
-                if (index == mode.Length - 1) {
-                    mode = mode.Substring(0, index);
-                } else if (index >= 0) {
-                    StringBuilder sb = new StringBuilder(mode.Substring(0, index), mode.Length - 1);
-                    for (int pos = index + 1; pos < mode.Length; pos++) {
-                        if (mode[pos] != 'b') {
-                            sb.Append(mode[pos]);
+                // remove all 'b's from mode string to simplify parsing
+                static string StandardizeMode(string mode) {
+                    int index = mode.IndexOf('b');
+
+                    if (index == mode.Length - 1) {
+                        mode = mode.Substring(0, index);
+                    } else if (index >= 0) {
+                        StringBuilder sb = new StringBuilder(mode.Substring(0, index), mode.Length - 1);
+                        for (int pos = index + 1; pos < mode.Length; pos++) {
+                            if (mode[pos] != 'b') {
+                                sb.Append(mode[pos]);
+                            }
+                        }
+                        mode = sb.ToString();
+                    }
+
+                    return mode;
+                }
+
+                static Exception BadMode(string mode) {
+                    bool foundMode = false, foundPlus = false;
+                    foreach (char c in mode) {
+                        switch (c) {
+                            case 'r':
+                            case 'w':
+                            case 'a':
+                                if (foundMode) {
+                                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                                } else {
+                                    foundMode = true;
+                                    continue;
+                                }
+                            case '+':
+                                if (foundPlus) {
+                                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                                } else {
+                                    foundPlus = true;
+                                    continue;
+                                }
+                            case 'b':
+                                // any number of 'b's is acceptable
+                                continue;
+                            default:
+                                return PythonOps.ValueError("invalid mode: {0}", mode);
                         }
                     }
-                    mode = sb.ToString();
+
+                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
                 }
-
-                return mode;
-            }
-
-            private static void BadMode(string mode) {
-                bool foundMode = false, foundPlus = false;
-                foreach (char c in mode) {
-                    switch (c) {
-                        case 'r':
-                        case 'w':
-                        case 'a':
-                            if (foundMode) {
-                                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
-                            } else {
-                                foundMode = true;
-                                continue;
-                            }
-                        case '+':
-                            if (foundPlus) {
-                                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
-                            } else {
-                                foundPlus = true;
-                                continue;
-                            }
-                        case 'b':
-                            // any number of 'b's is acceptable
-                            continue;
-                        default:
-                            throw PythonOps.ValueError("invalid mode: {0}", mode);
-                    }
-                }
-
-                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
             }
 
             #endregion
@@ -508,6 +504,7 @@ namespace IronPython.Modules {
 
                 EnsureWritable();
                 _writeStream.Write(bytes);
+                _writeStream.Flush(); // FileIO is not supposed to buffer so we need to call Flush.
                 SeekToEnd();
 
                 return bytes.Length;
@@ -564,7 +561,7 @@ namespace IronPython.Modules {
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(2, "No such file or directory", filename: name);
                 try {
-                    return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
+                    return pal.OpenFileStream(name, fileMode, fileAccess, fileShare, 1); // Use a 1 byte buffer size to disable buffering (if the FileStream implementation supports it).
                 } catch (UnauthorizedAccessException) {
                     throw PythonOps.OSError(13, "Permission denied", name);
                 } catch (FileNotFoundException) {

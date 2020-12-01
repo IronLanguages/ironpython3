@@ -394,7 +394,7 @@ class BaseTest:
         self.assertEqual(a, b)
 
     def test_tofromstring(self):
-        nb_warnings = 2 if sys.implementation.name == "ironpython" else 4 # https://github.com/IronLanguages/ironpython3/issues/767
+        nb_warnings = 2 if sys.implementation.name == "ironpython" or sys.version_info >= (3,5) else 4
         with warnings.catch_warnings(record=True) as r:
             warnings.filterwarnings("always",
                                     message=r"(to|from)string\(\) is deprecated",

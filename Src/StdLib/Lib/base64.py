@@ -586,7 +586,6 @@ def main():
             func(f, sys.stdout.buffer)
     else:
         func(sys.stdin.buffer, sys.stdout.buffer)
-    sys.stdout.buffer.flush() # ironpython: workaround for https://github.com/IronLanguages/ironpython3/issues/791
 
 def test():
     s0 = b"Aladdin:open sesame"

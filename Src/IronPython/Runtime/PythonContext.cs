@@ -294,6 +294,7 @@ namespace IronPython.Runtime {
             _mainThreadFunctionStack = PythonOps.GetFunctionStack();
 
             // bootstrap importlib
+            if (PythonOptions.NoImportLib) return;
             try {
                 var sourceUnit = CreateSourceUnit(new BootstrapStreamContentProvider(), null, DefaultEncoding, SourceCodeKind.File);
 
@@ -1294,6 +1295,19 @@ namespace IronPython.Runtime {
                     PerfTrack.DumpStats();
                 }
 #endif
+            }
+
+            Flush(SharedContext, SystemStandardOut);
+            Flush(SharedContext, SystemStandardError);
+
+            static void Flush(CodeContext context, object obj) {
+                if (obj is PythonIOModule._IOBase pf) {
+                    if (!pf.closed)
+                        pf.flush(context);
+                } else if (PythonOps.TryGetBoundAttr(context, obj, "closed", out object closed)) {
+                    if (!PythonOps.IsTrue(closed))
+                        PythonTypeOps.TryInvokeUnaryOperator(context, obj, "flush", out _);
+                }
             }
         }
 
@@ -2876,7 +2890,7 @@ namespace IronPython.Runtime {
                         SystemState.__dict__["meta_path"] = lstPath = new PythonList();
                     }
 
-                    lstPath.append(_compiledLoader);
+                    lstPath.insert(0, _compiledLoader);
                 }
             }
 

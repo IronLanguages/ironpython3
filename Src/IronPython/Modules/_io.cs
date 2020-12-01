@@ -92,7 +92,7 @@ namespace IronPython.Modules {
 
             public void _checkReadable(string msg) {
                 if (!readable(context)) {
-                    throw PythonOps.ValueError(msg ?? "File or stream is not readable.");
+                    throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not readable.");
                 }
             }
 
@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
             public void _checkWritable(string msg) {
                 if (!writable(context)) {
-                    throw PythonOps.ValueError(msg ?? "File or stream is not writable.");
+                    throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not writable.");
                 }
             }
 
@@ -362,24 +362,26 @@ namespace IronPython.Modules {
 
             #region IPythonExpandable Members
 
-            private IDictionary<string, object> _customAttributes;
 
-            IDictionary<string, object> IPythonExpandable.EnsureCustomAttributes() {
-                return _customAttributes = new Dictionary<string, object>();
+            private PythonDictionary _dict;
+
+            private PythonDictionary EnsureCustomAttributes() {
+                if (_dict is null) _dict = new PythonDictionary();
+                return _dict;
             }
 
-            IDictionary<string, object> IPythonExpandable.CustomAttributes {
-                get { return _customAttributes; }
-            }
+            public PythonDictionary __dict__ => EnsureCustomAttributes();
 
-            CodeContext/*!*/ IPythonExpandable.Context {
-                get { return context; }
-            }
+            IDictionary<object, object> IPythonExpandable.EnsureCustomAttributes() => EnsureCustomAttributes();
+
+            IDictionary<object, object> IPythonExpandable.CustomAttributes => _dict;
+
+            CodeContext IPythonExpandable.Context => context;
 
             #endregion
 
             #region IDynamicMetaObjectProvider Members
-            
+
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
                 return new MetaExpandable<_IOBase>(parameter, this);
             }
@@ -394,6 +396,9 @@ namespace IronPython.Modules {
                     string.Format("{0}.{1} not supported", PythonTypeOps.GetName(this), attr)
                 );
             }
+
+            internal Exception UnsupportedOperationWithMessage(CodeContext/*!*/ context, string msg)
+                => PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey), msg);
 
             internal Exception AttributeError(string attrName) {
                 throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(this), attrName);
@@ -1847,6 +1852,8 @@ namespace IronPython.Modules {
             ) : base(context) {
             }
 
+            private string newline;
+
             public void __init__(
                 CodeContext/*!*/ context,
                 string initial_value="",
@@ -1856,6 +1863,7 @@ namespace IronPython.Modules {
                 buf.__init__(null);
                 base.__init__(context, buf, "utf-8", null, newline, false);
 
+                this.newline = newline;
                 if (newline == null) {
                     _writeTranslate = false;
                 }
@@ -1875,6 +1883,50 @@ namespace IronPython.Modules {
             public string getvalue(CodeContext/*!*/ context) {
                 flush(context);
                 return ((BytesIO)(object)_bufferTyped).getvalue().decode(context, _encoding, _errors);
+            }
+
+            #endregion
+
+            #region Pickling
+
+            public PythonTuple __getstate__(CodeContext context) {
+                return PythonTuple.MakeTuple(getvalue(context), newline, tell(context), new PythonDictionary(__dict__));
+            }
+
+            public void __setstate__(CodeContext context, PythonTuple tuple) {
+                _checkClosed();
+
+                if (tuple.__len__() != 4) {
+                    throw PythonOps.TypeError("_io.StringIO.__setstate__ argument should be 4-tuple, got tuple");
+                }
+
+                var initial_value = tuple[0] as string;
+                if (!(tuple[0] is string || tuple[0] is null)) {
+                    throw PythonOps.TypeError($"initial_value must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                }
+
+                var newline = tuple[1] as string;
+                if (!(tuple[1] is string || tuple[1] is null)) {
+                    throw PythonOps.TypeError($"newline must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                }
+
+                if (!(tuple[2] is int i)) {
+                    throw PythonOps.TypeError($"third item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
+                }
+                if (i < 0) {
+                    throw PythonOps.ValueError("position value cannot be negative");
+                }
+
+                var dict = tuple[3] as PythonDictionary;
+                if (!(tuple[3] is PythonDictionary || tuple[3] is null)) {
+                    throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
+                }
+
+                __init__(context, initial_value: initial_value, newline: newline);
+                seek(context, i);
+
+                if (!(dict is null))
+                    __dict__.update(context, dict);
             }
 
             #endregion
@@ -2010,7 +2062,9 @@ namespace IronPython.Modules {
             }
 
             public override bool seekable(CodeContext/*!*/ context) {
-                return _seekable;
+                return _bufferTyped != null ?
+                    _bufferTyped.seekable(context) :
+                    PythonOps.IsTrue(PythonOps.Invoke(context, _buffer, "seekable"));
             }
 
             public override bool readable(CodeContext/*!*/ context) {
@@ -2401,7 +2455,7 @@ namespace IronPython.Modules {
             public override object read(CodeContext/*!*/ context, object length=null) {
                 _checkClosed();
                 if (!readable(context)) {
-                    throw PythonOps.IOError("not readable");
+                    throw UnsupportedOperationWithMessage(context, "not readable");
                 }
 
                 int size = GetInt(length, -1);
@@ -2446,6 +2500,9 @@ namespace IronPython.Modules {
 
             public override object readline(CodeContext/*!*/ context, int limit=-1) {
                 _checkClosed("read from closed file");
+                if (!readable(context)) {
+                    throw UnsupportedOperationWithMessage(context, "not readable");
+                }
 
                 string line = GetDecodedChars();
 
@@ -2584,13 +2641,19 @@ namespace IronPython.Modules {
 
             #region ICodeFormattable Members
 
+#nullable enable
             public string __repr__(CodeContext/*!*/ context) {
-                if (PythonOps.TryGetBoundAttr(buffer, "name", out object nameObj)) {
-                    return $"<_io.TextIOWrapper name={PythonOps.Repr(context, nameObj)} encoding='{_encoding}'>";
-                }
+                string name = string.Empty;
+                if (PythonOps.TryGetBoundAttr(buffer, "name", out var nameObj))
+                    name = $" name={PythonOps.Repr(context, nameObj)}";
 
-                return $"<_io.TextIOWrapper encoding='{_encoding}'>";
+                string mode = string.Empty;
+                if (PythonOps.TryGetBoundAttr(this, "mode", out var modeObj))
+                    mode = $" mode={PythonOps.Repr(context, modeObj)}";
+
+                return $"<_io.TextIOWrapper{name}{mode} encoding='{_encoding}'>";
             }
+#nullable restore
 
             #endregion
 
@@ -2755,7 +2818,7 @@ namespace IronPython.Modules {
 
             HashSet<char> modes = MakeSet(mode);
             if (modes.Count < mode.Length || !_validModes.IsSupersetOf(modes)) {
-                throw PythonOps.ValueError("invalid mode: {0}", mode);
+                throw PythonOps.ValueError("invalid mode: '{0}'", mode);
             }
 
             bool reading = modes.Contains('r');
@@ -2798,6 +2861,8 @@ namespace IronPython.Modules {
                 mode += '+';
             }
 
+            if (buffering == 0 && !binary) throw PythonOps.ValueError("can't have unbuffered text I/O");
+
             FileIO fio = fname != null
                     ? new FileIO(context, fname, mode, closefd, opener)
                     : new FileIO(context, fd, mode, closefd, opener);
@@ -2811,10 +2876,8 @@ namespace IronPython.Modules {
                 buffering = DEFAULT_BUFFER_SIZE;
             }
             if (buffering == 0) {
-                if (binary) {
-                    return fio;
-                }
-                throw PythonOps.ValueError("can't have unbuffered text I/O");
+                Debug.Assert(binary);
+                return fio;
             }
 
             _BufferedIOBase buffer;

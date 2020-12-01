@@ -164,13 +164,14 @@ For instance of built-in types, x.__class__ is now the same as type(x):
 
 You can get the information from the list type:
 
+Modified to not fail on https://github.com/IronLanguages/ironpython3/issues/995 and https://github.com/IronLanguages/ironpython3/issues/996
+
     >>> pprint.pprint(dir(list))    # like list.__dict__.keys(), but sorted
     ['__add__',
      '__class__',
      '__contains__',
      '__delattr__',
      '__delitem__',
-     '__dir__',
      '__doc__',
      '__eq__',
      '__format__',
@@ -189,6 +190,7 @@ You can get the information from the list type:
      '__mul__',
      '__ne__',
      '__new__',
+     '__radd__',
      '__reduce__',
      '__reduce_ex__',
      '__repr__',

@@ -57,19 +57,21 @@ class ThreadSafetyTest(unittest.TestCase):
                 transTable = transTable + chr(ord('A') + ord(x) - ord('0'))
             else:
                 transTable = transTable + x
-        
+
         # base test infrastructure, reader thread, writer thread, and test
         # runner
         def reader():
             try:
                 try:
                     go.WaitOne()
-                    for i in xrange(loopCnt): readerWorker(i)
-                except Exception, e:
+                    for i in range(loopCnt): readerWorker(i)
+                except Exception as e:
                     self.fail('Test failed, unexpected exception from reader: %r' % e)
             finally:
                 global readerAlive
                 readerAlive = False
+
+        fail = self.fail
         
         class writer:
             def __init__(self, writer, index):
@@ -79,9 +81,9 @@ class ThreadSafetyTest(unittest.TestCase):
                 try:
                     try:
                         go.WaitOne()
-                        for i in xrange(loopCnt): self.writer(i, self.index)
-                    except Exception, e:
-                        self.fail('Test failed (writer through exception): %r' % e)
+                        for i in range(loopCnt): self.writer(i, self.index)
+                    except Exception as e:
+                        fail('Test failed (writer through exception): %r' % e)
                 finally:
                     global writerAlive
                     writerAlive = False
@@ -138,9 +140,9 @@ class ThreadSafetyTest(unittest.TestCase):
             
             global prevValues
             for x in prevValues.keys():
-                #print 'checking ', x
+                #print('checking ', x)
                 self.assertEqual(hasattr(oc, x), True)
-                #print getattr(oc,x), prevValues[x]
+                #print(getattr(oc,x), prevValues[x])
                 self.assertEqual(getattr(oc, x), prevValues[x])
             for x in dir(oc):
                 if not prevValues.has_key(x):
@@ -168,7 +170,7 @@ class ThreadSafetyTest(unittest.TestCase):
             setattr(oc, attrName, x)
             self.assertEqual(getattr(oc, attrName), x)
             if i != 0 and i % 50 == 0:
-                for x in xrange(i-50, i):
+                for x in range(i-50, i):
                     attrName = str(x).translate(transTable)
                     delattr(oc, attrName)
             
@@ -313,7 +315,6 @@ class ThreadSafetyTest(unittest.TestCase):
                 baseTypes = baseTypes + (foo,)
         
         
-        
         testCases = [ # initialization, reader, writer, test loopCnt, post-condition.
                     #    Multiple writes can be provided w/ a tuple
                     
@@ -355,7 +356,7 @@ class ThreadSafetyTest(unittest.TestCase):
         
         def doOneTest(test):
             """runs a single test, argument is a testCase tuple"""
-            print 'running test', test
+            print('running test', test)
             global loopCnt, writerWorker, readerWorker
             
             # call init function
@@ -383,15 +384,16 @@ class ThreadSafetyTest(unittest.TestCase):
         global zeroCount
         zeroCount = 0
         
-        def foo((ntimes,nbits)):
-            for i in xrange(ntimes):
+        def foo(X):
+            (ntimes,nbits) = X
+            for i in range(ntimes):
                 x = random.getrandbits(nbits)
                 if x == 0:
                     zeroCount += 1
         
         def run_many(nthreads,ntimes,nbits):
             lst_threads = []
-            for i in xrange(nthreads):
+            for i in range(nthreads):
                 t = Thread(ParameterizedThreadStart(foo))
                 t.Start((ntimes,nbits))
                 lst_threads.append(t)

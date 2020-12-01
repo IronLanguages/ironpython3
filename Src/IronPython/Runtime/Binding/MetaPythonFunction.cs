@@ -504,19 +504,21 @@ namespace IronPython.Runtime.Binding {
                 var normalNoDefaults = normalArgumentCount - _func.Value.Defaults.Length;
 
                 for (int i = 0; i < normalArgumentCount; i++) {
+                    var argName = _func.Value.ArgNames[i];
+
                     if (exprArgs[i] != null) {
-                        exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
+                        exprArgs[i] = ValidateNotDuplicate(exprArgs[i], argName, i);
                         continue;
                     }
 
                     if (i < normalNoDefaults) {
-                        exprArgs[i] = ExtractNonDefaultValue(_func.Value.ArgNames[i]);
+                        exprArgs[i] = ExtractNonDefaultValue(argName);
                         if (exprArgs[i] == null) {
                             // can't get a value, this is an invalid call.
                             return false;
                         }
                     } else {
-                        exprArgs[i] = ExtractDefaultValue(i, i - normalNoDefaults);
+                        exprArgs[i] = ExtractDefaultValue(argName, i - normalNoDefaults);
                     }
                 }
 
@@ -525,9 +527,9 @@ namespace IronPython.Runtime.Binding {
                 for (int i = normalArgumentCount; i < normalArgumentCount + keywordOnlyArgumentCount; i++) {
                     var argName = _func.Value.ArgNames[i];
 
-                    if (exprArgs[i] == null) {
+                    if (exprArgs[i] is null) {
                         if (_func.Value.__kwdefaults__ != null && _func.Value.__kwdefaults__.ContainsKey(argName)) {
-                            exprArgs[i] = ExtractKeywordOnlyDefault(argName);
+                            exprArgs[i] = ExtractKeywordOnlyDefault(argName, i);
                         } else if (_dict != null) {
                             exprArgs[i] = ExtractDictionaryArgument(argName);
                         }
@@ -793,7 +795,7 @@ namespace IronPython.Runtime.Binding {
             /// Helper function to extract the variable from defaults, or to call a helper
             /// to check params / kw-dict / defaults to see which one contains the actual value.
             /// </summary>
-            private Expression ExtractDefaultValue(int index, int dfltIndex) {
+            private Expression ExtractDefaultValue(string argName, int dfltIndex) {
                 if (_dict == null && _userProvidedParams == null) {
                     // we can pull the default directly
                     return Ast.Call(
@@ -812,19 +814,19 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod(nameof(PythonOps.GetFunctionParameterValue)),
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                     AstUtils.Constant(dfltIndex),
-                    AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
+                    AstUtils.Constant(argName, typeof(string)),
                     VariableOrNull(_params, typeof(PythonList)),
                     VariableOrNull(_dict, typeof(PythonDictionary))
                 );
             }
 
-            private Expression ExtractKeywordOnlyDefault(string name) {
-                if (_dict == null) {
+            private Expression ExtractKeywordOnlyDefault(string name, int index) {
+                if (_dict is null) {
                     // we can pull the default directly
                     return Ast.Call(
                         typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionGetKeywordOnlyDefaultValue)),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                        AstUtils.Constant(name)
+                        AstUtils.Constant(index)
                     );
                 }
 

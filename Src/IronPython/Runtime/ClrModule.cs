@@ -1167,7 +1167,9 @@ import Namespace.")]
                     // something more complex, let the binary formatter handle it                    
                     BinaryFormatter bf = new BinaryFormatter();
                     MemoryStream stream = new MemoryStream();
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization methods are obsolete in .NET 5.0
                     bf.Serialize(stream, self);
+#pragma warning restore SYSLIB0011
                     data = stream.ToArray().MakeString();
                     format = null;
                     break;
@@ -1209,7 +1211,9 @@ import Namespace.")]
 
             MemoryStream stream = new MemoryStream(data.MakeByteArray());
             BinaryFormatter bf = new BinaryFormatter();
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization methods are obsolete in .NET 5.0
             return bf.Deserialize(stream);
+#pragma warning restore SYSLIB0011
         }
 #endif
     }

@@ -188,7 +188,7 @@ namespace IronPython.Compiler.Ast {
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             // Functions expose their locals to direct access
             ContainsNestedFreeVariables = true;
-            if (TryGetVariable(reference.Name, out variable)) {
+            if (TryGetVariable(reference.Name, out variable) && variable.Kind != VariableKind.Nonlocal) {
                 variable.AccessedInNestedScope = true;
 
                 if (variable.Kind == VariableKind.Local || variable.Kind == VariableKind.Parameter) {
@@ -215,11 +215,15 @@ namespace IronPython.Compiler.Ast {
                 if (variable.Kind == VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
                 }
-                return variable;
+
+                if (variable.Kind != VariableKind.Nonlocal) {
+                    return variable;
+                }
             }
 
             // Try to bind in outer scopes
-            for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
+            bool stopAtGlobal = variable?.Kind == VariableKind.Nonlocal;
+            for (ScopeStatement parent = Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = parent.Parent) {
                 if (parent.TryBindOuter(this, reference, out variable)) {
                     return variable;
                 }

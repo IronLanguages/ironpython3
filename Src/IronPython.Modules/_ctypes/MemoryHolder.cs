@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #if FEATURE_CTYPES
+#pragma warning disable SYSLIB0004 // The Constrained Execution Region (CER) feature is not supported in .NET 5.0.
 
 using System;
 using System.IO;

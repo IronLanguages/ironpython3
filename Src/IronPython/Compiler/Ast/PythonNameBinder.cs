@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
  *     if (cond): del x        # illegal because x is a closure variable
  *     def g():
  *         print x
+ * TODO: the example above is no longer valid; also the description of the name binding algorithm does not match the code
  */
 
 namespace IronPython.Compiler.Ast {
@@ -69,6 +70,7 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
+        // TODO: obsolete?
         private void WalkTuple(TupleExpression tuple) {
             tuple.Parent = _binder._currentScope;
             foreach (Expression innerNode in tuple.Items) {
@@ -190,7 +192,7 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable DefineDeleted(string name) {
             PythonVariable variable = _currentScope.EnsureVariable(name);
-            variable.Deleted = true;
+            variable.RegisterDeletion();
             return variable;
         }
 
@@ -676,6 +678,7 @@ namespace IronPython.Compiler.Ast {
             foreach (string n in node.Names) {
                 PythonVariable conflict;
                 // Check current scope for conflicting variable
+                bool assignedGlobal = false;
                 if (_currentScope.TryGetVariable(n, out conflict)) {
                     // conflict?
                     switch (conflict.Kind) {
@@ -683,17 +686,22 @@ namespace IronPython.Compiler.Ast {
                             break;
 
                         case VariableKind.Local:
+                            assignedGlobal = true;
                             ReportSyntaxError($"name '{n}' is assigned to before global declaration", node);
                             break;
 
                         case VariableKind.Parameter:
                             ReportSyntaxError($"name '{n}' is parameter and global", node);
                             break;
+
+                        case VariableKind.Nonlocal:
+                            ReportSyntaxError($"name '{n}' is nonlocal and global", node);
+                            break;
                     }
                 }
 
                 // Check for the name being referenced previously
-                if (_currentScope.IsReferenced(n)) {
+                if (_currentScope.IsReferenced(n) && !assignedGlobal) {
                     ReportSyntaxError($"name '{n}' is used prior to global declaration", node);
                 }
 
@@ -732,21 +740,27 @@ namespace IronPython.Compiler.Ast {
                         case VariableKind.Global:
                             ReportSyntaxError($"name '{n}' is nonlocal and global", node);
                             break;
+
                         case VariableKind.Local:
                             ReportSyntaxError($"name '{n}' is assigned to before nonlocal declaration", node);
                             break;
+
                         case VariableKind.Parameter:
                             ReportSyntaxError($"name '{n}' is parameter and nonlocal", node);
+                            break;
+
+                        case VariableKind.Nonlocal:
+                            // no conflict, name redeclared as nonlocal
                             break;
                     }
                 }
 
                 // Check for the name being referenced previously
-                if (_currentScope.IsReferenced(n)) {
+                if (_currentScope.IsReferenced(n) && conflict is null) {
                     ReportSyntaxError($"name '{n}' is used prior to nonlocal declaration", node);
                 }
 
-                // TODO: do we need to do other stuff here?
+                _currentScope.EnsureNonlocalVariable(n, node);
             }
             return true;
         }

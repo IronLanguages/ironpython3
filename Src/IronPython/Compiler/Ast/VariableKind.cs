@@ -4,27 +4,37 @@
 
 namespace IronPython.Compiler.Ast {
 
+    /// <summary>
+    /// Represents different kinds of a Python variable depending on how the variable was defined or declared.
+    /// </summary>
     public enum VariableKind {
 
         /// <summary>
         /// Local variable.
-        /// 
-        /// Local variables can be referenced from nested lambdas
+        ///
+        /// Local variables can be referenced from nested lambdas.
         /// </summary>
         Local,
 
         /// <summary>
-        /// Parameter to a LambdaExpression
-        /// 
-        /// Like locals, they can be referenced from nested lambdas
+        /// Parameter to a LambdaExpression.
+        ///
+        /// Like locals, they can be referenced from nested lambdas.
         /// </summary>
         Parameter,
 
         /// <summary>
-        /// Global variable
-        /// 
+        /// Global variable.
+        ///
         /// Should only appear in global (top level) lambda.
         /// </summary>
-        Global
+        Global,
+
+        /// <summary>
+        /// Nonlocal variable.
+        ///
+        /// Provides a by-reference access to a local variable in an outer scope.
+        /// </summary>
+        Nonlocal
     }
 }

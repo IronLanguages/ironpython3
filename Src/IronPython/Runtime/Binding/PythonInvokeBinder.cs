@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Binding {
 
         /// <summary>
         /// Python's Invoke is a non-standard action.  Here we first try to bind through a Python
-        /// internal interface (IPythonInvokable) which supports CallSigantures.  If that fails
+        /// internal interface (IPythonInvokable) which supports CallSignatures.  If that fails
         /// and we have an IDO then we translate to the DLR protocol through a nested dynamic site -
         /// this includes unsplatting any keyword / position arguments.  Finally if it's just a plain
         /// old .NET type we use the default binder which supports CallSignatures.

@@ -4,7 +4,7 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "release",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1'),
+    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0'),
     [String] $platform = "x64",
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount
@@ -17,7 +17,7 @@ $ErrorActionPreference="Continue"
 
 $_BASEDIR = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 
-if(!$global:isUnix) {
+function EnsureMSBuild() {
     $_VSWHERE = [System.IO.Path]::Combine(${env:ProgramFiles(x86)}, 'Microsoft Visual Studio\Installer\vswhere.exe')
     $_VSINSTPATH = ''
 
@@ -60,6 +60,7 @@ function Main([String] $target, [String] $configuration) {
     }
 
     if (!$global:isUnix -And ($target -eq "Package")) {
+        EnsureMSBuild
         msbuild Build.proj /m /t:$target /p:Configuration=$configuration /verbosity:minimal /nologo /p:Platform="Any CPU" /bl:build-$target-$configuration.binlog
     }
     else {

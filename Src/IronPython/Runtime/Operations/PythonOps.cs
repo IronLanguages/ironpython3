@@ -2279,7 +2279,7 @@ namespace IronPython.Runtime.Operations {
 
         public static PythonDictionary CopyAndVerifyDictionary(PythonFunction function, IDictionary dict) {
             foreach (object? o in dict.Keys) {
-                if (!(o is string)) {
+                if (!(o is string) && !(o is Extensible<string> es)) {
                     throw TypeError("{0}() keywords must be strings", function.__name__);
                 }
             }
@@ -2293,7 +2293,7 @@ namespace IronPython.Runtime.Operations {
         public static PythonDictionary UserMappingToPythonDictionary(CodeContext/*!*/ context, object dict, string funcName) {
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, "keys", out object keys)) {
-                throw PythonOps.TypeError("{0}() argument after ** must be a mapping, not {1}",
+                throw TypeError("{0}() argument after ** must be a mapping, not {1}",
                     funcName,
                     PythonTypeOps.GetName(dict));
             }
@@ -2304,19 +2304,13 @@ namespace IronPython.Runtime.Operations {
             IEnumerator enumerator = GetEnumerator(keys);
             while (enumerator.MoveNext()) {
                 object? o = enumerator.Current;
-                if (!(o is string s)) {
-                    if (!(o is Extensible<string> es)) {
-                        throw PythonOps.TypeError("{0}() keywords must be strings, not {0}",
-                            funcName,
-                            PythonTypeOps.GetName(dict));
-                    }
-
-                    s = es.Value;
+                if (!(o is string) && !(o is Extensible<string>)) {
+                    throw TypeError("{0}() keywords must be strings, not {1}",
+                        funcName,
+                        PythonTypeOps.GetName(o));
                 }
-
                 res[o] = PythonOps.GetIndex(context, dict, o);
             }
-
             return res;
         }
 
@@ -2882,9 +2876,10 @@ namespace IronPython.Runtime.Operations {
             return func.Defaults[index];
         }
 
-        public static object? FunctionGetKeywordOnlyDefaultValue(PythonFunction func, string name) {
-            if (func.__kwdefaults__ == null) return null;
-            func.__kwdefaults__.TryGetValue(name, out object res);
+        public static object? FunctionGetKeywordOnlyDefaultValue(PythonFunction func, int index) {
+            if (func.__kwdefaults__ is null) return null;
+            var argName = func.ArgNames[index];
+            func.__kwdefaults__.TryGetValue(argName, out object res);
             return res;
         }
 
@@ -3005,9 +3000,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         [NoSideEffects]
-        public static object CheckUninitialized(object value, string name) {
+        public static object CheckUninitializedFree(object value, string name) {
             if (value == Uninitialized.Instance) {
-                throw new UnboundLocalException(string.Format("Local variable '{0}' referenced before assignment.", name));
+                throw new UnboundNameException($"free variable '{name}' referenced before assignment in enclosing scope");
+            }
+            return value;
+        }
+
+        [NoSideEffects]
+        public static object CheckUninitializedLocal(object value, string name) {
+            if (value == Uninitialized.Instance) {
+                throw new UnboundLocalException($"local variable '{name}' referenced before assignment");
             }
             return value;
         }

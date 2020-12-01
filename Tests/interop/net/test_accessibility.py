@@ -1,6 +1,7 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
+
 '''
 NOTES:
 - needs to be rewritten
@@ -19,8 +20,8 @@ class AccessibilityTest(IronPythonTestCase):
     def pass_for_read_protected(self, x):
         x.protected_static_field
         x.protected_static_method
-        #x.protected_static_property  # bug 370438
-        #x.protected_static_event     # bug 370432
+        x.protected_static_property  # bug 370438
+        x.protected_static_event     # bug 370432
         if str(x).startswith("<C1 object") or str(x).startswith("<C2 object"):
             print("Skipping (https://github.com/IronLanguages/main/issues/721)...")
         else:
@@ -39,8 +40,8 @@ class AccessibilityTest(IronPythonTestCase):
         self.assertRaises(AttributeError, lambda: x.internal_static_nestedclass)
         x.protected_static_field
         x.protected_static_method
-        #x.protected_static_property  # bug 370438
-        #x.protected_static_event     # bug 370432
+        x.protected_static_property  # bug 370438
+        x.protected_static_event     # bug 370432
         self.assertTrue(not hasattr('x', 'protected_static_nestedclass')) # not supported
         x.public_static_field
         x.public_static_method
@@ -61,7 +62,7 @@ class AccessibilityTest(IronPythonTestCase):
         x.protected_instance_field
         x.protected_instance_method
         x.protected_instance_property
-        #x.protected_instance_event     # bug 370432
+        x.protected_instance_event     # bug 370432
         self.assertTrue(not hasattr('x', 'protected_instance_nestedclass')) # not supported
         x.public_instance_field
         x.public_instance_method
@@ -166,7 +167,8 @@ class AccessibilityTest(IronPythonTestCase):
             self.assertTrue('protected_static_field' in dir(C))
 
             x = C()
-            self.assertTrue(not hasattr(x, 'protected_instance_field'))
+            with self.assertRaises(TypeError):
+                hasattr(x, 'protected_instance_field')
             self.assertTrue('protected_instance_field' in dir(C))
             self.assertTrue('protected_instance_field' in dir(x))
             self.assertRaises(TypeError, lambda : x.protected_instance_field)

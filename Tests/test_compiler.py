@@ -29,7 +29,7 @@ class CompilerTest(IronPythonTestCase):
         packagePath = os.path.join(self.temporary_dir, packageName)
         self.ensure_directory_present(packagePath)
         fileList = []
-        for fileName, code in codeDict.iteritems():
+        for fileName, code in codeDict.items():
             filePath = os.path.join(packagePath, fileName)
             self.ensure_directory_present(os.path.dirname(filePath))
             self.write_to_file(filePath, code)
@@ -58,7 +58,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertRaises(SyntaxError, self.compileCode, "syntaxerrTest", "def f() pass")
         
     def test_runtime_error(self):
-        self.compileCode("runtimeError", "def f(): print a")
+        self.compileCode("runtimeError", "def f(): print(a)")
         
         from runtimeError import f
         self.assertRaises(NameError, f)
@@ -112,7 +112,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(initPackage.f(), 42)
 
     def test_package_simple(self):
-        self.compilePackage("simplePackage", { "__init__.py" : "import a\nimport b\ndef f(): return a.f() + b.f()",
+        self.compilePackage("simplePackage", { "__init__.py" : "from . import a\nfrom . import b\ndef f(): return a.f() + b.f()",
                                         "a.py" : "def f() : return 10",
                                         "b.py" : "def f() : return 20"})
                                         
@@ -122,7 +122,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(simplePackage.b.f(), 20)
     
     def test_package_subpackage(self):
-        self.compilePackage("subPackage", { "__init__.py" : "import a\nimport b.c\ndef f(): return a.f() + b.c.f()",
+        self.compilePackage("subPackage", { "__init__.py" : "from . import a\nfrom .b import c\ndef f(): return a.f() + c.f()",
                                     "a.py" : "def f(): return 10",
                                     "b/__init__.py" : "def f(): return 'kthxbye'",
                                     "b/c.py" : "def f(): return 20"})
@@ -133,8 +133,8 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(subPackage.b.c.f(), 20)
 
     def test_package_subpackage_relative_imports(self):
-        self.compilePackage("subPackage_relative", { "__init__.py" : "from foo import bar",
-                                    "foo/__init__.py" : "from foo import bar",
+        self.compilePackage("subPackage_relative", { "__init__.py" : "from .foo import bar",
+                                    "foo/__init__.py" : "from .foo import bar",
                                     "foo/foo.py" : "bar = 'BAR'"})
 
         import subPackage_relative
@@ -181,7 +181,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(cyclic_modules1.cyclic_modules.A, 0)
 
     def test_cyclic_pkg(self):
-        self.compilePackage("cyclic_package", { "__init__.py" : "import cyclic_submodules0\nimport cyclic_submodules1",
+        self.compilePackage("cyclic_package", { "__init__.py" : "from . import cyclic_submodules0\nfrom . import cyclic_submodules1",
                                         "cyclic_submodules0.py" : "import cyclic_package.cyclic_submodules1\nA = 2",
                                         "cyclic_submodules1.py" : "import cyclic_package.cyclic_submodules0\nA = 3"})
                                         
@@ -193,7 +193,7 @@ class CompilerTest(IronPythonTestCase):
         self.assertEqual(cyclic_package.cyclic_submodules1.cyclic_package.cyclic_submodules0.A, 2)
 
     def test_system_core_cp20623(self):
-        self.compileCode("cp20623", "import System\nA=System.DateTime(350000000).Second\nprint A")
+        self.compileCode("cp20623", "import System\nA=System.DateTime(350000000).Second\nprint(A)")
         import cp20623
         self.assertEqual(cp20623.A, 35)
         #TODO: need to also generate a standalone exe from cp20623 and try running it

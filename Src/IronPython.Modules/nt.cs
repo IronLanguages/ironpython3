@@ -16,6 +16,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -101,7 +102,7 @@ namespace IronPython.Modules {
         [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static string _getfinalpathname([NotNull] string path) {
             var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
             if (hFile.IsInvalid) {
@@ -1084,7 +1085,7 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_PROCESS
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile([NotNull] string filename, string operation = "open") {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo.FileName = filename;
@@ -1097,11 +1098,11 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile([NotNull] Bytes filename, string operation = "open")
             => startfile(filename.ToFsString(), operation);
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile(CodeContext context, [NotNull] IBufferProtocol filename, string operation = "open")
             => startfile(filename.ToFsBytes(context), operation);
 
@@ -1423,7 +1424,7 @@ namespace IronPython.Modules {
             psi.CreateNoWindow = false;
 
             try {
-                Process process = Process.Start(psi);
+                Process? process = Process.Start(psi);
                 if (process == null) {
                     return -1;
                 }
@@ -1852,9 +1853,9 @@ the 'status' value."),
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private static Exception ToPythonException(Exception e, string? filename = null) {
-            if (e is IPythonAwareException) {
+            // already a Python Exception
+            if (e.GetPythonException() is not null)
                 return e;
-            }
 
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions

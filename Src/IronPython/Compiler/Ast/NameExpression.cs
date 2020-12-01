@@ -44,7 +44,9 @@ namespace IronPython.Compiler.Ast {
 
             if (!Assigned && !(read is IPythonGlobalExpression)) {
                 read = Ast.Call(
-                    AstMethods.CheckUninitialized,
+                    Parent.IsFreeVariable(Reference.PythonVariable) ?
+                        AstMethods.CheckUninitializedFree :
+                        AstMethods.CheckUninitializedLocal,
                     read,
                     Ast.Constant(Name)
                 );

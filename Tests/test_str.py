@@ -476,9 +476,29 @@ class StrTest(IronPythonTestCase):
             self.assertEqual(u"i".ToUpper(CultureInfo("tr-TR")),u"İ")
 
     def test_translate(self):
-        self.assertEqual(u"abcd".translate({}), u"abcd")
-        self.assertEqual(u"abcd".translate({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"}) , "AcXY")
-        self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate({ord('a') : 65536}))
-        self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate({ord('a') : 2.0}))
+        class indexable:
+            def __init__(self, d):
+                self.d = d
+            def __getitem__(self, idx):
+                return self.d[idx]
+
+        for t in (dict, indexable):
+            self.assertEqual(u"abcd".translate(t({})), u"abcd")
+            self.assertEqual(u"abcd".translate(t({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"})) , "AcXY")
+            self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate(t({ord('a') : 65536})))
+            self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate(t({ord('a') : 2.0})))
+
+        class ThrowingIndexable:
+            def __init__(self, err):
+                self.err = err
+            def __getitem__(self, idx):
+                raise self.err
+
+        for err in (LookupError, IndexError, KeyError):
+            self.assertEqual(u"abcd".translate(ThrowingIndexable(err)), u"abcd")
+
+            class UserError(err): pass
+
+            self.assertEqual(u"abcd".translate(ThrowingIndexable(UserError(err))), u"abcd")
 
 run_test(__name__)

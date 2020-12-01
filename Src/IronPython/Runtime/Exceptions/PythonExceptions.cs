@@ -781,22 +781,22 @@ for k, v in toError.items():
         /// Creates a new style Python exception from the .NET exception
         /// </summary>
         private static BaseException/*!*/ ToPythonNewStyle(System.Exception/*!*/ clrException) {
+            // EndOfStreamException is not part of the OSError hierarchy
+            if (clrException is Win32Exception || clrException is IOException && clrException is not EndOfStreamException) {
+                int errorCode = clrException.HResult;
+
+                if ((errorCode & ~0xfff) == unchecked((int)0x80070000)) {
+                    errorCode &= 0xfff;
+                }
+
+                // TODO: can we get filename and such?
+                return CreatePythonThrowable(OSError, errorCode, clrException.Message, null, errorCode);
+            }
+
             BaseException pyExcep;
             if (clrException is InvalidCastException || clrException is ArgumentNullException) {
                 // explicit extra conversions outside the generated hierarchy
                 pyExcep = new BaseException(TypeError);
-            } else if (clrException is Win32Exception) {
-                Win32Exception win32 = (Win32Exception)clrException;
-                int errorCode = win32.ErrorCode;
-
-                pyExcep = new _OSError();
-                if ((errorCode & 0x80070000) == 0x80070000) {
-                    errorCode &= 0xffff;
-                }
-                pyExcep.__init__(errorCode, win32.Message, null, errorCode);
-                return pyExcep;
-            } else if (clrException is DirectoryNotFoundException) {
-                pyExcep = new _OSError(FileNotFoundError);
             } else {
                 // conversions from generated code (in the generated hierarchy)...
                 pyExcep = ToPythonHelper(clrException);

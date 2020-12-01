@@ -115,8 +115,8 @@ namespace IronPython.Runtime {
             return new ByteArray(bytes);
         }
 
+        [PythonHidden]
         internal ArrayData<byte> UnsafeByteList {
-            [PythonHidden]
             get => _bytes;
         }
 
@@ -219,7 +219,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public ByteArray InPlaceAdd([NotNull]ByteArray other) {
+        public ByteArray InPlaceAdd([NotNull] ByteArray other) {
             using (new OrderedLocker(this, other)) {
                 _bytes.AddRange(other._bytes);
                 return this;
@@ -227,17 +227,11 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public ByteArray InPlaceAdd([NotNull]Bytes other) {
+        public ByteArray InPlaceAdd([NotNull] IBufferProtocol other) {
             lock (this) {
-                _bytes.AddRange(other);
-                return this;
-            }
-        }
-
-        [SpecialName]
-        public ByteArray InPlaceAdd([NotNull]MemoryView other) {
-            lock (this) {
-                _bytes.AddRange(other.tobytes());
+                using var buf = other.GetBufferNoThrow();
+                if (buf is null) throw TypeErrorForConcat(this, other);
+                _bytes.AddRange(buf);
                 return this;
             }
         }
@@ -1090,46 +1084,39 @@ namespace IronPython.Runtime {
 
         public override string ToString() => Repr();
 
-        public static ByteArray operator +([NotNull]ByteArray self, [NotNull]ByteArray other) {
-            List<byte> bytes;
+        public static ByteArray operator +([NotNull] ByteArray self, [NotNull] ByteArray other) {
+            ByteArray res;
 
             lock (self) {
-                bytes = new List<byte>(self._bytes);
+                res = self.CopyThis();
             }
             lock (other) {
-                bytes.AddRange(other._bytes);
+                res._bytes.AddRange(other._bytes);
             }
 
-            return new ByteArray(bytes);
+            return res;
         }
 
-        public static ByteArray operator +([NotNull]ByteArray self, [NotNull]Bytes other) {
-            List<byte> bytes;
+        public static ByteArray operator +([NotNull] ByteArray self, [NotNull] IBufferProtocol other) {
+            ByteArray res;
 
             lock (self) {
-                bytes = new List<byte>(self._bytes);
+                res = self.CopyThis();
             }
 
-            bytes.AddRange(other);
+            using var buf = other.GetBufferNoThrow();
+            if (buf is null) throw TypeErrorForConcat(self, other);
+            res._bytes.AddRange(buf);
 
-            return new ByteArray(bytes);
-        }
-
-        public static ByteArray operator +([NotNull]ByteArray self, [NotNull]MemoryView other) {
-            List<byte> bytes;
-
-            lock (self) {
-                bytes = new List<byte>(self._bytes);
-            }
-
-            bytes.AddRange(other.tobytes());
-
-            return new ByteArray(bytes);
+            return res;
         }
 
         public static ByteArray operator +([NotNull]ByteArray self, object? other) {
-            throw PythonOps.TypeError("can't concat {0} to bytearray", PythonTypeOps.GetName(other));
+            throw TypeErrorForConcat(self, other);
         }
+
+        private static Exception TypeErrorForConcat(object self, object? other)
+            => PythonOps.TypeError($"can't concat {PythonTypeOps.GetName(self)} to {PythonTypeOps.GetName(other)}");
 
         private static ByteArray MultiplyWorker(ByteArray self, int count) {
             lock (self) {
@@ -1342,7 +1329,11 @@ namespace IronPython.Runtime {
         }
 
         private ByteArray CopyThis() {
-            return new ByteArray(new List<byte>(_bytes));
+            lock (this) {
+                var res = new ByteArray();
+                res._bytes.AddRange(_bytes);
+                return res;
+            }
         }
 
         private void SliceNoStep(int start, int stop, IList<byte> other) {

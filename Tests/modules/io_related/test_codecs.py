@@ -1073,15 +1073,12 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.register, "abc")
         self.assertRaises(TypeError, codecs.register, 3.14)
 
-        global decode_input
-        global mv_decode_input
-
         def my_test_decode(b, errors = None):
-            global decode_input
+            nonlocal decode_input
             decode_input = b
             if type(b) == memoryview:
                 # clone memoryview for inspection, since the original may get released in the meantime
-                global mv_decode_input
+                nonlocal mv_decode_input
                 mv_decode_input = memoryview(b)
             return ('*' * len(b), len(b))
 
@@ -1912,8 +1909,6 @@ class CodecTest(IronPythonTestCase):
         finally:
             sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
 
-    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
-    @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
     def test_cp11334(self):
         def run_python(filename):
             p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", filename)], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1997,7 +1992,6 @@ class CodecTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, codecs.lookup, None)
 
-    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     def test_cp1019(self):
         #--Test that bogus encodings fail properly
         # https://github.com/IronLanguages/main/issues/255

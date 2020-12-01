@@ -276,11 +276,18 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal PythonVariable/*!*/ EnsureGlobalVariable(string name) {
             PythonVariable variable;
-            if (!TryGetVariable(name, out variable)) {
+            if (TryGetVariable(name, out variable)) {
+                variable.LiftToGlobal();
+            } else {
                 variable = CreateVariable(name, VariableKind.Global);
             }
 
             return variable;
+        }
+
+        internal override MSAst.Expression GetVariableExpression(PythonVariable variable) {
+            Debug.Assert(_globalVariables.ContainsKey(variable));
+            return _globalVariables[variable];
         }
 
         #endregion

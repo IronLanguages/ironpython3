@@ -384,8 +384,7 @@ namespace IronPython.Compiler.Ast {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
                     if (!HasClosureVariable(closureVariables, variable) &&
-                        !variable.IsGlobal &&
-                        variable.Kind != VariableKind.Nonlocal &&
+                        variable.Kind is not VariableKind.Global and not VariableKind.Nonlocal &&
                         (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
 
                         if (closureVariables == null) {
@@ -700,7 +699,7 @@ namespace IronPython.Compiler.Ast {
 
         internal virtual MSAst.Expression GetVariableExpression(PythonVariable variable) {
             Assert.NotNull(variable?.LimitVariable);
-            if (variable.IsGlobal) {
+            if (variable.Kind is VariableKind.Global) {
                 return GlobalParent.ModuleVariables[variable];
             }
 

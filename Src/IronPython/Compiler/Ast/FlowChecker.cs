@@ -56,7 +56,7 @@ using Microsoft.Scripting;
  * 
  * The bit arrays in the flow checker hold the state and upon encountering NameExpr we figure
  * out whether the name has not yet been initialized at all (in which case we need to emit the
- * first explicit assignment to Uninitialized.instance and guard the use with an inlined check
+ * first explicit assignment to Uninitialized.instance and guard the use with an inlined check)
  * or whether it is definitely assigned (we don't need to inline the check)
  * or whether it may be uninitialized, in which case we must only guard the use by inlining the Uninitialized check
  * 
@@ -97,7 +97,7 @@ namespace IronPython.Compiler.Ast {
             node.Walk(_fc);
             return false;
         }
-        
+
         public override bool Walk(ParenthesisExpression node) {
             return true;
         }
@@ -109,14 +109,13 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(ListExpression node) {
             return true;
         }
-        
+
         public override bool Walk(Parameter node) {
             _fc.Define(node.Name);
             return true;
         }
     }
 
-    // TODO: probably obsolete, PythonVariable.Deleted does the job better (across scopes)
     internal class FlowDeleter : PythonWalkerNonRecursive {
         private readonly FlowChecker _fc;
 

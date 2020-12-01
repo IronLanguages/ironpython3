@@ -15,6 +15,7 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler.Ast {
     /// <summary>
     /// Fake ScopeStatement for FunctionCode's to hold on to after we have deserialized pre-compiled code.
+    /// Will never be a subject of name binding.
     /// </summary>
     internal class SerializedScopeStatement : ScopeStatement {
         private readonly string _name;
@@ -74,29 +75,15 @@ namespace IronPython.Compiler.Ast {
             throw new InvalidOperationException();
         }
 
-        public override string Name {
-            get {
-                return _name;
-            }
-        }
+        public override string Name => _name;
 
-        internal override string Filename {
-            get {
-                return _filename;
-            }
-        }
+        internal override string Filename => _filename;
 
-        internal override FunctionAttributes Flags {
-            get {
-                return _flags;
-            }
-        }
+        internal override FunctionAttributes Flags => _flags;
 
-        internal override string[] ParameterNames {
-            get {
-                return _parameterNames;
-            }
-        }
+        internal override bool IsGlobal => true;
+
+        internal override string[] ParameterNames => _parameterNames;
 
         internal override int ArgCount => _argCount;
 

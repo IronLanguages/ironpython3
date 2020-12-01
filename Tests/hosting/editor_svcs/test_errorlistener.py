@@ -137,7 +137,7 @@ None = 3"""
 
     def test_warning(self):
         expected = [
-            ("name 'a' is assigned to before global declaration", "global a", -1, self.FatalError), # reports as error since 3.6
+            ("name 'a' is assigned to before global declaration", "global a", 0x10, self.FatalError), # reports as error since 3.6
         ]
         code = """\
 def foo():
@@ -148,8 +148,8 @@ def foo():
     def test_should_report_multiple_warnings_negative(self):
         "Bug #17541, http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=17541"
         expected = [
-            ("Variable a assigned before global declaration", "global a", -1, self.Warning),
-            ("Variable b assigned before global declaration", "global b", -1, self.Warning),
+            ("Variable a assigned before global declaration", "global a", 0x10, self.Warning),
+            ("Variable b assigned before global declaration", "global b", 0x10, self.Warning),
         ]
         code = """\
 def foo():
@@ -164,8 +164,8 @@ def bar():
     def test_should_report_both_errors_and_warnings_negative(self):
         "Bug #17541, http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=17541"
         expected = [
-            ("can't assign to keyword", "None", -1, self.Error),
-            ("Variable a assigned before global declaration", "global a", -1, self.Warning),
+            ("can't assign to keyword", "None", 0x10, self.Error),
+            ("Variable a assigned before global declaration", "global a", 0x10, self.Warning),
         ]
         code = """\
 None = 2

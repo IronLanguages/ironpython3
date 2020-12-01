@@ -21,6 +21,7 @@ namespace IronPython.Compiler.Ast {
 
         public PythonVariable(string name, VariableKind kind, ScopeStatement/*!*/ scope) {
             Assert.NotNull(scope);
+            Debug.Assert(kind != VariableKind.Global || scope.IsGlobal);
             Debug.Assert(kind != VariableKind.Nonlocal || !scope.IsGlobal);
             Name = name;
             Kind = kind;
@@ -32,18 +33,22 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public string Name { get; }
 
-        public bool IsGlobal {
-            get {
-                return Kind == VariableKind.Global || Scope.IsGlobal;
-            }
-        }
-
         /// <summary>
         /// The original scope in which the variable is defined.
         /// </summary>
         public ScopeStatement Scope { get; }
 
-        public VariableKind Kind { get; set; } // TODO: make readonly
+        public VariableKind Kind { get; private set; }
+
+        /// <summary>
+        /// Transform a local kind of variable in a global scope (yes, they can be created)
+        /// into a global kind, hence explicitly accessible to nested local scopes.
+        /// </summary>
+        internal void LiftToGlobal() {
+            Debug.Assert(Scope.IsGlobal);
+            Debug.Assert(Kind is not VariableKind.Parameter and not VariableKind.Nonlocal);
+            Kind = VariableKind.Global;
+        }
 
         /// <summary>
         /// The actual variable represented by this variable instance.

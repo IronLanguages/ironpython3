@@ -251,7 +251,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override Ast GetVariableExpression(PythonVariable variable) {
-            if (variable.IsGlobal) {
+            if (variable.Kind is VariableKind.Global) {
                 return GlobalParent.ModuleVariables[variable];
             }
 

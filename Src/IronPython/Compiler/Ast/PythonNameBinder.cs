@@ -11,28 +11,35 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
+
 /*
  * The name binding:
  *
- * The name binding happens in 2 passes.
- * In the first pass (full recursive walk of the AST) we resolve locals.
- * The second pass uses the "processed" list of all context statements (functions and class
- * bodies) and has each context statement resolve its free variables to determine whether
- * they are globals or references to lexically enclosing scopes.
+ * The name binding happens in 4 passes.
  *
- * The second pass happens in post-order (the context statement is added into the "processed"
- * list after processing its nested functions/statements). This way, when the function is
- * processing its free variables, it also knows already which of its locals are being lifted
- * to the closure and can report error if such closure variable is being deleted.
+ * The first pass is a full recursive walk of the AST. During this walk, all scopes are established
+ * (created by functions, classes, comprehensions, generators, and the AST root),
+ * and in each scope all variables are collected that are defined (local or parameter)
+ * or declared (global or nonlocal) there. Also, for each scope, all references used in the
+ * scope are collected but kept unresolved as yet.
  *
- * This is illegal in Python:
+ * The second pass uses the collected stack of all scopes and has each scope resolve its references.
+ * The references can be resolved locally within the scope or as free variables, 
+ * either as globals or as references to lexically enclosing scopes.
  *
- * def f():
- *     x = 10
- *     if (cond): del x        # illegal because x is a closure variable
- *     def g():
- *         print x
- * TODO: the example above is no longer valid; also the description of the name binding algorithm does not match the code
+ * The second pass happens in post-order (a scope is processed after processing all its nested scopes).
+ * Consequently, when the scope is processing its free variables, it also knows already
+ * which of its locals are being lifted to the closure.
+ *
+ * The third pass goes over all the scopes again, this time in pre-order (except for the root AST).
+ * In this pass, all scopes build theirs closures, if needed. Becasue nested scopes are processed
+ * after their encompassing scope, scopes may use the already prepared closure
+ * from their parent.
+ *
+ * During the fourth pass, each scope is being inspected by the FlowChecker,
+ * which analyzes the data flow in the scope. Information collected during this analysis
+ * allows for some optimizations later on, when the expression trees are being constructed.
  */
 
 namespace IronPython.Compiler.Ast {
@@ -54,37 +61,6 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
         public override bool Walk(ListExpression node) {
-            return true;
-        }
-    }
-
-    internal class ParameterBinder : PythonWalkerNonRecursive {
-        private PythonNameBinder _binder;
-        public ParameterBinder(PythonNameBinder binder) {
-            _binder = binder;
-        }
-
-        public override bool Walk(Parameter node) {
-            node.Parent = _binder._currentScope;
-            node.PythonVariable = _binder.DefineParameter(node.Name);
-            return false;
-        }
-
-        // TODO: obsolete?
-        private void WalkTuple(TupleExpression tuple) {
-            tuple.Parent = _binder._currentScope;
-            foreach (Expression innerNode in tuple.Items) {
-                if (innerNode is NameExpression name) {
-                    _binder.DefineName(name.Name);
-                    name.Parent = _binder._currentScope;
-                    name.Reference = _binder.Reference(name.Name);
-                } else {
-                    WalkTuple((TupleExpression)innerNode);
-                }
-            }
-        }
-        public override bool Walk(TupleExpression node) {
-            node.Parent = _binder._currentScope;
             return true;
         }
     }
@@ -111,7 +87,6 @@ namespace IronPython.Compiler.Ast {
 
         private readonly DefineBinder _define;
         private readonly DeleteBinder _delete;
-        private readonly ParameterBinder _parameter;
 
         #endregion
 
@@ -120,7 +95,6 @@ namespace IronPython.Compiler.Ast {
         private PythonNameBinder(CompilerContext context) {
             _define = new DefineBinder(this);
             _delete = new DeleteBinder(this);
-            _parameter = new ParameterBinder(this);
             Context = context;
         }
 
@@ -197,12 +171,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal void ReportSyntaxWarning(string message, Node node) {
-            Context.Errors.Add(Context.SourceUnit, message, node.Span, -1, Severity.Warning);
+            Context.Errors.Add(Context.SourceUnit, message, node.Span, ErrorCodes.SyntaxError, Severity.Warning);
         }
 
         internal void ReportSyntaxError(string message, Node node) {
-            // TODO: Change the error code (-1)
-            Context.Errors.Add(Context.SourceUnit, message, node.Span, -1, Severity.FatalError);
+            Context.Errors.Add(Context.SourceUnit, message, node.Span, ErrorCodes.SyntaxError, Severity.FatalError);
         }
 
         #region AstBinder Overrides
@@ -635,12 +608,12 @@ namespace IronPython.Compiler.Ast {
         // FunctionDefinition
         public override bool Walk(FunctionDefinition node) {
             node._nameVariable = _globalScope.EnsureGlobalVariable("__name__");
-            
+
             // Name is defined in the enclosing context
             if (!node.IsLambda) {
                 node.PythonVariable = DefineName(node.Name);
             }
-            
+
             // process the default arg values in the outer context
             foreach (Parameter p in node.Parameters) {
                 p.DefaultValue?.Walk(this);
@@ -658,7 +631,8 @@ namespace IronPython.Compiler.Ast {
             PushScope(node);
 
             foreach (Parameter p in node.Parameters) {
-                p.Walk(_parameter);
+                p.Parent = _currentScope;
+                p.PythonVariable = DefineParameter(p.Name);
             }
 
             node.Body.Walk(this);
@@ -705,9 +679,8 @@ namespace IronPython.Compiler.Ast {
                     ReportSyntaxError($"name '{n}' is used prior to global declaration", node);
                 }
 
-                // Create the variable in the global context and mark it as global
+                // Create the variable in the global context or mark it as global
                 PythonVariable variable = _globalScope.EnsureGlobalVariable(n);
-                variable.Kind = VariableKind.Global;
 
                 if (conflict == null) {
                     // no previously defined variables, add it to the current scope

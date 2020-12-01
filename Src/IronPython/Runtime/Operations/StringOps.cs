@@ -407,14 +407,20 @@ namespace IronPython.Runtime.Operations {
             return center(self, width, ' ');
         }
 
-        public static string center([NotNull]this string self, int width, char fillchar) {
+        public static string center([NotNull] this string self, int width, char fillchar) {
             int spaces = width - self.Length;
             if (spaces <= 0) return self;
 
             StringBuilder ret = new StringBuilder(width);
-            ret.Append(fillchar, spaces / 2);
-            ret.Append(self);
-            ret.Append(fillchar, (spaces + 1) / 2);
+            if ((width & 1) == 0) {
+                ret.Append(fillchar, spaces / 2);
+                ret.Append(self);
+                ret.Append(fillchar, (spaces + 1) / 2);
+            } else {
+                ret.Append(fillchar, (spaces + 1) / 2);
+                ret.Append(self);
+                ret.Append(fillchar, spaces / 2);
+            }
             return ret.ToString();
         }
 

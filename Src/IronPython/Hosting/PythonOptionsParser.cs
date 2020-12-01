@@ -70,6 +70,12 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Verbose"] = ScriptingRuntimeHelpers.True;
                     break;
 
+                case "-I": // both -E and -s
+                    ConsoleOptions.IgnoreEnvironmentVariables = true;
+                    LanguageSetup.Options["IgnoreEnvironment"] = ScriptingRuntimeHelpers.True;
+                    LanguageSetup.Options["NoUserSite"] = ScriptingRuntimeHelpers.True;
+                    break;
+
                 case "-S":
                     ConsoleOptions.SkipImportSite = true;
                     LanguageSetup.Options["NoSite"] = ScriptingRuntimeHelpers.True;
@@ -250,6 +256,7 @@ namespace IronPython.Hosting {
                 { "-E",                     "Ignore environment variables" },
                 { "-S",                     "Don't imply 'import site' on initialization" },
                 { "-s",                     "Don't add user site directory to sys.path" },
+                { "-I",                     "isolate IronPython from the user's environment (implies -E and -s)" },
                 { "-t",                     "Issue warnings about inconsistent tab usage" },
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },

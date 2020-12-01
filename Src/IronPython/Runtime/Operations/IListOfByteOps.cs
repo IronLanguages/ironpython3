@@ -466,13 +466,22 @@ namespace IronPython.Runtime.Operations {
             byte fill = fillchar.ToByteChecked();
 
             List<byte> newBytes = new List<byte>();
-            for (int i = 0; i < spaces / 2; i++) {
-                newBytes.Add(fill);
-            }
-
-            newBytes.AddRange(bytes);
-            for (int i = 0; i < (spaces + 1) / 2; i++) {
-                newBytes.Add(fill);
+            if ((width & 1) == 0) {
+                for (int i = 0; i < spaces / 2; i++) {
+                    newBytes.Add(fill);
+                }
+                newBytes.AddRange(bytes);
+                for (int i = 0; i < (spaces + 1) / 2; i++) {
+                    newBytes.Add(fill);
+                }
+            } else {
+                for (int i = 0; i < (spaces + 1) / 2; i++) {
+                    newBytes.Add(fill);
+                }
+                newBytes.AddRange(bytes);
+                for (int i = 0; i < spaces / 2; i++) {
+                    newBytes.Add(fill);
+                }
             }
             return newBytes;
         }

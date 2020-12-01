@@ -74,10 +74,7 @@ class NtTest(IronPythonTestCase):
         self.assertEqual(nt.getcwdb(),nt.getcwd().encode())
 
         nt.mkdir('dir_create_test')
-        if is_cli:
-            self.assertEqual(nt.listdir(nt.getcwdb()).count('dir_create_test'), 1)
-        else:
-            self.assertEqual(nt.listdir(nt.getcwdb()).count(b'dir_create_test'), 1)
+        self.assertEqual(nt.listdir(nt.getcwdb()).count(b'dir_create_test'), 1)
         nt.rmdir('dir_create_test')
 
     # getpid test

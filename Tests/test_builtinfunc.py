@@ -174,19 +174,19 @@ class BuiltinsTest2(IronPythonTestCase):
 
     def test_range(self):
         if is_cli:
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, 2, 5.0)
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, 3, 10, 2.0)
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, 0, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, float(-2<<32), 100)
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, 0, 100, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected index value, got float",
+            self.assertRaisesMessage(TypeError, "expected integer value, got float",
                             range, float(-2<<32), float(-2<<32), float(-2<<32))
         else:
             self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",

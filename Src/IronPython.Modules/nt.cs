@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections;
@@ -26,6 +28,9 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+
 #if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
@@ -35,6 +40,13 @@ namespace IronPython.Modules {
     public static class PythonNT {
         public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
+        /* TODO: missing functions/classes:
+         * Windows:
+         * {'execve', '_isdir', 'getlogin', 'get_inheritable', 'statvfs_result', 'readlink', 'stat_float_times', 'getppid',
+         * '_getdiskusage', 'execv', 'set_inheritable', 'device_encoding', 'isatty', '_getvolumepathname',
+         * 'times_result', 'cpu_count', 'get_handle_inheritable', 'set_handle_inheritable'}
+         */
+
 #if FEATURE_PROCESS
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
@@ -43,9 +55,37 @@ namespace IronPython.Modules {
 
         private static readonly object _keyFields = new object();
         private static readonly string _keyHaveFunctions = "_have_functions";
+        private static readonly Encoding _filesystemEncoding;
+
+        static PythonNT() {
+            string fsEncodingName = SysModule.getfilesystemencoding();
+
+            // TODO: Python 3.6: use sys.getfilesystemencodeerrors()
+            switch (fsEncodingName) {
+                case "mbcs":
+                    _filesystemEncoding = Encoding.GetEncoding(0); // on errors does diacritics stripping if possible else replace
+                    break;
+
+                case "utf-8":
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        _filesystemEncoding = new PythonSurrogatePassEncoding(Encoding.UTF8);
+                    } else {
+                        // TODO: Verify: CPython uses surrogateescape, but .NET will handle using replace
+                        // so paths produced as output will never have surrogates, but have errors replaced by U+FFFD
+                        // and paths provided as input will have any surrogates replaced by U+FFFD or ?
+                        // Using surrogateescape here properly validates bytes input but does not guarantee safe roundtrip
+                        _filesystemEncoding = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
+                    }
+                    break;
+
+                default:
+                    throw new InvalidImplementationException("SysModule.getfilesystemencoding() returned invalid encoding");
+            }
+
+        }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
+        public static void PerformModuleReload([NotNull] PythonContext context, [NotNull] PythonDictionary dict) {
             var have_functions = new PythonList();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 have_functions.Add("MS_WINDOWS");
@@ -63,7 +103,7 @@ namespace IronPython.Modules {
         private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static string _getfinalpathname(string path) {
+        public static string _getfinalpathname([NotNull] string path) {
             var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
             if (hFile.IsInvalid) {
                 throw GetLastWin32Error(path);
@@ -77,6 +117,83 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
+        public static string _getfullpathname(CodeContext/*!*/ context, [NotNull] string/*!*/ path) {
+            PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
+
+            try {
+                return pal.GetFullPath(path);
+            } catch (ArgumentException) {
+                // .NET validates the path, CPython doesn't... so we replace invalid chars with
+                // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/
+                // their original value.
+                string newdir = path;
+
+                if (IsWindows()) {
+                    if (newdir.Length >= 2 && newdir[1] == ':' &&
+                        (newdir[0] < 'a' || newdir[0] > 'z') && (newdir[0] < 'A' || newdir[0] > 'Z')) {
+                        // invalid drive, .NET will reject this
+                        if (newdir.Length == 2) {
+                            return newdir + Path.DirectorySeparatorChar;
+                        } else if (newdir[2] == Path.DirectorySeparatorChar) {
+                            return newdir;
+                        } else {
+                            return newdir.Substring(0, 2) + Path.DirectorySeparatorChar + newdir.Substring(2);
+                        }
+                    }
+                    if (newdir.Length > 2 && newdir.IndexOf(':', 2) != -1) {
+                        // : is an invalid char if it's not in the 2nd position
+                        newdir = newdir.Substring(0, 2) + newdir.Substring(2).Replace(':', Char.MaxValue);
+                    }
+
+                    if (newdir.Length > 0 && newdir[0] == ':') {
+                        newdir = Char.MaxValue + newdir.Substring(1);
+                    }
+                }
+
+                foreach (char c in Path.GetInvalidPathChars()) {
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+
+#if NETCOREAPP || NETSTANDARD
+                foreach (char c in invalidPathChars) {
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+#endif
+
+                foreach (char c in Path.GetInvalidFileNameChars()) {
+                    // don't replace the volume or directory separators
+                    if (c == Path.VolumeSeparatorChar || c == Path.DirectorySeparatorChar) continue;
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+
+                // walk backwards through the path replacing the same characters.  We should have
+                // only updated the directory leaving the filename which we're fixing.
+                string res = pal.GetFullPath(newdir);
+                int curDir = path.Length;
+                for (int curRes = res.Length - 1; curRes >= 0; curRes--) {
+                    if (res[curRes] == Char.MaxValue) {
+                        for (curDir--; curDir >= 0; curDir--) {
+                            if (newdir[curDir] == Char.MaxValue) {
+                                res = res.Substring(0, curRes) + path[curDir] + res.Substring(curRes + 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return res;
+            }
+
+            static bool IsWindows() {
+                return Environment.OSVersion.Platform == PlatformID.Win32NT ||
+                    Environment.OSVersion.Platform == PlatformID.Win32S ||
+                    Environment.OSVersion.Platform == PlatformID.Win32Windows;
+            }
+        }
+
+        public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNull] Bytes path)
+            => _getfullpathname(context, path.ToFsString()).ToFsBytes();
+
 #if FEATURE_PROCESS
         public static void abort() {
             System.Environment.FailFast("IronPython os.abort");
@@ -85,14 +202,15 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// Checks for the specific permissions, provided by the mode parameter, are available for the provided path.  Permissions can be:
-        /// 
+        ///
         /// F_OK: Check to see if the file exists
         /// R_OK | W_OK | X_OK: Check for the specific permissions.  Only W_OK is respected.
         /// </summary>
-        public static bool access(CodeContext/*!*/ context, [NotNull] string path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> dict) {
+        [Documentation("access(path, mode, *, dir_fd=None, effective_ids=False, follow_symlinks=True)")]
+        public static bool access(CodeContext/*!*/ context, [NotNull] string path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
-            foreach (var pair in dict) {
+            foreach (var pair in kwargs) {
                 switch (pair.Key) {
                     case "dir_fd":
                     case "follow_symlinks":
@@ -137,6 +255,14 @@ namespace IronPython.Modules {
 #endif
         }
 
+        [Documentation("")]
+        public static bool access(CodeContext context, [NotNull] Bytes path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => access(context, path.ToFsString(), mode, kwargs);
+
+        [Documentation("")]
+        public static bool access(CodeContext context, [NotNull] IBufferProtocol path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => access(context, path.ToFsBytes(context), mode, kwargs);
+
 #if FEATURE_FILESYSTEM
 
         public static void chdir([NotNull]string path) {
@@ -151,23 +277,28 @@ namespace IronPython.Modules {
             }
         }
 
+        public static void chdir([NotNull] Bytes path)
+            => chdir(path.ToFsString());
+
+        public static void chdir(CodeContext context, [NotNull] IBufferProtocol path)
+            => chdir(path.ToFsBytes(context));
+
         // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
         private static void chmodUnix(string path, int mode) {
             if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
             throw GetLastUnixError(path);
         }
 
-        public static void chmod(string path, int mode, [ParamDictionary]IDictionary<string, object> dict) {
-            if (dict != null) {
-                foreach (var key in dict.Keys) {
-                    switch (key) {
-                        case "dir_fd":
-                        case "follow_symlinks":
-                            // TODO: implement these!
-                            break;
-                        default:
-                            throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
-                    }
+        [Documentation("chmod(path, mode, *, dir_fd=None, follow_symlinks=True)")]
+        public static void chmod([NotNull] string path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                    case "follow_symlinks":
+                        // TODO: implement these!
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
                 }
             }
 
@@ -189,6 +320,14 @@ namespace IronPython.Modules {
             }
         }
 
+        [Documentation("")]
+        public static void chmod([NotNull] Bytes path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => chmod(path.ToFsString(), mode, kwargs);
+
+        [Documentation("")]
+        public static void chmod(CodeContext context, [NotNull] IBufferProtocol path, int mode, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => chmod(path.ToFsBytes(context), mode, kwargs);
+
 #endif
 
         public static void close(CodeContext/*!*/ context, int fd) {
@@ -197,7 +336,7 @@ namespace IronPython.Modules {
             if (fileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
                 fileManager.CloseIfLast(context, fd, file);
             } else {
-                Stream stream = fileManager.GetObjectFromId(fd) as Stream;
+                Stream? stream = fileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
                     throw PythonOps.OSError(9, "Bad file descriptor");
                 }
@@ -233,7 +372,7 @@ namespace IronPython.Modules {
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
                 return pythonContext.FileManager.AddToStrongMapping(file);
             } else {
-                Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+                Stream? stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
                     throw PythonOps.OSError(9, "Bad file descriptor");
                 }
@@ -287,8 +426,8 @@ namespace IronPython.Modules {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType error = Builtin.OSError;
 
-        public static void _exit(CodeContext/*!*/ context, int code) {
-            context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(code);
+        public static void _exit(CodeContext/*!*/ context, int status) {
+            context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(status);
         }
 
         [LightThrowing]
@@ -300,7 +439,7 @@ namespace IronPython.Modules {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     if (IsUnixStream(file._readStream)) return new stat_result(4096);
                 }
-                if (file.name is string strName) return lstat(strName);
+                if (file.name is string strName) return lstat(strName, new Dictionary<string, object>(1));
             }
             throw PythonOps.OSError(9, "Bad file descriptor");
 
@@ -323,91 +462,12 @@ namespace IronPython.Modules {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }
 
-        public static Bytes getcwdb(CodeContext/*!*/ context) {
-            var encoding = SysModule.getfilesystemencoding() as string;
-            return StringOps.encode(context, context.LanguageContext.DomainManager.Platform.CurrentDirectory, encoding);
-        }
+        public static Bytes getcwdb(CodeContext/*!*/ context)
+            => getcwd(context).ToFsBytes();
 
 #if NETCOREAPP || NETSTANDARD
         private static readonly char[] invalidPathChars = new char[] { '\"', '<', '>' };
 #endif
-
-        public static string _getfullpathname(CodeContext/*!*/ context, [NotNull]string/*!*/ dir) {
-            PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
-
-            try {
-                return pal.GetFullPath(dir);
-            } catch (ArgumentException) {
-                // .NET validates the path, CPython doesn't... so we replace invalid chars with 
-                // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/ 
-                // their original value.
-                string newdir = dir;
-
-                if (IsWindows()) {
-                    if (newdir.Length >= 2 && newdir[1] == ':' &&
-                        (newdir[0] < 'a' || newdir[0] > 'z') && (newdir[0] < 'A' || newdir[0] > 'Z')) {
-                        // invalid drive, .NET will reject this
-                        if (newdir.Length == 2) {
-                            return newdir + Path.DirectorySeparatorChar;
-                        } else if (newdir[2] == Path.DirectorySeparatorChar) {
-                            return newdir;
-                        } else {
-                            return newdir.Substring(0, 2) + Path.DirectorySeparatorChar + newdir.Substring(2);
-                        }
-                    }
-                    if (newdir.Length > 2 && newdir.IndexOf(':', 2) != -1) {
-                        // : is an invalid char if it's not in the 2nd position
-                        newdir = newdir.Substring(0, 2) + newdir.Substring(2).Replace(':', Char.MaxValue);
-                    }
-
-                    if (newdir.Length > 0 && newdir[0] == ':') {
-                        newdir = Char.MaxValue + newdir.Substring(1);
-                    }
-                }
-
-                foreach (char c in Path.GetInvalidPathChars()) {
-                    newdir = newdir.Replace(c, Char.MaxValue);
-                }
-
-#if NETCOREAPP || NETSTANDARD
-                foreach (char c in invalidPathChars) {
-                    newdir = newdir.Replace(c, Char.MaxValue);
-                }
-#endif
-
-                foreach (char c in Path.GetInvalidFileNameChars()) {
-                    // don't replace the volume or directory separators
-                    if (c == Path.VolumeSeparatorChar || c == Path.DirectorySeparatorChar) continue;
-                    newdir = newdir.Replace(c, Char.MaxValue);
-                }
-
-                // walk backwards through the path replacing the same characters.  We should have
-                // only updated the directory leaving the filename which we're fixing.
-                string res = pal.GetFullPath(newdir);
-                int curDir = dir.Length;
-                for (int curRes = res.Length - 1; curRes >= 0; curRes--) {
-                    if (res[curRes] == Char.MaxValue) {
-                        for (curDir--; curDir >= 0; curDir--) {
-                            if (newdir[curDir] == Char.MaxValue) {
-                                res = res.Substring(0, curRes) + dir[curDir] + res.Substring(curRes + 1);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                return res;
-            }
-
-            static bool IsWindows() {
-                return Environment.OSVersion.Platform == PlatformID.Win32NT ||
-                    Environment.OSVersion.Platform == PlatformID.Win32S ||
-                    Environment.OSVersion.Platform == PlatformID.Win32Windows;
-            }
-        }
-
-        public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNull] Bytes dir)
-            => StringOps.encode(context, _getfullpathname(context, dir.MakeString()), SysModule.getfilesystemencoding());
 
 #if FEATURE_PROCESS
         public static int getpid() {
@@ -415,7 +475,20 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static void link(string src, string dst, bool target_is_directory = false) {
+        [Documentation("link(src, dst, *, src_dir_fd=None, dst_dir_fd=None, follow_symlinks=True)")]
+        public static void link([NotNull] string src, [NotNull] string dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "src_dir_fd":
+                    case "dst_dir_fd":
+                    case "follow_symlinks":
+                        // TODO: implement these!
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                }
+            }
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 linkWindows(src, dst);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -435,14 +508,19 @@ namespace IronPython.Modules {
             }
         }
 
+        [Documentation("")]
+        public static void link([NotNull] Bytes src, [NotNull] Bytes dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => link(src.ToFsString(), dst.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void link(CodeContext context, object? src, object? dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => link(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
+
 
         [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);
 
-        public static PythonList listdir(CodeContext/*!*/ context, [BytesLike][NotNull]IList<byte> path)
-            => listdir(context, PythonOps.MakeString(path));
-
-        public static PythonList listdir(CodeContext/*!*/ context, string path = null) {
+        public static PythonList listdir(CodeContext/*!*/ context, string? path = null) {
             if (path == null) {
                 path = getcwd(context);
             }
@@ -460,30 +538,66 @@ namespace IronPython.Modules {
             }
         }
 
+        public static PythonList listdir(CodeContext context, [NotNull] Bytes path) {
+            PythonList ret = new PythonList();
+            foreach (object? item in listdir(context, path.ToFsString())) {
+                ret.AddNoLock(((string)item!).ToFsBytes());
+            }
+            return ret;
+        }
+
+        public static PythonList listdir(CodeContext context, [NotNull] IBufferProtocol path)
+            => listdir(context, path.ToFsBytes(context));
+
         public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
             var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
 
             return file.seek(context, offset, whence);
         }
 
-        /// <summary>
-        /// lstat(path) -> stat result 
-        /// Like stat(path), but do not follow symbolic links.
-        /// </summary>
+        [Documentation("lstat(path, *, dir_fd=None) -> stat_result\n\n" +
+            "Like stat(), but do not follow symbolic links.\n" +
+            "Equivalent to calling stat(...) with follow_symlinks=False.")]
         [LightThrowing]
-        public static object lstat(string path) {
-            // TODO: detect links
-            return stat(path, null);
+        public static object lstat([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            if (kwargs.ContainsKey("follow_symlinks"))
+                throw PythonOps.TypeError("'follow_symlinks' is an invalid keyword argument for lstat(...)");
+
+            kwargs["follow_symlinks"] = false;
+            return stat(path, kwargs);
         }
 
-        [LightThrowing]
-        public static object lstat([BytesLike]IList<byte> path)
-            => lstat(PythonOps.MakeString(path));
+        [LightThrowing, Documentation("")]
+        public static object lstat([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => lstat(path.ToFsString(), kwargs);
 
+
+        [LightThrowing, Documentation("")]
+        public static object lstat(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => lstat(path.ToFsBytes(context), kwargs);
 
 #if FEATURE_NATIVE
 
-        public static void symlink(string src, string dst, bool target_is_directory = false) {
+        [Documentation("symlink(src, dst, target_is_directory=False, *, dir_fd=None)")]
+        public static void symlink([NotNull] string src, [NotNull] string dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args) {
+            var numArgs = args.Length;
+            CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
+
+            bool target_is_directory = numArgs > 0 ? Converter.ConvertToBoolean(args[0]) : false;
+
+            foreach (var kvp in kwargs) {
+                switch (kvp.Key) {
+                    case nameof(target_is_directory):
+                        if (numArgs > 0) throw PythonOps.TypeError("argument for {0}() given by name ('{1}') and position ({2})", nameof(symlink), nameof(target_is_directory), 3);
+                        target_is_directory = Converter.ConvertToBoolean(kvp.Value);
+                        break;
+                    case "dir_fd":
+                        throw PythonOps.NotImplementedError("{0} unavailable on this platform", kvp.Key);
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for {1}()", kvp.Key, nameof(symlink));
+                }
+            }
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 // TODO: implement this
                 throw new NotImplementedException();
@@ -499,22 +613,31 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonType("uname_result"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [Documentation("")]
+        public static void symlink([NotNull] Bytes src, [NotNull] Bytes dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => symlink(src.ToFsString(), dst.ToFsString(), kwargs, args);
+
+        [Documentation("")]
+        public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
+
         public class uname_result : PythonTuple {
-            public uname_result(string sysname, string nodename, string release, string version, string machine) :
-                base(new object[] { sysname, nodename, release, version, machine }) { }
+            // TODO: posix: support constructor with a sequence, see construction of stat_result
+            public uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :
+                base(new object?[] { sysname, nodename, release, version, machine }) { }
 
-            public string sysname => (string)this[0];
+            public string? sysname => (string?)this[0];
 
-            public string nodename => (string)this[1];
+            public string? nodename => (string?)this[1];
 
-            public string release => (string)this[2];
+            public string? release => (string?)this[2];
 
-            public string version => (string)this[3];
+            public string? version => (string?)this[3];
 
-            public string machine => (string)this[4];
+            public string? machine => (string?)this[4];
 
             public override string ToString() {
+                // TODO: posix: handle null values, see terminal_size.__repr__()
                 return $"posix.uname_result(sysname='{sysname}', nodename='{nodename}', release='{release}', version='{version}', machine='{machine}')";
             }
         }
@@ -539,18 +662,26 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_FILESYSTEM
-        public static void mkdir(string path) {
-            if (Directory.Exists(path))
-                throw DirectoryExists();
+        [Documentation("mkdir(path, mode=511, *, dir_fd=None)")]
+        public static void mkdir([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args) {
+            var numArgs = args.Length;
+            CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
-            try {
-                Directory.CreateDirectory(path);
-            } catch (Exception e) {
-                throw ToPythonException(e, path);
+            int mode = numArgs > 0 ? Converter.ConvertToIndex(args[0], throwOverflowError: true) : 511; // 0o777
+
+            foreach (var kvp in kwargs) {
+                switch (kvp.Key) {
+                    case nameof(mode):
+                        if (numArgs > 0) throw PythonOps.TypeError("argument for {0}() given by name ('{1}') and position ({2})", nameof(mkdir), nameof(mode), 2);
+                        mode = Converter.ConvertToIndex(kvp.Value, throwOverflowError: true);
+                        break;
+                    case "dir_fd":
+                        throw PythonOps.NotImplementedError("{0} unavailable on this platform", kvp.Key);
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for {1}()", kvp.Key, nameof(mkdir));
+                }
             }
-        }
 
-        public static void mkdir(string path, int mode) {
             if (Directory.Exists(path)) throw DirectoryExists();
             // we ignore mode
 
@@ -561,17 +692,40 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object open(CodeContext/*!*/ context, string filename, int flag) {
-            return open(context, filename, flag, 0777);
-        }
+        [Documentation("")]
+        public static void mkdir([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => mkdir(path.ToFsString(), kwargs, args);
+
+        [Documentation("")]
+        public static void mkdir(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => mkdir(path.ToFsBytes(context), kwargs, args);
 
         private const int DefaultBufferSize = 4096;
 
-        public static object open(CodeContext/*!*/ context, string filename, int flag, int mode) {
+        [Documentation("open(path, flags, mode=511, *, dir_fd=None)")]
+        public static object open(CodeContext/*!*/ context, [NotNull] string filename, int flags, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args) {
+            var numArgs = args.Length;
+            CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
+
+            int mode = numArgs > 0 ? Converter.ConvertToIndex(args[0], throwOverflowError: true) : 511; // 0o777
+
+            foreach (var kvp in kwargs) {
+                switch (kvp.Key) {
+                    case nameof(mode):
+                        if (numArgs > 0) throw PythonOps.TypeError("argument for {0}() given by name ('{1}') and position ({2})", nameof(open), nameof(mode), 3);
+                        mode = Converter.ConvertToIndex(kvp.Value, throwOverflowError: true);
+                        break;
+                    case "dir_fd":
+                        throw PythonOps.NotImplementedError("{0} unavailable on this platform", kvp.Key);
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for {1}()", kvp.Key, nameof(open));
+                }
+            }
+
             try {
-                FileMode fileMode = FileModeFromFlags(flag);
-                FileAccess access = FileAccessFromFlags(flag);
-                FileOptions options = FileOptionsFromFlags(flag);
+                FileMode fileMode = FileModeFromFlags(flags);
+                FileAccess access = FileAccessFromFlags(flags);
+                FileOptions options = FileOptionsFromFlags(flags);
                 Stream fs;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(filename, "nul", StringComparison.OrdinalIgnoreCase)
                    || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && filename == "/dev/null") {
@@ -593,7 +747,7 @@ namespace IronPython.Modules {
                 else if (fs.CanWrite) mode2 = "w";
                 else mode2 = "r";
 
-                if ((flag & O_BINARY) != 0) {
+                if ((flags & O_BINARY) != 0) {
                     mode2 += "b";
                 }
 
@@ -602,6 +756,15 @@ namespace IronPython.Modules {
                 throw ToPythonException(e, filename);
             }
         }
+
+        [Documentation("")]
+        public static object open(CodeContext context, [NotNull] Bytes filename, int flags, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => open(context, filename.ToFsString(), flags, kwargs, args);
+
+        [Documentation("")]
+        public static object open(CodeContext context, [NotNull] IBufferProtocol filename, int flags, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => open(context, filename.ToFsBytes(context), flags, kwargs, args);
+
 
         private static FileOptions FileOptionsFromFlags(int flag) {
             FileOptions res = FileOptions.None;
@@ -650,9 +813,9 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_PROCESS
-        public static void putenv(string varname, string value) {
+        public static void putenv([NotNull] string name, [NotNull] string value) {
             try {
-                System.Environment.SetEnvironmentVariable(varname, value);
+                System.Environment.SetEnvironmentVariable(name, value);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -673,13 +836,33 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void rename(string src, string dst) {
+        [Documentation("rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
+        public static void rename([NotNull] string src, [NotNull] string dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "src_dir_fd":
+                    case "dst_dir_fd":
+                        // TODO: posix: implement these!
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                }
+            }
+
             try {
                 Directory.Move(src, dst);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
         }
+
+        [Documentation("")]
+        public static void rename([NotNull] Bytes src, [NotNull] Bytes dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => rename(src.ToFsString(), dst.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void rename(CodeContext context, object? src, object? dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => rename(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
 
         private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
 
@@ -691,7 +874,19 @@ namespace IronPython.Modules {
             throw GetLastUnixError(src, dst);
         }
 
-        public static void replace(string src, string dst) {
+        [Documentation("replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
+        public static void replace([NotNull] string src, [NotNull] string dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "src_dir_fd":
+                    case "dst_dir_fd":
+                        // TODO: posix: implement these!
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                }
+            }
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 if (!MoveFileEx(src, dst, MOVEFILE_REPLACE_EXISTING)) {
                     throw GetLastWin32Error(src, dst);
@@ -703,7 +898,26 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void rmdir(string path) {
+        [Documentation("")]
+        public static void replace([NotNull] Bytes src, [NotNull] Bytes dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => replace(src.ToFsString(), dst.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void replace(CodeContext context, object? src, object? dst, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => replace(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
+
+
+        [Documentation("rmdir(path, *, dir_fd=None)")]
+        public static void rmdir([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                        // TODO: posix: implement this
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                }
+            }
             try {
                 Directory.Delete(path);
             } catch (Exception e) {
@@ -711,38 +925,58 @@ namespace IronPython.Modules {
             }
         }
 
+        [Documentation("")]
+        public static void rmdir([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => rmdir(path.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void rmdir(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => rmdir(path.ToFsBytes(context), kwargs);
+
 #if FEATURE_PROCESS
 
         /// <summary>
         /// spawns a new process.
-        /// 
+        ///
         /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
         /// is the exit code.
-        /// 
+        ///
         /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
         /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
         /// in a handle leak.
         /// </summary>
-        public static object spawnv(CodeContext/*!*/ context, int mode, string path, object args) {
+        public static object spawnv(CodeContext/*!*/ context, int mode, [NotNull] string path, object? args) {
             return SpawnProcessImpl(context, MakeProcess(), mode, path, args);
         }
 
+        public static object spawnv(CodeContext context, int mode, [NotNull] Bytes path, object? args)
+            => spawnv(context, mode, path.ToFsString(), args);
+
+        public static object spawnv(CodeContext context, int mode, [NotNull] IBufferProtocol path, object? args)
+            => spawnv(context, mode, path.ToFsBytes(context), args);
+
         /// <summary>
         /// spawns a new process.
-        /// 
+        ///
         /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
         /// is the exit code.
-        /// 
+        ///
         /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
         /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
         /// in a handle leak.
         /// </summary>
-        public static object spawnve(CodeContext/*!*/ context, int mode, string path, object args, object env) {
+        public static object spawnve(CodeContext/*!*/ context, int mode, [NotNull] string path, object? args, object? env) {
             Process process = MakeProcess();
-            SetEnvironment(process.StartInfo.EnvironmentVariables, env);
+            SetEnvironment(context, process.StartInfo.EnvironmentVariables, env);
 
             return SpawnProcessImpl(context, process, mode, path, args);
         }
+
+        public static object spawnve(CodeContext context, int mode, [NotNull] Bytes path, object? args, object? env)
+            => spawnve(context, mode, path.ToFsString(), args, env);
+
+        public static object spawnve(CodeContext context, int mode, [NotNull] IBufferProtocol path, object? args, object? env)
+            => spawnve(context, mode, path.ToFsBytes(context), args, env);
 
         private static Process MakeProcess() {
             try {
@@ -752,9 +986,9 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object SpawnProcessImpl(CodeContext/*!*/ context, Process process, int mode, string path, object args) {
+        private static object SpawnProcessImpl(CodeContext/*!*/ context, Process process, int mode, string path, object? args, [CallerMemberName] string? methodname = null) {
             try {
-                process.StartInfo.Arguments = ArgumentsToString(context, args);
+                process.StartInfo.Arguments = ArgumentsToString(context, args, methodname);
                 process.StartInfo.FileName = path;
                 process.StartInfo.UseShellExecute = false;
             } catch (Exception e) {
@@ -794,22 +1028,18 @@ namespace IronPython.Modules {
         /// <summary>
         /// Copy elements from a Python mapping of dict environment variables to a StringDictionary.
         /// </summary>
-        private static void SetEnvironment(System.Collections.Specialized.StringDictionary currentEnvironment, object newEnvironment) {
-            PythonDictionary env = newEnvironment as PythonDictionary;
+        private static void SetEnvironment(CodeContext context, System.Collections.Specialized.StringDictionary currentEnvironment, object? newEnvironment) {
+            var env = newEnvironment as IEnumerable<KeyValuePair<object?, object?>>; // TODO: as IMappingProtocol (https://docs.python.org/3.4/c-api/mapping.html) ?
             if (env == null) {
-                throw PythonOps.TypeError("env argument must be a dict");
+                throw PythonOps.TypeError("env argument must be a mapping object");
             }
 
             currentEnvironment.Clear();
 
             string strKey, strValue;
-            foreach (object key in env.keys()) {
-                if (!Converter.TryConvertToString(key, out strKey)) {
-                    throw PythonOps.TypeError("env dict contains a non-string key");
-                }
-                if (!Converter.TryConvertToString(env[key], out strValue)) {
-                    throw PythonOps.TypeError("env dict contains a non-string value");
-                }
+            foreach (var kvp in env) {
+                strKey = ConvertToFsString(context, kvp.Key, "environment variable name", "spawnve");
+                strValue = ConvertToFsString(context, kvp.Value, "environment variable value", "spawnve");
                 currentEnvironment[strKey] = strValue;
             }
         }
@@ -818,11 +1048,11 @@ namespace IronPython.Modules {
         /// <summary>
         /// Convert a sequence of args to a string suitable for using to spawn a process.
         /// </summary>
-        private static string ArgumentsToString(CodeContext/*!*/ context, object args) {
-            IEnumerator argsEnumerator;
-            System.Text.StringBuilder sb = null;
+        private static string ArgumentsToString(CodeContext/*!*/ context, object? args, string? methodname) {
+            IEnumerator? argsEnumerator;
+            StringBuilder? sb = null;
             if (!PythonOps.TryGetEnumerator(context, args, out argsEnumerator)) {
-                throw PythonOps.TypeError("args parameter must be sequence, not {0}", DynamicHelpers.GetPythonType(args));
+                throw PythonOps.TypeErrorForBadInstance("args parameter must be sequence, not {0}", args);
             }
 
             bool space = false;
@@ -830,8 +1060,8 @@ namespace IronPython.Modules {
                 // skip the first element, which is the name of the command being run
                 argsEnumerator.MoveNext();
                 while (argsEnumerator.MoveNext()) {
-                    if (sb == null) sb = new System.Text.StringBuilder(); // lazy creation
-                    string strarg = PythonOps.ToString(argsEnumerator.Current);
+                    if (sb == null) sb = new StringBuilder(); // lazy creation
+                    string strarg = ConvertToFsString(context, argsEnumerator.Current, "elements of 'args'", methodname);
                     if (space) {
                         sb.Append(' ');
                     }
@@ -846,7 +1076,7 @@ namespace IronPython.Modules {
                     space = true;
                 }
             } finally {
-                IDisposable disposable = argsEnumerator as IDisposable;
+                IDisposable? disposable = argsEnumerator as IDisposable;
                 if (disposable != null) disposable.Dispose();
             }
 
@@ -856,7 +1086,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile(string filename, string operation = "open") {
+        public static void startfile([NotNull] string filename, string operation = "open") {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
@@ -867,6 +1097,15 @@ namespace IronPython.Modules {
                 throw ToPythonException(e, filename);
             }
         }
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static void startfile([NotNull] Bytes filename, string operation = "open")
+            => startfile(filename.ToFsString(), operation);
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static void startfile(CodeContext context, [NotNull] IBufferProtocol filename, string operation = "open")
+            => startfile(filename.ToFsBytes(context), operation);
+
 #endif
 
         [PythonType]
@@ -889,14 +1128,14 @@ namespace IronPython.Modules {
                       st_atime_ns / (double)nanosecondsPerSeconds, st_mtime_ns / (double)nanosecondsPerSeconds, st_ctime_ns / (double)nanosecondsPerSeconds,
                       st_atime_ns, st_mtime_ns, st_ctime_ns }, null) { }
 
-            private stat_result(object[] statResult, PythonDictionary dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
+            private stat_result(object?[] statResult, PythonDictionary? dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
                 if (statResult.Length < n_sequence_fields) {
                     throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
                 } else if (statResult.Length > n_fields) {
                     throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
                 }
 
-                object obj;
+                object? obj;
                 if (statResult.Length >= 11) {
                     _atime = statResult[10];
                 } else if (TryGetDictValue(dict, "st_atime", out obj)) {
@@ -934,35 +1173,35 @@ namespace IronPython.Modules {
                 }
             }
 
-            public static stat_result __new__(CodeContext context, PythonType cls, IEnumerable<object> sequence, PythonDictionary dict = null) {
+            public static stat_result __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] IEnumerable<object?> sequence, PythonDictionary? dict = null) {
                 return new stat_result(sequence, dict);
             }
 
-            public stat_result(IEnumerable<object> sequence, PythonDictionary dict = null)
+            public stat_result([NotNull] IEnumerable<object?> sequence, PythonDictionary? dict = null)
                 : this(sequence.ToArray(), dict) { }
- 
-            private static bool TryGetDictValue(PythonDictionary dict, string name, out object value) {
+
+            private static bool TryGetDictValue(PythonDictionary? dict, string name, out object? value) {
                 value = null;
                 return dict != null && dict.TryGetValue(name, out value);
             }
 
-            private readonly object _atime;
-            private readonly object _mtime;
-            private readonly object _ctime;
+            private readonly object? _atime;
+            private readonly object? _mtime;
+            private readonly object? _ctime;
 
-            public object st_mode => this[0];
-            public object st_ino => this[1];
-            public object st_dev => this[2];
-            public object st_nlink => this[3];
-            public object st_uid => this[4];
-            public object st_gid => this[5];
-            public object st_size => this[6];
-            public object st_atime => _atime ?? this[7];
-            public object st_mtime => _mtime ?? this[8];
-            public object st_ctime => _ctime ?? this[9];
-            public object st_atime_ns { get; }
-            public object st_mtime_ns { get; }
-            public object st_ctime_ns { get; }
+            public object? st_mode => this[0];
+            public object? st_ino => this[1];
+            public object? st_dev => this[2];
+            public object? st_nlink => this[3];
+            public object? st_uid => this[4];
+            public object? st_gid => this[5];
+            public object? st_size => this[6];
+            public object? st_atime => _atime ?? this[7];
+            public object? st_mtime => _mtime ?? this[8];
+            public object? st_ctime => _ctime ?? this[9];
+            public object? st_atime_ns { get; }
+            public object? st_mtime_ns { get; }
+            public object? st_ctime_ns { get; }
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return string.Format("os.stat_result("
@@ -975,7 +1214,7 @@ namespace IronPython.Modules {
                     + "st_size={6}, "
                     + "st_atime={7}, "
                     + "st_mtime={8}, "
-                    + "st_ctime={9})", ToArray());
+                    + "st_ctime={9})", this.Select(v => PythonOps.Repr(context, v)).ToArray());
             }
 
             public PythonTuple __reduce__() {
@@ -1040,23 +1279,22 @@ namespace IronPython.Modules {
             public uint FileIndexLow;
         }
 
-        [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
+        [Documentation("stat(path, *, dir_fd=None, follow_symlinks=True) -> stat_result\n\n" +
+            "Gathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path, [ParamDictionary, NotNull]IDictionary<string, object> dict) {
+        public static object stat([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
 
-            if (dict != null) {
-                foreach (var key in dict.Keys) {
-                    switch (key) {
-                        case "dir_fd":
-                        case "follow_symlinks":
-                            // TODO: implement these!
-                            break;
-                        default:
-                            return LightExceptions.Throw(PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key));
-                    }
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                    case "follow_symlinks":
+                        // TODO: implement these!
+                        break;
+                    default:
+                        return LightExceptions.Throw(PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key));
                 }
             }
 
@@ -1113,11 +1351,15 @@ namespace IronPython.Modules {
             }
         }
 
-        [LightThrowing]
-        public static object stat([BytesLike]IList<byte> path, [ParamDictionary, NotNull]IDictionary<string, object> dict)
-            => stat(PythonOps.MakeString(path), dict);
+        [LightThrowing, Documentation("")]
+        public static object stat([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> dict)
+            => stat(path.ToFsString(), dict);
 
-        [LightThrowing]
+        [LightThrowing, Documentation("")]
+        public static object stat(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> dict)
+            => stat(path.ToFsBytes(context), dict);
+
+        [LightThrowing, Documentation("")]
         public static object stat(CodeContext context, int fd)
             => fstat(context, fd);
 
@@ -1172,8 +1414,8 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
-        public static int system(string command) {
-            ProcessStartInfo psi = GetProcessInfo(command, false);
+        public static int system([NotNull] string command) {
+            ProcessStartInfo? psi = GetProcessInfo(command, false);
 
             if (psi == null) {
                 return -1;
@@ -1182,7 +1424,7 @@ namespace IronPython.Modules {
             psi.CreateNoWindow = false;
 
             try {
-                Process process = Process.Start(psi);
+                Process? process = Process.Start(psi);
                 if (process == null) {
                     return -1;
                 }
@@ -1206,18 +1448,18 @@ namespace IronPython.Modules {
             public const int n_sequence_fields = 2;
             public const int n_unnamed_fields = 0;
 
-            internal terminal_size(object[] sequence) : base(sequence) {
+            internal terminal_size(object?[] sequence) : base(sequence) {
                 if (sequence.Length != n_sequence_fields) {
                     throw PythonOps.TypeError($"os.{nameof(terminal_size)}() takes a {n_sequence_fields}-sequence ({sequence.Length}-sequence given)");
                 }
             }
 
-            public static terminal_size __new__(CodeContext context, PythonType cls, IEnumerable<object> sequence) {
+            public static terminal_size __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] IEnumerable<object?> sequence) {
                 return new terminal_size(sequence.ToArray());
             }
 
-            public object columns => this[0];
-            public object lines => this[1];
+            public object? columns => this[0];
+            public object? lines => this[1];
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return $"os.{nameof(terminal_size)}(columns={PythonOps.Repr(context, columns)}, lines={PythonOps.Repr(context, lines)})";
@@ -1235,13 +1477,39 @@ namespace IronPython.Modules {
                 DateTime.Now.Subtract(p.StartTime).TotalSeconds);
         }
 
-        public static void remove(string path) {
+        [Documentation("remove(path, *, dir_fd=None)")]
+        public static void remove([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                        // TODO: posix: implement this
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                }
+            }
             UnlinkWorker(path);
         }
 
-        public static void unlink(string path) {
-            UnlinkWorker(path);
-        }
+        [Documentation("")]
+        public static void remove([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => remove(path.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void remove(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => remove(path.ToFsBytes(context), kwargs);
+
+        [Documentation("unlink(path, *, dir_fd=None)")]
+        public static void unlink([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => remove(path, kwargs);
+
+        [Documentation("")]
+        public static void unlink([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => unlink(path.ToFsString(), kwargs);
+
+        [Documentation("")]
+        public static void unlink(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
+            => unlink(path.ToFsBytes(context), kwargs);
 
         private static void UnlinkWorker(string path) {
             if (path == null) {
@@ -1263,12 +1531,14 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_PROCESS
-        public static void unsetenv(string varname) {
+        public static void unsetenv([NotNull] string varname) {
             System.Environment.SetEnvironmentVariable(varname, null);
         }
 #endif
 
         public static object urandom(int n) {
+            if (n < 0) throw PythonOps.ValueError("negative argument not allowed");
+
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
             byte[] data = new byte[n];
             rng.GetBytes(data);
@@ -1276,13 +1546,8 @@ namespace IronPython.Modules {
             return Bytes.Make(data);
         }
 
-        public static object urandom(BigInteger n) {
-            return urandom((int)n);
-        }
-
-        public static object urandom(double n) {
-            throw PythonOps.TypeError("integer argument expected, got float");
-        }
+        public static object urandom(object? n)
+            => urandom(Converter.ConvertToIndex(n, throwOverflowError: true));
 
         private static readonly object _umaskKey = new object();
 
@@ -1296,13 +1561,8 @@ namespace IronPython.Modules {
             }
         }
 
-        public static int umask(CodeContext/*!*/ context, BigInteger mask) {
-            return umask(context, (int)mask);
-        }
-
-        public static int umask(double mask) {
-            throw PythonOps.TypeError("integer argument expected, got float");
-        }
+        public static int umask(CodeContext/*!*/ context, object? mask)
+            => umask(context, Converter.ConvertToIndex(mask, throwOverflowError: true));
 
 #if FEATURE_FILESYSTEM
 
@@ -1318,36 +1578,45 @@ namespace IronPython.Modules {
             throw GetLastUnixError(path);
         }
 
-        public static void utime(string path, [ParamDictionary]IDictionary<string, object> dict)
-            => utime(path, null, dict);
+        [Documentation("utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)")]
+        public static void utime([NotNull] string path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args) {
+            var numArgs = args.Length;
+            CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 3, numArgs, kwargs.Count);
 
-        public static void utime(string path, PythonTuple times, [ParamDictionary]IDictionary<string, object> dict) {
-            PythonTuple ns = null;
-            if (dict != null) {
-                foreach (var pair in dict) {
-                    switch (pair.Key) {
-                        case "ns":
-                            if (times != null) {
-                                throw PythonOps.ValueError("utime: you may specify either 'times' or 'ns' but not both");
-                            }
-                            if (pair.Value is PythonTuple t && t.__len__() == 2) {
-                                ns = t;
-                            } else {
-                                throw PythonOps.TypeError("utime: 'ns' must be a tuple of two ints");
-                            }
-                            break;
-                        case "dir_fd":
-                        case "follow_symlinks":
-                            // TODO: implement these!
-                            break;
-                        default:
-                            throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", pair.Key);
-                    }
+            PythonTuple? times = numArgs > 0 ? convertTimesToTuple(args[0]) : null;
+
+            PythonTuple? ns = null;
+            foreach (var kvp in kwargs) {
+                switch (kvp.Key) {
+                    case nameof(times):
+                        if (numArgs > 0) throw PythonOps.TypeError("argument for {0}() given by name ('{1}') and position ({2})", nameof(utime), kvp.Key, 2);
+                        if (ns != null) throw PythonOps.ValueError("utime: you may specify either 'times' or 'ns' but not both");
+
+                        times = convertTimesToTuple(kvp.Value);
+                        break;
+
+                    case nameof(ns):
+                        if (times != null) throw PythonOps.ValueError("utime: you may specify either 'times' or 'ns' but not both");
+
+                        if (kvp.Value is PythonTuple pt3 && pt3.Count == 2) {
+                            ns = pt3;
+                        } else {
+                            throw PythonOps.TypeError("utime: 'ns' must be a tuple of two ints");
+                        }
+                        break;
+
+                    case "dir_fd":
+                    case "follow_symlinks":
+                        // TODO: implement these!
+                        break;
+
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", kvp.Key);
                 }
             }
 
             if (times != null && times.__len__() != 2) {
-                throw PythonOps.TypeError("times value must be a 2-value tuple (atime, mtime)");
+                throw PythonOps.TypeError("utime: 'times' must be either a 2-value tuple (atime, mtime) or None");
             }
 
             // precision is lost when using FileInfo on Linux, use a syscall instead
@@ -1375,13 +1644,27 @@ namespace IronPython.Modules {
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
+
+            static PythonTuple? convertTimesToTuple(object? val) {
+                return val == null ? null
+                        : val is PythonTuple pt2 && pt2.Count == 2 ? pt2
+                        : throw PythonOps.TypeError("utime: 'times' must be either a 2-value tuple (atime, mtime) or None");
+            }
         }
+
+        [Documentation("")]
+        public static void utime([NotNull] Bytes path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => utime(path.ToFsString(), kwargs, args);
+
+        [Documentation("")]
+        public static void utime(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs, [NotNull] params object[] args)
+            => utime(path.ToFsBytes(context), kwargs, args);
 
 #endif
 
 #if FEATURE_PROCESS
-        public static PythonTuple waitpid(int pid, object options) {
-            Process process;
+        public static PythonTuple waitpid(int pid, int options) {
+            Process? process;
             lock (_processToIdMapping) {
                 if (!_processToIdMapping.TryGetValue(pid, out process)) {
                     throw PythonOps.OSError(PythonErrorNumber.ECHILD, "No child processes");
@@ -1401,12 +1684,11 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, [BytesLike]IList<byte> text) {
+        public static int write(CodeContext/*!*/ context, int fd, [NotNull] IBufferProtocol data) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                pf.write(context, text);
-                return text.Count;
+                return (int)pf.write(context, data);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1414,7 +1696,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
 
-        [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
+        [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
@@ -1570,7 +1852,7 @@ the 'status' value."),
         #region Private implementation details
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
-        private static Exception ToPythonException(Exception e, string filename = null) {
+        private static Exception ToPythonException(Exception e, string? filename = null) {
             // already a Python Exception
             if (e.GetPythonException() is not null)
                 return e;
@@ -1595,7 +1877,7 @@ the 'status' value."),
                 return PythonOps.OSError(errorCode, "Access is denied", filename, errorCode);
             } else {
                 var ioe = e as IOException;
-                Exception pe = IOExceptionToPythonException(ioe, error, filename);
+                Exception? pe = IOExceptionToPythonException(ioe, error, filename);
                 if (pe != null) return pe;
 
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
@@ -1620,7 +1902,7 @@ the 'status' value."),
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
         }
 
-        private static Exception IOExceptionToPythonException(IOException ioe, int error, string filename) {
+        private static Exception? IOExceptionToPythonException(IOException? ioe, int error, string? filename) {
             if (ioe == null) return null;
 
             switch (error) {
@@ -1678,10 +1960,10 @@ the 'status' value."),
 
 #if FEATURE_PROCESS
 
-        private static ProcessStartInfo GetProcessInfo(string command, bool throwException) {
+        private static ProcessStartInfo? GetProcessInfo(string command, bool throwException) {
             // TODO: always run through cmd.exe ?
             command = command.Trim();
-            string baseCommand, args;
+            string? baseCommand, args;
             if (!TryGetExecutableCommand(command, out baseCommand, out args)) {
                 if (!TryGetShellCommand(command, out baseCommand, out args)) {
                     if (throwException) {
@@ -1745,17 +2027,17 @@ the 'status' value."),
             return false;
         }
 
-        private static bool TryGetShellCommand(string command, out string baseCommand, out string args) {
+        private static bool TryGetShellCommand(string command, [NotNullWhen(true)] out string? baseCommand, out string args) {
             baseCommand = Environment.GetEnvironmentVariable("COMSPEC");
-            args = String.Empty;
+            args = string.Empty;
             if (baseCommand == null) {
                 baseCommand = Environment.GetEnvironmentVariable("SHELL");
                 if (baseCommand == null) {
                     return false;
                 }
-                args = String.Format("-c \"{0}\"", command);
+                args = string.Format("-c \"{0}\"", command);
             } else {
-                args = String.Format("/c {0}", command);
+                args = string.Format("/c {0}", command);
             }
             return true;
         }
@@ -1768,7 +2050,7 @@ the 'status' value."),
 
 #if FEATURE_NATIVE
 
-        private static Exception GetLastUnixError(string filename = null, string filename2 = null) {
+        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null) {
             var error = Mono.Unix.Native.Syscall.GetLastError();
             var msg = Mono.Unix.Native.Stdlib.strerror(error);
             return PythonOps.OSError((int)error, msg, filename, null, filename2);
@@ -1799,13 +2081,40 @@ the 'status' value."),
             return buf.ToString().TrimEnd('\r', '\n', '.');
         }
 
-        private static Exception GetLastWin32Error(string filename = null, string filename2 = null) {
+        private static Exception GetLastWin32Error(string? filename = null, string? filename2 = null) {
             var error = Marshal.GetLastWin32Error();
             var msg = GetMessage(error);
             return PythonOps.OSError(0, msg, filename, error, filename2);
         }
 
 #endif
+        private static string ToFsString(this Bytes b) => _filesystemEncoding.GetString(b.AsMemory().Span);
+
+        private static Bytes ToFsBytes(this string s) => Bytes.Make(_filesystemEncoding.GetBytes(s));
+
+        private static Bytes ToFsBytes(this IBufferProtocol bp, CodeContext context) {
+            // TODO: Python 3.6: "path should be string, bytes or os.PathLike"
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonTypeOps.GetName(bp));
+            return new Bytes(bp); // accepts FULL_RO buffers in CPython
+        }
+
+        private static string ConvertToFsString(CodeContext context, [NotNullOnReturn] object? o, string argname, [CallerMemberName] string? methodname = null)
+            => o switch {
+                string s            => s,
+                ExtensibleString es => es.Value,
+                Bytes b             => b.ToFsString(),
+                IBufferProtocol bp  => bp.ToFsBytes(context).ToFsString(),
+                // TODO: Python 3.6: os.PathLike
+                _ => throw PythonOps.TypeError("{0}: {1} should be string or bytes, not '{2}'", methodname, argname, PythonOps.GetPythonTypeName(o))
+            };
+
+        private static void CheckOptionalArgsCount(int numRegParms, int numOptPosParms, int numKwParms, int numOptPosArgs, int numKwArgs, [CallerMemberName] string? methodname = null) {
+            if (numOptPosArgs > numOptPosParms)
+                throw PythonOps.TypeErrorForOptionalArgumentCountMismatch(methodname ?? "<unknown>", numRegParms + numOptPosParms, numRegParms + numOptPosArgs, positional: true);
+
+            if (numOptPosArgs + numKwArgs > numOptPosParms + numKwParms)
+                throw PythonOps.TypeErrorForOptionalArgumentCountMismatch(methodname ?? "<unknown>", numRegParms + numOptPosParms + numKwParms, numRegParms + numOptPosArgs + numKwArgs);
+        }
 
         #endregion
     }

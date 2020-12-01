@@ -3795,6 +3795,11 @@ namespace IronPython.Runtime.Operations {
                              methodName, expectedArgCount, expectedArgCount == 1 ? "" : "s", actualArgCount);
         }
 
+        public static Exception TypeErrorForOptionalArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount, bool positional=false) {
+            return TypeError("{0}() takes at most {1} {2}argument{3} ({4} given)",
+                             methodName, expectedArgCount, positional ? "positional " : "", expectedArgCount == 1 ? "" : "s", actualArgCount);
+        }
+
         public static Exception TypeErrorForTypeMismatch(string expectedTypeName, object? instance) {
             return TypeError("expected {0}, got {1}", expectedTypeName, PythonOps.GetPythonTypeName(instance));
         }

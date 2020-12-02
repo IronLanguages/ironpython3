@@ -2827,9 +2827,11 @@ namespace IronPython.Modules {
             bool updating = modes.Contains('+');
             bool text = modes.Contains('t');
             bool binary = modes.Contains('b');
+            bool creating = modes.Contains('x');
             if (modes.Contains('U')) {
-                if (writing || appending) {
-                    throw PythonOps.ValueError("can't use U and writing mode at once");
+                if (creating || writing || appending || updating) {
+                    // error message from Python 3.6
+                    throw PythonOps.ValueError("mode U cannot be combined with 'x', 'w', 'a', or '+'");
                 }
                 PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "'U' mode is deprecated");
                 reading = true;
@@ -2837,11 +2839,8 @@ namespace IronPython.Modules {
             if (text && binary) {
                 throw PythonOps.ValueError("can't have text and binary mode at once");
             }
-            if (reading && writing || reading && appending || writing && appending) {
-                throw PythonOps.ValueError("can't have read/write/append mode at once");
-            }
-            if (!(reading || writing || appending)) {
-                throw PythonOps.ValueError("must have exactly one of read/write/append mode");
+            if (Convert.ToInt32(creating) + Convert.ToInt32(reading) + Convert.ToInt32(writing) + Convert.ToInt32(appending) > 1) {
+                throw PythonOps.ValueError("must have exactly one of create/read/write/append mode");
             }
             if (binary && encoding != null) {
                 throw PythonOps.ValueError("binary mode doesn't take an encoding argument");
@@ -2851,15 +2850,14 @@ namespace IronPython.Modules {
             }
 
             mode = reading ? "r" : "";
-            if (writing) {
-                mode += 'w';
-            }
-            if (appending) {
-                mode += 'a';
-            }
-            if (updating) {
+            if (creating)
+                mode += "x";
+            if (writing)
+                mode += "w";
+            if (appending)
+                mode += "a";
+            if (updating)
                 mode += '+';
-            }
 
             if (buffering == 0 && !binary) throw PythonOps.ValueError("can't have unbuffered text I/O");
 
@@ -2883,7 +2881,7 @@ namespace IronPython.Modules {
             _BufferedIOBase buffer;
             if (updating) {
                 buffer = BufferedRandom.Create(context, fio, buffering, null);
-            } else if (writing || appending) {
+            } else if (writing || appending || creating) {
                 buffer = BufferedWriter.Create(context, fio, buffering, null);
             } else if (reading) {
                 buffer = BufferedReader.Create(context, fio, buffering);
@@ -3101,7 +3099,7 @@ namespace IronPython.Modules {
 
         #region Private implementation details
 
-        private static HashSet<char> _validModes = MakeSet("abrtwU+");
+        private static HashSet<char> _validModes = MakeSet("abrtwxU+");
 
         private static HashSet<char> MakeSet(string chars) {
             HashSet<char> res = new HashSet<char>();

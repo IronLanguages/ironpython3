@@ -601,13 +601,13 @@ class FileTest(IronPythonTestCase):
             with open(fname, 'w') as x:
                 self.assertEqual(x.mode, 'w')
             # don't allow empty modes
-            self.assertRaisesMessage(ValueError, 'must have exactly one of read/write/append mode' if is_cli else "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
+            self.assertRaisesMessage(ValueError, "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
 
             # mode must start with valid value
             self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
 
             # allow anything w/ U but r and w
-            err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
+            err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if is_cli or sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
             self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw')
             self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua')
             self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw+')

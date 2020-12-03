@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 import test.test_gzip
 
@@ -22,7 +22,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_gzip.TestGzip('test_bytes_filename'))
         suite.addTest(test.test_gzip.TestGzip('test_compress'))
         suite.addTest(test.test_gzip.TestGzip('test_decompress'))
-        suite.addTest(test.test_gzip.TestGzip('test_exclusive_write'))
+        if not is_mono:
+            suite.addTest(test.test_gzip.TestGzip('test_exclusive_write'))
         suite.addTest(test.test_gzip.TestGzip('test_fileobj_from_fdopen'))
         suite.addTest(test.test_gzip.TestGzip('test_io_on_closed_object'))
         suite.addTest(test.test_gzip.TestGzip('test_many_append'))
@@ -50,11 +51,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_gzip.TestGzip('test_write_memoryview'))
         suite.addTest(test.test_gzip.TestGzip('test_zero_padded_file'))
         suite.addTest(test.test_gzip.TestOpen('test_bad_params'))
-        suite.addTest(test.test_gzip.TestOpen('test_binary_modes'))
+        if not is_mono:
+            suite.addTest(test.test_gzip.TestOpen('test_binary_modes'))
         suite.addTest(test.test_gzip.TestOpen('test_encoding'))
         suite.addTest(test.test_gzip.TestOpen('test_encoding_error_handler'))
         suite.addTest(test.test_gzip.TestOpen('test_fileobj'))
-        suite.addTest(test.test_gzip.TestOpen('test_implicit_binary_modes'))
+        if not is_mono:
+            suite.addTest(test.test_gzip.TestOpen('test_implicit_binary_modes'))
         suite.addTest(test.test_gzip.TestOpen('test_newline'))
         suite.addTest(test.test_gzip.TestOpen('test_text_modes'))
         return suite

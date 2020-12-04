@@ -334,7 +334,8 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(bytes));
             }
 
-            public BigInteger write(CodeContext/*!*/ context, [NotNull] IBufferProtocol bytes) {
+            // TODO: get rid of virtual? see https://github.com/IronLanguages/ironpython3/issues/1070
+            public virtual BigInteger write(CodeContext/*!*/ context, [NotNull] IBufferProtocol bytes) {
                 _checkClosed();
                 return DoWrite(bytes);
             }

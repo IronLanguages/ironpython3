@@ -10,7 +10,7 @@ import unittest
 import codecs
 import sys
 
-from iptest import run_test, is_mono
+from iptest import run_test
 
 import test.test_bz2
 
@@ -104,8 +104,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.OpenTest('test_implicit_binary_modes'))
         suite.addTest(test.test_bz2.OpenTest('test_newline'))
         suite.addTest(test.test_bz2.OpenTest('test_text_modes'))
-        if not is_mono:
-            suite.addTest(test.test_bz2.OpenTest('test_x_mode'))
+        suite.addTest(test.test_bz2.OpenTest('test_x_mode'))
         return suite
         
     else:

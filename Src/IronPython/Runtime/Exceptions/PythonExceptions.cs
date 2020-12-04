@@ -786,11 +786,11 @@ for k, v in toError.items():
                 int errorCode = clrException.HResult;
 
                 if ((errorCode & ~0xfff) == unchecked((int)0x80070000)) {
-                    errorCode &= 0xfff;
+                    errorCode = _OSError.WinErrorToErrno(errorCode & 0xfff);
                 }
 
                 // TODO: can we get filename and such?
-                return CreatePythonThrowable(OSError, errorCode, clrException.Message, null, errorCode);
+                return CreatePythonThrowable(OSError, errorCode, clrException.Message);
             }
 
             BaseException pyExcep;

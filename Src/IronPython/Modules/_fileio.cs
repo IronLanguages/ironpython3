@@ -113,6 +113,9 @@ namespace IronPython.Modules {
                         case "wb":
                             _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                             break;
+                        case "xb":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                            break;
                         case "ab":
                             _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                             _readStream.Seek(0L, SeekOrigin.End);
@@ -122,6 +125,9 @@ namespace IronPython.Modules {
                             break;
                         case "wb+":
                             _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            break;
+                        case "xb+":
+                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
                             break;
                         case "ab+":
                             _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -166,6 +172,9 @@ namespace IronPython.Modules {
                     case "a":
                         flags = O_APPEND | O_CREAT;
                         return "ab";
+                    case "x":
+                        flags = O_CREAT | O_EXCL;
+                        return "xb";
                     case "r+":
                     case "+r":
                         flags = O_RDWR;
@@ -178,6 +187,10 @@ namespace IronPython.Modules {
                     case "+a":
                         flags = O_APPEND | O_CREAT | O_RDWR;
                         return "ab+";
+                    case "x+":
+                    case "+x":
+                        flags = O_CREAT | O_RDWR | O_EXCL;
+                        return "xb+";
                     default:
                         throw BadMode(mode);
                 }
@@ -185,6 +198,7 @@ namespace IronPython.Modules {
                 // remove all 'b's from mode string to simplify parsing
                 static string StandardizeMode(string mode) {
                     int index = mode.IndexOf('b');
+                    if (index == -1) return mode;
 
                     if (index == mode.Length - 1) {
                         mode = mode.Substring(0, index);
@@ -208,15 +222,16 @@ namespace IronPython.Modules {
                             case 'r':
                             case 'w':
                             case 'a':
+                            case 'x':
                                 if (foundMode) {
-                                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
                                 } else {
                                     foundMode = true;
                                     continue;
                                 }
                             case '+':
                                 if (foundPlus) {
-                                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
                                 } else {
                                     foundPlus = true;
                                     continue;
@@ -229,7 +244,7 @@ namespace IronPython.Modules {
                         }
                     }
 
-                    return PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
                 }
             }
 

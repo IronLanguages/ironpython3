@@ -813,28 +813,10 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
 
             if (node.Target is NameExpression nameExpr && nameExpr.Name == "super" && _currentScope is FunctionDefinition func) {
+                _currentScope.Reference("__class__");
                 if (node.Args.Length == 0 && func.ParameterNames.Length > 0) {
-                    if (ShouldExpandSuperSyntaxSugar(node)) {
-                        // if `super()` is referenced in a class method.
-                        _currentScope.Reference(node.Parent.Parent.Name);
-                        node.ImplicitArgs.Add(new Arg(new NameExpression(node.Parent.Parent.Name)));
-                        node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
-                    } else {
-                        // otherwise, fallback to default implementation.
-                        _currentScope.Reference("__class__");
-                        node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
-                        node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
-                    }
-                }
-
-                bool ShouldExpandSuperSyntaxSugar(CallExpression node) {
-                    if (!(node.Parent is FunctionDefinition)) {
-                        return false;
-                    }
-                    if (!(node.Parent.Parent is ClassDefinition)) {
-                        return false;
-                    }
-                    return true;
+                    node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
+                    node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
                 }
             }
             return base.Walk(node);

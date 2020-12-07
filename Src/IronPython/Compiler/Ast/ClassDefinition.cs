@@ -80,6 +80,9 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal PythonVariable ModuleNameVariable { get; set; }
 
+        internal PythonVariable ClassCellVariable { get;set; }
+        internal PythonVariable ClassVariable { get;set; }
+
         internal override bool HasLateBoundVariableSets {
             get {
                 return base.HasLateBoundVariableSets || NeedsLocalsDictionary;
@@ -91,9 +94,20 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
+        internal bool needClassCell {get; set;}
+
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
-                variable = from.EnsureVariable(reference.Name);
+                needClassCell = true;
+                ClassCellVariable = EnsureVariable("__classcell__");
+                ClassVariable = variable = EnsureVariable(reference.Name);
+                variable.AccessedInNestedScope = true;
+                from.AddFreeVariable(variable, true);
+                for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
+                    scope.AddFreeVariable(variable, false);
+                }
+
+                AddCellVariable(variable);
                 return true;
             }
             return base.TryBindOuter(from, reference, out variable);
@@ -194,10 +208,17 @@ namespace IronPython.Compiler.Ast {
             var createLocal = CreateLocalContext(_parentContextParam);
 
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
+            // __classcell__ == ClosureCell(__class__)
+            if (needClassCell) {
+                var exp = (ClosureExpression) GetVariableExpression(ClassVariable);
+                MSAst.Expression assignClassCell = AssignValue(GetVariableExpression(ClassCellVariable), exp.ClosureCell);
+                init.Add(assignClassCell);
+            }
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
             // Create the body
             MSAst.Expression bodyStmt = Body;
+
 
             // __module__ = __name__
             MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable), GetVariableExpression(ModuleNameVariable));

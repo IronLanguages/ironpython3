@@ -263,22 +263,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             EnsureModule(context, dict);
 
             PythonType meta = FindMetaClass(cls, bases);
+            object type;
 
             if (meta != TypeCache.PythonType) {
                 object classdict = PythonOps.CallPrepare(context, meta, name, bases, dict);
 
                 if (meta != cls) {
                     // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass
-                    return PythonCalls.Call(context, meta, name, bases, classdict);
+                    type = PythonCalls.Call(context, meta, name, bases, classdict);
+                } else {
+                    // we have the right user __new__, call our ctor method which will do the actual
+                    // creation.                   
+                    type = meta.CreateInstance(context, name, bases, classdict);
                 }
-
-                // we have the right user __new__, call our ctor method which will do the actual
-                // creation.                   
-                return meta.CreateInstance(context, name, bases, classdict);
+            } else {
+                // no custom user type for __new__
+                type = new PythonType(context, name, bases, dict, selfNames);
             }
+            object cell = dict.get("__classcell__");
+            if (cell != null && cell is ClosureCell pycell)
+            {
+                pycell.Value = type;
+                dict.RemoveDirect("__classcell__");
+            }
+            return type;
 
-            // no custom user type for __new__
-            return new PythonType(context, name, bases, dict, selfNames);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]

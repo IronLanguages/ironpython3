@@ -339,35 +339,6 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestCommandLine(("-X:MTA", "-c", "print('OK')"), "OK\n")
         self.TestInteractive("-X:MTA")
 
-    @unittest.skip("TODO: find something that raises a warning")
-    def test_Q(self):
-        """Test -Q"""
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3/2.0)"), "1.5\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3j/2.0)"), "1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3L/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3.0/2L)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2.0)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2L)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3.0/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3L/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3/2L)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3/2L)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3L/2)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3L/2)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-
-        self.TestCommandLine(("-Qnew", "-c", "print(3/2)"), "1.5\n")
-        self.TestCommandLine(("-Qold", "-c", "print(3/2)"), "1\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Q", "new", "-c", "print(3/2)"), "1.5\n")
-        self.TestCommandLine(("-Q", "old", "-c", "print(3/2)"), "1\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-
     def test_doc(self):
         self.TestCommandLine(("", "-c", "print(__doc__)"), "None\n", 0)
 
@@ -428,32 +399,6 @@ AssertionError
             self.TestCommandLine(("-c", isattycmd2), "True False True", 0)
         finally:
             self.batfile = hideDefaultBatch
-
-    @unittest.skip("TODO: figure out")
-    def test_cp34849(self):
-        script="""
-import sys
-def f1():
-    raise Exception("test exception")
-def t():
-    try:
-        f1()
-    except:
-        pt = sys.exc_info()
-        raise pt[0], pt[1], pt[2]
-t()
-"""
-        expected = r"""Traceback (most recent call last):
-  File "%s", line 7, in t
-  File "%s", line 4, in f1
-Exception: test exception
-""" % (os.path.join(self.tmpdir, "script_cp34849.py"), os.path.join(self.tmpdir, "script_cp34849.py"))
-
-        scriptFileName = os.path.join(self.tmpdir, "script_cp34849.py")
-        with open(scriptFileName, "w") as f:
-            f.write(script)
-
-        self.TestCommandLine((scriptFileName,), expected, 1)
 
     @skipUnlessIronPython()
     def test_cp35263(self):

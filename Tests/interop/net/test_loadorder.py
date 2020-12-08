@@ -89,7 +89,7 @@ from iptest.process_util import ProcessUtil
 @skipUnlessIronPython()
 class LoadOrderTests(IronPythonTestCase, ProcessUtil):
     def test_all(self):
-        directory = os.path.join(self.get_test_dir(), "interop", "net", "loadorder")
+        directory = os.path.join(self.test_dir, "interop", "net", "loadorder")
     
         count = 0
         for x in os.listdir(directory):

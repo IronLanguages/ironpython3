@@ -45,10 +45,7 @@ class StdConsoleTest(IronPythonTestCase):
         super(StdConsoleTest, self).setUp()
 
         # Get a temporary directory in which the tests can scribble.
-        # This is relative to working directory so the path related tests (e.g.'print __name__')
-        # return predictable results.
-
-        self.tmpdir = os.path.join(self.temp_dir, "tmp")
+        self.tmpdir = os.path.join(self.temporary_dir, "tmp")
         if not os.path.exists(self.tmpdir):
             os.mkdir(self.tmpdir)
 

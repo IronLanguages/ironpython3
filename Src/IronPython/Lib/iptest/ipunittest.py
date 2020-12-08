@@ -111,10 +111,11 @@ def load_ironpython_test(*args):
 class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     def setUp(self):
+        temp_dir = self.get_temp_dir()
         if is_cli:
-            self._temporary_dir = os.path.join(self.temp_dir, "IronPythonTest", clr.TargetFramework.translate(str.maketrans(" =,", "__-")))
+            self._temporary_dir = os.path.join(temp_dir, "IronPythonTest", clr.TargetFramework.translate(str.maketrans(" =,", "__-")))
         else:
-            self._temporary_dir = os.path.join(self.temp_dir, "IronPythonTest", "CPython")
+            self._temporary_dir = os.path.join(temp_dir, "IronPythonTest", "CPython")
         self.ensure_directory_present(self._temporary_dir)
 
         self._iron_python_test_dll = _iron_python_test_dll
@@ -164,21 +165,21 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
         return None
 
     # file paths
-    def get_temporary_dir(self):
+    @property
+    def temporary_dir(self):
         return self._temporary_dir
-    temporary_dir = property(get_temporary_dir)
 
-    def get_iron_python_test_dll(self):
+    @property
+    def iron_python_test_dll(self):
         return self._iron_python_test_dll
-    iron_python_test_dll = property(get_iron_python_test_dll)
 
-    def get_test_dir(self):
+    @property
+    def test_dir(self):
         return self._test_dir
-    test_dir = property(get_test_dir)
 
-    def get_test_inputs_dir(self):
+    @property
+    def test_inputs_dir(self):
         return self._test_inputs_dir
-    test_inputs_dir = property(get_test_inputs_dir)
 
 def run_test(name):
     if name == '__main__':

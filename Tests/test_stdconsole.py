@@ -24,7 +24,7 @@ class IronPythonVariableContext(object):
         self._prepend = prepend
         self._sep = sep
         self._oldval = Environment.GetEnvironmentVariable(self._variable)
-        
+
     def __enter__(self):
         from System import Environment
         if self._prepend:
@@ -45,10 +45,7 @@ class StdConsoleTest(IronPythonTestCase):
         super(StdConsoleTest, self).setUp()
 
         # Get a temporary directory in which the tests can scribble.
-        # This is relative to working directory so the path related tests (e.g.'print __name__')
-        # return predictable results.
-
-        self.tmpdir = "tmp" #os.path.join(self.temp_dir, "tmp")
+        self.tmpdir = os.path.join(self.temporary_dir, "tmp")
         if not os.path.exists(self.tmpdir):
             os.mkdir(self.tmpdir)
 
@@ -85,11 +82,11 @@ class StdConsoleTest(IronPythonTestCase):
         realargs.extend(args)
         exitcode = os.spawnv(0, self.batfile, realargs)
         cmdline = "ipy " + ' '.join(args)
-        
+
         print('')
         print('    {}'.format(cmdline))
-        
-        self.assertTrue(exitcode == expected_exitcode, "'" + cmdline + "' generated unexpected exit code " + str(exitcode))
+
+        self.assertEqual(exitcode, expected_exitcode, "'" + cmdline + "' generated unexpected exit code")
         if expected_output is not None:
             with open(self.tmpfile) as f:
                 if isinstance(expected_output, str):
@@ -100,17 +97,18 @@ class StdConsoleTest(IronPythonTestCase):
             # normalize \r\n to \n
             if type(output) == list:
                 output = [x.replace('\r\n', '\n') for x in output]
+                if is_cli and output[-1] == "\n": output.pop() # https://github.com/IronLanguages/ironpython3/issues/1061
             else:
                 output = output.replace('\r\n', '\n')
-            
+
             # then check the output
             if isinstance(expected_output, str):
-                self.assertTrue(output == expected_output, "'" + cmdline + "' generated unexpected output:\n" + output)
+                self.assertEqual(output, expected_output, "'" + cmdline + "' generated unexpected output")
             elif isinstance(expected_output, tuple):
                 if expected_output[0] == "firstline":
-                    self.assertTrue(output[0] == expected_output[1], "'" + cmdline + "' generated unexpected first line of output:\n" + repr(output[0]))
+                    self.assertEqual(output[0], expected_output[1], "'" + cmdline + "' generated unexpected first line of output")
                 elif expected_output[0] == "lastline":
-                    self.assertTrue(output[-1] == expected_output[1], "'" + cmdline + "' generated unexpected last line of output:\n" + repr(output[-1]))
+                    self.assertEqual(output[-1], expected_output[1], "'" + cmdline + "' generated unexpected last line of output")
                 elif expected_output[0] == "regexp":
                     output = ''.join(output)
                     self.assertTrue(re.match(expected_output[1], output, re.M | re.S), "'" + cmdline + "' generated unexpected output:\n" + repr(output))
@@ -119,14 +117,14 @@ class StdConsoleTest(IronPythonTestCase):
             else:
                 self.assertTrue(False, "Invalid type for expected_output")
 
-    
+
     # Runs the console with the given argument string with the expectation that it should enter interactive mode.
     # Meaning, for one, no -c parameter.  This is useful for catching certain argument parsing errors.
     def TestInteractive(self, args, expected_exitcode = 0):
         from iptest.console_util import IronPythonInstance
         ipi = IronPythonInstance(sys.executable, sys.exec_prefix, args, '-X:BasicConsole')
         self.assertEqual(ipi.Start(), True)
-        
+
         #Verify basic behavior
         self.assertEqual("4", ipi.ExecuteLine("2+2"))
         ipi.End()
@@ -149,16 +147,16 @@ class StdConsoleTest(IronPythonTestCase):
 
         # Test exit code with sys.exit(non-int)
         self.TestCommandLine(("-c", "import sys; sys.exit(None)"),       "",         0)
-        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n",1)
+        self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n", 1) # https://github.com/IronLanguages/ironpython3/issues/1061
         self.TestCommandLine(("-c", "import sys; sys.exit(2147483647)"), "", 2147483647)
-        self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "", -1)
-    
+        if is_cli: # raises an OSError with CPython
+            self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "OverflowError: Arithmetic operation resulted in an overflow.\n\n", 1)
+
     def test_os__exit(self):
         self.TestCommandLine(("-c", "import os; os._exit(0)"),          "",         0)
         self.TestCommandLine(("-c", "import os; os._exit(200)"),        "",         200)
         self.TestScript((), "import os\nclass C(int): pass\nc = C(200)\nos._exit(c)\n", "", 200)
 
-    
     @unittest.skip("TODO: this test spawns UI about ipy.exe failing abnormally")
     def test_os_abort(self):
         # Positive
@@ -186,18 +184,18 @@ class StdConsoleTest(IronPythonTestCase):
         from System import Environment
         with open(os.path.join(self.tmpdir, "site.py"), "w") as f:
             f.write("import sys\nsys.foo = 123\n")
-        
+
         with IronPythonVariableContext("IRONPYTHONPATH", self.tmpdir, prepend=True):
             print(Environment.GetEnvironmentVariable("IRONPYTHONPATH"))
             # Verify that the file gets loaded by default.
             self.TestCommandLine(("-c", "import sys; print(sys.foo)"), "123\n")
-            
+
             # CP778 - verify 'site' does not show up in dir()
             self.TestCommandLine(("-c", "print('site' in dir())"), "False\n")
-            
+
             # Verify that Lib remains in sys.path.
             self.TestCommandLine(("-S", "-c", "import os ; import sys; print(str(os.path.join(sys.exec_prefix, 'Lib')).lower() in [x.lower() for x in sys.path])"), "True\n")
-            
+
             # Now check that we can suppress this with -S.
             self.TestCommandLine(("-S", "-c", "import sys; print(sys.foo)"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
 
@@ -206,7 +204,7 @@ class StdConsoleTest(IronPythonTestCase):
         from System import Environment
         with open(os.path.join(self.tmpdir, "site.py"), "w") as f:
             f.write("import sys\nsys.foo = 456\n")
-        
+
         self.TestCommandLine(("-c", "import site;import sys;print(hasattr(sys, 'foo'))"), "False\n")
         with IronPythonVariableContext("IRONPYTHONPATH", self.tmpdir, prepend=True):
             self.TestCommandLine(("-c", "import site;import sys;print(hasattr(sys, 'foo'))"), "True\n")
@@ -223,17 +221,20 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestScript((),       foo_doc, "OK\n")
         self.TestScript(("-OO",), foo_doc, "None\n")
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
     def test_t(self):
         """Test the -t and -tt (warnings/errors on inconsistent tab usage) options."""
         # Write a script containing inconsistent use fo tabs.
         tmpscript = os.path.join(self.tmpdir, "tabs.py")
         with open(tmpscript, "w") as f:
             f.write("if (1):\n\tpass\n        pass\nprint('OK')\n")
-        
-        self.TestCommandLine((tmpscript, ), "OK\n")
+
         msg = "inconsistent use of tabs and spaces in indentation"
-        self.TestCommandLine(("-t", tmpscript), ("firstline", "%s:3: SyntaxWarning: %s\n"  % (tmpscript, msg, )), 0)
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/982
+            self.TestCommandLine((tmpscript, ), "OK\n")
+            self.TestCommandLine(("-t", tmpscript), ("firstline", "%s:3: SyntaxWarning: %s\n"  % (tmpscript, msg, )), 0)
+        else:
+            self.TestCommandLine((tmpscript, ), ("lastline", "TabError: " + msg + "\n"), 1)
+            self.TestCommandLine(("-t", tmpscript), ("lastline", "TabError: " + msg + "\n"), 1)
         self.TestCommandLine(("-tt", tmpscript), ("lastline", "TabError: " + msg + "\n"), 1)
 
         tmpscript = os.path.join(self.tmpdir, "funcdef.py")
@@ -248,42 +249,44 @@ class StdConsoleTest(IronPythonTestCase):
     def test_E(self):
         """Test the -E (suppress use of environment variables) option."""
         from System import Environment
-        
+
         # Re-use the generated site.py from above and verify that we can stop it being picked up from IRONPYTHONPATH
         # using -E.
         self.TestCommandLine(("-E", "-c", "import sys; print(sys.foo)"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
-        
+
         # Create an override startup script that exits right away
         tmpscript = os.path.join(self.tmpdir, "startupdie.py")
         with open(tmpscript, "w") as f:
             f.write("from System import Environment\nprint('Boo!')\nEnvironment.Exit(27)\n")
-        
+
         with IronPythonVariableContext("IRONPYTHONSTARTUP", tmpscript):
             self.TestCommandLine((), None, 27)
-            
+
             tmpscript2 = os.path.join(self.tmpdir, "something.py")
             with open(tmpscript2, "w") as f:
                 f.write("print(2+2)\n")
-            
+
             self.TestCommandLine(('-E', tmpscript2), "4\n")
-            
+
             tmpscript3 = os.path.join(self.tmpdir, "startupdie.py")
             with open(tmpscript3, "w") as f:
                 f.write("import sys\nprint('Boo!')\nsys.exit(42)\n")
-        
+
         with IronPythonVariableContext("IRONPYTHONSTARTUP", tmpscript3):
             self.TestCommandLine((), None, 42)
-        
+
         os.unlink(tmpscript)
         os.unlink(tmpscript2)
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
     def test_W(self):
         """Test -W (set warning filters) option."""
         self.TestCommandLine(("-c", "import sys; print(sys.warnoptions)"), "[]\n")
-        self.TestCommandLine(("-W", "foo", "-c", "import sys; print(sys.warnoptions)"), "Invalid -W option ignored: invalid action: 'foo'\n['foo']\n")
+        self.TestCommandLine(("-W", "foo", "-c", "import sys; print(sys.warnoptions)"), "Invalid -W option ignored: invalid action: 'foo'\n['foo']\n" if is_cli else "['foo']\nInvalid -W option ignored: invalid action: 'foo'\n")
         self.TestCommandLine(("-W", "always", "-W", "once", "-c", "import sys; print(sys.warnoptions)"), "['always', 'once']\n")
-        self.TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
+        if is_cli:
+            self.TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
+        else:
+            self.TestCommandLine(("-W",), ("firstline", "Argument expected for the -W option\n"), 2)
 
     @skipUnlessIronPython()
     def test_X_Interpret(self):
@@ -305,7 +308,7 @@ class StdConsoleTest(IronPythonTestCase):
     @skipUnlessIronPython()
     def test_X_MaxRecursion(self):
         """Test -X:MaxRecursion"""
-        self.TestCommandLine(("-X:MaxRecursion", "20", "-c", "2+2"), "")
+        self.TestCommandLine(("-X:MaxRecursion", "45", "-c", "2+2"), "") # TODO: this is high because of importlib
         self.TestCommandLine(("-X:MaxRecursion", "3.14159265", "-c", "2+2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", 1)
         self.TestCommandLine(("-X:MaxRecursion",), "Argument expected for the -X:MaxRecursion option.\n", 1)
         self.TestCommandLine(("-X:MaxRecursion", "2"), "The argument for the -X:MaxRecursion option must be an integer >= 10.\n", 1)
@@ -319,14 +322,16 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestCommandLine(('-x', tmpxoptscript), "4\n")
         os.unlink(tmpxoptscript)
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
     def test_nonexistent_file(self):
         """Test invocation of a nonexistent file"""
         try:
             os.unlink("nonexistent.py")
         except OSError:
             pass
-        self.TestCommandLine(("nonexistent.py",), "File nonexistent.py does not exist.\n", 1)
+        if is_cli:
+            self.TestCommandLine(("nonexistent.py",), "File nonexistent.py does not exist.\n\n", 1)
+        else:
+            self.TestCommandLine(("nonexistent.py",), "{}: can't open file 'nonexistent.py': [Errno 2] No such file or directory\n".format(sys.executable), 2)
 
     @skipUnlessIronPython()
     def test_MTA(self):
@@ -334,40 +339,20 @@ class StdConsoleTest(IronPythonTestCase):
         self.TestCommandLine(("-X:MTA", "-c", "print('OK')"), "OK\n")
         self.TestInteractive("-X:MTA")
 
-    @unittest.skipUnless(is_cli, "TODO: figure out")
-    def test_Q(self):
-        """Test -Q"""
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3/2.0)"), "1.5\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3j/2.0)"), "1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3L/2.0)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3.0/2L)"), "-c:1: DeprecationWarning: classic float division\n1.5\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2.0)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3j/2L)"), "-c:1: DeprecationWarning: classic complex division\n1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3.0/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3L/2j)"), "-c:1: DeprecationWarning: classic complex division\n-1.5j\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3/2L)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3/2L)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3L/2)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3L/2)"), "-c:1: DeprecationWarning: classic long division\n1\n")
-
-        self.TestCommandLine(("-Qnew", "-c", "print(3/2)"), "1.5\n")
-        self.TestCommandLine(("-Qold", "-c", "print(3/2)"), "1\n")
-        self.TestCommandLine(("-Qwarn", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Qwarnall", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Q", "new", "-c", "print(3/2)"), "1.5\n")
-        self.TestCommandLine(("-Q", "old", "-c", "print(3/2)"), "1\n")
-        self.TestCommandLine(("-Q", "warn", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-        self.TestCommandLine(("-Q", "warnall", "-c", "print(3/2)"), "-c:1: DeprecationWarning: classic int division\n1\n")
-
     def test_doc(self):
         self.TestCommandLine(("", "-c", "print(__doc__)"), "None\n", 0)
-        
+
     def test_cp11922(self):
-        self.TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1061
+            self.TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
+
+  File "-c", line 1, in <module>
+
+AssertionError
+
+''', 1)
+        else:
+            self.TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
   File "<string>", line 1, in <module>
 AssertionError
 ''', 1)
@@ -400,46 +385,20 @@ AssertionError
 
             with open(self.batfile, "w") as f:
                 f.write("@" + sys.executable + " >" + self.tmpfile + " 2>&1 <nul %*\n")
-            
+
             self.TestCommandLine(("-c", isattycmd), "False False False", 0)
 
             with open(self.batfile, "w") as f:
                 f.write("@" + sys.executable + " >" + self.tmpfile + " %*\n")
-            
+
             self.TestCommandLine(("-c", isattycmd), "False True True", 0)
 
             with open(self.batfile, "w") as f:
                 f.write("@" + sys.executable + " 2>" + self.tmpfile + " %*\n")
-            
+
             self.TestCommandLine(("-c", isattycmd2), "True False True", 0)
         finally:
             self.batfile = hideDefaultBatch
-
-    @unittest.skipUnless(is_cli, "TODO: figure out")
-    def test_cp34849(self):
-        script="""
-import sys
-def f1():
-    raise Exception("test exception")
-def t():
-    try:
-        f1()
-    except:
-        pt = sys.exc_info()
-        raise pt[0], pt[1], pt[2]
-t()
-"""
-        expected = r"""Traceback (most recent call last):
-  File "%s", line 7, in t
-  File "%s", line 4, in f1
-Exception: test exception
-""" % (os.path.join(self.tmpdir, "script_cp34849.py"), os.path.join(self.tmpdir, "script_cp34849.py"))
-
-        scriptFileName = os.path.join(self.tmpdir, "script_cp34849.py")
-        with open(scriptFileName, "w") as f:
-            f.write(script)
-        
-        self.TestCommandLine((scriptFileName,), expected, 1)
 
     @skipUnlessIronPython()
     def test_cp35263(self):
@@ -450,16 +409,16 @@ def foo():
 warnings.warn('warning 2')
 foo()
 """
-        expected=r"""tmp\script_cp35263.py:5: UserWarning: warning 2
+        expected=r"""{filename}:5: UserWarning: warning 2
   warnings.warn('warning 2')
-tmp\script_cp35263.py:4: UserWarning: warning 1
+{filename}:4: UserWarning: warning 1
   warnings.warn('warning 1')
 """
         scriptFileName = os.path.join(self.tmpdir, "script_cp35263.py")
         with open(scriptFileName, "w") as f:
             f.write(script)
-        
-        self.TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected, 0)
+
+        self.TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected.format(filename=scriptFileName), 0)
 
     def test_cp35322(self):
         self.TestCommandLine(("-c", "print(__name__)"), "__main__\n", 0)
@@ -473,7 +432,7 @@ print(__name__)"""
         with ZipFile(zipname, 'w') as myzip:
             myzip.writestr('__main__.py', script1)
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_1.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 0)
 
         script2 = r"""
 import sys
@@ -485,21 +444,19 @@ sys.exit(42)"""
         with ZipFile(zipname, 'w') as myzip:
             myzip.writestr('__main__.py', script2)
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_2.zip\\__main__.py\n__main__\n", 42)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 42)
 
         zipname = os.path.join(self.tmpdir, 'script_cp35379_3.zip')
         # get some padding in front of 1st zip content
         with open(zipname, "wb") as padded:
-            with open(os.path.join(self.test_dir, "cmd.exe"), "rb") as cmdexe:
-                padded.write(cmdexe.read())
+            padded.write(bytes(range(256)))
             with open(os.path.join(self.tmpdir, "script_cp35379_1.zip"), "rb") as firstZip:
                 padded.write(firstZip.read())
 
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname,), zipname + "\\__main__.py\n__main__\n", 0)
 
         # it should not matter if relative path is given with \ or /
-        zipname = zipname.replace('\\', '/')
-        self.TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+        self.TestCommandLine((zipname.replace('\\', '/'),), zipname + "\\__main__.py\n__main__\n", 0)
 
 run_test(__name__)
 

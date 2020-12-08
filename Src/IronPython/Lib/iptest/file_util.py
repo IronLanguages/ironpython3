@@ -51,14 +51,12 @@ class FileUtil(object):
     def get_temp_dir(self):
         temp = self.get_environ_variable("TMP")
         if not temp: temp = self.get_environ_variable("TEMP")
-        if (not temp or ' ' in temp) and os.name == 'nt': 
+        if (not temp or ' ' in temp) and os.name == 'nt':
             temp = r"C:\temp"
-        if (not temp or ' ' in temp) and os.name == 'posix': 
+        if (not temp or ' ' in temp) and os.name == 'posix':
             temp = "/tmp"
 
         return temp
-
-    temp_dir = property(get_temp_dir)
 
     def delete_files(self, *files):
         for f in files: 

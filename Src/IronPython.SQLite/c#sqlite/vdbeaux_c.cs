@@ -1896,7 +1896,7 @@ void sqlite3VdbeLeave(Vdbe *p){
       {
         string z = pOp.p4.z;
         z = z.Trim();// while ( sqlite3Isspace( *(u8)z ) ) z++;
-        Console.Write( "SQL: [%s]\n", z );
+        Console.Write( "SQL: [{0}]\n", z );
       }
     }
 #endif

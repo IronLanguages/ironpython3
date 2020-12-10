@@ -967,7 +967,9 @@ namespace IronPythonTest {
 
     public class VirtualEvent {
         private List<SimpleDelegate> _events = new List<SimpleDelegate>();
+#pragma warning disable CA1070 // Do not declare event fields as virtual
         public virtual event SimpleDelegate MyEvent;
+#pragma warning restore CA1070 // Do not declare event fields as virtual
         public virtual event SimpleDelegate MyCustomEvent {
             add {
                 LastCall = "Add";

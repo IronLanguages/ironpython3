@@ -6,7 +6,6 @@
     <RootNamespace>IronPythonCompiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
     <StartupObject>IronPythonCompiler.Program</StartupObject>
-    <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -24,17 +23,6 @@
       <HintPath>..\..\Util\References\IKVM\IKVM.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

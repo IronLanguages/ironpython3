@@ -39,3 +39,52 @@ csharp_preferred_modifier_order = public, private, protected, internal, static, 
 
 # IPY01: Parameter which is marked not nullable does not have the NotNullAttribute
 dotnet_diagnostic.IPY01.severity = warning
+
+# Analyzers
+dotnet_analyzer_diagnostic.severity = warning
+dotnet_analyzer_diagnostic.category-style.severity = default
+
+dotnet_diagnostic.CA1000.severity = none        # CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1001.severity = suggestion  # CA1001: Types that own disposable fields should be disposable
+dotnet_diagnostic.CA1010.severity = suggestion  # CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1018.severity = suggestion  # CA1018: Mark attributes with AttributeUsageAttribute
+dotnet_diagnostic.CA1036.severity = suggestion  # CA1036: Override methods on comparable types
+dotnet_diagnostic.CA1051.severity = none        # CA1051: Do not declare visible instance fields
+dotnet_diagnostic.CA1069.severity = suggestion  # CA1069: Enums values should not be duplicated
+dotnet_diagnostic.CA1200.severity = suggestion  # CA1200: Avoid using cref tags with a prefix
+dotnet_diagnostic.CA1304.severity = none        # CA1304: Specify CultureInfo
+dotnet_diagnostic.CA1305.severity = none        # CA1305: Specify IFormatProvider
+dotnet_diagnostic.CA1309.severity = suggestion  # CA1309: Use ordinal string comparison
+dotnet_diagnostic.CA1310.severity = suggestion  # CA1310: Specify StringComparison for correctness
+dotnet_diagnostic.CA1707.severity = none        # CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1708.severity = none        # CA1708: Identifiers should differ by more than case
+dotnet_diagnostic.CA1710.severity = none        # CA1710: Identifiers should have correct suffix
+dotnet_diagnostic.CA1711.severity = none        # CA1711: Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1712.severity = none        # CA1712: Do not prefix enum values with type name
+dotnet_diagnostic.CA1715.severity = none        # CA1715: Identifiers should have correct prefix
+dotnet_diagnostic.CA1716.severity = none        # CA1716: Identifiers should not match keywords
+dotnet_diagnostic.CA1720.severity = none        # CA1720: Identifier contains type name
+dotnet_diagnostic.CA1725.severity = suggestion  # CA1725: Parameter names should match base declaration
+dotnet_diagnostic.CA1805.severity = suggestion  # CA1805: Do not initialize unnecessarily
+dotnet_diagnostic.CA1806.severity = none        # CA1806: Do not ignore method results
+dotnet_diagnostic.CA1816.severity = suggestion  # CA1816: Dispose methods should call SuppressFinalize
+dotnet_diagnostic.CA1822.severity = none        # CA1822: Mark members as static
+dotnet_diagnostic.CA1830.severity = suggestion  # CA1830: Prefer strongly-typed Append and Insert method overloads on StringBuilder
+dotnet_diagnostic.CA1834.severity = suggestion  # CA1834: Consider using 'StringBuilder.Append(char)' when applicable
+dotnet_diagnostic.CA1837.severity = suggestion  # CA1837: Use 'Environment.ProcessId'
+dotnet_diagnostic.CA1838.severity = suggestion  # CA1838: Avoid 'StringBuilder' parameters for P/Invokes
+dotnet_diagnostic.CA2101.severity = suggestion  # CA2101: Specify marshaling for P/Invoke string arguments
+dotnet_diagnostic.CA2201.severity = none        # CA2201: Do not raise reserved exception types
+dotnet_diagnostic.CA2208.severity = suggestion  # CA2208: Instantiate argument exceptions correctly
+dotnet_diagnostic.CA2211.severity = none        # CA2211: Non-constant fields should not be visible
+dotnet_diagnostic.CA2219.severity = suggestion  # CA2219: Do not raise exceptions in finally clauses
+dotnet_diagnostic.CA2229.severity = suggestion  # CA2229: Implement serialization constructors
+dotnet_diagnostic.CA2249.severity = suggestion  # CA2249: Consider using 'string.Contains' instead of 'string.IndexOf'
+dotnet_diagnostic.CA3075.severity = suggestion  # CA3075: Insecure DTD processing in XML
+dotnet_diagnostic.CA5350.severity = suggestion  # CA5350: Do Not Use Weak Cryptographic Algorithms
+dotnet_diagnostic.CA5351.severity = suggestion  # CA5351: Do Not Use Broken Cryptographic Algorithms
+dotnet_diagnostic.CA5359.severity = suggestion  # CA5359: Do Not Disable Certificate Validation
+dotnet_diagnostic.CA5372.severity = suggestion  # CA5372: Use XmlReader For XPathDocument
+
+# TODO: remove this
+dotnet_diagnostic.CA1825.severity = suggestion  # CA1825: Avoid zero-length array allocations

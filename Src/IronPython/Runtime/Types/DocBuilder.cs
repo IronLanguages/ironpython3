@@ -543,7 +543,9 @@ namespace IronPython.Runtime.Types {
             return location;
         }
 
+#if !NETCOREAPP && !NETSTANDARD
         private const string _frameworkReferencePath = @"Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0";
+#endif
 
         /// <summary>
         /// Gets the XPathDocument for the specified assembly, or null if one is not available.

@@ -30,8 +30,10 @@ namespace IronPythonTest.LoadTest {
     }
 }
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class NoNamespaceLoadTest {
     public string HelloWorld() {
         return "Hello World";
     }
 }
+#pragma warning restore CA1050 // Declare types in namespaces

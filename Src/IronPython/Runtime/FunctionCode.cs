@@ -208,7 +208,7 @@ namespace IronPython.Runtime {
                             } catch (InvalidOperationException ex) {
                                 // The InvalidOperationException is thrown with an empty message
                                 if (!string.IsNullOrEmpty(ex.Message)) {
-                                    throw ex;
+                                    throw;
                                 }
                             }
                         });

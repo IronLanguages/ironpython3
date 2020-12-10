@@ -6,7 +6,6 @@
     <RootNamespace>IronPythonConsole</RootNamespace>
     <AssemblyName>ipy</AssemblyName>
     <ApplicationIcon>ipy.ico</ApplicationIcon>
-    <CodeAnalysisRuleSet>..\..\IronPython.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
@@ -44,17 +43,6 @@
 
   <ItemGroup>
     <LateStageitem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

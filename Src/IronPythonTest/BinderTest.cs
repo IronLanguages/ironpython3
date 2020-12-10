@@ -586,7 +586,9 @@ namespace IronPythonTest.BinderTest {
     public class COverloads_Derived_Number : COverloads_Base_Number {
         public void M100(Byte arg) { Flag.Value = 200; }
         public void M101(Double arg) { Flag.Value = 201; }
+#pragma warning disable CA1061 // Do not hide base class methods
         public void M102(Object arg) { Flag.Value = 202; }
+#pragma warning restore CA1061 // Do not hide base class methods
         public void M103(Int32? arg) { Flag.Value = 203; }
         public void M104(Int32 arg) { Flag.Value = 204; }
         public void M105(Int32 arg) { Flag.Value = 205; }

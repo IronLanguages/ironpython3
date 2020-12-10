@@ -120,7 +120,7 @@ namespace IronPythonTest {
 
 
         [DllImport("ole32.dll", PreserveSig = false)]
-        public static extern void CoRegisterClassObject(
+        private static extern void CoRegisterClassObject(
             [In] ref Guid rclsid,
             [MarshalAs(UnmanagedType.IUnknown)] object pUnk,
             /* CLSCTX */ int dwClsContext,
@@ -129,7 +129,7 @@ namespace IronPythonTest {
             );
 
         [DllImport("ole32.dll", PreserveSig = false)]
-        public static extern void CoRevokeClassObject(uint dwRegister);
+        private static extern void CoRevokeClassObject(uint dwRegister);
 
         private static Guid ProgID_IPassword = new Guid("{834C5A62-E0BB-4FB4-87B9-F37C869C976B}");
         private static Guid IID_IClassFactory = new Guid("{00000001-0000-0000-C000-000000000046}");

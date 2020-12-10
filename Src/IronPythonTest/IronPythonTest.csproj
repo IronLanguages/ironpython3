@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="NUnitLite" Version="3.12.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
   </ItemGroup>
 
@@ -37,13 +37,6 @@
     </ItemGroup>
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />

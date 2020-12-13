@@ -39,7 +39,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private PythonTypeAttributes _attrs;                // attributes of the type
         private int _flags;                                 // CPython-like flags on the type
         private int _version = GetNextVersion();            // version of the type
-        private List<WeakReference> _subtypes;              // all of the subtypes of the PythonType
+        private List<WeakReference<PythonType>> _subtypes;  // all of the subtypes of the PythonType
         private PythonContext _pythonContext;               // the context the type was created from, or null for system types.
         private bool? _objectNew, _objectInit;              // true if the type doesn't override __new__ / __init__ from object.
         internal Dictionary<CachedGetKey, FastGetBase> _cachedGets; // cached gets on user defined type instances
@@ -76,7 +76,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [MultiRuntimeAware]
         private static int MasterVersion = 1;
         private static readonly CommonDictionaryStorage _pythonTypes = new CommonDictionaryStorage();
-        private static readonly WeakReference[] _emptyWeakRef = Array.Empty<WeakReference>();
         private static readonly object _subtypesLock = new object();
         internal static readonly Func<string, Exception, Exception> DefaultMakeException = (message, innerException) => new Exception(message, innerException);
         internal static readonly Func<string, Exception> DefaultMakeExceptionNoInnerException = (message) => new Exception(message);
@@ -681,17 +680,15 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public PythonList __subclasses__(CodeContext/*!*/ context) {
             PythonList ret = new PythonList();
-            IList<WeakReference> subtypes = SubTypes;
+            var subtypes = SubTypes;
 
             if (subtypes != null) {
                 PythonContext pc = context.LanguageContext;
 
-                foreach (WeakReference wr in subtypes) {
-                    if (wr.IsAlive) {
-                        PythonType pt = (PythonType)wr.Target;
-
+                foreach (var wr in subtypes) {
+                    if (wr.TryGetTarget(out PythonType pt)) {
                         if (pt.PythonContext == null || pt.PythonContext == pc) {
-                            ret.AddNoLock(wr.Target);
+                            ret.AddNoLock(pt);
                         }
                     }
                 }
@@ -1271,8 +1268,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void ClearObjectNewInSubclasses(PythonType pt) {
             lock (_subtypesLock) {
                 if (pt._subtypes != null) {
-                    foreach (WeakReference wr in pt._subtypes) {
-                        if (wr.Target is PythonType type) {
+                    foreach (var wr in pt._subtypes) {
+                        if (wr.TryGetTarget(out PythonType type)) {
                             type._objectNew = null;
 
                             ClearObjectNewInSubclasses(type);
@@ -1285,8 +1282,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void ClearObjectInitInSubclasses(PythonType pt) {
             lock (_subtypesLock) {
                 if (pt._subtypes != null) {
-                    foreach (WeakReference wr in pt._subtypes) {
-                        if (wr.Target is PythonType type) {
+                    foreach (var wr in pt._subtypes) {
+                        if (wr.TryGetTarget(out PythonType type)) {
                             type._objectInit = null;
 
                             ClearObjectInitInSubclasses(type);
@@ -2459,9 +2456,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #region Private implementation details
 
         private void UpdateVersion() {
-            foreach (WeakReference wr in SubTypes) {
-                if (wr.IsAlive) {
-                    ((PythonType)wr.Target).UpdateVersion();
+            foreach (var wr in SubTypes) {
+                if (wr.TryGetTarget(out PythonType pt)) {
+                    pt.UpdateVersion();
                 }
             }
 
@@ -2497,25 +2494,26 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         private void AddSubType(PythonType subtype) {
             if (_subtypes == null) {
-                Interlocked.CompareExchange<List<WeakReference>>(ref _subtypes, new List<WeakReference>(), null);
+                Interlocked.CompareExchange(ref _subtypes, new List<WeakReference<PythonType>>(), null);
             }
 
             lock (_subtypesLock) {
-                _subtypes.Add(new WeakReference(subtype));
+                _subtypes.Add(new WeakReference<PythonType>(subtype));
             }
         }
 
         private void RemoveSubType(PythonType subtype) {
-            int i = 0;
-            if (_subtypes != null) {
-                lock (_subtypesLock) {
-                    while (i < _subtypes.Count) {
-                        if (!_subtypes[i].IsAlive || _subtypes[i].Target == subtype) {
-                            _subtypes.RemoveAt(i);
-                            continue;
-                        }
-                        i++;
+            if (_subtypes is null) return;
+
+            lock (_subtypesLock) {
+                int i = 0;
+                while (i < _subtypes.Count) {
+                    var wr = _subtypes[i];
+                    if (!wr.TryGetTarget(out PythonType target) || target == subtype) {
+                        _subtypes.RemoveAt(i);
+                        continue;
                     }
+                    i++;
                 }
             }
         }
@@ -2524,9 +2522,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Gets a list of weak references to all the subtypes of this class.  May return null
         /// if there are no subtypes of the class.
         /// </summary>
-        private IList<WeakReference> SubTypes {
+        private IList<WeakReference<PythonType>> SubTypes {
             get {
-                if (_subtypes == null) return _emptyWeakRef;
+                if (_subtypes == null) return Array.Empty<WeakReference<PythonType>>();
 
                 lock (_subtypesLock) {
                     return _subtypes.ToArray();

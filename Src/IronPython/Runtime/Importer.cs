@@ -86,10 +86,10 @@ namespace IronPython.Runtime {
 
                 if (scope.__dict__._storage.TryGetPath(out object path)) {
                     if (path is PythonList listPath) {
-                        return ImportNestedModule(context, scope, new[] { name }, 0, listPath);
+                        return ImportNestedModule(context, scope, new ArraySegment<string>(new[] { name }), listPath, scope.GetName());
                     }
                     if (path is string stringPath) {
-                        return ImportNestedModule(context, scope, new[] { name }, 0, PythonList.FromArrayNoCopy(stringPath));
+                        return ImportNestedModule(context, scope, new ArraySegment<string>(new[] { name }), PythonList.FromArrayNoCopy(stringPath), scope.GetName());
                     }
                 }
             } else if (from is PythonType pt) {
@@ -112,25 +112,26 @@ namespace IronPython.Runtime {
             throw PythonOps.ImportError("Cannot import name {0}", name);
         }
 
-        private static object ImportModuleFrom(CodeContext/*!*/ context, object from, string[] parts, int current) {
+        private static object ImportModuleFrom(CodeContext/*!*/ context, object from, ArraySegment<string> parts, object root) {
             if (from is PythonModule scope) {
                 if (scope.__dict__._storage.TryGetPath(out object path) || DynamicHelpers.GetPythonType(scope).TryGetMember(context, scope, "__path__", out path)) {
                     if (path is PythonList listPath) {
-                        return ImportNestedModule(context, scope, parts, current, listPath);
+                        return ImportNestedModule(context, scope, parts, listPath, (root as PythonModule)?.GetName());
                     }
                     if (path is string stringPath) {
-                        return ImportNestedModule(context, scope, parts, current, PythonList.FromArrayNoCopy(stringPath));
+                        return ImportNestedModule(context, scope, parts, PythonList.FromArrayNoCopy(stringPath), (root as PythonModule)?.GetName());
                     }
                 }
             }
 
+            string name = parts.Array[parts.Offset + parts.Count - 1];
             if (from is NamespaceTracker ns) {
-                if (ns.TryGetValue(parts[current], out object val)) {
+                if (ns.TryGetValue(name, out object val)) {
                     return MemberTrackerToPython(context, val);
                 }
             }
 
-            throw PythonOps.ImportError("No module named {0}", parts[current]);
+            throw PythonOps.ImportError("No module named {0}", name);
         }
 
         /// <summary>
@@ -262,7 +263,7 @@ namespace IronPython.Runtime {
                     }
                 } else if (i != 0) {
                     // child module isn't loaded yet, import it.
-                    next = ImportModuleFrom(context, next, parts, i);
+                    next = ImportModuleFrom(context, next, new ArraySegment<string>(parts, 1, i), newmod);
                 } else {
                     // top-level module doesn't exist in sys.modules, probably
                     // came from some weird meta path hook.
@@ -603,17 +604,21 @@ namespace IronPython.Runtime {
         }
 
         private static object ImportNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ module,
-            string[] parts, int current, PythonList/*!*/ path) {
+            ArraySegment<string> parts, PythonList/*!*/ path, string scopeModuleName) {
+            Debug.Assert(parts.Array is not null);
+            Debug.Assert(parts.Count > 0);
+
             object ret;
-            string name = parts[current];
-            string fullName = CreateFullName(module.GetName() as string, name);
+            int current = parts.Offset + parts.Count - 1;
+            string name = parts.Array[current];
+            string fullName = CreateFullName(scopeModuleName, parts);
 
             if (TryGetExistingOrMetaPathModule(context, fullName, path, out ret)) {
                 module.__dict__[name] = ret;
                 return ret;
             }
 
-            if (TryGetNestedModule(context, module, parts, current, out ret)) {
+            if (TryGetNestedModule(context, module, parts.Array, current, out ret)) {
                 return ret;
             }
 
@@ -762,11 +767,11 @@ namespace IronPython.Runtime {
                 || module is BuiltinFunction;
         }
 
-        private static string CreateFullName(string/*!*/ baseName, string name) {
+        private static string CreateFullName(string/*!*/ baseName, ArraySegment<string> parts) {
             if (baseName == null || baseName.Length == 0 || baseName == "__main__") {
-                return name;
+                return string.Join(".", parts);
             }
-            return baseName + "." + name;
+            return baseName + "." + string.Join(".", parts);
         }
 
         #endregion

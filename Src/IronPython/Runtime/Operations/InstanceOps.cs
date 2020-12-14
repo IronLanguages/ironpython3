@@ -403,7 +403,7 @@ namespace IronPython.Runtime.Operations {
 
         public static bool StructuralComparableLessThan<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
             where T : IStructuralComparable {
-            return StructuralCompare(context, x, y) < 0;
+            return x.CompareTo(y, context.LanguageContext.GetLtComparer(null)) < 0;
         }
 
         public static bool StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, T x, [NotNull]T y)

@@ -3101,7 +3101,7 @@ namespace IronPython.Runtime {
             }
 
             public int Compare(object x, object y) {
-                return _lessThanSite.Target(_lessThanSite, x, y) ? -1 : 0;
+                return _lessThanSite.Target(_lessThanSite, x, y) ? -1 : 1;
             }
         }
 

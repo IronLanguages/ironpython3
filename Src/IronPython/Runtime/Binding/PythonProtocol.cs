@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Binding {
                 callAsInt = DynamicExpression.Dynamic(
                     state.Convert(typeof(int), ConversionResultKind.ExplicitCast),
                     typeof(int),
-                    call
+                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.Index)), call)
                 );
             }
 
@@ -104,7 +104,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Constant("__len__() should return >= 0"),
                             Ast.NewArrayInit(typeof(object))
                         )
-                    )                    
+                    )
                 ),
                 Ast.NotEqual(res, Ast.Constant(0))
             );

@@ -536,11 +536,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IValueEquality Members
-
         public const object __hash__ = null;
-
-        #endregion
 
         [Python3Warning("cell comparisons not supported in 3.x")]
         public int __cmp__(object other) {

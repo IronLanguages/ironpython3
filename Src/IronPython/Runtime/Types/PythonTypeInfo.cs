@@ -276,9 +276,7 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
-        /// Resolves methods mapped to __eq__ and __ne__ from:
-        ///     1. IStructuralEquatable.Equals
-        ///     2. IValueEquality.Equals (CLR2 only)
+        /// Resolves methods mapped to __eq__ and __ne__ from IStructuralEquatable.Equals
         /// </summary>
         private class EqualityResolver : MemberResolver {
             public static readonly EqualityResolver Instance = new EqualityResolver();
@@ -647,10 +645,9 @@ namespace IronPython.Runtime.Types {
 #endif
                 
                 // Runs after StandardResolver so custom __eq__ methods can be added
-                // that support things like returning NotImplemented vs. IValueEquality
-                // which only supports true/false.  Runs before OperatorResolver so that
-                // IStructuralEquatable and IValueEquality take precedence over Equals,
-                // which can be provided for nice .NET interop.
+                // that support things like returning NotImplemented. Runs before
+                // OperatorResolver so that IStructuralEquatable take precedence
+                // over Equals, which can be provided for nice .NET interop.
                 
                 EqualityResolver.Instance,
                 new ComparisonResolver(typeof(IStructuralComparable), "StructuralComparable"),
@@ -878,8 +875,7 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
-        /// Provides a resolution for __hash__, first looking for IStructuralEquatable.GetHashCode,
-        /// then IValueEquality.GetValueHashCode.
+        /// Provides a resolution for __hash__ looking for IStructuralEquatable.GetHashCode.
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {

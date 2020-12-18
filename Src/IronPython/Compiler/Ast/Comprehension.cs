@@ -237,6 +237,28 @@ namespace IronPython.Compiler.Ast {
             return MSAst.Expression.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.GetClosureTupleFromContext)), _comprehension.Parent.LocalContext);
         }
 
+        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
+            ContainsNestedFreeVariables = true;
+            if (TryGetVariable(reference.Name, out variable)) {
+                Debug.Assert(variable.Kind != VariableKind.Nonlocal, "there should be no nonlocals in a comprehension");
+                variable.AccessedInNestedScope = true;
+
+                if (variable.Kind == VariableKind.Local || variable.Kind == VariableKind.Parameter) {
+                    from.AddFreeVariable(variable, true);
+
+                    for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
+                        scope.AddFreeVariable(variable, false);
+                    }
+
+                    AddCellVariable(variable);
+                } else {
+                    from.AddReferencedGlobal(reference.Name);
+                }
+                return true;
+            }
+            return false;
+        }
+
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
             if (TryGetVariable(reference.Name, out PythonVariable variable)) {
                 if (variable.Kind == VariableKind.Global) {

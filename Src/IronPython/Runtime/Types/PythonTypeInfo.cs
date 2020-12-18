@@ -995,16 +995,6 @@ namespace IronPython.Runtime.Types {
         /// Provides a resolution for __iter__
         /// </summary>
         private static MemberGroup/*!*/ IterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type == typeof(string)) {
-                // __iter__ is only exposed in 3.0
-                return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForString));
-            }
-
-            if (typeof(Bytes).IsAssignableFrom(type)) {
-                // __iter__ is only exposed in 3.0
-                return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForBytes));
-            }
-
             foreach (Type t in binder.GetContributingTypes(type)) {
                 MemberInfo[] news = t.GetMember("__iter__");
                 if (news.Length > 0) {

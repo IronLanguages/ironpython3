@@ -348,6 +348,9 @@ namespace IronPython.Runtime.Operations {
             return text;
         }
 
+        public static IEnumerator<string> __iter__([NotNull] string s)
+            => StringEnumerator(s);
+
         public static int __len__([NotNull]string s) {
             return s.Length;
         }

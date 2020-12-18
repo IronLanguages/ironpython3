@@ -316,14 +316,6 @@ namespace IronPython.Runtime.Operations {
 
         #region Comparison and Hashing
 
-        public static bool EqualsMethod(object x, object y) {
-            return x.Equals(y);
-        }
-
-        public static bool NotEqualsMethod(object x, object y) {
-            return !x.Equals(y);
-        }
-
         // Structural Equality and Hashing Helpers
 
         public static int StructuralHashMethod(CodeContext/*!*/ context, IStructuralEquatable x) {

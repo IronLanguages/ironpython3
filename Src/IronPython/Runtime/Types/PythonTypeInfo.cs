@@ -689,9 +689,6 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__getitem__", GetItemResolver),
                 new OneOffResolver("__setitem__", SetItemResolver),
                 
-                // Runs after operator resolver to map __ne__ -> !__eq__
-                new OneOffResolver("__ne__", FallbackInequalityResolver),
-
                 // Runs after the operator resolver to map IComparable
                 new ComparisonResolver(typeof(IComparable), "Comparable"),
 
@@ -805,7 +802,7 @@ namespace IronPython.Runtime.Types {
                 && type != typeof(Complex)) {
                 MethodInfo tostr = type.GetMethod("ToString", ReflectionUtils.EmptyTypes);
                 if (tostr != null && tostr.DeclaringType != typeof(object)) {
-                    return GetInstanceOpsMethod(type, "ToStringMethod");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.ToStringMethod));
                 }
             }
 
@@ -833,7 +830,7 @@ namespace IronPython.Runtime.Types {
                 }
 
                 // no override, pick up the default fancy .NET __repr__
-                return binder.GetBaseInstanceMethod(type, "FancyRepr");
+                return binder.GetBaseInstanceMethod(type, nameof(InstanceOps.FancyRepr));
             }
 
             return MemberGroup.EmptyGroup;
@@ -846,7 +843,7 @@ namespace IronPython.Runtime.Types {
                 string methodName = "__reduce_ex__";
 
                 if (!TypeOverridesMethod(binder, type, methodName)) {
-                    return GetInstanceOpsMethod(type, "SerializeReduce");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.SerializeReduce));
                 }
             }
 
@@ -893,7 +890,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-                return GetInstanceOpsMethod(type, "StructuralHashMethod");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.StructuralHashMethod));
             }
 
             // otherwise we'll pick up __hash__ from ObjectOps which will call .NET's .GetHashCode therefore
@@ -965,7 +962,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ NextResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (typeof(IEnumerator).IsAssignableFrom(type)) {
-                return GetInstanceOpsMethod(type, "NextMethod");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.NextMethod));
             }
 
             return MemberGroup.EmptyGroup;
@@ -977,7 +974,7 @@ namespace IronPython.Runtime.Types {
         private static MemberGroup/*!*/ LengthResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (!type.IsDefined(typeof(DontMapICollectionToLenAttribute), true)) {
                 if (binder.GetInterfaces(type).Contains(typeof(ICollection))) {
-                    return GetInstanceOpsMethod(type, "LengthMethod");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.LengthMethod));
                 }
 
                 foreach (Type t in binder.GetInterfaces(type)) {
@@ -1031,40 +1028,6 @@ namespace IronPython.Runtime.Types {
             return MemberGroup.EmptyGroup;
         }
 
-        /// <summary>
-        /// Looks for an Equals overload defined on the type and if one is present binds __ne__ to an
-        /// InstanceOps helper.
-        /// </summary>
-        private static MemberGroup/*!*/ FallbackInequalityResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            // if object defines __eq__ then we can call the reverse version
-            if (IncludeOperatorMethod(type, PythonOperationKind.NotEqual)) {
-                foreach (Type curType in binder.GetContributingTypes(type)) {
-                    MemberGroup mg = binder.GetMember(curType, "Equals");
-
-                    foreach (MemberTracker mt in mg) {
-                        if (mt.MemberType != TrackerTypes.Method || mt.DeclaringType == typeof(object)) {
-                            continue;
-                        }
-
-                        MethodTracker method = (MethodTracker)mt;
-                        if ((method.Method.Attributes & MethodAttributes.NewSlot) != 0 ||
-                            PythonHiddenAttribute.IsHidden(method.Method)) {
-                            continue;
-                        }
-
-                        ParameterInfo[] pis = method.Method.GetParameters();
-                        if (pis.Length == 1) {
-                            if (pis[0].ParameterType == typeof(object)) {
-                                return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod(nameof(InstanceOps.NotEqualsMethod)), curType));
-                            }
-                        }
-                    }
-                }
-            }
-
-            return MemberGroup.EmptyGroup;
-        }
-
         private static MemberGroup/*!*/ AllResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             // static types are like modules and define __all__.
             if (type.IsAbstract && type.IsSealed) {
@@ -1083,7 +1046,7 @@ namespace IronPython.Runtime.Types {
             if (res == MemberGroup.EmptyGroup && 
                 !typeof(IPythonObject).IsAssignableFrom(type) &&
                 typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type)) {
-                res = GetInstanceOpsMethod(type, "DynamicDir");
+                res = GetInstanceOpsMethod(type, nameof(InstanceOps.DynamicDir));
             }
 
             return res;
@@ -1126,7 +1089,7 @@ namespace IronPython.Runtime.Types {
 
         private static MemberGroup/*!*/ EnterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (!type.IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
-                return GetInstanceOpsMethod(type, "EnterMethod");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.EnterMethod));
             }
 
             return MemberGroup.EmptyGroup;
@@ -1134,7 +1097,7 @@ namespace IronPython.Runtime.Types {
 
         private static MemberGroup/*!*/ ExitResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (!type.IsDefined(typeof(DontMapIDisposableToContextManagerAttribute), true) && typeof(IDisposable).IsAssignableFrom(type)) {
-                return GetInstanceOpsMethod(type, "ExitMethod");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.ExitMethod));
             }
 
             return MemberGroup.EmptyGroup;
@@ -1142,7 +1105,7 @@ namespace IronPython.Runtime.Types {
 
         private static MemberGroup/*!*/ FormatResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (typeof(IFormattable).IsAssignableFrom(type)) {
-                return GetInstanceOpsMethod(type, "Format");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.Format));
             }
 
             return MemberGroup.EmptyGroup;

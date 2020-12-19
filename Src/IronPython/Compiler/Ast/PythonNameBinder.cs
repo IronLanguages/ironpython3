@@ -250,6 +250,7 @@ namespace IronPython.Compiler.Ast {
 
         public override bool Walk(ListComprehension node) {
             node.Parent = _currentScope;
+            node.Scope.Parent = _currentScope;
             PushScope(node.Scope);
             return base.Walk(node);
         }

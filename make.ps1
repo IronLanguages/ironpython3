@@ -2,7 +2,7 @@
 [CmdletBinding()]
 Param(
     [Parameter(Position=1)]
-    [String] $target = "release",
+    [String] $target = "build",
     [String] $configuration = "Release",
     [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0'),
     [String] $platform = "x64",
@@ -222,16 +222,19 @@ switch -wildcard ($target) {
     "stage-debug"   { Main "Stage" "Debug" }
     "package-debug" { Main "Package" "Debug" }
     "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks $platform; break }
-    "test-debug"    { Test "" "Debug" $frameworks $platform; break }
+    "test-debug"    { Test "all" "Debug" $frameworks $platform; break }
 
     # release targets
-    "restore"       { Main "RestoreReferences" "Release" }
     "release"       { Main "Build" "Release" }
-    "clean"         { Main "Clean" "Release" }
-    "stage"         { Main "Stage" "Release" }
-    "package"       { Main "Package" "Release" }
-    "test-*"        { Test $target.Substring(5) "Release" $frameworks $platform; break }
-    "test"          { Test "" "Release" $frameworks $platform; break }
+
+    # general targets
+    "restore"       { Main "RestoreReferences" $configuration }
+    "build"         { Main "Build" $configuration }
+    "clean"         { Main "Clean" $configuration }
+    "stage"         { Main "Stage" $configuration }
+    "package"       { Main "Package" $configuration }
+    "test-*"        { Test $target.Substring(5) $configuration $frameworks $platform; break }
+    "test"          { Test "all" $configuration $frameworks $platform; break }
 
     # utility targets
     "ngen"          {

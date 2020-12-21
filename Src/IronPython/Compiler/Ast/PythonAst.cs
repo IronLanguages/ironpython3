@@ -699,7 +699,7 @@ namespace IronPython.Compiler.Ast {
 
         /// <summary>
         /// Rewrites the tree for performing lookups against globals instead of being bound
-        /// against the optimized scope.  This is used if the user compiles optimied code and then
+        /// against the optimized scope.  This is used if the user compiles optimized code and then
         /// runs it against a different scope.
         /// </summary>
         internal PythonAst MakeLookupCode() {
@@ -739,7 +739,7 @@ namespace IronPython.Compiler.Ast {
                     return PythonAst._globalContext;
                 }
 
-                // we need to re-write nested scoeps
+                // we need to re-write nested scopes
                 if (node is ScopeStatement scope) {
                     return base.VisitExtension(VisitScope(scope));
                 }
@@ -750,6 +750,10 @@ namespace IronPython.Compiler.Ast {
 
                 if (node is GeneratorExpression generator) {
                     return base.VisitExtension(new GeneratorExpression((FunctionDefinition)VisitScope(generator.Function), generator.Iterable));
+                }
+
+                if (node is Comprehension comprehension) {
+                    return VisitComprehension(comprehension);
                 }
 
                 // update the global get/set/raw gets variables
@@ -802,6 +806,22 @@ namespace IronPython.Compiler.Ast {
                     _curScope = prevScope;
                 }
                 return newScope;
+            }
+
+            private MSAst.Expression VisitComprehension(Comprehension comprehension) {
+                var newScope = (ComprehensionScope)comprehension.Scope.CopyForRewrite();
+                newScope.Parent = _curScope;
+                var newComprehension = comprehension.CopyForRewrite(newScope);
+
+                ScopeStatement prevScope = _curScope;
+                try {
+                    // rewrite the comprehension in a new scope
+                    _curScope = newScope;
+
+                    return base.VisitExtension(newComprehension);
+                } finally {
+                    _curScope = prevScope;
+                }
             }
         }
 

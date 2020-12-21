@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import types
 import unittest
 
 from iptest import run_test
@@ -321,5 +322,39 @@ class ClosureTest(unittest.TestCase):
             self.assertEqual(z, "global z")
             exec("z = 7", globals())
             self.assertEqual(z, 7)
+
+    def test_gh817(self):
+        # https://github.com/IronLanguages/ironpython3/issues/817
+
+        for x in [lambda: i for i in [1,2]]:
+            self.assertEqual(x(), 2)
+
+        self.assertEqual([tuple(i for j in [1]) for i in [1]], [(1,)])
+        self.assertEqual({tuple(i for j in [1]) for i in [1]}, {(1,)})
+
+        self.assertEqual({i: tuple(j for j in t if i != j) for t in ((1,2),) for i in t}, {1: (2,), 2: (1,)})
+
+        self.assertEqual([lambda: i for i in [1]][0](), 1)
+
+        self.assertEqual([x * a for a in range(3) if a == 2 for x in range(5,7)], [10, 12])
+        self.assertRaises(UnboundLocalError, lambda: [x * a for a in range(3) if x == 2 for x in range(5,7)])
+
+        def foo1(z):
+            return [(x for x in range(y)) for y in range(z)]
+        self.assertEqual([list(x) for x in foo1(3)], [[], [0], [0, 1]])
+
+        def foo2(z):
+            return [(x + z for x in range(y)) for y in range(z)]
+        self.assertEqual([list(x) for x in foo2(3)], [[], [3], [3, 4]])
+
+        dl = [{ y: (z**2 for z in range(x)) for y in range(3)} for x in range(4)]
+        self.assertIsInstance(dl, list)
+        self.assertEqual(len(dl), 4)
+        for p, d in enumerate(dl):
+            self.assertIsInstance(d, dict)
+            for k in range(3):
+                g = d[k]
+                self.assertIsInstance(g, types.GeneratorType)
+                self.assertEqual(list(g), [0, 1, 4][:p])
 
 run_test(__name__)

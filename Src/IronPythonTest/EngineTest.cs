@@ -619,6 +619,26 @@ class K(object):
         }
 
         [Test]
+        public static void ScenarioComprehensionScope() {
+            var engine = Python.CreateEngine();
+            var scope = engine.CreateScope();
+            var source = engine.CreateScriptSourceFromString("assert [lambda: i for i in [1,2]][0]() == 2");
+            var compiledCode = source.Compile();
+            compiledCode.Execute(scope);
+        }
+
+        [Test]
+        public static void ScenarioComprehensionScopeGlobal() {
+            var engine = Python.CreateEngine();
+            var source = engine.CreateScriptSourceFromString("assert [lambda: i for i in global_list][0]() == res");
+            var compiledCode = source.Compile();
+            var scope = engine.CreateScope();
+            scope.SetVariable("global_list", new[] { 1, 2 });
+            scope.SetVariable("res", 2);
+            compiledCode.Execute(scope);
+        }
+
+        [Test]
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
             engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);

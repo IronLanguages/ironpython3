@@ -2252,7 +2252,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (_underlyingSystemType.BaseType != null) {
                 Type baseType;
                 if (_underlyingSystemType == typeof(bool)) {
-                    // bool inherits from int in python
+                    // bool inherits from int in Python
                     baseType = typeof(int);
                 } else if (_underlyingSystemType.BaseType == typeof(ValueType)) {
                     // hide ValueType, it doesn't exist in Python
@@ -2266,6 +2266,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
 
                 _bases = new PythonType[] { GetPythonType(baseType) };
+
+                if (_underlyingSystemType == typeof(bool)) {
+                    // exclude ValueType from the mro
+                    Debug.Assert(baseType == typeof(int));
+                    mro.Add(DynamicHelpers.GetPythonTypeFromType(baseType));
+                    baseType = typeof(object);
+                }
 
                 Type curType = baseType;
                 while (curType != null) {

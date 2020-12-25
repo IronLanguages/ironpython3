@@ -29,29 +29,30 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static bool LessThan(decimal x, decimal y) {
-            return x < y;
-        }
+        public static bool LessThan(decimal x, decimal y) => x < y;
         [SpecialName]
-        public static bool LessThanOrEqual(decimal x, decimal y) {
-            return x <= y;
-        }
+        public static bool LessThanOrEqual(decimal x, decimal y) => x <= y;
         [SpecialName]
-        public static bool GreaterThan(decimal x, decimal y) {
-            return x > y;
-        }
+        public static bool GreaterThan(decimal x, decimal y) => x > y;
         [SpecialName]
-        public static bool GreaterThanOrEqual(decimal x, decimal y) {
-            return x >= y;
-        }
+        public static bool GreaterThanOrEqual(decimal x, decimal y) => x >= y;
         [SpecialName]
-        public static bool Equals(decimal x, decimal y) {
-            return x == y;
-        }
+        public static bool Equals(decimal x, decimal y) => x == y;
         [SpecialName]
-        public static bool NotEquals(decimal x, decimal y) {
-            return x != y;
-        }
+        public static bool NotEquals(decimal x, decimal y) => x != y;
+
+        [SpecialName]
+        public static bool LessThan(decimal x, BigInteger y) => __cmp__(x, y) < 0;
+        [SpecialName]
+        public static bool LessThanOrEqual(decimal x, BigInteger y) => __cmp__(x, y) <= 0;
+        [SpecialName]
+        public static bool GreaterThan(decimal x, BigInteger y) => __cmp__(x, y) > 0;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(decimal x, BigInteger y) => __cmp__(x, y) >= 0;
+        [SpecialName]
+        public static bool Equals(decimal x, BigInteger y) => __cmp__(x, y) == 0;
+        [SpecialName]
+        public static bool NotEquals(decimal x, BigInteger y) => __cmp__(x, y) != 0;
 
         internal static int __cmp__(BigInteger x, decimal y) {
             return -__cmp__(y, x);

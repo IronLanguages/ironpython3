@@ -384,13 +384,14 @@ namespace IronPython.Runtime.Types {
 
                         if (opInfo != null) {
                             foreach (Type curType in binder.GetContributingTypes(type)) {
-                                if (curType == typeof(double)) {
+                                if ((type.IsPrimitive || type == typeof(decimal)) && curType.IsInterface && (opInfo.Operator & PythonOperationKind.Comparison) != 0) continue;
+
+                                if (curType.IsPrimitive || curType == typeof(decimal)) {
                                     if ((opInfo.Operator & PythonOperationKind.Comparison) != 0) {
                                         // we override these with our own comparisons in DoubleOps
                                         continue;
                                     }
-                                } else
-                                if (curType == typeof(BigInteger)) {
+                                } else if (curType == typeof(BigInteger)) {
                                     if (opInfo.Operator == PythonOperationKind.Mod ||
                                         opInfo.Operator == PythonOperationKind.RightShift ||
                                         opInfo.Operator == PythonOperationKind.LeftShift ||
@@ -399,7 +400,6 @@ namespace IronPython.Runtime.Types {
                                         // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                         continue;
                                     }
-
                                 } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.TrueDivide) {
                                     // we override this with our own division PythonOperationKind which is different from .NET Complex.
                                     continue;
@@ -1706,28 +1706,8 @@ namespace IronPython.Runtime.Types {
         /// <summary>
         /// Filters out methods which are present on standard .NET types but shouldn't be there in Python
         /// </summary>
-        internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op) {
-            if (t == typeof(string) && op == PythonOperationKind.Compare) {
-                // string doesn't define __cmp__, just __lt__ and friends
-                return false;
-            } 
-
-            // numeric types in python don't define equality, just __cmp__
-            if (t == typeof(bool) ||
-                (Converter.IsNumeric(t) && t != typeof(Complex) && t != typeof(double) && t != typeof(float)) &&
-                t != typeof(Decimal)) {
-                switch (op) {
-                    case PythonOperationKind.Equal:
-                    case PythonOperationKind.NotEqual:
-                    case PythonOperationKind.GreaterThan:
-                    case PythonOperationKind.LessThan:
-                    case PythonOperationKind.GreaterThanOrEqual:
-                    case PythonOperationKind.LessThanOrEqual:
-                        return false;
-                }
-            }
-            return true;
-        }
+        internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op)
+            => op != PythonOperationKind.Compare;
 
         /// <summary>
         /// When private binding is enabled we can have a collision between the private Event
@@ -1913,6 +1893,7 @@ namespace IronPython.Runtime.Types {
                 }
                 mts.Add(mt);
             }
+            if (mts.Count == 0) return MemberGroup.EmptyGroup;
             return new MemberGroup(mts.ToArray());
         }
 

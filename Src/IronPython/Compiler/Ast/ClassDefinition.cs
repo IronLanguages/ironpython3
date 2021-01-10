@@ -32,6 +32,7 @@ namespace IronPython.Compiler.Ast {
 
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
+        private static readonly MSAst.ParameterExpression _classDefTemp = Ast.Parameter(typeof(object), "$class_definition");
 
         public ClassDefinition(string name, Expression[] bases, Arg[] keywords, Statement body = null) {
             ContractUtils.RequiresNotNullItems(bases, nameof(bases));
@@ -66,7 +67,12 @@ namespace IronPython.Compiler.Ast {
         internal PythonVariable PythonVariable { get; set; }
 
         /// <summary>
-        /// Variable for the the __module__ (module name)
+        /// Variable for the __class__ (class definition)
+        /// </summary>
+        internal PythonVariable ClassVariable { get; private set; }
+
+        /// <summary>
+        /// Variable for the __module__ (module name)
         /// </summary>
         internal PythonVariable ModVariable { get; set; }
 
@@ -89,11 +95,21 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal void CreateClassVariable() {
+            ClassVariable = EnsureVariable("__class__");
+        }
+
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
-                variable = from.EnsureVariable(reference.Name);
+                variable = ClassVariable;
+                variable.AccessedInNestedScope = true;
+                from.AddFreeVariable(variable, true);
+                for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
+                    scope.AddFreeVariable(variable, false);
+                }
+                AddCellVariable(variable);
                 return true;
             }
             return base.TryBindOuter(from, reference, out variable);
@@ -168,7 +184,13 @@ namespace IronPython.Compiler.Ast {
             classDef = AddDecorators(classDef, Decorators);
 
             return GlobalParent.AddDebugInfoAndVoid(
-                AssignValue(Parent.GetVariableExpression(PythonVariable), classDef), 
+                Ast.Block(
+                    new[] { _classDefTemp },
+                    new Ast[] {
+                        Ast.Assign(_classDefTemp, classDef),
+                        AssignValue(Parent.GetVariableExpression(PythonVariable), _classDefTemp),
+                        AssignValue(GetVariableExpression(ClassVariable), _classDefTemp),
+                }),
                 new SourceSpan(
                     GlobalParent.IndexToLocation(StartIndex),
                     GlobalParent.IndexToLocation(HeaderIndex)

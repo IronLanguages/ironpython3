@@ -626,18 +626,6 @@ namespace IronPython.Compiler.Ast {
 
             CreateFunctionVariables(locals, init);
 
-            // If the __class__ variable is used in a class method then we need to initialize it.
-            // This must be done before parameter initialization (in case one of the parameters is called __class__).
-            ClassDefinition parent = FindParentOfType<ClassDefinition>();
-            if (parent != null && TryGetVariable("__class__", out PythonVariable pVar)) {
-                init.Add(
-                    AssignValue(
-                        GetVariableExpression(pVar),
-                        Ast.Call(AstMethods.LookupName, parent.Parent.LocalContext, Ast.Constant(parent.Name))
-                    )
-                );
-            }
-
             // Initialize parameters - unpack tuples.
             // Since tuples unpack into locals, this must be done after locals have been created.
             InitializeParameters(init, needsWrapperMethod, parameters);

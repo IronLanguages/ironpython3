@@ -204,6 +204,7 @@ namespace IronPython.Compiler.Ast {
         // ClassDefinition
         public override bool Walk(ClassDefinition node) {
             node.PythonVariable = DefineName(node.Name);
+            node.CreateClassVariable();
 
             // Base references are in the outer context
             foreach (Expression b in node.Bases) b.Walk(this);
@@ -216,7 +217,7 @@ namespace IronPython.Compiler.Ast {
                     dec.Walk(this);
                 }
             }
-            
+
             PushScope(node);
 
             node.ModuleNameVariable = _globalScope.EnsureGlobalVariable("__name__");

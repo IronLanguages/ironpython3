@@ -29,6 +29,7 @@ namespace IronPython.Compiler.Ast {
         private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
 
         private static int _classId;
+        private readonly int _classInstanceId;
 
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
@@ -43,6 +44,7 @@ namespace IronPython.Compiler.Ast {
             _keywords = keywords;
             Body = body;
             Metaclass = keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
+            _classInstanceId = Interlocked.Increment(ref _classId);
         }
 
         public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
@@ -95,21 +97,16 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal void CreateClassVariable() {
-            ClassVariable = EnsureVariable("__class__");
-        }
-
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
+
+        internal void CreateClassVariable() {
+            ClassVariable = GlobalParent.EnsureGlobalVariable($"$__class__{_classInstanceId}");
+        }
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
                 variable = ClassVariable;
-                variable.AccessedInNestedScope = true;
-                from.AddFreeVariable(variable, true);
-                for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
-                    scope.AddFreeVariable(variable, false);
-                }
-                AddCellVariable(variable);
+                from.AddReferencedGlobal(variable.Name);
                 return true;
             }
             return base.TryBindOuter(from, reference, out variable);
@@ -117,6 +114,12 @@ namespace IronPython.Compiler.Ast {
 
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
             PythonVariable variable;
+
+            if (reference.Name == "__class__") {
+                variable = ClassVariable;
+                AddReferencedGlobal(variable.Name);
+                return variable;
+            }
 
             // Python semantics: The variables bound local in the class
             // scope are accessed by name - the dictionary behavior of classes
@@ -258,7 +261,7 @@ namespace IronPython.Compiler.Ast {
                     locals,
                     bodyStmt
                 ),
-                Name + "$" + Interlocked.Increment(ref _classId),
+                Name + "$" + _classInstanceId,
                 new[] { _parentContextParam }
                 );
 

@@ -91,12 +91,23 @@ If locale is None then the current setting is returned.
             return GetLocaleInfo(context).Collate.CompareInfo.Compare(string1, string2, CompareOptions.None);
         }
 
-        [Documentation(@"returns a System.Globalization.SortKey that can be compared using the built-in cmp.
+        private sealed class SortKeyWrapper : IComparable<SortKeyWrapper>, IComparable {
+            public SortKey SortKey { get; }
+
+            public SortKeyWrapper(SortKey sortKey) {
+                SortKey = sortKey;
+            }
+
+            public int CompareTo(SortKeyWrapper other) => SortKey.Compare(SortKey, other.SortKey);
+
+            public int CompareTo(object other) => (other is SortKeyWrapper wrapper) ? CompareTo(wrapper) : throw new ArgumentException($"The parameter must be a {nameof(SortKeyWrapper)}.", nameof(other));
+        }
+
+        [Documentation(@"returns a wrapped System.Globalization.SortKey that can be compared using the built-in cmp.
 
 Note: Return value differs from CPython - it is not a string.")]
-        public static object strxfrm(CodeContext/*!*/ context, string @string) {
-            return GetLocaleInfo(context).Collate.CompareInfo.GetSortKey(@string);
-        }
+        public static object strxfrm(CodeContext/*!*/ context, string @string)
+            => new SortKeyWrapper(GetLocaleInfo(context).Collate.CompareInfo.GetSortKey(@string));
 
         private enum LocaleCategories {
             All = 0,

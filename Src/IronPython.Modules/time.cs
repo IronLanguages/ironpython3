@@ -181,11 +181,11 @@ namespace IronPython.Modules {
 
         public static object strptime(CodeContext/*!*/ context, string @string, string format) {
             var packed = _strptime(context, @string, format);
-            return GetDateTimeTuple((DateTime)packed[0], (DayOfWeek?)packed[1]);
+            return GetDateTimeTuple(packed.Item1, packed.Item2);
         }
         
         // returns object array containing 2 elements: DateTime and DayOfWeek 
-        internal static object[] _strptime(CodeContext/*!*/ context, string @string, string format) {
+        internal static Tuple<DateTime, DayOfWeek?> _strptime(CodeContext/*!*/ context, string @string, string format) {
             bool postProc;
             FoundDateComponents foundDateComp;
             List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, true, out postProc, out foundDateComp);
@@ -255,7 +255,7 @@ namespace IronPython.Modules {
                 res = new DateTime(1900, res.Month, res.Day, res.Hour, res.Minute, res.Second, res.Millisecond, res.Kind);
             }
 
-            return new object[] { res, dayOfWeek };
+            return Tuple.Create(res, dayOfWeek);
         }
 
         private static string[] ExpandMicrosecondFormat(int fIdx, string [] formatParts) {

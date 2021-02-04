@@ -1113,7 +1113,7 @@ namespace IronPython.Modules {
 
             public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
                 var packed = PythonTime._strptime(context, date_string, format);
-                return new datetime((DateTime)packed[0]);
+                return new datetime(packed.Item1);
             }
 
             #region IRichComparable Members

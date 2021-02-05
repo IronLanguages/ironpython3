@@ -384,11 +384,12 @@ namespace IronPython.Runtime.Types {
 
                         if (opInfo != null) {
                             foreach (Type curType in binder.GetContributingTypes(type)) {
+                                // we override these with our own comparisons, don't use the interface methods (e.g. IEquatable<Int16>.Equals)
                                 if ((type.IsPrimitive || type == typeof(decimal)) && curType.IsInterface && (opInfo.Operator & PythonOperationKind.Comparison) != 0) continue;
 
                                 if (curType.IsPrimitive || curType == typeof(decimal)) {
                                     if ((opInfo.Operator & PythonOperationKind.Comparison) != 0) {
-                                        // we override these with our own comparisons in DoubleOps
+                                        // we override these with our own comparisons
                                         continue;
                                     }
                                 } else if (curType == typeof(BigInteger)) {

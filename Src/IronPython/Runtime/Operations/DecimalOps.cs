@@ -16,7 +16,7 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
 
-        public static int __cmp__(CodeContext context, decimal x, decimal other) {
+        internal static int __cmp__(CodeContext context, decimal x, decimal other) {
             return x.CompareTo(other);
         }
 

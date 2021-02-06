@@ -623,6 +623,14 @@ namespace IronPython.Runtime.Operations {
             return 1;
         }
 
+        internal static object EqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.Equal, self, other);
+        }
+
+        internal static object NotEqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.NotEqual, self, other);
+        }
+
         public static object GreaterThanHelper(CodeContext/*!*/ context, object? self, object? other) {
             return InternalCompare(context, PythonOperationKind.GreaterThan, self, other);
         }

@@ -37,10 +37,10 @@ namespace IronPython.Runtime.Types {
     /// TODO: Back BuiltinFunction's by MethodGroup's.
     /// </summary>    
     [PythonType("builtin_function_or_method"), DontMapGetMemberNamesToDir]
-    public partial class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible, IFastInvokable  {
+    public partial class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible, IFastInvokable {
         internal readonly BuiltinFunctionData/*!*/ _data;            // information describing the BuiltinFunction
         internal readonly object _instance;                          // the bound instance or null if unbound
-        private static readonly object _noInstance = new object();  
+        private static readonly object _noInstance = new object();
 
         #region Static factories
 
@@ -128,7 +128,7 @@ namespace IronPython.Runtime.Types {
 
         internal object Call(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, object instance, object[] args) {
             storage = GetInitializedStorage(context, storage);
-            
+
             object callable;
             if (!GetDescriptor().TryGetValue(context, instance, DynamicHelpers.GetPythonTypeFromType(DeclaringType), out callable)) {
                 callable = this;
@@ -144,7 +144,7 @@ namespace IronPython.Runtime.Types {
             if (!GetDescriptor().TryGetValue(context, instance, DynamicHelpers.GetPythonTypeFromType(DeclaringType), out callable)) {
                 callable = this;
             }
-            
+
             return storage.Data.Target(storage.Data, context, callable);
         }
 
@@ -183,7 +183,7 @@ namespace IronPython.Runtime.Types {
 
             return storage.Data.Target(storage.Data, context, this, args, keywordArgs);
         }
-        
+
         /// <summary>
         /// Returns a BuiltinFunction bound to the provided type arguments.  Returns null if the binding
         /// cannot be performed.
@@ -253,7 +253,7 @@ namespace IronPython.Runtime.Types {
         public IList<MethodBase> Targets {
             [PythonHidden]
             get {
-                return _data.Targets;                
+                return _data.Targets;
             }
         }
 
@@ -300,7 +300,7 @@ namespace IronPython.Runtime.Types {
                 AstUtils.Constant(_data, typeof(object))
             );
         }
-        
+
         #endregion
 
         #region PythonTypeSlot Overrides
@@ -428,7 +428,7 @@ namespace IronPython.Runtime.Types {
 
             if (target.Overload != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call), target.Overload, out info)) {
                 res = info.AddWarning(codeContext, res);
-            }            
+            }
 
             // finally add the restrictions for the built-in function and return the result.
             res = new DynamicMetaObject(
@@ -559,38 +559,22 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
-                        
+
         #region Public Python APIs
 
-        public int __cmp__(CodeContext/*!*/ context, [NotNull]BuiltinFunction/*!*/  other) {
-            if (other == this) {
-                return 0;
-            }
+        private bool Equals(BuiltinFunction other) {
+            if (this == other) return true;
 
             if (!IsUnbound && !other.IsUnbound) {
-                int result = PythonOps.Compare(__self__, other.__self__);
-                if (result != 0) {
-                    return result;
-                }
-
-                if (_data == other._data) {
-                    return 0;
-                }
+                return _instance == other._instance && _data == other._data;
             }
 
-            int res = String.CompareOrdinal(__name__, other.__name__);
-            if (res != 0) {
-                return res;
-            }
-
-            res = String.CompareOrdinal(Get__module__(context), other.Get__module__(context));
-            if (res != 0) {
-                return res;
-            }
-            
-            long lres = IdDispenser.GetId(this) - IdDispenser.GetId(other);
-            return lres > 0 ? 1 : -1;
+            return false;
         }
+
+        public bool __eq__([NotNull] BuiltinFunction/*!*/ other) => Equals(other);
+
+        public bool __ne__([NotNull] BuiltinFunction/*!*/ other) => !Equals(other);
 
         [return: MaybeNotImplemented]
         public NotImplementedType __gt__(CodeContext context, object other) => NotImplementedType.Value;
@@ -713,11 +697,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public object __call__(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary]IDictionary<object, object> dictArgs, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary] IDictionary<object, object> dictArgs, params object[] args) {
             return Call(context, storage, null, args, dictArgs);
         }
 
-        
+
         internal virtual bool IsOnlyGeneric {
             get {
                 return false;
@@ -852,7 +836,6 @@ namespace IronPython.Runtime.Types {
         }
     }
 
-    
     /// <summary>
     /// A custom built-in function which supports indexing 
     /// </summary>
@@ -926,4 +909,3 @@ namespace IronPython.Runtime.Types {
 
     }
 }
-

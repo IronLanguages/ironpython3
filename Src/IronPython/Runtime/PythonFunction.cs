@@ -538,11 +538,28 @@ namespace IronPython.Runtime {
 
         public const object __hash__ = null;
 
-        [Python3Warning("cell comparisons not supported in 3.x")]
-        public int __cmp__(object other) {
-            if (!(other is ClosureCell cc)) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.EqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
 
-            return PythonOps.Compare(Value, cc.Value);
-        }
+        [return: MaybeNotImplemented]
+        public object __ne__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.NotEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __lt__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.LessThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __le__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.LessThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __ge__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.GreaterThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __gt__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.GreaterThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
     }
 }

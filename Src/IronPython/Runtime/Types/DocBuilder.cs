@@ -28,7 +28,6 @@ namespace IronPython.Runtime.Types {
                 case "__abs__": return "x.__abs__() <==> abs(x)";
                 case "__add__": return "x.__add__(y) <==> x+y";
                 case "__call__": return "x.__call__(...) <==> x(...)";
-                case "__cmp__": return "x.__cmp__(y) <==> cmp(x,y)";
                 case "__delitem__": return "x.__delitem__(y) <==> del x[y]";
                 case "__eq__": return "x.__eq__(y) <==> x==y";
                 case "__floordiv__": return "x.__floordiv__(y) <==> x//y";

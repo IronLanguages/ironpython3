@@ -12,13 +12,13 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
@@ -38,28 +38,28 @@ namespace IronPython.Runtime {
         private static readonly Dictionary<Type, CallSite<Func<CallSite, object, object>>> _siteDict = new Dictionary<Type, CallSite<Func<CallSite, object, object>>>();
         private static readonly CallSite<Func<CallSite, object, byte>> _byteSite = MakeExplicitConvertSite<byte>();
         private static readonly CallSite<Func<CallSite, object, sbyte>> _sbyteSite = MakeExplicitConvertSite<sbyte>();
-        private static readonly CallSite<Func<CallSite, object, Int16>> _int16Site = MakeExplicitConvertSite<Int16>();
-        private static readonly CallSite<Func<CallSite, object, UInt16>> _uint16Site = MakeExplicitConvertSite<UInt16>();
-        private static readonly CallSite<Func<CallSite, object, UInt32>> _uint32Site = MakeExplicitConvertSite<UInt32>();
-        private static readonly CallSite<Func<CallSite, object, Int64>> _int64Site = MakeExplicitConvertSite<Int64>();
-        private static readonly CallSite<Func<CallSite, object, UInt64>> _uint64Site = MakeExplicitConvertSite<UInt64>();
+        private static readonly CallSite<Func<CallSite, object, short>> _int16Site = MakeExplicitConvertSite<short>();
+        private static readonly CallSite<Func<CallSite, object, ushort>> _uint16Site = MakeExplicitConvertSite<ushort>();
+        private static readonly CallSite<Func<CallSite, object, uint>> _uint32Site = MakeExplicitConvertSite<uint>();
+        private static readonly CallSite<Func<CallSite, object, long>> _int64Site = MakeExplicitConvertSite<long>();
+        private static readonly CallSite<Func<CallSite, object, ulong>> _uint64Site = MakeExplicitConvertSite<ulong>();
         private static readonly CallSite<Func<CallSite, object, decimal>> _decimalSite = MakeExplicitConvertSite<decimal>();
         private static readonly CallSite<Func<CallSite, object, float>> _floatSite = MakeExplicitConvertSite<float>();
 
-        private static readonly CallSite<Func<CallSite, object, object>> 
-            _tryByteSite       = MakeExplicitTrySite<Byte>(),
-            _trySByteSite      = MakeExplicitTrySite<SByte>(),
-            _tryInt16Site      = MakeExplicitTrySite<Int16>(),
-            _tryInt32Site      = MakeExplicitTrySite<Int32>(),
-            _tryInt64Site      = MakeExplicitTrySite<Int64>(),
-            _tryUInt16Site     = MakeExplicitTrySite<UInt16>(),
-            _tryUInt32Site     = MakeExplicitTrySite<UInt32>(),
-            _tryUInt64Site     = MakeExplicitTrySite<UInt64>(),
-            _tryDoubleSite     = MakeExplicitTrySite<Double>(),
-            _tryCharSite       = MakeExplicitTrySite<Char>(),
+        private static readonly CallSite<Func<CallSite, object, object>>
+            _tryByteSite       = MakeExplicitTrySite<byte>(),
+            _trySByteSite      = MakeExplicitTrySite<sbyte>(),
+            _tryInt16Site      = MakeExplicitTrySite<short>(),
+            _tryInt32Site      = MakeExplicitTrySite<int>(),
+            _tryInt64Site      = MakeExplicitTrySite<long>(),
+            _tryUInt16Site     = MakeExplicitTrySite<ushort>(),
+            _tryUInt32Site     = MakeExplicitTrySite<uint>(),
+            _tryUInt64Site     = MakeExplicitTrySite<ulong>(),
+            _tryDoubleSite     = MakeExplicitTrySite<double>(),
+            _tryCharSite       = MakeExplicitTrySite<char>(),
             _tryBigIntegerSite = MakeExplicitTrySite<BigInteger>(),
             _tryComplexSite    = MakeExplicitTrySite<Complex>(),
-            _tryStringSite     = MakeExplicitTrySite<String>();
+            _tryStringSite     = MakeExplicitTrySite<string>();
 
         private static CallSite<Func<CallSite, object, T>> MakeImplicitConvertSite<T>() {
             return MakeConvertSite<T>(ConversionResultKind.ImplicitCast);
@@ -95,111 +95,111 @@ namespace IronPython.Runtime {
 
         #region Conversion entry points
 
-        public static Int32 ConvertToInt32(object value) { return _intSite.Target(_intSite, value); }
-        public static String ConvertToString(object value) { return _stringSite.Target(_stringSite, value); }
+        public static int ConvertToInt32(object value) { return _intSite.Target(_intSite, value); }
+        public static string ConvertToString(object value) { return _stringSite.Target(_stringSite, value); }
         public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Target(_bigIntSite, value); }
-        public static Double ConvertToDouble(object value) { return _doubleSite.Target(_doubleSite, value); }
+        public static double ConvertToDouble(object value) { return _doubleSite.Target(_doubleSite, value); }
         public static Complex ConvertToComplex(object value) { return _complexSite.Target(_complexSite, value); }
-        public static Boolean ConvertToBoolean(object value) { return _boolSite.Target(_boolSite, value); }
-        public static Int64 ConvertToInt64(object value) { return _int64Site.Target(_int64Site, value); }
+        public static bool ConvertToBoolean(object value) { return _boolSite.Target(_boolSite, value); }
+        public static long ConvertToInt64(object value) { return _int64Site.Target(_int64Site, value); }
 
-        public static Byte ConvertToByte(object value) { return _byteSite.Target(_byteSite, value); }
-        public static SByte ConvertToSByte(object value) { return _sbyteSite.Target(_sbyteSite, value); }
-        public static Int16 ConvertToInt16(object value) { return _int16Site.Target(_int16Site, value); }
-        public static UInt16 ConvertToUInt16(object value) { return _uint16Site.Target(_uint16Site, value); }
-        public static UInt32 ConvertToUInt32(object value) { return _uint32Site.Target(_uint32Site, value); }
-        public static UInt64 ConvertToUInt64(object value) { return _uint64Site.Target(_uint64Site, value); }
-        public static Single ConvertToSingle(object value) { return _floatSite.Target(_floatSite, value); }
-        public static Decimal ConvertToDecimal(object value) { return _decimalSite.Target(_decimalSite, value); }
-        public static Char ConvertToChar(object value) { return _charSite.Target(_charSite, value); }
+        public static byte ConvertToByte(object value) { return _byteSite.Target(_byteSite, value); }
+        public static sbyte ConvertToSByte(object value) { return _sbyteSite.Target(_sbyteSite, value); }
+        public static short ConvertToInt16(object value) { return _int16Site.Target(_int16Site, value); }
+        public static ushort ConvertToUInt16(object value) { return _uint16Site.Target(_uint16Site, value); }
+        public static uint ConvertToUInt32(object value) { return _uint32Site.Target(_uint32Site, value); }
+        public static ulong ConvertToUInt64(object value) { return _uint64Site.Target(_uint64Site, value); }
+        public static float ConvertToSingle(object value) { return _floatSite.Target(_floatSite, value); }
+        public static decimal ConvertToDecimal(object value) { return _decimalSite.Target(_decimalSite, value); }
+        public static char ConvertToChar(object value) { return _charSite.Target(_charSite, value); }
 
-        internal static bool TryConvertToByte(object value, out Byte result) {
+        internal static bool TryConvertToByte(object value, out byte result) {
             object res = _tryByteSite.Target(_tryByteSite, value);
             if (res != null) {
-                result = (Byte)res;
+                result = (byte)res;
                 return true;
             }
-            result = default(Byte);
+            result = default(byte);
             return false;
         }
 
-        internal static bool TryConvertToSByte(object value, out SByte result) {
+        internal static bool TryConvertToSByte(object value, out sbyte result) {
             object res = _trySByteSite.Target(_trySByteSite, value);
             if (res != null) {
-                result = (SByte)res;
+                result = (sbyte)res;
                 return true;
             }
-            result = default(SByte);
+            result = default(sbyte);
             return false;
         }
 
-        internal static bool TryConvertToInt16(object value, out Int16 result) {
+        internal static bool TryConvertToInt16(object value, out short result) {
             object res = _tryInt16Site.Target(_tryInt16Site, value);
             if (res != null) {
-                result = (Int16)res;
+                result = (short)res;
                 return true;
             }
-            result = default(Int16);
+            result = default(short);
             return false;
         }
 
-        internal static bool TryConvertToInt32(object value, out Int32 result) {
+        internal static bool TryConvertToInt32(object value, out int result) {
             object res = _tryInt32Site.Target(_tryInt32Site, value);
             if (res != null) {
-                result = (Int32)res;
+                result = (int)res;
                 return true;
             }
-            result = default(Int32);
+            result = default(int);
             return false;
         }
 
-        internal static bool TryConvertToInt64(object value, out Int64 result) {
+        internal static bool TryConvertToInt64(object value, out long result) {
             object res = _tryInt64Site.Target(_tryInt64Site, value);
             if (res != null) {
-                result = (Int64)res;
+                result = (long)res;
                 return true;
             }
-            result = default(Int64);
+            result = default(long);
             return false;
         }
 
-        internal static bool TryConvertToUInt16(object value, out UInt16 result) {
+        internal static bool TryConvertToUInt16(object value, out ushort result) {
             object res = _tryUInt16Site.Target(_tryUInt16Site, value);
             if (res != null) {
-                result = (UInt16)res;
+                result = (ushort)res;
                 return true;
             }
-            result = default(UInt16);
+            result = default(ushort);
             return false;
         }
 
-        internal static bool TryConvertToUInt32(object value, out UInt32 result) {
+        internal static bool TryConvertToUInt32(object value, out uint result) {
             object res = _tryUInt32Site.Target(_tryUInt32Site, value);
             if (res != null) {
-                result = (UInt32)res;
+                result = (uint)res;
                 return true;
             }
-            result = default(UInt32);
+            result = default(uint);
             return false;
         }
 
-        internal static bool TryConvertToUInt64(object value, out UInt64 result) {
+        internal static bool TryConvertToUInt64(object value, out ulong result) {
             object res = _tryUInt64Site.Target(_tryUInt64Site, value);
             if (res != null) {
-                result = (UInt64)res;
+                result = (ulong)res;
                 return true;
             }
-            result = default(UInt64);
+            result = default(ulong);
             return false;
         }
 
-        internal static bool TryConvertToDouble(object value, out Double result) {
+        internal static bool TryConvertToDouble(object value, out double result) {
             object res = _tryDoubleSite.Target(_tryDoubleSite, value);
             if (res != null) {
-                result = (Double)res;
+                result = (double)res;
                 return true;
             }
-            result = default(Double);
+            result = default(double);
             return false;
         }
 
@@ -224,13 +224,13 @@ namespace IronPython.Runtime {
         }
 
 #nullable enable
-        internal static bool TryConvertToString(object? value, [NotNullWhen(true)]out String? result) {
+        internal static bool TryConvertToString(object? value, [NotNullWhen(true)] out string? result) {
             object res = _tryStringSite.Target(_tryStringSite, value);
             if (res != null) {
-                result = (String)res;
+                result = (string)res;
                 return true;
             }
-            result = default(String);
+            result = default(string);
             return false;
         }
 #nullable restore
@@ -247,14 +247,14 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        internal static Char ExplicitConvertToChar(object value) {
+        internal static char ExplicitConvertToChar(object value) {
             return _explicitCharSite.Target(_explicitCharSite, value);
         }
 
         public static T Convert<T>(object value) {
             return (T)Convert(value, typeof(T));
         }
-        
+
         /// <summary>
         /// General conversion routine TryConvert - tries to convert the object to the desired type.
         /// Try to avoid using this method, the goal is to ultimately remove it!
@@ -275,7 +275,7 @@ namespace IronPython.Runtime {
                 if (!_siteDict.TryGetValue(to, out site)) {
                     _siteDict[to] = site = CallSite<Func<CallSite, object, object>>.Create(
                         DefaultContext.DefaultPythonContext.ConvertRetObject(
-                            to, 
+                            to,
                             ConversionResultKind.ExplicitCast
                         )
                     );
@@ -283,12 +283,12 @@ namespace IronPython.Runtime {
             }
 
             object res = site.Target(site, value);
-            if (to.IsValueType && res == null && 
+            if (to.IsValueType && res == null &&
                 (!to.IsGenericType || to.GetGenericTypeDefinition() != typeof(Nullable<>))) {
                 throw MakeTypeError(to, value);
             }
             return res;
-        }        
+        }
 
         /// <summary>
         /// This function tries to convert an object to IEnumerator, or wraps it into an adapter
@@ -301,7 +301,7 @@ namespace IronPython.Runtime {
             } catch {
                 e = null;
                 return false;
-            }            
+            }
         }
 
         /// <summary>
@@ -413,15 +413,15 @@ namespace IronPython.Runtime {
 
         #region Cached Type instances
 
-        private static readonly Type StringType = typeof(System.String);
-        private static readonly Type Int32Type = typeof(System.Int32);
-        private static readonly Type DoubleType = typeof(System.Double);
-        private static readonly Type DecimalType = typeof(System.Decimal);
-        private static readonly Type Int64Type = typeof(System.Int64);
-        private static readonly Type UInt64Type = typeof(System.UInt64);
-        private static readonly Type CharType = typeof(System.Char);
-        private static readonly Type SingleType = typeof(System.Single);
-        private static readonly Type BooleanType = typeof(System.Boolean);
+        private static readonly Type StringType = typeof(string);
+        private static readonly Type Int32Type = typeof(int);
+        private static readonly Type DoubleType = typeof(double);
+        private static readonly Type DecimalType = typeof(decimal);
+        private static readonly Type Int64Type = typeof(long);
+        private static readonly Type UInt64Type = typeof(ulong);
+        private static readonly Type CharType = typeof(char);
+        private static readonly Type SingleType = typeof(float);
+        private static readonly Type BooleanType = typeof(bool);
         private static readonly Type BigIntegerType = typeof(BigInteger);
         private static readonly Type ComplexType = typeof(Complex);
         private static readonly Type DelegateType = typeof(Delegate);
@@ -434,7 +434,7 @@ namespace IronPython.Runtime {
         private static readonly Type IListOfObjectType = typeof(IList<object>);
         private static readonly Type IEnumerableOfObjectType = typeof(IEnumerable<object>);
         private static readonly Type IDictionaryOfObjectType = typeof(IDictionary<object, object>);
-        
+
         #endregion
 
         #region Entry points called from the generated code
@@ -492,7 +492,7 @@ namespace IronPython.Runtime {
             if (HasImplicitNumericConversion(fromType, toType)) return true;
 
             // Handling the hole that Type is the only object that we 'box'
-            if (toType == TypeType && 
+            if (toType == TypeType &&
                 (typeof(PythonType).IsAssignableFrom(fromType) ||
                 typeof(TypeGroup).IsAssignableFrom(fromType))) return true;
 
@@ -703,7 +703,7 @@ namespace IronPython.Runtime {
 
         public static Candidate PreferConvert(Type t1, Type t2) {
             if (t1 == typeof(bool) && t2 == typeof(int)) return Candidate.Two;
-            if (t1 == typeof(Decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
+            if (t1 == typeof(decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
             //if (t1 == typeof(int) && t2 == typeof(BigInteger)) return Candidate.Two;
 
             switch (t1.GetTypeCode()) {
@@ -828,7 +828,7 @@ namespace IronPython.Runtime {
         }
 
         internal static bool HasImplicitConversion(Type fromType, Type toType) {
-            return 
+            return
                 HasImplicitConversionWorker(fromType, fromType, toType) ||
                 HasImplicitConversionWorker(toType, fromType, toType);
         }

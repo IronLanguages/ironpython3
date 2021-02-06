@@ -265,7 +265,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_FILESYSTEM
 
-        public static void chdir([NotNull]string path) {
+        public static void chdir([NotNull] string path) {
             if (String.IsNullOrEmpty(path)) {
                 throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
             }
@@ -528,6 +528,15 @@ namespace IronPython.Modules {
             if (path == string.Empty) {
                 throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
+
+#if !NETFRAMEWORK
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                // .NET Core throws an unhelpful "The parameter is incorrect" error when trying to listdir a file
+                if (File.Exists(path)) {
+                    throw GetWin32Error(PythonExceptions._OSError.ERROR_DIRECTORY, path);
+                }
+            }
+#endif
 
             PythonList ret = new PythonList();
             try {
@@ -1896,7 +1905,7 @@ the 'status' value."),
             }
 
             if (isWindowsError) {
-                return PythonOps.OSError(errorCode, message, null, errorCode);
+                return PythonOps.OSError(errorCode, message, filename, errorCode);
             }
 
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
@@ -1930,7 +1939,7 @@ the 'status' value."),
         public const int W_OK = 2;
         public const int R_OK = 4;
 
-        private static void addBase(string[] files, PythonList ret) {
+        private static void addBase(IEnumerable<string> files, PythonList ret) {
             foreach (string file in files) {
                 ret.AddNoLock(Path.GetFileName(file));
             }
@@ -2050,15 +2059,17 @@ the 'status' value."),
 
 #if FEATURE_NATIVE
 
-        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null) {
-            var error = Mono.Unix.Native.Syscall.GetLastError();
-            var msg = Mono.Unix.Native.Stdlib.strerror(error);
-            return PythonOps.OSError((int)error, msg, filename, null, filename2);
+        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
+            => GetUnixError((int)Mono.Unix.Native.Syscall.GetLastError());
+
+        private static Exception GetUnixError(int error, string? filename = null, string? filename2 = null) {
+            var msg = Mono.Unix.Native.Stdlib.strerror((Mono.Unix.Native.Errno)error);
+            return PythonOps.OSError(error, msg, filename, null, filename2);
         }
 
         [DllImport("kernel32.dll", EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = true)]
         private static extern int FormatMessage(int dwFlags, IntPtr lpSource,
-                    int dwMessageId, int dwLanguageId, [Out]StringBuilder lpBuffer,
+                    int dwMessageId, int dwLanguageId, [Out] StringBuilder lpBuffer,
                     int nSize, IntPtr arguments);
 
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
@@ -2081,8 +2092,10 @@ the 'status' value."),
             return buf.ToString().TrimEnd('\r', '\n', '.');
         }
 
-        private static Exception GetLastWin32Error(string? filename = null, string? filename2 = null) {
-            var error = Marshal.GetLastWin32Error();
+        private static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
+            => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
+
+        private static Exception GetWin32Error(int error, string? filename = null, string? filename2 = null) {
             var msg = GetMessage(error);
             return PythonOps.OSError(0, msg, filename, error, filename2);
         }

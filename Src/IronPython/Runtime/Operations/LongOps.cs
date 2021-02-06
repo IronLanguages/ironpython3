@@ -510,6 +510,19 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static bool LessThan(BigInteger x, BigInteger y) => x < y;
+        [SpecialName]
+        public static bool LessThanOrEqual(BigInteger x, BigInteger y) => x <= y;
+        [SpecialName]
+        public static bool GreaterThan(BigInteger x, BigInteger y) => x > y;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(BigInteger x, BigInteger y) => x >= y;
+        [SpecialName]
+        public static bool Equals(BigInteger x, BigInteger y) => x == y;
+        [SpecialName]
+        public static bool NotEquals(BigInteger x, BigInteger y) => x != y;
+
+        [SpecialName]
         public static int Compare(BigInteger x, int y) {
             int ix;
             if (x.AsInt32(out ix)) {                
@@ -520,6 +533,19 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static bool LessThan(BigInteger x, int y) => x < y;
+        [SpecialName]
+        public static bool LessThanOrEqual(BigInteger x, int y) => x <= y;
+        [SpecialName]
+        public static bool GreaterThan(BigInteger x, int y) => x > y;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(BigInteger x, int y) => x >= y;
+        [SpecialName]
+        public static bool Equals(BigInteger x, int y) => x == y;
+        [SpecialName]
+        public static bool NotEquals(BigInteger x, int y) => x != y;
+
+        [SpecialName]
         public static int Compare(BigInteger x, uint y) {
             uint ix;
             if (x.AsUInt32(out ix)) {
@@ -528,6 +554,19 @@ namespace IronPython.Runtime.Operations {
 
             return BigInteger.Compare(x, y);
         }
+
+        [SpecialName]
+        public static bool LessThan(BigInteger x, uint y) => x < y;
+        [SpecialName]
+        public static bool LessThanOrEqual(BigInteger x, uint y) => x <= y;
+        [SpecialName]
+        public static bool GreaterThan(BigInteger x, uint y) => x > y;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(BigInteger x, uint y) => x >= y;
+        [SpecialName]
+        public static bool Equals(BigInteger x, uint y) => x == y;
+        [SpecialName]
+        public static bool NotEquals(BigInteger x, uint y) => x != y;
 
         [SpecialName]
         public static int Compare(BigInteger x, double y) {

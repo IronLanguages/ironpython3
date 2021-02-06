@@ -182,16 +182,6 @@ namespace IronPython.Runtime.Operations {
 
         #region Iteration
 
-        // 3.0-only
-        public static object IterMethodForString(string self) {
-            return StringOps.StringEnumerator(self);
-        }
-
-        // 3.0-only
-        public static object IterMethodForBytes(Bytes self) {
-            return IListOfByteOps.BytesEnumerator(self);
-        }
-
         public static object IterMethodForEnumerator(IEnumerator self) {
             return self;
         }

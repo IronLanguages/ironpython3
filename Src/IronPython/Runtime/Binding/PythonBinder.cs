@@ -380,11 +380,11 @@ namespace IronPython.Runtime.Binding {
         #endregion
 
         internal IList<Type> GetExtensionTypesInternal(Type t) {
-            List<Type> res = new List<Type>(base.GetExtensionTypes(t));
+            var res = new List<Type>(base.GetExtensionTypes(t));
 
             AddExtensionTypes(t, res);
 
-            return res.ToArray();
+            return res;
         }
 
         public override bool IncludeExtensionMember(MemberInfo member) {

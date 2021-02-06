@@ -592,23 +592,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool CompareTypesEqual(CodeContext/*!*/ context, object? x, object? y) {
-            if (x == null && y == null) return true;
-            if (x == null) return false;
-            if (y == null) return false;
-
-            if (DynamicHelpers.GetPythonType(x) == DynamicHelpers.GetPythonType(y)) {
-                // avoid going to the ID dispenser if we have the same types...
-                return x == y;
-            }
-
-            return PythonOps.CompareTypesWorker(context, false, x, y) == 0;
+            return ReferenceEquals(x, y);
         }
 
         public static bool CompareTypesNotEqual(CodeContext/*!*/ context, object? x, object? y) {
-            return PythonOps.CompareTypesWorker(context, false, x, y) != 0;
+            return !CompareTypesEqual(context, x, y);
         }
 
-        private static int CompareTypesWorker(CodeContext/*!*/ context, bool shouldWarn, object? x, object? y) {
+        public static int CompareTypes(CodeContext/*!*/ context, object? x, object? y) {
             if (x == null && y == null) return 0;
             if (x == null) return -1;
             if (y == null) return 1;
@@ -632,8 +623,12 @@ namespace IronPython.Runtime.Operations {
             return 1;
         }
 
-        public static int CompareTypes(CodeContext/*!*/ context, object? x, object? y) {
-            return CompareTypesWorker(context, true, x, y);
+        internal static object EqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.Equal, self, other);
+        }
+
+        internal static object NotEqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.NotEqual, self, other);
         }
 
         public static object GreaterThanHelper(CodeContext/*!*/ context, object? self, object? other) {

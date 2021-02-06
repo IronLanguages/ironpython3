@@ -1417,7 +1417,7 @@ namespace IronPython.Modules {
             #region Rich Comparison Members
 
             /// <summary>
-            /// Helper function for doing the comparisons.  time has no __cmp__ method
+            /// Helper function for doing the comparisons.
             /// </summary>
             private int CompareTo(object other) {
                 time other2 = other as time;

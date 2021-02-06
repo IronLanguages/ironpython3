@@ -274,7 +274,7 @@ cast_helper_body = "return (%(type)s)%(op_type)sOps.%(method_name)s((%(op_type)s
 helper_body = "return %(op_type)sOps.%(method_name)s((%(op_type)s)x, (%(rop_type)s)y);"
 
 def write_binop_raw(cw, body, name, ty, **kws):
-    kws1 = dict(return_type = ty.name, method_name = name, rtype=ty.name, ltype=ty.name)
+    kws1 = dict(return_type=ty.name, method_name=name, rtype=ty.name, ltype=ty.name)
     kws1.update(kws)
     #print kws1
     cw.enter_block(binop_decl, **kws1)
@@ -295,13 +295,33 @@ def write_binop1_general(func, cw, body, name, ty, **kws):
             else:
                 kws['return_type'] = cw.kws['bigger_signed']
 
-
         kws['ltype'] = oty.name
         func(cw, unsigned_signed_body, name, ty, **kws)
 
         kws['ltype'] = ty.name
         kws['rtype'] = oty.name
         func(cw, unsigned_signed_body, name, ty, **kws)
+
+def write_rich_comp_raw(cw, body, name, ty, **kws):
+    kws1 = dict(return_type=ty.name, method_name=name, rtype=ty.name, ltype=ty.name)
+    kws1.update(kws)
+    assert body.startswith("return")
+    cw.write("""[SpecialName]
+public static %(return_type)s %(method_name)s(%(rtype)s x, %(ltype)s y) =>""" + body[6:], **kws1)
+
+def write_rich_comp(cw, body, name, ty, **kws):
+    write_rich_comp_general(write_rich_comp_raw, cw, body, name, ty, **kws)
+
+def write_rich_comp_general(func, cw, body, name, ty, **kws):
+    func(cw, body, name, ty, **kws)
+
+    if not ty.is_signed:
+        oty = ty.get_signed()
+        kws['ltype'] = oty.name
+        if cw.kws.get('bigger_signed') == "BigInteger":
+            func(cw, unsigned_signed_body, name, ty, **kws)
+        else:
+            func(cw, body, name, ty, **kws)
 
 def write_compare(cw, body, name, ty, **kws):
     def writer(cw, body, name, ty, **kws):
@@ -358,7 +378,8 @@ def gen_binaryops(cw, ty):
         cw.writeline()
         cw.write("// Binary Operations - Comparisons")
         write_compare(cw, simple_compare_body, 'Compare', ty, return_type='int')
-
+        for symbol, name in [('<', 'LessThan'), ('<=', 'LessThanOrEqual'), ('>', 'GreaterThan'), ('>=', 'GreaterThanOrEqual'), ('==', 'Equals'), ('!=', 'NotEquals')]:
+            write_rich_comp(cw, simple_body, name, ty, symbol=symbol, return_type='bool')
 
 implicit_conv = """\
 [SpecialName, ImplicitConversionMethod]

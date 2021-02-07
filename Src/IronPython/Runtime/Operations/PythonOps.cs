@@ -647,7 +647,7 @@ namespace IronPython.Runtime.Operations {
             return InternalCompare(context, PythonOperationKind.LessThanOrEqual, self, other);
         }
 
-        internal static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object? self, object? other) {
+        private static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object? self, object? other) {
             if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, Symbols.OperatorToSymbol(op), out object ret))
                 return ret;
 

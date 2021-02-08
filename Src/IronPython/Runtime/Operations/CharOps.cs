@@ -8,8 +8,6 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
 
-using IronPython.Runtime.Types;
-
 namespace IronPython.Runtime.Operations {
     /// <summary>
     /// We override the behavior of equals, compare and hashcode to make
@@ -18,56 +16,46 @@ namespace IronPython.Runtime.Operations {
     /// </summary>
 
     public static class CharOps {
-        public static string/*!*/ __repr__(char self) {
-            return char.ToString(self);
-        }
+        public static string __repr__(char self) => char.ToString(self);
 
-        public static bool __eq__(char self, char other) {
-            return self == other;
-        }
+        public static int __hash__(char self) => char.ToString(self).GetHashCode();
+
+        public static int __index__(char self) => self;
 
         [SpecialName]
-        public static bool __ne__(char self, char other) {
-            return self != other;
-        }
+        public static bool LessThan(char x, char y) => x < y;
+        [SpecialName]
+        public static bool LessThanOrEqual(char x, char y) => x <= y;
+        [SpecialName]
+        public static bool GreaterThan(char x, char y) => x > y;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(char x, char y) => x >= y;
+        [SpecialName]
+        public static bool Equals(char x, char y) => x == y;
+        [SpecialName]
+        public static bool NotEquals(char x, char y) => x != y;
 
-        public static int __hash__(char self) {
-            return char.ToString(self).GetHashCode();
-        }
+        [SpecialName]
+        public static bool LessThan(char x, [NotNull] string y) => StringOps.LessThan(char.ToString(x), y);
+        [SpecialName]
+        public static bool LessThanOrEqual(char x, [NotNull] string y) => StringOps.LessThanOrEqual(char.ToString(x), y);
+        [SpecialName]
+        public static bool GreaterThan(char x, [NotNull] string y) => StringOps.GreaterThan(char.ToString(x), y);
+        [SpecialName]
+        public static bool GreaterThanOrEqual(char x, [NotNull] string y) => StringOps.GreaterThanOrEqual(char.ToString(x), y);
+        [SpecialName]
+        public static bool Equals(char x, [NotNull] string y) => StringOps.Equals(char.ToString(x), y);
+        [SpecialName]
+        public static bool NotEquals(char x, [NotNull] string y) => StringOps.NotEquals(char.ToString(x), y);
 
-        public static int __index__(char self) {
-            return self;
-        }
+        public static bool __contains__(char self, char other) => self == other;
 
-        [return: MaybeNotImplemented]
-        public static object __cmp__(char self, object other) {
-            if (other is char c) {
-                int diff = self - c;
-                return diff > 0 ? 1 : diff < 0 ? -1 : 0;
-            } else if (other is string strOther && strOther.Length == 1) {
-                int diff = self - strOther[0];
-                return diff > 0 ? 1 : diff < 0 ? -1 : 0;
-            }
-
-            return NotImplementedType.Value;
-        }
-
-        public static bool __contains__(char self, char other) {
-            return self == other;
-        }
-
-        public static bool __contains__(char self, string other) {
-            return other.Length == 1 && other[0] == self;
-        }
+        public static bool __contains__(char self, string? other) => StringOps.__contains__(char.ToString(self), other);
 
         [SpecialName, ImplicitConversionMethod]
-        public static string ConvertToString(char self) {
-            return char.ToString(self);
-        }
+        public static string ConvertToString(char self) => char.ToString(self);
 
         [SpecialName, ExplicitConversionMethod]
-        public static char ConvertToChar(int value) {
-            return checked((char)value);
-        }
+        public static char ConvertToChar(int value) => checked((char)value);
     }
 }

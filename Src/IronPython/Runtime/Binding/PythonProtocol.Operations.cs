@@ -1011,13 +1011,10 @@ namespace IronPython.Runtime.Binding {
 
             SlotOrFunction fop = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
             SlotOrFunction rop = SlotOrFunction.GetSlotOrFunction(state, ropSym, rTypes);
-            SlotOrFunction cmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
-            SlotOrFunction rcmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
 
             ConditionalBuilder bodyBuilder = new ConditionalBuilder(operation);
 
             SlotOrFunction.GetCombinedTargets(fop, rop, out fop, out rop);
-            SlotOrFunction.GetCombinedTargets(cmp, rcmp, out cmp, out rcmp);
 
             bool shouldWarn = false;
             
@@ -1038,37 +1035,10 @@ namespace IronPython.Runtime.Binding {
             if (MakeOneCompareGeneric(fop, opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
                 shouldWarn = shouldWarn || rop.ShouldWarn(state, out info);
                 if (MakeOneCompareGeneric(rop, !opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
-
-                    // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
-                    shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);
-
-                    if (MakeOneCompareGeneric(
-                        cmp,
-                        false,
-                        types,
-                        delegate(ConditionalBuilder builder, Expression retCond, Expression expr, bool reverse, Type retType) {
-                            MakeCompareTest(op, builder, retCond, expr, reverse, retType);
-                        },
-                        bodyBuilder,
-                        typeof(object))) {
-
-                        shouldWarn = shouldWarn || rcmp.ShouldWarn(state, out info);
-
-                        if (MakeOneCompareGeneric(
-                            rcmp,
-                            true,
-                            types,
-                            delegate(ConditionalBuilder builder, Expression retCond, Expression expr, bool reverse, Type retType) {
-                                MakeCompareTest(op, builder, retCond, expr, reverse, retType);
-                            },
-                            bodyBuilder,
-                            typeof(object))) {
-                            if (errorSuggestion != null) {
-                                bodyBuilder.FinishCondition(errorSuggestion.Expression, typeof(object));
-                            } else {
-                                bodyBuilder.FinishCondition(BindingHelpers.AddPythonBoxing(MakeFallbackCompare(operation, op, types)), typeof(object));
-                            }
-                        }
+                    if (errorSuggestion != null) {
+                        bodyBuilder.FinishCondition(errorSuggestion.Expression, typeof(object));
+                    } else {
+                        bodyBuilder.FinishCondition(BindingHelpers.AddPythonBoxing(MakeFallbackCompare(operation, op, types)), typeof(object));
                     }
                 }
             }

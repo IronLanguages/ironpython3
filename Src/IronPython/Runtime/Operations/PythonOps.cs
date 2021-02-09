@@ -716,9 +716,6 @@ namespace IronPython.Runtime.Operations {
                 if (IsOrEqualsRetBool(x, y)) continue;
                 var res = LessThanHelper(context, x, y);
                 if (res is NotImplementedType) {
-                    if (x is IComparable c && y is IComparable && x.GetType() == y.GetType()) {
-                        return c.CompareTo(y) < 0;
-                    }
                     throw TypeErrorForBinaryOp("<", x, y);
                 }
                 return res;

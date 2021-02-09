@@ -16,7 +16,7 @@ using IronPython.Runtime.Exceptions;
 
 namespace IronPython.Runtime {
     [PythonType("slice")]
-    public sealed class Slice : ICodeFormattable, IComparable, ISlice {
+    public sealed class Slice : ICodeFormattable, ISlice {
         public Slice(object? stop) : this(null, stop, null) { }
 
         public Slice(object? start, object? stop) : this(start, stop, null) { }
@@ -57,15 +57,6 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IComparable Members
-
-        int IComparable.CompareTo(object? obj) {
-            if (obj is Slice other) return Compare(other);
-            throw new ValueErrorException("expected slice");
-        }
-
-        #endregion
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int __hash__() {
             throw PythonOps.TypeErrorForUnhashableType("slice");
@@ -86,6 +77,26 @@ namespace IronPython.Runtime {
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             return string.Format("slice({0}, {1}, {2})", PythonOps.Repr(context, start), PythonOps.Repr(context, stop), PythonOps.Repr(context, step));
         }
+
+        #endregion
+
+        #region Rich Comparison Members
+
+        private bool Equals(Slice other) => start == other.start && stop == other.stop && step == other.step;
+
+        public bool __eq__([NotNull] Slice other) => Equals(other);
+
+        public bool __ne__([NotNull] Slice other) => !Equals(other);
+
+        private PythonTuple ToTuple() => PythonTuple.MakeTuple(start, stop, step);
+
+        public static object operator >([NotNull] Slice self, [NotNull] Slice other)=> self.ToTuple() < other.ToTuple();
+
+        public static object operator <([NotNull] Slice self, [NotNull] Slice other)=> self.ToTuple() < other.ToTuple();
+
+        public static object operator >=([NotNull] Slice self, [NotNull] Slice other) => self.ToTuple() >= other.ToTuple();
+
+        public static object operator <=([NotNull] Slice self, [NotNull] Slice other) => self.ToTuple() <= other.ToTuple();
 
         #endregion
 
@@ -132,11 +143,6 @@ namespace IronPython.Runtime {
         internal void GetIndicesAndCount(int length, out int ostart, out int ostop, out int ostep, out int count) {
             indices(length, out ostart, out ostop, out ostep);
             count = PythonOps.GetSliceCount(ostart, ostop, ostep);
-        }
-
-        private int Compare(Slice obj) {
-            return PythonOps.CompareArrays(new object?[] { start, stop, step }, 3,
-                new object?[] { obj.start, obj.stop, obj.step }, 3);
         }
 
         #endregion

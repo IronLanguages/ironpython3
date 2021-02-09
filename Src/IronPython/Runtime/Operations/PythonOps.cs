@@ -673,16 +673,6 @@ namespace IronPython.Runtime.Operations {
             return size0 > size1 ? +1 : -1;
         }
 
-        internal static int CompareArrays(object?[] data0, int size0, object?[] data1, int size1, IComparer comparer) {
-            int size = Math.Min(size0, size1);
-            for (int i = 0; i < size; i++) {
-                int c = comparer.Compare(data0[i], data1[i]);
-                if (c != 0) return c;
-            }
-            if (size0 == size1) return 0;
-            return size0 > size1 ? +1 : -1;
-        }
-
         internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1) {
             if (size0 != size1) {
                 return false;

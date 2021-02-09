@@ -1072,16 +1072,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal int CompareToWorker(PythonList l, IComparer? comparer = null) {
-            using (new OrderedLocker(this, l)) {
-                if (comparer == null) {
-                    return PythonOps.CompareArrays(_data, _size, l._data, l._size);
-                } else {
-                    return PythonOps.CompareArrays(_data, _size, l._data, l._size, comparer);
-                }
-            }
-        }
-
         internal bool FastSwap(int i, int j) {
             // ensure i <= j
             if (i > j) {

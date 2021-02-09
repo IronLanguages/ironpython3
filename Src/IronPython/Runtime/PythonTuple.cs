@@ -405,28 +405,11 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public override bool Equals(object? obj) {
-            if (!Object.ReferenceEquals(this, obj)) {
-                if (!(obj is PythonTuple other) || _data.Length != other._data.Length) {
-                    return false;
-                }
+        internal bool Equals(PythonTuple other)
+            => ReferenceEquals(this, other) || PythonOps.ArraysEqual(DefaultContext.Default, _data, other._data);
 
-                for (int i = 0; i < _data.Length; i++) {
-                    object? obj1 = this[i], obj2 = other[i];
-
-                    if (Object.ReferenceEquals(obj1, obj2)) {
-                        continue;
-                    } else if (obj1 != null) {
-                        if (!obj1.Equals(obj2)) {
-                            return false;
-                        }
-                    } else {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
+        public override bool Equals(object? obj)
+            => obj is PythonTuple other && Equals(other);
 
         public override int GetHashCode() {
             int hash1 = 6551;

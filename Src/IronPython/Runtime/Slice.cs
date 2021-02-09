@@ -82,13 +82,13 @@ namespace IronPython.Runtime {
 
         #region Rich Comparison Members
 
-        private bool Equals(Slice other) => start == other.start && stop == other.stop && step == other.step;
+        private PythonTuple ToTuple() => PythonTuple.MakeTuple(start, stop, step);
+
+        private bool Equals(Slice other) => ToTuple().Equals(other.ToTuple());
 
         public bool __eq__([NotNull] Slice other) => Equals(other);
 
         public bool __ne__([NotNull] Slice other) => !Equals(other);
-
-        private PythonTuple ToTuple() => PythonTuple.MakeTuple(start, stop, step);
 
         public static object operator >([NotNull] Slice self, [NotNull] Slice other)=> self.ToTuple() < other.ToTuple();
 

@@ -1158,19 +1158,7 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject FastPathCompare(DynamicMetaObject/*!*/[] types) {
             if (types[0].GetLimitType() == types[1].GetLimitType()) {
                 // fast paths for comparing some types which don't define __cmp__
-                if (types[0].GetLimitType() == typeof(PythonList)) {
-                    types[0] = types[0].Restrict(typeof(PythonList));
-                    types[1] = types[1].Restrict(typeof(PythonList));
-
-                    return new DynamicMetaObject(
-                        Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareLists)),
-                            types[0].Expression,
-                            types[1].Expression
-                        ),
-                        BindingRestrictions.Combine(types)
-                    );
-                } else if (types[0].GetLimitType() == typeof(double)) {
+                if (types[0].GetLimitType() == typeof(double)) {
                     types[0] = types[0].Restrict(typeof(double));
                     types[1] = types[1].Restrict(typeof(double));
 

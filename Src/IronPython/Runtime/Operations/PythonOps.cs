@@ -3384,10 +3384,6 @@ namespace IronPython.Runtime.Operations {
             return context.LanguageContext.DelegateCreator.GetDelegate(target, type);
         }
 
-        public static int CompareLists(PythonList self, PythonList other) {
-            return self.CompareTo(other);
-        }
-
         public static int CompareFloats(double self, double other) {
             return DoubleOps.Compare(self, other);
         }

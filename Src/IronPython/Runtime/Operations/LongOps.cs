@@ -580,7 +580,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static int Compare(BigInteger x, decimal y) {            
-            return DecimalOps.__cmp__(x, y);
+            return -DecimalOps.__cmp__(y, x);
         }
 
         [SpecialName]

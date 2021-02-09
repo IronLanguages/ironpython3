@@ -9,24 +9,13 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
+        public static bool __bool__(decimal x) => x != 0;
 
-        internal static int __cmp__(CodeContext context, decimal x, decimal other) {
-            return x.CompareTo(other);
-        }
-
-        public static bool __bool__(decimal x) {
-            return x != 0;
-        }
-
-        public static string __repr__(decimal x) {
-            return x.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string __repr__(decimal x) => x.ToString(CultureInfo.InvariantCulture);
 
         [SpecialName]
         public static bool LessThan(decimal x, decimal y) => x < y;
@@ -54,10 +43,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static bool NotEquals(decimal x, BigInteger y) => __cmp__(x, y) != 0;
 
-        internal static int __cmp__(BigInteger x, decimal y) {
-            return -__cmp__(y, x);
-        }
-
         internal static int __cmp__(decimal x, BigInteger y) {
             BigInteger bx = (BigInteger)x;
             if (bx == y) {
@@ -67,19 +52,6 @@ namespace IronPython.Runtime.Operations {
                 else return -1;
             }
             return bx > y ? +1 : -1;
-        }
-
-        [return: MaybeNotImplemented]
-        internal static object __cmp__(object x, decimal y) {
-            return __cmp__(y, x);
-        }
-
-        [return: MaybeNotImplemented]
-        internal static object __cmp__(decimal x, object y) {
-            if (y is null) {
-                return ScriptingRuntimeHelpers.Int32ToObject(+1);
-            }
-            return NotImplementedType.Value;
         }
 
         public static int __hash__(decimal x) {

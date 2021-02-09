@@ -128,29 +128,6 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public bool __eq__(object other) {
-            if (!(other is BuiltinMethodDescriptor bmd)) {
-                return false;
-            }
-            if (PythonOps.Id(__objclass__) != PythonOps.Id(bmd.__objclass__)) {
-                return false;
-            }
-            return __name__ == bmd.__name__;
-        }
-
-        public int __cmp__(object other) {
-            if (!(other is BuiltinMethodDescriptor bmd)) {
-                throw PythonOps.TypeError("method.__cmp__(x,y) requires y to be a 'instancemethod', not a {0}", PythonTypeOps.GetName(other));
-            }
-
-            long result = PythonOps.Id(__objclass__) - PythonOps.Id(bmd.__objclass__);
-            if (result != 0) {
-                return (result > 0) ? 1 : -1;
-            }
-            
-            return StringOps.Compare(__name__, bmd.__name__);
-        }
-
         #endregion
 
         #region ICodeFormattable Members

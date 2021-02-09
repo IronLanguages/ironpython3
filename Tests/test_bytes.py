@@ -1482,18 +1482,17 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(id(x), id(True))
 
     def test_bytes_dict(self):
-        self.assertTrue('__init__' not in list(bytes.__dict__.keys()))
-        self.assertTrue('__init__' in list(bytearray.__dict__.keys()))
+        self.assertNotIn('__init__', bytes.__dict__.keys())
+        self.assertIn('__init__', bytearray.__dict__.keys())
 
         for testType in types:
-            extra_str_dict_keys = [ "__cmp__", "isdecimal", "isnumeric", "isunicode"]  # "__radd__",
-
             #It's OK that __getattribute__ does not show up in the __dict__.  It is
             #implemented.
             self.assertTrue(hasattr(testType, "__getattribute__"), str(testType) + " has no __getattribute__ method")
 
+            extra_str_dict_keys = ["isdecimal", "isnumeric"]
             for temp_key in extra_str_dict_keys:
-                self.assertTrue(not temp_key in list(testType.__dict__.keys()))
+                self.assertNotIn(temp_key, testType.__dict__.keys())
 
     def test_bytes_to_numeric(self):
         for testType in types:

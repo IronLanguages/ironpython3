@@ -647,7 +647,7 @@ namespace IronPython.Runtime.Types {
                 
                 // Runs after StandardResolver so custom __eq__ methods can be added
                 // that support things like returning NotImplemented. Runs before
-                // OperatorResolver so that IStructuralEquatable take precedence
+                // OperatorResolver so that IStructuralEquatable takes precedence
                 // over Equals, which can be provided for nice .NET interop.
                 
                 EqualityResolver.Instance,

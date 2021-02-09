@@ -27,7 +27,7 @@ namespace IronPython.Runtime {
 
     [PythonType("list"), Serializable, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [DebuggerTypeProxy(typeof(ObjectCollectionDebugProxy)), DebuggerDisplay("list, {Count} items")]
-    public class PythonList : IList, ICodeFormattable, IList<object?>, IReversible, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object?> {
+    public class PythonList : IList, ICodeFormattable, IList<object?>, IReversible, IStructuralEquatable, IReadOnlyList<object?> {
         private const int INITIAL_SIZE = 20;
 
         internal int _size;
@@ -1072,16 +1072,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal int CompareToWorker(PythonList l, IComparer? comparer = null) {
-            using (new OrderedLocker(this, l)) {
-                if (comparer == null) {
-                    return PythonOps.CompareArrays(_data, _size, l._data, l._size);
-                } else {
-                    return PythonOps.CompareArrays(_data, _size, l._data, l._size, comparer);
-                }
-            }
-        }
-
         internal bool FastSwap(int i, int j) {
             // ensure i <= j
             if (i > j) {
@@ -1322,39 +1312,44 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal int CompareTo(PythonList other, IComparer? comparer = null) {
-            CompareUtil.Push(this, other);
+        #region Rich Comparison Members
+
+        private Span<object?> AsSpan() => _data.AsSpan(0, Count);
+
+        public static object operator >([NotNull] PythonList self, [NotNull] PythonList other) {
+            CompareUtil.Push(self, other);
             try {
-                return CompareToWorker(other, comparer);
+                return PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
             } finally {
-                CompareUtil.Pop(this, other);
+                CompareUtil.Pop(self, other);
             }
         }
 
-        #region Rich Comparison Members
-
-        public static object operator >([NotNull]PythonList self, [NotNull]PythonList other)
-            => self.CompareTo(other) > 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-
-        public static object operator <([NotNull]PythonList self, [NotNull]PythonList other)
-            => self.CompareTo(other) < 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-
-        public static object operator >=([NotNull]PythonList self, [NotNull]PythonList other)
-            => self.CompareTo(other) >= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-
-        public static object operator <=([NotNull]PythonList self, [NotNull]PythonList other)
-            => self.CompareTo(other) <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-
-        #endregion
-
-        #region IStructuralComparable Members
-
-        int IStructuralComparable.CompareTo(object? other, IComparer comparer) {
-            if (other is PythonList l) {
-                return CompareTo(l, comparer);
+        public static object operator <([NotNull] PythonList self, [NotNull] PythonList other) {
+            CompareUtil.Push(self, other);
+            try {
+                return PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+            } finally {
+                CompareUtil.Pop(self, other);
             }
+        }
 
-            throw new ValueErrorException("expected List");
+        public static object operator >=([NotNull] PythonList self, [NotNull] PythonList other) {
+            CompareUtil.Push(self, other);
+            try {
+                return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+            } finally {
+                CompareUtil.Pop(self, other);
+            }
+        }
+
+        public static object operator <=([NotNull] PythonList self, [NotNull] PythonList other) {
+            CompareUtil.Push(self, other);
+            try {
+                return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+            } finally {
+                CompareUtil.Pop(self, other);
+            }
         }
 
         #endregion

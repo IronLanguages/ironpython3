@@ -204,26 +204,6 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static int CompareTo(CodeContext/*!*/ context, IDictionary<object, object> left, IDictionary<object, object> right) {
-            int lcnt = left.Count;
-            int rcnt = right.Count;
-
-            if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
-
-
-            PythonList ritems = ToList(right);
-            return CompareToWorker(context, left, ritems);
-        }
-
-        internal static int CompareToWorker(CodeContext/*!*/ context, IDictionary<object, object> left, PythonList ritems) {
-            PythonList litems = ToList(left);
-
-            litems.Sort(context);
-            ritems.Sort(context);
-
-            return litems.CompareToWorker(ritems);
-        }
-
         #endregion
     }
 }

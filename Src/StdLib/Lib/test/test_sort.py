@@ -129,6 +129,8 @@ class TestBase(unittest.TestCase):
             x = [e for e, i in augmented] # a stable sort of s
             check("stability", x, s)
 
+        self.assertEqual(nerrors, 0) # fail if we ran into any errors
+
 #==============================================================================
 
 class TestBugs(unittest.TestCase):

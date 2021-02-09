@@ -663,37 +663,8 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeErrorForBadInstance("an integer is required (got {0})", value);
         }
 
-        internal static int CompareArrays(object?[] data0, int size0, object?[] data1, int size1) {
-            int size = Math.Min(size0, size1);
-            for (int i = 0; i < size; i++) {
-                int c = PythonOps.Compare(data0[i], data1[i]);
-                if (c != 0) return c;
-            }
-            if (size0 == size1) return 0;
-            return size0 > size1 ? +1 : -1;
-        }
-
-        internal static int CompareArrays(object?[] data0, int size0, object?[] data1, int size1, IComparer comparer) {
-            int size = Math.Min(size0, size1);
-            for (int i = 0; i < size; i++) {
-                int c = comparer.Compare(data0[i], data1[i]);
-                if (c != 0) return c;
-            }
-            if (size0 == size1) return 0;
-            return size0 > size1 ? +1 : -1;
-        }
-
-        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1) {
-            if (size0 != size1) {
-                return false;
-            }
-            for (int i = 0; i < size0; i++) {
-                if (!IsOrEqualsRetBool(data0[i], data1[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1)
+            => ArraysEqual(DefaultContext.Default, data0.AsSpan(0, size0), data1.AsSpan(0, size1));
 
         internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1, IEqualityComparer comparer) {
             if (size0 != size1) {
@@ -707,6 +678,82 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             return true;
+        }
+
+        internal static bool ArraysEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+            if (data0.Length != data1.Length) {
+                return false;
+            }
+            for (int i = 0; i < data0.Length; i++) {
+                if (!IsOrEqualsRetBool(context, data0[i], data1[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        internal static object ArraysGreaterThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+            int size = Math.Min(data0.Length, data1.Length);
+            for (int i = 0; i < size; i++) {
+                var x = data0[i];
+                var y = data1[i];
+                if (IsOrEqualsRetBool(x, y)) continue;
+                var res = GreaterThanHelper(context, x, y);
+                if (res is NotImplementedType) {
+                    throw TypeErrorForBinaryOp(">", x, y);
+                }
+                return res;
+            }
+
+            return data0.Length > data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object ArraysLessThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+            int size = Math.Min(data0.Length, data1.Length);
+            for (int i = 0; i < size; i++) {
+                var x = data0[i];
+                var y = data1[i];
+                if (IsOrEqualsRetBool(x, y)) continue;
+                var res = LessThanHelper(context, x, y);
+                if (res is NotImplementedType) {
+                    throw TypeErrorForBinaryOp("<", x, y);
+                }
+                return res;
+            }
+
+            return data0.Length < data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object ArraysGreaterThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+            int size = Math.Min(data0.Length, data1.Length);
+            for (int i = 0; i < size; i++) {
+                var x = data0[i];
+                var y = data1[i];
+                if (IsOrEqualsRetBool(x, y)) continue;
+                var res = GreaterThanOrEqualHelper(context, x, y);
+                if (res is NotImplementedType) {
+                    throw TypeErrorForBinaryOp(">=", x, y);
+                }
+                return res;
+            }
+
+            return data0.Length >= data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object ArraysLessThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+            int size = Math.Min(data0.Length, data1.Length);
+            for (int i = 0; i < size; i++) {
+                var x = data0[i];
+                var y = data1[i];
+                if (IsOrEqualsRetBool(x, y)) continue;
+                var res = LessThanOrEqualHelper(context, x, y);
+                if (res is NotImplementedType) {
+                    throw TypeErrorForBinaryOp("<=", x, y);
+                }
+                return res;
+            }
+
+            return data0.Length <= data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         public static object PowerMod(CodeContext/*!*/ context, object? x, object? y, object? z) {
@@ -3315,14 +3362,6 @@ namespace IronPython.Runtime.Operations {
 
         public static Delegate GetDelegate(CodeContext/*!*/ context, object target, Type type) {
             return context.LanguageContext.DelegateCreator.GetDelegate(target, type);
-        }
-
-        public static int CompareLists(PythonList self, PythonList other) {
-            return self.CompareTo(other);
-        }
-
-        public static int CompareTuples(PythonTuple self, PythonTuple other) {
-            return self.CompareTo(other);
         }
 
         public static int CompareFloats(double self, double other) {

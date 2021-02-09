@@ -26,7 +26,7 @@ using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
-    public class PythonTuple : IList, IList<object?>, ICodeFormattable, IExpressionSerializable, IStructuralEquatable, IStructuralComparable, IReadOnlyList<object?> {
+    public class PythonTuple : IList, IList<object?>, ICodeFormattable, IExpressionSerializable, IStructuralEquatable, IReadOnlyList<object?> {
         internal readonly object?[] _data;
 
         internal static readonly PythonTuple EMPTY = new PythonTuple();
@@ -391,37 +391,17 @@ namespace IronPython.Runtime {
 
         #region Rich Comparison Members
 
-        internal int CompareTo(PythonTuple other) {
-            return PythonOps.CompareArrays(_data, _data.Length, other._data, other._data.Length);
-        }
+        public static object operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysGreaterThan(DefaultContext.Default, self._data, other._data);
 
-        public static bool operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
-            return self.CompareTo(other) > 0;
-        }
+        public static object operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysLessThan(DefaultContext.Default, self._data, other._data);
 
-        public static bool operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
-            return self.CompareTo(other) < 0;
-        }
+        public static object operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self._data, other._data);
 
-        public static bool operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
-            return self.CompareTo(other) >= 0;
-        }
-
-        public static bool operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other) {
-            return self.CompareTo(other) <= 0;
-        }
-
-        #endregion
-
-        #region IStructuralComparable Members
-
-        int IStructuralComparable.CompareTo(object? obj, IComparer comparer) {
-            if (!(obj is PythonTuple other)) {
-                throw new ValueErrorException("expected tuple");
-            }
-
-            return PythonOps.CompareArrays(_data, _data.Length, other._data, other._data.Length, comparer);
-        }
+        public static object operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self._data, other._data);
 
         #endregion
 

@@ -1170,18 +1170,6 @@ namespace IronPython.Runtime.Binding {
                         ),
                         BindingRestrictions.Combine(types)
                     );
-                } else if (types[0].GetLimitType() == typeof(PythonTuple)) {
-                    types[0] = types[0].Restrict(typeof(PythonTuple));
-                    types[1] = types[1].Restrict(typeof(PythonTuple));
-
-                    return new DynamicMetaObject(
-                        Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareTuples)),
-                            types[0].Expression,
-                            types[1].Expression
-                        ),
-                        BindingRestrictions.Combine(types)
-                    );
                 } else if (types[0].GetLimitType() == typeof(double)) {
                     types[0] = types[0].Restrict(typeof(double));
                     types[1] = types[1].Restrict(typeof(double));

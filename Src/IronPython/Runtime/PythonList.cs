@@ -1314,10 +1314,12 @@ namespace IronPython.Runtime {
 
         #region Rich Comparison Members
 
+        private Span<object?> AsSpan() => _data.AsSpan(0, Count);
+
         public static object operator >([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
-                return PythonOps.ArraysGreaterThan(DefaultContext.Default, self._data.AsSpan(0, self.Count), other._data.AsSpan(0, other.Count));
+                return PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
             } finally {
                 CompareUtil.Pop(self, other);
             }
@@ -1326,7 +1328,7 @@ namespace IronPython.Runtime {
         public static object operator <([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
-                return PythonOps.ArraysLessThan(DefaultContext.Default, self._data.AsSpan(0, self.Count), other._data.AsSpan(0, other.Count));
+                return PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
             } finally {
                 CompareUtil.Pop(self, other);
             }
@@ -1335,7 +1337,7 @@ namespace IronPython.Runtime {
         public static object operator >=([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
-                return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self._data.AsSpan(0, self.Count), other._data.AsSpan(0, other.Count));
+                return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
             } finally {
                 CompareUtil.Pop(self, other);
             }
@@ -1344,7 +1346,7 @@ namespace IronPython.Runtime {
         public static object operator <=([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
-                return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self._data.AsSpan(0, self.Count), other._data.AsSpan(0, other.Count));
+                return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
             } finally {
                 CompareUtil.Pop(self, other);
             }

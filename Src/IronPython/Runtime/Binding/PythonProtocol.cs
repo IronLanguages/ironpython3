@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-
-using System.Linq.Expressions;
+#nullable enable
 
 using System;
 using System.Dynamic;
-using System.Runtime.CompilerServices;
+using System.Linq.Expressions;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -38,19 +37,18 @@ namespace IronPython.Runtime.Binding {
         /// protocol methods.  This code is shared between both our fallback for a site and our MetaObject
         /// for user defined objects.
         /// </summary>
-        internal static DynamicMetaObject ConvertToBool(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self) {
+        internal static DynamicMetaObject? ConvertToBool(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self) {
             Assert.NotNull(conversion, self);
 
-            SlotOrFunction sf = SlotOrFunction.GetSlotOrFunction(
-                PythonContext.GetPythonContext(conversion),
-                "__bool__",
-                self);
+            var context = PythonContext.GetPythonContext(conversion);
+
+            var sf = SlotOrFunction.GetSlotOrFunction(context, "__bool__", self);
 
             if (sf.Success) {
                 if (sf.Target.Expression.Type != typeof(bool)) {
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.ThrowingConvertToBool)),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ThrowingConvertToBool))!,
                             sf.Target.Expression
                         ),
                         sf.Target.Restrictions
@@ -60,15 +58,12 @@ namespace IronPython.Runtime.Binding {
                 return sf.Target;
             }
 
-            sf = SlotOrFunction.GetSlotOrFunction(
-                PythonContext.GetPythonContext(conversion),
-                "__len__",
-                self);
+            sf = SlotOrFunction.GetSlotOrFunction(context, "__len__", self);
 
             if (sf.Success) {
                 return new DynamicMetaObject(
                     GetConvertByLengthBody(
-                        PythonContext.GetPythonContext(conversion),
+                        context,
                         sf.Target.Expression
                     ),
                     sf.Target.Restrictions
@@ -89,7 +84,7 @@ namespace IronPython.Runtime.Binding {
                 callAsInt = DynamicExpression.Dynamic(
                     state.Convert(typeof(int), ConversionResultKind.ExplicitCast),
                     typeof(int),
-                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.Index)), call)
+                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.Index))!, call)
                 );
             }
 
@@ -100,7 +95,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.IfThen(Ast.LessThan(res, Ast.Constant(0)),
                     Ast.Throw(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.ValueError)),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ValueError))!,
                             Ast.Constant("__len__() should return >= 0"),
                             Ast.NewArrayInit(typeof(object))
                         )
@@ -114,7 +109,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Calls
 
-        internal static DynamicMetaObject Call(DynamicMetaObjectBinder/*!*/ call, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args) {
+        internal static DynamicMetaObject? Call(DynamicMetaObjectBinder/*!*/ call, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args) {
             Assert.NotNull(call, args);
             Assert.NotNullItems(args);
 
@@ -144,7 +139,7 @@ namespace IronPython.Runtime.Binding {
             if (!typeof(Delegate).IsAssignableFrom(target.GetLimitType()) &&
                 pt.TryResolveSlot(pyContext.SharedContext, "__call__", out callSlot)) {
                 ConditionalBuilder cb = new ConditionalBuilder(call);
-                
+
                 callSlot.MakeGetExpression(
                     pyContext.Binder,
                     PythonContext.GetCodeContext(call),
@@ -152,14 +147,14 @@ namespace IronPython.Runtime.Binding {
                     GetPythonType(self),
                     cb
                 );
-                
+
                 if (!cb.IsFinal) {
                     cb.FinishCondition(GetCallError(call, self));
                 }
 
                 Expression[] callArgs = ArrayUtils.Insert(
                     PythonContext.GetCodeContext(call),
-                    cb.GetMetaObject().Expression, 
+                    cb.GetMetaObject().Expression,
                     DynamicUtils.GetExpressions(args)
                 );
 
@@ -173,10 +168,10 @@ namespace IronPython.Runtime.Binding {
 
                 body = Ast.TryFinally(
                     Ast.Block(
-                        Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame)), Ast.Constant(pyContext)),                        
+                        Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame))!, Ast.Constant(pyContext)),
                         body
                     ),
-                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPopFrame)))
+                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPopFrame))!)
                 );
 
                 return BindingHelpers.AddDynamicTestAndDefer(
@@ -217,12 +212,12 @@ namespace IronPython.Runtime.Binding {
 
             return binder.Throw(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod(nameof(PythonOps.UncallableError)),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.UncallableError))!,
                     AstUtils.Convert(self.Expression, typeof(object))
                 )
             );
         }
-        
+
         #endregion
     }
 }

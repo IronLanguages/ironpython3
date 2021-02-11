@@ -59,5 +59,49 @@ class BoolTest(unittest.TestCase):
         self.assertEqual(System.Decimal(True), System.Decimal(1))
         self.assertEqual(System.Decimal(False), System.Decimal(0))
 
-run_test(__name__)
+    def test__bool__(self):
+        class ClassWithBool:
+            def __init__(self, val):
+                self.val = val
+            def __bool__(self):
+                return self.val
 
+        class ClassWithLen:
+            def __init__(self, val):
+                self.val = val
+            def __len__(self):
+                return self.val
+
+        class MyIndex:
+            def __init__(self, val):
+                self.val = val
+            def __index__(self):
+                return self.val
+
+        class MyLong(long): pass
+
+        bool_cases = [
+            (True, True), (False, False), (MyIndex(0), TypeError),
+        ]
+        len_cases = [
+            (1, True), (0, False), (0.0, TypeError), (-1, ValueError), (1<<64, OverflowError),
+        ]
+
+        cases = []
+        cases += [(ClassWithBool(x), y) for x, y in bool_cases]
+        cases += [(ClassWithLen(x), y) for x, y in len_cases]
+        cases += [(ClassWithLen(long(x)), y) for x, y in len_cases if isinstance(x, int)]
+        cases += [(ClassWithLen(MyLong(x)), y) for x, y in len_cases if isinstance(x, int)]
+        cases += [(ClassWithLen(MyIndex(x)), y) for x, y in len_cases]
+
+        for val, res in cases:
+            if type(res) == type:
+                with self.assertRaises(res):
+                    bool(val)
+                with self.assertRaises(res):
+                    not val
+            else:
+                self.assertEqual(bool(val), res)
+                self.assertEqual(not val, not res)
+
+run_test(__name__)

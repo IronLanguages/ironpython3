@@ -115,7 +115,7 @@ namespace IronPython.Runtime.Binding {
                     retType = typeof(bool);
                     break;
                 case ExpressionType.IsTrue:
-                    res = PythonProtocol.ConvertToBool(operation, arg);
+                    res = ConvertToBool(operation, arg);
                     retType = typeof(bool);
                     break;
                 default:
@@ -547,12 +547,10 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self, Type retType, DynamicMetaObject errorSuggestion) {
             self = self.Restrict(self.GetLimitType());
 
-            SlotOrFunction @bool = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), "__bool__", self);
-            SlotOrFunction length = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), "__len__", self);
-
             Expression notExpr;
 
-            if (!@bool.Success && !length.Success) {
+            var res = ConvertToBool(operation, self);
+            if (res is null) {
                 // no __len__ or __bool__, for None this is always false, everything else is True.  If we have
                 // an error suggestion though we'll go with that.
                 if (errorSuggestion == null) {
@@ -560,40 +558,11 @@ namespace IronPython.Runtime.Binding {
                 } else {
                     notExpr = errorSuggestion.Expression;
                 }
-            } else {
-                SlotOrFunction target = @bool.Success ? @bool : length;
-
-                notExpr = target.Target.Expression;
-
-                if (@bool.Success) {
-                    // call non-zero and negate it
-                    if (notExpr.Type == typeof(bool)) {
-                        notExpr = Ast.Equal(notExpr, AstUtils.Constant(false));
-                    } else {
-                        notExpr = Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.Not)),
-                            AstUtils.Convert(notExpr, typeof(object))
-                        );
-                    }
-                } else {
-                    // call len, compare w/ zero
-                    if (notExpr.Type == typeof(int)) {
-                        notExpr = Ast.Equal(notExpr, AstUtils.Constant(0));
-                    } else {
-                        notExpr =
-                            Ast.Equal(
-                                DynamicExpression.Dynamic(
-                                    PythonContext.GetPythonContext(operation).Operation(
-                                        PythonOperationKind.Compare
-                                    ),
-                                    typeof(int),
-                                    notExpr,
-                                    AstUtils.Constant(0)
-                                ),
-                                AstUtils.Constant(0)
-                            );
-                    }
-                }
+            }
+            else {
+                Debug.Assert(res.Expression.Type == typeof(bool));
+                notExpr = Ast.IsFalse(res.Expression);
+                self = res;
             }
 
             if (retType == typeof(object) && notExpr.Type == typeof(bool)) {
@@ -602,10 +571,9 @@ namespace IronPython.Runtime.Binding {
 
             return new DynamicMetaObject(
                 notExpr,
-                self.Restrictions.Merge(@bool.Target.Restrictions.Merge(length.Target.Restrictions))
+                self.Restrictions
             );
         }
-
 
         #endregion
 

@@ -391,22 +391,24 @@ namespace IronPython.Runtime {
 
         #region Rich Comparison Members
 
-        public static object operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other)
-            => PythonOps.ArraysGreaterThan(DefaultContext.Default, self._data, other._data);
+        private ReadOnlySpan<object?> AsSpan() => _data.AsSpan();
 
-        public static object operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other)
-            => PythonOps.ArraysLessThan(DefaultContext.Default, self._data, other._data);
+        public static object? operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
-        public static object operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
-            => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self._data, other._data);
+        public static object? operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
-        public static object operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
-            => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self._data, other._data);
+        public static object? operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+
+        public static object? operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+            => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
         #endregion
 
         internal bool Equals(PythonTuple other)
-            => ReferenceEquals(this, other) || PythonOps.ArraysEqual(DefaultContext.Default, _data, other._data);
+            => ReferenceEquals(this, other) || PythonOps.ArraysEqual(DefaultContext.Default, AsSpan(), other.AsSpan());
 
         public override bool Equals(object? obj)
             => obj is PythonTuple other && Equals(other);

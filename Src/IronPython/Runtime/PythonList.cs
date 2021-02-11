@@ -1307,7 +1307,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object operator >([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator >([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1316,7 +1316,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object operator <([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator <([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1325,7 +1325,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object operator >=([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator >=([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1334,7 +1334,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object operator <=([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator <=([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());

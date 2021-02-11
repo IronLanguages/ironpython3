@@ -557,6 +557,23 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool IsOrEqualsRetBool(CodeContext/*!*/ context, object? x, object? y) => ReferenceEquals(x, y) || EqualRetBool(context, x, y);
 
+        internal static bool RichCompareSequenceElements(CodeContext/*!*/ context, object? x, object? y, PythonOperationKind op, out object? res) {
+            if (IsOrEqualsRetBool(context, x, y)) {
+                res = null;
+                return false;
+            }
+            res = RichCompare(context, x, y, op);
+            return true;
+        }
+
+        internal static object? RichCompare(CodeContext/*!*/ context, object? x, object? y, PythonOperationKind op) {
+            var res = InternalCompare(context, op, x, y);
+            if (res is NotImplementedType) {
+                throw TypeErrorForBinaryOp(PythonProtocol.GetOperatorDisplay(op), x, y);
+            }
+            return res;
+        }
+
         public static int Compare(object? x, object? y) {
             return Compare(DefaultContext.Default, x, y);
         }
@@ -663,12 +680,6 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeErrorForBadInstance("an integer is required (got {0})", value);
         }
 
-        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1)
-            => ArraysEqual(DefaultContext.Default, data0.AsSpan(0, size0), data1.AsSpan(0, size1));
-
-        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1, IEqualityComparer comparer)
-            => ArraysEqual(DefaultContext.Default, data0.AsSpan(0, size0), data1.AsSpan(0, size1), comparer);
-
         internal static bool ArraysEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             if (data0.Length != data1.Length) {
                 return false;
@@ -695,68 +706,95 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        internal static object ArraysGreaterThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+        internal static object? CompareSequences(CodeContext context, IEnumerable<object?> data0, IEnumerable<object?> data1, PythonOperationKind op) {
+            using var enum0 = data0.GetEnumerator();
+            using var enum1 = data1.GetEnumerator();
+            while (enum0.MoveNext()) {
+                if (!enum1.MoveNext()) break;
+                if (RichCompareSequenceElements(context, enum0.Current, enum1.Current, op, out var res))
+                    return res;
+            }
+            return InternalCompare(context, op, enum0.MoveNext(), enum1.MoveNext());
+        }
+
+        internal static object? ArraysGreaterThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             int size = Math.Min(data0.Length, data1.Length);
             for (int i = 0; i < size; i++) {
-                var x = data0[i];
-                var y = data1[i];
-                if (IsOrEqualsRetBool(x, y)) continue;
-                var res = GreaterThanHelper(context, x, y);
-                if (res is NotImplementedType) {
-                    throw TypeErrorForBinaryOp(">", x, y);
-                }
-                return res;
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.GreaterThan, out var res))
+                    return res;
             }
 
             return data0.Length > data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
-        internal static object ArraysLessThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+        internal static object? ArraysGreaterThan(CodeContext context, IList<object?> data0, IList<object?> data1) {
+            int size = Math.Min(data0.Count, data1.Count);
+            for (int i = 0; i < size; i++) {
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.GreaterThan, out var res))
+                    return res;
+            }
+
+            return data0.Count > data1.Count ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object? ArraysLessThan(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             int size = Math.Min(data0.Length, data1.Length);
             for (int i = 0; i < size; i++) {
-                var x = data0[i];
-                var y = data1[i];
-                if (IsOrEqualsRetBool(x, y)) continue;
-                var res = LessThanHelper(context, x, y);
-                if (res is NotImplementedType) {
-                    throw TypeErrorForBinaryOp("<", x, y);
-                }
-                return res;
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.LessThan, out var res))
+                    return res;
             }
 
             return data0.Length < data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
-        internal static object ArraysGreaterThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+        internal static object? ArraysLessThan(CodeContext context, IList<object?> data0, IList<object?> data1) {
+            int size = Math.Min(data0.Count, data1.Count);
+            for (int i = 0; i < size; i++) {
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.LessThan, out var res))
+                    return res;
+            }
+
+            return data0.Count < data1.Count ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object? ArraysGreaterThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             int size = Math.Min(data0.Length, data1.Length);
             for (int i = 0; i < size; i++) {
-                var x = data0[i];
-                var y = data1[i];
-                if (IsOrEqualsRetBool(x, y)) continue;
-                var res = GreaterThanOrEqualHelper(context, x, y);
-                if (res is NotImplementedType) {
-                    throw TypeErrorForBinaryOp(">=", x, y);
-                }
-                return res;
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.GreaterThanOrEqual, out var res))
+                    return res;
             }
 
             return data0.Length >= data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
-        internal static object ArraysLessThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
+        internal static object? ArraysGreaterThanOrEqual(CodeContext context, IList<object?> data0, IList<object?> data1) {
+            int size = Math.Min(data0.Count, data1.Count);
+            for (int i = 0; i < size; i++) {
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.GreaterThanOrEqual, out var res))
+                    return res;
+            }
+
+            return data0.Count >= data1.Count ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object? ArraysLessThanOrEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             int size = Math.Min(data0.Length, data1.Length);
             for (int i = 0; i < size; i++) {
-                var x = data0[i];
-                var y = data1[i];
-                if (IsOrEqualsRetBool(x, y)) continue;
-                var res = LessThanOrEqualHelper(context, x, y);
-                if (res is NotImplementedType) {
-                    throw TypeErrorForBinaryOp("<=", x, y);
-                }
-                return res;
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.LessThanOrEqual, out var res))
+                    return res;
             }
 
             return data0.Length <= data1.Length ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        internal static object? ArraysLessThanOrEqual(CodeContext context, IList<object?> data0, IList<object?> data1) {
+            int size = Math.Min(data0.Count, data1.Count);
+            for (int i = 0; i < size; i++) {
+                if (RichCompareSequenceElements(context, data0[i], data1[i], PythonOperationKind.LessThanOrEqual, out var res))
+                    return res;
+            }
+
+            return data0.Count <= data1.Count ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         public static object PowerMod(CodeContext/*!*/ context, object? x, object? y, object? z) {

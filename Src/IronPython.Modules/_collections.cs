@@ -28,7 +28,7 @@ namespace IronPython.Modules {
 
         [PythonType]
         [DontMapIEnumerableToContains, DebuggerDisplay("deque, {__len__()} items"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
-        public class deque : IEnumerable, IComparable, ICodeFormattable, IStructuralEquatable, IStructuralComparable, ICollection, IReversible, IWeakReferenceable {
+        public class deque : IEnumerable, ICodeFormattable, IStructuralEquatable, ICollection, IReversible, IWeakReferenceable {
             private object[] _data;
             private readonly object _lockObj = new object();
             private int _head, _tail;
@@ -475,88 +475,6 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            #region IComparable Members
-
-            int IComparable.CompareTo(object obj) {
-                deque otherDeque = obj as deque;
-                if (otherDeque == null) {
-                    throw new ValueErrorException("expected deque");
-                }
-
-                return CompareToWorker(otherDeque);
-            }
-
-            private int CompareToWorker(deque otherDeque, IComparer comparer = null) {
-                Assert.NotNull(otherDeque);
-
-                if (_itemCnt == 0) {
-                    return otherDeque._itemCnt == 0 ? 0 : -1;
-                } else if (otherDeque._itemCnt == 0) {
-                    return 1;
-                }
-
-                if (CompareUtil.Check(this)) return 0;
-
-                CompareUtil.Push(this);
-                try {
-                    int otherIndex = otherDeque._head, ourIndex = _head;
-
-                    for (; ; ) {
-                        int result;
-                        if (comparer == null) {
-                            result = PythonOps.Compare(_data[ourIndex], otherDeque._data[otherIndex]);
-                        } else {
-                            result = comparer.Compare(_data[ourIndex], otherDeque._data[otherIndex]);
-                        }
-                        if (result != 0) {
-                            return result;
-                        }
-
-                        // advance both indexes
-                        otherIndex++;
-                        if (otherIndex == otherDeque._data.Length) {
-                            otherIndex = 0;
-                        }
-                        if (otherIndex == otherDeque._tail) {
-                            break;
-                        }
-
-                        ourIndex++;
-                        if (ourIndex == _data.Length) {
-                            ourIndex = 0;
-                        }
-                        if (ourIndex == _tail) {
-                            break;
-                        }
-                    }
-                    // all items are equal, but # of items may be different.
-
-                    if (otherDeque._itemCnt == _itemCnt) {
-                        // same # of items, all items are equal
-                        return 0;
-                    }
-
-                    return _itemCnt > otherDeque._itemCnt ? 1 : -1;
-                } finally {
-                    CompareUtil.Pop(this);
-                }
-            }
-
-            #endregion
-
-            #region IStructuralComparable Members
-
-            int IStructuralComparable.CompareTo(object other, IComparer comparer) {
-                deque otherDeque = other as deque;
-                if (otherDeque == null) {
-                    throw new ValueErrorException("expected deque");
-                }
-
-                return CompareToWorker(otherDeque, comparer);
-            }
-
-            #endregion
-
             #region IEnumerable Members
 
             IEnumerator IEnumerable.GetEnumerator() {
@@ -883,97 +801,64 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
-                if (!(other is deque)) return false;
-
-                return EqualsWorker((deque)other, comparer);
-            }
-
-            private bool EqualsWorker(deque otherDeque, IEqualityComparer comparer) {
-                Assert.NotNull(otherDeque);
-
-                if (otherDeque._itemCnt != _itemCnt) {
-                    // number of items is different, deques can't be equal
-                    return false;
-                } else if (otherDeque._itemCnt == 0) {
-                    // two empty deques are equal
-                    return true;
-                }
-
-                if (CompareUtil.Check(this)) return true;
-
-                CompareUtil.Push(this);
-                try {
-                    for (int otherIndex = otherDeque._head, ourIndex = _head; ourIndex != _tail; ) {
-                        bool result;
-                        var ourData = _data[ourIndex];
-                        var otherData = otherDeque._data[otherIndex];
-                        if (comparer == null) {
-                            result = PythonOps.IsOrEqualsRetBool(ourData, otherData);
-                        } else {
-                            result = ReferenceEquals(ourData, otherData) || comparer.Equals(ourData, otherData);
-                        }
-                        if (!result) {
-                            return false;
-                        }
-
-                        // advance both indices
-                        otherIndex++;
-                        if (otherIndex == otherDeque._data.Length) {
-                            otherIndex = 0;
-                        }
-
-                        ourIndex++;
-                        if (ourIndex == _data.Length) {
-                            ourIndex = 0;
-                        }
-                    }
-
-                    // same # of items, all items are equal
-                    return true;
-                } finally {
-                    CompareUtil.Pop(this);
-                }
-            }
+            bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer)
+                => ReferenceEquals(this, other) || other is deque d && _itemCnt == d._itemCnt && Equals(d, comparer);
 
             #endregion
 
             #region Rich Comparison Members
 
-            [SpecialName]
-            [return: MaybeNotImplemented]
-            public static object operator >(deque self, object other) {
-                deque otherDeque = other as deque;
-                if (otherDeque == null) return NotImplementedType.Value;
+            private Span<object> AsSpan() => _data.AsSpan(0, _itemCnt);
 
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareToWorker(otherDeque) > 0);
+            private bool Equals(deque other, IEqualityComparer comparer = null) {
+                CompareUtil.Push(this, other);
+                try {
+                    using (new OrderedLocker(this, other)) {
+                        if (comparer is null) {
+                            return PythonOps.ArraysEqual(DefaultContext.Default, AsSpan(), other.AsSpan());
+                        } else {
+                            return PythonOps.ArraysEqual(DefaultContext.Default, AsSpan(), other.AsSpan(), comparer);
+                        }
+                    }
+                } finally {
+                    CompareUtil.Pop(this, other);
+                }
             }
 
-            [SpecialName]
-            [return: MaybeNotImplemented]
-            public static object operator <(deque self, object other) {
-                deque otherDeque = other as deque;
-                if (otherDeque == null) return NotImplementedType.Value;
-
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareToWorker(otherDeque) < 0);
+            public static object operator >([NotNull] deque self, [NotNull] deque other) {
+                CompareUtil.Push(self, other);
+                try {
+                    return PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+                } finally {
+                    CompareUtil.Pop(self, other);
+                }
             }
 
-            [SpecialName]
-            [return: MaybeNotImplemented]
-            public static object operator >=(deque self, object other) {
-                deque otherDeque = other as deque;
-                if (otherDeque == null) return NotImplementedType.Value;
-
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareToWorker(otherDeque) >= 0);
+            public static object operator <([NotNull] deque self, [NotNull] deque other) {
+                CompareUtil.Push(self, other);
+                try {
+                    return PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+                } finally {
+                    CompareUtil.Pop(self, other);
+                }
             }
 
-            [SpecialName]
-            [return: MaybeNotImplemented]
-            public static object operator <=(deque self, object other) {
-                deque otherDeque = other as deque;
-                if (otherDeque == null) return NotImplementedType.Value;
+            public static object operator >=([NotNull] deque self, [NotNull] deque other) {
+                CompareUtil.Push(self, other);
+                try {
+                    return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+                } finally {
+                    CompareUtil.Pop(self, other);
+                }
+            }
 
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareToWorker(otherDeque) <= 0);
+            public static object operator <=([NotNull] deque self, [NotNull] deque other) {
+                CompareUtil.Push(self, other);
+                try {
+                    return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
+                } finally {
+                    CompareUtil.Pop(self, other);
+                }
             }
 
             #endregion

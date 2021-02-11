@@ -1062,16 +1062,6 @@ namespace IronPython.Runtime {
             lock (this) return Array.BinarySearch(_data, index, count, value, comparer);
         }
 
-        internal bool EqualsWorker(PythonList l, IEqualityComparer? comparer) {
-            using (new OrderedLocker(this, l)) {
-                if (comparer == null) {
-                    return PythonOps.ArraysEqual(_data, _size, l._data, l._size);
-                } else {
-                    return PythonOps.ArraysEqual(_data, _size, l._data, l._size, comparer);
-                }
-            }
-        }
-
         internal bool FastSwap(int i, int j) {
             // ensure i <= j
             if (i > j) {
@@ -1262,13 +1252,8 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer) {
-            if (Object.ReferenceEquals(this, other)) return true;
-
-            if (other is PythonList l && l.Count == Count)
-                return Equals(l, comparer);
-            return false;
-        }
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
+            => ReferenceEquals(this, other) || other is PythonList l && Count == l.Count && Equals(l, comparer);
 
         #endregion
 
@@ -1303,18 +1288,24 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        #region Rich Comparison Members
+
+        private Span<object?> AsSpan() => _data.AsSpan(0, Count);
+
         private bool Equals(PythonList other, IEqualityComparer? comparer = null) {
             CompareUtil.Push(this, other);
             try {
-                return EqualsWorker(other, comparer);
+                using (new OrderedLocker(this, other)) {
+                    if (comparer is null) {
+                        return PythonOps.ArraysEqual(DefaultContext.Default, AsSpan(), other.AsSpan());
+                    } else {
+                        return PythonOps.ArraysEqual(DefaultContext.Default, AsSpan(), other.AsSpan(), comparer);
+                    }
+                }
             } finally {
                 CompareUtil.Pop(this, other);
             }
         }
-
-        #region Rich Comparison Members
-
-        private Span<object?> AsSpan() => _data.AsSpan(0, Count);
 
         public static object operator >([NotNull] PythonList self, [NotNull] PythonList other) {
             CompareUtil.Push(self, other);

@@ -666,19 +666,8 @@ namespace IronPython.Runtime.Operations {
         internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1)
             => ArraysEqual(DefaultContext.Default, data0.AsSpan(0, size0), data1.AsSpan(0, size1));
 
-        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1, IEqualityComparer comparer) {
-            if (size0 != size1) {
-                return false;
-            }
-            for (int i = 0; i < size0; i++) {
-                var d0 = data0[i];
-                var d1 = data1[i];
-                if (!ReferenceEquals(d0, d1) && !comparer.Equals(d0, d1)) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        internal static bool ArraysEqual(object?[] data0, int size0, object?[] data1, int size1, IEqualityComparer comparer)
+            => ArraysEqual(DefaultContext.Default, data0.AsSpan(0, size0), data1.AsSpan(0, size1), comparer);
 
         internal static bool ArraysEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
             if (data0.Length != data1.Length) {
@@ -686,6 +675,20 @@ namespace IronPython.Runtime.Operations {
             }
             for (int i = 0; i < data0.Length; i++) {
                 if (!IsOrEqualsRetBool(context, data0[i], data1[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        internal static bool ArraysEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1, IEqualityComparer comparer) {
+            if (data0.Length != data1.Length) {
+                return false;
+            }
+            for (int i = 0; i < data0.Length; i++) {
+                var d0 = data0[i];
+                var d1 = data1[i];
+                if (!ReferenceEquals(d0, d1) && !comparer.Equals(d0, d1)) {
                     return false;
                 }
             }

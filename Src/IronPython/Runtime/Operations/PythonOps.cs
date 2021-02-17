@@ -2119,7 +2119,9 @@ namespace IronPython.Runtime.Operations {
             // CLR restrictions require that this must be called from within a catch block.  This gets
             // called even if we aren't going to handle the exception - we'll just reset the abort 
             if (clrException is ThreadAbortException tae && tae.ExceptionState is KeyboardInterruptException) {
+#pragma warning disable SYSLIB0006 // Thread.Abort is not supported and throws PlatformNotSupportedException on .NET Core.
                 Thread.ResetAbort();
+#pragma warning restore SYSLIB0006
             }
 #endif
 

@@ -439,7 +439,9 @@ namespace IronPython.Hosting {
 #else
             } catch (ThreadAbortException tae) {
                 if (tae.ExceptionState is KeyboardInterruptException pki) {
+#pragma warning disable SYSLIB0006 // Thread.Abort is not supported and throws PlatformNotSupportedException on .NET Core.
                     Thread.ResetAbort();
+#pragma warning restore SYSLIB0006
                 }
 #endif
             }

@@ -31,6 +31,10 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '5.0.x'
+    - name: Setup .NET 6.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '6.0.100-preview.2.21155.3'
     - name: Version Information
       run: |
         dotnet --info
@@ -56,4 +60,7 @@ jobs:
       shell: pwsh
     - name: Test (net5.0)
       run: ./make.ps1 -frameworks net5.0 test-all
+      shell: pwsh
+    - name: Test (net6.0)
+      run: ./make.ps1 -frameworks net6.0 test-all
       shell: pwsh

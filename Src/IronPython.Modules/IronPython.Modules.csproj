@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;netcoreapp3.1;netstandard2.0;net5.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp3.1;netstandard2.0;net5.0;net6.0</TargetFrameworks>
     <BaseAddress>885063680</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -42,6 +42,10 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0 " />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.1.21102.12  " />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

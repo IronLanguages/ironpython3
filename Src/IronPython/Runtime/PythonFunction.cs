@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+
+using IronPython.Compiler.Ast;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Compiler;
-using IronPython.Compiler.Ast;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using Ast = System.Linq.Expressions.Expression;
+using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 namespace IronPython.Runtime {
-    using Ast = MSAst.Expression;
-    using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-
     /// <summary>
     /// Created for a user-defined function.  
     /// </summary>
@@ -539,27 +536,23 @@ namespace IronPython.Runtime {
         public const object __hash__ = null;
 
         [return: MaybeNotImplemented]
-        public object __eq__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.EqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __eq__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.Equal);
 
         [return: MaybeNotImplemented]
-        public object __ne__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.NotEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __ne__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.NotEqual);
 
-        [return: MaybeNotImplemented]
-        public object __lt__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.LessThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __lt__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.LessThan);
 
-        [return: MaybeNotImplemented]
-        public object __le__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.LessThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __le__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.LessThanOrEqual);
 
-        [return: MaybeNotImplemented]
-        public object __ge__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.GreaterThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __ge__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.GreaterThanOrEqual);
 
-        [return: MaybeNotImplemented]
-        public object __gt__(CodeContext context, object other)
-            => other is ClosureCell cell ? PythonOps.GreaterThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
+        public object __gt__(CodeContext context, [NotNull] ClosureCell other)
+            => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.GreaterThan);
     }
 }

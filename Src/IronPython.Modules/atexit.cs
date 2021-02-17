@@ -81,7 +81,7 @@ atexit.register
             var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
-                    functions.RemoveAll(x => PythonOps.Compare(context, x.Func, func) == 0);
+                    functions.RemoveAll(x => PythonOps.IsOrEqualsRetBool(context, x.Func, func));
                 }
             }
         }

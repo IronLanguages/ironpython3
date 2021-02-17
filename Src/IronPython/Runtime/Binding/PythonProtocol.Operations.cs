@@ -1850,7 +1850,7 @@ namespace IronPython.Runtime.Binding {
                                 xType, yType, GetOperatorDisplay(op));
         }
 
-        private static string/*!*/ GetOperatorDisplay(PythonOperationKind op) {
+        internal static string/*!*/ GetOperatorDisplay(PythonOperationKind op) {
             switch (op) {
                 case PythonOperationKind.Add: return "+";
                 case PythonOperationKind.Subtract: return "-";

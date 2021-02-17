@@ -948,63 +948,17 @@ namespace IronPython.Modules {
 
             #region IRichComparable Members
 
-            private bool TryCompare(object? other, out int res) {
-                if (!(other is array pa) || pa.typecode != typecode) {
-                    res = 0;
-                    return false;
-                }
+            public static object? operator >([NotNull] array self, [NotNull] array other)
+                => PythonOps.ArraysGreaterThan(DefaultContext.Default, self!, other!);
 
-                if (pa._data.Count != _data.Count) {
-                    res = _data.Count - pa._data.Count;
-                } else {
-                    res = 0;
-                    for (int i = 0; i < pa._data.Count && res == 0; i++) {
-                        res = PythonOps.Compare(_data[i], pa._data[i]);
-                    }
-                }
+            public static object? operator <([NotNull] array self, [NotNull] array other)
+                => PythonOps.ArraysLessThan(DefaultContext.Default, self!, other!);
 
-                return true;
-            }
+            public static object? operator >=([NotNull] array self, [NotNull] array other)
+                => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self!, other!);
 
-            [return: MaybeNotImplemented]
-            public static object operator >([NotNull]array self, object? other) {
-                int res;
-                if (!self.TryCompare(other, out res)) {
-                    return NotImplementedType.Value;
-                }
-
-                return ScriptingRuntimeHelpers.BooleanToObject(res > 0);
-            }
-
-            [return: MaybeNotImplemented]
-            public static object operator <([NotNull]array self, object? other) {
-                int res;
-                if (!self.TryCompare(other, out res)) {
-                    return NotImplementedType.Value;
-                }
-
-                return ScriptingRuntimeHelpers.BooleanToObject(res < 0);
-            }
-
-            [return: MaybeNotImplemented]
-            public static object operator >=([NotNull]array self, object? other) {
-                int res;
-                if (!self.TryCompare(other, out res)) {
-                    return NotImplementedType.Value;
-                }
-
-                return ScriptingRuntimeHelpers.BooleanToObject(res >= 0);
-            }
-
-            [return: MaybeNotImplemented]
-            public static object operator <=([NotNull]array self, object? other) {
-                int res;
-                if (!self.TryCompare(other, out res)) {
-                    return NotImplementedType.Value;
-                }
-
-                return ScriptingRuntimeHelpers.BooleanToObject(res <= 0);
-            }
+            public static object? operator <=([NotNull] array self, [NotNull] array other)
+                => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self!, other!);
 
             #endregion
 

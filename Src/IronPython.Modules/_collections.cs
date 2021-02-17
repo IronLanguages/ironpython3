@@ -867,8 +867,10 @@ namespace IronPython.Modules {
                     int otherIndex = other._head, ourIndex = _head;
 
                     for (; ; ) {
-                        if (PythonOps.RichCompareSequenceElements(context, _data[ourIndex], other._data[otherIndex], op, out var res)) {
-                            return res;
+                        var ourData = _data[ourIndex];
+                        var otherData = other._data[otherIndex];
+                        if (!PythonOps.IsOrEqualsRetBool(context, ourData, otherData)) {
+                            return PythonOps.RichCompare(context, ourData, otherData, op);
                         }
 
                         // advance both indexes

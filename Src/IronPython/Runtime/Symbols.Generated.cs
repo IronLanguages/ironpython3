@@ -71,7 +71,6 @@ namespace IronPython.Runtime {
                 case PythonOperationKind.AbsoluteValue: return "__abs__";
                 case PythonOperationKind.DivMod: return "__divmod__";
                 case PythonOperationKind.ReverseDivMod: return "__rdivmod__";
-                case PythonOperationKind.Compare: return "__cmp__";
 
                 default:
                     throw new InvalidOperationException(op.ToString());

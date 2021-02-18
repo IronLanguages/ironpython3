@@ -72,7 +72,6 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, object, object>>[] _newUnarySites;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>>[] _newTernarySites;
 
-        private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<AttrKey, CallSite<Func<CallSite, object, object, object>>> _setAttrSites;
         private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, object>> _metaClassSite;
@@ -2159,27 +2158,6 @@ namespace IronPython.Runtime {
 
         internal static bool TryInvokeTernaryOperator(CodeContext/*!*/ context, TernaryOperators oper, object target, object value1, object value2, out object res)
             => context.LanguageContext.InvokeOperatorWorker(context, oper, target, value1, value2, out res);
-
-        internal CallSite<Func<CallSite, object, object, int>> CompareSite {
-            get {
-                if (_compareSite == null) {
-                    Interlocked.CompareExchange(ref _compareSite,
-                        MakeSortCompareSite(),
-                        null
-                    );
-                }
-
-                return _compareSite;
-            }
-        }
-
-        internal CallSite<Func<CallSite, object, object, int>> MakeSortCompareSite() {
-            return CallSite<Func<CallSite, object, object, int>>.Create(
-                Operation(
-                    PythonOperationKind.Compare
-                )
-            );
-        }
 
         internal void SetAttr(CodeContext/*!*/ context, object o, string name, object value) {
             CallSite<Func<CallSite, object, object, object>> site;

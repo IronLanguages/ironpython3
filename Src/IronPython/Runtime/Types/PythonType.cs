@@ -63,7 +63,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private InstanceCreator _instanceCtor;              // creates instances
         private CallSite<Func<CallSite, object, int>> _hashSite;
         private CallSite<Func<CallSite, object, object, bool>> _eqSite;
-        private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<CallSignature, LateBoundInitBinder> _lateBoundInitBinders;
         private string[] _optimizedInstanceNames;           // optimized names stored in a custom dictionary
         private int _optimizedInstanceVersion;
@@ -918,18 +917,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             return _eqSite.Target(_eqSite, self, other);
-        }
-
-        internal int Compare(object self, object other) {
-            if (_compareSite == null) {
-                Interlocked.CompareExchange(
-                    ref _compareSite,
-                    Context.MakeSortCompareSite(),
-                    null
-                );
-            }
-
-            return _compareSite.Target(_compareSite, self, other);
         }
 
         internal CallSite<Func<CallSite, object, CodeContext, object>> GetTryGetMemberSite(

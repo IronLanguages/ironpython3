@@ -187,10 +187,6 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.AbsoluteValue:
                     res = BindingHelpers.AddPythonBoxing(MakeUnaryOperation(operation, args[0], "__abs__", null));
                     break;
-                case PythonOperationKind.Compare:
-                    res = MakeSortComparisonRule(args, operation, operation.Operation);
-                    Debug.Assert(res.LimitType == typeof(int));
-                    break;
                 case PythonOperationKind.GetEnumeratorForIteration:
                     res = MakeEnumeratorOperation(operation, args[0]);
                     break;
@@ -1019,189 +1015,8 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        /// <summary>
-        /// Makes the comparison rule which returns an int (-1, 0, 1).  TODO: Better name?
-        /// </summary>
-        private static DynamicMetaObject/*!*/ MakeSortComparisonRule(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op) {
-            RestrictTypes(types);
-
-            DynamicMetaObject fastPath = FastPathCompare(types);
-            if (fastPath != null) {
-                return fastPath;
-            }
-
-            // Python compare semantics: 
-            //      if the types are the same invoke __cmp__ first.
-            //      If __cmp__ is not defined or the types are different:
-            //          try rich comparisons (eq, lt, gt, etc...) 
-            //      If the types are not the same and rich cmp didn't work finally try __cmp__
-            //      If __cmp__ isn't defined return a comparison based upon the types.
-            //
-            // Along the way we try both forward and reverse versions (try types[0] and then
-            // try types[1] reverse version).  For these comparisons __cmp__ and __eq__ are their
-            // own reversals and __gt__ is the opposite of __lt__.
-
-            // collect all the comparison methods, most likely we won't need them all.
-            DynamicMetaObject[] rTypes = new DynamicMetaObject[] { types[1], types[0] };
-            
-            PythonContext state = PythonContext.GetPythonContext(operation);
-            SlotOrFunction cfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
-            SlotOrFunction rcfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
-            SlotOrFunction eqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", types);
-            SlotOrFunction reqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", rTypes);
-            SlotOrFunction ltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", types);
-            SlotOrFunction gtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", types);
-            SlotOrFunction rltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", rTypes);
-            SlotOrFunction rgtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", rTypes);
-
-            // inspect forward and reverse versions so we can pick one or both.
-            SlotOrFunction cTarget, rcTarget, eqTarget, reqTarget, ltTarget, rgtTarget, gtTarget, rltTarget;
-            SlotOrFunction.GetCombinedTargets(cfunc, rcfunc, out cTarget, out rcTarget);
-            SlotOrFunction.GetCombinedTargets(eqfunc, reqfunc, out eqTarget, out reqTarget);
-            SlotOrFunction.GetCombinedTargets(ltfunc, rgtfunc, out ltTarget, out rgtTarget);
-            SlotOrFunction.GetCombinedTargets(gtfunc, rltfunc, out gtTarget, out rltTarget);
-
-            PythonType xType = MetaPythonObject.GetPythonType(types[0]);
-            PythonType yType = MetaPythonObject.GetPythonType(types[1]);
-
-            // now build the rule from the targets.
-            // bail if we're comparing to null and the rhs can't do anything special...
-            if (xType.IsNull) {
-                if (yType.IsNull) {
-                    return new DynamicMetaObject(
-                        AstUtils.Constant(0),
-                        BindingRestrictions.Combine(types)
-                    );
-                } else if (yType.UnderlyingSystemType.IsPrimitive || yType.UnderlyingSystemType == typeof(BigInteger)) {
-                    return new DynamicMetaObject(
-                        AstUtils.Constant(-1),
-                        BindingRestrictions.Combine(types)
-                    );
-                }
-            }
-
-            ConditionalBuilder bodyBuilder = new ConditionalBuilder(operation);
-
-            bool tryRich = true, more = true;
-            if (xType == yType && cTarget != SlotOrFunction.Empty) {
-                more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder, typeof(int));
-
-                // try __cmp__ backwards for new-style classes and don't fallback to
-                // rich comparisons if available
-                more = more && MakeOneCompareGeneric(rcTarget, true, types, MakeCompareReverse, bodyBuilder, typeof(int));
-                tryRich = false;
-            }
-
-            if (tryRich && more) {
-                // try the >, <, ==, !=, >=, <=.  These don't get short circuited using the more logic
-                // because they don't give a definitive answer even if they return bool.  Only if they
-                // return true do we know to return 0, -1, or 1.
-                // try eq
-                MakeOneCompareGeneric(eqTarget, false, types, MakeCompareToZero, bodyBuilder, typeof(int));
-                MakeOneCompareGeneric(reqTarget, true, types, MakeCompareToZero, bodyBuilder, typeof(int));
-
-                // try less than & reverse
-                MakeOneCompareGeneric(ltTarget, false, types, MakeCompareToNegativeOne, bodyBuilder, typeof(int));
-                MakeOneCompareGeneric(rgtTarget, true, types, MakeCompareToNegativeOne, bodyBuilder, typeof(int));
-
-                // try greater than & reverse
-                MakeOneCompareGeneric(gtTarget, false, types, MakeCompareToOne, bodyBuilder, typeof(int));
-                MakeOneCompareGeneric(rltTarget, true, types, MakeCompareToOne, bodyBuilder, typeof(int));
-            }
-
-            if (xType != yType) {
-                more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder, typeof(int));
-
-                more = more && MakeOneCompareGeneric(rcTarget, true, types, MakeCompareReverse, bodyBuilder, typeof(int));
-            }
-
-            if (more) {
-                // fall back to compare types
-                bodyBuilder.FinishCondition(MakeFallbackCompare(operation, op, types), typeof(int));
-            }
-
-            return bodyBuilder.GetMetaObject(types);
-        }
-
-        private static DynamicMetaObject FastPathCompare(DynamicMetaObject/*!*/[] types) {
-            if (types[0].GetLimitType() == types[1].GetLimitType()) {
-                // fast paths for comparing some types which don't define __cmp__
-                if (types[0].GetLimitType() == typeof(double)) {
-                    types[0] = types[0].Restrict(typeof(double));
-                    types[1] = types[1].Restrict(typeof(double));
-
-                    return new DynamicMetaObject(
-                        Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareFloats)),
-                            types[0].Expression,
-                            types[1].Expression
-                        ),
-                        BindingRestrictions.Combine(types)
-                    );
-                }
-            }
-            return null;
-        }
-
-        private static void MakeCompareToZero(ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition, Expression/*!*/ expr, bool reverse, Type retType) {
-            MakeValueCheck(0, expr, bodyBuilder, retCondition);
-        }
-
-        private static void MakeCompareToOne(ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition, Expression/*!*/ expr, bool reverse, Type retType) {
-            MakeValueCheck(1, expr, bodyBuilder, retCondition);
-        }
-
-        private static void MakeCompareToNegativeOne(ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition, Expression/*!*/ expr, bool reverse, Type retType) {
-            MakeValueCheck(-1, expr, bodyBuilder, retCondition);
-        }
-
-        private static void MakeValueCheck(int val, Expression retValue, ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition) {
-            if (retValue.Type != typeof(bool)) {
-                retValue = DynamicExpression.Dynamic(
-                    PythonContext.GetPythonContext(bodyBuilder.Action).Convert(
-                        typeof(bool),
-                        ConversionResultKind.ExplicitCast
-                    ),
-                    typeof(bool),
-                    retValue
-                );
-            }
-            if (retCondition != null) {
-                retValue = Ast.AndAlso(retCondition, retValue);
-            }
-
-            bodyBuilder.AddCondition(
-                retValue,
-                AstUtils.Constant(val)
-            );
-        }
-
-        private static BinaryExpression/*!*/ ReverseCompareValue(Expression/*!*/ retVal) {
-            return Ast.Multiply(
-                AstUtils.Convert(
-                    retVal,
-                    typeof(int)
-                ),
-                AstUtils.Constant(-1)
-            );
-        }
-
-        private static void MakeCompareReverse(ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition, Expression/*!*/ expr, bool reverse, Type retType) {
-            Expression res = expr;
-            if (reverse) {
-                res = ReverseCompareValue(expr);
-            }
-
-            MakeCompareReturn(bodyBuilder, retCondition, res, reverse, retType);
-        }
-
-        private static void MakeCompareTest(PythonOperationKind op, ConditionalBuilder/*!*/ bodyBuilder, Expression retCond, Expression/*!*/ expr, bool reverse, Type retType) {
-            MakeCompareReturn(bodyBuilder, retCond, GetCompareTest(op, expr, reverse), reverse, retType);
-        }
-
         private static Expression/*!*/ MakeFallbackCompare(DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind op, DynamicMetaObject[] types) {
-            if (op == PythonOperationKind.Equal || op == PythonOperationKind.NotEqual ||
-                    op == PythonOperationKind.Compare) {
+            if (op == PythonOperationKind.Equal || op == PythonOperationKind.NotEqual) {
                 return Ast.Call(
                     GetComparisonFallbackMethod(op),
                     PythonContext.GetCodeContext(binder),
@@ -1217,26 +1032,9 @@ namespace IronPython.Runtime.Binding {
                 switch (op) {
                     case PythonOperationKind.Equal: name = nameof(PythonOps.CompareTypesEqual); break;
                     case PythonOperationKind.NotEqual: name = nameof(PythonOps.CompareTypesNotEqual); break;
-                    case PythonOperationKind.Compare: name = nameof(PythonOps.CompareTypes); break;
                     default: throw new InvalidOperationException();
                 }
                 return typeof(PythonOps).GetMethod(name);
-            }
-        }
-
-        private static Expression GetCompareTest(PythonOperationKind op, Expression expr, bool reverse) {
-            if (expr.Type == typeof(int)) {
-                // fast path, just do a compare in IL
-                return GetCompareNode(op, reverse, expr);
-            } else {
-                return GetCompareExpression(
-                    op,
-                    reverse,
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.CompareToZero)),
-                        AstUtils.Convert(expr, typeof(object))
-                    )
-                );
             }
         }
 

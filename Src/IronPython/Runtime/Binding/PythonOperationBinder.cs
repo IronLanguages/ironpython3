@@ -51,14 +51,6 @@ namespace IronPython.Runtime.Binding {
                         }
                     }
                     break;
-                case PythonOperationKind.Compare:
-                    if (CompilerHelpers.GetType(args[0]) == typeof(string) &&
-                        CompilerHelpers.GetType(args[1]) == typeof(string)) {
-                        if (typeof(T) == typeof(Func<CallSite, object, object, int>)) {
-                            return (T)(object)new Func<CallSite, object, object, int>(CompareStrings);
-                        }
-                    }
-                    break;
                 case PythonOperationKind.GetEnumeratorForIteration:
                     if (CompilerHelpers.GetType(args[0]) == typeof(PythonList)) {
                         if (typeof(T) == typeof(Func<CallSite, PythonList, KeyValuePair<IEnumerator, IDisposable>>)) {
@@ -222,15 +214,6 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
         }
 
-        private int CompareStrings(CallSite site, object arg0, object arg1) {
-            if (arg0 != null && arg0.GetType() == typeof(string) &&
-                arg1 != null && arg1.GetType() == typeof(string)) {
-                return StringOps.Compare((string)arg0, (string)arg1);
-            }
-
-            return ((CallSite<Func<CallSite, object, object, int>>)site).Update(site, arg0, arg1);
-        }
-
         public PythonOperationKind Operation {
             get {
                 return _operation;
@@ -243,7 +226,6 @@ namespace IronPython.Runtime.Binding {
         public override Type ReturnType {
             get {
                 switch (Operation) {
-                    case PythonOperationKind.Compare: return typeof(int);
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);
                     case PythonOperationKind.Contains: return typeof(bool);

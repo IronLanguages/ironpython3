@@ -67,7 +67,6 @@ namespace IronPython.Runtime.Types {
             pyOp["__getitem__"] = PythonOperationKind.GetItem;
             pyOp["__setitem__"] = PythonOperationKind.SetItem;
             pyOp["__delitem__"] = PythonOperationKind.DeleteItem;
-            pyOp["__cmp__"] = PythonOperationKind.Compare;
             pyOp["__pos__"] = PythonOperationKind.Positive;
             pyOp["__neg__"] = PythonOperationKind.Negate;
             pyOp["__invert__"] = PythonOperationKind.OnesComplement;

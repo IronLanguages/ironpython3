@@ -563,30 +563,13 @@ namespace IronPython.Runtime.Operations {
                 throw TypeErrorForBinaryOp(PythonProtocol.GetOperatorDisplay(op), x, y);
             }
             return res;
-        }
 
-        public static object CompareEqual(int res) {
-            return res == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
+            static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object? self, object? other) {
+                if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, Symbols.OperatorToSymbol(op), out object ret))
+                    return ret;
 
-        public static object CompareNotEqual(int res) {
-            return res == 0 ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
-        }
-
-        public static object CompareGreaterThan(int res) {
-            return res > 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        public static object CompareGreaterThanOrEqual(int res) {
-            return res >= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        public static object CompareLessThan(int res) {
-            return res < 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
-        }
-
-        public static object CompareLessThanOrEqual(int res) {
-            return res <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+                return NotImplementedType.Value;
+            }
         }
 
         public static bool CompareTypesEqual(CodeContext/*!*/ context, object? x, object? y) {
@@ -595,46 +578,6 @@ namespace IronPython.Runtime.Operations {
 
         public static bool CompareTypesNotEqual(CodeContext/*!*/ context, object? x, object? y) {
             return !CompareTypesEqual(context, x, y);
-        }
-
-        public static int CompareTypes(CodeContext/*!*/ context, object? x, object? y) {
-            if (x == null && y == null) return 0;
-            if (x == null) return -1;
-            if (y == null) return 1;
-
-            int diff;
-
-            if (DynamicHelpers.GetPythonType(x) != DynamicHelpers.GetPythonType(y)) {
-                string name1 = PythonTypeOps.GetName(x);
-                string name2 = PythonTypeOps.GetName(y);
-                diff = string.CompareOrdinal(name1, name2);
-                if (diff == 0) {
-                    // if the types are different but have the same name compare based upon their types. 
-                    diff = (int)(IdDispenser.GetId(DynamicHelpers.GetPythonType(x)) - IdDispenser.GetId(DynamicHelpers.GetPythonType(y)));
-                }
-            } else {
-                diff = (int)(IdDispenser.GetId(x) - IdDispenser.GetId(y));
-            }
-
-            if (diff < 0) return -1;
-            if (diff == 0) return 0;
-            return 1;
-        }
-
-        private static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object? self, object? other) {
-            if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, Symbols.OperatorToSymbol(op), out object ret))
-                return ret;
-
-            return NotImplementedType.Value;
-        }
-
-        public static int CompareToZero(object? value) {
-            if (Converter.TryConvertToDouble(value, out double val)) {
-                if (val > 0) return 1;
-                if (val < 0) return -1;
-                return 0;
-            }
-            throw PythonOps.TypeErrorForBadInstance("an integer is required (got {0})", value);
         }
 
         internal static bool ArraysEqual(CodeContext context, ReadOnlySpan<object?> data0, ReadOnlySpan<object?> data1) {
@@ -3335,10 +3278,6 @@ namespace IronPython.Runtime.Operations {
 
         public static Delegate GetDelegate(CodeContext/*!*/ context, object target, Type type) {
             return context.LanguageContext.DelegateCreator.GetDelegate(target, type);
-        }
-
-        public static int CompareFloats(double self, double other) {
-            return DoubleOps.Compare(self, other);
         }
 
         [Obsolete("Use Bytes(IList<byte>) instead.")]

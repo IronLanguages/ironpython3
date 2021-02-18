@@ -396,7 +396,6 @@ namespace IronPython.Runtime.Types {
                                     if (opInfo.Operator == PythonOperationKind.Mod ||
                                         opInfo.Operator == PythonOperationKind.RightShift ||
                                         opInfo.Operator == PythonOperationKind.LeftShift ||
-                                        opInfo.Operator == PythonOperationKind.Compare ||
                                         opInfo.Operator == PythonOperationKind.TrueDivide) {
                                         // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                         continue;
@@ -1698,7 +1697,7 @@ namespace IronPython.Runtime.Types {
         /// Filters out methods which are present on standard .NET types but shouldn't be there in Python
         /// </summary>
         internal static bool IncludeOperatorMethod(Type/*!*/ t, PythonOperationKind op)
-            => op != PythonOperationKind.Compare;
+            => true; // TODO: get rid of this method?
 
         /// <summary>
         /// When private binding is enabled we can have a collision between the private Event

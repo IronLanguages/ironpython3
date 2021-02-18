@@ -122,8 +122,6 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.DeleteItem, "del_Item", "DeleteItem"));        // not defined
 
             // DLR Extended operators:
-            res.Add(new OperatorMapping(PythonOperationKind.Compare, "op_Compare", "Compare", typeof(int)));        // not defined
-
             res.Add(new OperatorMapping(PythonOperationKind.CallSignatures, "GetCallSignatures", null));
             res.Add(new OperatorMapping(PythonOperationKind.Documentation, "GetDocumentation", null));
             res.Add(new OperatorMapping(PythonOperationKind.IsCallable, "IsCallable", null));

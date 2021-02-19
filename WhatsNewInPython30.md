@@ -11,9 +11,9 @@ Views And Iterators Instead Of Lists
 
 Ordering Comparisons
 ==============
-- [ ] The ordering comparison operators (`<`, `<=`, `>=`, `>`) raise a `TypeError` exception when the operands don't have a meaningful natural ordering. Thus, expressions like `1 < ''`, `0 > None` or `len <= len` are no longer valid, and e.g. `None < None` raises `TypeError` instead of returning `False`. A corollary is that sorting a heterogeneous list no longer makes sense - all the elements must be comparable to each other. Note that this does not apply to the `==` and `!=` operators: objects of different incomparable types always compare unequal to each other.
+- [x] The ordering comparison operators (`<`, `<=`, `>=`, `>`) raise a `TypeError` exception when the operands don't have a meaningful natural ordering. Thus, expressions like `1 < ''`, `0 > None` or `len <= len` are no longer valid, and e.g. `None < None` raises `TypeError` instead of returning `False`. A corollary is that sorting a heterogeneous list no longer makes sense - all the elements must be comparable to each other. Note that this does not apply to the `==` and `!=` operators: objects of different incomparable types always compare unequal to each other.
 - [x] `builtin.sorted()` and `list.sort()` no longer accept the `cmp` argument providing a comparison function. Use the `key` argument instead. N.B. the `key` and `reverse` arguments are now "keyword-only"
-- [ ] The `cmp()` function should be treated as gone, and the `__cmp__()` special method is no longer supported. Use `__lt__()` for sorting, `__eq__()` with `__hash__()`, and other rich comparisons as needed. (If you really need the `cmp()` functionality, you could use the expression `(a > b) - (a < b)` as the equivalent for` cmp(a, b)`.)
+- [x] The `cmp()` function should be treated as gone, and the `__cmp__()` special method is no longer supported. Use `__lt__()` for sorting, `__eq__()` with `__hash__()`, and other rich comparisons as needed. (If you really need the `cmp()` functionality, you could use the expression `(a > b) - (a < b)` as the equivalent for` cmp(a, b)`.)
 
 Integers
 =====
@@ -43,11 +43,11 @@ Text Vs. Data Instead Of Unicode Vs. 8-bit
 
 New Syntax
 ========
-- [ ] [PEP 3107][]: Function argument and return value annotations. This provides a standardized way of annotating a function's parameters and return value. There are no semantics attached to such annotations except that they can be introspected at runtime using the `__annotations__` attribute. The intent is to encourage experimentation through metaclasses, decorators or frameworks.
+- [x] [PEP 3107][]: Function argument and return value annotations. This provides a standardized way of annotating a function's parameters and return value. There are no semantics attached to such annotations except that they can be introspected at runtime using the `__annotations__` attribute. The intent is to encourage experimentation through metaclasses, decorators or frameworks.
 - [ ] [PEP 3102][]: Keyword-only arguments. Named parameters occurring after `*args` in the parameter list must be specified using keyword syntax in the call. You can also use a bare `*` in the parameter list to indicate that you don't accept a variable-length argument list, but you do have keyword-only arguments.
 - [ ] Keyword arguments are allowed after the list of base classes in a class definition. This is used by the new convention for specifying a metaclass (see next section), but can be used for other purposes as well, as long as the metaclass supports it.
 - [x] [PEP 3104][]: `nonlocal` statement. Using `nonlocal x` you can now assign directly to a variable in an outer (but non-`global`) scope. `nonlocal` is a new reserved word.
-- [ ] [PEP 3132][]: Extended Iterable Unpacking. You can now write things like `a, b, *rest = some_sequence`. And even `*rest, a = stuff`. The `rest` object is always a (possibly empty) list; the right-hand side may be any iterable
+- [x] [PEP 3132][]: Extended Iterable Unpacking. You can now write things like `a, b, *rest = some_sequence`. And even `*rest, a = stuff`. The `rest` object is always a (possibly empty) list; the right-hand side may be any iterable
 - [x] Dictionary comprehensions: `{k: v for k, v in stuff}` means the same thing as `dict(stuff)` but is more flexible. (This is [PEP 0274][] vindicated. :-)
 - [x] Set literals, e.g. `{1, 2}`. Note that `{}` is an empty dictionary; use `set()` for an empty set. Set comprehensions are also supported; e.g., `{x for x in stuff}` means the same thing as `set(stuff)` but is more flexible.
 - [x] New octal literals, e.g. `0o720` (already in 2.6). The old octal literals (`0720`) are gone.
@@ -106,7 +106,7 @@ Changes To Exceptions
 
 Operators And Special Methods
 ===============
-- [ ] `!=` now returns the opposite of `==`, unless `==` returns `NotImplemented`.
+- [x] `!=` now returns the opposite of `==`, unless `==` returns `NotImplemented`.
 - [x] The concept of "unbound methods" has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
 - [x] `__getslice__()`, `__setslice__()` and `__delslice__()` were killed. The syntax `a[i:j]` now translates to `a.__getitem__(slice(i, j))` (or `__setitem__()` or `__delitem__()`, when used as an assignment or deletion target, respectively).
 - [x] [PEP 3114][]: the standard `next()` method has been renamed to `__next__()`.
@@ -117,7 +117,7 @@ Operators And Special Methods
 
 Builtins
 =====
-- [ ] [PEP 3135][]: New `super()`. You can now invoke `super()` without arguments and (assuming this is in a regular instance method defined inside a class statement) the right class and instance will automatically be chosen. With arguments, the behavior of `super()` is unchanged.
+- [x] [PEP 3135][]: New `super()`. You can now invoke `super()` without arguments and (assuming this is in a regular instance method defined inside a class statement) the right class and instance will automatically be chosen. With arguments, the behavior of `super()` is unchanged.
 - [x] [PEP 3111][]: `raw_input()` was renamed to `input()`. That is, the new `input()` function reads a line from `sys.stdin` and returns it with the trailing newline stripped. It raises `EOFError` if the input is terminated prematurely. To get the old behavior of `input()`, use `eval(input())`.
 - [x] A new builtin `next()` was added to call the `__next__()` method on an object.
 - [x] Moved `intern()` to `sys.intern()`

@@ -1223,7 +1223,7 @@ namespace IronPython.Modules {
         internal static IList<byte> GetStringValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
             if (val is IList<byte> res) return res;
-            throw Error(context, "expected string value");
+            throw Error(context, "expected bytes value");
         }
 
         internal static object GetValue(CodeContext/*!*/ context, int index, object[] args) {

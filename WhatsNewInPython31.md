@@ -2,6 +2,11 @@
 
 https://docs.python.org/3/whatsnew/3.1.html
 
+PEPs
+====
+- [x] [PEP 372][]: Ordered Dictionaries
+- [x] [PEP 378][]: Format Specifier for Thousands Separator
+
 Other Language Changes
 =======================
 - [ ] Directories and zip archives containing a `__main__.py` file can now be executed directly by passing their name to the interpreter. The directory/zipfile is automatically inserted as the first entry in `sys.path`.
@@ -9,7 +14,7 @@ Other Language Changes
 - [x] The fields in `format()` strings can now be automatically numbered.
 - [x] The `string.maketrans()` function is deprecated and is replaced by new static methods, `bytes.maketrans()` and `bytearray.maketrans()`. This change solves the confusion around which types were supported by the string module. Now, `str`, `bytes`, and `bytearray` each have their own `maketrans` and `translate` methods with intermediate translation tables of the appropriate type.
 - [x] The syntax of the `with` statement now allows multiple context managers in a single statement.
-- [ ] `round(x, n)` now returns an integer if `x` is an integer. Previously it returned a `float`.
+- [x] `round(x, n)` now returns an integer if `x` is an integer. Previously it returned a `float`.
 - [ ] Python now uses David Gay's algorithm for finding the shortest floating point representation that doesn't change its value.
 
 New, Improved, and Deprecated Modules
@@ -32,3 +37,6 @@ New, Improved, and Deprecated Modules
 - [ ] The `nntplib` and `imaplib` modules now support IPv6.
 - [ ] The `pickle` module has been adapted for better interoperability with Python 2.x when used with protocol 2 or lower. The reorganization of the standard library changed the formal reference for many objects. For example, `__builtin__.set` in Python 2 is called `builtins.set` in Python 3. This change confounded efforts to share data between different versions of Python. But now when protocol 2 or lower is selected, the pickler will automatically use the old Python 2 names for both loading and dumping. This remapping is turned-on by default but can be disabled with the `fix_imports` option. An unfortunate but unavoidable side-effect of this change is that protocol 2 pickles produced by Python 3.1 won't be readable with Python 3.0. The latest pickle protocol, protocol 3, should be used when migrating data between Python 3.x implementations, as it doesn't attempt to remain compatible with Python 2.x.
 - [ ] A new module, `importlib` was added. It provides a complete, portable, pure Python reference implementation of the `import` statement and its counterpart, the `__import__()` function. It represents a substantial step forward in documenting and defining the actions that take place during imports.
+
+[PEP 372]: https://python.org/dev/peps/pep-0372
+[PEP 378]: https://python.org/dev/peps/pep-0378

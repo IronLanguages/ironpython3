@@ -12,11 +12,11 @@ PEPs
 - [ ] [PEP 3151][]: Reworking the OS and IO exception hierarchy
 - [ ] [PEP 380][]: Syntax for Delegating to a Subgenerator
 - [ ] [PEP 409][]: Suppressing exception context
-- [ ] [PEP 414][]: Explicit Unicode literals
+- [x] [PEP 414][]: Explicit Unicode literals
 - [ ] [PEP 3155][]: Qualified name for classes and functions
 - [ ] [PEP 412][]: Key-Sharing Dictionary
 - [ ] [PEP 362][]: Function Signature Object
-- [ ] [PEP 421][]: Adding `sys.implementation`
+- [x] [PEP 421][]: Adding `sys.implementation`
 
 Using `importlib` as the Implementation of Import
 ===============================================

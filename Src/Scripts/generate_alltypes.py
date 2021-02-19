@@ -323,12 +323,6 @@ def write_rich_comp_general(func, cw, body, name, ty, **kws):
         else:
             func(cw, body, name, ty, **kws)
 
-def write_compare(cw, body, name, ty, **kws):
-    def writer(cw, body, name, ty, **kws):
-        write_binop_raw(cw, body, 'Compare', ty, **kws)
-
-    write_binop1_general(writer, cw, body, name, ty, **kws)
-
 def gen_binaryops(cw, ty):
     cw.writeline()
     cw.write("// Binary Operations - Arithmetic")
@@ -377,7 +371,6 @@ def gen_binaryops(cw, ty):
 
         cw.writeline()
         cw.write("// Binary Operations - Comparisons")
-        write_compare(cw, simple_compare_body, 'Compare', ty, return_type='int')
         for symbol, name in [('<', 'LessThan'), ('<=', 'LessThanOrEqual'), ('>', 'GreaterThan'), ('>=', 'GreaterThanOrEqual'), ('==', 'Equals'), ('!=', 'NotEquals')]:
             write_rich_comp(cw, simple_body, name, ty, symbol=symbol, return_type='bool')
 

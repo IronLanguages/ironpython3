@@ -1448,11 +1448,6 @@ namespace IronPython.Runtime.Operations {
             return new PythonStrIterator(s);
         }
 
-        internal static int Compare(string self, string obj) {
-            int ret = string.CompareOrdinal(self, obj);
-            return ret == 0 ? 0 : (ret < 0 ? -1 : +1);
-        }
-
         public static object __getnewargs__(CodeContext/*!*/ context, [NotNull]string self) {
             // Cast self to object to avoid exception caused by trying to access SystemState on DefaultContext
             return PythonTuple.MakeTuple(StringOps.__new__(context, TypeCache.String, (object)self));

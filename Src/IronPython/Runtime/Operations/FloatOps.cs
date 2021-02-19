@@ -635,21 +635,11 @@ namespace IronPython.Runtime.Operations {
             return Sign(sign) * Math.Abs(value);
         }
 
-        internal static int Compare(double x, double y) {
-            if (Double.IsInfinity(x) && Double.IsNaN(y)) {
-                return 1;
-            } else if (Double.IsNaN(x) && Double.IsInfinity(y)) {
-                return -1;
-            }
-
-            return x > y ? 1 : x == y ? 0 : -1;
-        }
-
-        internal static int Compare(double x, BigInteger y) {
+        private static int Compare(double x, BigInteger y) {
             return -Compare(y, x);
         }
 
-        internal static int Compare(BigInteger x, double y) {
+        private static int Compare(BigInteger x, double y) {
             if (double.IsNaN(y) || double.IsPositiveInfinity(y)) {
                 return -1;
             } else if (y == Double.NegativeInfinity) {
@@ -695,14 +685,9 @@ namespace IronPython.Runtime.Operations {
             return Compare(x, y) != 0;
         }
 
-        internal static int Compare(double x, decimal y) {
+        private static int Compare(double x, decimal y) {
             if (x > (double)decimal.MaxValue) return +1;
-#if ANDROID // TODO: ?
-            const decimal minValue = -79228162514264337593543950335m;
-            if (x < (double)minValue) return -1;
-#else
             if (x < (double)decimal.MinValue) return -1;
-#endif
             return ((decimal)x).CompareTo(y);
         }
 

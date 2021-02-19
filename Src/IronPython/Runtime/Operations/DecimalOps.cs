@@ -31,19 +31,19 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEquals(decimal x, decimal y) => x != y;
 
         [SpecialName]
-        public static bool LessThan(decimal x, BigInteger y) => __cmp__(x, y) < 0;
+        public static bool LessThan(decimal x, BigInteger y) => Compare(x, y) < 0;
         [SpecialName]
-        public static bool LessThanOrEqual(decimal x, BigInteger y) => __cmp__(x, y) <= 0;
+        public static bool LessThanOrEqual(decimal x, BigInteger y) => Compare(x, y) <= 0;
         [SpecialName]
-        public static bool GreaterThan(decimal x, BigInteger y) => __cmp__(x, y) > 0;
+        public static bool GreaterThan(decimal x, BigInteger y) => Compare(x, y) > 0;
         [SpecialName]
-        public static bool GreaterThanOrEqual(decimal x, BigInteger y) => __cmp__(x, y) >= 0;
+        public static bool GreaterThanOrEqual(decimal x, BigInteger y) => Compare(x, y) >= 0;
         [SpecialName]
-        public static bool Equals(decimal x, BigInteger y) => __cmp__(x, y) == 0;
+        public static bool Equals(decimal x, BigInteger y) => Compare(x, y) == 0;
         [SpecialName]
-        public static bool NotEquals(decimal x, BigInteger y) => __cmp__(x, y) != 0;
+        public static bool NotEquals(decimal x, BigInteger y) => Compare(x, y) != 0;
 
-        internal static int __cmp__(decimal x, BigInteger y) {
+        private static int Compare(decimal x, BigInteger y) {
             BigInteger bx = (BigInteger)x;
             if (bx == y) {
                 decimal mod = x % 1;

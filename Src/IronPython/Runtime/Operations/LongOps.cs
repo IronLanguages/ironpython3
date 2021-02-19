@@ -505,11 +505,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static int Compare(BigInteger x, BigInteger y) {
-            return x.CompareTo(y);
-        }
-
-        [SpecialName]
         public static bool LessThan(BigInteger x, BigInteger y) => x < y;
         [SpecialName]
         public static bool LessThanOrEqual(BigInteger x, BigInteger y) => x <= y;
@@ -521,16 +516,6 @@ namespace IronPython.Runtime.Operations {
         public static bool Equals(BigInteger x, BigInteger y) => x == y;
         [SpecialName]
         public static bool NotEquals(BigInteger x, BigInteger y) => x != y;
-
-        [SpecialName]
-        public static int Compare(BigInteger x, int y) {
-            int ix;
-            if (x.AsInt32(out ix)) {                
-                return ix == y ? 0 : ix > y ? 1 : -1;
-            }
-
-            return BigInteger.Compare(x, y);
-        }
 
         [SpecialName]
         public static bool LessThan(BigInteger x, int y) => x < y;
@@ -546,16 +531,6 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEquals(BigInteger x, int y) => x != y;
 
         [SpecialName]
-        public static int Compare(BigInteger x, uint y) {
-            uint ix;
-            if (x.AsUInt32(out ix)) {
-                return ix == y ? 0 : ix > y ? 1 : -1;
-            }
-
-            return BigInteger.Compare(x, y);
-        }
-
-        [SpecialName]
         public static bool LessThan(BigInteger x, uint y) => x < y;
         [SpecialName]
         public static bool LessThanOrEqual(BigInteger x, uint y) => x <= y;
@@ -567,26 +542,6 @@ namespace IronPython.Runtime.Operations {
         public static bool Equals(BigInteger x, uint y) => x == y;
         [SpecialName]
         public static bool NotEquals(BigInteger x, uint y) => x != y;
-
-        [SpecialName]
-        public static int Compare(BigInteger x, double y) {
-            return -((int)DoubleOps.Compare(y, x));
-        }
-
-        [SpecialName]
-        public static int Compare(BigInteger x, [NotNull]Extensible<double> y) {
-            return -((int)DoubleOps.Compare(y.Value, x));
-        }
-
-        [SpecialName]
-        public static int Compare(BigInteger x, decimal y) {            
-            return -DecimalOps.__cmp__(y, x);
-        }
-
-        [SpecialName]
-        public static int Compare(BigInteger x, bool y) {
-            return Compare(x, y ? 1 : 0);
-        }
 
         public static BigInteger __long__(BigInteger self) {
             return self;

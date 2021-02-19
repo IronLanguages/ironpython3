@@ -54,8 +54,9 @@ namespace IronPython.Runtime.Types {
         private void CalculateDescriptorInfo() {
             PythonType pt = DynamicHelpers.GetPythonType(Value);
             if (!pt.IsSystemType) {
-                _descVersion = pt.Version;
-                if (!pt.TryResolveSlot(pt.Context.SharedClsContext, "__get__", out _desc)) {
+                if (pt.TryResolveSlot(pt.Context.SharedClsContext, "__get__", out _desc)) {
+                    _descVersion = pt.Version;
+                } else {
                     _descVersion = UserDescriptorFalse;
                 }
             } else {

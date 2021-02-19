@@ -220,10 +220,10 @@ namespace IronPython.Runtime {
 #if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
             _resolveHolder = new AssemblyResolveHolder(this);
             try {
-                Assembly entryAssembly = Assembly.GetEntryAssembly();
+                string entry = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
                 // Can be null if called from unmanaged code (VS integration scenario)
-                if (entryAssembly != null) {
-                    string entry = Path.GetDirectoryName(entryAssembly.Location);
+                // or in self-contained single file scenarios
+                if (entry != null) {
                     string lib = Path.Combine(entry, "Lib");
                     path.append(lib);
 

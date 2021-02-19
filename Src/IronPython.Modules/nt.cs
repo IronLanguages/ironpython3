@@ -2060,7 +2060,7 @@ the 'status' value."),
 #if FEATURE_NATIVE
 
         private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
-            => GetUnixError((int)Mono.Unix.Native.Syscall.GetLastError());
+            => GetUnixError((int)Mono.Unix.Native.Syscall.GetLastError(), filename, filename2);
 
         private static Exception GetUnixError(int error, string? filename = null, string? filename2 = null) {
             var msg = Mono.Unix.Native.Stdlib.strerror((Mono.Unix.Native.Errno)error);

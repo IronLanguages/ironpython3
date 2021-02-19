@@ -1060,61 +1060,6 @@ namespace IronPython.Runtime.Operations {
             return digits;
         }
 
-        private static string/*!*/ ToExponent(BigInteger/*!*/ self, bool lower, int minPrecision, int maxPrecision) {
-            Debug.Assert(minPrecision <= maxPrecision);
-
-            // get all the digits
-            string digits = self.ToString();
-
-            StringBuilder tmp = new StringBuilder();
-            tmp.Append(digits[0]);
-            
-            for (int i = 1; i < maxPrecision && i < digits.Length; i++) {
-                // append if we have a significant digit or if we are forcing a minimum precision
-                if (digits[i] != '0' || i <= minPrecision) {
-                    if (tmp.Length == 1) {
-                        // first time we've appended, add the decimal point now
-                        tmp.Append('.');
-                    }
-
-                    while (i > tmp.Length - 1) {
-                        // add any digits that we skipped before
-                        tmp.Append('0');
-                    }
-
-                    // round up last digit if necessary
-                    if (i == maxPrecision - 1 && i != digits.Length - 1 && digits[i + 1] >= '5') {
-                        tmp.Append((char)(digits[i] + 1));
-                    } else {
-                        tmp.Append(digits[i]);
-                    }
-                }
-            }
-
-            if (digits.Length <= minPrecision) {
-                if (tmp.Length == 1) {
-                    // first time we've appended, add the decimal point now
-                    tmp.Append('.');
-                }
-
-                while (minPrecision >= tmp.Length - 1) {
-                    tmp.Append('0');
-                }
-            }
-
-            tmp.Append(lower ? "e+" : "E+");
-            int digitCnt = digits.Length - 1;
-            if (digitCnt < 10) {
-                tmp.Append('0');
-                tmp.Append((char)('0' + digitCnt));
-            } else {
-                tmp.Append(digitCnt.ToString());
-            }
-
-            digits = tmp.ToString();
-            return digits;
-        }
-
         private static string/*!*/ ToDigits(BigInteger/*!*/ val, int radix, bool lower) {
             if (val.IsZero()) {
                 return "0";

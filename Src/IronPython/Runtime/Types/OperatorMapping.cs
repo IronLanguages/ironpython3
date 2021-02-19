@@ -13,13 +13,7 @@ namespace IronPython.Runtime.Types {
         private readonly PythonOperationKind _operator;
         private readonly string _name;
 
-        private OperatorMapping(PythonOperationKind op, string name, string altName) {
-            _operator = op;
-            _name = name;
-            AlternateName = altName;
-        }
-
-        private OperatorMapping(PythonOperationKind op, string name, string altName, Type alternateExpectedType) {
+        private OperatorMapping(PythonOperationKind op, string name, string altName, Type alternateExpectedType = null) {
             _operator = op;
             _name = name;
             AlternateName = altName;

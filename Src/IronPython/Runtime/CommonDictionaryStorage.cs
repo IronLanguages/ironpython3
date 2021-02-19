@@ -117,12 +117,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AddItems(object[] items) {
-            for (int i = 0; i < items.Length / 2; i++) {
-                AddNoLock(items[i * 2 + 1], items[i * 2]);
-            }
-        }
-
         /// <summary>
         /// Creates a new dictionary storage with the given set of buckets
         /// and size.  Used when cloning the dictionary storage.

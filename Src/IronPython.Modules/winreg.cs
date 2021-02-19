@@ -630,10 +630,6 @@ namespace IronPython.Modules {
                 throw new ValueErrorException("Unknown system key");
         }
 
-        private static int MapRegistryValueKind(RegistryValueKind registryValueKind) {
-            return (int)registryValueKind;
-        }
-
 #endregion
 
 

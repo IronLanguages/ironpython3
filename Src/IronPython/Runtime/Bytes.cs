@@ -891,6 +891,16 @@ namespace IronPython.Runtime {
             return new Bytes(bytes);
         }
 
+        public static Bytes operator +([NotNull] Bytes self, [NotNull] IBufferProtocol other) {
+            using var buffer = other.GetBufferNoThrow();
+            if (buffer is null) throw PythonOps.TypeError("can't concat {0} to bytes", PythonTypeOps.GetName(other));
+            var span = buffer.AsReadOnlySpan();
+            var bytes = new byte[self._bytes.Length + span.Length];
+            self._bytes.CopyTo(bytes, 0);
+            span.CopyTo(bytes.AsSpan(self._bytes.Length));
+            return new Bytes(bytes);
+        }
+
         public static Bytes operator +([NotNull]Bytes self, object? other) {
             throw PythonOps.TypeError("can't concat {0} to bytes", PythonTypeOps.GetName(other));
         }

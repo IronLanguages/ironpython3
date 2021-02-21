@@ -92,16 +92,6 @@ for documentation."""
     def test_sslwrap(self):
         print('TODO: no implementation to test yet.')
 
-    def test_SSLType(self):
-        #--Positive
-        if is_cli:
-            #https://github.com/IronLanguages/ironpython2/issues/142
-            self.assertEqual(str(_ssl.SSLType),
-                    "<class '_socket.ssl'>")
-        else:
-            self.assertEqual(str(_ssl.SSLType),
-                    "<type 'ssl.SSLContext'>")
-
     '''
     TODO: once we have a proper implementation of _ssl.sslwrap the tests below need
         to be rewritten.

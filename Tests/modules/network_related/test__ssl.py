@@ -89,14 +89,6 @@ for documentation."""
             self.fail("Please add a test for _ssl.decode_cert")
         print('TODO: no implementation to test yet.')
 
-    def test_sslwrap(self):
-        print('TODO: no implementation to test yet.')
-
-    '''
-    TODO: once we have a proper implementation of _ssl.sslwrap the tests below need
-        to be rewritten.
-    '''
-
     def test_SSLType_ssl(self):
         '''
         Should be essentially the same as _ssl.sslwrap.  It's not though and will
@@ -111,7 +103,8 @@ for documentation."""
         #sock
         s = socket.socket(socket.AF_INET)
         s.connect((SSL_URL, SSL_PORT))
-        ssl_s = _ssl.sslwrap(s, False)
+        context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
+        ssl_s = context._wrap_socket(s, False)
 
         ssl_s.shutdown()
         s.close()
@@ -126,25 +119,16 @@ for documentation."""
         '''
         s = socket.socket(socket.AF_INET)
         s.connect((SSL_URL, SSL_PORT))
+        context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
 
         #--Negative
 
         #Empty
-        self.assertRaises(TypeError, _ssl.sslwrap)
-        self.assertRaises(TypeError, _ssl.sslwrap, False)
+        self.assertRaises(TypeError, context._wrap_socket)
+        self.assertRaises(TypeError, context._wrap_socket, False)
 
         #None
-        self.assertRaises(TypeError, _ssl.sslwrap, None, False)
-
-        #s, bad keyfile
-        #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
-
-        #s, bad certfile
-        #Should throw _ssl.SSLError because both keyfile and certificate weren't specified
-
-        #s, bad keyfile, bad certfile
-        #Should throw ssl.SSLError
-        self.assertRaises(_ssl.SSLError, _ssl.sslwrap, s, False, "bad keyfile", "bad certfile")
+        self.assertRaises(TypeError, context._wrap_socket, None, False)
 
         #Cleanup
         s.close()
@@ -153,7 +137,8 @@ for documentation."""
         #--Positive
         s = socket.socket(socket.AF_INET)
         s.connect((SSL_URL, SSL_PORT))
-        ssl_s = _ssl.sslwrap(s, False)
+        context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
+        ssl_s = context._wrap_socket(s, False)
         self.assertEqual(ssl_s.issuer(), '')  #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24281
         ssl_s.do_handshake()
 
@@ -184,7 +169,8 @@ for documentation."""
         #--Positive
         s = socket.socket(socket.AF_INET)
         s.connect((SSL_URL, SSL_PORT))
-        ssl_s = _ssl.sslwrap(s, False)
+        context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
+        ssl_s = context._wrap_socket(s, False)
         self.assertEqual(ssl_s.server(), '')  #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24281
         ssl_s.do_handshake()
 
@@ -216,7 +202,8 @@ for documentation."""
         #--Positive
         s = socket.socket(socket.AF_INET)
         s.connect((SSL_URL, SSL_PORT))
-        ssl_s = _ssl.sslwrap(s, False)
+        context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
+        ssl_s = context._wrap_socket(s, False)
         ssl_s.do_handshake()
 
         self.assertIn("Writes the string s into the SSL object.", ssl_s.write.__doc__)

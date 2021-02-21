@@ -197,7 +197,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object _wrap_socket(CodeContext context, PythonSocket.socket sock = null, bool server_side = false, string server_hostname = null, object ssl_sock = null) {
+            public object _wrap_socket(CodeContext context, PythonSocket.socket sock, bool server_side, string server_hostname = null, object ssl_sock = null) {
                 return new _SSLSocket(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store) { _serverHostName = server_hostname };
             }
         }
@@ -598,29 +598,6 @@ of bytes written.")]
                     throw PythonSocket.MakeException(context, e);
                 }
             }
-        }
-
-        public static _SSLSocket sslwrap(
-            CodeContext context,
-            PythonSocket.socket socket,
-            bool server_side,
-            string keyfile = null,
-            string certfile = null,
-            int certs_mode = PythonSsl.CERT_NONE,
-            int protocol = (PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
-            string cacertsfile = null,
-            object ciphers = null) {
-            return new _SSLSocket(
-                context,
-                socket,
-                server_side,
-                keyfile,
-                certfile,
-                certs_mode,
-                protocol,
-                cacertsfile,
-                null
-            );
         }
 
         public static object txt2obj(CodeContext context, string txt, bool name = false) {

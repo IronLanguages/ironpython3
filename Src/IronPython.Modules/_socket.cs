@@ -142,6 +142,10 @@ namespace IronPython.Modules {
                 } else {
                     try {
                         socket = new Socket(addressFamily, socketType, protocolType);
+                        if (ClrModule.IsMono) {
+                            // for whatever reason Mono sets this to true on Linux
+                            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
+                        }
                     } catch (SocketException e) {
                         throw MakeException(context, e);
                     }

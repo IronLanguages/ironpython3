@@ -18,6 +18,9 @@ csharp_new_line_before_catch = false
 csharp_new_line_before_finally = false
 csharp_space_after_keywords_in_control_flow_statements = true
 
+csharp_style_prefer_index_operator = false
+csharp_style_prefer_range_operator = false
+
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = true
 

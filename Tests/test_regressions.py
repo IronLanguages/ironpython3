@@ -1508,4 +1508,11 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         finally:
             os.remove(filename)
 
+    def test_ipy3_gh957(self):
+        """https://github.com/IronLanguages/ironpython3/issues/957"""
+        class A(str): pass
+
+        # just ensure this doesn't throw
+        getattr(A("abc"), '__iter__')
+
 run_test(__name__)

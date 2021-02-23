@@ -1,6 +1,8 @@
 IronPython 3
-==============
-**IronPython3 is NOT ready for use yet. There is still much that needs to be done to support Python 3.x. We are working on it, albeit slowly. We welcome all those who would like to help!**
+============
+**There is still much that needs to be done to support Python 3.x. We are working on it, albeit slowly. We welcome all those who would like to help!**
+
+The current target a Python 3.4 compatible release, although features and behaviors from later versions may be included.
 
 [Official Website](http://ironpython.net)
 

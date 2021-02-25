@@ -470,6 +470,8 @@ namespace IronPython.Runtime {
             return new ByteArray(IListOfByteOps.FromHex(@string));
         }
 
+        public string hex() => Bytes.ToHex(_bytes.AsByteSpan()); // new in CPython 3.5
+
         public int index([BytesLike, NotNull]IList<byte> sub) {
             lock (this) {
                 return index(sub, 0, _bytes.Count);

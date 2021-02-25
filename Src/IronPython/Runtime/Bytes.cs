@@ -355,6 +355,23 @@ namespace IronPython.Runtime {
             return new Bytes(IListOfByteOps.FromHex(@string));
         }
 
+        public string hex() => ToHex(_bytes.AsSpan()); // new in CPython 3.5
+
+        internal static string ToHex(ReadOnlySpan<byte> bytes) {
+            if (bytes.Length == 0) return string.Empty;
+
+            var builder = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes) {
+                builder.Append(ToAscii(b >> 4));
+                builder.Append(ToAscii(b & 0xf));
+            }
+            return builder.ToString();
+
+            static char ToAscii(int b) {
+                return (char)(b < 10 ? '0' + b : 'a' + (b - 10));
+            }
+        }
+
         public int index([BytesLike, NotNull]IList<byte> sub)
             => index(sub, 0, _bytes.Length);
 

@@ -357,6 +357,27 @@ namespace IronPython.Runtime {
             }
         }
 
+        // new in CPython 3.5
+        public string hex() {
+            CheckBuffer();
+
+            if (_isCContig) {
+                return Bytes.ToHex(_buffer.AsReadOnlySpan().Slice(_offset, _numItems * _itemSize));
+            }
+            else {
+                var builder = new System.Text.StringBuilder(_numItems * _itemSize * 2);
+                foreach (byte b in this.EnumerateBytes()) {
+                    builder.Append(ToAscii(b >> 4));
+                    builder.Append(ToAscii(b & 0xf));
+                }
+                return builder.ToString();
+            }
+
+            static char ToAscii(int b) {
+                return (char)(b < 10 ? '0' + b : 'a' + (b - 10));
+            }
+        }
+
         public Bytes tobytes() {
             CheckBuffer();
 

@@ -1654,6 +1654,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Subtract: return "-";
                 case PythonOperationKind.Power: return "**";
                 case PythonOperationKind.Multiply: return "*";
+                case PythonOperationKind.MatMult: return "@";
                 case PythonOperationKind.FloorDivide: return "//";
                 case PythonOperationKind.TrueDivide: return "/";
                 case PythonOperationKind.Mod: return "%";
@@ -1672,6 +1673,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.InPlaceSubtract: return "-=";
                 case PythonOperationKind.InPlacePower: return "**=";
                 case PythonOperationKind.InPlaceMultiply: return "*=";
+                case PythonOperationKind.InPlaceMatMult: return "@=";
                 case PythonOperationKind.InPlaceFloorDivide: return "//=";
                 case PythonOperationKind.InPlaceTrueDivide: return "/=";
                 case PythonOperationKind.InPlaceMod: return "%=";
@@ -1684,6 +1686,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.ReverseSubtract: return "-";
                 case PythonOperationKind.ReversePower: return "**";
                 case PythonOperationKind.ReverseMultiply: return "*";
+                case PythonOperationKind.ReverseMatMult: return "@";
                 case PythonOperationKind.ReverseFloorDivide: return "//";
                 case PythonOperationKind.ReverseTrueDivide: return "/";
                 case PythonOperationKind.ReverseMod: return "%";

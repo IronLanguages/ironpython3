@@ -398,6 +398,7 @@ namespace IronPython.Modules {
                     PythonOperator.LeftShift => LShift.Instance,
                     PythonOperator.LessThan => Lt.Instance,
                     PythonOperator.LessThanOrEqual => LtE.Instance,
+                    PythonOperator.MatMult => MatMult.Instance,
                     PythonOperator.Mod => Mod.Instance,
                     PythonOperator.Multiply => Mult.Instance,
                     PythonOperator.Negate => USub.Instance,
@@ -2089,6 +2090,12 @@ namespace IronPython.Modules {
         public class LShift : @operator {
             internal static readonly LShift Instance = new LShift();
             internal override PythonOperator Revert() => PythonOperator.LeftShift;
+        }
+
+        [PythonType]
+        public class MatMult : @operator {
+            internal static readonly MatMult Instance = new MatMult();
+            internal override PythonOperator Revert() => PythonOperator.MatMult;
         }
 
         [PythonType]

@@ -112,6 +112,8 @@ namespace IronPython.Runtime.Binding {
         Power,
         ///<summary>Operator for performing mul</summary>
         Multiply,
+        ///<summary>Operator for performing matmul</summary>
+        MatMult,
         ///<summary>Operator for performing floordiv</summary>
         FloorDivide,
         ///<summary>Operator for performing truediv</summary>
@@ -152,6 +154,8 @@ namespace IronPython.Runtime.Binding {
         InPlacePower = Power | InPlace,
         ///<summary>Operator for performing in-place mul</summary>
         InPlaceMultiply = Multiply | InPlace,
+        ///<summary>Operator for performing in-place matmul</summary>
+        InPlaceMatMult = MatMult | InPlace,
         ///<summary>Operator for performing in-place floordiv</summary>
         InPlaceFloorDivide = FloorDivide | InPlace,
         ///<summary>Operator for performing in-place truediv</summary>
@@ -176,6 +180,8 @@ namespace IronPython.Runtime.Binding {
         ReversePower = Power | Reversed,
         ///<summary>Operator for performing reverse mul</summary>
         ReverseMultiply = Multiply | Reversed,
+        ///<summary>Operator for performing reverse matmul</summary>
+        ReverseMatMult = MatMult | Reversed,
         ///<summary>Operator for performing reverse floordiv</summary>
         ReverseFloorDivide = FloorDivide | Reversed,
         ///<summary>Operator for performing reverse truediv</summary>

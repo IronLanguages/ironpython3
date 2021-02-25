@@ -34,6 +34,10 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.InPlaceSubtract;
                 case PythonOperator.Multiply:
                     return PythonOperationKind.InPlaceMultiply;
+                case PythonOperator.MatMult:
+                    return PythonOperationKind.InPlaceMatMult;
+                case PythonOperator.FloorDivide:
+                    return PythonOperationKind.InPlaceFloorDivide;
                 case PythonOperator.TrueDivide:
                     return PythonOperationKind.InPlaceTrueDivide;
                 case PythonOperator.Mod:
@@ -50,8 +54,6 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.InPlaceRightShift;
                 case PythonOperator.Power:
                     return PythonOperationKind.InPlacePower;
-                case PythonOperator.FloorDivide:
-                    return PythonOperationKind.InPlaceFloorDivide;
                 default:
                     Debug.Assert(false, "Unexpected PythonOperator: " + op.ToString());
                     return PythonOperationKind.None;

@@ -36,6 +36,11 @@ namespace IronPython.Compiler {
                         return Tokens.MultiplyEqualToken;
                     }
                     return Tokens.MultiplyToken;
+                case '@':
+                    if (NextChar('=')) {
+                        return Tokens.MatMultEqualToken;
+                    }
+                    return Tokens.MatMultToken;
                 case '/':
                     if (NextChar('/')) {
                         if (NextChar('=')) {
@@ -128,8 +133,6 @@ namespace IronPython.Compiler {
                     return Tokens.SemicolonToken;
                 case '~':
                     return Tokens.TwiddleToken;
-                case '@':
-                    return Tokens.AtToken;
 
                 // *** END GENERATED CODE ***
 

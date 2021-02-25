@@ -165,6 +165,7 @@ class Operator(Symbol):
         cw.writeline('[SlotField] public static PythonTypeSlot __i%s__ = new SlotWrapper(\"__i%s__\", CallableProxyType);' % (self.name, self.name))
 
     def genConstantFolding(self, cw, type):
+        if self.clrName == 'MatMult': return
         # Exclude bitwise ops on Double and Complex, and exclude comparisons
         # on Complex. Also exclude Complex floordiv and because they need to
         # issue warnings during runtime.
@@ -193,12 +194,12 @@ ops = []
 5 term: factor (('*'|'/'|'%'|'//') factor)*
 """
             # op,  pyname,   prec, .NET name, .NET op      op,    pyname,   prec, .NET name,  .NET op overload
-binaries = [('+',  'add',      4, 'Add',         True),   ('-',  'sub',    4, 'Subtract',   True),
-            ('**', 'pow',      6, 'Power',       False),  ('*',  'mul',    5, 'Multiply',   True),
-            ('//', 'floordiv', 5, 'FloorDivide', False),
-            ('/',  'truediv',  5, 'TrueDivide',  False),  ('%',  'mod',    5, 'Mod',        True),
-            ('<<', 'lshift',   3, 'LeftShift',   False),   ('>>', 'rshift', 3, 'RightShift', False),
-            ('&',  'and',      2, 'BitwiseAnd',  True),   ('|',  'or',     0, 'BitwiseOr',  True),
+binaries = [('+',  'add',      4, 'Add',         True),   ('-',  'sub',      4, 'Subtract',    True),
+            ('**', 'pow',      6, 'Power',       False),  ('*',  'mul',      5, 'Multiply',    True),
+            ('@',  'matmul',   5, 'MatMult',     False),  ('//', 'floordiv', 5, 'FloorDivide', False),
+            ('/',  'truediv',  5, 'TrueDivide',  False),  ('%',  'mod',      5, 'Mod',         True),
+            ('<<', 'lshift',   3, 'LeftShift',   False),  ('>>', 'rshift',   3, 'RightShift',  False),
+            ('&',  'and',      2, 'BitwiseAnd',  True),   ('|',  'or',       0, 'BitwiseOr',   True),
             ('^',  'xor',      1, 'ExclusiveOr', True)]
 
 def add_binaries(list):

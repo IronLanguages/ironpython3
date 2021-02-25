@@ -29,6 +29,9 @@ namespace IronPython.Runtime.Types {
             pyOp["__mul__"] = PythonOperationKind.Multiply;
             pyOp["__rmul__"] = PythonOperationKind.ReverseMultiply;
             pyOp["__imul__"] = PythonOperationKind.InPlaceMultiply;
+            pyOp["__matmul__"] = PythonOperationKind.MatMult;
+            pyOp["__rmatmul__"] = PythonOperationKind.ReverseMatMult;
+            pyOp["__imatmul__"] = PythonOperationKind.InPlaceMatMult;
             pyOp["__floordiv__"] = PythonOperationKind.FloorDivide;
             pyOp["__rfloordiv__"] = PythonOperationKind.ReverseFloorDivide;
             pyOp["__ifloordiv__"] = PythonOperationKind.InPlaceFloorDivide;

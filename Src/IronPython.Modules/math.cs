@@ -596,6 +596,31 @@ namespace IronPython.Modules {
             return res;
         }
 
+        public static object gcd(object x, object y) {
+            return gcd(ObjectToBigInteger(x), ObjectToBigInteger(y));
+
+            static BigInteger ObjectToBigInteger(object x) {
+                BigInteger a;
+                switch (PythonOps.Index(x)) {
+                    case int i:
+                        a = i;
+                        break;
+                    case Extensible<int> ei: // deprecated
+                        a = ei.Value;
+                        break;
+                    case BigInteger bi:
+                        a = bi;
+                        break;
+                    case Extensible<BigInteger> ebi: // deprecated
+                        a = ebi.Value;
+                        break;
+                    default:
+                        throw new InvalidOperationException();
+                }
+                return a;
+            }
+        }
+
         public static readonly double nan = double.NaN; // new in CPython 3.5
 
         public static readonly double inf = double.PositiveInfinity; // new in CPython 3.5

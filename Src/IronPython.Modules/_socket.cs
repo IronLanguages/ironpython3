@@ -375,6 +375,8 @@ namespace IronPython.Modules {
                 + "Listen for connections on the socket. Backlog is the maximum length of the\n"
                 + "pending connections queue. The maximum value is system-dependent."
                 )]
+            public void listen() => listen(Math.Min(SOMAXCONN, 128)); // new in CPython 3.5
+
             public void listen(int backlog) {
                 try {
                     _socket.Listen(backlog);

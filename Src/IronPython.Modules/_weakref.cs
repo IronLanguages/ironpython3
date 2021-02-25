@@ -49,6 +49,25 @@ namespace IronPython.Modules {
             }
         }
 
+        // new in CPython 3.5
+        public static void _remove_dead_weakref(CodeContext context, PythonDictionary dict, object key) {
+            if (dict.TryGetValue(key, out var value)) {
+                if (value is @ref r) {
+                    if (r._target.Target is null) {
+                        dict.Remove(key);
+                    }
+                } else if (value is weakproxy wp) {
+                    if (wp._target.Target is null) {
+                        dict.Remove(key);
+                    }
+                } else if (value is weakcallableproxy wcp) {
+                    if (wcp._target.Target is null) {
+                        dict.Remove(key);
+                    }
+                }
+            }
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType CallableProxyType = DynamicHelpers.GetPythonTypeFromType(typeof(weakcallableproxy));
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
@@ -60,7 +79,7 @@ namespace IronPython.Modules {
         public class @ref : IStructuralEquatable
         {
             private readonly CodeContext _context;
-            private readonly WeakHandle _target;
+            internal readonly WeakHandle _target;
             private int _hashVal;
             private bool _fHasHash;
 
@@ -266,7 +285,7 @@ namespace IronPython.Modules {
         [PythonType, DynamicBaseType, PythonHidden]
         public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable
         {
-            private readonly WeakHandle _target;
+            internal readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
 
             #region Python Constructors
@@ -485,7 +504,7 @@ namespace IronPython.Modules {
             IStructuralEquatable,
             IPythonMembersList {
 
-            private WeakHandle _target;
+            internal readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
 
             #region Python Constructors

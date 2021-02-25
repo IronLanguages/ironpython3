@@ -588,6 +588,27 @@ namespace IronPython.Modules {
             return DoubleOps.CopySign(val, sign);
         }
 
+        // new in CPython 3.5
+        public static object gcd(BigInteger x, BigInteger y) {
+            var res = BigInteger.GreatestCommonDivisor(x, y);
+            if (res.AsInt32(out var i))
+                return i;
+            return res;
+        }
+
+        public static readonly double nan = double.NaN; // new in CPython 3.5
+
+        public static readonly double inf = double.PositiveInfinity; // new in CPython 3.5
+
+        // new in CPython 3.5
+        public static bool isclose(double a, double b, double rel_tol = 1e-09, double abs_tol = 0.0) {
+            if (rel_tol < 0 || abs_tol < 0) throw PythonOps.ValueError("tolerances must be non-negative");
+            //if (double.IsNaN(a) || double.IsNaN(b)) return false;
+            if (a == b) return true;
+            if (double.IsInfinity(a) || double.IsInfinity(b)) return false;
+            return Math.Abs(a - b) <= Math.Max(rel_tol * Math.Max(Math.Abs(a), Math.Abs(b)), abs_tol);
+        }
+
         #region Private Implementation Details
 
         private static void SetExponentLe(byte[] v, int exp) {

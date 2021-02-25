@@ -725,6 +725,8 @@ namespace IronPython.Compiler {
                 case TokenKind.AddEqual: return PythonOperator.Add;
                 case TokenKind.SubtractEqual: return PythonOperator.Subtract;
                 case TokenKind.MultiplyEqual: return PythonOperator.Multiply;
+                case TokenKind.MatMultEqual: return PythonOperator.MatMult;
+                case TokenKind.FloorDivideEqual: return PythonOperator.FloorDivide;
                 case TokenKind.TrueDivideEqual: return PythonOperator.TrueDivide;
                 case TokenKind.ModEqual: return PythonOperator.Mod;
                 case TokenKind.BitwiseAndEqual: return PythonOperator.BitwiseAnd;
@@ -733,7 +735,6 @@ namespace IronPython.Compiler {
                 case TokenKind.LeftShiftEqual: return PythonOperator.LeftShift;
                 case TokenKind.RightShiftEqual: return PythonOperator.RightShift;
                 case TokenKind.PowerEqual: return PythonOperator.Power;
-                case TokenKind.FloorDivideEqual: return PythonOperator.FloorDivide;
                 default: return PythonOperator.None;
             }
         }
@@ -743,6 +744,8 @@ namespace IronPython.Compiler {
                 case TokenKind.Add: return PythonOperator.Add;
                 case TokenKind.Subtract: return PythonOperator.Subtract;
                 case TokenKind.Multiply: return PythonOperator.Multiply;
+                case TokenKind.MatMult: return PythonOperator.MatMult;
+                case TokenKind.FloorDivide: return PythonOperator.FloorDivide;
                 case TokenKind.TrueDivide: return PythonOperator.TrueDivide;
                 case TokenKind.Mod: return PythonOperator.Mod;
                 case TokenKind.BitwiseAnd: return PythonOperator.BitwiseAnd;
@@ -751,7 +754,6 @@ namespace IronPython.Compiler {
                 case TokenKind.LeftShift: return PythonOperator.LeftShift;
                 case TokenKind.RightShift: return PythonOperator.RightShift;
                 case TokenKind.Power: return PythonOperator.Power;
-                case TokenKind.FloorDivide: return PythonOperator.FloorDivide;
                 default:
                     string message = string.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
@@ -2835,6 +2837,8 @@ namespace IronPython.Compiler {
                 case TokenKind.AddEqual:
                 case TokenKind.SubtractEqual:
                 case TokenKind.MultiplyEqual:
+                case TokenKind.MatMultEqual:
+                case TokenKind.FloorDivideEqual:
                 case TokenKind.TrueDivideEqual:
                 case TokenKind.ModEqual:
                 case TokenKind.BitwiseAndEqual:
@@ -2843,7 +2847,6 @@ namespace IronPython.Compiler {
                 case TokenKind.LeftShiftEqual:
                 case TokenKind.RightShiftEqual:
                 case TokenKind.PowerEqual:
-                case TokenKind.FloorDivideEqual:
 
                 case TokenKind.Indent:
                 case TokenKind.Dedent:

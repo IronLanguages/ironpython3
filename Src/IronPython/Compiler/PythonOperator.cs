@@ -13,10 +13,11 @@ namespace IronPython.Compiler {
         Negate,
 
         // Binary
-
         Add,
         Subtract,
         Multiply,
+        MatMult,
+        FloorDivide,
         TrueDivide,
         Mod,
         BitwiseAnd,
@@ -25,10 +26,8 @@ namespace IronPython.Compiler {
         LeftShift,
         RightShift,
         Power,
-        FloorDivide,
 
         // Comparisons
-
         LessThan,
         LessThanOrEqual,
         GreaterThan,
@@ -39,7 +38,6 @@ namespace IronPython.Compiler {
         NotIn,
         IsNot,
         Is,
-
 
         // Aliases
         ExclusiveOr = Xor,

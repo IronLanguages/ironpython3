@@ -668,6 +668,9 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__long__", BigIntegerResolver),
 
                 // non standard PythonOperationKind which are Python specific
+                new OneOffResolver("__matmul__", new OneOffOperatorBinder("MatMult", "__matmul__", PythonOperationKind.MatMult).Resolver),
+                new OneOffResolver("__rmatmul__", new OneOffOperatorBinder("MatMult", "__rmatmul__", PythonOperationKind.ReverseMatMult).Resolver),
+                new OneOffResolver("__imatmul__", new OneOffOperatorBinder("InMatMult", "__imatmul__", PythonOperationKind.InPlaceMatMult).Resolver),
                 new OneOffResolver("__truediv__", new OneOffOperatorBinder("TrueDivide", "__truediv__", PythonOperationKind.TrueDivide).Resolver),
                 new OneOffResolver("__rtruediv__", new OneOffOperatorBinder("TrueDivide", "__rtruediv__", PythonOperationKind.ReverseTrueDivide).Resolver),
                 new OneOffResolver("__itruediv__", new OneOffOperatorBinder("InPlaceTrueDivide", "__itruediv__", PythonOperationKind.InPlaceTrueDivide).Resolver),

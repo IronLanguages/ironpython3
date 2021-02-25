@@ -276,6 +276,10 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.Subtract;
                 case PythonOperator.Multiply:
                     return PythonOperationKind.Multiply;
+                case PythonOperator.MatMult:
+                    return PythonOperationKind.MatMult;
+                case PythonOperator.FloorDivide:
+                    return PythonOperationKind.FloorDivide;
                 case PythonOperator.TrueDivide:
                     return PythonOperationKind.TrueDivide;
                 case PythonOperator.Mod:
@@ -292,8 +296,6 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.RightShift;
                 case PythonOperator.Power:
                     return PythonOperationKind.Power;
-                case PythonOperator.FloorDivide:
-                    return PythonOperationKind.FloorDivide;
 
                 // Comparisons
                 case PythonOperator.LessThan:

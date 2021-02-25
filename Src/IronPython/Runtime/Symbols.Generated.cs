@@ -29,6 +29,9 @@ namespace IronPython.Runtime {
                 case PythonOperationKind.Multiply: return "__mul__";
                 case PythonOperationKind.ReverseMultiply: return "__rmul__";
                 case PythonOperationKind.InPlaceMultiply: return "__imul__";
+                case PythonOperationKind.MatMult: return "__matmul__";
+                case PythonOperationKind.ReverseMatMult: return "__rmatmul__";
+                case PythonOperationKind.InPlaceMatMult: return "__imatmul__";
                 case PythonOperationKind.FloorDivide: return "__floordiv__";
                 case PythonOperationKind.ReverseFloorDivide: return "__rfloordiv__";
                 case PythonOperationKind.InPlaceFloorDivide: return "__ifloordiv__";

@@ -631,6 +631,7 @@ namespace IronPython.Modules {
             [PythonHidden]
             public void Dispose() => enumerator.Dispose();
 
+            [PythonHidden]
             public IEnumerator<DirEntry> GetEnumerator() => this;
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

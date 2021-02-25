@@ -52,6 +52,7 @@ namespace IronPython.Modules {
         public static PythonType UnboundLocalError => PythonExceptions.UnboundLocalError;
         public static PythonType ReferenceError => PythonExceptions.ReferenceError;
         public static PythonType RuntimeError => PythonExceptions.RuntimeError;
+        public static PythonType RecursionError => PythonExceptions.RecursionError;
         public static PythonType NotImplementedError => PythonExceptions.NotImplementedError;
         public static PythonType SyntaxError => PythonExceptions.SyntaxError;
         public static PythonType IndentationError => PythonExceptions.IndentationError;

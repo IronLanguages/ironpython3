@@ -2879,7 +2879,7 @@ namespace IronPython.Runtime.Operations {
 
         public static void FunctionPushFrame(PythonContext context) {
             if (PythonFunction.AddRecursionDepth(1) > context.RecursionLimit) {
-                throw PythonOps.RuntimeError("maximum recursion depth exceeded");
+                throw PythonOps.RecursionError("maximum recursion depth exceeded");
             }
         }
 

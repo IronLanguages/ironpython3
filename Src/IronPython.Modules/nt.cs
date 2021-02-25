@@ -585,6 +585,88 @@ namespace IronPython.Modules {
         public static object lstat(CodeContext context, [NotNull] IBufferProtocol path, [ParamDictionary, NotNull] IDictionary<string, object> kwargs)
             => lstat(path.ToFsBytes(context), kwargs);
 
+        [PythonType]
+        public sealed class DirEntry {
+            private readonly FileSystemInfo info;
+
+            internal DirEntry(FileSystemInfo info) {
+                this.info = info;
+            }
+
+            public string path => info.FullName;
+            public string name => info.Name;
+
+            [LightThrowing]
+            public object? inode() {
+                var obj = stat(follow_symlinks: false);
+                if (obj is stat_result res) return res.st_ino;
+                return obj;
+            }
+
+            public bool is_dir(bool follow_symlinks = true) => info.Attributes.HasFlag(FileAttributes.Directory);
+
+            public bool is_file(bool follow_symlinks = true) => !is_dir();
+
+            public bool is_symlink() => throw new NotImplementedException();
+
+            [LightThrowing]
+            public object? stat(bool follow_symlinks = true) => PythonNT.stat(path, new Dictionary<string, object>());
+
+            public string __repr__() => $"<DirEntry '{name}'>";
+        }
+
+        [PythonType, PythonHidden]
+        public sealed class ScandirIterator : IEnumerable<DirEntry>, IEnumerator<DirEntry> {
+            private readonly IEnumerator<FileSystemInfo> enumerator;
+
+            internal ScandirIterator(IEnumerable<FileSystemInfo> list) {
+                enumerator = list.GetEnumerator();
+            }
+
+            [PythonHidden]
+            public DirEntry Current => new DirEntry(enumerator.Current);
+
+            object IEnumerator.Current => Current;
+
+            [PythonHidden]
+            public void Dispose() => enumerator.Dispose();
+
+            public IEnumerator<DirEntry> GetEnumerator() => this;
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            [PythonHidden]
+            public bool MoveNext() => enumerator.MoveNext();
+
+            [PythonHidden]
+            public void Reset() => enumerator.Reset();
+        }
+
+        public static ScandirIterator scandir(CodeContext context, string? path = null) {
+            if (path == null) {
+                path = getcwd(context);
+            }
+
+            if (path == string.Empty) {
+                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
+            }
+
+#if !NETFRAMEWORK
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                // .NET Core throws an unhelpful "The parameter is incorrect" error when trying to listdir a file
+                if (File.Exists(path)) {
+                    throw GetWin32Error(PythonExceptions._OSError.ERROR_DIRECTORY, path);
+                }
+            }
+#endif
+
+            try {
+                return new ScandirIterator(new DirectoryInfo(path).EnumerateFileSystemInfos());
+            } catch (Exception e) {
+                throw ToPythonException(e, path);
+            }
+        }
+
 #if FEATURE_NATIVE
 
         [Documentation("symlink(src, dst, target_is_directory=False, *, dir_fd=None)")]

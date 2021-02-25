@@ -573,83 +573,66 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    /// <summary>
-    /// public class to get optimized
-    /// </summary>
     [PythonType("tuple_iterator")]
-    public sealed class PythonTupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object?> {
-        private int _curIndex;
-        private readonly PythonTuple _tuple;
+    public sealed class PythonTupleEnumerator : IEnumerable<object?>, IEnumerator<object?> {
+        private PythonTuple? _tuple;
+        private int _index;
 
         internal PythonTupleEnumerator(PythonTuple t) {
             _tuple = t;
-            _curIndex = -1;
+            _index = -1;
         }
 
-        #region IEnumerator Members
+        #region IEnumerable<object?> Members
 
         [PythonHidden]
-        public object? Current {
-            get {
-                // access _data directly because this is what CPython does:
-                // class T(tuple):
-                //     def __getitem__(self): return None
-                // 
-                // for x in T((1,2)): print x
-                // prints 1 and 2
-                return _tuple._data[_curIndex];
-            }
-        }
+        public IEnumerator GetEnumerator() => this;
+
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this;
+
+        #endregion
+
+        #region IEnumerator<object?> Members
+
+        [PythonHidden]
+        public object? Current => _tuple!._data[_index];
 
         [PythonHidden]
         public bool MoveNext() {
-            if ((_curIndex + 1) >= _tuple.Count) {
+            if (_tuple is null || ++_index >= _tuple.Count) {
+                _tuple = null;
                 return false;
             }
-            _curIndex++;
             return true;
         }
 
+        void IEnumerator.Reset() => throw new NotSupportedException();
+
         [PythonHidden]
-        public void Reset() {
-            _curIndex = -1;
-        }
+        public void Dispose() { }
 
         #endregion
 
-        #region IDisposable Members
-
-        [PythonHidden]
-        public void Dispose() {
-            GC.SuppressFinalize(this);
-        }
-
-        #endregion
-
-        #region IEnumerable Members
-
-        [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return this;
-        }
-
-        #endregion
+        #region Pickling
 
         public PythonTuple __reduce__(CodeContext/*!*/ context) {
             object? iter;
             context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_tuple), _curIndex + 1);
+            if (_tuple is null) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonTuple.EMPTY));
+            }
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_tuple), _index + 1);
         }
 
-        public void __setstate__(int position) {
-            if (position < 0) position = 0;
-            else if (position > _tuple.Count) position = _tuple.Count;
-            _curIndex = position - 1;
+        public void __setstate__(int state) {
+            if (_tuple is null) return;
+            _index = Math.Min(Math.Max(0, state), _tuple.Count) - 1;
         }
 
-        public int __length_hint__() {
-            return _tuple.__len__() - _curIndex - 1;
-        }
+        #endregion
+
+        public int __length_hint__()
+            => _tuple is null ? 0 : _tuple.Count - _index - 1;
     }
 
     internal static class TupleExtensions {

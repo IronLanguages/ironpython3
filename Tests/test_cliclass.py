@@ -1232,7 +1232,7 @@ End Class""")
                     self.assertEqual(newVal, value)
                 except RuntimeError as e:
                     # we hit one of our recursive structures...
-                    self.assertEqual(str(e), "maximum recursion depth exceeded in cmp")
+                    self.assertEqual(str(e), "maximum recursion depth exceeded")
                     self.assertTrue(type(newVal) is list or type(newVal) is dict)
 
         # passing an unknown format raises...

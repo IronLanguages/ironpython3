@@ -174,198 +174,6 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
-        private static PythonType OSErrorStorage;
-        public static PythonType OSError {
-            get {
-                if (OSErrorStorage == null) {
-                    Interlocked.CompareExchange(ref OSErrorStorage, CreateSubType(Exception, typeof(_OSError), (msg, innerException) => new OSException(msg, innerException)), null);
-                }
-                return OSErrorStorage;
-            }
-        }
-
-        [PythonType("OSError"), PythonHidden, DynamicBaseType, Serializable]
-        public partial class _OSError : BaseException {
-            public _OSError() : base(OSError) { }
-            public _OSError(PythonType type) : base(type) { }
-
-            public object errno { get; set; }
-
-            public object strerror { get; set; }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType BlockingIOErrorStorage;
-        public static PythonType BlockingIOError {
-            get {
-                if (BlockingIOErrorStorage == null) {
-                    Interlocked.CompareExchange(ref BlockingIOErrorStorage, CreateSubType(OSError, typeof(_BlockingIOError), (msg, innerException) => new BlockingIOException(msg, innerException)), null);
-                }
-                return BlockingIOErrorStorage;
-            }
-        }
-
-        [PythonType("BlockingIOError"), PythonHidden, DynamicBaseType, Serializable]
-        public partial class _BlockingIOError : _OSError {
-            public _BlockingIOError() : base(BlockingIOError) { }
-            public _BlockingIOError(PythonType type) : base(type) { }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType FileExistsErrorStorage;
-        public static PythonType FileExistsError {
-            get {
-                if (FileExistsErrorStorage == null) {
-                    Interlocked.CompareExchange(ref FileExistsErrorStorage, CreateSubType(OSError, "FileExistsError", (msg, innerException) => new FileExistsException(msg, innerException)), null);
-                }
-                return FileExistsErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType FileNotFoundErrorStorage;
-        public static PythonType FileNotFoundError {
-            get {
-                if (FileNotFoundErrorStorage == null) {
-                    Interlocked.CompareExchange(ref FileNotFoundErrorStorage, CreateSubType(OSError, "FileNotFoundError", (msg, innerException) => new FileNotFoundException(msg, innerException)), null);
-                }
-                return FileNotFoundErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType PermissionErrorStorage;
-        public static PythonType PermissionError {
-            get {
-                if (PermissionErrorStorage == null) {
-                    Interlocked.CompareExchange(ref PermissionErrorStorage, CreateSubType(OSError, "PermissionError", (msg, innerException) => new UnauthorizedAccessException(msg, innerException)), null);
-                }
-                return PermissionErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType NotADirectoryErrorStorage;
-        public static PythonType NotADirectoryError {
-            get {
-                if (NotADirectoryErrorStorage == null) {
-                    Interlocked.CompareExchange(ref NotADirectoryErrorStorage, CreateSubType(OSError, "NotADirectoryError", (msg, innerException) => new NotADirectoryException(msg, innerException)), null);
-                }
-                return NotADirectoryErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType InterruptedErrorStorage;
-        public static PythonType InterruptedError {
-            get {
-                if (InterruptedErrorStorage == null) {
-                    Interlocked.CompareExchange(ref InterruptedErrorStorage, CreateSubType(OSError, "InterruptedError", (msg, innerException) => new InterruptedException(msg, innerException)), null);
-                }
-                return InterruptedErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ChildProcessErrorStorage;
-        public static PythonType ChildProcessError {
-            get {
-                if (ChildProcessErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ChildProcessErrorStorage, CreateSubType(OSError, "ChildProcessError", (msg, innerException) => new ChildProcessException(msg, innerException)), null);
-                }
-                return ChildProcessErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType IsADirectoryErrorStorage;
-        public static PythonType IsADirectoryError {
-            get {
-                if (IsADirectoryErrorStorage == null) {
-                    Interlocked.CompareExchange(ref IsADirectoryErrorStorage, CreateSubType(OSError, "IsADirectoryError", (msg, innerException) => new IsADirectoryException(msg, innerException)), null);
-                }
-                return IsADirectoryErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ProcessLookupErrorStorage;
-        public static PythonType ProcessLookupError {
-            get {
-                if (ProcessLookupErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ProcessLookupErrorStorage, CreateSubType(OSError, "ProcessLookupError", (msg, innerException) => new ProcessLookupException(msg, innerException)), null);
-                }
-                return ProcessLookupErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType TimeoutErrorStorage;
-        public static PythonType TimeoutError {
-            get {
-                if (TimeoutErrorStorage == null) {
-                    Interlocked.CompareExchange(ref TimeoutErrorStorage, CreateSubType(OSError, "TimeoutError", (msg, innerException) => new TimeoutException(msg, innerException)), null);
-                }
-                return TimeoutErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ConnectionErrorStorage;
-        public static PythonType ConnectionError {
-            get {
-                if (ConnectionErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ConnectionErrorStorage, CreateSubType(OSError, "ConnectionError", (msg, innerException) => new ConnectionException(msg, innerException)), null);
-                }
-                return ConnectionErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType BrokenPipeErrorStorage;
-        public static PythonType BrokenPipeError {
-            get {
-                if (BrokenPipeErrorStorage == null) {
-                    Interlocked.CompareExchange(ref BrokenPipeErrorStorage, CreateSubType(ConnectionError, "BrokenPipeError", (msg, innerException) => new BrokenPipeException(msg, innerException)), null);
-                }
-                return BrokenPipeErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ConnectionAbortedErrorStorage;
-        public static PythonType ConnectionAbortedError {
-            get {
-                if (ConnectionAbortedErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ConnectionAbortedErrorStorage, CreateSubType(ConnectionError, "ConnectionAbortedError", (msg, innerException) => new ConnectionAbortedException(msg, innerException)), null);
-                }
-                return ConnectionAbortedErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ConnectionRefusedErrorStorage;
-        public static PythonType ConnectionRefusedError {
-            get {
-                if (ConnectionRefusedErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ConnectionRefusedErrorStorage, CreateSubType(ConnectionError, "ConnectionRefusedError", (msg, innerException) => new ConnectionRefusedException(msg, innerException)), null);
-                }
-                return ConnectionRefusedErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
-        private static PythonType ConnectionResetErrorStorage;
-        public static PythonType ConnectionResetError {
-            get {
-                if (ConnectionResetErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ConnectionResetErrorStorage, CreateSubType(ConnectionError, "ConnectionResetError", (msg, innerException) => new ConnectionResetException(msg, innerException)), null);
-                }
-                return ConnectionResetErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
         private static PythonType EOFErrorStorage;
         public static PythonType EOFError {
             get {
@@ -464,6 +272,198 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType OSErrorStorage;
+        public static PythonType OSError {
+            get {
+                if (OSErrorStorage == null) {
+                    Interlocked.CompareExchange(ref OSErrorStorage, CreateSubType(Exception, typeof(_OSError), (msg, innerException) => new OSException(msg, innerException)), null);
+                }
+                return OSErrorStorage;
+            }
+        }
+
+        [PythonType("OSError"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _OSError : BaseException {
+            public _OSError() : base(OSError) { }
+            public _OSError(PythonType type) : base(type) { }
+
+            public object errno { get; set; }
+
+            public object strerror { get; set; }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType BlockingIOErrorStorage;
+        public static PythonType BlockingIOError {
+            get {
+                if (BlockingIOErrorStorage == null) {
+                    Interlocked.CompareExchange(ref BlockingIOErrorStorage, CreateSubType(OSError, typeof(_BlockingIOError), (msg, innerException) => new BlockingIOException(msg, innerException)), null);
+                }
+                return BlockingIOErrorStorage;
+            }
+        }
+
+        [PythonType("BlockingIOError"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _BlockingIOError : _OSError {
+            public _BlockingIOError() : base(BlockingIOError) { }
+            public _BlockingIOError(PythonType type) : base(type) { }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ChildProcessErrorStorage;
+        public static PythonType ChildProcessError {
+            get {
+                if (ChildProcessErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ChildProcessErrorStorage, CreateSubType(OSError, "ChildProcessError", (msg, innerException) => new ChildProcessException(msg, innerException)), null);
+                }
+                return ChildProcessErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionErrorStorage;
+        public static PythonType ConnectionError {
+            get {
+                if (ConnectionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionErrorStorage, CreateSubType(OSError, "ConnectionError", (msg, innerException) => new ConnectionException(msg, innerException)), null);
+                }
+                return ConnectionErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType BrokenPipeErrorStorage;
+        public static PythonType BrokenPipeError {
+            get {
+                if (BrokenPipeErrorStorage == null) {
+                    Interlocked.CompareExchange(ref BrokenPipeErrorStorage, CreateSubType(ConnectionError, "BrokenPipeError", (msg, innerException) => new BrokenPipeException(msg, innerException)), null);
+                }
+                return BrokenPipeErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionAbortedErrorStorage;
+        public static PythonType ConnectionAbortedError {
+            get {
+                if (ConnectionAbortedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionAbortedErrorStorage, CreateSubType(ConnectionError, "ConnectionAbortedError", (msg, innerException) => new ConnectionAbortedException(msg, innerException)), null);
+                }
+                return ConnectionAbortedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionRefusedErrorStorage;
+        public static PythonType ConnectionRefusedError {
+            get {
+                if (ConnectionRefusedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionRefusedErrorStorage, CreateSubType(ConnectionError, "ConnectionRefusedError", (msg, innerException) => new ConnectionRefusedException(msg, innerException)), null);
+                }
+                return ConnectionRefusedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionResetErrorStorage;
+        public static PythonType ConnectionResetError {
+            get {
+                if (ConnectionResetErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionResetErrorStorage, CreateSubType(ConnectionError, "ConnectionResetError", (msg, innerException) => new ConnectionResetException(msg, innerException)), null);
+                }
+                return ConnectionResetErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType FileExistsErrorStorage;
+        public static PythonType FileExistsError {
+            get {
+                if (FileExistsErrorStorage == null) {
+                    Interlocked.CompareExchange(ref FileExistsErrorStorage, CreateSubType(OSError, "FileExistsError", (msg, innerException) => new FileExistsException(msg, innerException)), null);
+                }
+                return FileExistsErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType FileNotFoundErrorStorage;
+        public static PythonType FileNotFoundError {
+            get {
+                if (FileNotFoundErrorStorage == null) {
+                    Interlocked.CompareExchange(ref FileNotFoundErrorStorage, CreateSubType(OSError, "FileNotFoundError", (msg, innerException) => new FileNotFoundException(msg, innerException)), null);
+                }
+                return FileNotFoundErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType InterruptedErrorStorage;
+        public static PythonType InterruptedError {
+            get {
+                if (InterruptedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref InterruptedErrorStorage, CreateSubType(OSError, "InterruptedError", (msg, innerException) => new InterruptedException(msg, innerException)), null);
+                }
+                return InterruptedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType IsADirectoryErrorStorage;
+        public static PythonType IsADirectoryError {
+            get {
+                if (IsADirectoryErrorStorage == null) {
+                    Interlocked.CompareExchange(ref IsADirectoryErrorStorage, CreateSubType(OSError, "IsADirectoryError", (msg, innerException) => new IsADirectoryException(msg, innerException)), null);
+                }
+                return IsADirectoryErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType NotADirectoryErrorStorage;
+        public static PythonType NotADirectoryError {
+            get {
+                if (NotADirectoryErrorStorage == null) {
+                    Interlocked.CompareExchange(ref NotADirectoryErrorStorage, CreateSubType(OSError, "NotADirectoryError", (msg, innerException) => new NotADirectoryException(msg, innerException)), null);
+                }
+                return NotADirectoryErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType PermissionErrorStorage;
+        public static PythonType PermissionError {
+            get {
+                if (PermissionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref PermissionErrorStorage, CreateSubType(OSError, "PermissionError", (msg, innerException) => new UnauthorizedAccessException(msg, innerException)), null);
+                }
+                return PermissionErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ProcessLookupErrorStorage;
+        public static PythonType ProcessLookupError {
+            get {
+                if (ProcessLookupErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ProcessLookupErrorStorage, CreateSubType(OSError, "ProcessLookupError", (msg, innerException) => new ProcessLookupException(msg, innerException)), null);
+                }
+                return ProcessLookupErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType TimeoutErrorStorage;
+        public static PythonType TimeoutError {
+            get {
+                if (TimeoutErrorStorage == null) {
+                    Interlocked.CompareExchange(ref TimeoutErrorStorage, CreateSubType(OSError, "TimeoutError", (msg, innerException) => new TimeoutException(msg, innerException)), null);
+                }
+                return TimeoutErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType ReferenceErrorStorage;
         public static PythonType ReferenceError {
             get {
@@ -486,17 +486,6 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
-        private static PythonType RecursionErrorStorage;
-        public static PythonType RecursionError {
-            get {
-                if (RecursionErrorStorage == null) {
-                    Interlocked.CompareExchange(ref RecursionErrorStorage, CreateSubType(RuntimeError, "RecursionError", (msg, innerException) => new RecursionException(msg, innerException)), null);
-                }
-                return RecursionErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
         private static PythonType NotImplementedErrorStorage;
         public static PythonType NotImplementedError {
             get {
@@ -504,6 +493,17 @@ namespace IronPython.Runtime.Exceptions {
                     Interlocked.CompareExchange(ref NotImplementedErrorStorage, CreateSubType(RuntimeError, "NotImplementedError", (msg, innerException) => new NotImplementedException(msg, innerException)), null);
                 }
                 return NotImplementedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType RecursionErrorStorage;
+        public static PythonType RecursionError {
+            get {
+                if (RecursionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref RecursionErrorStorage, CreateSubType(RuntimeError, "RecursionError", (msg, innerException) => new RecursionException(msg, innerException)), null);
+                }
+                return RecursionErrorStorage;
             }
         }
 

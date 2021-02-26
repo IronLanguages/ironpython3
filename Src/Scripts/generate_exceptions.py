@@ -79,75 +79,75 @@ class ExceptionInfo(object):
 
 # format is name, args, (fields, ...), (subclasses, ...)
 exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptions.PythonException', None, None, (
-            ExceptionInfo('SystemExit', 'IronPython.Runtime.Exceptions.SystemExitException', None, ('code',), ()),
-            ExceptionInfo('KeyboardInterrupt', 'Microsoft.Scripting.KeyboardInterruptException', None, (), ()),
-            ExceptionInfo('GeneratorExit', 'IronPython.Runtime.Exceptions.GeneratorExitException', None, (), ()),
-            ExceptionInfo('Exception', 'IronPython.Runtime.Exceptions.PythonException', None, (), (
+        ExceptionInfo('SystemExit', 'IronPython.Runtime.Exceptions.SystemExitException', None, ('code',), ()),
+        ExceptionInfo('KeyboardInterrupt', 'Microsoft.Scripting.KeyboardInterruptException', None, (), ()),
+        ExceptionInfo('GeneratorExit', 'IronPython.Runtime.Exceptions.GeneratorExitException', None, (), ()),
+        ExceptionInfo('Exception', 'IronPython.Runtime.Exceptions.PythonException', None, (), (
                 ExceptionInfo('StopIteration', 'IronPython.Runtime.Exceptions.StopIterationException', None, ('value',), ()),
                 ExceptionInfo('ArithmeticError', 'System.ArithmeticException', None, (), (
-                    ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
-                    ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),
-                    ExceptionInfo('ZeroDivisionError', 'System.DivideByZeroException', None, (), ()),
+                        ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
+                        ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),
+                        ExceptionInfo('ZeroDivisionError', 'System.DivideByZeroException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('AssertionError', 'IronPython.Runtime.Exceptions.AssertionException', None, (), ()),
                 ExceptionInfo('AttributeError', 'IronPython.Runtime.Exceptions.AttributeErrorException', None, (), (), baseMapping = 'System.MissingMemberException'),
                 ExceptionInfo('BufferError', 'IronPython.Runtime.Exceptions.BufferException', None, (), ()),
-                ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror'), (
-                    ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, (), (), generate_class=True),
-                    ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
-                    ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
-                    ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
-                    ExceptionInfo('NotADirectoryError', 'IronPython.Runtime.Exceptions.NotADirectoryException', None, (), ()),
-                    ExceptionInfo('InterruptedError', 'IronPython.Runtime.Exceptions.InterruptedException', None, (), ()),
-                    ExceptionInfo('ChildProcessError', 'IronPython.Runtime.Exceptions.ChildProcessException', None, (), ()),
-                    ExceptionInfo('IsADirectoryError', 'IronPython.Runtime.Exceptions.IsADirectoryException', None, (), ()),
-                    ExceptionInfo('ProcessLookupError', 'IronPython.Runtime.Exceptions.ProcessLookupException', None, (), ()),
-                    ExceptionInfo('TimeoutError', 'System.TimeoutException', None, (), ()),
-                    ExceptionInfo('ConnectionError', 'IronPython.Runtime.Exceptions.ConnectionException', None, (), (
-                          ExceptionInfo('BrokenPipeError', 'IronPython.Runtime.Exceptions.BrokenPipeException', None, (), ()),
-                          ExceptionInfo('ConnectionAbortedError', 'IronPython.Runtime.Exceptions.ConnectionAbortedException', None, (), ()),
-                          ExceptionInfo('ConnectionRefusedError', 'IronPython.Runtime.Exceptions.ConnectionRefusedException', None, (), ()),
-                          ExceptionInfo('ConnectionResetError', 'IronPython.Runtime.Exceptions.ConnectionResetException', None, (), ()),
-                         )),
-                    ),
-                ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
                 ExceptionInfo('ImportError', 'IronPython.Runtime.Exceptions.ImportException', None, ('name', 'path'), ()),
                 ExceptionInfo('LookupError', 'IronPython.Runtime.Exceptions.LookupException', None, (), (
-                    ExceptionInfo('IndexError', 'System.IndexOutOfRangeException', None, (), ()),
-                    ExceptionInfo('KeyError', 'System.Collections.Generic.KeyNotFoundException', None, (), ()),
+                        ExceptionInfo('IndexError', 'System.IndexOutOfRangeException', None, (), ()),
+                        ExceptionInfo('KeyError', 'System.Collections.Generic.KeyNotFoundException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('MemoryError', 'System.OutOfMemoryException', None, (), ()),
                 ExceptionInfo('NameError', 'IronPython.Runtime.UnboundNameException', None, (), (
-                    ExceptionInfo('UnboundLocalError', 'IronPython.Runtime.UnboundLocalException', None, (), ()),
+                        ExceptionInfo('UnboundLocalError', 'IronPython.Runtime.UnboundLocalException', None, (), ()),
+                    ),
+                ),
+                ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror'), (
+                        ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, (), (), generate_class=True),
+                        ExceptionInfo('ChildProcessError', 'IronPython.Runtime.Exceptions.ChildProcessException', None, (), ()),
+                        ExceptionInfo('ConnectionError', 'IronPython.Runtime.Exceptions.ConnectionException', None, (), (
+                                ExceptionInfo('BrokenPipeError', 'IronPython.Runtime.Exceptions.BrokenPipeException', None, (), ()),
+                                ExceptionInfo('ConnectionAbortedError', 'IronPython.Runtime.Exceptions.ConnectionAbortedException', None, (), ()),
+                                ExceptionInfo('ConnectionRefusedError', 'IronPython.Runtime.Exceptions.ConnectionRefusedException', None, (), ()),
+                                ExceptionInfo('ConnectionResetError', 'IronPython.Runtime.Exceptions.ConnectionResetException', None, (), ()),
+                            ),
+                        ),
+                        ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
+                        ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
+                        ExceptionInfo('InterruptedError', 'IronPython.Runtime.Exceptions.InterruptedException', None, (), ()),
+                        ExceptionInfo('IsADirectoryError', 'IronPython.Runtime.Exceptions.IsADirectoryException', None, (), ()),
+                        ExceptionInfo('NotADirectoryError', 'IronPython.Runtime.Exceptions.NotADirectoryException', None, (), ()),
+                        ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
+                        ExceptionInfo('ProcessLookupError', 'IronPython.Runtime.Exceptions.ProcessLookupException', None, (), ()),
+                        ExceptionInfo('TimeoutError', 'System.TimeoutException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('ReferenceError', 'IronPython.Runtime.Exceptions.ReferenceException', None, (), ()),
                 ExceptionInfo('RuntimeError', 'IronPython.Runtime.Exceptions.RuntimeException', None, (), (
-                    ExceptionInfo('RecursionError', 'IronPython.Runtime.Exceptions.RecursionException', None, (), ()),
-                    ExceptionInfo('NotImplementedError', 'System.NotImplementedException', None, (), ()),
+                        ExceptionInfo('NotImplementedError', 'System.NotImplementedException', None, (), ()),
+                        ExceptionInfo('RecursionError', 'IronPython.Runtime.Exceptions.RecursionException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('SyntaxError', 'Microsoft.Scripting.SyntaxErrorException', None, ('text', 'print_file_and_line', 'filename', 'lineno', 'offset', 'msg'), (
-                    ExceptionInfo('IndentationError', 'IronPython.Runtime.Exceptions.IndentationException', None, (), (
-                         ExceptionInfo('TabError', 'IronPython.Runtime.Exceptions.TabException', None, (), ()),
-                             ),
-                         ),
+                        ExceptionInfo('IndentationError', 'IronPython.Runtime.Exceptions.IndentationException', None, (), (
+                                ExceptionInfo('TabError', 'IronPython.Runtime.Exceptions.TabException', None, (), ()),
+                            ),
+                        ),
                     ),
                 ),
                 ExceptionInfo('SystemError', 'System.SystemException', None, (), ()),
                 ExceptionInfo('TypeError', 'IronPython.Runtime.Exceptions.TypeErrorException', None, (), (), baseMapping = 'Microsoft.Scripting.ArgumentTypeException'),
                 ExceptionInfo('ValueError', 'IronPython.Runtime.Exceptions.ValueErrorException', None, (), (
-                    ExceptionInfo('UnicodeError', 'IronPython.Runtime.Exceptions.UnicodeException', None, (), (
-                        ExceptionInfo('UnicodeDecodeError', 'System.Text.DecoderFallbackException', ('encoding', 'object', 'start', 'end', 'reason'), ('start', 'reason', 'object', 'end', 'encoding'), ()),
-                        ExceptionInfo('UnicodeEncodeError', 'System.Text.EncoderFallbackException', ('encoding', 'object', 'start', 'end', 'reason'), ('start', 'reason', 'object', 'end', 'encoding'), ()),
-                        ExceptionInfo('UnicodeTranslateError', 'IronPython.Runtime.Exceptions.UnicodeTranslateException', None, ('start', 'reason', 'object', 'end', 'encoding'), ()),
+                        ExceptionInfo('UnicodeError', 'IronPython.Runtime.Exceptions.UnicodeException', None, (), (
+                                ExceptionInfo('UnicodeDecodeError', 'System.Text.DecoderFallbackException', ('encoding', 'object', 'start', 'end', 'reason'), ('start', 'reason', 'object', 'end', 'encoding'), ()),
+                                ExceptionInfo('UnicodeEncodeError', 'System.Text.EncoderFallbackException', ('encoding', 'object', 'start', 'end', 'reason'), ('start', 'reason', 'object', 'end', 'encoding'), ()),
+                                ExceptionInfo('UnicodeTranslateError', 'IronPython.Runtime.Exceptions.UnicodeTranslateException', None, ('start', 'reason', 'object', 'end', 'encoding'), ()),
                             ),
                         ),
-                    ),
-                    baseMapping = 'System.ArgumentException'
+                    ), baseMapping = 'System.ArgumentException'
                 ),
                 ExceptionInfo('Warning', 'System.ComponentModel.WarningException', None, (), (
                         ExceptionInfo('DeprecationWarning', 'IronPython.Runtime.Exceptions.DeprecationWarningException', None, (), ()),
@@ -164,7 +164,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ),
             ),
         ),
-    )
+    ),
 )
 
 def get_exception_info(pythonName, curHierarchy):

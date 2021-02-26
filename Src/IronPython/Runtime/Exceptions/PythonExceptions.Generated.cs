@@ -486,6 +486,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType RecursionErrorStorage;
+        public static PythonType RecursionError {
+            get {
+                if (RecursionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref RecursionErrorStorage, CreateSubType(RuntimeError, "RecursionError", (msg, innerException) => new RecursionException(msg, innerException)), null);
+                }
+                return RecursionErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType NotImplementedErrorStorage;
         public static PythonType NotImplementedError {
             get {
@@ -873,6 +884,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
             if (clrException is ProcessLookupException) return new PythonExceptions._OSError(PythonExceptions.ProcessLookupError);
+            if (clrException is RecursionException) return new PythonExceptions.BaseException(PythonExceptions.RecursionError);
             if (clrException is TimeoutException) return new PythonExceptions._OSError(PythonExceptions.TimeoutError);
             if (clrException is UnauthorizedAccessException) return new PythonExceptions._OSError(PythonExceptions.PermissionError);
             if (clrException is UnboundLocalException) return new PythonExceptions.BaseException(PythonExceptions.UnboundLocalError);

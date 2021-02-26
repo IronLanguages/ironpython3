@@ -15,7 +15,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
               'ProcessLookupError', 'ConnectionError', 'ConnectionAbortedError', 'BrokenPipeError',
-              'ConnectionRefusedError', 'ConnectionResetError']
+              'ConnectionRefusedError', 'ConnectionResetError', 'RecursionError']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, baseMapping=None, generate_class=False):
@@ -126,6 +126,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ),
                 ExceptionInfo('ReferenceError', 'IronPython.Runtime.Exceptions.ReferenceException', None, (), ()),
                 ExceptionInfo('RuntimeError', 'IronPython.Runtime.Exceptions.RuntimeException', None, (), (
+                    ExceptionInfo('RecursionError', 'IronPython.Runtime.Exceptions.RecursionException', None, (), ()),
                     ExceptionInfo('NotImplementedError', 'System.NotImplementedException', None, (), ()),
                     ),
                 ),

@@ -18,7 +18,7 @@ namespace IronPython.Runtime {
         internal static void Push(object o) {
             var stack = EnsureStack();
             if (stack.Contains(o)) {
-                throw PythonOps.RuntimeError("maximum recursion depth exceeded in cmp");
+                throw PythonOps.RecursionError("maximum recursion depth exceeded");
             }
             stack.Push(o);
         }

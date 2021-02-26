@@ -147,6 +147,10 @@ namespace IronPython.Runtime.Operations {
             return new ConnectionResetException(string.Format(format, args));
         }
 
+        public static Exception RecursionError(string format, params object[] args) {
+            return new RecursionException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

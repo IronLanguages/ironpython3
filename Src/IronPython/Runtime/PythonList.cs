@@ -1347,158 +1347,128 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("list_iterator")]
-    public sealed class PythonListIterator : IEnumerator, IEnumerable, IEnumerable<object?>, IEnumerator<object?> {
+    public sealed class PythonListIterator : IEnumerable<object?>, IEnumerator<object?> {
+        private PythonList? _list;
         private int _index;
-        private readonly PythonList _list;
-        private bool _iterating;
 
         internal PythonListIterator(PythonList l) {
             _list = l;
-            Reset();
-        }
-
-        #region Pickling
-
-        public object __reduce__(CodeContext context) {
-            object? iter;
-            context.TryLookupBuiltin("iter", out iter);
-            if (_iterating) {
-                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_list), _index + 1);
-            }
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
-        }
-
-        public void __setstate__(int state) {
-            _index = state - 1;
-            _iterating = _index < _list._size;
-        }
-
-        #endregion
-
-        #region IEnumerator Members
-
-        [PythonHidden]
-        public void Reset() {
             _index = -1;
-            _iterating = true;
         }
 
-        [PythonHidden]
-        public object? Current => _list._data[_index];
-
-        [PythonHidden]
-        public bool MoveNext() {
-            if (_iterating) {
-                _index++;
-                _iterating = (_index < _list._size);
-            }
-            return _iterating;
-        }
-
-        #endregion
-
-        #region IEnumerable Members
+        #region IEnumerable<object?> Members
 
         [PythonHidden]
         public IEnumerator GetEnumerator() => this;
-
-        #endregion
-
-        #region IDisposable Members
-
-        [PythonHidden]
-        public void Dispose() { }
-
-        #endregion
-
-        #region IEnumerable<object> Members
 
         IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this;
 
         #endregion
 
-        public int __length_hint__()
-            => _iterating ? _list._size - _index - 1 : 0;
-    }
-
-    [PythonType("list_reverseiterator")]
-    public sealed class PythonListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object?>, IEnumerator<object?> {
-        private int _index;
-        private readonly PythonList _list;
-        private bool _iterating;
-
-        internal PythonListReverseIterator(PythonList l) {
-            _list = l;
-            Reset();
-        }
-
-        #region Pickling
-
-        public object __reduce__(CodeContext context) {
-            if (_iterating) {
-                return PythonTuple.MakeTuple(Modules.Builtin.reversed, PythonTuple.MakeTuple(_list), _list._size - _index - 1);
-            }
-            object? iter;
-            context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
-        }
-
-        public void __setstate__(int state) {
-            _index = _list._size - state - 1;
-            _iterating = _index <= _list._size;
-        }
-
-        #endregion
-
-        #region IEnumerator Members
+        #region IEnumerator<object?> Members
 
         [PythonHidden]
-        public void Reset() {
-            _index = 0;
-            _iterating = true;
-        }
-
-        [PythonHidden]
-        public object? Current => _list._data[_list._size - _index];
+        public object? Current => _list!._data[_index];
 
         [PythonHidden]
         public bool MoveNext() {
-            if (_iterating) {
-                _index++;
-                _iterating = (_index <= _list._size);
+            if (_list is null || ++_index >= _list._size) {
+                _list = null;
+                return false;
             }
-            return _iterating;
+            return true;
         }
 
-        #endregion
-
-        #region IEnumerable Members
-
-        [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return this;
-        }
-
-        #endregion
-
-        #region IDisposable Members
+        void IEnumerator.Reset() => throw new NotSupportedException();
 
         [PythonHidden]
         public void Dispose() { }
 
         #endregion
 
-        #region IEnumerable<object> Members
+        #region Pickling
 
-        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() {
-            return this;
+        public PythonTuple __reduce__(CodeContext context) {
+            object? iter;
+            context.TryLookupBuiltin("iter", out iter);
+            if (_list is null) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
+            }
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_list), _index + 1);
+        }
+
+        public void __setstate__(int state) {
+            if (_list is null) return;
+            _index = Math.Min(Math.Max(0, state), _list._size) - 1;
         }
 
         #endregion
 
-        public int __length_hint__() {
-            return _iterating ? _list._size - _index : 0;
+        public int __length_hint__()
+            => _list is null ? 0 : _list._size - _index - 1;
+    }
+
+    [PythonType("list_reverseiterator")]
+    public sealed class PythonListReverseIterator : IEnumerable<object?>, IEnumerator<object?> {
+        private PythonList? _list;
+        private int _index;
+
+        internal PythonListReverseIterator(PythonList l) {
+            _list = l;
+            _index = _list._size;
         }
+
+        #region IEnumerable<object> Members
+
+        [PythonHidden]
+        public IEnumerator GetEnumerator() => this;
+
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this;
+
+        #endregion
+
+        #region IEnumerator<object?> Members
+
+        [PythonHidden]
+        public object? Current => _list!._data[_index];
+
+        [PythonHidden]
+        public bool MoveNext() {
+            if (_list is null || --_index < 0) {
+                _list = null;
+                return false;
+            }
+            return true;
+        }
+
+        void IEnumerator.Reset() => throw new NotSupportedException();
+
+        [PythonHidden]
+        public void Dispose() { }
+
+        #endregion
+
+        #region Pickling
+
+        public PythonTuple __reduce__(CodeContext context) {
+            if (_list is null) {
+                object? iter;
+                context.TryLookupBuiltin("iter", out iter);
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
+            }
+
+            return PythonTuple.MakeTuple(Modules.Builtin.reversed, PythonTuple.MakeTuple(_list), _index - 1);
+        }
+
+        public void __setstate__(int state) {
+            if (_list is null) return;
+            _index = Math.Min(Math.Max(0, state + 1), _list._size);
+        }
+
+        #endregion
+
+        public int __length_hint__()
+            => _list is null ? 0 : _index;
     }
 
     /// <summary>

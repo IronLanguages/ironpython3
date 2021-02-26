@@ -151,6 +151,10 @@ namespace IronPython.Runtime.Operations {
             return new RecursionException(string.Format(format, args));
         }
 
+        public static Exception StopAsyncIteration(string format, params object[] args) {
+            return new StopAsyncIterationException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

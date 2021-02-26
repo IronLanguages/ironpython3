@@ -332,41 +332,42 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object find([NotNull] Bytes/*!*/ s) {
+            public object find([NotNull] IBufferProtocol s) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object find([NotNull] Bytes/*!*/ s, long start) {
+            public object find([NotNull] IBufferProtocol s, long start) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object find([NotNull] Bytes/*!*/ s, long start, long end) {
+            public object find([NotNull] IBufferProtocol s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, end);
                 }
             }
 
-            private object FindWorker(IList<byte>/*!*/ s, long start, long end) {
-                ContractUtils.RequiresNotNull(s, nameof(s));
+            private object FindWorker(IBufferProtocol data, long start, long end) {
+                using var pythonBuffer = data.GetBuffer();
+                var s = pythonBuffer.AsReadOnlySpan();
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);
 
-                if (s.Count == 0) {
+                if (s.Length == 0) {
                     return start <= end ? ReturnLong(start) : -1;
                 }
 
                 long findLength = end - start;
-                if (s.Count > findLength) {
+                if (s.Length > findLength) {
                     return -1;
                 }
 
                 int index = -1;
-                int bufferLength = Math.Max(s.Count, PAGESIZE);
+                int bufferLength = Math.Max(s.Length, PAGESIZE);
 
                 if (findLength <= bufferLength * 2) {
                     // In this case, the search area is not significantly larger than s, so we only need to
@@ -374,7 +375,7 @@ namespace IronPython.Modules {
                     byte[] buffer = new byte[findLength];
                     _view.ReadArray(start, buffer, 0, (int)findLength);
 
-                    index = buffer.IndexOf(s);
+                    index = buffer.AsSpan().IndexOf(s);
                 } else {
                     // We're matching s against a significantly larger file, so we partition the stream into
                     // sections twice the length of s and search each segment. Because a match could exist on a
@@ -391,7 +392,7 @@ namespace IronPython.Modules {
 
                     while (findLength > 0 && bytesRead > 0) {
                         var combinedBuffer = CombineBytes(buffer0, buffer1, bytesRead);
-                        index = combinedBuffer.IndexOf(s);
+                        index = combinedBuffer.AsSpan().IndexOf(s);
 
                         if (index != -1) {
                             return ReturnLong(start - 2 * bufferLength + index);
@@ -608,41 +609,42 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object rfind([NotNull] Bytes/*!*/ s) {
+            public object rfind([NotNull] IBufferProtocol s) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull] Bytes/*!*/ s, long start) {
+            public object rfind([NotNull] IBufferProtocol s, long start) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull] Bytes/*!*/ s, long start, long end) {
+            public object rfind([NotNull] IBufferProtocol s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, end);
                 }
             }
 
-            private object RFindWorker(IList<byte>/*!*/ s, long start, long end) {
-                ContractUtils.RequiresNotNull(s, nameof(s));
+            private object RFindWorker(IBufferProtocol bufferProtocol, long start, long end) {
+                using var pythonBuffer = bufferProtocol.GetBuffer();
+                var s = pythonBuffer.AsReadOnlySpan();
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);
 
-                if (s.Count == 0) {
+                if (s.Length == 0) {
                     return start <= end ? ReturnLong(start) : -1;
                 }
 
                 long findLength = end - start;
-                if (s.Count > findLength) {
+                if (s.Length > findLength) {
                     return -1;
                 }
 
                 int index = -1;
-                int bufferLength = Math.Max(s.Count, PAGESIZE);
+                int bufferLength = Math.Max(s.Length, PAGESIZE);
                 CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
 
                 if (findLength <= bufferLength * 2) {
@@ -652,7 +654,7 @@ namespace IronPython.Modules {
 
                     findLength = _view.ReadArray(start, buffer, 0, (int)findLength);
 
-                    index = buffer.LastIndexOf(s, buffer.Length, buffer.Length);
+                    index = buffer.AsSpan().LastIndexOf(s);
                 } else {
                     // We're matching s against a significantly larger file, so we partition the stream into
                     // sections twice the length of s and search each segment. Because a match could exist on a
@@ -674,7 +676,7 @@ namespace IronPython.Modules {
 
                     while (findLength >= 0) {
                         var combinedBuffer = CombineBytes(buffer0, buffer1, bytesRead);
-                        index = combinedBuffer.LastIndexOf(s, combinedBuffer.Length, combinedBuffer.Length);
+                        index = combinedBuffer.AsSpan().LastIndexOf(s);
 
                         if (index != -1) {
                             return ReturnLong(index + start);

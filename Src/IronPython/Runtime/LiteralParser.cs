@@ -627,6 +627,27 @@ namespace IronPython.Runtime {
             return true;
         }
 
+        internal static bool TryParseFloat(string text, out double res, bool replaceUnicode) {
+            try {
+                //
+                // Strings that end with '\0' is the specific case that CLR libraries allow,
+                // however Python doesn't. Since we use CLR floating point number parser,
+                // we must check explicitly for the strings that end with '\0'
+                //
+                if (text != null && text.Length > 0 && text[text.Length - 1] == '\0') {
+                    res = default;
+                    return false;
+                }
+                res = ParseFloatNoCatch(text, replaceUnicode: replaceUnicode);
+            } catch (OverflowException) {
+                res = text.lstrip().StartsWith("-") ? Double.NegativeInfinity : Double.PositiveInfinity;
+            } catch(FormatException) {
+                res = default;
+                return false;
+            }
+            return true;
+        }
+
         public static double ParseFloat(string text) {
             try {
                 //
@@ -643,8 +664,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static double ParseFloatNoCatch(string text) {
-            string s = ReplaceUnicodeCharacters(text);
+        private static double ParseFloatNoCatch(string text, bool replaceUnicode = true) {
+            string s = replaceUnicode ? ReplaceUnicodeCharacters(text) : text;
             switch (s.ToLowerAsciiTriggered().lstrip()) {
                 case "nan":
                 case "+nan":
@@ -652,8 +673,11 @@ namespace IronPython.Runtime {
                     return double.NaN;
                 case "inf":
                 case "+inf":
+                case "infinity":
+                case "+infinity":
                     return double.PositiveInfinity;
                 case "-inf":
+                case "-infinity":
                     return double.NegativeInfinity;
                 default:
                     // pass NumberStyles to disallow ,'s in float strings.

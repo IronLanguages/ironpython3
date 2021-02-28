@@ -19,6 +19,7 @@ namespace IronPython.Modules {
         public static PythonType GeneratorExit => PythonExceptions.GeneratorExit;
         public static PythonType Exception => PythonExceptions.Exception;
         public static PythonType StopIteration => PythonExceptions.StopIteration;
+        public static PythonType StopAsyncIteration => PythonExceptions.StopAsyncIteration;
         public static PythonType ArithmeticError => PythonExceptions.ArithmeticError;
         public static PythonType FloatingPointError => PythonExceptions.FloatingPointError;
         public static PythonType OverflowError => PythonExceptions.OverflowError;

@@ -97,6 +97,25 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType StopAsyncIterationStorage;
+        public static PythonType StopAsyncIteration {
+            get {
+                if (StopAsyncIterationStorage == null) {
+                    Interlocked.CompareExchange(ref StopAsyncIterationStorage, CreateSubType(Exception, typeof(_StopAsyncIteration), (msg, innerException) => new StopAsyncIterationException(msg, innerException)), null);
+                }
+                return StopAsyncIterationStorage;
+            }
+        }
+
+        [PythonType("StopAsyncIteration"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _StopAsyncIteration : BaseException {
+            public _StopAsyncIteration() : base(StopAsyncIteration) { }
+            public _StopAsyncIteration(PythonType type) : base(type) { }
+
+            public object value { get; set; }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType ArithmeticErrorStorage;
         public static PythonType ArithmeticError {
             get {
@@ -902,6 +921,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is PythonException) return new PythonExceptions.BaseException(PythonExceptions.Exception);
             if (clrException is ReferenceException) return new PythonExceptions.BaseException(PythonExceptions.ReferenceError);
             if (clrException is RuntimeException) return new PythonExceptions.BaseException(PythonExceptions.RuntimeError);
+            if (clrException is StopAsyncIterationException) return new PythonExceptions._StopAsyncIteration();
             if (clrException is StopIterationException) return new PythonExceptions._StopIteration();
             if (clrException is SyntaxErrorException) return new PythonExceptions._SyntaxError();
             if (clrException is SystemException) return new PythonExceptions.BaseException(PythonExceptions.SystemError);

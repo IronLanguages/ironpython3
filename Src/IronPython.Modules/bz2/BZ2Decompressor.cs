@@ -46,6 +46,8 @@ decompress() function instead.
                 }
             }
 
+            public bool needs_input { get; private set; } = true; // new in CPython 3.5
+
             [Documentation(@"decompress(data) -> bytes
 
 Provide more data to the decompressor object. It will return chunks
@@ -54,7 +56,7 @@ after the end of stream is found, EOFError will be raised. If any data
 was found after the end of stream, it'll be ignored and saved in
 unused_data attribute.
 ")]
-            public Bytes decompress([NotNull] IBufferProtocol data) {
+            public Bytes decompress([NotNull] IBufferProtocol data, int max_length = -1) {
                 if (_finished)
                     throw PythonOps.EofError("End of stream was already found");
 
@@ -63,6 +65,8 @@ unused_data attribute.
 
                 if (!InitializeMemoryStream(bytes))
                     AddData(bytes);
+
+                if (max_length == 0) return Bytes.Empty;
 
                 List<byte> output = new List<byte>();
                 if (InitializeBZ2Stream()) {
@@ -74,20 +78,28 @@ unused_data attribute.
                         // any slower. However, using blocks would require fewer state saves,
                         // which would probably be faster.
                         int b;
+                        var finished = true;
                         while ((b = this.bz2Input.ReadByte()) != -1) {
                             output.Add((byte)b);
 
                             memoryPosition = this.input.Position;
                             state = this.bz2Input.DumpState();
+
+                            if (output.Count == max_length) {
+                                finished = false;
+                                break;
+                            }
                         }
 
                         this.lastSuccessfulPosition = this.input.Position;
-                        this._finished = true;
+                        this._finished = finished;
+                        needs_input = finished;
                     } catch (IOException) {
                         // rewind the decompressor and the memory buffer to try again when
                         // more data arrives
                         this.input.Position = memoryPosition;
                         this.bz2Input.RestoreState(state);
+                        needs_input = true;
                     }
                 }
 

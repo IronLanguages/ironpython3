@@ -15,7 +15,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
               'ProcessLookupError', 'ConnectionError', 'ConnectionAbortedError', 'BrokenPipeError',
-              'ConnectionRefusedError', 'ConnectionResetError', 'RecursionError']
+              'ConnectionRefusedError', 'ConnectionResetError', 'RecursionError', 'StopAsyncIteration']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, baseMapping=None, generate_class=False):
@@ -84,6 +84,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
         ExceptionInfo('GeneratorExit', 'IronPython.Runtime.Exceptions.GeneratorExitException', None, (), ()),
         ExceptionInfo('Exception', 'IronPython.Runtime.Exceptions.PythonException', None, (), (
                 ExceptionInfo('StopIteration', 'IronPython.Runtime.Exceptions.StopIterationException', None, ('value',), ()),
+                ExceptionInfo('StopAsyncIteration', 'IronPython.Runtime.Exceptions.StopAsyncIterationException', None, ('value',), ()),
                 ExceptionInfo('ArithmeticError', 'System.ArithmeticException', None, (), (
                         ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
                         ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),

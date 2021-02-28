@@ -108,20 +108,13 @@ namespace IronPython.Runtime {
     public class PythonProperty : PythonTypeDataSlot {
         private object _fget, _fset, _fdel, _doc;
 
-        public PythonProperty() {
-        }
+        public PythonProperty() { }
 
-        public PythonProperty(params object[] args) {
-        }
+        public PythonProperty(params object[] args) { }
 
-        public PythonProperty(
-            [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
-        }
+        public PythonProperty([ParamDictionary] IDictionary<object, object> dict, params object[] args) { }
 
-        public void __init__(object fget=null,
-                        object fset=null,
-                        object fdel=null,
-                        object doc=null) {
+        public void __init__(object fget = null, object fset = null, object fdel = null, object doc = null) {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;
             if (GetType() != typeof(PythonProperty) && _fget is PythonFunction) {
                 // http://bugs.python.org/issue5890
@@ -177,20 +170,15 @@ namespace IronPython.Runtime {
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static object Get__doc__(CodeContext context, PythonProperty self) {
-            if (self._doc == null && PythonOps.HasAttr(context, self._fget, "__doc__")) {
-                return PythonOps.GetBoundAttr(context, self._fget, "__doc__");
-            } else if (self._doc == null) {
-                System.Console.WriteLine("No attribute __doc__");
-            }
+            if (self._doc is null && PythonOps.TryGetBoundAttr(self._fget, "__doc__", out var doc)) return doc;
             return self._doc;
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static void Set__doc__(PythonProperty self, object value) {
-            throw PythonOps.AttributeError("readonly attribute");
+            self._doc = value;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         public object fdel {
             get { return _fdel; }
             set {
@@ -198,7 +186,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         public object fset {
             get { return _fset; }
             set {
@@ -206,7 +193,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         public object fget {
             get { return _fget; }
             set {

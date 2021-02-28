@@ -37,7 +37,7 @@ must be a number between 1 and 9.
                 this.compresslevel = compresslevel;
 
                 this.output = new MemoryStream();
-                this.bz2Output = new BZip2OutputStream(this.output, true);
+                this.bz2Output = new BZip2OutputStream(this.output, compresslevel, true);
             }
 
             [Documentation(@"compress(data) -> bytes

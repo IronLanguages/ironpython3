@@ -1223,9 +1223,9 @@ class C:
     def test_gh723(self):
         import ast
         x = """
-        class test(object):
-            def test(self):
-                return __class__
+class test(object):
+    def test(self):
+        return __class__
         """
         a = compile(x, "", "exec", flags=0x400)
         self.assertTrue(a.body[0].body[0].body[0].value.id == "__class__")

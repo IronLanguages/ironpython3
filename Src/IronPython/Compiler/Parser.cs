@@ -1939,7 +1939,7 @@ namespace IronPython.Compiler {
                 case TokenKind.Name:            // identifier
                     NextToken();
                     string name = (string)t.Value;
-                    _sink?.StartName(GetSourceSpan(), name);
+                    ParserSink?.StartName(GetSourceSpan(), name);
                     ret = new NameExpression(FixName(name));
                     ret.SetLoc(_globalParent, GetStart(), GetEnd());
                     return ret;

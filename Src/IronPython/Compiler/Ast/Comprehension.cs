@@ -262,7 +262,7 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
-       internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
+        internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
             if (TryGetVariable(reference.Name, out PythonVariable variable)) {
                 if (variable.Kind == VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);

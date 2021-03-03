@@ -281,7 +281,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 type = new PythonType(context, name, bases, dict, selfNames);
             }
             object cell = dict.get("__classcell__");
-            if (cell != null && cell is ClosureCell pycell)
+            if (cell is ClosureCell pycell)
             {
                 pycell.Value = type;
                 dict.RemoveDirect("__classcell__");

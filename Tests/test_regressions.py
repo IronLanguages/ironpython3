@@ -1211,6 +1211,33 @@ class C:
 
         self.assertTrue("a" == test("b"), 'strings are not equal')
 
+    def test_gh722(self):
+        "https://github.com/IronLanguages/ironpython3/issues/722"
+        class two(object):
+            def test(self):
+                return __class__
+        a = two
+        two = "z"
+        self.assertTrue(a().test() == a().__class__, "class name doesn't match")
+
+    def test_gh723(self):
+        import ast
+        x = """
+        class test(object):
+            def test(self):
+                return __class__
+        """
+        a = compile(x, "", "exec", flags=0x400)
+        self.assertTrue(a.body[0].body[0].body[0].value.id == "__class__")
+
+    def test_gh1085(self):
+        class A():
+            def f(self):
+                nonlocal __class__
+                __class__ = A
+
+        A().f() # check that this does not StackOverflow
+
     def test_traceback_stack(self):
         import sys
         import traceback

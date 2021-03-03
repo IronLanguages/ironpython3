@@ -347,15 +347,6 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal T FindParentOfType<T>() where T : ScopeStatement {
-            var parent = Parent;
-            while (parent != null && !(parent is T)) {
-                parent = parent.Parent;
-            }
-
-            return (T)parent;
-        }
-
         internal virtual void FinishBind(PythonNameBinder binder) {
             List<ClosureInfo> closureVariables = null;
 

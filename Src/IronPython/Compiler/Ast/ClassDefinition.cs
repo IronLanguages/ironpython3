@@ -80,8 +80,8 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal PythonVariable ModuleNameVariable { get; set; }
 
-        internal PythonVariable ClassCellVariable { get;set; }
-        internal PythonVariable ClassVariable { get;set; }
+        private PythonVariable ClassCellVariable { get; set; }
+        private PythonVariable ClassVariable { get; set; }
 
         internal override bool HasLateBoundVariableSets {
             get {

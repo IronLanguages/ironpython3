@@ -94,7 +94,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
-        internal bool needClassCell {get; set;}
+        private bool needClassCell { get; set; }
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {

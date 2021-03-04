@@ -82,7 +82,7 @@ Beep(frequency, duration) - Make a beep through the PC speaker.";
 
 The sound argument can be a filename, data, or None.
 For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, string sound, int flags) {
+        public static void PlaySound(CodeContext/*!*/ context, string? sound, int flags) {
             if (sound is null) {
                 if (!PlaySound(IntPtr.Zero, IntPtr.Zero, flags)) {
                     throw PythonOps.RuntimeError("Failed to play sound");

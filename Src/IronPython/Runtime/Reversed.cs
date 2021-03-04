@@ -27,11 +27,11 @@ namespace IronPython.Runtime {
             _getItemMethod = getitem;
         }
 
-        public static object? __new__(CodeContext context, PythonType type, [NotNull] IReversible o) {
+        public static object? __new__(CodeContext context, [NotNull] PythonType type, [NotNull] IReversible o) {
             return o.__reversed__();
         }
 
-        public static object? __new__(CodeContext context, PythonType type, object o) {
+        public static object? __new__(CodeContext context, [NotNull] PythonType type, object? o) {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__reversed__", out object? res))
                 return res;
 
@@ -39,9 +39,9 @@ namespace IronPython.Runtime {
 
             PythonTypeSlot getitem;
             PythonType pt = DynamicHelpers.GetPythonType(o);
-            if (!pt.TryResolveSlot(context, "__getitem__", out getitem) ||
-                !getitem.TryGetValue(context, o, pt, out boundFunc)
-                || o is PythonDictionary) {
+            if (o is null || o is PythonDictionary
+                || !pt.TryResolveSlot(context, "__getitem__", out getitem)
+                || !getitem.TryGetValue(context, o, pt, out boundFunc)) {
                 throw PythonOps.TypeError("argument to reversed() must be a sequence");
             }
 

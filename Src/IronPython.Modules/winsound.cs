@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#if FEATURE_NATIVE
+
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +18,6 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if FEATURE_NATIVE
 [assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     [SupportedOSPlatform("windows")]
@@ -79,54 +82,34 @@ Beep(frequency, duration) - Make a beep through the PC speaker.";
 
 The sound argument can be a filename, data, or None.
 For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, [NotNull] string sound, int flags) {
-            if (((flags & SND_ASYNC) == SND_ASYNC)
-                && ((flags & SND_MEMORY) == SND_MEMORY)) {
-                throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
-            }
-
-            if (!PlaySound(sound, IntPtr.Zero, flags)) {
-                throw PythonOps.RuntimeError("Failed to play sound");
-            }
-        }
-
-        [Documentation(@"PlaySound(sound, flags) - a wrapper around the Windows PlaySound API
-
-The sound argument can be a filename, data, or None.
-For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, [NotNull] IList<byte> sound, int flags) {
-            if (((flags & SND_ASYNC) == SND_ASYNC)
-                && ((flags & SND_MEMORY) == SND_MEMORY)) {
-                throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
-            }
-
-            if (!PlaySound(sound.ToArray(), IntPtr.Zero, flags)) {
-                throw PythonOps.RuntimeError("Failed to play sound");
-            }
-        }
-
-        [Documentation(@"PlaySound(sound, flags) - a wrapper around the Windows PlaySound API
-
-The sound argument can be a filename, data, or None.
-For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, object sound, int flags) {
-            bool ok = false;
-            if (((flags & SND_ASYNC) == SND_ASYNC)
-                && ((flags & SND_MEMORY) == SND_MEMORY)) {
-                throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
-            }
-
-            if (sound == null) {
-                ok = PlaySound(IntPtr.Zero, IntPtr.Zero, flags);
-            } else if(sound is string) {
-                ok = PlaySound((string)sound, IntPtr.Zero, flags);
-            } else if (sound is IList<byte>) {
-                ok = PlaySound(((IList<byte>)sound).ToArray(), IntPtr.Zero, flags);
+        public static void PlaySound(CodeContext/*!*/ context, string? sound, int flags) {
+            if (sound is null) {
+                if (!PlaySound(IntPtr.Zero, IntPtr.Zero, flags)) {
+                    throw PythonOps.RuntimeError("Failed to play sound");
+                }
             } else {
-                throw PythonOps.RuntimeError("Failed to play sound");
-            }            
+                if (((flags & SND_ASYNC) == SND_ASYNC) && ((flags & SND_MEMORY) == SND_MEMORY)) throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
+                if ((flags & SND_MEMORY) == SND_MEMORY) throw PythonOps.TypeError($"a bytes-like object is required, not '{PythonOps.GetPythonTypeName(sound)}'");
 
-            if (!ok) {
+                if (sound.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null character");
+
+                if (!PlaySound(sound, IntPtr.Zero, flags)) {
+                    throw PythonOps.RuntimeError("Failed to play sound");
+                }
+            }
+        }
+
+        [Documentation(@"PlaySound(sound, flags) - a wrapper around the Windows PlaySound API
+
+The sound argument can be a filename, data, or None.
+For flag values, ored together, see module documentation.")]
+        public static void PlaySound(CodeContext/*!*/ context, [NotNull] IBufferProtocol sound, int flags) {
+            if (((flags & SND_ASYNC) == SND_ASYNC) && ((flags & SND_MEMORY) == SND_MEMORY)) throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
+            if ((flags & SND_MEMORY) == 0) throw PythonOps.TypeError($"'{nameof(sound)}' must be str or None, not '{PythonOps.GetPythonTypeName(sound)}'");
+
+            using var buffer = sound.GetBuffer();
+
+            if (!PlaySound(buffer.ToArray(), IntPtr.Zero, flags)) {
                 throw PythonOps.RuntimeError("Failed to play sound");
             }
         }
@@ -156,4 +139,5 @@ The duration argument specifies the number of milliseconds.
         #endregion
     }
 }
+
 #endif

@@ -304,11 +304,8 @@ else:
 
         self.assertEqual(imp.is_builtin("_thread"),1)
 
-        # there are a several differences between ironpython and cpython
-        if is_cli:
-            self.assertEqual(imp.is_builtin("copyreg"),1)
-        else:
-            self.assertEqual(imp.is_builtin("copyreg"),0)
+        # used to be a builtin but no longer is
+        self.assertEqual(imp.is_builtin("copyreg"),0)
 
         # supposedly you can't re-init these
         self.assertEqual(imp.is_builtin("sys"), -1)

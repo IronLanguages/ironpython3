@@ -127,7 +127,7 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(
                 DynamicHelpers.GetPythonType(this),
                 PythonTuple.MakeTuple(_items.GetItems()),
-                GetType() == typeof(SetCollection) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+                GetType() == typeof(SetCollection) ? null : PythonOps.GetBoundAttr(context, this, "__dict__")
             );
         }
 
@@ -943,7 +943,7 @@ namespace IronPython.Runtime {
             return PythonTuple.MakeTuple(
                 DynamicHelpers.GetPythonType(this),
                 PythonTuple.MakeTuple(_items.GetItems()),
-                GetType() == typeof(FrozenSetCollection) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+                GetType() == typeof(FrozenSetCollection) ? null : PythonOps.GetBoundAttr(context, this, "__dict__")
             );
         }
 

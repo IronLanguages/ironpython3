@@ -451,7 +451,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         public static int Get__flags__(CodeContext/*!*/ context, PythonType/*!*/ type) {
             int res = type._flags;
 
-            if (type.IsSystemType) {
+            if (!type.IsSystemType) {
                 res |= TypeFlagHeapType;
             }
             return res;

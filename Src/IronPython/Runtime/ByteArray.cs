@@ -1068,7 +1068,7 @@ namespace IronPython.Runtime {
                     PythonOps.MakeString(this),
                     "latin-1"
                 ),
-                GetType() == typeof(ByteArray) ? null : ObjectOps.ReduceProtocol0(context, this)[2]
+                GetType() == typeof(ByteArray) ? null : PythonOps.GetBoundAttr(context, this, "__dict__")
             );
         }
 

@@ -863,6 +863,9 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetName(value));
         }
 
+        public PythonTuple __getnewargs__()
+            => PythonTuple.MakeTuple(AsBytes());
+
         public IEnumerator<int> __iter__()
             => IListOfByteOps.BytesEnumerator(this);
 

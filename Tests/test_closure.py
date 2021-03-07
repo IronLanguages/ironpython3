@@ -357,4 +357,9 @@ class ClosureTest(unittest.TestCase):
                 self.assertIsInstance(g, types.GeneratorType)
                 self.assertEqual(list(g), [0, 1, 4][:p])
 
+    def test_gh1119(self):
+        x = [[[1]]]
+        res = [[tuple(str(d) for d in z) for z in y] for y in x]
+        self.assertEqual(res, [[('1',)]])
+
 run_test(__name__)

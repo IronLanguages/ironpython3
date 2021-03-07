@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -11,11 +15,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_csv", typeof(IronPython.Modules.PythonCsvModule))]
-namespace IronPython.Modules
-{
+namespace IronPython.Modules {
     using DialectRegistry = Dictionary<string, PythonCsvModule.Dialect>;
-    public static class PythonCsvModule
-    {
+    public static class PythonCsvModule {
         public const string __doc__ = "";
 
         public const string __version__ = "1.0";
@@ -31,31 +33,26 @@ namespace IronPython.Modules
         private const int FieldSizeLimit = 128 * 1024;   /* max parsed field size */
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
-        {
-            if (!context.HasModuleState(_fieldSizeLimitKey))
-            {
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
+            if (!context.HasModuleState(_fieldSizeLimitKey)) {
                 context.SetModuleState(_fieldSizeLimitKey, FieldSizeLimit);
             }
 
-            if (!context.HasModuleState(_dialectRegistryKey))
-            {
+            if (!context.HasModuleState(_dialectRegistryKey)) {
                 context.SetModuleState(_dialectRegistryKey,
                     new DialectRegistry());
             }
             InitModuleExceptions(context, dict);
         }
 
-        public static int field_size_limit(CodeContext /*!*/ context, int new_limit)
-        {
+        public static int field_size_limit(CodeContext /*!*/ context, int new_limit) {
             PythonContext ctx = context.LanguageContext;
             int old_limit = (int)ctx.GetModuleState(_fieldSizeLimitKey);
             ctx.SetModuleState(_fieldSizeLimitKey, new_limit);
             return old_limit;
         }
 
-        public static int field_size_limit(CodeContext/*!*/ context)
-        {
+        public static int field_size_limit(CodeContext/*!*/ context) {
             return (int)context.LanguageContext.
                 GetModuleState(_fieldSizeLimitKey);
         }
@@ -64,27 +61,23 @@ namespace IronPython.Modules
 dialect = csv.register_dialect(name, dialect)")]
         public static void register_dialect(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args)
-        {
+            params object[] args) {
             string name = null;
             object dialectObj = null;
             Dialect dialect = null;
 
-            if (args.Length < 1)
-            {
+            if (args.Length < 1) {
                 throw PythonOps.TypeError("expected at least 1 arguments, got {0}",
                      args.Length);
             }
 
-            if (args.Length > 2)
-            {
+            if (args.Length > 2) {
                 throw PythonOps.TypeError("expected at most 2 arguments, got {0}",
                     args.Length);
             }
 
             name = args[0] as string;
-            if (name == null)
-            {
+            if (name == null) {
                 throw PythonOps.TypeError(
                     "dialect name must be a string or unicode");
             }
@@ -105,11 +98,9 @@ dialect = csv.register_dialect(name, dialect)")]
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        private static DialectRegistry GetDialects(CodeContext/*!*/ context)
-        {
+        private static DialectRegistry GetDialects(CodeContext/*!*/ context) {
             PythonContext ctx = context.LanguageContext;
-            if (!ctx.HasModuleState(_dialectRegistryKey))
-            {
+            if (!ctx.HasModuleState(_dialectRegistryKey)) {
                 ctx.SetModuleState(_dialectRegistryKey,
                     new DialectRegistry());
             }
@@ -117,11 +108,9 @@ dialect = csv.register_dialect(name, dialect)")]
             return (DialectRegistry)ctx.GetModuleState(_dialectRegistryKey);
         }
 
-        private static int GetFieldSizeLimit(CodeContext/*!*/ context)
-        {
+        private static int GetFieldSizeLimit(CodeContext/*!*/ context) {
             PythonContext ctx = context.LanguageContext;
-            if (!ctx.HasModuleState(_fieldSizeLimitKey))
-            {
+            if (!ctx.HasModuleState(_fieldSizeLimitKey)) {
                 ctx.SetModuleState(_fieldSizeLimitKey, FieldSizeLimit);
             }
 
@@ -131,8 +120,7 @@ dialect = csv.register_dialect(name, dialect)")]
         [Documentation(@"Delete the name/dialect mapping associated with a string name.\n
     csv.unregister_dialect(name)")]
         public static void unregister_dialect(CodeContext/*!*/ context,
-            string name)
-        {
+            string name) {
             DialectRegistry dialects = GetDialects(context);
             if (name == null || !dialects.ContainsKey(name))
                 throw MakeError("unknown dialect");
@@ -143,8 +131,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
         [Documentation(@"Return the dialect instance associated with name.
     dialect = csv.get_dialect(name)")]
-        public static object get_dialect(CodeContext/*!*/ context, string name)
-        {
+        public static object get_dialect(CodeContext/*!*/ context, string name) {
             DialectRegistry dialects = GetDialects(context);
             if (name == null || !dialects.ContainsKey(name))
                 throw MakeError("unknown dialect");
@@ -153,8 +140,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
         [Documentation(@"Return a list of all know dialect names
     names = csv.list_dialects()")]
-        public static PythonList list_dialects(CodeContext/*!*/ context)
-        {
+        public static PythonList list_dialects(CodeContext/*!*/ context) {
             return new PythonList(GetDialects(context).Keys);
         }
 
@@ -173,29 +159,25 @@ dialect = csv.register_dialect(name, dialect)")]
     of the CSV file (which can span multiple input lines)")]
         public static object reader(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args)
-        {
+            params object[] args) {
             object dialectObj = null;
             Dialect dialect = null;
             IEnumerator e = null;
             DialectRegistry dialects = GetDialects(context);
 
-            if (args.Length < 1)
-            {
+            if (args.Length < 1) {
                 throw PythonOps.TypeError(
                     "expected at least 1 arguments, got {0}",
                      args.Length);
             }
 
-            if (args.Length > 2)
-            {
+            if (args.Length > 2) {
                 throw PythonOps.TypeError(
                     "expected at most 2 arguments, got {0}",
                     args.Length);
             }
 
-            if (!PythonOps.TryGetEnumerator(context, args[0], out e))
-            {
+            if (!PythonOps.TryGetEnumerator(context, args[0], out e)) {
                 throw PythonOps.TypeError("argument 1 must be an iterator");
             }
 
@@ -204,8 +186,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
             if (dialectObj is string && !dialects.ContainsKey((string)dialectObj))
                 throw MakeError("unknown dialect");
-            else if (dialectObj is string)
-            {
+            else if (dialectObj is string) {
                 dialect = dialects[(string)dialectObj];
                 dialectObj = dialect;
             }
@@ -219,21 +200,18 @@ dialect = csv.register_dialect(name, dialect)")]
 
         public static object writer(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args)
-        {
+            params object[] args) {
             object output_file = null;
             object dialectObj = null;
             Dialect dialect = null;
             DialectRegistry dialects = GetDialects(context);
 
-            if (args.Length < 1)
-            {
+            if (args.Length < 1) {
                 throw PythonOps.TypeError("expected at least 1 arguments, got {0}",
                      args.Length);
             }
 
-            if (args.Length > 2)
-            {
+            if (args.Length > 2) {
                 throw PythonOps.TypeError("expected at most 2 arguments, got {0}",
                     args.Length);
             }
@@ -244,8 +222,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
             if (dialectObj is string && !dialects.ContainsKey((string)dialectObj))
                 throw MakeError("unknown dialect");
-            else if (dialectObj is string)
-            {
+            else if (dialectObj is string) {
                 dialect = dialects[(string)dialectObj];
                 dialectObj = dialect;
             }
@@ -260,8 +237,7 @@ dialect = csv.register_dialect(name, dialect)")]
         [Documentation(@"CSV dialect
 The Dialect type records CSV parsing and generation options.")]
         [PythonType]
-        public class Dialect
-        {
+        public class Dialect {
             private string _delimiter = ",";
             private string _escapechar = null;
             private bool _skipinitialspace;
@@ -282,14 +258,12 @@ The Dialect type records CSV parsing and generation options.")]
                                                             "skipinitialspace",
                                                             "strict"};
 
-            private Dialect()
-            {
+            private Dialect() {
             }
 
             public static Dialect Create(CodeContext/*!*/ context,
                 [ParamDictionary] IDictionary<object, object> kwArgs,
-                params object[] args)
-            {
+                params object[] args) {
                 object dialect = null;
                 object delimiter = null;
                 object doublequote = null;
@@ -315,17 +289,15 @@ The Dialect type records CSV parsing and generation options.")]
                 kwArgs.TryGetValue("skipinitialspace", out skipinitialspace);
                 kwArgs.TryGetValue("strict", out strict);
 
-                if (dialect != null)
-                {
-                    if (dialect is string)
-                    {
+                if (dialect != null) {
+                    if (dialect is string) {
                         string dialectName = (string)dialect;
                         if (dialects.ContainsKey(dialectName))
                             dialect = dialects[dialectName];
                         else
                             throw MakeError("unknown dialect");
                     }
-                    
+
                     if (dialect is Dialect &&
                         delimiter == null &&
                         doublequote == null &&
@@ -334,8 +306,7 @@ The Dialect type records CSV parsing and generation options.")]
                         quotechar == null &&
                         quoting == null &&
                         skipinitialspace == null &&
-                        strict == null)
-                    {
+                        strict == null) {
                         return dialect as Dialect;
                     }
                 }
@@ -348,8 +319,7 @@ The Dialect type records CSV parsing and generation options.")]
             }
 
             [SpecialName]
-            public void DeleteMember(CodeContext/*!*/ context, string name)
-            {
+            public void DeleteMember(CodeContext/*!*/ context, string name) {
                 if (string.Compare(name, "delimiter") == 0 ||
                     string.Compare(name, "skipinitialspace") == 0 ||
                     string.Compare(name, "doublequote") == 0 ||
@@ -357,21 +327,17 @@ The Dialect type records CSV parsing and generation options.")]
                     string.Compare(name, "escapechar") == 0 ||
                     string.Compare(name, "lineterminator") == 0 ||
                     string.Compare(name, "quotechar") == 0 ||
-                    string.Compare(name, "quoting") == 0)
-                {
+                    string.Compare(name, "quoting") == 0) {
                     throw PythonOps.AttributeError("attribute '{0}' of " +
                         "'_csv.Dialect' objects is not writable", name);
-                }
-                else
-                {
+                } else {
                     throw PythonOps.AttributeError("'_csv.Dialect' object " +
                         "has no attribute '{0}'", name);
                 }
             }
 
             [SpecialName]
-            public void SetMember(CodeContext/*!*/ context, string name, object value)
-            {
+            public void SetMember(CodeContext/*!*/ context, string name, object value) {
                 if (string.Compare(name, "delimiter") == 0 ||
                     string.Compare(name, "skipinitialspace") == 0 ||
                     string.Compare(name, "doublequote") == 0 ||
@@ -379,13 +345,10 @@ The Dialect type records CSV parsing and generation options.")]
                     string.Compare(name, "escapechar") == 0 ||
                     string.Compare(name, "lineterminator") == 0 ||
                     string.Compare(name, "quotechar") == 0 ||
-                    string.Compare(name, "quoting") == 0)
-                {
+                    string.Compare(name, "quoting") == 0) {
                     throw PythonOps.AttributeError("attribute '{0}' of " +
                         "'_csv.Dialect' objects is not writable", name);
-                }
-                else
-                {
+                } else {
                     throw PythonOps.AttributeError("'_csv.Dialect' object " +
                         "has no attribute '{0}'", name);
                 }
@@ -393,13 +356,10 @@ The Dialect type records CSV parsing and generation options.")]
 
             #region Parameter Setting
 
-            private static int SetInt(string name, object src, bool found, int @default)
-            {
+            private static int SetInt(string name, object src, bool found, int @default) {
                 int result = @default;
-                if (found)
-                {
-                    if (!(src is int))
-                    {
+                if (found) {
+                    if (!(src is int)) {
                         throw PythonOps.TypeError("\"{0}\" must be an integer",
                             name);
                     }
@@ -408,8 +368,7 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            private static bool SetBool(string name, object src, bool found, bool @default)
-            {
+            private static bool SetBool(string name, object src, bool found, bool @default) {
                 bool result = @default;
                 if (found)
                     result = PythonOps.IsTrue(src);
@@ -417,29 +376,22 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            private static string SetChar(string name, object src, bool found, string @default)
-            {
+            private static string SetChar(string name, object src, bool found, string @default) {
                 string result = @default;
-                if (found)
-                {
+                if (found) {
                     if (src == null)
                         result = null;
-                    else if (src is string)
-                    {
+                    else if (src is string) {
                         string source = src as string;
                         if (source.Length == 0)
                             result = null;
-                        else if (source.Length != 1)
-                        {
+                        else if (source.Length != 1) {
                             throw PythonOps.TypeError(
                                 "\"{0}\" must be an 1-character string",
                                 name);
-                        }
-                        else
+                        } else
                             result = source.Substring(0, 1);
-                    }
-                    else
-                    {
+                    } else {
                         throw PythonOps.TypeError(
                             "\"{0}\" must be string, not {1}", name, PythonOps.GetPythonTypeName(src));
                     }
@@ -447,20 +399,15 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            private static string SetString(string name, object src, bool found, string @default)
-            {
+            private static string SetString(string name, object src, bool found, string @default) {
                 string result = @default;
-                if (found)
-                {
+                if (found) {
                     if (src == null)
                         result = null;
-                    else if (!(src is string))
-                    {
+                    else if (!(src is string)) {
                         throw PythonOps.TypeError(
                             "\"{0}\" must be a string", name);
-                    }
-                    else
-                    {
+                    } else {
                         result = src as string;
                     }
                 }
@@ -470,8 +417,7 @@ The Dialect type records CSV parsing and generation options.")]
 
             public Dialect(CodeContext/*!*/ context,
                 [ParamDictionary] IDictionary<object, object> kwArgs,
-                params object[] args)
-            {
+                params object[] args) {
                 object dialect = null;
                 object delimiter = null;
                 object doublequote = null;
@@ -485,23 +431,19 @@ The Dialect type records CSV parsing and generation options.")]
                 Dictionary<string, bool> foundParams =
                     new Dictionary<string, bool>();
 
-                foreach (object key in kwArgs.Keys)
-                {
-                    if (Array.IndexOf(VALID_KWARGS, key) < 0)
-                    {
+                foreach (object key in kwArgs.Keys) {
+                    if (Array.IndexOf(VALID_KWARGS, key) < 0) {
                         throw PythonOps.TypeError("'{0}' is an invalid " +
                             "keyword argument for this function", key);
                     }
                 }
 
-                if (args.Length > 0 && args[0] != null)
-                {
+                if (args.Length > 0 && args[0] != null) {
                     dialect = args[0];
                     foundParams["dialect"] = true;
                 }
 
-                if (dialect == null)
-                {
+                if (dialect == null) {
                     foundParams["dialect"] =
                         kwArgs.TryGetValue("dialect", out dialect);
                 }
@@ -514,8 +456,7 @@ The Dialect type records CSV parsing and generation options.")]
                 foundParams["skipinitialspace"] = kwArgs.TryGetValue("skipinitialspace", out skipinitialspace);
                 foundParams["strict"] = kwArgs.TryGetValue("strict", out strict);
 
-                if (dialect != null)
-                {
+                if (dialect != null) {
                     if (!foundParams["delimiter"] && delimiter == null)
                         foundParams["delimiter"] = PythonOps.TryGetBoundAttr(dialect, "delimiter", out delimiter);
                     if (!foundParams["doublequote"] && doublequote == null)
@@ -565,43 +506,35 @@ The Dialect type records CSV parsing and generation options.")]
                     throw PythonOps.TypeError("lineterminator must be set");
             }
 
-            public string escapechar
-            {
+            public string escapechar {
                 get { return _escapechar; }
             }
 
-            public string delimiter
-            {
+            public string delimiter {
                 get { return _delimiter; }
             }
 
-            public bool skipinitialspace
-            {
+            public bool skipinitialspace {
                 get { return _skipinitialspace; }
             }
 
-            public bool doublequote
-            {
+            public bool doublequote {
                 get { return _doublequote; }
             }
 
-            public string lineterminator
-            {
+            public string lineterminator {
                 get { return _lineterminator; }
             }
 
-            public bool strict
-            {
+            public bool strict {
                 get { return _strict; }
             }
 
-            public int quoting
-            {
+            public int quoting {
                 get { return _quoting; }
             }
 
-            public string quotechar
-            {
+            public string quotechar {
                 get { return _quotechar; }
             }
         }
@@ -611,23 +544,20 @@ The Dialect type records CSV parsing and generation options.")]
 Reader objects are responsible for reading and parsing tabular data
 in CSV format.")]
         [PythonType]
-        public class Reader : IEnumerable
-        {
+        public class Reader : IEnumerable {
             private IEnumerator _input_iter;
             private Dialect _dialect;
             private int _line_num;
             private ReaderIterator _iterator;
 
             public Reader(CodeContext/*!*/ context, IEnumerator input_iter,
-                Dialect dialect)
-            {
+                Dialect dialect) {
                 _input_iter = input_iter;
                 _dialect = dialect;
                 _iterator = new ReaderIterator(context, this);
             }
 
-            public object __next__()
-            {
+            public object __next__() {
                 if (!_iterator.MoveNext())
                     throw PythonOps.StopIteration();
 
@@ -636,13 +566,11 @@ in CSV format.")]
 
             #region IEnumerable Members
 
-            public IEnumerator GetEnumerator()
-            {
+            public IEnumerator GetEnumerator() {
                 return _iterator;
             }
 
-            private sealed class ReaderIterator : IEnumerator, IEnumerable
-            {
+            private sealed class ReaderIterator : IEnumerator, IEnumerable {
                 private CodeContext _context;
                 private Reader _reader;
                 private PythonList _fields = new PythonList();
@@ -651,8 +579,7 @@ in CSV format.")]
                 private StringBuilder _field = new StringBuilder();
                 private IEnumerator _iterator;
 
-                private enum State
-                {
+                private enum State {
                     StartRecord,
                     StartField,
                     EscapedChar,
@@ -663,8 +590,7 @@ in CSV format.")]
                     EatCrNl
                 }
 
-                public ReaderIterator(CodeContext/*!*/ context, Reader reader)
-                {
+                public ReaderIterator(CodeContext/*!*/ context, Reader reader) {
                     _context = context;
                     _reader = reader;
                     _iterator = _reader._input_iter;
@@ -672,24 +598,20 @@ in CSV format.")]
 
                 #region IEnumerator Members
 
-                public object Current
-                {
+                public object Current {
                     get { return new PythonList(_fields); }
                 }
 
-                public bool MoveNext()
-                {
+                public bool MoveNext() {
                     bool result = false;
                     Reset();
 
-                    do
-                    {
+                    do {
                         object lineobj = null;
-                        if (!_iterator.MoveNext())
-                        {
+                        if (!_iterator.MoveNext()) {
                             // End of input OR exception
-                            if(_field.Length > 0 || _state == State.InQuotedField) {
-                                if(_reader._dialect.strict) {
+                            if (_field.Length > 0 || _state == State.InQuotedField) {
+                                if (_reader._dialect.strict) {
                                     throw MakeError("unexpected end of data");
                                 } else {
                                     ParseSaveField();
@@ -697,9 +619,7 @@ in CSV format.")]
                                 }
                             }
                             return false;
-                        }
-                        else
-                        {
+                        } else {
                             lineobj = _iterator.Current;
                         }
 
@@ -708,18 +628,15 @@ in CSV format.")]
                         if (lineobj is char)
                             lineobj = lineobj.ToString();
 
-                        if (!(lineobj is string))
-                        {
+                        if (!(lineobj is string)) {
                             throw MakeError("iterator should return strings, not "
                                 + PythonOps.GetPythonTypeName(lineobj) +
                                 " (did you open the file in text mode?)");
                         }
 
                         string line = lineobj as string;
-                        if (!string.IsNullOrEmpty(line))
-                        {
-                            for (int i = 0; i < line.Length; i++)
-                            {
+                        if (!string.IsNullOrEmpty(line)) {
+                            for (int i = 0; i < line.Length; i++) {
                                 char c = line[i];
                                 if (c == '\0')
                                     throw MakeError("line contains NULL byte");
@@ -742,8 +659,7 @@ in CSV format.")]
                     return result;
                 }
 
-                public void Reset()
-                {
+                public void Reset() {
                     _state = State.StartRecord;
                     _fields.Clear();
                     _is_numeric_field = false;
@@ -754,27 +670,21 @@ in CSV format.")]
 
                 #region IEnumerable Members
 
-                public IEnumerator GetEnumerator()
-                {
+                public IEnumerator GetEnumerator() {
                     return this;
                 }
 
                 #endregion
 
-                private void ProcessChar(char c)
-                {
+                private void ProcessChar(char c) {
                     Dialect dialect = _reader._dialect;
-                    switch (_state)
-                    {
+                    switch (_state) {
                         case State.StartRecord:
                             // start of record
-                            if (c == '\0')
-                            {
+                            if (c == '\0') {
                                 // empty line, will return empty list
                                 break;
-                            }
-                            else if (c == '\n' || c == '\r')
-                            {
+                            } else if (c == '\n' || c == '\r') {
                                 _state = State.EatCrNl;
                                 break;
                             }
@@ -785,37 +695,26 @@ in CSV format.")]
 
                         case State.StartField:
                             // expecting field
-                            if (c == '\n' || c == '\r' || c == '\0')
-                            {
+                            if (c == '\n' || c == '\r' || c == '\0') {
                                 // save empty field - return [fields]
                                 ParseSaveField();
                                 _state = (c == '\0' ?
                                     State.StartRecord : State.EatCrNl);
-                            }
-                            else if (!string.IsNullOrEmpty(dialect.quotechar) &&
-                                c == dialect.quotechar[0] &&
-                                dialect.quoting != QUOTE_NONE)
-                            {
+                            } else if (!string.IsNullOrEmpty(dialect.quotechar) &&
+                                  c == dialect.quotechar[0] &&
+                                  dialect.quoting != QUOTE_NONE) {
                                 // start quoted field
                                 _state = State.InQuotedField;
-                            }
-                            else if (!string.IsNullOrEmpty(dialect.escapechar) &&
-                                c == dialect.escapechar[0])
-                            {
+                            } else if (!string.IsNullOrEmpty(dialect.escapechar) &&
+                                  c == dialect.escapechar[0]) {
                                 // possible escaped char
                                 _state = State.EscapedChar;
-                            }
-                            else if (c == ' ' && dialect.skipinitialspace)
-                            {
+                            } else if (c == ' ' && dialect.skipinitialspace) {
                                 // ignore space at start of field
-                            }
-                            else if (c == dialect.delimiter[0])
-                            {
+                            } else if (c == dialect.delimiter[0]) {
                                 // save empty field
                                 ParseSaveField();
-                            }
-                            else
-                            {
+                            } else {
                                 // begin new unquoted field
                                 if (dialect.quoting == QUOTE_NONNUMERIC)
                                     _is_numeric_field = true;
@@ -835,26 +734,19 @@ in CSV format.")]
 
                         case State.InField:
                             // in unquoted field
-                            if (c == '\n' || c == '\r' || c == '\0')
-                            {
+                            if (c == '\n' || c == '\r' || c == '\0') {
                                 // end of line, return [fields]
                                 ParseSaveField();
                                 _state = (c == '\0' ? State.StartRecord : State.EatCrNl);
-                            }
-                            else if (!string.IsNullOrEmpty(dialect.escapechar) &&
-                                c == dialect.escapechar[0])
-                            {
+                            } else if (!string.IsNullOrEmpty(dialect.escapechar) &&
+                                  c == dialect.escapechar[0]) {
                                 // possible escaped character
                                 _state = State.EscapedChar;
-                            }
-                            else if (c == dialect.delimiter[0])
-                            {
+                            } else if (c == dialect.delimiter[0]) {
                                 // save field - wait for new field
                                 ParseSaveField();
                                 _state = State.StartField;
-                            }
-                            else
-                            {
+                            } else {
                                 // normal character - save in field
                                 ParseAddChar(c);
                             }
@@ -862,33 +754,23 @@ in CSV format.")]
 
                         case State.InQuotedField:
                             // in quoted field
-                            if (c == '\0')
-                            {
+                            if (c == '\0') {
                                 // ignore null character
-                            }
-                            else if (!string.IsNullOrEmpty(dialect.escapechar) &&
-                                c == dialect.escapechar[0])
-                            {
+                            } else if (!string.IsNullOrEmpty(dialect.escapechar) &&
+                                  c == dialect.escapechar[0]) {
                                 // possible escape character
                                 _state = State.EscapeInQuotedField;
-                            }
-                            else if (!string.IsNullOrEmpty(dialect.quotechar) &&
-                                c == dialect.quotechar[0] &&
-                                dialect.quoting != QUOTE_NONE)
-                            {
-                                if (dialect.doublequote)
-                                {
+                            } else if (!string.IsNullOrEmpty(dialect.quotechar) &&
+                                  c == dialect.quotechar[0] &&
+                                  dialect.quoting != QUOTE_NONE) {
+                                if (dialect.doublequote) {
                                     // doublequote; " represented by ""
                                     _state = State.QuoteInQuotedField;
-                                }
-                                else
-                                {
+                                } else {
                                     // end of quote part of field
                                     _state = State.InField;
                                 }
-                            }
-                            else
-                            {
+                            } else {
                                 // normal character - save in field
                                 ParseAddChar(c);
                             }
@@ -905,31 +787,22 @@ in CSV format.")]
                         case State.QuoteInQuotedField:
                             // doublequote - seen a quote in a quoted field
                             if (dialect.quoting != QUOTE_NONE &&
-                                c == dialect.quotechar[0])
-                            {
+                                c == dialect.quotechar[0]) {
                                 // save "" as "
                                 ParseAddChar(c);
                                 _state = State.InQuotedField;
-                            }
-                            else if (c == dialect.delimiter[0])
-                            {
+                            } else if (c == dialect.delimiter[0]) {
                                 // save field - wait for new field
                                 ParseSaveField();
                                 _state = State.StartField;
-                            }
-                            else if (c == '\n' || c == '\r' || c == '\0')
-                            {
+                            } else if (c == '\n' || c == '\r' || c == '\0') {
                                 // end of line - return [fields]
                                 ParseSaveField();
                                 _state = (c == '\0' ? State.StartRecord : State.EatCrNl);
-                            }
-                            else if (!dialect.strict)
-                            {
+                            } else if (!dialect.strict) {
                                 ParseAddChar(c);
                                 _state = State.InField;
-                            }
-                            else
-                            {
+                            } else {
                                 // illegal!
                                 throw MakeError("'{0}' expected after '{1}'",
                                     dialect.delimiter, dialect.quotechar);
@@ -937,14 +810,11 @@ in CSV format.")]
                             break;
 
                         case State.EatCrNl:
-                            if (c == '\n' || c == '\r')
-                            {
+                            if (c == '\n' || c == '\r') {
                                 // eat the CR NL
-                            }
-                            else if (c == '\0')
+                            } else if (c == '\0')
                                 _state = State.StartRecord;
-                            else
-                            {
+                            else {
                                 throw MakeError("new-line character seen " +
                                     "in unquoted field - do you need to open" +
                                     " the file in universal-newline mode?");
@@ -953,11 +823,9 @@ in CSV format.")]
                     }
                 }
 
-                private void ParseAddChar(char c)
-                {
+                private void ParseAddChar(char c) {
                     int field_size_limit = GetFieldSizeLimit(_context);
-                    if (_field.Length >= field_size_limit)
-                    {
+                    if (_field.Length >= field_size_limit) {
                         throw MakeError(
                             string.Format("field larger than field " +
                                 "limit ({0})", field_size_limit));
@@ -966,28 +834,22 @@ in CSV format.")]
                     _field.Append(c);
                 }
 
-                private void ParseSaveField()
-                {
+                private void ParseSaveField() {
                     string field = _field.ToString();
-                    if (_is_numeric_field)
-                    {
+                    if (_is_numeric_field) {
                         _is_numeric_field = false;
 
                         double tmp;
-                        if (double.TryParse(field, out tmp))
-                        {
+                        if (double.TryParse(field, out tmp)) {
                             if (field.Contains("."))
                                 _fields.Add(tmp);
                             else
                                 _fields.Add((int)tmp);
-                        }
-                        else
-                        {
+                        } else {
                             throw PythonOps.ValueError(
                                 "invalid literal for float(): {0}", field);
                         }
-                    }
-                    else
+                    } else
                         _fields.Add(field);
 
                     _field.Clear();
@@ -996,13 +858,11 @@ in CSV format.")]
 
             #endregion
 
-            public object dialect
-            {
+            public object dialect {
                 get { return _dialect; }
             }
 
-            public int line_num
-            {
+            public int line_num {
                 get { return _line_num; }
             }
         }
@@ -1012,8 +872,7 @@ in CSV format.")]
 Writer objects are responsible for generating tabular data
 in CSV format from sequence input.")]
         [PythonType]
-        public class Writer
-        {
+        public class Writer {
             private Dialect _dialect;
             private object _writeline;
 
@@ -1021,21 +880,18 @@ in CSV format from sequence input.")]
             private int _num_fields;
 
             public Writer(CodeContext/*!*/ context, object output_file,
-                Dialect dialect)
-            {
+                Dialect dialect) {
                 _dialect = dialect;
                 if (!PythonOps.TryGetBoundAttr(
                     output_file, "write", out _writeline) ||
                     _writeline == null ||
-                    !PythonOps.IsCallable(context, _writeline))
-                {
+                    !PythonOps.IsCallable(context, _writeline)) {
                     throw PythonOps.TypeError(
                         "argument 1 must have a \"write\" method");
                 }
             }
 
-            public object dialect
-            {
+            public object dialect {
                 get { return _dialect; }
             }
 
@@ -1043,8 +899,7 @@ in CSV format from sequence input.")]
 
 Construct and write a CSV record from a sequence of fields.  Non-string
 elements will be converted to string.")]
-            public void writerow(CodeContext/*!*/ context, object sequence)
-            {
+            public void writerow(CodeContext/*!*/ context, object sequence) {
                 IEnumerator e = null;
                 if (!PythonOps.TryGetEnumerator(context, sequence, out e))
                     throw MakeError("sequence expected");
@@ -1053,13 +908,11 @@ elements will be converted to string.")]
 
                 // join all fields in internal buffer
                 JoinReset();
-                while (e.MoveNext())
-                {
+                while (e.MoveNext()) {
                     object field = e.Current;
                     bool quoted = false;
 
-                    switch (_dialect.quoting)
-                    {
+                    switch (_dialect.quoting) {
                         case QUOTE_NONNUMERIC:
                             quoted = !(PythonOps.CheckingConvertToFloat(field) ||
                                 PythonOps.CheckingConvertToInt(field) ||
@@ -1072,17 +925,13 @@ elements will be converted to string.")]
 
                     if (field is string)
                         JoinAppend((string)field, quoted, rowlen == 1);
-                    else if (field is double)
-                    {
+                    else if (field is double) {
                         JoinAppend(DoubleOps.__repr__(context, (double)field),
                             quoted, rowlen == 1);
-                    }
-                    else if (field is float)
-                    {
+                    } else if (field is float) {
                         JoinAppend(SingleOps.__repr__(context, (float)field),
                             quoted, rowlen == 1);
-                    }
-                    else if (field == null)
+                    } else if (field == null)
                         JoinAppend(string.Empty, quoted, rowlen == 1);
                     else
                         JoinAppend(PythonOps.ToString(context, field), quoted, rowlen == 1);
@@ -1098,36 +947,30 @@ elements will be converted to string.")]
 
 Construct and write a series of sequences to a csv file.  Non-string 
 elements will be converted to string.")]
-            public void writerows(CodeContext/*!*/ context, object sequence)
-            {
+            public void writerows(CodeContext/*!*/ context, object sequence) {
                 IEnumerator e = null;
-                if (!PythonOps.TryGetEnumerator(context, sequence, out e))
-                {
+                if (!PythonOps.TryGetEnumerator(context, sequence, out e)) {
                     throw PythonOps.TypeError(
                         "writerows() argument must be iterable");
                 }
 
-                while (e.MoveNext())
-                {
+                while (e.MoveNext()) {
                     writerow(context, e.Current);
                 }
             }
 
-            private void JoinReset()
-            {
+            private void JoinReset() {
                 _num_fields = 0;
                 _rec.Clear();
             }
 
-            private void JoinAppend(string field, bool quoted, bool quote_empty)
-            {
+            private void JoinAppend(string field, bool quoted, bool quote_empty) {
                 // if this is not the first field, we need a field separator
                 if (_num_fields > 0)
                     _rec.Add(_dialect.delimiter);
 
                 List<char> need_escape = new List<char>();
-                if (_dialect.quoting == QUOTE_NONE)
-                {
+                if (_dialect.quoting == QUOTE_NONE) {
                     if (!string.IsNullOrEmpty(_dialect.escapechar))
                         need_escape.Add(_dialect.escapechar[0]);
                     need_escape.AddRange(_dialect.lineterminator.ToCharArray());
@@ -1135,9 +978,7 @@ elements will be converted to string.")]
                         need_escape.Add(_dialect.delimiter[0]);
                     if (!string.IsNullOrEmpty(_dialect.quotechar))
                         need_escape.Add(_dialect.quotechar[0]);
-                }
-                else
-                {
+                } else {
                     List<char> temp = new List<char>();
                     if (!string.IsNullOrEmpty(_dialect.escapechar))
                         temp.Add(_dialect.escapechar[0]);
@@ -1150,25 +991,19 @@ elements will be converted to string.")]
 
                     need_escape.Clear();
 
-                    if (!string.IsNullOrEmpty(_dialect.quotechar) && field.Contains(_dialect.quotechar))
-                    {
-                        if (_dialect.doublequote)
-                        {
+                    if (!string.IsNullOrEmpty(_dialect.quotechar) && field.Contains(_dialect.quotechar)) {
+                        if (_dialect.doublequote) {
                             field = field.Replace(_dialect.quotechar,
                                 _dialect.quotechar + _dialect.quotechar);
                             quoted = true;
-                        }
-                        else
-                        {
+                        } else {
                             need_escape.Add(_dialect.quotechar[0]);
                         }
                     }
                 }
 
-                foreach (char c in need_escape)
-                {
-                    if (field.IndexOf(c) >= 0)
-                    {
+                foreach (char c in need_escape) {
+                    if (field.IndexOf(c) >= 0) {
                         if (string.IsNullOrEmpty(_dialect.escapechar))
                             throw MakeError("need to escape, but no escapechar set");
                         field = field.Replace(c.ToString(), _dialect.escapechar + c);
@@ -1176,8 +1011,7 @@ elements will be converted to string.")]
                 }
 
                 // If field is empty check if it needs to be quoted
-                if (string.IsNullOrEmpty(field) && quote_empty)
-                {
+                if (string.IsNullOrEmpty(field) && quote_empty) {
                     if (_dialect.quoting == QUOTE_NONE)
                         throw MakeError("single empty field record must be quoted");
                     quoted = true;
@@ -1192,14 +1026,12 @@ elements will be converted to string.")]
         }
 
         public static PythonType Error;
-        internal static Exception MakeError(params object[] args)
-        {
+        internal static Exception MakeError(params object[] args) {
             return PythonOps.CreateThrowable(Error, args);
         }
 
         private static void InitModuleExceptions(PythonContext context,
-            PythonDictionary dict)
-        {
+            PythonDictionary dict) {
             Error = context.EnsureModuleException("csv.Error",
                 PythonExceptions.Exception, dict, "Error", "_csv");
         }

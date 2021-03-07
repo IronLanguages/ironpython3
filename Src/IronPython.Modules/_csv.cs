@@ -387,7 +387,7 @@ The Dialect type records CSV parsing and generation options.")]
                             result = null;
                         else if (source.Length != 1) {
                             throw PythonOps.TypeError(
-                                "\"{0}\" must be an 1-character string",
+                                "\"{0}\" must be a 1-character string",
                                 name);
                         } else
                             result = source.Substring(0, 1);
@@ -495,7 +495,7 @@ The Dialect type records CSV parsing and generation options.")]
                 if (_quoting < QUOTE_MINIMAL || _quoting > QUOTE_NONE)
                     throw PythonOps.TypeError("bad \"quoting\" value");
                 if (string.IsNullOrEmpty(_delimiter))
-                    throw PythonOps.TypeError("\"delimiter\" must be an 1-character string");
+                    throw PythonOps.TypeError("\"delimiter\" must be a 1-character string");
 
                 if ((foundParams["quotechar"] && quotechar == null) && quoting == null)
                     _quoting = QUOTE_NONE;
@@ -876,7 +876,7 @@ in CSV format from sequence input.")]
             private Dialect _dialect;
             private object _writeline;
 
-            private List<string> _rec = new List<string>();
+            private StringBuilder _rec = new StringBuilder();
             private int _num_fields;
 
             public Writer(CodeContext/*!*/ context, object output_file,
@@ -900,47 +900,46 @@ in CSV format from sequence input.")]
 Construct and write a CSV record from a sequence of fields.  Non-string
 elements will be converted to string.")]
             public void writerow(CodeContext/*!*/ context, object sequence) {
-                IEnumerator e = null;
+                IEnumerator e;
                 if (!PythonOps.TryGetEnumerator(context, sequence, out e))
-                    throw MakeError("sequence expected");
-
-                int rowlen = PythonOps.Length(sequence);
+                    throw MakeError($"iterable expected, not {PythonTypeOps.GetName(sequence)}");
 
                 // join all fields in internal buffer
                 JoinReset();
                 while (e.MoveNext()) {
                     object field = e.Current;
-                    bool quoted = false;
+                    var quoted = _dialect.quoting switch {
+                        QUOTE_NONNUMERIC => !(PythonOps.CheckingConvertToFloat(field) ||
+                                                PythonOps.CheckingConvertToInt(field) ||
+                                                PythonOps.CheckingConvertToLong(field)),
+                        QUOTE_ALL => true,
+                        _ => false,
+                    };
 
-                    switch (_dialect.quoting) {
-                        case QUOTE_NONNUMERIC:
-                            quoted = !(PythonOps.CheckingConvertToFloat(field) ||
-                                PythonOps.CheckingConvertToInt(field) ||
-                                PythonOps.CheckingConvertToLong(field));
-                            break;
-                        case QUOTE_ALL:
-                            quoted = true;
-                            break;
-                    }
-
-                    if (field is string)
-                        JoinAppend((string)field, quoted, rowlen == 1);
-                    else if (field is double) {
-                        JoinAppend(DoubleOps.__repr__(context, (double)field),
-                            quoted, rowlen == 1);
+                    if (field is string) {
+                        JoinAppend((string)field, quoted);
+                    } else if (field is double) {
+                        JoinAppend(DoubleOps.__repr__(context, (double)field), quoted);
                     } else if (field is float) {
-                        JoinAppend(SingleOps.__repr__(context, (float)field),
-                            quoted, rowlen == 1);
-                    } else if (field == null)
-                        JoinAppend(string.Empty, quoted, rowlen == 1);
-                    else
-                        JoinAppend(PythonOps.ToString(context, field), quoted, rowlen == 1);
+                        JoinAppend(SingleOps.__repr__(context, (float)field), quoted);
+                    } else if (field is null) {
+                        JoinAppend(string.Empty, quoted);
+                    } else {
+                        JoinAppend(PythonOps.ToString(context, field), quoted);
+                    }
                 }
 
-                _rec.Add(_dialect.lineterminator);
+                if (_num_fields > 0 && _rec.Length == 0) {
+                    if (_dialect.quoting == QUOTE_NONE) {
+                        throw MakeError("single empty field record must be quoted");
+                    }
+                    _num_fields--;
+                    JoinAppend(string.Empty, quoted: true);
+                }
 
-                PythonOps.CallWithContext(
-                    context, _writeline, string.Join("", _rec.ToArray()));
+                _rec.Append(_dialect.lineterminator);
+
+                PythonOps.CallWithContext(context, _writeline, _rec.ToString());
             }
 
             [Documentation(@"writerows(sequence of sequences)
@@ -964,10 +963,10 @@ elements will be converted to string.")]
                 _rec.Clear();
             }
 
-            private void JoinAppend(string field, bool quoted, bool quote_empty) {
+            private void JoinAppend(string field, bool quoted) {
                 // if this is not the first field, we need a field separator
                 if (_num_fields > 0)
-                    _rec.Add(_dialect.delimiter);
+                    _rec.Append(_dialect.delimiter);
 
                 List<char> need_escape = new List<char>();
                 if (_dialect.quoting == QUOTE_NONE) {
@@ -1010,17 +1009,10 @@ elements will be converted to string.")]
                     }
                 }
 
-                // If field is empty check if it needs to be quoted
-                if (string.IsNullOrEmpty(field) && quote_empty) {
-                    if (_dialect.quoting == QUOTE_NONE)
-                        throw MakeError("single empty field record must be quoted");
-                    quoted = true;
-                }
-
                 if (quoted)
                     field = _dialect.quotechar + field + _dialect.quotechar;
 
-                _rec.Add(field);
+                _rec.Append(field);
                 _num_fields++;
             }
         }

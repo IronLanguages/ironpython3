@@ -2155,9 +2155,10 @@ namespace IronPython.Runtime.Operations {
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
 
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, true);
+            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, forRethrow: true, forGenerator: false, suppressContext: false);
             return MakeRethrowExceptionWorker(e);
         }
+
         /// <summary>
         /// helper function for re-raised exception.
         /// This entry point is used by 'raise' inside 'with' statement
@@ -2170,23 +2171,14 @@ namespace IronPython.Runtime.Operations {
             return e;
         }
 
-        /// <summary>
-        /// helper function for non-re-raise exceptions.
-        /// 
-        /// type is the type of exception to throw or an instance.  If it 
-        /// is an instance then value should be null.  
-        /// 
-        /// If type is a type then value can either be an instance of type,
-        /// a Tuple, or a single value.  This case is handled by EC.CreateThrowable.
-        /// </summary>
-        public static Exception MakeException(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
-            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false);
+        public static Exception MakeException(CodeContext/*!*/ context, object exception) {
+            Exception e = MakeExceptionWorker(context, exception, null, null, null, forRethrow: false, forGenerator: false, suppressContext: false);
             e.RemoveFrameList();
             return e;
         }
 
-        public static Exception MakeException(CodeContext/*!*/ context, object exception, object cause) {
-            Exception e = MakeExceptionWorker(context, exception, cause, false);
+        public static Exception MakeExceptionWithCause(CodeContext/*!*/ context, object exception, object cause) {
+            Exception e = MakeExceptionWorker(context, exception, null, null, cause, forRethrow: false, forGenerator: false, suppressContext: true);
             e.RemoveFrameList();
             return e;
         }
@@ -2195,12 +2187,12 @@ namespace IronPython.Runtime.Operations {
             GetCurrentException()?.GetPythonException() as PythonExceptions.BaseException;
 
         public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
-            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false, true);
+            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, forRethrow: false, forGenerator: true, suppressContext: false);
             e.RemoveFrameList();
             return e;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool forRethrow, bool forGenerator = false) {
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool forRethrow, bool forGenerator, bool suppressContext) {
             Exception throwable;
 
             if (cause != null) {
@@ -2216,9 +2208,9 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (type is PythonExceptions.BaseException) {
-                throwable = ((PythonExceptions.BaseException)type).CreateClrExceptionWithCause((PythonExceptions.BaseException?)cause, GetRawContextException());
+                throwable = ((PythonExceptions.BaseException)type).CreateClrExceptionWithCause((PythonExceptions.BaseException?)cause, GetRawContextException(), suppressContext);
             } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                throwable = PythonExceptions.CreateThrowableForRaise(context, pt, value, (PythonExceptions.BaseException?)cause);
+                throwable = PythonExceptions.CreateThrowableForRaise(context, pt, value, (PythonExceptions.BaseException?)cause, suppressContext);
             } else if (type is Exception ex) {
                 // TODO: maybe add cause?
                 throwable = ex;
@@ -2239,10 +2231,6 @@ namespace IronPython.Runtime.Operations {
             PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, throwable);
 
             return throwable;
-        }
-
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object exception, object cause, bool forRethrow) {
-            return MakeExceptionWorker(context, exception, null, null, cause, forRethrow);
         }
 
         public static Exception CreateThrowable(PythonType type, params object[] args) {

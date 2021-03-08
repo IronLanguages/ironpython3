@@ -363,9 +363,10 @@ namespace IronPython.Runtime.Exceptions {
                 return _clrException;
             }
 
-            internal Exception CreateClrExceptionWithCause(BaseException? cause, BaseException? context) {
+            internal Exception CreateClrExceptionWithCause(BaseException? cause, BaseException? context, bool suppressContext) {
                 _cause = cause;
                 _context = context;
+                __suppress_context__ = suppressContext;
                 _traceback = null;
 
                 if (cause != null) {

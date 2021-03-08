@@ -219,8 +219,9 @@ namespace IronPython.Compiler.Ast {
     /// this doesn't actually show up in the AST hierarchy and instead hangs off the comprehension expression.
     /// </summary>
     internal class ComprehensionScope : ScopeStatement {
+        private static int _comprehensionId;
+        private readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext$" + System.Threading.Interlocked.Increment(ref _comprehensionId));
         private readonly Comprehension _comprehension;
-        private static readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext");
 
         public ComprehensionScope(Comprehension comprehension) {
             _comprehension = comprehension;

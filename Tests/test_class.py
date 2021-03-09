@@ -1670,7 +1670,7 @@ class ClassTest(IronPythonTestCase):
         with self.assertRaises(AttributeError):
             prop.fset = self.test_classmethod
 
-        if sys.version_info >= (3,5):
+        if is_cli or sys.version_info >= (3,5):
             prop.__doc__ = 'abc'
         else:
             with self.assertRaises(AttributeError):

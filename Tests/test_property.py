@@ -226,7 +226,13 @@ class PropertyTest(IronPythonTestCase):
     def test_assign(self):
         x = property()
 
-        for attr in ['__doc__', 'fdel', 'fget', 'fset']:
+        if is_cli or sys.version_info >= (3,5):
+            x.__doc__ = "abc"
+        else:
+            with self.assertRaises(AttributeError):
+                x.__doc__ = "abc"
+
+        for attr in ['fdel', 'fget', 'fset']:
             self.assertRaisesMessage(AttributeError, "readonly attribute", lambda : setattr(x, attr, 'abc'))
 
 run_test(__name__)

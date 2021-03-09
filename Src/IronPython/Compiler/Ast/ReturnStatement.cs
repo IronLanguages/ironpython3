@@ -17,9 +17,6 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (Parent.IsGeneratorMethod) {
-                if (Expression == null) {
-                    return GlobalParent.AddDebugInfo(AstUtils.YieldBreak(GeneratorLabel), Span);
-                }
                 // Reduce to a yield return with a marker of -2, this will be interpreted as a yield break with a return value
                 return GlobalParent.AddDebugInfo(AstUtils.YieldReturn(GeneratorLabel, TransformOrConstantNull(Expression, typeof(object)), -2), Span);
             }

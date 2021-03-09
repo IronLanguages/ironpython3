@@ -514,5 +514,17 @@ def fetest(%s):
         self.assertRaisesMessage(TypeError, "object() takes no parameters",
                             lambda: KNew(*(i for i in range(10))) != None)
 
+    def test_ipy3_gh260(self):
+        """https://github.com/IronLanguages/ironpython3/issues/260"""
+
+        def gen():
+            yield 1
+
+        x = gen()
+        self.assertEqual(next(x), 1)
+
+        with self.assertRaises(StopIteration) as cm:
+            next(x)
+        self.assertIsNone(cm.exception.value)
 
 run_test(__name__)

@@ -124,6 +124,7 @@ namespace IronPython.Compiler {
                     ),
                     Expression.Switch(Expression.Assign(_gotoRouter, _state), cases),
                     body,
+                    MakeAssign(_current, AstUtils.Constant(null)),
                     MakeAssign(_state, AstUtils.Constant(Finished)),
                     Expression.Label(_returnLabels.Peek()),
                     _current

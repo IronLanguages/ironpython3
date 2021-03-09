@@ -77,7 +77,10 @@ namespace IronPython.Runtime {
             
             object res = NextWorker();
             if (res == OperationFailed.Value) {
-                return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException((FinalValue)));
+                if (FinalValue is null)
+                    return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException());
+                else
+                    return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(FinalValue));
             }
 
             return res;

@@ -35,14 +35,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_pep380.TestPEP380Operation('test_delegator_is_visible_to_debugger'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_exception_in_initial_next_call'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_exception_value_crash'))
-        suite.addTest(unittest.expectedFailure(test.test_pep380.TestPEP380Operation('test_generator_return_value'))) # https://github.com/IronLanguages/ironpython3/issues/260
+        suite.addTest(test.test_pep380.TestPEP380Operation('test_generator_return_value'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_handing_exception_while_delegating_close'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_handling_exception_while_delegating_send'))
-        suite.addTest(unittest.expectedFailure(test.test_pep380.TestPEP380Operation('test_next_and_return_with_value'))) # https://github.com/IronLanguages/ironpython3/issues/260
+        suite.addTest(test.test_pep380.TestPEP380Operation('test_next_and_return_with_value'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_raising_exception_in_delegated_next_call'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_raising_exception_in_initial_next_call'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_returning_value_from_delegated_throw'))
-        suite.addTest(unittest.expectedFailure(test.test_pep380.TestPEP380Operation('test_send_and_return_with_value'))) # https://github.com/IronLanguages/ironpython3/issues/260
+        suite.addTest(test.test_pep380.TestPEP380Operation('test_send_and_return_with_value'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_send_tuple_with_custom_generator'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_throwing_GeneratorExit_into_subgen_that_raises'))
         suite.addTest(test.test_pep380.TestPEP380Operation('test_throwing_GeneratorExit_into_subgen_that_returns'))

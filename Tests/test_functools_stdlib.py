@@ -16,13 +16,13 @@ import test.test_functools
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_bad_cmp')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_cmp_to_key')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_cmp_to_key_arguments')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_hash')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_obj_field')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_sort_int')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-        #suite.addTest(test.test_functools.TestCmpToKeyC('test_sort_int_str')) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_bad_cmp'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_cmp_to_key'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_cmp_to_key_arguments'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_hash'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_obj_field'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_sort_int'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestCmpToKeyC('test_sort_int_str'))) # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
         suite.addTest(test.test_functools.TestCmpToKeyPy('test_bad_cmp'))
         suite.addTest(test.test_functools.TestCmpToKeyPy('test_cmp_to_key'))
         suite.addTest(test.test_functools.TestCmpToKeyPy('test_cmp_to_key_arguments'))
@@ -31,13 +31,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestCmpToKeyPy('test_sort_int'))
         suite.addTest(test.test_functools.TestCmpToKeyPy('test_sort_int_str'))
         suite.addTest(test.test_functools.TestLRU('test_early_detection_of_bad_call'))
-        #suite.addTest(test.test_functools.TestLRU('test_lru')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_lru_with_exceptions')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_lru_with_keyword_args')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_lru_with_keyword_args_maxsize_none')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_lru_with_maxsize_none')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_lru_with_types')) # UnboundLocalError: Local variable 'misses' referenced before assignment.
-        #suite.addTest(test.test_functools.TestLRU('test_need_for_rlock')) # UnboundLocalError: Local variable 'full' referenced before assignment.
+        suite.addTest(test.test_functools.TestLRU('test_lru'))
+        suite.addTest(test.test_functools.TestLRU('test_lru_with_exceptions'))
+        suite.addTest(test.test_functools.TestLRU('test_lru_with_keyword_args'))
+        suite.addTest(test.test_functools.TestLRU('test_lru_with_keyword_args_maxsize_none'))
+        suite.addTest(test.test_functools.TestLRU('test_lru_with_maxsize_none'))
+        suite.addTest(test.test_functools.TestLRU('test_lru_with_types'))
+        suite.addTest(test.test_functools.TestLRU('test_need_for_rlock'))
         suite.addTest(test.test_functools.TestPartialC('test_arg_combinations'))
         suite.addTest(test.test_functools.TestPartialC('test_argument_checking'))
         suite.addTest(test.test_functools.TestPartialC('test_attributes'))
@@ -50,14 +50,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_pickle'))
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
-        #suite.addTest(test.test_functools.TestPartialC('test_repr')) # AssertionError
-        #suite.addTest(test.test_functools.TestPartialC('test_setstate_refcount')) # AttributeError: 'partial' object has no attribute '__setstate__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_repr'))) # AssertionError
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_setstate_refcount'))) # AttributeError: 'partial' object has no attribute '__setstate__'
         suite.addTest(test.test_functools.TestPartialC('test_weakref'))
         suite.addTest(test.test_functools.TestPartialC('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_arg_combinations'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_argument_checking'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_attributes'))
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_attributes_unwritable')) # AssertionError: AttributeError not raised by setattr
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_attributes_unwritable'))) # AssertionError: AttributeError not raised by setattr
         suite.addTest(test.test_functools.TestPartialCSubclass('test_basic_examples'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_error_propagation'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_keyword'))
@@ -66,8 +66,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_protection_of_callers_dict_argument'))
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_repr')) # AssertionError
-        #suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_refcount')) # AttributeError: 'PartialSubclass' object has no attribute '__setstate__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_repr'))) # AssertionError
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_setstate_refcount'))) # AttributeError: 'PartialSubclass' object has no attribute '__setstate__'
         suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialMethod('test_abstract'))
@@ -110,20 +110,20 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_gt'))
         suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_le'))
         suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_lt'))
-        #suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_no_overwrite')) # ValueError: must define at least one ordering operation: < > <= >=
+        suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_no_overwrite'))
         suite.addTest(test.test_functools.TestTotalOrdering('test_type_error_when_not_implemented'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_builtin_update'))
-        #suite.addTest(test.test_functools.TestUpdateWrapper('test_default_update')) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_default_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
         suite.addTest(test.test_functools.TestUpdateWrapper('test_default_update_doc'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_missing_attributes'))
-        #suite.addTest(test.test_functools.TestUpdateWrapper('test_no_update')) # AttributeError: 'function' object has no attribute '__qualname__'
-        #suite.addTest(test.test_functools.TestUpdateWrapper('test_selective_update')) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_no_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_selective_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
         suite.addTest(test.test_functools.TestWraps('test_builtin_update'))
-        #suite.addTest(test.test_functools.TestWraps('test_default_update')) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_default_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
         suite.addTest(test.test_functools.TestWraps('test_default_update_doc'))
         suite.addTest(test.test_functools.TestWraps('test_missing_attributes'))
-        #suite.addTest(test.test_functools.TestWraps('test_no_update')) # AttributeError: 'function' object has no attribute '__qualname__'
-        #suite.addTest(test.test_functools.TestWraps('test_selective_update')) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_no_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_selective_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
         return suite
 
     else:

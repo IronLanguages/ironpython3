@@ -39,7 +39,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_weakset.TestWeakSet('test_isub'))
         suite.addTest(test.test_weakset.TestWeakSet('test_ixor'))
         suite.addTest(test.test_weakset.TestWeakSet('test_len'))
-        #suite.addTest(test.test_weakset.TestWeakSet('test_len_cycles'))
+        suite.addTest(unittest.expectedFailure(test.test_weakset.TestWeakSet('test_len_cycles'))) # TODO: figure out
         suite.addTest(test.test_weakset.TestWeakSet('test_len_race'))
         suite.addTest(test.test_weakset.TestWeakSet('test_lt'))
         suite.addTest(test.test_weakset.TestWeakSet('test_methods'))
@@ -56,7 +56,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_weakset.TestWeakSet('test_union'))
         suite.addTest(test.test_weakset.TestWeakSet('test_update'))
         suite.addTest(test.test_weakset.TestWeakSet('test_update_set'))
-        #suite.addTest(test.test_weakset.TestWeakSet('test_weak_destroy_and_mutate_while_iterating'))
+        suite.addTest(unittest.expectedFailure(test.test_weakset.TestWeakSet('test_weak_destroy_and_mutate_while_iterating'))) # TODO: figure out
         suite.addTest(test.test_weakset.TestWeakSet('test_weak_destroy_while_iterating'))
         suite.addTest(test.test_weakset.TestWeakSet('test_xor'))
         return suite

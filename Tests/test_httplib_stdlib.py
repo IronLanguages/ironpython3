@@ -40,7 +40,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_httplib.BasicTest('test_readinto_chunked_head'))
         suite.addTest(test.test_httplib.BasicTest('test_readinto_head'))
         suite.addTest(test.test_httplib.BasicTest('test_response_headers'))
-        suite.addTest(test.test_httplib.BasicTest('test_send')) # TypeError: can't concat int to bytes
+        suite.addTest(test.test_httplib.BasicTest('test_send'))
         suite.addTest(test.test_httplib.BasicTest('test_send_file'))
         suite.addTest(test.test_httplib.BasicTest('test_send_iter'))
         suite.addTest(test.test_httplib.BasicTest('test_send_type_error'))
@@ -57,9 +57,9 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_httplib.HTTPSTest('test_local_bad_hostname')) # StackOverflowException
         #suite.addTest(test.test_httplib.HTTPSTest('test_local_good_hostname')) # StackOverflowException
         #suite.addTest(test.test_httplib.HTTPSTest('test_local_unknown_cert')) # StackOverflowException
-        #suite.addTest(test.test_httplib.HTTPSTest('test_networked')) # AttributeError: 'SSLError' object has no attribute 'reason'
-        #suite.addTest(test.test_httplib.HTTPSTest('test_networked_bad_cert')) # AttributeError: 'SSLError' object has no attribute 'reason'
-        #suite.addTest(test.test_httplib.HTTPSTest('test_networked_good_cert')) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
+        suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked'))) # AttributeError: 'SSLError' object has no attribute 'reason'
+        suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_bad_cert'))) # AttributeError: 'SSLError' object has no attribute 'reason'
+        suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_good_cert'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_noverification'))
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_trusted_by_default_cert'))
         suite.addTest(test.test_httplib.HeaderTests('test_auto_headers'))
@@ -67,7 +67,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_httplib.HeaderTests('test_invalid_headers'))
         suite.addTest(test.test_httplib.HeaderTests('test_ipv6host_header'))
         suite.addTest(test.test_httplib.HeaderTests('test_malformed_headers_coped_with'))
-        #suite.addTest(test.test_httplib.HeaderTests('test_putheader')) # https://github.com/IronLanguages/ironpython3/issues/1100
+        suite.addTest(unittest.expectedFailure(test.test_httplib.HeaderTests('test_putheader'))) # https://github.com/IronLanguages/ironpython3/issues/1100
         suite.addTest(test.test_httplib.OfflineTest('test_all'))
         suite.addTest(test.test_httplib.OfflineTest('test_responses'))
         suite.addTest(test.test_httplib.RequestBodyTest('test_ascii_body'))

@@ -21,13 +21,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.BZ2CompressorTest('testCompress4G'))
         suite.addTest(test.test_bz2.BZ2CompressorTest('testCompressChunks10'))
         suite.addTest(test.test_bz2.BZ2CompressorTest('testCompressEmptyString'))
-        #suite.addTest(test.test_bz2.BZ2CompressorTest('testPickle')) # AssertionError: TypeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_bz2.BZ2CompressorTest('testPickle'))) # AssertionError: TypeError not raised
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompress'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompress4G'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompressChunks10'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompressUnusedData'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testEOFError'))
-        #suite.addTest(test.test_bz2.BZ2DecompressorTest('testPickle')) # AssertionError: TypeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_bz2.BZ2DecompressorTest('testPickle'))) # AssertionError: TypeError not raised
         suite.addTest(test.test_bz2.BZ2DecompressorTest('test_Constructor'))
         suite.addTest(test.test_bz2.BZ2FileTest('testAppend'))
         suite.addTest(test.test_bz2.BZ2FileTest('testBadArgs'))
@@ -85,7 +85,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.BZ2FileTest('testWriteLines'))
         suite.addTest(test.test_bz2.BZ2FileTest('testWriteMethodsOnReadOnlyFile'))
         suite.addTest(test.test_bz2.BZ2FileTest('testWriteNonDefaultCompressLevel'))
-        #suite.addTest(test.test_bz2.BZ2FileTest('test_read_truncated')) # EOFError: Compressed file ended before the end-of-stream marker was reached
+        suite.addTest(unittest.expectedFailure(test.test_bz2.BZ2FileTest('test_read_truncated'))) # EOFError: Compressed file ended before the end-of-stream marker was reached
         suite.addTest(test.test_bz2.CompressDecompressTest('testCompress'))
         suite.addTest(test.test_bz2.CompressDecompressTest('testCompressEmptyString'))
         suite.addTest(test.test_bz2.CompressDecompressTest('testDecompress'))

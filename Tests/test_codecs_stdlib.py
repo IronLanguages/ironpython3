@@ -10,25 +10,28 @@ import unittest
 import codecs
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_mono, is_netcoreapp31, is_net50
 
 import test.test_codecs
 
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        #suite.addTest(test.test_codecs.BasicUnicodeTest('test_bad_decode_args')) # unknown encoding: big5
-        #suite.addTest(test.test_codecs.BasicUnicodeTest('test_bad_encode_args')) # unknown encoding: big5
-        #suite.addTest(test.test_codecs.BasicUnicodeTest('test_basics')) # unknown encoding: big5
+        suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_bad_decode_args'))) # unknown encoding: big5
+        suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_bad_encode_args'))) # unknown encoding: big5
+        suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_basics'))) # unknown encoding: big5
         suite.addTest(test.test_codecs.BasicUnicodeTest('test_basics_capi'))
-        #suite.addTest(test.test_codecs.BasicUnicodeTest('test_decoder_state')) # unknown encoding: big5
+        suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_decoder_state'))) # unknown encoding: big5
         suite.addTest(test.test_codecs.BasicUnicodeTest('test_encoding_map_type_initialized'))
-        #suite.addTest(test.test_codecs.BasicUnicodeTest('test_seek')) # unknown encoding: big5
+        suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_seek'))) # unknown encoding: big5
         suite.addTest(test.test_codecs.BomTest('test_seek0'))
         suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.CP65001Test('test_bug1175396'))
-        #suite.addTest(test.test_codecs.CP65001Test('test_decode')) # '[��]' != '[���]' (bug in .NET: dotnet/corefx#36163, fixed in .NET Core 3.x)
+        if is_netcoreapp31 or is_net50:
+            suite.addTest(test.test_codecs.CP65001Test('test_decode'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_codecs.CP65001Test('test_decode'))) # '[��]' != '[���]' (bug in .NET: dotnet/corefx#36163, fixed in .NET Core 3.x)
         suite.addTest(test.test_codecs.CP65001Test('test_encode'))
         suite.addTest(test.test_codecs.CP65001Test('test_lone_surrogates'))
         suite.addTest(test.test_codecs.CP65001Test('test_mixed_readline_and_read'))
@@ -38,13 +41,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2int_map'))
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2str_map'))
         suite.addTest(test.test_codecs.CharmapTest('test_decode_with_string_map'))
-        #suite.addTest(test.test_codecs.CodePageTest('test_code_page_name')) # "CP_UTF8" does not match "'cp65001'""
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp1252')) # b'?' != b'L' for "Ł" with 'replace'
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp932')) # b'[?]' != b'[y]' for "ÿ" with 'replace'
-        #suite.addTest(test.test_codecs.CodePageTest('test_cp_utf7')) # Unable to decode b'[+/]' from "cp65000"
-        #suite.addTest(test.test_codecs.CodePageTest('test_incremental')) # incremental codepage decoding not implemented yet
-        #suite.addTest(test.test_codecs.CodePageTest('test_invalid_code_page')) # SystemError raised iso OSError
-        #suite.addTest(test.test_codecs.CodePageTest('test_multibyte_encoding')) # .NET cp932 does not resynchronize cursor after '\x84' in '\x84\xe9\x80'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_code_page_name'))) # "CP_UTF8" does not match "'cp65001'""
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp1252'))) # b'?' != b'L' for "Ł" with 'replace'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp932'))) # b'[?]' != b'[y]' for "ÿ" with 'replace'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp_utf7'))) # Unable to decode b'[+/]' from "cp65000"
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_incremental'))) # incremental codepage decoding not implemented yet
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_invalid_code_page'))) # SystemError raised iso OSError
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_multibyte_encoding'))) # .NET cp932 does not resynchronize cursor after '\x84' in '\x84\xe9\x80'
         suite.addTest(test.test_codecs.CodecsModuleTest('test_all'))
         suite.addTest(test.test_codecs.CodecsModuleTest('test_decode'))
         suite.addTest(test.test_codecs.CodecsModuleTest('test_encode'))
@@ -68,19 +71,22 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_multiple_args_is_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_new_override_is_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_non_str_arg_is_not_wrapped'))
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_by_type')) # wrong exception
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_by_value')) # wrong exception
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_grandchild_subclass_exact_size')) # wrong exception
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_subclass_with_weakref_support')) # # wrong exception
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_unflagged_non_text_codec_handling')) # wrong exception
-        #suite.addTest(test.test_codecs.IDNACodecTest('test_builtin_decode')) # 'Array[Byte]' object has no attribute 'rfind'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ExceptionChainingTest('test_raise_by_type'))) # wrong exception
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ExceptionChainingTest('test_raise_by_value'))) # wrong exception
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ExceptionChainingTest('test_raise_grandchild_subclass_exact_size'))) # wrong exception
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ExceptionChainingTest('test_raise_subclass_with_weakref_support'))) # # wrong exception
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ExceptionChainingTest('test_unflagged_non_text_codec_handling'))) # wrong exception
+        suite.addTest(test.test_codecs.IDNACodecTest('test_builtin_decode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_builtin_encode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_errors'))
-        #suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_decode')) # 'Array[Byte]' object has no attribute 'rfind'
+        suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_decode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_encode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_stream'))
-        #suite.addTest(test.test_codecs.NameprepTest('test_nameprep')) # Invalid Unicode code point found at index 0
-        #suite.addTest(test.test_codecs.PunycodeTest('test_decode')) # 'Array[Byte]' object has no attribute 'rfind'
+        if is_mono:
+            suite.addTest(test.test_codecs.NameprepTest('test_nameprep'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_codecs.NameprepTest('test_nameprep'))) # Invalid Unicode code point found at index 0
+        suite.addTest(test.test_codecs.PunycodeTest('test_decode'))
         suite.addTest(test.test_codecs.PunycodeTest('test_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_decode_errors'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_empty'))
@@ -93,19 +99,19 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.RecodingTest('test_recoding'))
         suite.addTest(test.test_codecs.StreamReaderTest('test_readlines'))
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_ascii'))
-        #suite.addTest(test.test_codecs.SurrogateEscapeTest('test_charmap')) # .NET iso-8859-3 decodes b'\xa5' to 'uf7f5' rather than undefined
+        suite.addTest(unittest.expectedFailure(test.test_codecs.SurrogateEscapeTest('test_charmap'))) # .NET iso-8859-3 decodes b'\xa5' to 'uf7f5' rather than undefined
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_latin1'))
         suite.addTest(test.test_codecs.SurrogateEscapeTest('test_utf8'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_aliases'))
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_basics')) # 3 errors
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_binary_to_text_blacklists_binary_transforms')) # expected str, got bytes
+        suite.addTest(test.test_codecs.TransformCodecTest('test_basics'))
+        suite.addTest(test.test_codecs.TransformCodecTest('test_binary_to_text_blacklists_binary_transforms'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_binary_to_text_blacklists_text_transforms'))
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_buffer_api_usage')) # TypeError: expected IList[Byte], got memoryview
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_custom_hex_error_is_wrapped')) # "^decoding with 'hex_codec' codec failed" does not match "Odd-length string"
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_custom_zlib_error_is_wrapped')) # "^decoding with 'zlib_codec' codec failed" does not match "Error -3 while decompressing data: incorrect header check"
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_quopri_stateless')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_read')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.TransformCodecTest('test_readline')) # Exception: BZ_DATA_ERROR
+        suite.addTest(test.test_codecs.TransformCodecTest('test_buffer_api_usage'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_custom_hex_error_is_wrapped'))) # "^decoding with 'hex_codec' codec failed" does not match "Odd-length string"
+        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_custom_zlib_error_is_wrapped'))) # "^decoding with 'zlib_codec' codec failed" does not match "Error -3 while decompressing data: incorrect header check"
+        suite.addTest(test.test_codecs.TransformCodecTest('test_quopri_stateless'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_read'))) # TypeError: expected str, got bytes
+        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_readline'))) # Exception: BZ_DATA_ERROR
         suite.addTest(test.test_codecs.TransformCodecTest('test_text_to_binary_blacklists_binary_transforms'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_text_to_binary_blacklists_text_transforms'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_uu_invalid'))
@@ -187,8 +193,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF7Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF7Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF7Test('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF7Test('test_errors')) # AssertionError: UnicodeDecodeError not raised by utf_7_decode
-        #suite.addTest(test.test_codecs.UTF7Test('test_lone_surrogates')) # UnicodeEncodeError: 'utf_8' codec can't encode character '\ud801' in position 503: Unable to translate Unicode character \uD801 at index 503 to specified code page.
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF7Test('test_errors'))) # AssertionError: UnicodeDecodeError not raised by utf_7_decode
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF7Test('test_lone_surrogates'))) # UnicodeEncodeError: 'utf_8' codec can't encode character '\ud801' in position 503: Unable to translate Unicode character \uD801 at index 503 to specified code page.
         suite.addTest(test.test_codecs.UTF7Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF7Test('test_nonbmp'))
         suite.addTest(test.test_codecs.UTF7Test('test_partial'))
@@ -200,7 +206,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1601501'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_decoder_state'))
-        #suite.addTest(test.test_codecs.UTF8SigTest('test_lone_surrogates')) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+        if is_netcoreapp31 or is_net50:
+            suite.addTest(test.test_codecs.UTF8SigTest('test_lone_surrogates'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
         suite.addTest(test.test_codecs.UTF8SigTest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_partial'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_readline'))
@@ -212,7 +221,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8Test('test_decoder_state'))
-        #suite.addTest(test.test_codecs.UTF8Test('test_lone_surrogates')) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+        if is_netcoreapp31 or is_net50:
+            suite.addTest(test.test_codecs.UTF8Test('test_lone_surrogates'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
         suite.addTest(test.test_codecs.UTF8Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF8Test('test_partial'))
         suite.addTest(test.test_codecs.UTF8Test('test_readline'))

@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_netcoreapp, is_netcoreapp21
 
 import test.test_complex
 
@@ -19,24 +19,30 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_complex.ComplexTest('test_abs'))
         suite.addTest(test.test_complex.ComplexTest('test_boolcontext'))
         suite.addTest(test.test_complex.ComplexTest('test_conjugate'))
-        #suite.addTest(test.test_complex.ComplexTest('test_constructor')) # ValueError: complex() literal too large to convert
+        if is_netcoreapp and not is_netcoreapp21:
+            suite.addTest(test.test_complex.ComplexTest('test_constructor'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_constructor'))) # ValueError: complex() literal too large to convert
         suite.addTest(test.test_complex.ComplexTest('test_divmod'))
         suite.addTest(test.test_complex.ComplexTest('test_file'))
         suite.addTest(test.test_complex.ComplexTest('test_floordiv'))
-        #suite.addTest(test.test_complex.ComplexTest('test_format'))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_format')))
         suite.addTest(test.test_complex.ComplexTest('test_getnewargs'))
         suite.addTest(test.test_complex.ComplexTest('test_hash'))
         suite.addTest(test.test_complex.ComplexTest('test_mod'))
         suite.addTest(test.test_complex.ComplexTest('test_neg'))
         suite.addTest(test.test_complex.ComplexTest('test_negated_imaginary_literal'))
         suite.addTest(test.test_complex.ComplexTest('test_negative_zero_repr_str'))
-        #suite.addTest(test.test_complex.ComplexTest('test_overflow')) # ValueError: complex() literal too large to convert
+        if is_netcoreapp and not is_netcoreapp21:
+            suite.addTest(test.test_complex.ComplexTest('test_overflow'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_overflow'))) # ValueError: complex() literal too large to convert
         suite.addTest(test.test_complex.ComplexTest('test_plus_minus_0j'))
         suite.addTest(test.test_complex.ComplexTest('test_pow'))
-        #suite.addTest(test.test_complex.ComplexTest('test_repr_roundtrip'))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_repr_roundtrip')))
         suite.addTest(test.test_complex.ComplexTest('test_repr_str'))
-        #suite.addTest(test.test_complex.ComplexTest('test_richcompare'))
-        #suite.addTest(test.test_complex.ComplexTest('test_richcompare_boundaries'))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_richcompare')))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_richcompare_boundaries')))
         suite.addTest(test.test_complex.ComplexTest('test_truediv'))
         return suite
 

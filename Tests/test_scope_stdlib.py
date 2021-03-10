@@ -20,7 +20,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_scope.ScopeTests('testCellIsKwonlyArg'))
         suite.addTest(test.test_scope.ScopeTests('testCellLeak'))
         suite.addTest(test.test_scope.ScopeTests('testClassAndGlobal'))
-        #suite.addTest(test.test_scope.ScopeTests('testClassNamespaceOverridesClosure'))
+        suite.addTest(unittest.expectedFailure(test.test_scope.ScopeTests('testClassNamespaceOverridesClosure'))) # TODO: figure out
         suite.addTest(test.test_scope.ScopeTests('testComplexDefinitions'))
         suite.addTest(test.test_scope.ScopeTests('testEvalExecFreeVars'))
         suite.addTest(test.test_scope.ScopeTests('testEvalFreeVars'))
@@ -30,7 +30,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_scope.ScopeTests('testGlobalInParallelNestedFunctions'))
         suite.addTest(test.test_scope.ScopeTests('testInteractionWithTraceFunc'))
         suite.addTest(test.test_scope.ScopeTests('testLambdas'))
-        #suite.addTest(test.test_scope.ScopeTests('testLeaks')) # https://github.com/IronLanguages/ironpython3/issues/1056
+        #suite.addTest(unittest.expectedFailure(test.test_scope.ScopeTests('testLeaks'))) # https://github.com/IronLanguages/ironpython3/issues/1056
         suite.addTest(test.test_scope.ScopeTests('testListCompLocalVars'))
         suite.addTest(test.test_scope.ScopeTests('testLocalsClass'))
         suite.addTest(test.test_scope.ScopeTests('testLocalsClass_WithTrace'))

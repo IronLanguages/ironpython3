@@ -10,7 +10,7 @@ import unittest
 import codecs
 import sys
 
-from iptest import run_test, is_netcoreapp31, is_net50
+from iptest import run_test, is_mono, is_netcoreapp31, is_net50
 
 import test.test_codecs
 
@@ -82,7 +82,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_decode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_encode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_stream'))
-        suite.addTest(unittest.expectedFailure(test.test_codecs.NameprepTest('test_nameprep'))) # Invalid Unicode code point found at index 0
+        if is_mono:
+            suite.addTest(test.test_codecs.NameprepTest('test_nameprep'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_codecs.NameprepTest('test_nameprep'))) # Invalid Unicode code point found at index 0
         suite.addTest(test.test_codecs.PunycodeTest('test_decode'))
         suite.addTest(test.test_codecs.PunycodeTest('test_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_decode_errors'))

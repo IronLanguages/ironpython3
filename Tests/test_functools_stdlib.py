@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import run_test, is_mono
 
 import test.test_functools
 
@@ -90,7 +90,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialPy('test_no_side_effects'))
         suite.addTest(test.test_functools.TestPartialPy('test_positional'))
         suite.addTest(test.test_functools.TestPartialPy('test_protection_of_callers_dict_argument'))
-        suite.addTest(test.test_functools.TestPartialPy('test_weakref'))
+        if not is_mono:
+            suite.addTest(test.test_functools.TestPartialPy('test_weakref'))
         suite.addTest(test.test_functools.TestPartialPy('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestReduce('test_iterator_usage'))
         suite.addTest(test.test_functools.TestReduce('test_reduce'))

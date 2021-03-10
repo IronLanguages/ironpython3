@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test, is_net50
+from iptest import run_test
 
 import test.test_memoryio
 
@@ -29,7 +29,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_memoryio.CBytesIOTest('test_getstate'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_getvalue'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_init'))
-        suite.addTest(test.test_memoryio.CBytesIOTest('test_instance_dict_leak'))
+        #suite.addTest(test.test_memoryio.CBytesIOTest('test_instance_dict_leak')) # https://github.com/IronLanguages/ironpython3/issues/1004
         suite.addTest(test.test_memoryio.CBytesIOTest('test_issue5449'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_iterator'))
         suite.addTest(test.test_memoryio.CBytesIOTest('test_overseek'))
@@ -72,22 +72,16 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_memoryio.CStringIOTest('test_getstate'))
         suite.addTest(test.test_memoryio.CStringIOTest('test_getvalue'))
         suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_init'))) # https://github.com/IronLanguages/ironpython3/issues/1001
-        suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_instance_dict_leak'))) # https://github.com/IronLanguages/ironpython3/issues/1004
+        #suite.addTest(test.test_memoryio.CStringIOTest('test_instance_dict_leak')) # https://github.com/IronLanguages/ironpython3/issues/1004
         suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_issue5265'))) # https://github.com/IronLanguages/ironpython3/issues/1001
         suite.addTest(test.test_memoryio.CStringIOTest('test_iterator'))
         suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/1001
         suite.addTest(test.test_memoryio.CStringIOTest('test_newline_argument'))
         suite.addTest(test.test_memoryio.CStringIOTest('test_newline_cr'))
         suite.addTest(test.test_memoryio.CStringIOTest('test_newline_crlf'))
-        if is_net50:
-            suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_newline_default'))) # https://github.com/IronLanguages/ironpython3/issues/1001
-        else:
-            suite.addTest(test.test_memoryio.CStringIOTest('test_newline_default'))
+        #suite.addTest(test.test_memoryio.CStringIOTest('test_newline_default')) # https://github.com/IronLanguages/ironpython3/issues/1001
         suite.addTest(test.test_memoryio.CStringIOTest('test_newline_empty'))
-        if is_net50:
-            suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_newline_lf'))) # https://github.com/IronLanguages/ironpython3/issues/1001
-        else:
-            suite.addTest(test.test_memoryio.CStringIOTest('test_newline_lf'))
+        #suite.addTest(test.test_memoryio.CStringIOTest('test_newline_lf')) # https://github.com/IronLanguages/ironpython3/issues/1001
         suite.addTest(unittest.expectedFailure(test.test_memoryio.CStringIOTest('test_newline_none'))) # https://github.com/IronLanguages/ironpython3/issues/1001
         suite.addTest(test.test_memoryio.CStringIOTest('test_newlines_property'))
         suite.addTest(test.test_memoryio.CStringIOTest('test_overseek'))

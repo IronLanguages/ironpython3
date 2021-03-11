@@ -187,8 +187,10 @@ namespace IronPython.Modules {
             NativeFunctions.FreeLibrary(handle);
         }
 
-        private static object LoadDLL(string library, int mode) {
-            if (library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
+#nullable enable
+
+        private static object LoadDLL(string? library, int mode) {
+            if (library is not null && library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError($"cannot load library {library}");
@@ -198,12 +200,14 @@ namespace IronPython.Modules {
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static object LoadLibrary(string library, int mode = 0)
+        public static object LoadLibrary([NotNull] string library, int mode = 0)
             => LoadDLL(library, mode);
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static object dlopen(string library, int mode = 0)
+        public static object dlopen(string? library, int mode = 0)
             => LoadDLL(library, mode);
+
+#nullable restore
 
         /// <summary>
         /// Returns a new type which represents a pointer given the existing type.

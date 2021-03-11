@@ -35,7 +35,6 @@ namespace IronPython.Runtime.Types {
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
     public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, IWeakReferenceableByProxy, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
-        private string _name;                               // the name of the type
         private Dictionary<string, PythonTypeSlot> _dict;   // type-level slots & attributes
         private PythonTypeAttributes _attrs;                // attributes of the type
         private int _flags;                                 // CPython-like flags on the type
@@ -143,6 +142,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IsSystemType = baseType.IsSystemType;
             IsPythonType = baseType.IsPythonType;
             Name = name;
+            QualName = name;
             _bases = new PythonType[] { baseType };
             ResolutionOrder = Mro.Calculate(this, _bases);
             _attrs |= PythonTypeAttributes.HasDictionary;
@@ -165,6 +165,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IsSystemType = isSystemType;
             IsPythonType = isPythonType;
             Name = name;
+            QualName = name;
             _bases = baseTypes;
             ResolutionOrder = Mro.Calculate(this, _bases);
             _attrs |= PythonTypeAttributes.HasDictionary;
@@ -623,6 +624,20 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             type.Name = name;
         }
 
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static string Get__qualname__(PythonType type) {
+            return type.QualName;
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Set__qualname__(PythonType type, string name) {
+            if (type.IsSystemType) {
+                throw PythonOps.TypeError("can't set attributes of built-in/extension type '{0}'", type.Name);
+            }
+
+            type.QualName = name;
+        }
+
         public static PythonDictionary __prepare__([ParamDictionary]IDictionary<object, object> kwargs, params object[] args)
             => new PythonDictionary();
 
@@ -734,14 +749,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Gets the name of the dynamic type
         /// </summary>
-        internal string Name {
-            get {
-                return _name;
-            }
-            set {
-                _name = value;
-            }
-        }
+        internal string Name { get; set; }
+
+        internal string QualName { get; set; }
 
         internal int Version {
             get {
@@ -1836,7 +1846,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             bases = ValidateBases(bases);
 
-            _name = name;
+            Name = name;
+            QualName = name;
             _bases = GetBasesAsList(bases).ToArray();
             _pythonContext = context.LanguageContext;
             _resolutionOrder = CalculateMro(this, _bases);
@@ -2237,7 +2248,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void InitializeSystemType() {
             IsSystemType = true;
             IsPythonType = PythonBinder.IsPythonType(_underlyingSystemType);
-            _name = NameConverter.GetTypeName(_underlyingSystemType);
+            Name = NameConverter.GetTypeName(_underlyingSystemType);
+            QualName = Name;
             AddSystemBases();
         }
 

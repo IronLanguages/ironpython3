@@ -774,6 +774,31 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
+        public class AsyncFunctionDef : stmt {
+            public AsyncFunctionDef() {
+                _fields = PythonTuple.MakeTuple(nameof(name), nameof(args), nameof(body), nameof(decorator_list), nameof(returns));
+            }
+
+            public AsyncFunctionDef(expr name, expr args, expr body, expr decorator_list, expr returns, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.name = name;
+                this.args = args;
+                this.body = body;
+                this.decorator_list = decorator_list;
+                this.returns = returns;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            // _fields
+            public expr name { get; set; }
+            public expr args { get; set; }
+            public expr body { get; set; }
+            public expr decorator_list { get; set; }
+            public expr returns { get; set; }
+        }
+
+        [PythonType]
         public class Attribute : expr {
             public Attribute() {
                 _fields = PythonTuple.MakeTuple(new[] { nameof(value), nameof(attr), nameof(ctx) });

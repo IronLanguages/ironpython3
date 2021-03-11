@@ -188,6 +188,7 @@ namespace IronPython.Modules {
         }
 
         private static object LoadDLL(string library, int mode) {
+            if (library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError($"cannot load library {library}");

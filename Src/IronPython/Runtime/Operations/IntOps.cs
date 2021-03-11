@@ -242,7 +242,7 @@ namespace IronPython.Runtime.Operations {
             if (qmod == null) return Power(x, power);
             int mod = (int)qmod;
 
-            if (power < 0) throw PythonOps.TypeError("power", power, "power must be >= 0");
+            if (power < 0) throw PythonOps.ValueError("power must be >= 0");
 
             if (mod == 0) {
                 throw PythonOps.ZeroDivisionError();
@@ -534,6 +534,10 @@ namespace IronPython.Runtime.Operations {
             if (!signed && (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80) Array.Resize(ref bytesArr, bytesArr.Length + 1);
             var val = new BigInteger(bytesArr);
 #endif
+
+            // prevents a TypeError: int.__new__(bool) is not safe
+            if (type == TypeCache.Boolean) return val == 0 ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
+
             return __new__(context, type, val);
         }
 

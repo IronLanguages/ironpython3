@@ -39,6 +39,7 @@ namespace IronPython.Runtime {
         internal int _id;                               // ID flag used for testing in rules
         private FunctionCode _code;                     // the Python function code object.  Not currently used for much by us...        
         private string _name;                           // the name of the method
+        private string _qualname;                       // the qualified name of the method
         private object _doc;                            // the current documentation string
         private PythonDictionary _annotations;          // annotations for the function
 
@@ -69,6 +70,7 @@ namespace IronPython.Runtime {
             _code = code;
             _doc = code._initialDoc;
             _name = name ?? code.PythonCode.Name;
+            _qualname = _name;
             _annotations = new PythonDictionary();
 
             Closure = null;
@@ -91,6 +93,7 @@ namespace IronPython.Runtime {
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
+            _qualname = _name;
             _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);
@@ -172,6 +175,12 @@ namespace IronPython.Runtime {
             get { return _name; }
             set {
                 _name = value ?? throw PythonOps.TypeError("__name__ must be set to a string object");
+            }
+        }
+        public string __qualname__ {
+            get { return _qualname; }
+            set {
+                _qualname = value ?? throw PythonOps.TypeError("__qualname__ must be set to a string object");
             }
         }
 

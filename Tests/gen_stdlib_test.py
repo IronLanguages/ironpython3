@@ -4,6 +4,7 @@
 
 import importlib
 import os
+import re
 import sys
 import unittest
 
@@ -40,10 +41,24 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../Src/StdLib/Lib")))
     module = importlib.import_module("test.{name}".format(name=name))
 
+    existing_tests = {}
+    try:
+        re_failure = re.compile(r'^\s*suite\.addTest\(unittest\.expectedFailure\((.*)\)\)( #.*)?$')
+        re_ok = re.compile(r'^\s*suite\.addTest\((.*)\)( #.*)?$')
+        with open(name + "_stdlib.py", "r", encoding="utf-8") as f:
+            for line in f:
+                match = re_failure.match(line) or re_ok.match(line)
+                if match:
+                    existing_tests[match.group(1)] = match.group(0)
+    except FileNotFoundError:
+        pass
+
     tests = []
     for suite in unittest.defaultTestLoader.loadTestsFromModule(module):
         for test in suite:
-            tests.append("        suite.addTest({}('{}'))".format(unittest.util.strclass(test.__class__), test._testMethodName))
+            tests.append("{}('{}')".format(unittest.util.strclass(test.__class__), test._testMethodName))
 
-    with open(name + "_stdlib.py", "w") as f:
+    tests = [existing_tests.get(t, "        suite.addTest({})".format(t)) for t in tests]
+
+    with open(name + "_stdlib.py", "w", encoding="utf-8") as f:
         f.write(template.format(name=name, tests="\n".join(tests)))

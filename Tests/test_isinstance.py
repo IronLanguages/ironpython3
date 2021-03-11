@@ -177,7 +177,10 @@ class IsInstanceTest(IronPythonTestCase):
         reloaded_sys = importlib.reload(sys)
 
         # Most attributes get reset
-        self.assertEqual((old_copyright, old_byteorder), (reloaded_sys.copyright, reloaded_sys.byteorder))
+        if sys.version_info >= (3,5):
+            self.assertEqual(("foo", "foo"), (reloaded_sys.copyright, reloaded_sys.byteorder))
+        else:
+            self.assertEqual((old_copyright, old_byteorder), (reloaded_sys.copyright, reloaded_sys.byteorder))
         # Some attributes are not reset
         self.assertEqual(reloaded_sys.argv, "foo")
         # Put back the original values

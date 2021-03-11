@@ -114,17 +114,17 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestTotalOrdering('test_total_ordering_no_overwrite'))
         suite.addTest(test.test_functools.TestTotalOrdering('test_type_error_when_not_implemented'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_builtin_update'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_default_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(test.test_functools.TestUpdateWrapper('test_default_update'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_default_update_doc'))
         suite.addTest(test.test_functools.TestUpdateWrapper('test_missing_attributes'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_no_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestUpdateWrapper('test_selective_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(test.test_functools.TestUpdateWrapper('test_no_update'))
+        suite.addTest(test.test_functools.TestUpdateWrapper('test_selective_update'))
         suite.addTest(test.test_functools.TestWraps('test_builtin_update'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_default_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(test.test_functools.TestWraps('test_default_update'))
         suite.addTest(test.test_functools.TestWraps('test_default_update_doc'))
         suite.addTest(test.test_functools.TestWraps('test_missing_attributes'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_no_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestWraps('test_selective_update'))) # AttributeError: 'function' object has no attribute '__qualname__'
+        suite.addTest(test.test_functools.TestWraps('test_no_update'))
+        suite.addTest(test.test_functools.TestWraps('test_selective_update'))
         return suite
 
     else:

@@ -288,23 +288,34 @@ namespace IronPython.Runtime {
 
             _mainThreadFunctionStack = PythonOps.GetFunctionStack();
 
-            // bootstrap importlib
-            if (PythonOptions.NoImportLib) return;
-            try {
-                var sourceUnit = CreateSourceUnit(new BootstrapStreamContentProvider(), null, DefaultEncoding, SourceCodeKind.File);
+            BootstrapImportLib();
 
-                var moduleOptions = ModuleOptions.Initialize | ModuleOptions.Optimized;
-                var scriptCode = GetScriptCode(sourceUnit, "_frozen_importlib", moduleOptions);
-                var scope = scriptCode.CreateScope();
-                var _frozen_importlib = InitializeModule(null, ((PythonScopeExtension)scope.GetExtension(ContextId)).ModuleContext, scriptCode, moduleOptions);
+            void BootstrapImportLib() {
+                if (PythonOptions.NoImportLib) return;
 
-                PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", SystemState, GetBuiltinModule("_imp"));
-            } catch { }
+                try {
+                    var _frozen_importlib = LoadModuleFromResource("_frozen_importlib", "IronPython.Modules._bootstrap.py");
+
+                    PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", SystemState, GetBuiltinModule("_imp"));
+                } catch { }
+
+                PythonModule LoadModuleFromResource(string name, string resourceName) {
+                    var sourceUnit = CreateSourceUnit(new ResourceStreamContentProvider(resourceName), null, DefaultEncoding, SourceCodeKind.File);
+                    var moduleOptions = ModuleOptions.Initialize | ModuleOptions.Optimized;
+                    var scriptCode = GetScriptCode(sourceUnit, name, moduleOptions);
+                    var scope = scriptCode.CreateScope();
+                    return InitializeModule(null, ((PythonScopeExtension)scope.GetExtension(ContextId)).ModuleContext, scriptCode, moduleOptions);
+                }
+            }
         }
 
-        private sealed class BootstrapStreamContentProvider : StreamContentProvider {
+        private sealed class ResourceStreamContentProvider : StreamContentProvider {
+            private string resourceName;
+            public ResourceStreamContentProvider(string resourceName) {
+                this.resourceName = resourceName;
+            }
             public override Stream GetStream() {
-                return typeof(PythonContext).Assembly.GetManifestResourceStream("IronPython.Modules._bootstrap.py");
+                return typeof(PythonContext).Assembly.GetManifestResourceStream(resourceName);
             }
         }
 
@@ -1781,7 +1792,7 @@ namespace IronPython.Runtime {
         }
 
         private void SetVersionVariables(PythonDictionary dict) {
-            dict["implementation"] = new SimpleNamespace(new Dictionary<string, object>() { { "cache_tag", "ironpython-34" }, { "name", "ironpython" }, { "version", VersionInfo.Instance }, { "hexversion", VersionInfo.Instance.GetHexVersion() } });
+            dict["implementation"] = new SimpleNamespace(new Dictionary<string, object>() { { "cache_tag", $"ironpython-{VersionInfo.Instance.major}{VersionInfo.Instance.minor}" }, { "name", "ironpython" }, { "version", VersionInfo.Instance }, { "hexversion", VersionInfo.Instance.GetHexVersion() } });
             dict["version_info"] = VersionInfo.Instance;
             dict["hexversion"] = VersionInfo.Instance.GetHexVersion();
             dict["version"] = _initialVersionString ?? GetVersionString();

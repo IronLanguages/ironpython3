@@ -1390,6 +1390,8 @@ namespace IronPython.Modules {
                 }
             }
 
+            VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 try {
                     FileInfo fi = new FileInfo(path);
@@ -2210,6 +2212,10 @@ the 'status' value."),
 
             if (numOptPosArgs + numKwArgs > numOptPosParms + numKwParms)
                 throw PythonOps.TypeErrorForOptionalArgumentCountMismatch(methodname ?? "<unknown>", numRegParms + numOptPosParms + numKwParms, numRegParms + numOptPosArgs + numKwArgs);
+        }
+
+        private static void VerifyPath(string path, string functionName, string argName) {
+            if (path.IndexOf((char)0) != -1) throw PythonOps.ValueError($"{functionName}: embedded null character in {argName}");
         }
 
         #endregion

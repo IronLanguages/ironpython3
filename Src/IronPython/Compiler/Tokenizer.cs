@@ -32,7 +32,6 @@ namespace IronPython.Compiler {
         private bool _disableLineFeedLineSeparator;
         private SourceUnit _sourceUnit;
         private ErrorSink _errors;
-        private Severity _indentationInconsistencySeverity;
         private bool _endContinues;
         private List<int> _newLineLocations;
         private SourceLocation _initialLocation;
@@ -124,17 +123,6 @@ namespace IronPython.Compiler {
             set {
                 ContractUtils.RequiresNotNull(value, nameof(value));
                 _errors = value;
-            }
-        }
-
-        public Severity IndentationInconsistencySeverity {
-            get { return _indentationInconsistencySeverity; }
-            set {
-                _indentationInconsistencySeverity = value;
-
-                if (value != Severity.Ignore && _state.IndentFormat == null) {
-                    _state.IndentFormat = new StringBuilder[MaxIndent];
-                }
             }
         }
 
@@ -1325,10 +1313,6 @@ namespace IronPython.Compiler {
         /// Returns whether the 
         /// </summary>
         private bool ReadNewline() {
-            // Check whether we're currently scanning for inconsistent use of identation characters. If
-            // we are we'll switch to using a slower version of this method with the extra checks embedded.
-            if (IndentationInconsistencySeverity != Severity.Ignore)
-                return ReadNewlineWithChecks();
 
             int spaces = 0;
             while (true) {

@@ -117,7 +117,6 @@ namespace IronPython.Compiler {
             Tokenizer tokenizer = new Tokenizer(context.Errors, compilerOptions, verbatim);
 
             tokenizer.Initialize(null, reader, context.SourceUnit, SourceLocation.MinValue);
-            tokenizer.IndentationInconsistencySeverity = options.IndentationInconsistencySeverity;
 
             Parser result = new Parser(context, tokenizer, context.Errors, context.ParserSink, compilerOptions.Module);
             result._sourceReader = reader;

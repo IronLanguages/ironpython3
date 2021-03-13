@@ -216,7 +216,7 @@ namespace IronPython.Compiler.Ast {
                     dec.Walk(this);
                 }
             }
-            
+
             PushScope(node);
 
             node.ModuleNameVariable = _globalScope.EnsureGlobalVariable("__name__");
@@ -248,10 +248,29 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
-        public override bool Walk(ListComprehension node) {
+        // Comprehensions
+
+        private void WalkComprehensionIterators(Comprehension node) {
             node.Parent = _currentScope;
+
+            // Special walk case: first (outermost) "for" iterator
+            var outermostFor = (ComprehensionFor)node.Iterators[0];
+            outermostFor.List.Walk(this);
             PushScope(node.Scope);
-            return base.Walk(node);
+            Walk(outermostFor);
+            outermostFor.Left.Walk(this);
+            PostWalk(outermostFor);
+
+            // Regular walk cases: remaining iterators/conditionals
+            for (int i = 1; i < node.Iterators.Count; i++) {
+                node.Iterators[i].Walk(this);
+            }
+        }
+
+        public override bool Walk(ListComprehension node) {
+            WalkComprehensionIterators(node);
+            node.Item.Walk(this);
+            return false;
         }
 
         public override void PostWalk(ListComprehension node) {
@@ -264,9 +283,9 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override bool Walk(SetComprehension node) {
-            node.Parent = _currentScope;
-            PushScope(node.Scope);
-            return base.Walk(node);
+            WalkComprehensionIterators(node);
+            node.Item.Walk(this);
+            return false;
         }
 
         public override void PostWalk(SetComprehension node) {
@@ -279,9 +298,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override bool Walk(DictionaryComprehension node) {
-            node.Parent = _currentScope;
-            PushScope(node.Scope);
-            return base.Walk(node);
+            WalkComprehensionIterators(node);
+            node.Key.Walk(this);
+            node.Value.Walk(this);
+            return false;
         }
 
         public override void PostWalk(DictionaryComprehension node) {

@@ -90,8 +90,13 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["IgnoreEnvironment"] = ScriptingRuntimeHelpers.True;
                     break;
 
-                case "-t": LanguageSetup.Options["IndentationInconsistencySeverity"] = Severity.Warning; break;
-                case "-tt": LanguageSetup.Options["IndentationInconsistencySeverity"] = Severity.Error; break;
+                case "-t":
+                    //ignore for backwards compatibility
+                    break;
+
+                case "-tt":
+                    //ignore for backwards compatibility
+                    break;
 
                 case "-O":
                     LanguageSetup.Options["Optimize"] = ScriptingRuntimeHelpers.True;
@@ -257,8 +262,6 @@ namespace IronPython.Hosting {
                 { "-S",                     "Don't imply 'import site' on initialization" },
                 { "-s",                     "Don't add user site directory to sys.path" },
                 { "-I",                     "isolate IronPython from the user's environment (implies -E and -s)" },
-                { "-t",                     "Issue warnings about inconsistent tab usage" },
-                { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-q",                     "don't print version and copyright messages on interactive startup" },
 

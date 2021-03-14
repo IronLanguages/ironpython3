@@ -801,10 +801,15 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(re.compile("\Z").match("\n"), None)
         self.assertEqual(re.compile("\Z").match("").group(0), "")
 
-    def test_gh21(self):
+    def test_ipy2_gh21(self):
         """https://github.com/IronLanguages/ironpython2/issues/21"""
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 2; was group 1", re.compile, r'(?P<hoge>\w+):(?P<hoge>\w+)')
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 3; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(?P<hoge>\w+)')
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 4; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(abc)(?P<hoge>\w+)')
+
+    def test_ipy3_gh814(self):
+        """https://github.com/IronLanguages/ironpython3/issues/814"""
+        self.assertEqual(re.match(r'\s+', "\xa0", flags=re.UNICODE).group(0), "\xa0")
+        self.assertIsNone(re.match(r'\s+', "\xa0", flags=re.ASCII))
 
 run_test(__name__)

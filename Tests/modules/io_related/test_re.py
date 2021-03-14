@@ -187,8 +187,8 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(pattern.subn("1", "abcdabcd", 2), ("1d1d",2))
 
         #flags
-        self.assertEqual(pattern.flags, 0 if is_cli else 32)
-        self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L | (0 if is_cli else 32))
+        self.assertEqual(pattern.flags, re.U)
+        self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L | re.U)
 
         #groupindex
         self.assertEqual(pattern.groupindex, {})
@@ -622,9 +622,9 @@ class ReTest(IronPythonTestCase):
         self.assertTrue ( m2.groups('Default') == ('Default',))
 
     def test_locale_flags(self):
-        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, 0 if is_cli else re.U)
-        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L | (0 if is_cli else re.U))
-        self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L | (0 if is_cli else re.U))
+        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.U)
+        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L | re.U)
+        self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L | re.U)
 
     def test_end(self):
         ex = re.compile(r'\s+')
@@ -771,7 +771,7 @@ class ReTest(IronPythonTestCase):
         pickled_regex = re._pickle(regex)
         self.assertEqual(len(pickled_regex), 2)
         self.assertEqual(pickled_regex[1],
-                ('^(?P<msg>NMAKE[A-Za-z0-9]*)\'\\"?(?P<file>[\\\\A-Za-z0-9/:_\\.\\+]+)', 0 if is_cli else re.U))
+                ('^(?P<msg>NMAKE[A-Za-z0-9]*)\'\\"?(?P<file>[\\\\A-Za-z0-9/:_\\.\\+]+)', re.U))
 
     def test_conditional(self):
         p = re.compile(r'(a)?(b)((?(1)c))')

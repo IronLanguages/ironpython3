@@ -46,23 +46,36 @@ namespace IronPython.Modules {
 
         #region CONSTANTS
 
+        [Flags]
+        internal enum ReFlags : int {
+            TEMPLATE = 0x01,
+            IGNORECASE = 0x02,
+            LOCALE = 0x04,
+            MULTILINE = 0x08,
+            DOTALL = 0x10,
+            UNICODE = 0x20,
+            VERBOSE = 0x40,
+            DEBUG = 0x80,
+            ASCII = 0x100,
+        }
+
         // short forms
-        public const int I = 0x02;
-        public const int L = 0x04;
-        public const int M = 0x08;
-        public const int S = 0x10;
-        public const int U = 0x20;
-        public const int X = 0x40;
-        public const int A = 0x100;
+        public const int I = (int)ReFlags.IGNORECASE;
+        public const int L = (int)ReFlags.LOCALE;
+        public const int M = (int)ReFlags.MULTILINE;
+        public const int S = (int)ReFlags.DOTALL;
+        public const int U = (int)ReFlags.UNICODE;
+        public const int X = (int)ReFlags.VERBOSE;
+        public const int A = (int)ReFlags.ASCII;
 
         // long forms
-        public const int IGNORECASE = 0x02;
-        public const int LOCALE = 0x04;
-        public const int MULTILINE = 0x08;
-        public const int DOTALL = 0x10;
-        public const int UNICODE = 0x20;
-        public const int VERBOSE = 0x40;
-        public const int ASCII = 0x100;
+        public const int IGNORECASE = (int)ReFlags.IGNORECASE;
+        public const int LOCALE     = (int)ReFlags.LOCALE;
+        public const int MULTILINE  = (int)ReFlags.MULTILINE;
+        public const int DOTALL     = (int)ReFlags.DOTALL;
+        public const int UNICODE    = (int)ReFlags.UNICODE;
+        public const int VERBOSE    = (int)ReFlags.VERBOSE;
+        public const int ASCII      = (int)ReFlags.ASCII;
 
         #endregion
 
@@ -150,20 +163,22 @@ namespace IronPython.Modules {
             private PythonDictionary _groups;
             private WeakRefTracker _weakRefTracker;
 
-            internal Pattern(CodeContext/*!*/ context, object pattern, int flags = 0, bool compiled = false) {
-                _pre = PreParseRegex(context, PatternAsString(pattern), (flags & VERBOSE) != 0);
-                flags |= OptionToFlags(_pre.Options);
+            internal Pattern(CodeContext/*!*/ context, object pattern, ReFlags flags = 0, bool compiled = false) {
+                _pre = PreParseRegex(context, PatternAsString(pattern, ref flags), (flags & ReFlags.VERBOSE) != 0);
+                flags |= _pre.Options;
                 _re = GenRegex(context, _pre.Pattern, flags, compiled, false);
                 this.pattern = pattern;
-                this.flags = flags;
+                this.flags = (int)flags;
 
-                static string PatternAsString(object pattern) {
+                static string PatternAsString(object pattern, ref ReFlags flags) {
                     switch (pattern) {
                         case Bytes bytes:
                             return bytes.MakeString();
                         case string s:
+                            flags |= ReFlags.UNICODE;
                             return s;
                         case ExtensibleString es:
+                            flags |= ReFlags.UNICODE;
                             return es.Value;
                         default:
                             throw new ArgumentTypeException();
@@ -171,7 +186,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private static Regex GenRegex(CodeContext/*!*/ context, string pattern, int flags, bool compiled, bool fullmatch) {
+            private static Regex GenRegex(CodeContext/*!*/ context, string pattern, ReFlags flags, bool compiled, bool fullmatch) {
                 try {
                     RegexOptions opts = FlagsToOption(flags);
                     return new Regex(fullmatch ? $"(?:{pattern})\\Z" : pattern, opts | (compiled ? RegexOptions.Compiled : RegexOptions.None));
@@ -210,7 +225,7 @@ namespace IronPython.Modules {
                 if (_re_fullmatch == null) {
                     lock (_re) {
                         if (_re_fullmatch == null)
-                            _re_fullmatch = GenRegex(context, _pre.Pattern, flags, _re.Options.HasFlag(RegexOptions.Compiled), true);
+                            _re_fullmatch = GenRegex(context, _pre.Pattern, (ReFlags)flags, _re.Options.HasFlag(RegexOptions.Compiled), true);
                     }
                 }
 
@@ -837,7 +852,7 @@ namespace IronPython.Modules {
                         return res;
                     }
                 }
-                res = new Pattern(context, pattern, flags, compiled);
+                res = new Pattern(context, pattern, (ReFlags)flags, compiled);
                 _cachedPatterns[key] = res;
                 return res;
             }
@@ -849,35 +864,14 @@ namespace IronPython.Modules {
             }
         }
 
-        private static RegexOptions FlagsToOption(int flags) {
+        private static RegexOptions FlagsToOption(ReFlags flags) {
             RegexOptions opts = RegexOptions.None;
-            if ((flags & (int)IGNORECASE) != 0) opts |= RegexOptions.IgnoreCase;
-            if ((flags & (int)MULTILINE) != 0) opts |= RegexOptions.Multiline;
-            if (((flags & (int)LOCALE)) == 0) opts &= (~RegexOptions.CultureInvariant);
-            if ((flags & (int)DOTALL) != 0) opts |= RegexOptions.Singleline;
-            if ((flags & (int)VERBOSE) != 0) opts |= RegexOptions.IgnorePatternWhitespace;
+            if ((flags & ReFlags.IGNORECASE) != 0) opts |= RegexOptions.IgnoreCase;
+            if ((flags & ReFlags.MULTILINE) != 0) opts |= RegexOptions.Multiline;
+            if ((flags & ReFlags.LOCALE) == 0) opts &= ~RegexOptions.CultureInvariant;
+            if ((flags & ReFlags.DOTALL) != 0) opts |= RegexOptions.Singleline;
 
             return opts;
-        }
-
-        private static int OptionToFlags(RegexOptions options) {
-            int flags = 0;
-            if ((options & RegexOptions.IgnoreCase) != 0) {
-                flags |= IGNORECASE;
-            }
-            if ((options & RegexOptions.Multiline) != 0) {
-                flags |= MULTILINE;
-            }
-            if ((options & RegexOptions.CultureInvariant) == 0) {
-                flags |= LOCALE;
-            }
-            if ((options & RegexOptions.Singleline) != 0) {
-                flags |= DOTALL;
-            }
-            if ((options & RegexOptions.IgnorePatternWhitespace) != 0) {
-                flags |= VERBOSE;
-            }
-            return flags;
         }
 
         internal class ParsedRegex {
@@ -887,7 +881,7 @@ namespace IronPython.Modules {
 
             public string UserPattern;
             public string Pattern;
-            public RegexOptions Options = RegexOptions.CultureInvariant;
+            public ReFlags Options;
         }
 
         private static readonly char[] _endOfLineChars = new[] { '\r', '\n' };
@@ -900,6 +894,7 @@ namespace IronPython.Modules {
         /// </summary>
         private static ParsedRegex PreParseRegex(CodeContext/*!*/ context, string pattern, bool verbose) {
             ParsedRegex res = new ParsedRegex(pattern);
+            if (verbose) res.Options |= ReFlags.VERBOSE;
 
             //string newPattern;
             int cur = 0, nameIndex;
@@ -910,6 +905,58 @@ namespace IronPython.Modules {
 
             int groupCount = 0;
             var namedGroups = new Dictionary<string, int>();
+
+            if (verbose) {
+                pattern = ApplyVerbose(pattern);
+            }
+
+            static string ApplyVerbose(string pattern) {
+                var builder = new StringBuilder();
+
+                bool isCharList = false;
+                bool isEscaped = false;
+
+                for (int i = 0; i < pattern.Length; i++) {
+                    var c = pattern[i];
+                    if (isEscaped) {
+                        isEscaped = false;
+                    } else {
+                        switch (c) {
+                            case ' ':
+                            case '\t':
+                            case '\n':
+                            case '\r':
+                            case '\f':
+                            case '\v':
+                                if (!isCharList) continue;
+                                break;
+                            case '\\':
+                                isEscaped = true;
+                                break;
+                            case '[':
+                                isCharList = true;
+                                break;
+                            case ']':
+                                isCharList = false;
+                                break;
+                            case '#':
+                                if (!isCharList) {
+                                    // skip to end of line
+                                    i = pattern.IndexOfAny(_endOfLineChars, i);
+                                    if (i < 0) i = pattern.Length;
+                                    continue;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    builder.Append(c);
+                }
+
+                return builder.ToString();
+            }
 
             for (; ; ) {
                 if (verbose && inComment) {
@@ -1009,29 +1056,33 @@ namespace IronPython.Modules {
                                             }
 
                                             break;
+                                        case 'a':
+                                            res.Options |= ReFlags.ASCII;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case 'i':
-                                            res.Options |= RegexOptions.IgnoreCase;
+                                            res.Options |= ReFlags.IGNORECASE;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case 'L':
-                                            res.Options &= ~(RegexOptions.CultureInvariant);
+                                            res.Options |= ReFlags.LOCALE;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case 'm':
-                                            res.Options |= RegexOptions.Multiline;
+                                            res.Options |= ReFlags.MULTILINE;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case 's':
-                                            res.Options |= RegexOptions.Singleline;
+                                            res.Options |= ReFlags.DOTALL;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case 'u':
-                                            // specify unicode; not relevant and not valid under .NET as we're always unicode
-                                            // -- so the option needs to be removed
+                                            res.Options |= ReFlags.UNICODE;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case 'x':
-                                            res.Options |= RegexOptions.IgnorePatternWhitespace;
+                                            if (!verbose) return PreParseRegex(context, res.UserPattern, true);
+                                            res.Options |= ReFlags.VERBOSE;
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
                                         case ':': break; // non-capturing

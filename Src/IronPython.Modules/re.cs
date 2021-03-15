@@ -367,7 +367,7 @@ namespace IronPython.Modules {
                         prevEnd = match.Index + match.Length;
 
                         if (replacement != null) return UnescapeGroups(match, replacement);
-                        return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
+                        return ValidateString(PythonCalls.Call(context, repl, Match.Make(match, this, input)));
                     },
                     count));
             }
@@ -396,7 +396,7 @@ namespace IronPython.Modules {
                         totalCount++;
                         if (replacement != null) return UnescapeGroups(match, replacement);
 
-                        return PythonCalls.Call(context, repl, Match.Make(match, this, input)) as string;
+                        return ValidateString(PythonCalls.Call(context, repl, Match.Make(match, this, input)));
                     },
                     count);
 

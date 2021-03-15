@@ -52,7 +52,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_bug_545855'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_bug_581080')))
         suite.addTest(test.test_re.ReTests('test_bug_612074'))
-        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_bug_6509')))
+        suite.addTest(test.test_re.ReTests('test_bug_6509'))
         suite.addTest(test.test_re.ReTests('test_bug_6561'))
         suite.addTest(test.test_re.ReTests('test_bug_725106'))
         suite.addTest(test.test_re.ReTests('test_bug_725149'))

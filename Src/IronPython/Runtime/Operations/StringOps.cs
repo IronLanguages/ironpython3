@@ -867,6 +867,15 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        [StaticExtensionMethod]
+        public static PythonDictionary maketrans([NotNull] string x, [NotNull] string y, [NotNull] string z) {
+            var res = maketrans(x, y);
+            foreach (var c in z) {
+                res[(int)c] = null;
+            }
+            return res;
+        }
+
         [return: SequenceTypeInfo(typeof(string))]
         public static PythonTuple partition([NotNull]this string self, [NotNull]string sep) {
             if (sep.Length == 0)

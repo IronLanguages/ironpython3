@@ -254,6 +254,7 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
 
             // Special walk case: first (outermost) "for" iterator
+            // See also: PythonAst.LookupVisitor.VisitComprehension(...)
             var outermostFor = (ComprehensionFor)node.Iterators[0];
             outermostFor.List.Walk(this);
             PushScope(node.Scope);

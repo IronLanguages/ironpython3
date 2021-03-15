@@ -720,6 +720,7 @@ namespace IronPython.Compiler.Ast {
 
         internal class LookupVisitor : MSAst.ExpressionVisitor {
             private readonly MSAst.Expression _globalContext;
+            private readonly Dictionary<MSAst.Expression, ScopeStatement> _outerComprehensionScopes = new();
             private ScopeStatement _curScope;
 
             public LookupVisitor(PythonAst ast, MSAst.Expression globalContext) {
@@ -737,6 +738,12 @@ namespace IronPython.Compiler.Ast {
             protected override MSAst.Expression VisitExtension(MSAst.Expression node) {
                 if (node == _globalContext) {
                     return PythonAst._globalContext;
+                }
+
+                // outer comprehension iterable is visited in outer comprehension scope
+                if (_outerComprehensionScopes.TryGetValue(node, out ScopeStatement outerComprehensionScope)) {
+                    _outerComprehensionScopes.Remove(node);
+                    return VisitComprehensionIterable(node, outerComprehensionScope);
                 }
 
                 // we need to re-write nested scopes
@@ -815,10 +822,23 @@ namespace IronPython.Compiler.Ast {
 
                 ScopeStatement prevScope = _curScope;
                 try {
-                    // rewrite the comprehension in a new scope
+                    // mark the first (outermost) "for" iterator for rewrite in the current scope
+                    _outerComprehensionScopes[((ComprehensionFor)comprehension.Iterators[0]).List] = _curScope;
+
+                    // rewrite the rest of comprehension in the new scope
                     _curScope = newScope;
 
                     return base.VisitExtension(newComprehension);
+                } finally {
+                    _curScope = prevScope;
+                }
+            }
+
+            private MSAst.Expression VisitComprehensionIterable(MSAst.Expression node, ScopeStatement scope) {
+                ScopeStatement prevScope = _curScope;
+                try {
+                    _curScope = scope;
+                    return VisitExtension(node); // no base.VisitExtension
                 } finally {
                     _curScope = prevScope;
                 }

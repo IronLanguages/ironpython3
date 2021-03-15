@@ -71,7 +71,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_expand'))
         suite.addTest(test.test_re.ReTests('test_finditer'))
         suite.addTest(test.test_re.ReTests('test_flags'))
-        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_getattr')))
+        suite.addTest(test.test_re.ReTests('test_getattr'))
         suite.addTest(test.test_re.ReTests('test_getlower'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_group_name_in_exception')))
         suite.addTest(test.test_re.ReTests('test_groupdict'))

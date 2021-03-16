@@ -32,7 +32,6 @@ namespace IronPython.Compiler {
         private bool _disableLineFeedLineSeparator;
         private SourceUnit _sourceUnit;
         private ErrorSink _errors;
-        private Severity _indentationInconsistencySeverity;
         private bool _endContinues;
         private List<int> _newLineLocations;
         private SourceLocation _initialLocation;
@@ -124,17 +123,6 @@ namespace IronPython.Compiler {
             set {
                 ContractUtils.RequiresNotNull(value, nameof(value));
                 _errors = value;
-            }
-        }
-
-        public Severity IndentationInconsistencySeverity {
-            get { return _indentationInconsistencySeverity; }
-            set {
-                _indentationInconsistencySeverity = value;
-
-                if (value != Severity.Ignore && _state.IndentFormat == null) {
-                    _state.IndentFormat = new StringBuilder[MaxIndent];
-                }
             }
         }
 
@@ -1321,70 +1309,11 @@ namespace IronPython.Compiler {
             }
         }
 
-        /// <summary>
-        /// Returns whether the 
-        /// </summary>
+        // <summary>
+        // Returns whether the
+        // </summary>
         private bool ReadNewline() {
-            // Check whether we're currently scanning for inconsistent use of identation characters. If
-            // we are we'll switch to using a slower version of this method with the extra checks embedded.
-            if (IndentationInconsistencySeverity != Severity.Ignore)
-                return ReadNewlineWithChecks();
-
-            int spaces = 0;
-            while (true) {
-                int ch = NextChar();
-
-                switch (ch) {
-                    case ' ': spaces += 1; break;
-                    case '\t': spaces += 8 - (spaces % 8); break;
-                    case '\f': spaces = 0; break;
-
-                    case '#':
-                        if (_verbatim) {
-                            BufferBack();
-                            MarkTokenEnd();
-                            return true;
-                        } else {
-                            ch = ReadLine();
-                            break;
-                        }
-                    default:
-                        BufferBack();
-
-                        if (GroupingLevel > 0) {
-                            return false;
-                        }
-
-                        MarkTokenEnd();
-
-                        // if there's a blank line then we don't want to mess w/ the
-                        // indentation level - Python says that blank lines are ignored.
-                        // And if we're the last blank line in a file we don't want to
-                        // increase the new indentation level.
-                        if (ch == EOF) {
-                            if (spaces < _state.Indent[_state.IndentLevel]) {
-                                if (_sourceUnit.Kind == SourceCodeKind.InteractiveCode ||
-                                    _sourceUnit.Kind == SourceCodeKind.Statements) {
-                                    SetIndent(spaces, null);
-                                } else {
-                                    DoDedent(spaces, _state.Indent[_state.IndentLevel]);
-                                }
-                            }
-                        } else if (ch != '\n' && ch != '\r') {
-                            SetIndent(spaces, null);
-                        }
-
-                        return true;
-                }
-            }
-        }
-
-        // This is another version of ReadNewline with nearly identical semantics. The difference is
-        // that checks are made to see that indentation is used consistently. This logic is in a
-        // duplicate method to avoid inflicting the overhead of the extra logic when we're not making
-        // the checks.
-        private bool ReadNewlineWithChecks() {
-            // Keep track of the indentation format for the current line
+            // Keep track of the indentation format for the current line - may want to optimize in the future
             StringBuilder sb = new StringBuilder(80);
 
             int spaces = 0;
@@ -1394,7 +1323,7 @@ namespace IronPython.Compiler {
                 switch (ch) {
                     case ' ': spaces += 1; sb.Append(' '); break;
                     case '\t': spaces += 8 - (spaces % 8); sb.Append('\t'); break;
-                    case '\f': spaces = 0; sb.Append('\f'); break;
+                    case '\f': spaces = 0; break;
 
                     case '#':
                         if (_verbatim) {
@@ -1463,15 +1392,13 @@ namespace IronPython.Compiler {
                         // We've hit a difference in the way we're indenting, report it.
                         _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
                             new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line
-                            ErrorCodes.TabError, _indentationInconsistencySeverity
+                            ErrorCodes.TabError, Severity.Error
                         );
-
-                        // We only report problems once per module, so switch back to the fast algorithm.
-                        _indentationInconsistencySeverity = Severity.Ignore;
                     }
                 }
             }
         }
+
 
         private void SetIndent(int spaces, StringBuilder chars) {
             int current = _state.Indent[_state.IndentLevel];
@@ -1479,8 +1406,7 @@ namespace IronPython.Compiler {
                 return;
             } else if (spaces > current) {
                 _state.Indent[++_state.IndentLevel] = spaces;
-                if (_state.IndentFormat != null)
-                    _state.IndentFormat[_state.IndentLevel] = chars;
+                _state.IndentFormat[_state.IndentLevel] = chars;
                 _state.PendingDedents = -1;
                 return;
             } else {
@@ -1656,8 +1582,6 @@ namespace IronPython.Compiler {
             public int PendingDedents;
             public bool LastNewLine;        // true if the last token we emitted was a new line.
             public IncompleteString IncompleteString;
-
-            // Indentation state used only when we're reporting on inconsistent identation format.
             public StringBuilder[] IndentFormat;
 
             // grouping state
@@ -1671,7 +1595,7 @@ namespace IronPython.Compiler {
                 BraceLevel = state.BraceLevel;
                 PendingDedents = state.PendingDedents;
                 IndentLevel = state.IndentLevel;
-                IndentFormat = (state.IndentFormat != null) ? (StringBuilder[])state.IndentFormat.Clone() : null;
+                IndentFormat = (StringBuilder[])state.IndentFormat.Clone();
                 IncompleteString = state.IncompleteString;
             }
 
@@ -1679,7 +1603,7 @@ namespace IronPython.Compiler {
                 Indent = new int[MaxIndent]; // TODO
                 LastNewLine = false;
                 BracketLevel = ParenLevel = BraceLevel = PendingDedents = IndentLevel = 0;
-                IndentFormat = null;
+                IndentFormat = new StringBuilder[MaxIndent];
                 IncompleteString = null;
             }
 

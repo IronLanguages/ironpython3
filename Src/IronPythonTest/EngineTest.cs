@@ -216,7 +216,6 @@ namespace IronPythonTest {
             options["StripDocStrings"] = true;
             options["Optimize"] = true;
             options["RecursionLimit"] = 42;
-            options["IndentationInconsistencySeverity"] = Severity.Warning;
             options["WarningFilters"] = new string[] { "warnonme" };
 
             ScriptEngine engine1 = Python.CreateEngine();
@@ -276,7 +275,6 @@ namespace IronPythonTest {
                 Assert.AreEqual(po.StripDocStrings, true);
                 Assert.AreEqual(po.Optimize, true);
                 Assert.AreEqual(po.RecursionLimit, 42);
-                Assert.AreEqual(po.IndentationInconsistencySeverity, Severity.Warning);
                 Assert.AreEqual(po.WarningFilters[0], "warnonme");
             }
 

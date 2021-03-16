@@ -229,12 +229,8 @@ class StdConsoleTest(IronPythonTestCase):
             f.write("if (1):\n\tpass\n        pass\nprint('OK')\n")
 
         msg = "inconsistent use of tabs and spaces in indentation"
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/982
-            self.TestCommandLine((tmpscript, ), "OK\n")
-            self.TestCommandLine(("-t", tmpscript), ("firstline", "%s:3: SyntaxWarning: %s\n"  % (tmpscript, msg, )), 0)
-        else:
-            self.TestCommandLine((tmpscript, ), ("lastline", "TabError: " + msg + "\n"), 1)
-            self.TestCommandLine(("-t", tmpscript), ("lastline", "TabError: " + msg + "\n"), 1)
+        self.TestCommandLine((tmpscript, ), ("lastline", "TabError: " + msg + "\n"), 1)
+        self.TestCommandLine(("-t", tmpscript), ("lastline", "TabError: " + msg + "\n"), 1)
         self.TestCommandLine(("-tt", tmpscript), ("lastline", "TabError: " + msg + "\n"), 1)
 
         tmpscript = os.path.join(self.tmpdir, "funcdef.py")

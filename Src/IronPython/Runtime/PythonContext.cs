@@ -719,14 +719,6 @@ namespace IronPython.Runtime {
             flags.no_user_site = PythonOptions.NoUserSite ? 1 : 0;
             flags.no_site = PythonOptions.NoSite ? 1 : 0;
             flags.ignore_environment = PythonOptions.IgnoreEnvironment ? 1 : 0;
-            switch (PythonOptions.IndentationInconsistencySeverity) {
-                case Severity.Warning:
-                    flags.tabcheck = 1;
-                    break;
-                case Severity.Error:
-                    flags.tabcheck = 2;
-                    break;
-            }
             flags.verbose = PythonOptions.Verbose ? 1 : 0;
             flags.unicode = 1;
             flags.bytes_warning = PythonOptions.BytesWarning switch {

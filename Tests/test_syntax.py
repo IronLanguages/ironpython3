@@ -123,7 +123,7 @@ def test_compile(self):
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "single")
     #indentation errors - BUG 864
     self.assertRaises(IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, compile, "class C:\nx=2\n", "Error", "exec")
-    self.assertRaises(IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, compile, "class C:\n\n", "Error", "single")
+    self.assertRaises(IndentationError if sys.version_info >= (3,9) else SyntaxError, compile, "class C:\n\n", "Error", "single")
 
     #allow \f
     compile('\f\f\f\f\fclass C:\f\f\f pass', 'ok', 'exec')
@@ -605,14 +605,14 @@ class HasASyntaxException:
                 ("if 1:\n", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
                 ("if 1:", 0x000, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6 if is_cli else 5, 'if 1:')) ),
                 ("if 1:\n", 0x000, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n')) ),
-                ("if 1:\n\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 1, '\n')) ),
-                ("if 1:\n\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 1, '\n')) ),
+                ("if 1:\n\n", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n') if is_cli else ('dummy', 2, 1, '\n')) ),
+                ("if 1:\n\n", 0x000, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 1, 6, 'if 1:\n') if is_cli else ('dummy', 2, 1, '\n')) ),
                 ("if 1:\n  if 1:", 0x200, ('expected an indented block' if sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
                 ("if 1:\n  if 1:\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n')) ),
                 ("if 1:\n  if 1:", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8 if is_cli else 7, '  if 1:')) ),
                 ("if 1:\n  if 1:\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n')) ),
-                ("if 1:\n  if 1:\n\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 1, '\n')) ),
-                ("if 1:\n  if 1:\n\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 1, '\n')) ),
+                ("if 1:\n  if 1:\n\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n') if is_cli else ('dummy', 3, 1, '\n')) ),
+                ("if 1:\n  if 1:\n\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 2, 8, '  if 1:\n') if is_cli else ('dummy', 3, 1, '\n')) ),
                 ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x200, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
                 ("class MyClass(object):\n\tabc = 42\n\tdef __new__(cls):\n", 0x000, ('expected an indented block' if is_cli or sys.version_info >= (3,9) else 'unexpected EOF while parsing', ('dummy', 3, 19, '\tdef __new__(cls):\n')) ),
                 ("def  Foo():\n\n    # comment\n\n    Something = -1\n\n\n\n  ", 0x000, ('unindent does not match any outer indentation level', ('dummy', 9, 2, '  '))),
@@ -622,22 +622,17 @@ class HasASyntaxException:
                 ]
 
         for input, flags, res in tests:
-            #print repr(input), flags
-            try:
-                code3 = compile(input, "dummy", "single", flags, 1)
-                self.fail("Unreachable code reached")
-            except SyntaxError as err:
-                self.assertEqual(err.args, res)
+            #print(repr(input), flags)
+            with self.assertRaises(SyntaxError) as cm:
+                compile(input, "dummy", "single", flags, 1)
+            self.assertEqual(cm.exception.args, res)
 
-
-        try:
+        with self.assertRaises(IndentationError) as cm:
             exec("""
             def f():
                 x = 3
                     y = 5""")
-            self.fail("Unreachable code reached")
-        except IndentationError as e:
-            self.assertEqual(e.lineno, 2)
+        self.assertEqual(cm.exception.lineno, 2)
 
     @skipUnlessIronPython()
     def test_parser_recovery(self):

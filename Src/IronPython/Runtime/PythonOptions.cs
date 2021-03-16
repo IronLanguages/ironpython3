@@ -96,11 +96,6 @@ namespace IronPython.Runtime {
         /// </summary>
         public bool Tracing { get; }
 
-        /// <summary> 
-        /// Severity of a warning that indentation is formatted inconsistently.
-        /// </summary>
-        public Severity IndentationInconsistencySeverity { get; }
-
         /// <summary>
         /// Forces all code to be compiled in a mode in which the code can be reliably collected by the CLR.
         /// </summary>
@@ -142,7 +137,6 @@ namespace IronPython.Runtime {
             Optimize = GetOption(options, "Optimize", false);
             StripDocStrings = GetOption(options, "StripDocStrings", false);
             RecursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
-            IndentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             EnableProfiler = GetOption(options, "EnableProfiler", false);
             LightweightScopes = GetOption(options, "LightweightScopes", false);
             FullFrames = GetOption(options, "FullFrames", false);

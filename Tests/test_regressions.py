@@ -589,13 +589,13 @@ with open(r"%s", "w") as f:
 
     def test_cp22692(self):
         self.assertEqual(self.cp22692_helper("if 1:", 0x200),
-                [SyntaxError, IndentationError if is_cli else SyntaxError])
+                [IndentationError if sys.version_info >= (3,9) else SyntaxError, IndentationError if sys.version_info >= (3,9) else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:", 0),
-                [SyntaxError, IndentationError if is_cli else SyntaxError])
+                [IndentationError if sys.version_info >= (3,9) else SyntaxError, IndentationError if sys.version_info >= (3,9) else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:\n  if 1:", 0x200),
-                [IndentationError if is_cli else SyntaxError, IndentationError if is_cli else SyntaxError])
+                [IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError])
         self.assertEqual(self.cp22692_helper("if 1:\n  if 1:", 0),
-                [IndentationError if is_cli else SyntaxError, IndentationError if is_cli else SyntaxError])
+                [IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError])
 
     @skipUnlessIronPython()
     def test_cp23545(self):

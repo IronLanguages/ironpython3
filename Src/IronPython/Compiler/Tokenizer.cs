@@ -1323,7 +1323,7 @@ namespace IronPython.Compiler {
                 switch (ch) {
                     case ' ': spaces += 1; sb.Append(' '); break;
                     case '\t': spaces += 8 - (spaces % 8); sb.Append('\t'); break;
-                    case '\f': spaces = 0; sb.Append('\f'); break;
+                    case '\f': spaces = 0; break;
 
                     case '#':
                         if (_verbatim) {

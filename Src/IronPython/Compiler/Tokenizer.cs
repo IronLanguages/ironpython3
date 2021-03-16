@@ -1406,8 +1406,7 @@ namespace IronPython.Compiler {
                 return;
             } else if (spaces > current) {
                 _state.Indent[++_state.IndentLevel] = spaces;
-                if (_state.IndentFormat != null)
-                    _state.IndentFormat[_state.IndentLevel] = chars;
+                _state.IndentFormat[_state.IndentLevel] = chars;
                 _state.PendingDedents = -1;
                 return;
             } else {
@@ -1596,7 +1595,7 @@ namespace IronPython.Compiler {
                 BraceLevel = state.BraceLevel;
                 PendingDedents = state.PendingDedents;
                 IndentLevel = state.IndentLevel;
-                IndentFormat = (state.IndentFormat != null) ? (StringBuilder[])state.IndentFormat.Clone() : null;
+                IndentFormat = (StringBuilder[])state.IndentFormat.Clone();
                 IncompleteString = state.IncompleteString;
             }
 
@@ -1604,7 +1603,7 @@ namespace IronPython.Compiler {
                 Indent = new int[MaxIndent]; // TODO
                 LastNewLine = false;
                 BracketLevel = ParenLevel = BraceLevel = PendingDedents = IndentLevel = 0;
-                IndentFormat = null;
+                IndentFormat = new StringBuilder[MaxIndent];
                 IncompleteString = null;
             }
 

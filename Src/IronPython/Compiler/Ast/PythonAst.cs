@@ -743,7 +743,7 @@ namespace IronPython.Compiler.Ast {
                 // outer comprehension iterable is visited in outer comprehension scope
                 if (_outerComprehensionScopes.TryGetValue(node, out ScopeStatement outerComprehensionScope)) {
                     _outerComprehensionScopes.Remove(node);
-                    return VisitComprehensionIterable(node, outerComprehensionScope);
+                    return VisitExtensionInScope(node, outerComprehensionScope);
                 }
 
                 // we need to re-write nested scopes
@@ -834,11 +834,11 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            private MSAst.Expression VisitComprehensionIterable(MSAst.Expression node, ScopeStatement scope) {
+            private MSAst.Expression VisitExtensionInScope(MSAst.Expression node, ScopeStatement scope) {
                 ScopeStatement prevScope = _curScope;
                 try {
                     _curScope = scope;
-                    return VisitExtension(node); // no base.VisitExtension
+                    return VisitExtension(node); // not base.VisitExtension
                 } finally {
                     _curScope = prevScope;
                 }

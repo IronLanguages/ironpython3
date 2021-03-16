@@ -86,12 +86,24 @@ class ListCompTest(unittest.TestCase):
         else:
             _dir = ['.0', 'x', 'y', 'z'] # adds implementation-level variable '.0'
         # below, x and first/third y is local, second y and z is from the outer scope
-        self.assertEqual([(0, 0, range(3), _dir),
+        self.assertEqual([(x, y, z, dir()) for x in y for y in z],
+                         [(0, 0, range(3), _dir),
                           (0, 1, range(3), _dir),
                           (0, 2, range(3), _dir),
                           (1, 0, range(3), _dir),
                           (1, 1, range(3), _dir),
-                          (1, 2, range(3), _dir)],
-                         [(x, y, z, dir()) for x in y for y in z])
+                          (1, 2, range(3), _dir)])
+
+        # mixing scopes
+        def apply(f, i): return f(i)
+        x = 2
+        res = [x for x in apply(lambda i: range(i+x), x)]
+        self.assertEqual(res, [0, 1, 2, 3])
+
+        res = [(x, y) for x in apply(lambda i: range(i+x), x) for y in apply(lambda i: range(i+x//2), x)]
+        self.assertEqual(res, [(1, 0), (2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2), (3, 3)])
+
+        res = [x for x in [y for y in apply(lambda i: range(i+x), x)]]
+        self.assertEqual(res, [0, 1, 2, 3])
 
 run_test(__name__)

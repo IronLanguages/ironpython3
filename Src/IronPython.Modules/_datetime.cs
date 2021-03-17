@@ -35,6 +35,7 @@ namespace IronPython.Modules {
             private bool _fWithDaysAndSeconds = false; // whether _tsWithDaysAndSeconds initialized
             private bool _fWithSeconds = false;
 
+            internal static readonly timedelta Zero = new timedelta(0, 0, 0);
             internal static readonly timedelta _DayResolution = new timedelta(1, 0, 0);
             // class attributes:
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
@@ -211,12 +212,11 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(new timedelta(days, seconds, microseconds, 0, 0, 0, 0));
             }
 
-            public override bool Equals(object obj) {
-                timedelta delta = obj as timedelta;
-                if (delta == null) return false;
+            internal bool Equals(timedelta delta)
+                => _days == delta._days && _seconds == delta._seconds && _microseconds == delta._microseconds;
 
-                return this._days == delta._days && this._seconds == delta._seconds && this._microseconds == delta._microseconds;
-            }
+            public override bool Equals(object obj)
+                => obj is timedelta delta && Equals(delta);
 
             public override int GetHashCode() {
                 return this._days ^ this._seconds ^ this._microseconds;
@@ -242,11 +242,7 @@ namespace IronPython.Modules {
 
             #region Rich Comparison Members
 
-            private int CompareTo(object other) {
-                timedelta delta = other as timedelta;
-                if (delta == null)
-                    throw PythonOps.TypeError("can't compare datetime.timedelta to {0}", PythonTypeOps.GetName(other));
-
+            private int CompareTo(timedelta delta) {
                 int res = this._days - delta._days;
                 if (res != 0) return res;
 
@@ -256,21 +252,13 @@ namespace IronPython.Modules {
                 return this._microseconds - delta._microseconds;
             }
 
-            public static bool operator >(timedelta self, object other) {
-                return self.CompareTo(other) > 0;
-            }
+            public static bool operator >([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) > 0;
 
-            public static bool operator <(timedelta self, object other) {
-                return self.CompareTo(other) < 0;
-            }
+            public static bool operator <([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) < 0;
 
-            public static bool operator >=(timedelta self, object other) {
-                return self.CompareTo(other) >= 0;
-            }
+            public static bool operator >=([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) >= 0;
 
-            public static bool operator <=(timedelta self, object other) {
-                return self.CompareTo(other) <= 0;
-            }
+            public static bool operator <=([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) <= 0;
 
             #endregion
 
@@ -987,7 +975,8 @@ namespace IronPython.Modules {
                 return new datetime(lyear, lmonth, lday, lhour, lminute, lsecond, lmicrosecond, tz);
             }
 
-            public object astimezone(tzinfo tz) {
+            public object astimezone(tzinfo tz = null) {
+                // TODO: https://github.com/IronLanguages/ironpython3/issues/1136
                 if (tz == null)
                     throw PythonOps.TypeError("astimezone() argument 1 must be datetime.tzinfo, not None");
 
@@ -1553,14 +1542,87 @@ namespace IronPython.Modules {
             }
 
             public PythonTuple __reduce__(CodeContext/*!*/ context) {
+                object args = PythonTuple.EMPTY;
+                if (PythonOps.TryGetBoundAttr(context, this, "__getinitargs__", out var getinitargs)) {
+                    args = PythonOps.CallWithContext(context, getinitargs);
+                }
+
                 object dict;
                 if (GetType() == typeof(tzinfo) ||
                     !PythonOps.TryGetBoundAttr(context, this, "__dict__", out dict)) {
-                    return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.EMPTY);
+                    return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
                 }
 
-                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.EMPTY, dict);
+                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args, dict);
             }
         }
+
+#nullable enable
+
+        [PythonType]
+        public sealed class timezone : tzinfo, ICodeFormattable {
+            private readonly timedelta _offset;
+            private readonly string? _name;
+
+            private timezone(timedelta offset, string? name = null) {
+                if (offset <= -timedelta._DayResolution || offset >= timedelta._DayResolution)
+                    throw PythonOps.ValueError($"offset must be a timedelta strictly between -timedelta(hours=24) and timedelta(hours=24), not {PythonOps.Repr(DefaultContext.Default, offset)}.");
+                _offset = offset;
+                _name = name;
+            }
+
+            public static timezone __new__(CodeContext context, PythonType cls, [NotNull] timedelta offset)
+                => __new__(context, cls, offset, null!);
+
+            public static timezone __new__(CodeContext context, PythonType cls, [NotNull] timedelta offset, [NotNull] string name) {
+                if (name is null && offset.Equals(timedelta.Zero))
+                    return utc;
+                return new timezone(offset, name);
+            }
+
+            public static timezone utc { get; } = new timezone(timedelta.Zero);
+
+            public override timedelta utcoffset(object? dt) => _offset;
+
+            public override timedelta? dst(object? dt) => null;
+
+            public override object fromutc([NotNull] datetime dt) {
+                if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError("fromutc: dt.tzinfo is not self");
+                return dt + _offset;
+            }
+
+            private bool IsUtc => ReferenceEquals(this, utc);
+
+            public override string tzname(object? dt) {
+                if (_name is not null) return _name;
+
+                if (IsUtc) return "UTC";
+
+                var totalSeconds = _offset.total_seconds();
+                var time = TimeSpan.FromSeconds(totalSeconds).ToString("c");
+                if (totalSeconds >= 0) time = "+" + time; // prefix with 0
+                if (time.EndsWith(":00", StringComparison.OrdinalIgnoreCase)) time = time.Substring(0, time.Length - 3); // remove trailing seconds
+                return $"UTC" + time;
+            }
+
+            #region ICodeFormattable Members
+
+            public string __repr__(CodeContext context) {
+                if (IsUtc)
+                    return "datetime.timezone.utc";
+                if (_name is null)
+                    return $"datetime.timezone({PythonOps.Repr(context, _offset)})";
+                return $"datetime.timezone({PythonOps.Repr(context, _offset)}, {PythonOps.Repr(context, _name)})";
+            }
+
+            #endregion
+
+            public PythonTuple __getinitargs__(CodeContext context) {
+                if (_name is null) return PythonTuple.MakeTuple(_offset);
+                return PythonTuple.MakeTuple(_offset, _name);
+            }
+        }
+
+#nullable restore
     }
 }

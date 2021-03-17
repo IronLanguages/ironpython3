@@ -75,6 +75,9 @@ namespace IronPython.Compiler.Ast {
         private readonly ComprehensionIterator[] _iterators;
 
         public ListComprehension(Expression item, ComprehensionIterator[] iterators) {
+            if (iterators is null || iterators.Length < 1) throw new ArgumentException("comprehension with no generators");
+            if (iterators[0] is not ComprehensionFor) throw new ArgumentException("comprehension with invalid generator");
+
             Item = item;
             _iterators = iterators;
             Scope = new ComprehensionScope(this);
@@ -121,6 +124,9 @@ namespace IronPython.Compiler.Ast {
         private readonly ComprehensionIterator[] _iterators;
 
         public SetComprehension(Expression item, ComprehensionIterator[] iterators) {
+            if (iterators is null || iterators.Length < 1) throw new ArgumentException("comprehension with no generators");
+            if (iterators[0] is not ComprehensionFor) throw new ArgumentException("comprehension with invalid generator");
+
             Item = item;
             _iterators = iterators;
             Scope = new ComprehensionScope(this);
@@ -167,6 +173,9 @@ namespace IronPython.Compiler.Ast {
         private readonly ComprehensionIterator[] _iterators;
 
         public DictionaryComprehension(Expression key, Expression value, ComprehensionIterator[] iterators) {
+            if (iterators is null || iterators.Length < 1) throw new ArgumentException("comprehension with no generators");
+            if (iterators[0] is not ComprehensionFor) throw new ArgumentException("comprehension with invalid generator");
+
             Key = key;
             Value = value;
             _iterators = iterators;

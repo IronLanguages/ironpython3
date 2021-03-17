@@ -99,4 +99,27 @@ class DictCompTest(unittest.TestCase):
         r = {k:eval(lambda i: i+v, k+v) for k in range(2)}
         self.assertEqual(r, {0:4, 1:5})
 
+    def test_ipy3_gh809(self):
+        """https://github.com/IronLanguages/ironpython3/issues/809"""
+
+        # iterable is evaluated in the outer scope
+        self.assertIn('self', {x : None for x in dir()})
+
+        # this rule applies recursively to nested comprehensions
+        self.assertIn('self', {x : None for x in {y : None for y in dir()}})
+        self.assertIn('self', {x : None for x in {y : None for y in {z : None for z in dir()}}})
+
+        # this only applies to the first iterable
+        # subsequent iterables are evaluated within the comprehension scope
+        self.assertEqual({(0, 'x') : None}, {(x, y) : None for x in range(1) for y in dir() if not y.startswith('.')}) # (filtering out auxiliary variable staring with a dot, used by CPython)
+
+        # also subsequent conditions are evaluated within the comprehension scope
+        a, b, c, d = range(4)
+        self.assertTrue(len(dir()) >= 4)
+        self.assertEqual({}, {None : dir() for x in range(1) if len(dir()) >= 4})
+
+        # lambdas create a new scope
+        self.assertEqual({}, {x : None for x in (lambda: dir())()})
+        self.assertEqual({None: []}, {None: x() for x in {lambda: dir() : None}})
+
 run_test(__name__)

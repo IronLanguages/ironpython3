@@ -99,4 +99,26 @@ class SetCompTest(unittest.TestCase):
         r = {eval(lambda i: i+v, k+v) for k in range(2)}
         self.assertEqual(r, set([4, 5]))
 
+    def test_ipy3_gh809(self):
+        """https://github.com/IronLanguages/ironpython3/issues/809"""
+
+        # iterable is evaluated in the outer scope
+        self.assertIn('self', {x for x in dir()})
+
+        # this rule applies recursively to nested comprehensions
+        self.assertIn('self', {x for x in {y for y in dir()}})
+        self.assertIn('self', {x for x in {y for y in {z for z in dir()}}})
+
+        # this only applies to the first iterable
+        # subsequent iterables are evaluated within the comprehension scope
+        self.assertEqual({(0, 'x')}, {(x, y) for x in range(1) for y in dir() if not y.startswith('.')}) # (filtering out auxiliary variable staring with a dot, used by CPython)
+
+        # also subsequent conditions are evaluated within the comprehension scope
+        a, b, c, d = range(4)
+        self.assertTrue(len(dir()) >= 4)
+        self.assertEqual(set(), {dir() for x in range(1) if len(dir()) >= 4})
+
+        # lambdas create a new scope
+        self.assertEqual(set(), {x for x in (lambda: dir())()})
+
 run_test(__name__)

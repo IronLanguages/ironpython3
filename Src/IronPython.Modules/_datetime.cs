@@ -1571,10 +1571,10 @@ namespace IronPython.Modules {
                 _name = name;
             }
 
-            public static timezone __new__(CodeContext context, PythonType cls, [NotNull] timedelta offset)
+            public static timezone __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] timedelta offset)
                 => __new__(context, cls, offset, null!);
 
-            public static timezone __new__(CodeContext context, PythonType cls, [NotNull] timedelta offset, [NotNull] string name) {
+            public static timezone __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] timedelta offset, [NotNull] string name) {
                 if (name is null && offset.Equals(timedelta.Zero))
                     return utc;
                 return new timezone(offset, name);

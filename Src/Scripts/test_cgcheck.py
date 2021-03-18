@@ -28,7 +28,7 @@ def test_main(level='full'):
 
 
     # 'generate_exception_factory',  
-    # populate list of generatoe_*.py from folder of this script
+    # populate list of generate_*.py from folder of this script
     generators = get_generators_in_folder()
     
     # filter list to remove blocked items, ie. they will not be run

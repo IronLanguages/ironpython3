@@ -406,12 +406,12 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         #endregion
 
-        // These values are based on the .NET 2 BigInteger in Microsoft.Scripting.Math
-        public static longinfo long_info = new longinfo(32, 4);
+        // These values are based on the .NET BigInteger in System.Numerics.BigInteger
+        public static intinfo int_info = new intinfo(32, 4);
 
-        [PythonType("long_info"), PythonHidden]
-        public class longinfo : PythonTuple {
-            internal longinfo(int bits_per_digit, int sizeof_digit)
+        [PythonType("int_info"), PythonHidden]
+        public class intinfo : PythonTuple {
+            internal intinfo(int bits_per_digit, int sizeof_digit)
                 : base(new object[] { bits_per_digit, sizeof_digit }) {
 
                 this.bits_per_digit = bits_per_digit;
@@ -426,7 +426,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
-                return $"sys.long_info(bits_per_digit={bits_per_digit}, sizeof_digit={sizeof_digit})";
+                return $"sys.int_info(bits_per_digit={bits_per_digit}, sizeof_digit={sizeof_digit})";
             }
         }
 

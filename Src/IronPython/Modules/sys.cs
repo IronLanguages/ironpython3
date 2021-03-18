@@ -409,7 +409,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // These values are based on the .NET BigInteger in System.Numerics.BigInteger
         public static intinfo int_info = new intinfo(32, 4);
 
-        [PythonType("long_info"), PythonHidden]
+        [PythonType("int_info"), PythonHidden]
         public class intinfo : PythonTuple {
             internal intinfo(int bits_per_digit, int sizeof_digit)
                 : base(new object[] { bits_per_digit, sizeof_digit }) {

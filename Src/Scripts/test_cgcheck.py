@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import collections
 import functools
+from pathlib import Path  
 
 def test_main(level='full'):
     import sys
@@ -14,33 +15,29 @@ def test_main(level='full'):
     old_args = sys.argv
     sys.argv = ['checkonly']
 
-    # !!! Instead of a whitelist, we should have a blacklist so that any newly added
-    # generators automatically get included in this tests
-    generators = [
-        'generate_alltypes',
-        'generate_calls',
-        'generate_casts',
-        'generate_dict_views',
-        'generate_dynsites',
-        'generate_encoding_aliases',
-        'generate_exceptions',
-        'generate_math',
-        'generate_ops',
-        'generate_reflected_calls',
-        'generate_set',
-        'generate_walker',
-        'generate_typecache',
-        'generate_dynamic_instructions',
-        'generate_comdispatch',
-		# TODO: uncomment when we have whole Core sources in Snap/test
-		# 'generate_exception_factory',
-	]
-    if sys.implementation.name != "ironpython":
-        generators.remove('generate_alltypes')
-        generators.remove('generate_exceptions')
-        generators.remove('generate_walker')
-        generators.remove('generate_comdispatch')
+    # these generators will always be blocked
+    generators_to_block = ['generate_exception_factory']
+    # TODO: unblock 'generate_exception_factory' when we have 
+    #       whole Core sources in Snap/test
+    
+    # these generators will be blocked if not running ironpython
+    generators_to_block_if_not_ipy = ['generate_alltypes',
+                                      'generate_exceptions',
+                                      'generate_walker',
+                                      'generate_comdispatch']
 
+
+    # 'generate_exception_factory',  
+    # populate list of generators from folder
+    generators = get_generators_in_folder()
+    
+    # filter list to remove blocked items, ie. they will not be run
+    remove_blocked_generators(generators,generators_to_block)
+
+    if sys.implementation.name != "ironpython":
+        # filter list to remove blocked items if we are not ironpython
+        remove_blocked_generators(generators,generators_to_block_if_not_ipy)
+        
     failures = 0
 
     for gen in generators:
@@ -65,6 +62,33 @@ def test_main(level='full'):
         print("PASS")
 
     sys.argv = old_args
+
+
+def get_generators_in_folder():
+    # get the folder with this test
+    path_of_test = Path(__file__)
+    folder_of_test = path_of_test.parent
+
+    # iterate over items in this folder and add generators
+    generators = []
+    
+    for item in folder_of_test.iterdir():
+        
+        if item.is_file():
+            # if current item is a file, get filename by accessing last path element
+            filename = str(item.parts[-1])
+            
+            if filename.startswith("generate_") and filename.endswith(".py"):
+                # found a generator, add it to our list (removing extension)
+                generators.append(filename.replace(".py",""))
+    
+    return generators
+
+def remove_blocked_generators(generators,blocklist):
+    
+    for g in blocklist:
+        if g in generators:
+            generators.remove(g)
 
 if __name__=="__main__":
     test_main()

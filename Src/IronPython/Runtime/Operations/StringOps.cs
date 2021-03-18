@@ -1839,6 +1839,7 @@ namespace IronPython.Runtime.Operations {
                 case null:
                 case "backslashreplace":
                 case "xmlcharrefreplace":
+                case "namereplace":
                 case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
                 case "ignore": e = setFallback(e, new DecoderReplacementFallback(string.Empty)); break;
@@ -2091,6 +2092,11 @@ namespace IronPython.Runtime.Operations {
                 d["backslashreplace"] = BuiltinFunction.MakeFunction(
                     "backslashreplace_errors",
                     ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(BackslashReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
+
+                d["namereplace"] = BuiltinFunction.MakeFunction(
+                    "namereplace_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(NameReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
                     typeof(StringOps));
 
                 d["surrogateescape"] = BuiltinFunction.MakeFunction(
@@ -2638,6 +2644,69 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        private static object NameReplaceErrors(object unicodeError) {
+            Modules.unicodedata.PerformModuleReload(null, null);
+
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeDecodeError in error callback");
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                        start = Math.Max(0, Math.Min(start, text.Length - 1));
+                        end = Math.Max(start, Math.Min(end, text.Length));
+                        return PythonTuple.MakeTuple(NameReplaceEncode(text, start, end - start), end);
+                    }
+                    goto default;
+
+                case PythonExceptions._UnicodeTranslateError ute:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeTranslateError in error callback");
+
+                case DecoderFallbackException dfe:
+                    throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
+
+                case EncoderFallbackException efe:
+                    string chars = (efe.CharUnknownHigh != '\0') ? new string(new[] { efe.CharUnknownHigh, efe.CharUnknownLow }) : new string(efe.CharUnknown, 1);
+                    return PythonTuple.MakeTuple(NameReplaceEncode(chars, 0, chars.Length), efe.Index + chars.Length);
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+
+            static string NameReplaceEncode(string s, int start, int count) {
+                StringBuilder b = new StringBuilder();
+
+                int i = start;
+                int end = start + count;
+                while (i < end) {
+                    char ch = s[i];
+                    if (char.IsSurrogatePair(s, i)) {
+                        var rune = char.ConvertToUtf32(s, i++);
+                        if (Modules.unicodedata.TryGetName(rune, out var name)) {
+                            b.AppendFormat("\\N{{{0}}}", name);
+                        } else {
+                            b.AppendFormat("\\U{0:x8}", rune);
+                        }
+                    } else if (ch > 0xFF) {
+                        if (Modules.unicodedata.TryGetName(ch, out var name)) {
+                            b.AppendFormat("\\N{{{0}}}", name);
+                        } else {
+                            b.AppendFormat("\\u{0:x4}", (int)ch);
+                        }
+                    } else {
+                        if (Modules.unicodedata.TryGetName(ch, out var name)) {
+                            b.AppendFormat("\\N{{{0}}}", name);
+                        } else {
+                            b.AppendFormat("\\x{0:x2}", (int)ch);
+                        }
+                    }
+                    i++;
+                }
+
+                return b.ToString();
+            }
+        }
+
         private delegate string? DecodeErrorHandler(IList<byte> bytes, int start, ref int end);
         private delegate Bytes?  EncodeErrorHandler(string text, int start, ref int end);
 
@@ -2851,6 +2920,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#endregion
+        #endregion
     }
 }

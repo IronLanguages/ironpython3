@@ -8,6 +8,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -18,8 +19,9 @@ using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-[assembly: PythonModule("unicodedata", typeof(IronPython.Modules.unicodedata))]
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
+[assembly: PythonModule("unicodedata", typeof(IronPython.Modules.unicodedata))]
 namespace IronPython.Modules {
     public static class unicodedata {
         private static UCD ucd_5_2_0 = null;
@@ -52,9 +54,18 @@ namespace IronPython.Modules {
             return ucd_5_2_0.lookup(name);
         }
 
-        public static string name(char unichr, string @default = null) {
-            return ucd_5_2_0.name(unichr, @default);
-        }
+#nullable enable
+
+        public static string name([NotNull] string unichr)
+            => ucd_5_2_0.name(unichr);
+
+        public static object? name([NotNull] string unichr, object? @default)
+            => ucd_5_2_0.name(unichr, @default);
+
+        internal static bool TryGetName(int rune, [NotNullWhen(true)] out string? name)
+            => ucd_5_2_0.TryGetName(rune, out name);
+
+#nullable restore
 
         public static int @decimal(char unichr, int @default) {
             return ucd_5_2_0.@decimal(unichr, @default);
@@ -140,19 +151,33 @@ namespace IronPython.Modules {
                 return char.ConvertFromUtf32(nameLookup[name]);
             }
 
-            public string name(char unichr, string @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
-                    return info.Name;
+#nullable enable
+
+            public string name([NotNull] string unichr)
+                => TryGetName(GetRune(unichr), out var name) ? name : throw PythonOps.ValueError("no such name");
+
+            public object? name([NotNull] string unichr, object? @default)
+                => TryGetName(GetRune(unichr), out var name) ? name : @default;
+
+            internal bool TryGetName(int rune, [NotNullWhen(true)] out string? name) {
+                if (TryGetInfo(rune, out CharInfo info, excludeRanges: true)) {
+                    name = info.Name;
+                    return true;
                 }
-                return @default;
+                name = null;
+                return false;
             }
 
-            public string name(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
-                    return info.Name;
+            private int GetRune(string unichr) {
+                if (unichr.Length == 1) {
+                    return unichr[0];
+                } else if (unichr.Length == 2 && char.IsSurrogatePair(unichr, 0)) {
+                    return char.ConvertToUtf32(unichr, 0);
                 }
-                throw PythonOps.ValueError("no such name");
+                throw PythonOps.TypeError("argument 1 must be a unicode character, not str");
             }
+
+#nullable restore
 
             public int @decimal(char unichr, int @default) {
                 if (TryGetInfo(unichr, out CharInfo info)) {
@@ -338,12 +363,14 @@ namespace IronPython.Modules {
                 nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key, StringComparer.OrdinalIgnoreCase);
             }
 
-            private bool TryGetInfo(char unichr, out CharInfo charInfo) {
+            internal bool TryGetInfo(int unichr, out CharInfo charInfo, bool excludeRanges = false) {
                 if (database.TryGetValue(unichr, out charInfo)) return true;
-                foreach (var range in ranges) {
-                    if (range.First <= unichr && unichr <= range.Last) {
-                        charInfo = range;
-                        return true;
+                if (!excludeRanges) {
+                    foreach (var range in ranges) {
+                        if (range.First <= unichr && unichr <= range.Last) {
+                            charInfo = range;
+                            return true;
+                        }
                     }
                 }
                 return false;

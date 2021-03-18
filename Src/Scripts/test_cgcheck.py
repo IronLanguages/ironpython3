@@ -16,7 +16,7 @@ def test_main(level='full'):
     sys.argv = ['checkonly']
 
     # these generators will always be blocked
-    generators_to_block = ['generate_exception_factory']
+    generators_to_block = ['generate_exception_factory', 'generate_indicetest']
     # TODO: unblock 'generate_exception_factory' when we have 
     #       whole Core sources in Snap/test
     
@@ -28,7 +28,7 @@ def test_main(level='full'):
 
 
     # 'generate_exception_factory',  
-    # populate list of generators from folder
+    # populate list of generatoe_*.py from folder of this script
     generators = get_generators_in_folder()
     
     # filter list to remove blocked items, ie. they will not be run

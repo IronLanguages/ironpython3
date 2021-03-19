@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import collections
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
@@ -936,15 +937,25 @@ class NameBindingTest(IronPythonTestCase):
     def test_delete_from_builtins(self):
         import builtins
         from importlib import reload
+        p = builtins.pow
         try:
             del builtins.pow
             self.assertRaises(NameError, lambda: pow)
             self.assertRaises(AttributeError, lambda: builtins.pow)
         finally:
             reload(builtins)
-            # make sure we still have access to builtins' after reloading
-            if not is_cli: # https://github.com/IronLanguages/ironpython3/issues/1028
+            # check if we still have access to builtins after reloading - see https://github.com/IronLanguages/ironpython3/issues/1028
+            if sys.version_info >= (3,5):
+                self.assertRaises(NameError, lambda: pow)
+            else:
                 self.assertEqual(pow(2,2), 4) # bug 359890
+            if sys.version_info >= (3,5):
+                self.assertRaises(AttributeError, lambda: builtins.pow)
+            else:
+                self.assertEqual(builtins.pow(2,2), 4)
+            builtins.pow = p
+            self.assertEqual(pow(2,2), 4)
+            self.assertEqual(builtins.pow(2,2), 4)
             dir('abc')
 
     def test_override_builtin_method(self):

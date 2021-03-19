@@ -2645,7 +2645,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static object NameReplaceErrors(object unicodeError) {
-            Modules.unicodedata.PerformModuleReload(null, null);
+            Modules.unicodedata.EnsureInitialized();
 
             switch (unicodeError) {
                 case PythonExceptions._UnicodeDecodeError ude:

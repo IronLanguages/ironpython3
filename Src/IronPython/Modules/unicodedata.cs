@@ -43,6 +43,14 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IDictionary/*!*/ dict) {
+            EnsureInitialized();
+        }
+
+        /// <summary>
+        /// Ensures that the modules is initialized so that static methods don't throw.
+        /// </summary>
+        [MemberNotNull(nameof(ucd_5_2_0))]
+        internal static void EnsureInitialized() {
             if (ucd_5_2_0 == null) {
                 // This is a lie. The version of Unicode depends on the .NET version as well as the OS. The
                 // version of the database stored internally is 5.2, so just say that.

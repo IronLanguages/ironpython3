@@ -1087,7 +1087,8 @@ class C:
         import unicodedata
 
         if is_cli:
-            self.assertEqual(unicodedata.name(u'\u4e2d'), '<CJK IDEOGRAPH, FIRST>..<CJK IDEOGRAPH, LAST>')
+            with self.assertRaises(ValueError):
+                unicodedata.name(u'\u4e2d')
         else:
             self.assertEqual(unicodedata.name(u'\u4e2d'), 'CJK UNIFIED IDEOGRAPH-4E2D')
 

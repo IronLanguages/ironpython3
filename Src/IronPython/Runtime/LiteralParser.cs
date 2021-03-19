@@ -109,7 +109,7 @@ namespace IronPython.Runtime {
                                 }
                                 continue;
                             case 'N': {
-                                    IronPython.Modules.unicodedata.PerformModuleReload(null, null);
+                                    Modules.unicodedata.EnsureInitialized();
                                     StringBuilder namebuf = new StringBuilder();
                                     bool namestarted = false;
                                     bool namecomplete = false;

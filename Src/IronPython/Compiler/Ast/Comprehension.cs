@@ -273,6 +273,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
+            // First try variables local to this scope
             if (TryGetVariable(reference.Name, out PythonVariable variable)) {
                 if (variable.Kind == VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
@@ -281,8 +282,14 @@ namespace IronPython.Compiler.Ast {
                 return variable;
             }
 
-            // then bind in our parent scope
-            return Parent.BindReference(binder, reference);
+            // then try to bind in outer scopes
+            for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
+                if (parent.TryBindOuter(this, reference, out variable)) {
+                    return variable;
+                }
+            }
+
+            return null;
         }
 
         internal override Ast GetVariableExpression(PythonVariable variable) {

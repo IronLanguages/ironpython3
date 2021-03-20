@@ -250,8 +250,14 @@ namespace IronPython.Compiler.Ast {
             return MSAst.Expression.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.GetClosureTupleFromContext)), Parent.LocalContext);
         }
 
+        internal override void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
+            if (!accessedInScope) {
+                ContainsNestedFreeVariables = true;
+            }
+            base.AddFreeVariable(variable, accessedInScope);
+        }
+
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
-            ContainsNestedFreeVariables = true;
             if (TryGetVariable(reference.Name, out variable)) {
                 Debug.Assert(variable.Kind != VariableKind.Nonlocal, "there should be no nonlocals in a comprehension");
                 variable.AccessedInNestedScope = true;
@@ -264,6 +270,7 @@ namespace IronPython.Compiler.Ast {
                     }
 
                     AddCellVariable(variable);
+                    ContainsNestedFreeVariables = true;
                 } else {
                     from.AddReferencedGlobal(reference.Name);
                 }

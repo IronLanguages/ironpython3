@@ -1461,4 +1461,10 @@ class FunctionTest(IronPythonTestCase):
                 fn_no_closure.__globals__, "name", fn_no_closure.__defaults__,
                 fn_with_closure.__closure__)
 
+    def test_ipy3_gh1143(self):
+        def f(): pass
+        self.assertIsNone(f.__closure__)
+        def g(): str
+        self.assertIsNone(g.__closure__)
+
 run_test(__name__)

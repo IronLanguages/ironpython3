@@ -80,7 +80,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         /// <summary>
-        /// True if an inner scope is accessing a variable defined in this scope.
+        /// True if an inner scope is accessing a non-global variable defined in this or an outer scope.
         /// </summary>
         internal bool ContainsNestedFreeVariables { get; set; }
 
@@ -184,7 +184,7 @@ namespace IronPython.Compiler.Ast {
         }
 
 
-        internal void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
+        internal virtual void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
             Debug.Assert(variable?.Kind is VariableKind.Local or VariableKind.Parameter);
 
             if (_freeVars == null) {

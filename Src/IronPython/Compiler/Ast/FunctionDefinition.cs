@@ -185,9 +185,15 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal override void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
+            if (!accessedInScope) {
+                ContainsNestedFreeVariables = true;
+            }
+            base.AddFreeVariable(variable, accessedInScope);
+        }
+
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             // Functions expose their locals to direct access
-            ContainsNestedFreeVariables = true;
             if (TryGetVariable(reference.Name, out variable) && variable.Kind != VariableKind.Nonlocal) {
                 variable.AccessedInNestedScope = true;
 
@@ -199,6 +205,7 @@ namespace IronPython.Compiler.Ast {
                     }
 
                     AddCellVariable(variable);
+                    ContainsNestedFreeVariables = true;
                 } else {
                     from.AddReferencedGlobal(reference.Name);
                 }

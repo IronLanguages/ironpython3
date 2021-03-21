@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import run_test, is_cli
+from iptest import run_test, is_cpython
 
 class ListCompTest(unittest.TestCase):
     def test_positive(self):
@@ -79,12 +79,9 @@ class ListCompTest(unittest.TestCase):
         # first iterable is captured and subsequent assignments do not change it
         self.maxDiff = None
         x, y, z = range(1), range(2), range(3)
-        if is_cli:
-            _dir = ['x', 'y']
-            # TODO: should be: _dir = ['x', 'y', 'z']
-            # See: https://github.com/IronLanguages/ironpython3/issues/1132
-        else:
-            _dir = ['.0', 'x', 'y', 'z'] # adds implementation-level variable '.0'
+        _dir = ['x', 'y', 'z']
+        if is_cpython:
+            _dir.insert(0, '.0') # adds implementation-level variable '.0'
         # below, x and first/third y is local, second y and z is from the outer scope
         self.assertEqual([(x, y, z, dir()) for x in y for y in z],
                          [(0, 0, range(3), _dir),
@@ -105,5 +102,27 @@ class ListCompTest(unittest.TestCase):
 
         res = [x for x in [y for y in apply(lambda i: range(i+x), x)]]
         self.assertEqual(res, [0, 1, 2, 3])
+
+    def test_ipy3_gh1132(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1132"""
+
+        global global_test_list
+        global_test_list = [1, 2]
+        local_list = [3, 4]
+
+        res = [dir() for x in global_test_list for y in local_list]
+        assert 'global_test_list' not in res[0]
+        assert 'local_list' in res[0]
+
+    def test_ipy3_gh1082(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1082"""
+
+        def foo():
+            [x for y in range(2)]
+            x = 2
+        with self.assertRaises(NameError) as cm:
+            foo()
+        self.assertNotIsInstance(cm.exception, UnboundLocalError)
+        self.assertEqual(cm.exception.args, ("free variable 'x' referenced before assignment in enclosing scope",))
 
 run_test(__name__)

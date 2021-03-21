@@ -353,7 +353,7 @@ namespace IronPython.Modules {
                 return ast;
             }
 
-            internal static PythonList Convert(IList<ComprehensionIterator> iters) {
+            internal static PythonList Convert(IReadOnlyList<ComprehensionIterator> iters) {
                 var cfCollector = new List<ComprehensionFor>();
                 var cifCollector = new List<List<ComprehensionIf>>();
                 List<ComprehensionIf> cif = null;

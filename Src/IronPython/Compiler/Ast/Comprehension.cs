@@ -25,7 +25,7 @@ namespace IronPython.Compiler.Ast {
     }
 
     public abstract class Comprehension : Expression {
-        public abstract IList<ComprehensionIterator> Iterators { get; }
+        public abstract IReadOnlyList<ComprehensionIterator> Iterators { get; }
         public abstract override string NodeName { get; }
 
         protected abstract MSAst.ParameterExpression MakeParameter();
@@ -85,7 +85,7 @@ namespace IronPython.Compiler.Ast {
 
         public Expression Item { get; }
 
-        public override IList<ComprehensionIterator> Iterators => _iterators;
+        public override IReadOnlyList<ComprehensionIterator> Iterators => _iterators;
 
         protected override MSAst.ParameterExpression MakeParameter()
             => Ast.Parameter(typeof(PythonList), "list_comprehension_list");
@@ -134,7 +134,7 @@ namespace IronPython.Compiler.Ast {
 
         public Expression Item { get; }
 
-        public override IList<ComprehensionIterator> Iterators => _iterators;
+        public override IReadOnlyList<ComprehensionIterator> Iterators => _iterators;
 
         protected override MSAst.ParameterExpression MakeParameter()
             => Ast.Parameter(typeof(SetCollection), "set_comprehension_set");
@@ -186,7 +186,7 @@ namespace IronPython.Compiler.Ast {
 
         public Expression Value { get; }
 
-        public override IList<ComprehensionIterator> Iterators => _iterators;
+        public override IReadOnlyList<ComprehensionIterator> Iterators => _iterators;
 
         protected override MSAst.ParameterExpression MakeParameter()
             => Ast.Parameter(typeof(PythonDictionary), "dict_comprehension_dict");

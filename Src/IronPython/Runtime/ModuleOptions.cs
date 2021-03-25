@@ -53,6 +53,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Generated code should support light exceptions
         /// </summary>
-        LightThrow = 0x8000
+        LightThrow = 0x8000,
+        GeneratorStop = 0x10000,
     }
 }

@@ -427,6 +427,14 @@ namespace IronPython.Runtime {
                     FinalValue = CurrentValue;
                     CurrentValue = OperationFailed.Value;
                 }
+            } catch (StopIterationException e) {
+                if (GeneratorStop) {
+                    var stopIterationError = e.GetPythonException();
+                    throw PythonExceptions.CreatePythonThrowable(PythonExceptions.RuntimeError, "generator raised StopIteration")
+                        .CreateClrExceptionWithCause(stopIterationError, stopIterationError, true);
+                } else {
+                    throw;
+                }
             } finally {
                 // A generator restores the sys.exc_info() status after each yield point.
                 PythonOps.CurrentExceptionState = _state.PrevException;
@@ -560,6 +568,8 @@ namespace IronPython.Runtime {
                 return (_function.Flags & FunctionAttributes.ContainsTryFinally) != 0;
             }
         }
+
+        private bool GeneratorStop => (_function.Flags & FunctionAttributes.GeneratorStop) != 0;
 
         #endregion
 

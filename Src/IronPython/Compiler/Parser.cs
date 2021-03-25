@@ -583,6 +583,7 @@ namespace IronPython.Compiler {
             FunctionDefinition current = CurrentFunction;
             if (current != null) {
                 current.IsGenerator = true;
+                current.GeneratorStop = GeneratorStop;
             }
 
             var start = GetStart();
@@ -889,6 +890,9 @@ namespace IronPython.Compiler {
                         // Ignored in Python 3
                     } else if (name == "unicode_literals") {
                         // Ignored in Python 3
+                    } else if (name == "generator_stop") {
+                        // New in 3.5, mandatory in 3.7
+                        _languageFeatures |= ModuleOptions.GeneratorStop;
                     } else if (name == "nested_scopes") {
                     } else if (name == "generators") {
                     } else {
@@ -2500,6 +2504,7 @@ namespace IronPython.Compiler {
             Parameter parameter = new Parameter("__gen_$_parm__", 0);
             FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root);
             func.IsGenerator = true;
+            func.GeneratorStop = GeneratorStop;
             func.SetLoc(_globalParent, root.StartIndex, GetEnd());
             func.HeaderIndex = root.EndIndex;
 
@@ -3158,6 +3163,8 @@ namespace IronPython.Compiler {
 
             return PythonOps.BadSourceEncodingError(message, lineNum, _sourceUnit.Path);
         }
+
+        private bool GeneratorStop => (_languageFeatures & ModuleOptions.GeneratorStop) == ModuleOptions.GeneratorStop;
 
         private void StartParsing() {
             if (_parsingStarted)

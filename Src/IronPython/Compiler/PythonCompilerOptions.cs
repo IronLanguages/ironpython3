@@ -55,6 +55,16 @@ namespace IronPython.Compiler {
             }
         }
 
+        internal bool GeneratorStop {
+            get {
+                return (_module & ModuleOptions.GeneratorStop) != 0;
+            }
+            set {
+                if (value) _module |= ModuleOptions.GeneratorStop;
+                else _module &= ~ModuleOptions.GeneratorStop;
+            }
+        }
+
         public bool Verbatim {
             get {
                 return (_module & ModuleOptions.Verbatim) != 0;

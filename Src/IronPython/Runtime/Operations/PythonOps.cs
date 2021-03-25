@@ -2030,10 +2030,10 @@ namespace IronPython.Runtime.Operations {
                     if (PythonOps.IsInstance(context, exception, pt)) return exception;
                 } else if (PythonOps.IsSubClass(pt, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
                     // catching a CLR exception type explicitly.
-                    Exception clrEx = PythonExceptions.ToClr(exception);
-                    if (PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
+                    var clrEx = PythonExceptions.ToClr(exception);
+                    if (clrEx is not null && PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
                 } else {
-                    throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
+                    throw PythonOps.TypeError("catching classes that do not inherit from BaseException or System.Exception is not allowed");
                 }
             } else if (test is PythonTuple tt) {
                 // we handle multiple exceptions, we'll check them one at a time.
@@ -2042,7 +2042,7 @@ namespace IronPython.Runtime.Operations {
                     if (res != null) return res;
                 }
             } else {
-                throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
+                throw PythonOps.TypeError("catching classes that do not inherit from BaseException or System.Exception is not allowed");
             }
 
             return null;
@@ -3828,7 +3828,7 @@ namespace IronPython.Runtime.Operations {
         internal static Exception MakeExceptionTypeError(object? type, bool forGenerator = false) {
             return PythonOps.TypeError(forGenerator ?
                 "exceptions must be classes or instances deriving from BaseException, not {0}" :
-                "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
+                "exceptions must derive from BaseException or System.Exception", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {

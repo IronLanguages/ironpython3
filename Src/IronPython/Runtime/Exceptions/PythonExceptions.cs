@@ -721,30 +721,21 @@ for k, v in toError.items():
             throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }
 
+#nullable enable
+
         /// <summary>
         /// Returns the CLR exception associated with a Python exception
         /// creating a new exception if necessary
         /// </summary>
-        internal static Exception ToClr(object pythonException) {
-            if (pythonException is BaseException pyExcep) {
-                return pyExcep.GetClrException();
-            }
-
-            // default exception message is the exception type (from Python)
-            Exception res = new Exception(PythonOps.ToString(pythonException));
-
-            res.SetPythonException(pythonException);
-
-            return res;
+        internal static Exception? ToClr(object pythonException) {
+            return pythonException as Exception ?? (pythonException as BaseException)?.GetClrException();
         }
 
         /// <summary>
         /// Given a CLR exception returns the Python exception which most closely maps to the CLR exception.
         /// </summary>
         internal static object ToPython(System.Exception/*!*/ clrException) {
-            Debug.Assert(clrException != null);
-
-            object res = clrException.GetPythonException();
+            var res = clrException.GetPythonException();
             if (res == null) {
                 // explicit extra conversions that need a special transformation
                 if (clrException is SyntaxErrorException syntax) {
@@ -760,9 +751,8 @@ for k, v in toError.items():
                     }
 
                     // check for cleared but saved reason...
-                    reason = ta.Data[typeof(KeyboardInterruptException)] as KeyboardInterruptException;
-                    if (reason != null) {
-                        return ToPython(reason);
+                    if (ta.Data[typeof(KeyboardInterruptException)] is KeyboardInterruptException reasonFromData) {
+                        return ToPython(reasonFromData);
                     }
                 }
 #endif
@@ -775,6 +765,8 @@ for k, v in toError.items():
 
             return res;
         }
+
+#nullable restore
 
         /// <summary>
         /// Creates a new style Python exception from the .NET exception
@@ -806,40 +798,34 @@ for k, v in toError.items():
             return pyExcep;
         }
 
+#nullable enable
+
         [Serializable]
         private class ExceptionDataWrapper : MarshalByRefObject {
-            private readonly object _value;
-
-            public ExceptionDataWrapper(object value) {
-                _value = value;
+            public ExceptionDataWrapper(BaseException value) {
+                Value = value;
             }
 
-            public object Value {
-                get {
-                    return _value;
-                }
-            }
+            public BaseException Value { get; }
         }
 
         /// <summary>
         /// Internal helper to associate a .NET exception and a Python exception.
         /// </summary>
-        private static void SetPythonException(this Exception e, object exception) {
+        private static void SetPythonException(this Exception e, BaseException exception) {
             if (e is IPythonAwareException pyAware) {
                 pyAware.PythonException = exception;
             } else {
                 e.Data[_pythonExceptionKey] = new ExceptionDataWrapper(exception);
             }
 
-            if (exception is BaseException be) {
-                be.clsException = e;
-            }
+            exception.clsException = e;
         }
 
         /// <summary>
         /// Internal helper to get the associated Python exception from a .NET exception.
         /// </summary>
-        internal static object GetPythonException(this Exception e) {
+        internal static BaseException? GetPythonException(this Exception e) {
             if (e is IPythonAwareException pyAware) {
                 return pyAware.PythonException;
             }
@@ -850,6 +836,8 @@ for k, v in toError.items():
 
             return null;
         }
+
+#nullable restore
 
         internal static List<DynamicStackFrame> GetFrameList(this Exception e) {
             if (e is IPythonAwareException pyAware) {

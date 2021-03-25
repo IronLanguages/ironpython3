@@ -10,7 +10,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Exceptions {
     /// <summary>
-    /// .NET exception that is thrown to shutdown the interpretter and exit the system.
+    /// .NET exception that is thrown to shutdown the interpreter and exit the system.
     /// </summary>
     [Serializable]
     public sealed class SystemExitException : Exception {

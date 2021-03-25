@@ -270,12 +270,12 @@ def factory_gen(cw):
     for e in pythonExcs:
         cw.write(FACTORY, name=e, clrname=get_clr_name(e))
 
-CLASS1 = """
+CLASS1 = """\
 [Serializable]
 public class %(name)s : %(supername)s, IPythonAwareException {
-    private object _pyExceptionObject;
-    private List<DynamicStackFrame> _frames;
-    private TraceBack _traceback;
+    private PythonExceptions.BaseException? _pyExceptionObject;
+    private List<DynamicStackFrame>? _frames;
+    private TraceBack? _traceback;
 
     public %(name)s() : base() { }
     public %(name)s(string msg) : base(msg) { }
@@ -285,7 +285,6 @@ public class %(name)s : %(supername)s, IPythonAwareException {
 #if FEATURE_SERIALIZATION
     protected %(name)s(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase")]
     public override void GetObjectData(SerializationInfo info, StreamingContext context) {
         info.AddValue("frames", _frames);
         info.AddValue("traceback", _traceback);
@@ -293,7 +292,7 @@ public class %(name)s : %(supername)s, IPythonAwareException {
     }
 #endif
 
-    object IPythonAwareException.PythonException {
+    PythonExceptions.BaseException? IPythonAwareException.PythonException {
         get {
             if (_pyExceptionObject == null) {
                 var newEx = %(make_new_exception)s;
@@ -305,16 +304,16 @@ public class %(name)s : %(supername)s, IPythonAwareException {
         set { _pyExceptionObject = value; }
     }
 
-    List<DynamicStackFrame> IPythonAwareException.Frames {
+    List<DynamicStackFrame>? IPythonAwareException.Frames {
         get { return _frames; }
         set { _frames = value; }
     }
 
-    TraceBack IPythonAwareException.TraceBack {
+    TraceBack? IPythonAwareException.TraceBack {
         get { return _traceback; }
         set { _traceback = value; }
     }
-}
+}\
 """
 
 def gen_one_exception(cw, e):

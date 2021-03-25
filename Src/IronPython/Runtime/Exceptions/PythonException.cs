@@ -1,15 +1,20 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+#nullable enable
+
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.Serialization;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Exceptions {
     [Serializable]
     internal class PythonException : Exception, IPythonAwareException {
-        private object _pyExceptionObject;
-        private List<DynamicStackFrame> _frames;
-        private TraceBack _traceback;
+        private PythonExceptions.BaseException? _pyExceptionObject;
+        private List<DynamicStackFrame>? _frames;
+        private TraceBack? _traceback;
 
         public PythonException() : base() { }
         public PythonException(string msg) : base(msg) { }
@@ -20,7 +25,7 @@ namespace IronPython.Runtime.Exceptions {
         protected PythonException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
 
-        object IPythonAwareException.PythonException {
+        PythonExceptions.BaseException? IPythonAwareException.PythonException {
             get {
                 return _pyExceptionObject;
             }
@@ -29,30 +34,20 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        List<DynamicStackFrame> IPythonAwareException.Frames {
+        List<DynamicStackFrame>? IPythonAwareException.Frames {
             get { return _frames; }
             set { _frames = value; }
         }
 
-        TraceBack IPythonAwareException.TraceBack {
+        TraceBack? IPythonAwareException.TraceBack {
             get { return _traceback; }
             set { _traceback = value; }
         }
     }
 
     internal interface IPythonAwareException {
-        object PythonException {
-            get;
-            set;
-        }
-        List<DynamicStackFrame> Frames {
-            get;
-            set;
-        }
-
-        TraceBack TraceBack {
-            get;
-            set;
-        }
+        PythonExceptions.BaseException? PythonException { get; set; }
+        List<DynamicStackFrame>? Frames { get; set; }
+        TraceBack? TraceBack { get; set; }
     }
 }

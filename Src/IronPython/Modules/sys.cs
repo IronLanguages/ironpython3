@@ -90,6 +90,8 @@ namespace IronPython.Modules {
 Handle an exception by displaying it with a traceback on sys.stderr._")]
         public static void excepthookImpl(CodeContext/*!*/ context, object exctype, object value, object traceback) {
             PythonContext pc = context.LanguageContext;
+            var exc = PythonExceptions.ToClr(value);
+            if (exc is null) throw PythonOps.TypeError($"Exception expected for {nameof(value)}, {PythonTypeOps.GetName(value)} found");
 
             PythonOps.PrintWithDest(
                 context,

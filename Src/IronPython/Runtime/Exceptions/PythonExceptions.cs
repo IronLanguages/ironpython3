@@ -686,13 +686,10 @@ for k, v in toError.items():
             return be;
         }
 
-        /// <summary>
-        /// Creates a new throwable exception of type type where the type is an new-style exception.
-        /// 
-        /// Used at runtime when creating the exception from a user provided type via the raise statement.
-        /// </summary>
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, BaseException cause, bool suppressContext) {
-            object pyEx;
+#nullable enable
+
+        internal static BaseException CreateBaseExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object? value) {
+            object? pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
                 pyEx = value;
@@ -704,19 +701,7 @@ for k, v in toError.items():
                 pyEx = PythonCalls.Call(context, type);
             }
 
-            if (pyEx is BaseException) {
-                var contextException = PythonOps.GetRawContextException();
-
-                // If we have a context-exception or no context/cause return the existing, or a new exception
-                if (cause != null) {
-                    return ((BaseException)pyEx).CreateClrExceptionWithCause(cause, null, suppressContext: suppressContext);
-                } else if (contextException == null) {
-                    return ((BaseException)pyEx).GetClrException();
-                } else {
-                    // Generate new CLR-Exception and return it
-                    return ((BaseException)pyEx).CreateClrExceptionWithCause(null, contextException, suppressContext: suppressContext);
-                }
-            }
+            if (pyEx is BaseException be) return be;
 
             throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }
@@ -725,26 +710,15 @@ for k, v in toError.items():
         /// Returns the CLR exception associated with a Python exception
         /// creating a new exception if necessary
         /// </summary>
-        internal static Exception ToClr(object pythonException) {
-            if (pythonException is BaseException pyExcep) {
-                return pyExcep.GetClrException();
-            }
-
-            // default exception message is the exception type (from Python)
-            Exception res = new Exception(PythonOps.ToString(pythonException));
-
-            res.SetPythonException(pythonException);
-
-            return res;
+        internal static Exception? ToClr(object pythonException) {
+            return pythonException as Exception ?? (pythonException as BaseException)?.GetClrException();
         }
 
         /// <summary>
         /// Given a CLR exception returns the Python exception which most closely maps to the CLR exception.
         /// </summary>
         internal static object ToPython(System.Exception/*!*/ clrException) {
-            Debug.Assert(clrException != null);
-
-            object res = clrException.GetPythonException();
+            var res = clrException.GetPythonException();
             if (res == null) {
                 // explicit extra conversions that need a special transformation
                 if (clrException is SyntaxErrorException syntax) {
@@ -760,9 +734,8 @@ for k, v in toError.items():
                     }
 
                     // check for cleared but saved reason...
-                    reason = ta.Data[typeof(KeyboardInterruptException)] as KeyboardInterruptException;
-                    if (reason != null) {
-                        return ToPython(reason);
+                    if (ta.Data[typeof(KeyboardInterruptException)] is KeyboardInterruptException reasonFromData) {
+                        return ToPython(reasonFromData);
                     }
                 }
 #endif
@@ -808,38 +781,30 @@ for k, v in toError.items():
 
         [Serializable]
         private class ExceptionDataWrapper : MarshalByRefObject {
-            private readonly object _value;
-
-            public ExceptionDataWrapper(object value) {
-                _value = value;
+            public ExceptionDataWrapper(BaseException value) {
+                Value = value;
             }
 
-            public object Value {
-                get {
-                    return _value;
-                }
-            }
+            public BaseException Value { get; }
         }
 
         /// <summary>
         /// Internal helper to associate a .NET exception and a Python exception.
         /// </summary>
-        private static void SetPythonException(this Exception e, object exception) {
+        private static void SetPythonException(this Exception e, BaseException exception) {
             if (e is IPythonAwareException pyAware) {
                 pyAware.PythonException = exception;
             } else {
                 e.Data[_pythonExceptionKey] = new ExceptionDataWrapper(exception);
             }
 
-            if (exception is BaseException be) {
-                be.clsException = e;
-            }
+            exception.clsException = e;
         }
 
         /// <summary>
         /// Internal helper to get the associated Python exception from a .NET exception.
         /// </summary>
-        internal static object GetPythonException(this Exception e) {
+        internal static BaseException? GetPythonException(this Exception e) {
             if (e is IPythonAwareException pyAware) {
                 return pyAware.PythonException;
             }
@@ -850,6 +815,8 @@ for k, v in toError.items():
 
             return null;
         }
+
+#nullable restore
 
         internal static List<DynamicStackFrame> GetFrameList(this Exception e) {
             if (e is IPythonAwareException pyAware) {

@@ -16,7 +16,7 @@ namespace IronPython.Runtime.Exceptions {
 
     [Serializable]
     public class AttributeErrorException : MissingMemberException, IPythonAwareException {
-        private object _pyExceptionObject;
+        private PythonExceptions.BaseException _pyExceptionObject;
         private List<DynamicStackFrame> _frames;
         private TraceBack _traceback;
 
@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 #endif
 
-        object IPythonAwareException.PythonException {
+        PythonExceptions.BaseException IPythonAwareException.PythonException {
             get { return _pyExceptionObject; }
             set { _pyExceptionObject = value; }
         }

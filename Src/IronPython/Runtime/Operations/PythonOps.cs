@@ -2030,10 +2030,10 @@ namespace IronPython.Runtime.Operations {
                     if (PythonOps.IsInstance(context, exception, pt)) return exception;
                 } else if (PythonOps.IsSubClass(pt, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
                     // catching a CLR exception type explicitly.
-                    Exception clrEx = PythonExceptions.ToClr(exception);
-                    if (PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
+                    var clrEx = PythonExceptions.ToClr(exception);
+                    if (clrEx is not null && PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
                 } else {
-                    throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
+                    throw PythonOps.TypeError("catching classes that do not inherit from BaseException or System.Exception is not allowed");
                 }
             } else if (test is PythonTuple tt) {
                 // we handle multiple exceptions, we'll check them one at a time.
@@ -2042,7 +2042,7 @@ namespace IronPython.Runtime.Operations {
                     if (res != null) return res;
                 }
             } else {
-                throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
+                throw PythonOps.TypeError("catching classes that do not inherit from BaseException or System.Exception is not allowed");
             }
 
             return null;
@@ -2154,8 +2154,8 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
-
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, forRethrow: true, forGenerator: false, suppressContext: false);
+            Debug.Assert(t[1] == GetRawContextException());
+            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
             return MakeRethrowExceptionWorker(e);
         }
 
@@ -2172,50 +2172,36 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception MakeException(CodeContext/*!*/ context, object exception) {
-            Exception e = MakeExceptionWorker(context, exception, null, null, null, forRethrow: false, forGenerator: false, suppressContext: false);
+            Exception e = MakeExceptionWorker(context, exception, null, null, null, suppressContext: false, forRethrow: false);
             e.RemoveFrameList();
             return e;
         }
 
         public static Exception MakeExceptionWithCause(CodeContext/*!*/ context, object exception, object cause) {
-            Exception e = MakeExceptionWorker(context, exception, null, null, cause, forRethrow: false, forGenerator: false, suppressContext: true);
+            Exception e = MakeExceptionWorker(context, exception, null, null, cause, suppressContext: true, forRethrow: false);
             e.RemoveFrameList();
             return e;
         }
 
-        internal static PythonExceptions.BaseException? GetRawContextException() =>
-            GetCurrentException()?.GetPythonException() as PythonExceptions.BaseException;
+        internal static PythonExceptions.BaseException? GetRawContextException() => GetCurrentException()?.GetPythonException();
 
-        public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
-            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, forRethrow: false, forGenerator: true, suppressContext: false);
+        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
+            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, suppressContext: false, forRethrow: false);
             e.RemoveFrameList();
             return e;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool forRethrow, bool forGenerator, bool suppressContext) {
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool suppressContext, bool forRethrow) {
             Exception throwable;
 
-            if (cause != null) {
-                // TODO: allow CLR exceptions as a cause
+            var causeException = GetCause(context, cause);
+            var contextException = GetRawContextException();
 
-                if (cause is PythonType ptCause && typeof(PythonExceptions.BaseException).IsAssignableFrom(ptCause.UnderlyingSystemType)) {
-                    cause = PythonCalls.Call(context, ptCause);
-                }
-
-                if (!(cause is PythonExceptions.BaseException)) {
-                    throw PythonOps.TypeError("exception causes must derive from BaseException");
-                }
-            }
-
-            if (type is PythonExceptions.BaseException) {
-                throwable = ((PythonExceptions.BaseException)type).CreateClrExceptionWithCause((PythonExceptions.BaseException?)cause, GetRawContextException(), suppressContext);
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                throwable = PythonExceptions.CreateThrowableForRaise(context, pt, value, (PythonExceptions.BaseException?)cause, suppressContext);
-            } else if (type is Exception ex) {
+            if (type is Exception ex) {
                 // TODO: maybe add cause?
                 throwable = ex;
             } else {
-                throwable = MakeExceptionTypeError(type, forGenerator);
+                throwable = GetBaseException(context, type, value).CreateClrExceptionWithCause(causeException, contextException, suppressContext);
             }
 
             if (traceback != null) {
@@ -2231,6 +2217,29 @@ namespace IronPython.Runtime.Operations {
             PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, throwable);
 
             return throwable;
+
+            static PythonExceptions.BaseException? GetCause(CodeContext context, object? cause) {
+                if (cause is null) return null;
+
+                // TODO: allow CLR exceptions as a cause
+
+                if (cause is PythonType ptCause && typeof(PythonExceptions.BaseException).IsAssignableFrom(ptCause.UnderlyingSystemType)) {
+                    cause = PythonCalls.Call(context, ptCause);
+                }
+
+                if (cause is PythonExceptions.BaseException be) return be;
+
+                throw PythonOps.TypeError("exception causes must derive from BaseException");
+            }
+
+            static PythonExceptions.BaseException GetBaseException(CodeContext context, object? type, object? value) {
+                if (type is PythonExceptions.BaseException be) return be;
+
+                if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType))
+                    return PythonExceptions.CreateBaseExceptionForRaise(context, pt, value);
+
+                throw PythonOps.TypeError("exceptions must derive from BaseException");
+            }
         }
 
         public static Exception CreateThrowable(PythonType type, params object[] args) {
@@ -3818,17 +3827,6 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception MissingInvokeMethodException(object o, string name) {
             throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", GetPythonTypeName(o), name);
-        }
-
-        /// <summary>
-        /// Create at TypeError exception for when Raise() can't create the exception requested.  
-        /// </summary>
-        /// <param name="type">original type of exception requested</param>
-        /// <returns>a TypeEror exception</returns>
-        internal static Exception MakeExceptionTypeError(object? type, bool forGenerator = false) {
-            return PythonOps.TypeError(forGenerator ?
-                "exceptions must be classes or instances deriving from BaseException, not {0}" :
-                "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {

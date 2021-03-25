@@ -686,12 +686,7 @@ for k, v in toError.items():
             return be;
         }
 
-        /// <summary>
-        /// Creates a new throwable exception of type type where the type is an new-style exception.
-        /// 
-        /// Used at runtime when creating the exception from a user provided type via the raise statement.
-        /// </summary>
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, BaseException cause, bool suppressContext) {
+        internal static BaseException CreateBaseExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
             object pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
@@ -704,19 +699,7 @@ for k, v in toError.items():
                 pyEx = PythonCalls.Call(context, type);
             }
 
-            if (pyEx is BaseException) {
-                var contextException = PythonOps.GetRawContextException();
-
-                // If we have a context-exception or no context/cause return the existing, or a new exception
-                if (cause != null) {
-                    return ((BaseException)pyEx).CreateClrExceptionWithCause(cause, null, suppressContext: suppressContext);
-                } else if (contextException == null) {
-                    return ((BaseException)pyEx).GetClrException();
-                } else {
-                    // Generate new CLR-Exception and return it
-                    return ((BaseException)pyEx).CreateClrExceptionWithCause(null, contextException, suppressContext: suppressContext);
-                }
-            }
+            if (pyEx is BaseException be) return be;
 
             throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }

@@ -544,29 +544,32 @@ class GeneratorThrowTest(unittest.TestCase):
 
         g.close()
 
-    def test_throw_none(self):
-        """Test corner case with Throw(None)"""
-        def f():
-            try:
-                yield 5  # we'll be stopped here and do g.throw(none)
-                yield 10
-            except TypeError:
-                # error shouldn't be raised inside of generator, so can't be caught
-                # here
-                self.assertTrue(false)
+    def test_throw_invalid_arguments(self):
+        """Test throw with invalid arguments"""
+        def test(*args):
+            def f():
+                try:
+                    yield 5  # we'll be stopped here
+                    yield 10
+                except TypeError:
+                    # error shouldn't be raised inside of generator, so can't be caught here
+                    self.fail()
 
-        g = f()
-        self.assertEqual(next(g), 5)
+            g = f()
+            self.assertEqual(next(g), 5)
 
-        # g.throw(None) should:
-        # - throw a TypeError immediately, not from generator body (So generator can't catch it)
-        # - does not update generator
-        def t():
-            g.throw(None)
-        self.assertRaises(TypeError, t)
+            # throws immediately and does not update the generator
+            def t():
+                g.throw(*args)
+            self.assertRaises(TypeError, t)
 
-        # verify that generator is still valid and can be resumed
-        self.assertEqual(next(g), 10)
+            # verify that generator is still valid and can be resumed
+            self.assertEqual(next(g), 10)
+
+        test(None)
+        test(1)
+        test(str)
+        test(Exception(), 1)
 
     def test_close_throw(self):
         """Test close(), which builds on throw()"""

@@ -10,11 +10,11 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
@@ -116,15 +116,15 @@ namespace IronPython.Runtime {
         /// </summary>
         [LightThrowing]
         private object @throw(object type, object value, object traceback, bool finalizing) {
-            // The Pep342 explicitly says "The type argument must not be None". 
-            // According to CPython 2.5's implementation, a null type argument should:
-            // - throw a TypeError exception (just as Raise(None) would) *outside* of the generator's body
-            //   (so the generator can't catch it).
-            // - not update any other generator state (so future calls to Next() will still work)
-            if (type == null) {
-                // Create the appropriate exception and throw it.
-                throw PythonOps.MakeExceptionTypeError(null, true);
-            }
+            // Do argument validation outside of the generator's body and do not update the state on failure
+            if (type is Exception || type is PythonExceptions.BaseException) {
+                if (value is not null)
+                    throw PythonOps.TypeError("instance exception may not have a separate value");
+            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
+                // ok
+            } else {
+                throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonTypeOps.GetName(type));
+             }
 
             // Set fields which will then be used by CheckThrowable.
             // We create the actual exception from inside the generator so that if the exception's __init__ 

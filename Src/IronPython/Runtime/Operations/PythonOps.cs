@@ -2154,7 +2154,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
-
+            Debug.Assert(t[1] == GetRawContextException());
             Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
             return MakeRethrowExceptionWorker(e);
         }
@@ -2185,7 +2185,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static PythonExceptions.BaseException? GetRawContextException() => GetCurrentException()?.GetPythonException();
 
-        public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
+        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
             Exception e = MakeExceptionWorker(context, type, value, traceback, cause, suppressContext: false, forRethrow: false);
             e.RemoveFrameList();
             return e;

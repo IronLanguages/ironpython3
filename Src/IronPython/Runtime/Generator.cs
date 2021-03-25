@@ -124,7 +124,7 @@ namespace IronPython.Runtime {
                 // ok
             } else {
                 throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonTypeOps.GetName(type));
-             }
+            }
 
             // Set fields which will then be used by CheckThrowable.
             // We create the actual exception from inside the generator so that if the exception's __init__ 
@@ -480,12 +480,12 @@ namespace IronPython.Runtime {
                 return SwapValues();
             }
             return CheckThrowable();
-        }
 
-        private object SwapValues() {
-            object sendValueBackup = _sendValue;
-            _sendValue = null;
-            return sendValueBackup;
+            object SwapValues() {
+                object sendValueBackup = _sendValue;
+                _sendValue = null;
+                return sendValueBackup;
+            }
         }
 
         /// <summary>

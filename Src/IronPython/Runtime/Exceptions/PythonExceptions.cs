@@ -686,8 +686,10 @@ for k, v in toError.items():
             return be;
         }
 
-        internal static BaseException CreateBaseExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
-            object pyEx;
+#nullable enable
+
+        internal static BaseException CreateBaseExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object? value) {
+            object? pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
                 pyEx = value;
@@ -703,8 +705,6 @@ for k, v in toError.items():
 
             throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }
-
-#nullable enable
 
         /// <summary>
         /// Returns the CLR exception associated with a Python exception
@@ -749,8 +749,6 @@ for k, v in toError.items():
             return res;
         }
 
-#nullable restore
-
         /// <summary>
         /// Creates a new style Python exception from the .NET exception
         /// </summary>
@@ -780,8 +778,6 @@ for k, v in toError.items():
 
             return pyExcep;
         }
-
-#nullable enable
 
         [Serializable]
         private class ExceptionDataWrapper : MarshalByRefObject {

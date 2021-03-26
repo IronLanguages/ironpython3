@@ -246,7 +246,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression/*!*/ GetParentClosureTuple() {
-            Debug.Assert(NeedsLocalContext);
+            Debug.Assert(NeedsLocalContext || IsClosure);
             return MSAst.Expression.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.GetClosureTupleFromContext)), Parent.LocalContext);
         }
 

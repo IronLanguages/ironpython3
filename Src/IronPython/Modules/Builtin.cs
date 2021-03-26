@@ -1642,6 +1642,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if ((cflags & CompileFlags.CO_FUTURE_UNICODE_LITERALS) != 0) {
                 // Ignored since Python 3
             }
+            if ((cflags & CompileFlags.CO_FUTURE_GENERATOR_STOP) != 0) {
+                langFeat |= ModuleOptions.GeneratorStop;
+            }
             pco.Module |= langFeat;
 
             // The options created this way never creates
@@ -1662,7 +1665,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             CompileFlags cflags = (CompileFlags)flags;
             if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_DONT_IMPLY_DEDENT |
                 CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT | CompileFlags.CO_FUTURE_PRINT_FUNCTION |
-                CompileFlags.CO_FUTURE_UNICODE_LITERALS | CompileFlags.CO_FUTURE_BARRY_AS_BDFL)) != 0) {
+                CompileFlags.CO_FUTURE_UNICODE_LITERALS | CompileFlags.CO_FUTURE_BARRY_AS_BDFL | CompileFlags.CO_FUTURE_GENERATOR_STOP)) != 0) {
                 throw PythonOps.ValueError("unrecognized flags");
             }
 

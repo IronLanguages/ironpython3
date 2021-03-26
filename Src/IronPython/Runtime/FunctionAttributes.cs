@@ -29,5 +29,6 @@ namespace IronPython.Runtime {
         /// IronPython specific: Set if the function includes a try/finally block.
         /// </summary>
         ContainsTryFinally = 0x8000,
+        GeneratorStop = 0x80000, // TODO: delete me in 3.7
     }
 }

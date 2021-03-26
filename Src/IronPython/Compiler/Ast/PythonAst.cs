@@ -317,6 +317,12 @@ namespace IronPython.Compiler.Ast {
 
         #region Public API
 
+        internal bool GeneratorStop {
+            get {
+                return (_languageFeatures & ModuleOptions.GeneratorStop) != 0;
+            }
+        }
+
         public Statement Body {
             get { return _body; }
         }

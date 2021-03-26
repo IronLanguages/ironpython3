@@ -124,6 +124,8 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public bool IsGenerator { get; set; }
 
+        internal bool GeneratorStop { get; set; }
+
         /// <summary>
         /// Called by parser to mark that this function can set sys.exc_info().
         /// An alternative technique would be to just walk the body after the parse and look for a except block.
@@ -179,6 +181,10 @@ namespace IronPython.Compiler.Ast {
 
                 if (IsGenerator) {
                     fa |= FunctionAttributes.Generator;
+                }
+
+                if (GeneratorStop) {
+                    fa |= FunctionAttributes.GeneratorStop;
                 }
 
                 return fa;

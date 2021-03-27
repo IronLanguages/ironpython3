@@ -21,7 +21,7 @@ class SyntaxTests(IronPythonTestCase):
             def foo():
                 nonlocal x
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "no binding for nonlocal 'x' found", 3)
 
@@ -31,7 +31,7 @@ class SyntaxTests(IronPythonTestCase):
             def foo():
                 nonlocal x
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "no binding for nonlocal 'x' found", 4)
 

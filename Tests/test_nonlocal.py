@@ -21,7 +21,7 @@ class SyntaxTests(IronPythonTestCase):
             def foo():
                 nonlocal x
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "no binding for nonlocal 'x' found", 3)
 
@@ -31,7 +31,7 @@ class SyntaxTests(IronPythonTestCase):
             def foo():
                 nonlocal x
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "no binding for nonlocal 'x' found", 4)
 
@@ -52,9 +52,25 @@ class SyntaxTests(IronPythonTestCase):
                 global x    # CPython's error location
                 nonlocal x  # IronPython's error location
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "name 'x' is nonlocal and global", 4 if is_cli else 3)
+
+    def test_local_global_nonlocal(self):
+        source = """if True:
+            def foo():
+                x = 2 # x local in foo
+                def bar():
+                    def gek():
+                        nonlocal x # sees global x in bar before x from foo
+                        return x
+                    global x # masks local x in outer scope foo
+                    x = 3 # global x
+                    return x, gek()
+                return x, bar()
+            foo()
+            """
+        self.check_compile_error(source, "no binding for nonlocal 'x' found", 6)
 
     def test_nonlocal_global(self):
         source = """if True:
@@ -62,7 +78,7 @@ class SyntaxTests(IronPythonTestCase):
                 nonlocal x  # CPython's error location
                 global x    # IronPython's error location
                 return x
-            f()
+            foo()
             """
         self.check_compile_error(source, "name 'x' is nonlocal and global", 4 if is_cli else 3)
 
@@ -73,7 +89,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal y
                     return x
                 return bar()
-            f(1)
+            foo(1)
             """
         self.check_compile_error(source, "no binding for nonlocal 'y' found", 4)
 
@@ -86,7 +102,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal x
                     return x
                 return bar()
-            f(1)
+            foo(1)
             """
         self.check_compile_error(source, "name 'x' is assigned to before nonlocal declaration", 5)
 
@@ -99,7 +115,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal x
                     return x
                 return bar()
-            f(1)
+            foo(1)
             """
         self.check_compile_error(source, "name 'x' is used prior to nonlocal declaration", 5)
 
@@ -114,7 +130,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal x
                     return x
                 return bar()
-            f(1)
+            foo(1)
             """
         self.check_compile_error(source, "name 'x' is assigned to before nonlocal declaration", 7)
 
@@ -129,7 +145,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal x
                     return x
                 return bar()
-            f(1)
+            foo(1)
             """
         self.check_compile_error(source, "name 'x' is assigned to before nonlocal declaration", 7)
 
@@ -144,7 +160,7 @@ class SyntaxTests(IronPythonTestCase):
                     nonlocal x
                     return x
                 return bar()
-            f(int)
+            foo(int)
             """
         if is_cli:
             self.check_compile_error(source, "name 'x' is assigned to before nonlocal declaration", 7)

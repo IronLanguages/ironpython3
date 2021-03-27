@@ -340,7 +340,7 @@ namespace IronPython.Compiler.Ast {
             if (_references != null) {
                 foreach (var reference in _references.Values) {
                     reference.PythonVariable = BindReference(binder, reference);
-                    if (reference.PythonVariable is null && TryGetNonlocalStatement(reference.Name, out NonlocalStatement node)) {
+                    if ((reference.PythonVariable is null || reference.PythonVariable.Kind is VariableKind.Global) && TryGetNonlocalStatement(reference.Name, out NonlocalStatement node)) {
                         binder.ReportSyntaxError($"no binding for nonlocal '{reference.Name}' found", node);
                     }
                 }

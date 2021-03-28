@@ -2,24 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
 using System;
 using System.Collections.Generic;
 
-using Microsoft.Scripting.Interpreter;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Interpreter;
+
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     public class DictionaryExpression : Expression, IInstructionProvider {
         private readonly SliceExpression[] _items;
-        private static readonly MSAst.Expression EmptyDictExpression = Ast.Call(AstMethods.MakeEmptyDict);
+        private static readonly MSAst.Expression EmptyDictExpression = Expression.Call(AstMethods.MakeEmptyDict);
 
         public DictionaryExpression(params SliceExpression[] items) {
             _items = items;
@@ -40,7 +38,7 @@ namespace IronPython.Compiler.Ast {
 
         private MSAst.Expression ReduceDictionaryWithItems() {
             MSAst.Expression[] parts = new MSAst.Expression[_items.Length * 2];
-            Type t = null;
+            Type? t = null;
             bool heterogeneous = false;
             for (int index = 0; index < _items.Length; index++) {
                 SliceExpression slice = _items[index];
@@ -68,19 +66,19 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            return Ast.Call(
+            return Expression.Call(
                 heterogeneous ? AstMethods.MakeDictFromItems : AstMethods.MakeHomogeneousDictFromItems,
-                Ast.NewArrayInit(
+                Expression.NewArrayInit(
                     typeof(object),
                     parts
                 )
             );
         }
 
-        private MSAst.Expression ReduceConstant() {
+        private MSAst.Expression? ReduceConstant() {
             for (int index = 0; index < _items.Length; index++) {
                 SliceExpression slice = _items[index];
-                if (!slice.SliceStop.IsConstant || !slice.SliceStart.IsConstant) {
+                if (!slice.SliceStop!.IsConstant || !slice.SliceStart!.IsConstant) {
                     return null;
                 }
             }
@@ -89,11 +87,10 @@ namespace IronPython.Compiler.Ast {
             for (int index = 0; index < _items.Length; index++) {
                 SliceExpression slice = _items[index];
 
-                storage.AddNoLock(slice.SliceStart.GetConstantValue(), slice.SliceStop.GetConstantValue());
+                storage.AddNoLock(slice.SliceStart!.GetConstantValue(), slice.SliceStop!.GetConstantValue());
             }
 
-
-            return Ast.Call(AstMethods.MakeConstantDict, Ast.Constant(new ConstantDictionaryStorage(storage), typeof(object)));
+            return Expression.Call(AstMethods.MakeConstantDict, Expression.Constant(new ConstantDictionaryStorage(storage), typeof(object)));
         }
 
         public override void Walk(PythonWalker walker) {
@@ -120,7 +117,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        private class EmptyDictInstruction: Instruction {
+        private class EmptyDictInstruction : Instruction {
             public static EmptyDictInstruction Instance = new EmptyDictInstruction();
 
             public override int Run(InterpretedFrame frame) {

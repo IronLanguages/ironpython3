@@ -926,7 +926,7 @@ namespace IronPython.Runtime.Operations {
             return PythonCalls.Call(func, allArgs.GetObjectArray());
         }
 
-        public static object GetIndex(CodeContext/*!*/ context, object? o, object index) {
+        public static object GetIndex(CodeContext/*!*/ context, object? o, object? index) {
             PythonContext pc = context.LanguageContext;
             return pc.GetIndexSite.Target(pc.GetIndexSite, o, index);
         }
@@ -1484,6 +1484,26 @@ namespace IronPython.Runtime.Operations {
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonTuple MakeTupleFromSequence(object items) {
             return PythonTuple.Make(items);
+        }
+
+        /// <summary>
+        /// DICT_UPDATE
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void DictUpdate(CodeContext context, PythonDictionary dict, object? item) {
+            // call dict.keys()
+            if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
+                throw TypeError($"'{PythonTypeOps.GetName(item)}' object is not a mapping");
+            }
+
+            PythonDictionary res = new PythonDictionary();
+
+            // enumerate the keys getting their values
+            IEnumerator enumerator = GetEnumerator(keys);
+            while (enumerator.MoveNext()) {
+                object? o = enumerator.Current;
+                dict[o] = PythonOps.GetIndex(context, item, o);
+            }
         }
 
         /// <summary>

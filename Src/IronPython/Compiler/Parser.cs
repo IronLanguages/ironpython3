@@ -2562,8 +2562,10 @@ namespace IronPython.Compiler {
         }
 
         // dict_display: '{' [dictorsetmaker] '}'
-        // dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
-        //                   (test (comp_for | (',' test)* [','])) )
+        // dictorsetmaker: ( ((test ':' test | '**' expr)
+        //                    (comp_for | (',' (test ':' test | '**' expr))* [','])) |
+        //                   ((test | star_expr)
+        //                    (comp_for | (',' (test | star_expr))* [','])) )
         private Expression FinishDictOrSetValue() {
             var oStart = GetStart();
             var oEnd = GetEnd();
@@ -2578,43 +2580,55 @@ namespace IronPython.Compiler {
                         break;
                     }
                     bool first = false;
-                    Expression e1 = ParseTest();
-                    if (MaybeEat(TokenKind.Colon)) { // dict literal
-                        if (setMembers != null) {
-                            ReportSyntaxError("invalid syntax");
-                        } else if (dictMembers == null) {
-                            dictMembers = new List<SliceExpression>();
+                    if (MaybeEat(TokenKind.Power)) {
+                        if (setMembers is not null) ReportSyntaxError("invalid syntax");
+                        if (dictMembers is null) {
+                            dictMembers = new();
                             first = true;
                         }
-                        Expression e2 = ParseTest();
-
-                        if (PeekToken(Tokens.KeywordForToken)) {
-                            if (!first) {
-                                ReportSyntaxError("invalid syntax");
-                            }
-                            return FinishDictComp(e1, e2, oStart, oEnd);
-                        }
-
-                        SliceExpression se = new SliceExpression(e1, e2, null);
-                        se.SetLoc(_globalParent, e1.StartIndex, e2.EndIndex);
+                        var expr = ParseExpr();
+                        var se = new SliceExpression(null, expr, null);
+                        se.SetLoc(_globalParent, expr.StartIndex, expr.EndIndex);
                         dictMembers.Add(se);
-                    } else { // set literal
-                        if (dictMembers != null) {
-                            ReportSyntaxError("invalid syntax");
-                        } else if (setMembers == null) {
-                            setMembers = new List<Expression>();
-                            first = true;
-                        }
-
-                        if (PeekToken(Tokens.KeywordForToken)) {
-                            if (!first) {
+                    } else {
+                        Expression e1 = ParseTest();
+                        if (MaybeEat(TokenKind.Colon)) { // dict literal
+                            if (setMembers != null) {
                                 ReportSyntaxError("invalid syntax");
+                            } else if (dictMembers == null) {
+                                dictMembers = new List<SliceExpression>();
+                                first = true;
                             }
-                            return FinishSetComp(e1, oStart, oEnd);
-                        }
+                            Expression e2 = ParseTest();
 
-                        // error recovery
-                        setMembers?.Add(e1);
+                            if (PeekToken(Tokens.KeywordForToken)) {
+                                if (!first) {
+                                    ReportSyntaxError("invalid syntax");
+                                }
+                                return FinishDictComp(e1, e2, oStart, oEnd);
+                            }
+
+                            SliceExpression se = new SliceExpression(e1, e2, null);
+                            se.SetLoc(_globalParent, e1.StartIndex, e2.EndIndex);
+                            dictMembers.Add(se);
+                        } else { // set literal
+                            if (dictMembers != null) {
+                                ReportSyntaxError("invalid syntax");
+                            } else if (setMembers == null) {
+                                setMembers = new List<Expression>();
+                                first = true;
+                            }
+
+                            if (PeekToken(Tokens.KeywordForToken)) {
+                                if (!first) {
+                                    ReportSyntaxError("invalid syntax");
+                                }
+                                return FinishSetComp(e1, oStart, oEnd);
+                            }
+
+                            // error recovery
+                            setMembers?.Add(e1);
+                        }
                     }
 
                     if (!MaybeEat(TokenKind.Comma)) {

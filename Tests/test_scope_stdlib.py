@@ -20,7 +20,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_scope.ScopeTests('testCellIsKwonlyArg'))
         suite.addTest(test.test_scope.ScopeTests('testCellLeak'))
         suite.addTest(test.test_scope.ScopeTests('testClassAndGlobal'))
-        suite.addTest(unittest.expectedFailure(test.test_scope.ScopeTests('testClassNamespaceOverridesClosure'))) # TODO: figure out
+        suite.addTest(test.test_scope.ScopeTests('testClassNamespaceOverridesClosure'))
         suite.addTest(test.test_scope.ScopeTests('testComplexDefinitions'))
         suite.addTest(test.test_scope.ScopeTests('testEvalExecFreeVars'))
         suite.addTest(test.test_scope.ScopeTests('testEvalFreeVars'))

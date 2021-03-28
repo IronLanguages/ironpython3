@@ -61,6 +61,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo MakeClosureCell = GetMethod((Func<ClosureCell>)PythonOps.MakeClosureCell);
         public static readonly MethodInfo MakeClosureCellWithValue = GetMethod((Func<object, ClosureCell>)PythonOps.MakeClosureCellWithValue);
         public static readonly MethodInfo LookupName = GetMethod((Func<CodeContext, string, object>)PythonOps.LookupName);
+        public static readonly MethodInfo LookupLocalName = GetMethod((Func<CodeContext, string, object>)PythonOps.LookupLocalName);
         public static readonly MethodInfo RemoveName = GetMethod((Action<CodeContext, string>)PythonOps.RemoveName);
         public static readonly MethodInfo SetName = GetMethod((Func<CodeContext, string, object, object>)PythonOps.SetName);
         public static readonly MethodInfo KeepAlive = GetMethod((Action<object>)GC.KeepAlive);

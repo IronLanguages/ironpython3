@@ -31,6 +31,7 @@ namespace IronPython.Compiler.Ast {
         private static int _classId;
 
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
+        private static readonly MSAst.ParameterExpression _lookupVariableParam = Ast.Parameter(typeof(object), "$classLookupVar");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
         public ClassDefinition(string name, Expression[] bases, Arg[] keywords, Statement body = null) {
@@ -143,6 +144,24 @@ namespace IronPython.Compiler.Ast {
             }
 
             return null;
+        }
+
+        internal override Ast LookupVariableExpression(PythonVariable variable) {
+            MSAst.Expression lookup = Ast.Call(
+                AstMethods.LookupLocalName,
+                LocalContext,
+                Ast.Constant(variable.Name)
+            );
+            MSAst.Expression varexp = GetVariableExpression(variable);
+
+            return Ast.Block(
+                new[] { _lookupVariableParam },
+                Ast.Assign(_lookupVariableParam, lookup),
+                Ast.IfThen( Ast.Equal(_lookupVariableParam, Ast.Constant(null)),
+                    Ast.Assign(_lookupVariableParam, varexp)
+                ),
+                _lookupVariableParam
+            );
         }
 
         private static readonly MSAst.Expression NullLambda = AstUtils.Default(typeof(Func<CodeContext, CodeContext>));

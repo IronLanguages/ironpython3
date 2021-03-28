@@ -211,10 +211,7 @@ def test_namebinding_locals_and_class_impl():
         locals()["xyz"] = True
         passed = xyz
 
-    if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1030
-        selph.assertTrue(C.passed == False)
-    else:
-        selph.assertTrue(C.passed == True)
+    selph.assertTrue(C.passed == True)
 
 def localsAfterExpr():
     exec("pass")
@@ -293,10 +290,7 @@ class NameBindingTest(IronPythonTestCase):
                 abc = a
             return c
 
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1030
-            self.assertEqual(f().abc, 2)
-        else:
-            self.assertEqual(f().abc, 42)
+        self.assertEqual(f().abc, 42)
 
     def test_DelBuiltin(self):
         # Check that "pow" is defined

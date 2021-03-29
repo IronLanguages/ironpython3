@@ -2749,6 +2749,27 @@ class ClassTest(IronPythonTestCase):
 
         self.assertEqual(Child.attr_Child, 'attribute set on Child by MetaClass')
 
+    def test_metaclass_scope(self):
+        class MetaClass(type): pass
+
+        def foo():
+            outer = "lexically scoped"
+            class C(metaclass=MetaClass):
+                x = outer
+            return C.x
+
+        self.assertEqual(foo(), "lexically scoped")
+
+        class MetaClass(type):
+            def __prepare__(*args):
+                return dict(outer="from metaclass")
+
+        if is_cli:
+            # https://github.com/IronLanguages/ironpython3/issues/1154
+            self.assertEqual(foo(), "lexically scoped")
+        else:
+            self.assertEqual(foo(), "from metaclass")
+
     def test_binary_operator_subclass(self):
         """subclassing but not overriding shouldn't call __radd__"""
         class A(object):

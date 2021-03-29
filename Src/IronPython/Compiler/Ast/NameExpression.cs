@@ -39,7 +39,7 @@ namespace IronPython.Compiler.Ast {
                     Ast.Constant(Name)
                 );
             } else {
-                read = Parent.GetVariableExpression(Reference.PythonVariable);
+                read = Parent.LookupVariableExpression(Reference.PythonVariable);
             }
 
             if (!Assigned && !(read is IPythonGlobalExpression)) {

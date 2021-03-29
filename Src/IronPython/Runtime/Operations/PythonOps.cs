@@ -3360,6 +3360,10 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.NameError(name);
         }
 
+        public static object? LookupLocalName(CodeContext context, string name, object? defaultValue) {
+            return context.TryGetVariable(name, out object? value) ? value : defaultValue;
+        }
+
         /// <summary>
         /// Called from generated code, helper to do name assignment
         /// </summary>

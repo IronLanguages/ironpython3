@@ -145,6 +145,16 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
 
+        internal override Ast LookupVariableExpression(PythonVariable variable) {
+            // Emulates opcode LOAD_CLASSDEREF
+            return Ast.Call(
+                AstMethods.LookupLocalName,
+                LocalContext,
+                Ast.Constant(variable.Name),
+                GetVariableExpression(variable)
+            );
+        }
+
         private static readonly MSAst.Expression NullLambda = AstUtils.Default(typeof(Func<CodeContext, CodeContext>));
 
         public override MSAst.Expression Reduce() {

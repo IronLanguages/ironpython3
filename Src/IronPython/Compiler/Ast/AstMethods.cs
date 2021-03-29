@@ -77,7 +77,10 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo PushFrame = GetMethod((Func<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PushFrame);
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
-        
+
+        // methods matching Python opcodes
+        public static readonly MethodInfo DictUpdate = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictUpdate);
+
         private static MethodInfo GetMethod(Delegate x) {
             return x.Method;
         }

@@ -194,6 +194,14 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, 1)
         self.assertEqual(b, [2])
 
+    def test_unpack_dict(self):
+        self.assertEqual({'x': 1, **{'y': 2}}, {'x': 1, 'y': 2})
+        self.assertEqual({'x': 1, **{'x': 2}}, {'x': 2})
+        self.assertEqual({**{'x': 2}, 'x': 1}, {'x': 1})
+
+        with self.assertRaises(TypeError):
+            {**[]}
+
 def test_main():
     test.support.run_unittest(UnpackTest)
 

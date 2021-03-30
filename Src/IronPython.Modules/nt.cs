@@ -22,6 +22,7 @@ using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -98,6 +99,12 @@ namespace IronPython.Modules {
         }
 
         #region Public API Surface
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple _getdiskusage([NotNull] string path) {
+            var driveInfo = new DriveInfo(path);
+            return PythonTuple.MakeTuple((BigInteger)driveInfo.TotalSize, (BigInteger)driveInfo.AvailableFreeSpace);
+        }
 
         [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
@@ -506,6 +513,12 @@ namespace IronPython.Modules {
                 if (Mono.Unix.Native.Syscall.link(src, dst) == 0) return;
                 throw GetLastUnixError(src, dst);
             }
+        }
+
+        public static bool isatty(CodeContext context, int fd) {
+            if (context.LanguageContext.FileManager.TryGetFileFromId(context.LanguageContext, fd, out var file))
+                return file.isatty(context);
+            return false;
         }
 
         [Documentation("")]
@@ -941,10 +954,18 @@ namespace IronPython.Modules {
                 }
             }
 
-            try {
-                Directory.Move(src, dst);
-            } catch (Exception e) {
-                throw ToPythonException(e);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (!MoveFileEx(src, dst, 0)) {
+                    throw GetLastWin32Error(src, dst);
+                }
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                renameUnix(src, dst);
+            } else {
+                try {
+                    Directory.Move(src, dst);
+                } catch (Exception e) {
+                    throw ToPythonException(e);
+                }
             }
         }
 
@@ -961,7 +982,7 @@ namespace IronPython.Modules {
         [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool MoveFileEx(string src, string dst, uint flags);
 
-        private static void replaceUnix(string src, string dst) {
+        private static void renameUnix(string src, string dst) {
             if (Mono.Unix.Native.Syscall.rename(src, dst) == 0) return;
             throw GetLastUnixError(src, dst);
         }
@@ -984,7 +1005,7 @@ namespace IronPython.Modules {
                     throw GetLastWin32Error(src, dst);
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                replaceUnix(src, dst);
+                renameUnix(src, dst);
             } else {
                 throw new NotImplementedException();
             }
@@ -1208,17 +1229,19 @@ namespace IronPython.Modules {
 
             private const long nanosecondsPerSeconds = 1_000_000_000;
 
+            private static object ToInt(BigInteger x) => x.AsInt32(out int i) ? i : (object)x;
+
             internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
             internal stat_result(Mono.Unix.Native.Stat stat)
-                : this(new object[16] {(int)stat.st_mode, stat.st_ino, stat.st_dev, stat.st_nlink, stat.st_uid, stat.st_gid, stat.st_size, stat.st_atime, stat.st_mtime, stat.st_ctime,
+                : this(new object[16] {(int)stat.st_mode, ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size), ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
                       stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
-                      stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec, stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec, stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec }, null) { }
+                      ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec), ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec), ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec) }, null) { }
 
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
-                : this(new object[16] { mode, fileidx, 0, 0, 0, 0, size, st_atime_ns / nanosecondsPerSeconds, st_mtime_ns / nanosecondsPerSeconds, st_ctime_ns / nanosecondsPerSeconds,
+                : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size), ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),
                       st_atime_ns / (double)nanosecondsPerSeconds, st_mtime_ns / (double)nanosecondsPerSeconds, st_ctime_ns / (double)nanosecondsPerSeconds,
-                      st_atime_ns, st_mtime_ns, st_ctime_ns }, null) { }
+                      ToInt(st_atime_ns), ToInt(st_mtime_ns), ToInt(st_ctime_ns) }, null) { }
 
             private stat_result(object?[] statResult, PythonDictionary? dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
                 if (statResult.Length < n_sequence_fields) {
@@ -1320,7 +1343,7 @@ namespace IronPython.Modules {
 
                 return MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(stat_result)),
-                    MakeTuple(MakeTuple(this), timeDict)
+                    MakeTuple(new PythonTuple(this), timeDict)
                 );
             }
         }

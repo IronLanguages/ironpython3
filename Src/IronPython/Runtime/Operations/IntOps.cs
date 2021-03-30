@@ -32,19 +32,19 @@ namespace IronPython.Runtime.Operations {
                 case Extensible<int> ei:
                     return TryInvokeInt(context, o, out var value) ? value : ei.Value;
                 case BigInteger val:
-                    return val.IsInt32() ? (int)val : o;
-                case Extensible<BigInteger> el:
-                    return TryInvokeInt(context, o, out result) ? result : el.Value.IsInt32() ? (int)el.Value : el.Value;
+                    return val.IsInt32() ? (object)(int)val : o;
+                case Extensible<BigInteger> ebi:
+                    return TryInvokeInt(context, o, out result) ? result : ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value;
                 case float f:
                     return DoubleOps.__int__(f);
                 case long val:
-                    return int.MinValue <= val && val <= int.MaxValue ? (int)val : (BigInteger)val;
+                    return int.MinValue <= val && val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
                 case uint val:
-                    return val <= int.MaxValue ? (int)val : (BigInteger)val;
+                    return val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
                 case ulong val:
-                    return val <= int.MaxValue ? (int)val : (BigInteger)val;
+                    return val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
                 case decimal val:
-                    return int.MinValue <= val && val <= int.MaxValue ? (int)val : (BigInteger)val;
+                    return int.MinValue <= val && val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
                 case Enum e:
                     return ((IConvertible)e).ToInt32(null);
                 case string s:
@@ -62,13 +62,13 @@ namespace IronPython.Runtime.Operations {
                     case int _:
                         return result;
                     case BigInteger bi:
-                        return bi.IsInt32() ? (int)bi : result;
+                        return bi.IsInt32() ? (object)(int)bi : result;
                     case bool b:
                         return BoolOps.__int__(b); // Python 3.6: return the int value
                     case Extensible<int> ei:
                         return ei.Value; // Python 3.6: return the int value
                     case Extensible<BigInteger> ebi:
-                        return ebi.Value.IsInt32() ? (int)ebi.Value : ebi.Value; // Python 3.6: return the int value
+                        return ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
                     default: {
                             if (TryInvokeInt(context, result, out var intResult)) {
                                 return intResult;
@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Operations {
                             return true;
                         case Extensible<BigInteger> ebi:
                             Warn(context, result);
-                            result = ebi.Value.IsInt32() ? (int)ebi.Value : ebi.Value; // Python 3.6: return the int value
+                            result = ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
                             return true;
                         default:
                             throw PythonOps.TypeError("__int__ returned non-int (type {0})", PythonTypeOps.GetName(result));

@@ -4,8 +4,10 @@
 
 # types derived from built-in types
 
+long = type(1 << 63) # https://github.com/IronLanguages/ironpython3/issues/52
+
 class myint(int): pass
-class mylong(int): pass
+class mylong(long): pass
 class myfloat(float): pass
 class mycomplex(complex): pass
 

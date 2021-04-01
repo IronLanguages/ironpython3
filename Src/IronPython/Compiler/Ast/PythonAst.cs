@@ -149,6 +149,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public void Bind() {
             PythonNameBinder.BindAst(this, _compilerContext);
+            StarredExpressionChecker.Check(this, _compilerContext);
         }
 
         public override string Name {

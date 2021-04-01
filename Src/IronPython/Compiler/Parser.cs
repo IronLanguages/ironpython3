@@ -627,10 +627,6 @@ namespace IronPython.Compiler {
                     ReportSyntaxError(right.StartIndex, right.EndIndex, assignError, ErrorCodes.SyntaxError | ErrorCodes.NoCaret);
                 }
 
-                if (right is StarredExpression) {
-                    ReportSyntaxError(right.StartIndex, right.EndIndex, "starred assignment target must be in a list or tuple");
-                }
-
                 if (singleLeft == null) {
                     singleLeft = right;
                 } else {
@@ -643,8 +639,6 @@ namespace IronPython.Compiler {
 
                 right = MaybeEat(TokenKind.KeywordYield) ? ParseYieldExpression() : ParseTestListStarExpr();
             }
-
-            CheckNotAssignmentTargetOnly(right);
 
             var target = left?.ToArray() ?? new[] { singleLeft };
 
@@ -689,35 +683,9 @@ namespace IronPython.Compiler {
                 return aug;
             }
 
-            CheckNotAssignmentTargetOnly(ret);
-
             Statement stmt = new ExpressionStatement(ret);
             stmt.SetLoc(_globalParent, ret.IndexSpan);
             return stmt;
-        }
-
-        private void CheckNotAssignmentTargetOnly(Expression expr) {
-            switch (expr) {
-                case SequenceExpression sequence: {
-                        foreach (var expression in sequence.Items) {
-                            if (expression is StarredExpression starred) {
-                                ReportSyntaxError(
-                                    starred.StartIndex,
-                                    starred.EndIndex,
-                                    "can use starred expression only as assignment target");
-                            }
-                        }
-
-                        break;
-                    }
-                case StarredExpression starred:
-                    ReportSyntaxError(
-                        starred.StartIndex,
-                        starred.EndIndex,
-                        "can use starred expression only as assignment target");
-
-                    break;
-            }
         }
 
         private PythonOperator GetAssignOperator(Token t) {

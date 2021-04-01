@@ -5,6 +5,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 using IronPython.Runtime.Binding;
@@ -24,6 +25,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         public IList<Expression> Items => _items;
+
+        protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             // if we just have a simple named multi-assignment  (e.g. a, b = 1,2)

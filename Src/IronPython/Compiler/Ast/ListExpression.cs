@@ -19,6 +19,10 @@ namespace IronPython.Compiler.Ast {
                 return Expression.Call(AstMethods.MakeEmptyList);
             }
 
+            if (HasStarredExpression) {
+                return UnpackSequenceHelper<PythonList>(Items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
+            }
+
             return Call(
                 AstMethods.MakeListNoCopy,  // method
                 NewArrayInit(           // parameters

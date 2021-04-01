@@ -46,6 +46,10 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
+            if (HasStarredExpression) {
+                return Expression.Call(AstMethods.ListToTuple, UnpackSequenceHelper<PythonList>(Items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend));
+            }
+
             return Expression.Call(
                 AstMethods.MakeTuple,
                 Expression.NewArrayInit(

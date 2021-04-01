@@ -5,6 +5,9 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
+
+using IronPython.Runtime;
 
 using Microsoft.Scripting.Utils;
 
@@ -23,9 +26,15 @@ namespace IronPython.Compiler.Ast {
 
         public IList<Expression> Items => _items;
 
+        protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
+
         public override MSAst.Expression Reduce() {
             if (Items.Count == 0) {
                 return Expression.Call(AstMethods.MakeEmptySet);
+            }
+
+            if (HasStarredExpression) {
+                return UnpackSequenceHelper<SetCollection>(Items, AstMethods.MakeEmptySet, AstMethods.SetAdd, AstMethods.SetUpdate);
             }
 
             return Expression.Call(

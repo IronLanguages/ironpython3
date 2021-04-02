@@ -2,28 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
+#nullable enable
 
 using IronPython.Runtime;
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
-
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     public class TupleExpression : SequenceExpression {
         public TupleExpression(bool expandable, params Expression[] items)
             : base(items) {
             IsExpandable = expandable;
         }
 
-        internal override string CheckAssign() {
+        internal override string? CheckAssign() {
             if (Items.Count == 0) {
                 //  TODO: remove this when we get to 3.6
                 return "can't assign to ()";
@@ -32,7 +25,7 @@ namespace IronPython.Compiler.Ast {
             return base.CheckAssign();
         }
 
-        internal override string CheckDelete() {
+        internal override string? CheckDelete() {
             if (Items.Count == 0)
                 return "can't delete ()"; //  TODO: remove this when we get to 3.6
             return base.CheckDelete();
@@ -40,22 +33,22 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (IsExpandable) {
-                return Ast.NewArrayInit(
+                return Expression.NewArrayInit(
                     typeof(object),
                     ToObjectArray(Items)
                 );
             }
 
             if (Items.Count == 0) {
-                return Ast.Field(
-                    null,
-                    typeof(PythonOps).GetField(nameof(PythonOps.EmptyTuple))
+                return Expression.Field(
+                    null!,
+                    typeof(PythonOps).GetField(nameof(PythonOps.EmptyTuple))!
                 );
             }
 
-            return Ast.Call(
+            return Expression.Call(
                 AstMethods.MakeTuple,
-                Ast.NewArrayInit(
+                Expression.NewArrayInit(
                     typeof(object),
                     ToObjectArray(Items)
                 )

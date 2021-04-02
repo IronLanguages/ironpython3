@@ -29,7 +29,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op)
             => Value.TransformSet(span, right, op);
 
-        internal override string CheckAssign() => Value.CheckAssign();
+        internal override string? CheckAssign() => Value.CheckAssign();
 
         internal override string CheckDelete() => "can use starred expression only as assignment target";
 

@@ -1487,6 +1487,27 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
+        /// DICT_MERGE
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void DictMerge(CodeContext context, PythonDictionary dict, object? item) {
+            // call dict.keys()
+            if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
+                throw TypeError($"'{PythonTypeOps.GetName(item)}' object is not a mapping");
+            }
+
+            // enumerate the keys getting their values
+            IEnumerator enumerator = GetEnumerator(keys);
+            while (enumerator.MoveNext()) {
+                object? o = enumerator.Current;
+                if (dict.ContainsKey(o) && (o is string || o is Extensible<string>)) {
+                    throw TypeError($"function got multiple values for keyword argument '{o}'");
+                }
+                dict[o] = PythonOps.GetIndex(context, item, o);
+            }
+        }
+
+        /// <summary>
         /// DICT_UPDATE
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]

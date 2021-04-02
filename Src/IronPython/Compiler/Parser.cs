@@ -2901,31 +2901,24 @@ namespace IronPython.Compiler {
         }
 
         private CallExpression FinishCallExpr(Expression target, params Arg[] args) {
-            bool hasArgsTuple = false;
-            bool hasKeywordDict = false;
-            int keywordCount = 0;
-            int extraArgs = 0;
+            bool hasKeyword = false;
+            bool hasKeywordUnpacking = false;
 
             foreach (Arg arg in args) {
                 if (arg.Name == null) {
-                    if (hasArgsTuple || hasKeywordDict || keywordCount > 0) {
-                        ReportSyntaxError(IronPython.Resources.NonKeywordAfterKeywordArg);
+                    if (hasKeywordUnpacking) {
+                        ReportSyntaxError(arg.StartIndex, arg.EndIndex, "positional argument follows keyword argument unpacking");
+                    } else if (hasKeyword) {
+                        ReportSyntaxError(arg.StartIndex, arg.EndIndex, "positional argument follows keyword argument");
                     }
                 } else if (arg.Name == "*") {
-                    if (hasArgsTuple || hasKeywordDict) {
-                        ReportSyntaxError(IronPython.Resources.OneListArgOnly);
+                    if (hasKeywordUnpacking) {
+                        ReportSyntaxError(arg.StartIndex, arg.EndIndex, "iterable argument unpacking follows keyword argument unpacking");
                     }
-                    hasArgsTuple = true; extraArgs++;
                 } else if (arg.Name == "**") {
-                    if (hasKeywordDict) {
-                        ReportSyntaxError(IronPython.Resources.OneKeywordArgOnly);
-                    }
-                    hasKeywordDict = true; extraArgs++;
+                    hasKeywordUnpacking = true;
                 } else {
-                    if (hasKeywordDict) {
-                        ReportSyntaxError(IronPython.Resources.KeywordOutOfSequence);
-                    }
-                    keywordCount++;
+                    hasKeyword = true;
                 }
             }
 

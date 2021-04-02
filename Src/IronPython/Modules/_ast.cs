@@ -2503,6 +2503,8 @@ namespace IronPython.Modules {
             internal Starred(StarredExpression expr, expr_context ctx)
                 : this(Convert(expr.Value), ctx, null, null) { }
 
+            internal override AstExpression Revert() => new StarredExpression(value?.Revert());
+
             public expr_context ctx { get; set; }
 
             public expr value { get; set; }

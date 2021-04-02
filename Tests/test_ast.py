@@ -1338,6 +1338,15 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('-1.1'), -1.1)
         self.assertEqual(ast.literal_eval('+1.1'), 1.1)
 
+    def test_ipy3_gh686(self):
+        """https://github.com/IronLanguages/ironpython3/issues/686"""
+        # check that compiling ast.Starred works properly
+        x = ast.parse("*a, = [1]")
+        c = compile(x, "", "exec")
+        d = {}
+        exec(c, d)
+        self.assertEqual(d["a"], [1])
+
 def main():
     if __name__ != '__main__':
         return

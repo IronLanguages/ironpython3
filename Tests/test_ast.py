@@ -1340,6 +1340,11 @@ class ASTHelpers_Test(unittest.TestCase):
 
     def test_ipy3_gh686(self):
         """https://github.com/IronLanguages/ironpython3/issues/686"""
+        # check that we can parse invalid starred expression code
+        x = ast.parse("*a")
+        with self.assertRaises(SyntaxError):
+            compile(x, "", "exec")
+
         # check that compiling ast.Starred works properly
         x = ast.parse("*a, = [1]")
         c = compile(x, "", "exec")

@@ -1496,8 +1496,6 @@ namespace IronPython.Runtime.Operations {
                 throw TypeError($"'{PythonTypeOps.GetName(item)}' object is not a mapping");
             }
 
-            PythonDictionary res = new PythonDictionary();
-
             // enumerate the keys getting their values
             IEnumerator enumerator = GetEnumerator(keys);
             while (enumerator.MoveNext()) {

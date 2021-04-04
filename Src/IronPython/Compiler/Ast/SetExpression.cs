@@ -29,10 +29,6 @@ namespace IronPython.Compiler.Ast {
         protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
 
         public override MSAst.Expression Reduce() {
-            if (Items.Count == 0) {
-                return Expression.Call(AstMethods.MakeEmptySet);
-            }
-
             if (HasStarredExpression) {
                 return UnpackSequenceHelper<SetCollection>(Items, AstMethods.MakeEmptySet, AstMethods.SetAdd, AstMethods.SetUpdate);
             }

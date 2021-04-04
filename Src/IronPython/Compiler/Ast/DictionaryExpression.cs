@@ -22,6 +22,7 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.Expression EmptyDictExpression = Expression.Call(AstMethods.MakeEmptyDict);
 
         public DictionaryExpression(params SliceExpression[] items) {
+            // TODO: use two arrays instead of SliceExpression
             foreach (var item in items) {
                 if (item.SliceStart is null) _hasNullKey = true;
                 if (item.SliceStop is null) throw PythonOps.ValueError("None disallowed in expression list");

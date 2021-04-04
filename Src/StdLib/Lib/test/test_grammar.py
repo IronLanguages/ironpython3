@@ -1,7 +1,8 @@
 # Python test set -- part 1, grammar.
 # This just tests whether the parser accepts them all.
 
-from test.support import run_unittest, check_syntax_error
+from test.support import check_syntax_error
+import inspect
 import unittest
 import sys
 # testing import *
@@ -205,6 +206,7 @@ class GrammarTests(unittest.TestCase):
         d01(1)
         d01(*(1,))
         d01(*[] or [2])
+        d01(*() or (), *{} and (), **() or {})
         d01(**{'a':2})
         d01(**{'a':2} or {})
         def d11(a, b=1): pass
@@ -298,8 +300,12 @@ class GrammarTests(unittest.TestCase):
             return args, kwargs
         self.assertEqual(f(1, x=2, *[3, 4], y=5), ((1, 3, 4),
                                                     {'x':2, 'y':5}))
-        self.assertRaises(SyntaxError, eval, "f(1, *(2,3), 4)")
+        self.assertEqual(f(1, *(2,3), 4), ((1, 2, 3, 4), {}))
         self.assertRaises(SyntaxError, eval, "f(1, x=2, *(3,4), x=5)")
+        self.assertEqual(f(**{'eggs':'scrambled', 'spam':'fried'}),
+                         ((), {'eggs':'scrambled', 'spam':'fried'}))
+        self.assertEqual(f(spam='fried', **{'eggs':'scrambled'}),
+                         ((), {'eggs':'scrambled', 'spam':'fried'}))
 
         # argument annotation tests
         def f(x) -> list: pass
@@ -988,7 +994,7 @@ class GrammarTests(unittest.TestCase):
         # Test ifelse expressions in various cases
         def _checkeval(msg, ret):
             "helper to check that evaluation of expressions is done correctly"
-            print(x)
+            print(msg)
             return ret
 
         # the next line is not allowed anymore
@@ -1019,9 +1025,20 @@ class GrammarTests(unittest.TestCase):
         self.assertFalse((False is 2) is 3)
         self.assertFalse(False is 2 is 3)
 
+    def test_matrix_mul(self):
+        # This is not intended to be a comprehensive test, rather just to be few
+        # samples of the @ operator in test_grammar.py.
+        class M:
+            def __matmul__(self, o):
+                return 4
+            def __imatmul__(self, o):
+                self.other = o
+                return self
+        m = M()
+        self.assertEqual(m @ m, 4)
+        m @= 42
+        self.assertEqual(m.other, 42)
 
-def test_main():
-    run_unittest(TokenTests, GrammarTests)
 
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

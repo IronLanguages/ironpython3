@@ -80,6 +80,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
 
         // methods matching Python opcodes
+        public static readonly MethodInfo DictMerge = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictMerge);
         public static readonly MethodInfo DictUpdate = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictUpdate);
         public static readonly MethodInfo ListAppend = GetMethod((Action<PythonList, object>)PythonOps.ListAppend);
         public static readonly MethodInfo ListExtend = GetMethod((Action<PythonList, object>)PythonOps.ListExtend);

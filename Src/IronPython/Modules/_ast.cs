@@ -1283,7 +1283,7 @@ namespace IronPython.Modules {
                 keys = new PythonList(expr.Items.Count);
                 values = new PythonList(expr.Items.Count);
                 foreach (SliceExpression item in expr.Items) {
-                    keys.Add(Convert(item.SliceStart));
+                    keys.Add(item.SliceStart is null ? null : Convert(item.SliceStart));
                     values.Add(Convert(item.SliceStop));
                 }
             }

@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
-using IronPython.Runtime;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 
 namespace IronPython.Compiler.Ast {
     public class Arg : Node {
         public Arg(Expression expression) : this(null, expression) { }
 
-        public Arg(string name, Expression expression) {
+        public Arg(string? name, Expression expression) {
             Name = name;
             Expression = expression;
         }
 
-        public string Name { get; }
+        public string? Name { get; }
 
         public Expression Expression { get; }
 

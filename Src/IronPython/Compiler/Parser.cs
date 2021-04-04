@@ -2416,6 +2416,7 @@ namespace IronPython.Compiler {
                         ret = FinishExpressionListAsExpr(expr);
                     } else if (PeekToken(Tokens.KeywordForToken)) {
                         // "(" expression "for" ...
+                        if (expr is StarredExpression) ReportSyntaxError(expr.StartIndex, expr.EndIndex, "iterable unpacking cannot be used in comprehension");
                         ret = ParseGeneratorExpression(expr);
                     } else {
                         // "(" expression ")"
@@ -2548,16 +2549,31 @@ namespace IronPython.Compiler {
                         break;
                     }
                     bool first = false;
-                    if (MaybeEat(TokenKind.Power)) {
+                    if (PeekToken(TokenKind.Power)) {
                         if (setMembers is not null) ReportSyntaxError("invalid syntax");
-                        if (dictMembers is null) {
+                        else if (dictMembers is null) {
                             dictMembers = new();
                             first = true;
                         }
+                        NextToken();
                         var expr = ParseExpr();
+
                         var se = new SliceExpression(null, expr, null);
                         se.SetLoc(_globalParent, expr.StartIndex, expr.EndIndex);
-                        dictMembers.Add(se);
+                        dictMembers?.Add(se);
+                    } else if (PeekToken(TokenKind.Multiply)) {
+                        if (dictMembers is not null) ReportSyntaxError("invalid syntax");
+                        else if (setMembers is null) {
+                            setMembers = new();
+                            first = true;
+                        }
+                        var expr = ParseStarExpr();
+
+                        if (PeekToken(Tokens.KeywordForToken)) {
+                            if (!first) ReportSyntaxError("invalid syntax");
+                        }
+
+                        setMembers?.Add(expr);
                     } else {
                         Expression e1 = ParseTest();
                         if (MaybeEat(TokenKind.Colon)) { // dict literal
@@ -2645,6 +2661,7 @@ namespace IronPython.Compiler {
                 new SourceSpan(_tokenizer.IndexToLocation(cStart), _tokenizer.IndexToLocation(cEnd)),
                 1);
 
+            if (item is StarredExpression) ReportSyntaxError(item.StartIndex, item.EndIndex, "iterable unpacking cannot be used in comprehension");
             var ret = new SetComprehension(item, iters);
             ret.SetLoc(_globalParent, oStart, cEnd);
             return ret;
@@ -2735,6 +2752,7 @@ namespace IronPython.Compiler {
                     if (PeekToken(Tokens.KeywordForToken)) {
                         // although it's calling ParseCompIter(), because the peek token is a FOR it is going to
                         // do the right thing.
+                        if (expr is StarredExpression) ReportSyntaxError(expr.StartIndex, expr.EndIndex, "iterable unpacking cannot be used in comprehension");
                         ret = new ListComprehension(expr, ParseCompIter());
                     } else {
                         // (',' (test|star_expr))* [',']

@@ -81,6 +81,11 @@ namespace IronPython.Compiler.Ast {
 
         // methods matching Python opcodes
         public static readonly MethodInfo DictUpdate = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictUpdate);
+        public static readonly MethodInfo ListAppend = GetMethod((Action<PythonList, object>)PythonOps.ListAppend);
+        public static readonly MethodInfo ListExtend = GetMethod((Action<PythonList, object>)PythonOps.ListExtend);
+        public static readonly MethodInfo ListToTuple = GetMethod((Func<PythonList, PythonTuple>)PythonOps.ListToTuple);
+        public static readonly MethodInfo SetAdd = GetMethod((Action<SetCollection, object>)PythonOps.SetAdd);
+        public static readonly MethodInfo SetUpdate = GetMethod((Action<SetCollection, object>)PythonOps.SetUpdate);
 
         private static MethodInfo GetMethod(Delegate x) {
             return x.Method;

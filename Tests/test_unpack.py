@@ -2,7 +2,9 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import test.support, unittest
+import sys
+import test.support
+import unittest
 
 class UnpackTest(unittest.TestCase):
     def assertRaisesSyntaxError(self, body, expectedMessage, lineno = 1):
@@ -87,25 +89,28 @@ class UnpackTest(unittest.TestCase):
             index = index + 1
 
     def test_too_many_starred_assignments(self):
-        self.assertRaisesSyntaxError("*x, *k = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("*x, *k, *r = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("v, *x, n, *k = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("h, t, *g, s, *x, m, *k = range(5)", "two starred expressions in assignment")
+        msg = "multiple starred expressions in assignment" if sys.version_info >= (3,9) else "two starred expressions in assignment"
+        self.assertRaisesSyntaxError("*x, *k = range(5)", msg)
+        self.assertRaisesSyntaxError("*x, *k, *r = range(5)", msg)
+        self.assertRaisesSyntaxError("v, *x, n, *k = range(5)", msg)
+        self.assertRaisesSyntaxError("h, t, *g, s, *x, m, *k = range(5)", msg)
 
-        self.assertRaisesSyntaxError("[*x, *k] = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("[*x, *k, *r] = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("[v, *x, n, *k] = range(5)", "two starred expressions in assignment")
-        self.assertRaisesSyntaxError("[h, t, *g, s, *x, m, *k] = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("[*x, *k] = range(5)", msg)
+        self.assertRaisesSyntaxError("[*x, *k, *r] = range(5)", msg)
+        self.assertRaisesSyntaxError("[v, *x, n, *k] = range(5)", msg)
+        self.assertRaisesSyntaxError("[h, t, *g, s, *x, m, *k] = range(5)", msg)
 
     def test_assignment_to_unassignable_targets(self):
-        self.assertRaisesSyntaxError('[x, y, "a", z] = range(4)', "can't assign to literal")
-        self.assertRaisesSyntaxError('[x, y, a + 1, z] = range(4)', "can't assign to operator")
+        literal_msg = "cannot assign to literal" if sys.version_info >= (3,8) else "can't assign to literal"
+        operator_msg = "cannot assign to operator" if sys.version_info >= (3,8) else "can't assign to operator"
+        self.assertRaisesSyntaxError('[x, y, "a", z] = range(4)', literal_msg)
+        self.assertRaisesSyntaxError('[x, y, a + 1, z] = range(4)', operator_msg)
 
-        self.assertRaisesSyntaxError('(x, y, "a", z) = range(4)', "can't assign to literal")
-        self.assertRaisesSyntaxError('(x, y, a + 1, z) = range(4)', "can't assign to operator")
+        self.assertRaisesSyntaxError('(x, y, "a", z) = range(4)', literal_msg)
+        self.assertRaisesSyntaxError('(x, y, a + 1, z) = range(4)', operator_msg)
 
-        self.assertRaisesSyntaxError('x, y, "a", z = range(4)', "can't assign to literal")
-        self.assertRaisesSyntaxError('x, y, a + 1, z = range(4)', "can't assign to operator")
+        self.assertRaisesSyntaxError('x, y, "a", z = range(4)', literal_msg)
+        self.assertRaisesSyntaxError('x, y, a + 1, z = range(4)', operator_msg)
 
     def test_too_many_expressions_in_star_unpack(self):
         body = ", ".join("a%d" % i for i in range(1<<8)) + ", *rest = range(1<<8 + 1)"
@@ -115,7 +120,10 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError(body, "too many expressions in star-unpacking assignment")
 
     def test_assign_to_empty(self):
-        self.assertRaisesSyntaxError('() = []', "can't assign to ()")
+        if sys.version_info >= (3,6):
+            exec("() = []") # TODO: remove exec once our baseline is >= 3.6
+        else:
+            self.assertRaisesSyntaxError('() = []', "can't assign to ()")
         [] = () # OK
 
     def test_assign_trailing_comma_list_to_list(self):
@@ -182,9 +190,15 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError('(a, *b) = (1, 2, 3,,)', "invalid syntax")
 
     def test_delete_star_fails(self):
-        self.assertRaisesSyntaxError('del *a', "can use starred expression only as assignment target")
-        self.assertRaisesSyntaxError('del *a, b', "can use starred expression only as assignment target")
-        self.assertRaisesSyntaxError('del b, *a', "can use starred expression only as assignment target")
+        if sys.version_info >= (3,9):
+            msg = "cannot delete starred"
+        elif sys.implementation.name == "ironpython" or sys.version_info >= (3,5):
+            msg = "can't use starred expression here"
+        else:
+            msg = "can use starred expression only as assignment target"
+        self.assertRaisesSyntaxError('del *a', msg)
+        self.assertRaisesSyntaxError('del *a, b', msg)
+        self.assertRaisesSyntaxError('del b, *a', msg)
 
     def test_ipy3_gh841(self):
         "https://github.com/IronLanguages/ironpython3/issues/841"
@@ -194,13 +208,33 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, 1)
         self.assertEqual(b, [2])
 
+    @unittest.skipUnless(sys.implementation.name == "ironpython" or sys.version_info >= (3,5), "new syntax in 3.5")
     def test_unpack_dict(self):
-        self.assertEqual({'x': 1, **{'y': 2}}, {'x': 1, 'y': 2})
-        self.assertEqual({'x': 1, **{'x': 2}}, {'x': 2})
-        self.assertEqual({**{'x': 2}, 'x': 1}, {'x': 1})
+        # TODO: remove eval once our baseline is >= 3.5
+        self.assertEqual(eval("{'x': 1, **{'y': 2}}"), {'x': 1, 'y': 2})
+        self.assertEqual(eval("{'x': 1, **{'x': 2}}"), {'x': 2})
+        self.assertEqual(eval("{**{'x': 2}, 'x': 1}"), {'x': 1})
+
+        # TODO: remove exec once our baseline is >= 3.5
+        with self.assertRaises(TypeError):
+            exec("{**[]}")
+
+    @unittest.skipUnless(sys.implementation.name == "ironpython" or sys.version_info >= (3,5), "new syntax in 3.5")
+    def test_unpack_sequence(self):
+        # TODO: remove eval once our baseline is >= 3.5
+        self.assertEqual(eval("(*range(4), 4)"), (0,1,2,3,4))
+        self.assertEqual(eval("[*range(4), 4]"), [0,1,2,3,4])
+        self.assertEqual(eval("{*range(4), 4}"), {0,1,2,3,4})
+
+        # TODO: remove exec once our baseline is >= 3.5
+        with self.assertRaises(TypeError):
+            exec("(*1,)")
 
         with self.assertRaises(TypeError):
-            {**[]}
+            exec("[*1]")
+
+        with self.assertRaises(TypeError):
+            exec("{*1}")
 
 def test_main():
     test.support.run_unittest(UnpackTest)

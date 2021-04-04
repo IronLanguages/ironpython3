@@ -29,9 +29,9 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op)
             => Value.TransformSet(span, right, op);
 
-        internal override string CheckAssign() => Value.CheckAssign();
+        internal override string? CheckAssign() => Value.CheckAssign();
 
-        internal override string CheckDelete() => "can use starred expression only as assignment target";
+        internal override string CheckDelete() => "can't use starred expression here"; // TODO: change error message in 3.9
 
         internal override MSAst.Expression TransformDelete() => Value.TransformDelete();
 
@@ -76,9 +76,15 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override bool Walk(StarredExpression node) {
-            ReportSyntaxError("can use starred expression only as assignment target", node);
+            ReportSyntaxError("can't use starred expression here", node);
             return base.Walk(node);
         }
+
+        public override bool Walk(ListExpression node) => WalkItems(node.Items);
+
+        public override bool Walk(SetExpression node) => WalkItems(node.Items);
+
+        public override bool Walk(TupleExpression node) => WalkItems(node.Items);
 
         private void ReportSyntaxError(string message, Node node) {
             context.Errors.Add(context.SourceUnit, message, node.Span, ErrorCodes.SyntaxError, Severity.FatalError);

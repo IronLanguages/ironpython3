@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
+using IronPython.Runtime;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     public class ListExpression : SequenceExpression {
         public ListExpression(params Expression[] items)
             : base(items) {
@@ -14,9 +16,11 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (Items.Count == 0) {
-                return Ast.Call(
-                    AstMethods.MakeEmptyList
-                );
+                return Expression.Call(AstMethods.MakeEmptyList);
+            }
+
+            if (HasStarredExpression) {
+                return UnpackSequenceHelper<PythonList>(Items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
             }
 
             return Call(

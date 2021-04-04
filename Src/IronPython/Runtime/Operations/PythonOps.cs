@@ -1505,6 +1505,36 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
+        /// LIST_APPEND
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void ListAppend(PythonList list, object? o) => list.AddNoLock(o);
+
+        /// <summary>
+        /// LIST_EXTEND
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void ListExtend(PythonList list, object? o) => list.extend(o);
+
+        /// <summary>
+        /// LIST_TO_TUPLE
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonTuple ListToTuple(PythonList list) => new PythonTuple(list);
+
+        /// <summary>
+        /// SET_ADD
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void SetAdd(SetCollection set, object? o) => set.add(o);
+
+        /// <summary>
+        /// SET_UPDATE
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void SetUpdate(SetCollection set, object? o) => set.update(o);
+
+        /// <summary>
         /// Python Runtime Helper for enumerator unpacking (tuple assignments, ...)
         /// Creates enumerator from the input parameter e, and then extracts 
         /// expected number of values, returning them as array

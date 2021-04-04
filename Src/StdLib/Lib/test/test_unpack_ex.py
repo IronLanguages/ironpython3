@@ -131,17 +131,17 @@ Now some general starred expressions (all fail).
     >>> *a # doctest:+ELLIPSIS
     Traceback (most recent call last):
       ...
-    SyntaxError: can use starred expression only as assignment target
+    SyntaxError: can't use starred expression here
 
     >>> *1 # doctest:+ELLIPSIS
     Traceback (most recent call last):
       ...
-    SyntaxError: can use starred expression only as assignment target
+    SyntaxError: can't use starred expression here
 
     >>> x = *a # doctest:+ELLIPSIS
     Traceback (most recent call last):
       ...
-    SyntaxError: can use starred expression only as assignment target
+    SyntaxError: can't use starred expression here
 
 Some size constraints (all fail.)
 

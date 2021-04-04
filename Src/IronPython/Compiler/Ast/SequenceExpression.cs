@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
+
+using IronPython.Runtime.Binding;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
-
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     public abstract class SequenceExpression : Expression {
         private readonly Expression[] _items;
 
@@ -27,6 +25,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         public IList<Expression> Items => _items;
+
+        protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             // if we just have a simple named multi-assignment  (e.g. a, b = 1,2)
@@ -58,7 +58,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             // 1. Evaluate the expression and assign the value to the temp.
-            MSAst.ParameterExpression right_temp = Ast.Variable(typeof(object), "unpacking");
+            MSAst.ParameterExpression right_temp = Expression.Variable(typeof(object), "unpacking");
 
             // 2. Add the assignment "right_temp = right" into the suite/block
             MSAst.Expression assignStmt1 = MakeAssignment(right_temp, right);
@@ -92,7 +92,7 @@ namespace IronPython.Compiler.Ast {
             ), typeof(object[]));
 
             // 4. Create temporary variable for the array
-            MSAst.ParameterExpression array_temp = Ast.Variable(typeof(object[]), "array");
+            MSAst.ParameterExpression array_temp = Expression.Variable(typeof(object[]), "array");
 
             // 5. Assign the value of the method call (mce) into the array temp
             // And add the assignment "array_temp = Ops.GetEnumeratorValues(...)" into the block
@@ -112,7 +112,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 // 6. array_temp[i]
-                MSAst.Expression element = Ast.ArrayAccess(
+                MSAst.Expression element = Expression.ArrayAccess(
                     array_temp,                             // array expression
                     AstUtils.Constant(i)                         // index
                 );
@@ -129,13 +129,13 @@ namespace IronPython.Compiler.Ast {
             }
             // 9. add the sets as their own block so they can be marked as a single span, if necessary.
             sets.Add(AstUtils.Empty());
-            MSAst.Expression itemSet = GlobalParent.AddDebugInfo(Ast.Block(sets.ToReadOnlyCollection()), leftSpan);
+            MSAst.Expression itemSet = GlobalParent.AddDebugInfo(Expression.Block(sets.ToReadOnlyCollection()), leftSpan);
 
             // 10. Return the suite statement (block)
-            return GlobalParent.AddDebugInfo(Ast.Block(new[] { array_temp, right_temp }, assignStmt1, assignStmt2, itemSet, AstUtils.Empty()), totalSpan);
+            return GlobalParent.AddDebugInfo(Expression.Block(new[] { array_temp, right_temp }, assignStmt1, assignStmt2, itemSet, AstUtils.Empty()), totalSpan);
         }
 
-        internal override string CheckAssign() {
+        internal override string? CheckAssign() {
             var starCount = 0;
             foreach (var item in Items) {
                 if (item.CheckAssign() is { } checkAssign) {
@@ -157,7 +157,7 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
 
-        internal override string CheckDelete() => null;
+        internal override string? CheckDelete() => null;
 
         internal override string CheckAugmentedAssign()
             => CheckAssign() ?? "illegal expression for augmented assignment";
@@ -170,7 +170,7 @@ namespace IronPython.Compiler.Ast {
                 statements[i] = _items[i].TransformDelete();
             }
             statements[_items.Length] = AstUtils.Empty();
-            return GlobalParent.AddDebugInfo(Ast.Block(statements), Span);
+            return GlobalParent.AddDebugInfo(Expression.Block(statements), Span);
         }
 
         internal override bool CanThrow {

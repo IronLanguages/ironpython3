@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
+
+using IronPython.Runtime;
 
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     public class SetExpression : Expression {
         private readonly Expression[] _items;
 
@@ -24,7 +26,17 @@ namespace IronPython.Compiler.Ast {
 
         public IList<Expression> Items => _items;
 
+        protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
+
         public override MSAst.Expression Reduce() {
+            if (Items.Count == 0) {
+                return Expression.Call(AstMethods.MakeEmptySet);
+            }
+
+            if (HasStarredExpression) {
+                return UnpackSequenceHelper<SetCollection>(Items, AstMethods.MakeEmptySet, AstMethods.SetAdd, AstMethods.SetUpdate);
+            }
+
             return Expression.Call(
                 AstMethods.MakeSet,
                 NewArrayInit(

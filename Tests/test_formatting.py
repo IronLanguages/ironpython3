@@ -146,6 +146,11 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual(str(f), "1.23457e+06")
         self.assertEqual("%g" % f, "1.23457e+06")
 
+    def test_long(self):
+        # these were not working properly
+        self.assertEqual("%x" % (-1 << 31), '-80000000')
+        self.assertEqual("% 9x" % (1 << 31), ' 80000000')
+
     def test_errors(self):
         def formatError():
             "%d" % (1,2)

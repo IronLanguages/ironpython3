@@ -775,38 +775,14 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// AppendBase appends an integer at the specified radix doing all the
-        /// special forms for Python.  We have a copy and paste version of this
-        /// for BigInteger below that should be kept in sync.
+        /// special forms for Python.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            bool fPos;
-            object intVal = GetIntegerValue(out fPos);
-            if (intVal is BigInteger) {
-                AppendBaseBigInt((BigInteger)intVal, format, radix);
-                return;
-            }
-            int origVal = (int)intVal;
-            int val = origVal;
-            if (val < 0) {
-                val *= -1;
+            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos));
 
+            if (!fPos) {
                 // if negative number, the leading space has no impact
                 _opts.Space = false;
-            }
-            // we build up the number backwards inside a string builder,
-            // and after we've finished building this up we append the
-            // string to our output buffer backwards.
-
-            // convert value to string 
-            StringBuilder str = new StringBuilder();
-            if (val == 0) str.Append('0');
-            while (val != 0) {
-                int digit = val % radix;
-                if (digit < 10) str.Append((char)((digit) + '0'));
-                else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
-                else str.Append((char)((digit - 10) + 'A'));
-
-                val /= radix;
             }
 
             // pad out for additional precision
@@ -817,7 +793,7 @@ namespace IronPython.Runtime {
 
             // pad result to minimum field width
             if (_opts.FieldWidth != 0) {
-                int signLen = (origVal < 0 || _opts.SignChar) ? 1 : 0;
+                int signLen = (!fPos || _opts.SignChar) ? 1 : 0;
                 int spaceLen = _opts.Space ? 1 : 0;
                 int len = _opts.FieldWidth - (str.Length + signLen + spaceLen);
 
@@ -848,7 +824,7 @@ namespace IronPython.Runtime {
 
 
             // add any sign if necessary
-            if (origVal < 0) {
+            if (!fPos) {
                 _buf.Append('-');
             } else if (_opts.SignChar) {
                 _buf.Append('+');
@@ -860,83 +836,54 @@ namespace IronPython.Runtime {
             for (int i = str.Length - 1; i >= 0; i--) {
                 _buf.Append(str[i]);
             }
-        }
 
-        /// <summary>
-        /// BigInteger version of AppendBase.  Should be kept in sync w/ AppendBase
-        /// </summary>
-        private void AppendBaseBigInt(BigInteger origVal, char format, int radix) {
-            BigInteger val = origVal;
-            if (val < 0) val *= -1;
+            static StringBuilder ProcessNumber(char format, int radix, ref FormatSettings _opts, object intVal) {
+                StringBuilder str;
 
-            // convert value to octal
+                // we build up the number backwards inside a string builder,
+                // and after we've finished building this up we append the
+                // string to our output buffer backwards.
 
-            StringBuilder str = new StringBuilder();
-            // use .NETs faster conversion if we can
-            if (radix == 16) {
-                AppendNumberReversed(str, char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
-            } else if (radix == 10) {
-                AppendNumberReversed(str, val.ToString());
-            } else {
-                if (val == 0) str.Append('0');
-                while (val != 0) {
-                    int digit = (int)(val % radix);
-                    if (digit < 10) str.Append((char)((digit) + '0'));
-                    else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
-                    else str.Append((char)((digit - 10) + 'A'));
+                if (intVal is BigInteger bi) {
+                    BigInteger val = bi;
+                    if (val < 0) val *= -1;
 
-                    val /= radix;
-                }
-            }
+                    str = new StringBuilder();
 
-            // pad out for additional precision
-            if (str.Length < _opts.Precision) {
-                int len = _opts.Precision - str.Length;
-                str.Append('0', len);
-            }
+                    // use .NETs faster conversion if we can
+                    if (radix == 16) {
+                        AppendNumberReversed(str, char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
+                    } else if (radix == 10) {
+                        AppendNumberReversed(str, val.ToString());
+                    } else {
+                        if (val == 0) str.Append('0');
+                        while (val != 0) {
+                            int digit = (int)(val % radix);
+                            if (digit < 10) str.Append((char)((digit) + '0'));
+                            else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                            else str.Append((char)((digit - 10) + 'A'));
 
-            // pad result to minimum field width
-            if (_opts.FieldWidth != 0) {
-                int signLen = (origVal < 0 || _opts.SignChar) ? 1 : 0;
-                int len = _opts.FieldWidth - (str.Length + signLen);
-                if (len > 0) {
-                    // we account for the size of the alternate form, if we'll end up adding it.
-                    if (_opts.AltForm && NeedsAltForm(format, (!_opts.LeftAdj && _opts.ZeroPad) ? '0' : str[str.Length - 1])) {
-                        len -= GetAltFormPrefixForRadix(format, radix).Length;
-                    }
-
-                    if (len > 0) {
-                        // and finally append the right form
-                        if (_opts.LeftAdj) {
-                            str.Insert(0, " ", len);
-                        } else {
-                            if (_opts.ZeroPad) {
-                                str.Append('0', len);
-                            } else {
-                                _buf.Append(' ', len);
-                            }
+                            val /= radix;
                         }
                     }
+                } else {
+                    int val = (int)intVal;
+                    if (val == int.MinValue) return ProcessNumber(format, radix, ref _opts, (BigInteger)val);
+                    if (val < 0) val *= -1;
+
+                    str = new StringBuilder();
+
+                    if (val == 0) str.Append('0');
+                    while (val != 0) {
+                        int digit = val % radix;
+                        if (digit < 10) str.Append((char)((digit) + '0'));
+                        else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                        else str.Append((char)((digit - 10) + 'A'));
+                        val /= radix;
+                    }
                 }
-            }
 
-            // append the alternate form
-            if (_opts.AltForm && NeedsAltForm(format, str[str.Length - 1]))
-                str.Append(GetAltFormPrefixForRadix(format, radix));
-
-
-            // add any sign if necessary
-            if (origVal < 0) {
-                _buf.Append('-');
-            } else if (_opts.SignChar) {
-                _buf.Append('+');
-            } else if (_opts.Space) {
-                _buf.Append(' ');
-            }
-
-            // append the final value
-            for (int i = str.Length - 1; i >= 0; i--) {
-                _buf.Append(str[i]);
+                return str;
             }
         }
 

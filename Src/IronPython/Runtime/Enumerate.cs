@@ -107,7 +107,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    [PythonType("SentinelIterator")]
+    [PythonType("callable_iterator")]
     public sealed class SentinelIterator : IEnumerator, IEnumerator<object> {
         private readonly object _target;
         private readonly object _sentinel;
@@ -120,7 +120,7 @@ namespace IronPython.Runtime {
             _target = target;
             _sentinel = sentinel;
             _context = context;
-            _site = CallSite<Func<CallSite, CodeContext, object, object>>.Create(_context.LanguageContext.InvokeOne);
+            _site = CallSite<Func<CallSite, CodeContext, object, object>>.Create(_context.LanguageContext.InvokeNone);
         }
 
         public object __iter__() {

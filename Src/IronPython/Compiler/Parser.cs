@@ -1064,7 +1064,7 @@ namespace IronPython.Compiler {
 
                 if (MaybeEat(TokenKind.LeftParenthesis)) {
                     ParserSink?.StartParameters(GetSourceSpan());
-                    Arg[] args = FinishArgumentList(null);
+                    IReadOnlyList<Arg> args = FinishArgumentList(null);
                     decorator = FinishCallExpr(decorator, args);
                 }
                 decorator.SetLoc(_globalParent, start, GetEnd());
@@ -1988,12 +1988,12 @@ namespace IronPython.Compiler {
                             if (!allowGeneratorExpression) return ret;
 
                             NextToken();
-                            Arg[] args = FinishArgListOrGenExpr();
+                            IReadOnlyList<Arg> args = FinishArgListOrGenExpr();
                             CallExpression call;
                             if (args != null) {
                                 call = FinishCallExpr(ret, args);
                             } else {
-                                call = new CallExpression(ret, new Arg[0]);
+                                call = new CallExpression(ret, null, null);
                             }
 
                             call.SetLoc(_globalParent, ret.StartIndex, GetEnd());
@@ -2132,7 +2132,7 @@ namespace IronPython.Compiler {
         //             expression "=" expression      rest_of_arguments
         //             expression "for" gen_expr_rest
         //
-        private Arg[] FinishArgListOrGenExpr() {
+        private IReadOnlyList<Arg> FinishArgListOrGenExpr() {
             Arg a = null;
 
             ParserSink?.StartParameters(GetSourceSpan());
@@ -2204,7 +2204,7 @@ namespace IronPython.Compiler {
 
         //arglist: (argument ',')* (argument [',']| '*' expression [',' '**' expression] | '**' expression)
         //argument: [expression '='] expression    # Really [keyword '='] expression
-        private Arg[] FinishArgumentList(Arg first) {
+        private IReadOnlyList<Arg> FinishArgumentList(Arg first) {
             const TokenKind terminator = TokenKind.RightParenthesis;
             List<Arg> l = new List<Arg>();
 
@@ -2246,8 +2246,7 @@ namespace IronPython.Compiler {
 
             ParserSink?.EndParameters(GetSourceSpan());
 
-            Arg[] ret = l.ToArray();
-            return ret;
+            return l;
         }
 
         // testlist: test (',' test)* [',']
@@ -2900,9 +2899,11 @@ namespace IronPython.Compiler {
             _functions.Push(function);
         }
 
-        private CallExpression FinishCallExpr(Expression target, params Arg[] args) {
+        private CallExpression FinishCallExpr(Expression target, IEnumerable<Arg> args) {
             bool hasKeyword = false;
             bool hasKeywordUnpacking = false;
+            List<Arg> posargs = null;
+            List<Arg> kwargs = null;
 
             foreach (Arg arg in args) {
                 if (arg.Name == null) {
@@ -2911,18 +2912,26 @@ namespace IronPython.Compiler {
                     } else if (hasKeyword) {
                         ReportSyntaxError(arg.StartIndex, arg.EndIndex, "positional argument follows keyword argument");
                     }
+                    posargs ??= new List<Arg>();
+                    posargs.Add(arg);
                 } else if (arg.Name == "*") {
                     if (hasKeywordUnpacking) {
                         ReportSyntaxError(arg.StartIndex, arg.EndIndex, "iterable argument unpacking follows keyword argument unpacking");
                     }
+                    posargs ??= new List<Arg>();
+                    posargs.Add(arg);
                 } else if (arg.Name == "**") {
                     hasKeywordUnpacking = true;
+                    kwargs ??= new List<Arg>();
+                    kwargs.Add(arg);
                 } else {
                     hasKeyword = true;
+                    kwargs ??= new List<Arg>();
+                    kwargs.Add(arg);
                 }
             }
 
-            return new CallExpression(target, args);
+            return new CallExpression(target, posargs, kwargs);
         }
 
         #endregion

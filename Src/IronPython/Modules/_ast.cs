@@ -1039,17 +1039,19 @@ namespace IronPython.Modules {
 
             internal Call(CallExpression call)
                 : this() {
-                args = new PythonList(call.Args.Length);
+                args = new PythonList(call.Args.Count);
                 keywords = new PythonList();
                 func = Convert(call.Target);
                 foreach (Arg arg in call.Args) {
                     if (arg.Name == null)
                         args.Add(Convert(arg.Expression));
-                    else if (arg.Name == "*")
+                    else // name == "*"
                         starargs = Convert(arg.Expression);
-                    else if (arg.Name == "**")
+                }
+                foreach (Arg arg in call.Kwargs) {
+                    if (arg.Name == "**")
                         kwargs = Convert(arg.Expression);
-                    else
+                    else // name is proper
                         keywords.Add(new keyword(arg));
                 }
             }
@@ -1057,15 +1059,16 @@ namespace IronPython.Modules {
             internal override AstExpression Revert() {
                 AstExpression target = expr.Revert(func);
                 List<Arg> newArgs = new List<Arg>();
+                List<Arg> newKwargs = new List<Arg>();
                 foreach (expr ex in args)
                     newArgs.Add(new Arg(expr.Revert(ex)));
                 if (null != starargs)
                     newArgs.Add(new Arg("*", expr.Revert(starargs)));
                 if (null != kwargs)
-                    newArgs.Add(new Arg("**", expr.Revert(kwargs)));
+                    newKwargs.Add(new Arg("**", expr.Revert(kwargs)));
                 foreach (keyword kw in keywords)
-                    newArgs.Add(new Arg(kw.arg, expr.Revert(kw.value)));
-                return new CallExpression(target, newArgs.ToArray());
+                    newKwargs.Add(new Arg(kw.arg, expr.Revert(kw.value)));
+                return new CallExpression(target, newArgs, newKwargs);
             }
 
             public expr func { get; set; }

@@ -22,18 +22,20 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler.Ast {
 
     public class CallExpression : Expression, IInstructionProvider {
-        public CallExpression(Expression target, Arg[] args) {
-            // TODO: use two arrays (args/keywords) instead
-            if (args == null) throw new ArgumentNullException(nameof(args));
+        public CallExpression(Expression target, IReadOnlyList<Arg>? args, IReadOnlyList<Arg>? kwargs) {
             Target = target;
-            Args = args;
+            Args = args?.ToArray() ?? Array.Empty<Arg>();
+            Kwargs = kwargs?.ToArray() ?? Array.Empty<Arg>();
         }
 
         public Expression Target { get; }
 
-        public Arg[] Args { get; }
+        public IReadOnlyList<Arg> Args { get; }
 
-        internal IList<Arg> ImplicitArgs { get; } = new List<Arg>();
+        public IReadOnlyList<Arg> Kwargs { get; }
+
+        internal IList<Arg> ImplicitArgs => _implicitArgs ??= new List<Arg>();
+        private List<Arg>? _implicitArgs;
 
         public bool NeedsLocalsDictionary() {
             if (!(Target is NameExpression nameExpr)) return false;
@@ -41,21 +43,29 @@ namespace IronPython.Compiler.Ast {
             if (nameExpr.Name == "eval" || nameExpr.Name == "exec") return true;
             if (nameExpr.Name == "dir" || nameExpr.Name == "vars" || nameExpr.Name == "locals") {
                 // could be splatting empty list or dict resulting in 0-param call which needs context
-                return Args.All(arg => arg.Name == "*" || arg.Name == "**");
+                return Args.All(arg => arg.Name == "*") && Kwargs.All(arg => arg.Name == "**");
             }
 
             return false;
         }
 
         public override MSAst.Expression Reduce() {
-            Arg[] args = Args;
-            if (Args.Length == 0 && ImplicitArgs.Count > 0) {
-                args = ImplicitArgs.ToArray();
+            IReadOnlyList<Arg> args = Args;
+            if (Args.Count == 0 && _implicitArgs != null && _implicitArgs.Count > 0) {
+                args = _implicitArgs;
             }
 
-            SplitArgs(args, out var simpleArgs, out var listArgs, out var namedArgs, out var dictArgs, out var numDict);
+            // count splatted list args and find the lowest index of a list argument, if any
+            ScanArgs(args, ArgumentType.List, out var numList, out int firstListPos);
+            Debug.Assert(numList == 0 || firstListPos < args.Count);
 
-            Argument[] kinds = new Argument[simpleArgs.Length + Math.Min(listArgs.Length, 1) + namedArgs.Length + (dictArgs.Length - numDict) + Math.Min(numDict, 1)];
+            // count splatted dictionary args and find the lowest index of a dict argument, if any
+            ScanArgs(Kwargs, ArgumentType.Dictionary, out var numDict, out int firstDictPos);
+            Debug.Assert(numDict == 0 || firstDictPos < Kwargs.Count);
+
+            // all list arguments and all simple arguments after the first list will be collated into a single list for the actual call
+            // all dictionary arguments will be merged into a single dictionary for the actual call
+            Argument[] kinds = new Argument[firstListPos + Math.Min(numList, 1) + (Kwargs.Count - numDict) + Math.Min(numDict, 1)];
             MSAst.Expression[] values = new MSAst.Expression[2 + kinds.Length];
 
             values[0] = Parent.LocalContext;
@@ -64,31 +74,28 @@ namespace IronPython.Compiler.Ast {
             int i = 0;
 
             // add simple arguments
-            foreach (var arg in simpleArgs) {
-                kinds[i] = arg.GetArgumentInfo();
-                values[i + 2] = arg.Expression;
-                i++;
+            if (firstListPos > 0) {
+                foreach (var arg in args) {
+                    if (i == firstListPos) break;
+                    Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.Simple);
+                    kinds[i] = arg.GetArgumentInfo();
+                    values[i + 2] = arg.Expression;
+                    i++;
+                }
             }
 
             // unpack list arguments
-            if (listArgs.Length > 0) {
-                var arg = listArgs[0];
+            if (numList > 0) {
+                var arg = args[firstListPos];
                 Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.List);
                 kinds[i] = arg.GetArgumentInfo();
-                values[i + 2] = UnpackListHelper(listArgs);
+                values[i + 2] = UnpackListHelper(args, firstListPos);
                 i++;
             }
 
             // add named arguments
-            foreach (var arg in namedArgs) {
-                kinds[i] = arg.GetArgumentInfo();
-                values[i + 2] = arg.Expression;
-                i++;
-            }
-
-            // add named arguments specified after a dict unpack
-            if (dictArgs.Length != numDict) {
-                foreach (var arg in dictArgs) {
+            if (Kwargs.Count != numDict) {
+                foreach (var arg in Kwargs) {
                     var info = arg.GetArgumentInfo();
                     if (info.Kind == ArgumentType.Named) {
                         kinds[i] = info;
@@ -99,11 +106,11 @@ namespace IronPython.Compiler.Ast {
             }
 
             // unpack dict arguments
-            if (dictArgs.Length > 0) {
-                var arg = dictArgs[0];
+            if (numDict > 0) {
+                var arg = Kwargs[firstDictPos];
                 Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.Dictionary);
                 kinds[i] = arg.GetArgumentInfo();
-                values[i + 2] = UnpackDictHelper(Parent.LocalContext, dictArgs);
+                values[i + 2] = UnpackDictHelper(Parent.LocalContext, Kwargs, numDict, firstDictPos);
             }
 
             return Parent.Invoke(
@@ -111,62 +118,33 @@ namespace IronPython.Compiler.Ast {
                 values
             );
 
-            static void SplitArgs(Arg[] args, out ReadOnlySpan<Arg> simpleArgs, out ReadOnlySpan<Arg> listArgs, out ReadOnlySpan<Arg> namedArgs, out ReadOnlySpan<Arg> dictArgs, out int numDict) {
-                if (args.Length == 0) {
-                    simpleArgs = default;
-                    listArgs = default;
-                    namedArgs = default;
-                    dictArgs = default;
-                    numDict = 0;
-                    return;
-                }
+            static void ScanArgs(IReadOnlyList<Arg> args, ArgumentType scanForType, out int numArgs, out int firstArgPos) {
+                numArgs = 0;
+                firstArgPos = args.Count;
 
-                int idxSimple = args.Length;
-                int idxList = args.Length;
-                int idxNamed = args.Length;
-                int idxDict = args.Length;
-                numDict = 0;
+                if (args.Count == 0) return;
 
-                // we want idxSimple <= idxList <= idxNamed <= idxDict
-                for (var i = args.Length - 1; i >= 0; i--) {
+                for (var i = args.Count - 1; i >= 0; i--) {
                     var arg = args[i];
                     var info = arg.GetArgumentInfo();
-                    switch (info.Kind) {
-                        case ArgumentType.Simple:
-                            idxSimple = i;
-                            break;
-                        case ArgumentType.List:
-                            idxList = i;
-                            break;
-                        case ArgumentType.Named:
-                            idxNamed = i;
-                            break;
-                        case ArgumentType.Dictionary:
-                            idxDict = i;
-                            numDict++;
-                            break;
-                        default:
-                            throw new InvalidOperationException();
+                    if (info.Kind == scanForType) {
+                        firstArgPos = i;
+                        numArgs++;
                     }
                 }
-                dictArgs = args.AsSpan(idxDict);
-                if (idxNamed > idxDict) idxNamed = idxDict;
-                namedArgs = args.AsSpan(idxNamed, idxDict - idxNamed);
-                if (idxList > idxNamed) idxList = idxNamed;
-                listArgs = args.AsSpan(idxList, idxNamed - idxList);
-                if (idxSimple > idxList) idxSimple = idxList;
-                simpleArgs = args.AsSpan(idxSimple, idxList - idxSimple);
             }
 
-            static MSAst.Expression UnpackListHelper(ReadOnlySpan<Arg> args) {
-                Debug.Assert(args.Length > 0);
-                Debug.Assert(args[0].GetArgumentInfo().Kind == ArgumentType.List);
-                if (args.Length == 1) return args[0].Expression;
+            static MSAst.Expression UnpackListHelper(IReadOnlyList<Arg> args, int firstListPos) {
+                Debug.Assert(args.Count > 0);
+                Debug.Assert(args[firstListPos].GetArgumentInfo().Kind == ArgumentType.List);
 
-                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(args.Length + 2);
+                if (args.Count - firstListPos == 1) return args[firstListPos].Expression;
+
+                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(args.Count - firstListPos + 2);
                 var varExpr = Expression.Variable(typeof(PythonList), "$coll");
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyList)));
-                foreach (var arg in args) {
+                for (int i = firstListPos; i < args.Count; i++) {
+                    var arg = args[i];
                     if (arg.GetArgumentInfo().Kind == ArgumentType.List) {
                         expressions.Add(Expression.Call(AstMethods.ListExtend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
                     } else {
@@ -177,15 +155,18 @@ namespace IronPython.Compiler.Ast {
                 return Expression.Block(typeof(PythonList), new MSAst.ParameterExpression[] { varExpr }, expressions);
             }
 
-            static MSAst.Expression UnpackDictHelper(MSAst.Expression context, ReadOnlySpan<Arg> args) {
-                Debug.Assert(args.Length > 0);
-                Debug.Assert(args[0].GetArgumentInfo().Kind == ArgumentType.Dictionary);
-                if (args.Length == 1) return args[0].Expression;
+            static MSAst.Expression UnpackDictHelper(MSAst.Expression context, IReadOnlyList<Arg> kwargs, int numDict, int firstDictPos) {
+                Debug.Assert(kwargs.Count > 0);
+                Debug.Assert(0 < numDict && numDict <= kwargs.Count);
+                Debug.Assert(kwargs[firstDictPos].GetArgumentInfo().Kind == ArgumentType.Dictionary);
 
-                var expressions = new List<MSAst.Expression>(args.Length + 2);
+                if (numDict == 1) return kwargs[firstDictPos].Expression;
+
+                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(numDict + 2);
                 var varExpr = Expression.Variable(typeof(PythonDictionary), "$dict");
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
-                foreach (var arg in args) {
+                for (int i = firstDictPos; i < kwargs.Count; i++) {
+                    var arg = kwargs[i];
                     if (arg.GetArgumentInfo().Kind == ArgumentType.Dictionary) {
                         expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, arg.Expression));
                     }
@@ -198,19 +179,24 @@ namespace IronPython.Compiler.Ast {
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            Arg[] args = Args;
-            if (args.Length == 0 && ImplicitArgs.Count > 0) {
-                args = ImplicitArgs.ToArray();
+            IReadOnlyList<Arg> args = Args;
+            if (args.Count == 0 && _implicitArgs != null && _implicitArgs.Count > 0) {
+                args = _implicitArgs;
             }
 
-            for (int i = 0; i < args.Length; i++) {
+            if (Kwargs.Count > 0) {
+                compiler.Compile(Reduce());
+                return;
+            }
+
+            for (int i = 0; i < args.Count; i++) {
                 if (!args[i].GetArgumentInfo().IsSimple) {
                     compiler.Compile(Reduce());
                     return;
                 }
             }
 
-            switch (args.Length) {
+            switch (args.Count) {
                 #region Generated Python Call Expression Instruction Switch
 
                 // *** BEGIN GENERATED CODE ***
@@ -441,10 +427,13 @@ namespace IronPython.Compiler.Ast {
                         arg.Walk(walker);
                     }
                 }
-                if (ImplicitArgs.Count > 0) {
+                if (_implicitArgs != null && _implicitArgs.Count > 0) {
                     foreach (Arg arg in ImplicitArgs) {
                         arg.Walk(walker);
                     }
+                }
+                foreach (Arg arg in Kwargs) {
+                    arg.Walk(walker);
                 }
             }
             walker.PostWalk(this);

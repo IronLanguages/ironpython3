@@ -8,31 +8,31 @@ using Microsoft.Scripting.Actions;
 
 namespace IronPython.Compiler.Ast {
     public class Arg : Node {
+        private static readonly Argument _listTypeArgument = new(ArgumentType.List);
+        private static readonly Argument _dictTypeArgument = new(ArgumentType.Dictionary);
+
         public Arg(Expression expression) : this(null, expression) { }
 
         public Arg(string? name, Expression expression) {
             Name = name;
             Expression = expression;
+
+            ArgumentInfo = name switch {
+                null => Argument.Simple,
+                "*"  => _listTypeArgument,
+                "**" => _dictTypeArgument,
+                _    => new Argument(name)
+            };
         }
 
         public string? Name { get; }
 
         public Expression Expression { get; }
 
+        internal Argument ArgumentInfo { get; }
+
         public override string ToString() {
             return base.ToString() + ":" + Name;
-        }
-
-        internal Argument GetArgumentInfo() {
-            if (Name == null) {
-                return Argument.Simple;
-            } else if (Name == "*") {
-                return new Argument(ArgumentType.List);
-            } else if (Name == "**") {
-                return new Argument(ArgumentType.Dictionary);
-            } else {
-                return new Argument(Name);
-            }
         }
 
         public override void Walk(PythonWalker walker) {

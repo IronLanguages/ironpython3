@@ -1013,7 +1013,7 @@ namespace IronPython.Compiler {
             var keywords = new List<Arg>();
             if (MaybeEat(TokenKind.LeftParenthesis)) {
                 foreach (var arg in FinishArgumentList(null)) {
-                    var info = arg.GetArgumentInfo();
+                    var info = arg.ArgumentInfo;
                     if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Simple) {
                         bases.Add(arg.Expression);
                     } else if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Named) {

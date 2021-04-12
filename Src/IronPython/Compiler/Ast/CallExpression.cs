@@ -77,8 +77,8 @@ namespace IronPython.Compiler.Ast {
             if (firstListPos > 0) {
                 foreach (var arg in args) {
                     if (i == firstListPos) break;
-                    Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.Simple);
-                    kinds[i] = arg.GetArgumentInfo();
+                    Debug.Assert(arg.ArgumentInfo.Kind == ArgumentType.Simple);
+                    kinds[i] = arg.ArgumentInfo;
                     values[i + 2] = arg.Expression;
                     i++;
                 }
@@ -87,8 +87,8 @@ namespace IronPython.Compiler.Ast {
             // unpack list arguments
             if (numList > 0) {
                 var arg = args[firstListPos];
-                Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.List);
-                kinds[i] = arg.GetArgumentInfo();
+                Debug.Assert(arg.ArgumentInfo.Kind == ArgumentType.List);
+                kinds[i] = arg.ArgumentInfo;
                 values[i + 2] = UnpackListHelper(args, firstListPos);
                 i++;
             }
@@ -96,7 +96,7 @@ namespace IronPython.Compiler.Ast {
             // add named arguments
             if (Kwargs.Count != numDict) {
                 foreach (var arg in Kwargs) {
-                    var info = arg.GetArgumentInfo();
+                    var info = arg.ArgumentInfo;
                     if (info.Kind == ArgumentType.Named) {
                         kinds[i] = info;
                         values[i + 2] = arg.Expression;
@@ -108,8 +108,8 @@ namespace IronPython.Compiler.Ast {
             // unpack dict arguments
             if (numDict > 0) {
                 var arg = Kwargs[firstDictPos];
-                Debug.Assert(arg.GetArgumentInfo().Kind == ArgumentType.Dictionary);
-                kinds[i] = arg.GetArgumentInfo();
+                Debug.Assert(arg.ArgumentInfo.Kind == ArgumentType.Dictionary);
+                kinds[i] = arg.ArgumentInfo;
                 values[i + 2] = UnpackDictHelper(Parent.LocalContext, Kwargs, numDict, firstDictPos);
             }
 
@@ -126,7 +126,7 @@ namespace IronPython.Compiler.Ast {
 
                 for (var i = args.Count - 1; i >= 0; i--) {
                     var arg = args[i];
-                    var info = arg.GetArgumentInfo();
+                    var info = arg.ArgumentInfo;
                     if (info.Kind == scanForType) {
                         firstArgPos = i;
                         numArgs++;
@@ -136,7 +136,7 @@ namespace IronPython.Compiler.Ast {
 
             static MSAst.Expression UnpackListHelper(IReadOnlyList<Arg> args, int firstListPos) {
                 Debug.Assert(args.Count > 0);
-                Debug.Assert(args[firstListPos].GetArgumentInfo().Kind == ArgumentType.List);
+                Debug.Assert(args[firstListPos].ArgumentInfo.Kind == ArgumentType.List);
 
                 if (args.Count - firstListPos == 1) return args[firstListPos].Expression;
 
@@ -145,7 +145,7 @@ namespace IronPython.Compiler.Ast {
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyList)));
                 for (int i = firstListPos; i < args.Count; i++) {
                     var arg = args[i];
-                    if (arg.GetArgumentInfo().Kind == ArgumentType.List) {
+                    if (arg.ArgumentInfo.Kind == ArgumentType.List) {
                         expressions.Add(Expression.Call(AstMethods.ListExtend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
                     } else {
                         expressions.Add(Expression.Call(AstMethods.ListAppend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
@@ -158,7 +158,7 @@ namespace IronPython.Compiler.Ast {
             static MSAst.Expression UnpackDictHelper(MSAst.Expression context, IReadOnlyList<Arg> kwargs, int numDict, int firstDictPos) {
                 Debug.Assert(kwargs.Count > 0);
                 Debug.Assert(0 < numDict && numDict <= kwargs.Count);
-                Debug.Assert(kwargs[firstDictPos].GetArgumentInfo().Kind == ArgumentType.Dictionary);
+                Debug.Assert(kwargs[firstDictPos].ArgumentInfo.Kind == ArgumentType.Dictionary);
 
                 if (numDict == 1) return kwargs[firstDictPos].Expression;
 
@@ -167,7 +167,7 @@ namespace IronPython.Compiler.Ast {
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
                 for (int i = firstDictPos; i < kwargs.Count; i++) {
                     var arg = kwargs[i];
-                    if (arg.GetArgumentInfo().Kind == ArgumentType.Dictionary) {
+                    if (arg.ArgumentInfo.Kind == ArgumentType.Dictionary) {
                         expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, arg.Expression));
                     }
                 }
@@ -190,7 +190,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             for (int i = 0; i < args.Count; i++) {
-                if (!args[i].GetArgumentInfo().IsSimple) {
+                if (!args[i].ArgumentInfo.IsSimple) {
                     compiler.Compile(Reduce());
                     return;
                 }

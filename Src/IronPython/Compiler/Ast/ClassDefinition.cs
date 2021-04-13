@@ -12,6 +12,7 @@ using System.Threading;
 using IronPython.Runtime;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -23,7 +24,7 @@ namespace IronPython.Compiler.Ast {
 
     public class ClassDefinition : ScopeStatement {
         private readonly string _name;
-        private readonly Expression[] _bases;
+        private readonly Arg[] _bases;
         private readonly Arg[] _keywords;
 
         private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
@@ -33,15 +34,12 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, Expression[] bases, Arg[] keywords, Statement body = null) {
-            ContractUtils.RequiresNotNullItems(bases, nameof(bases));
-            ContractUtils.RequiresNotNullItems(keywords, nameof(keywords));
-
+        public ClassDefinition(string name, IReadOnlyList<Arg> bases, IReadOnlyList<Arg> keywords, Statement body = null) {
             _name = name;
-            _bases = bases;
-            _keywords = keywords;
+            _bases = bases?.ToArray() ?? Array.Empty<Arg>();
+            _keywords = keywords?.ToArray() ?? Array.Empty<Arg>();
             Body = body;
-            Metaclass = keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
+            Metaclass = _keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
         }
 
         public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
@@ -50,7 +48,7 @@ namespace IronPython.Compiler.Ast {
 
         public override string Name => _name;
 
-        public IReadOnlyList<Expression> Bases => _bases;
+        public IReadOnlyList<Arg> Bases => _bases;
 
         public IReadOnlyList<Arg> Keywords => _keywords;
 
@@ -181,10 +179,7 @@ namespace IronPython.Compiler.Ast {
                 lambda,
                 Parent.LocalContext,
                 AstUtils.Constant(_name),
-                Ast.NewArrayInit(
-                    typeof(object),
-                    ToObjectArray(_bases)
-                ),
+                UnpackBasesHelper(_bases),
                 Metaclass is null ? AstUtils.Constant(null, typeof(object)) : AstUtils.Convert(Metaclass, typeof(object)),
                 AstUtils.Constant(FindSelfNames())
             );
@@ -198,6 +193,33 @@ namespace IronPython.Compiler.Ast {
                     GlobalParent.IndexToLocation(HeaderIndex)
                 )
             );
+
+            // Compare to: CallExpression.Reduce.__UnpackListHelper
+            static MSAst.Expression UnpackBasesHelper(IReadOnlyList<Arg> bases) {
+                if (bases.Count == 0) {
+                    return Expression.Call(AstMethods.MakeEmptyTuple);
+                } else if (bases.All(arg => arg.ArgumentInfo.Kind is ArgumentType.Simple)) {
+                    return Expression.Call(AstMethods.MakeTuple,
+                        Expression.NewArrayInit(
+                            typeof(object),
+                            ToObjectArray(bases.Select(arg => arg.Expression).ToList())
+                        )
+                    );
+                } else {
+                    var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(bases.Count + 2);
+                    var varExpr = Expression.Variable(typeof(PythonList), "$coll");
+                    expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyList)));
+                    foreach (var arg in bases) {
+                        if (arg.ArgumentInfo.Kind == ArgumentType.List) {
+                            expressions.Add(Expression.Call(AstMethods.ListExtend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
+                        } else {
+                            expressions.Add(Expression.Call(AstMethods.ListAppend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
+                        }
+                    }
+                    expressions.Add(Expression.Call(AstMethods.ListToTuple, varExpr));
+                    return Expression.Block(typeof(PythonTuple), new MSAst.ParameterExpression[] { varExpr }, expressions);
+                }
+            }
         }
 
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {
@@ -297,10 +319,11 @@ namespace IronPython.Compiler.Ast {
                         decorator.Walk(walker);
                     }
                 }
-                if (_bases != null) {
-                    foreach (Expression b in _bases) {
-                        b.Walk(walker);
-                    }
+                foreach (Arg b in _bases) {
+                    b.Walk(walker);
+                }
+                foreach (Arg b in _keywords) {
+                    b.Walk(walker);
                 }
                 Body?.Walk(walker);
             }

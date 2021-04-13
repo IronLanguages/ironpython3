@@ -844,6 +844,29 @@ class ClassTest(IronPythonTestCase):
 
         self.assertEqual(L.__mro__, (L, K, H, I, G, E, D, B, C, A, object))
 
+    def test_class_args(self):
+        class A1: pass
+        class A2: pass
+        class A3: pass
+
+        class B1(A1, *(A2, A3)): pass
+        self.assertEqual(B1.__mro__, (B1, A1, A2, A3, object))
+
+        clist = [A1, A2]
+        with self.assertRaisesMessage(TypeError, "duplicate base class A1"):
+            class B2(A1, *clist): pass
+
+        def foo(x): return x
+
+        class B3(foo(A1), clist[1], A3): pass
+        self.assertEqual(B3.__mro__, (B3, A1, A2, A3, object))
+
+        class B4(A1, *foo([A2, A3])): pass
+        self.assertEqual(B4.__mro__, (B4, A1, A2, A3, object))
+
+        with self.assertRaisesMessage(UnboundLocalError, "local variable 'A4' referenced before assignment"):
+            class B5(A1, *(A4,)): pass
+        class A4: pass
 
     def test_newstyle_lookup(self):
         """new-style classes should only lookup methods from the class, not from the instance"""

@@ -20,7 +20,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo IsTrue = GetMethod((Func<object, bool>)PythonOps.IsTrue);
         public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<CodeContext, object>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo RaiseAssertionErrorNoMessage = GetMethod((Action<CodeContext>)PythonOps.RaiseAssertionError);
-        public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, object[], object, string, object>)PythonOps.MakeClass);
+        public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, PythonTuple, object, string, object>)PythonOps.MakeClass);
         public static readonly MethodInfo PrintExpressionValue = GetMethod((Action<CodeContext, object>)PythonOps.PrintExpressionValue);
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);
@@ -45,6 +45,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo CheckException = GetMethod((Func<CodeContext, object, object, object>)PythonOps.CheckException);
         public static readonly MethodInfo SetCurrentException = GetMethod((Func<CodeContext, Exception, object>)PythonOps.SetCurrentException);
         public static readonly MethodInfo MakeTuple = GetMethod((Func<object[], PythonTuple>)PythonOps.MakeTuple);
+        public static readonly MethodInfo MakeEmptyTuple = GetMethod((Func<PythonTuple>)PythonOps.MakeEmptyTuple);
         public static readonly MethodInfo IsNot = GetMethod((Func<object, object, object>)PythonOps.IsNot);
         public static readonly MethodInfo Is = GetMethod((Func<object, object, object>)PythonOps.Is);
         public static readonly MethodInfo ImportTop = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportTop);

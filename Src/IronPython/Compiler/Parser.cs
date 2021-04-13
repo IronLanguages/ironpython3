@@ -1006,27 +1006,21 @@ namespace IronPython.Compiler {
             string name = ReadName();
             if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(null, new Expression[0], new Arg[0], ErrorStmt());
+                return new ClassDefinition(null, null, null, ErrorStmt());
             }
 
-            var bases = new List<Expression>();
-            var keywords = new List<Arg>();
+            List<Arg> bases = null;
+            List<Arg> keywords = null;
             if (MaybeEat(TokenKind.LeftParenthesis)) {
-                foreach (var arg in FinishArgumentList(null)) {
-                    var info = arg.ArgumentInfo;
-                    if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Simple) {
-                        bases.Add(arg.Expression);
-                    } else if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Named) {
-                        keywords.Add(arg);
-                    }
-                }
+                IReadOnlyList<Arg> args = FinishArgumentList(null);
+                SplitAndValidateArguments(args, out bases, out keywords);
             }
             var mid = GetEnd();
 
             // Save private prefix
             string savedPrefix = SetPrivatePrefix(name);
 
-            var ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray());
+            var ret = new ClassDefinition(name, bases, keywords);
             PushClass(ret);
 
             // Parse the class body
@@ -1989,13 +1983,7 @@ namespace IronPython.Compiler {
 
                             NextToken();
                             IReadOnlyList<Arg> args = FinishArgListOrGenExpr();
-                            CallExpression call;
-                            if (args != null) {
-                                call = FinishCallExpr(ret, args);
-                            } else {
-                                call = new CallExpression(ret, null, null);
-                            }
-
+                            CallExpression call = FinishCallExpr(ret, args);
                             call.SetLoc(_globalParent, ret.StartIndex, GetEnd());
                             ret = call;
                             break;
@@ -2900,10 +2888,21 @@ namespace IronPython.Compiler {
         }
 
         private CallExpression FinishCallExpr(Expression target, IEnumerable<Arg> args) {
-            bool hasKeyword = false;
-            bool hasKeywordUnpacking = false;
             List<Arg> posargs = null;
             List<Arg> kwargs = null;
+
+            if (args is not null) {
+                SplitAndValidateArguments(args, out posargs, out kwargs); 
+            }
+
+            return new CallExpression(target, posargs, kwargs);
+        }
+
+        private void SplitAndValidateArguments(IEnumerable<Arg> args, out List<Arg> posargs, out List<Arg> kwargs) {
+            bool hasKeyword = false;
+            bool hasKeywordUnpacking = false;
+
+            posargs = kwargs = null;
 
             foreach (Arg arg in args) {
                 if (arg.Name == null) {
@@ -2930,8 +2929,6 @@ namespace IronPython.Compiler {
                     kwargs.Add(arg);
                 }
             }
-
-            return new CallExpression(target, posargs, kwargs);
         }
 
         #endregion

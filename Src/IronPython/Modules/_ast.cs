@@ -1064,10 +1064,10 @@ namespace IronPython.Modules {
                     newArgs.Add(new Arg(expr.Revert(ex)));
                 if (null != starargs)
                     newArgs.Add(new Arg("*", expr.Revert(starargs)));
-                if (null != kwargs)
-                    newKwargs.Add(new Arg("**", expr.Revert(kwargs)));
                 foreach (keyword kw in keywords)
                     newKwargs.Add(new Arg(kw.arg, expr.Revert(kw.value)));
+                if (null != kwargs)
+                    newKwargs.Add(new Arg("**", expr.Revert(kwargs)));
                 return new CallExpression(target, newArgs, newKwargs);
             }
 
@@ -1106,8 +1106,19 @@ namespace IronPython.Modules {
                 : this() {
                 name = def.Name;
                 bases = new PythonList(def.Bases.Count);
-                foreach (AstExpression expr in def.Bases)
-                    bases.Add(Convert(expr));
+                foreach (Arg arg in def.Bases) {
+                    if (arg.Name == null)
+                        bases.Add(Convert(arg.Expression));
+                    else // name == "*"
+                        starargs = Convert(arg.Expression);
+                }
+                keywords = new PythonList(def.Keywords.Count);
+                foreach (Arg arg in def.Keywords) {
+                    if (arg.Name == "**")
+                        kwargs = Convert(arg.Expression);
+                    else // name is proper
+                        keywords.Add(new keyword(arg));
+                }
                 body = ConvertStatements(def.Body);
                 if (def.Decorators != null) {
                     decorator_list = new PythonList(def.Decorators.Count);
@@ -1116,18 +1127,20 @@ namespace IronPython.Modules {
                 } else {
                     decorator_list = new PythonList(0);
                 }
-                if (def.Keywords != null) {
-                    keywords = new PythonList(def.Keywords.Count);
-                    foreach (Arg arg in def.Keywords)
-                        keywords.AddNoLock(new keyword(arg));
-                } else {
-                    keywords = new PythonList(0);
-                }
             }
 
             internal override Statement Revert() {
-                var newBases = expr.RevertExprs(bases);
-                var newKeywords = keywords.Cast<keyword>().Select(kw => new Arg(kw.arg, expr.Revert(kw.value))).ToArray();
+                List<Arg> newBases = new List<Arg>();
+                List<Arg> newKeywords = new List<Arg>();
+                foreach (expr ex in bases)
+                    newBases.Add(new Arg(expr.Revert(ex)));
+                if (null != starargs)
+                    newBases.Add(new Arg("*", expr.Revert(starargs)));
+                foreach (keyword kw in keywords)
+                    newKeywords.Add(new Arg(kw.arg, expr.Revert(kw.value)));
+                if (null != kwargs)
+                    newKeywords.Add(new Arg("**", expr.Revert(kwargs)));
+
                 ClassDefinition cd = new ClassDefinition(name, newBases, newKeywords, RevertStmts(body));
                 if (decorator_list.Count != 0)
                     cd.Decorators = expr.RevertExprs(decorator_list);

@@ -206,7 +206,7 @@ namespace IronPython.Compiler.Ast {
             node.PythonVariable = DefineName(node.Name);
 
             // Base references are in the outer context
-            foreach (Expression b in node.Bases) b.Walk(this);
+            foreach (Arg b in node.Bases) b.Walk(this);
 
             foreach (Arg a in node.Keywords) a.Walk(this);
 

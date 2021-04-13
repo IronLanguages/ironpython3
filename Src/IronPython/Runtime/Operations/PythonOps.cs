@@ -1321,7 +1321,7 @@ namespace IronPython.Runtime.Operations {
             return classdict;
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, object metaclass, string selfNames) {
+        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, object metaclass, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
             return MakeClass(parentContext, name, bases, metaclass, selfNames, func(parentContext).Dict);
@@ -1342,11 +1342,11 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, object metaclass, string selfNames, PythonDictionary vars) {
-            foreach (object dt in bases) {
+        private static object MakeClass(CodeContext/*!*/ context, string name, PythonTuple bases, object metaclass, string selfNames, PythonDictionary vars) {
+            foreach (object? dt in bases) {
                 if (dt is TypeGroup) {
-                    object[] newBases = new object[bases.Length];
-                    for (int i = 0; i < bases.Length; i++) {
+                    object?[] newBases = new object[bases.Count];
+                    for (int i = 0; i < bases.Count; i++) {
                         if (bases[i] is TypeGroup tc) {
                             if (!tc.TryGetNonGenericType(out Type nonGenericType)) {
                                 throw PythonOps.TypeError("cannot derive from open generic types {0}", Repr(context, tc));
@@ -1356,7 +1356,7 @@ namespace IronPython.Runtime.Operations {
                             newBases[i] = bases[i];
                         }
                     }
-                    bases = newBases;
+                    bases = PythonTuple.MakeTuple(newBases);
                     break;
                 } else if (dt is PythonType pt) {
                     if (pt.Equals(PythonType.GetPythonType(typeof(Enum))) || pt.Equals(PythonType.GetPythonType(typeof(Array)))
@@ -1367,20 +1367,18 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
-
             if (metaclass is null) {
                 // this makes sure that object is a base
-                if (tupleBases.Count == 0) {
-                    tupleBases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                if (bases.Count == 0) {
+                    bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
                 }
-                return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars, selfNames);
+                return PythonType.__new__(context, TypeCache.PythonType, name, bases, vars, selfNames);
             }
 
             object? classdict = vars;
 
             if (metaclass is PythonType) {
-                classdict = CallPrepare(context, (PythonType)metaclass, name, tupleBases, vars);
+                classdict = CallPrepare(context, (PythonType)metaclass, name, bases, vars);
             }
 
             // eg:
@@ -1395,7 +1393,7 @@ namespace IronPython.Runtime.Operations {
                 context,
                 metaclass,
                 name,
-                tupleBases,
+                bases,
                 classdict
             );
 
@@ -1484,6 +1482,15 @@ namespace IronPython.Runtime.Operations {
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static PythonTuple MakeTupleFromSequence(object items) {
             return PythonTuple.Make(items);
+        }
+
+        /// <summary>
+        /// Python runtime helper to create an instance of an empty Tuple
+        /// </summary>
+        [NoSideEffects]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonTuple MakeEmptyTuple() {
+            return PythonTuple.MakeTuple();
         }
 
         /// <summary>

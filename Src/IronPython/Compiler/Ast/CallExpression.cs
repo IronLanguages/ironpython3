@@ -134,6 +134,7 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
+            // Compare to: ClassDefinition.Reduce.__UnpackBasesHelper
             static MSAst.Expression UnpackListHelper(IReadOnlyList<Arg> args, int firstListPos) {
                 Debug.Assert(args.Count > 0);
                 Debug.Assert(args[firstListPos].ArgumentInfo.Kind == ArgumentType.List);

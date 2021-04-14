@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -19,6 +20,8 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
 using MSAst = System.Linq.Expressions;
 
+#nullable enable
+
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
@@ -27,18 +30,18 @@ namespace IronPython.Compiler.Ast {
         private readonly Arg[] _bases;
         private readonly Arg[] _keywords;
 
-        private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
+        private LightLambdaExpression? _dlrBody;       // the transformed body including all of our initialization, etc...
 
         private static int _classId;
 
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, IReadOnlyList<Arg> bases, IReadOnlyList<Arg> keywords, Statement body = null) {
+        public ClassDefinition(string name, IReadOnlyList<Arg>? bases, IReadOnlyList<Arg>? keywords, Statement? body = null) {
             _name = name;
             _bases = bases?.ToArray() ?? Array.Empty<Arg>();
             _keywords = keywords?.ToArray() ?? Array.Empty<Arg>();
-            Body = body;
+            Body = body ?? EmptyStatement.PreCompiledInstance;
             Metaclass = _keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
         }
 
@@ -52,34 +55,41 @@ namespace IronPython.Compiler.Ast {
 
         public IReadOnlyList<Arg> Keywords => _keywords;
 
-        public Expression Metaclass { get; }
+        public Expression? Metaclass { get; }
 
         public Statement Body { get; set; }
 
-        public IList<Expression> Decorators { get; internal set; }
+        public IList<Expression>? Decorators { get; internal set; }
 
         /// <summary>
-        /// Variable corresponding to the class name
+        /// Variable corresponding to the class name, set during name binding
         /// </summary>
-        internal PythonVariable PythonVariable { get; set; }
+        [DisallowNull]
+        internal PythonVariable? PythonVariable { get; set; }
 
         /// <summary>
-        /// Variable for the the __module__ (module name)
+        /// Variable for the the __module__ (module name), set during name binding
         /// </summary>
-        internal PythonVariable ModVariable { get; set; }
+        [DisallowNull]
+        internal PythonVariable? ModVariable { get; set; }
 
         /// <summary>
-        /// Variable for the __doc__ attribute
+        /// Variable for the __doc__ attribute, set during name binding
         /// </summary>
-        internal PythonVariable DocVariable { get; set; }
+        [DisallowNull]
+        internal PythonVariable? DocVariable { get; set; }
 
         /// <summary>
-        /// Variable for the module's __name__
+        /// Variable for the module's __name__, set during name binding
         /// </summary>
-        internal PythonVariable ModuleNameVariable { get; set; }
+        [DisallowNull]
+        internal PythonVariable? ModuleNameVariable { get; set; }
 
-        private PythonVariable ClassCellVariable { get; set; }
-        private PythonVariable ClassVariable { get; set; }
+        // set during name binding
+        [DisallowNull]
+        private PythonVariable? ClassCellVariable { get; set; }
+        [DisallowNull]
+        private PythonVariable? ClassVariable { get; set; }
 
         internal override bool HasLateBoundVariableSets {
             get {
@@ -111,8 +121,8 @@ namespace IronPython.Compiler.Ast {
             return base.TryBindOuter(from, reference, out variable);
         }
 
-        internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
-            PythonVariable variable;
+        internal override PythonVariable? BindReference(PythonNameBinder binder, PythonReference reference) {
+            PythonVariable? variable;
 
             // Python semantics: The variables bound local in the class
             // scope are accessed by name - the dictionary behavior of classes
@@ -187,7 +197,7 @@ namespace IronPython.Compiler.Ast {
             classDef = AddDecorators(classDef, Decorators);
 
             return GlobalParent.AddDebugInfoAndVoid(
-                AssignValue(Parent.GetVariableExpression(PythonVariable), classDef), 
+                AssignValue(Parent.GetVariableExpression(PythonVariable!), classDef), 
                 new SourceSpan(
                     GlobalParent.IndexToLocation(StartIndex),
                     GlobalParent.IndexToLocation(HeaderIndex)
@@ -242,8 +252,8 @@ namespace IronPython.Compiler.Ast {
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
             // __classcell__ == ClosureCell(__class__)
             if (needClassCell) {
-                var exp = (ClosureExpression) GetVariableExpression(ClassVariable);
-                MSAst.Expression assignClassCell = AssignValue(GetVariableExpression(ClassCellVariable), exp.ClosureCell);
+                var exp = (ClosureExpression) GetVariableExpression(ClassVariable!);
+                MSAst.Expression assignClassCell = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
                 init.Add(assignClassCell);
             }
 
@@ -253,13 +263,13 @@ namespace IronPython.Compiler.Ast {
 
 
             // __module__ = __name__
-            MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable), GetVariableExpression(ModuleNameVariable));
+            MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable!), GetVariableExpression(ModuleNameVariable!));
 
             string doc = GetDocumentation(Body);
             if (doc != null) {
                 statements.Add(
                     AssignValue(
-                        GetVariableExpression(DocVariable),
+                        GetVariableExpression(DocVariable!),
                         AstUtils.Constant(doc)
                     )
                 );
@@ -325,7 +335,7 @@ namespace IronPython.Compiler.Ast {
                 foreach (Arg b in _keywords) {
                     b.Walk(walker);
                 }
-                Body?.Walk(walker);
+                Body.Walk(walker);
             }
             walker.PostWalk(this);
         }

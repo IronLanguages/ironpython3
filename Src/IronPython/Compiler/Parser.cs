@@ -1006,7 +1006,7 @@ namespace IronPython.Compiler {
             string name = ReadName();
             if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(null, null, null, ErrorStmt());
+                return new ClassDefinition(string.Empty, null, null, ErrorStmt());
             }
 
             List<Arg> bases = null;

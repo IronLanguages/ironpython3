@@ -70,7 +70,7 @@ namespace IronPython.Runtime {
 
         private Dictionary<AttrKey, CallSite<Func<CallSite, object, object, object>>> _setAttrSites;
         private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
-        private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, object>> _metaClassSite;
+        private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, PythonDictionary, object>> _metaClassSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _writeSite;
         private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite;
         private CallSite<Action<CallSite, object, object>> _delIndexSite;
@@ -2197,14 +2197,19 @@ namespace IronPython.Runtime {
             site.Target(site, o);
         }
 
-        internal CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, object>> MetaClassCallSite {
+        internal CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, PythonDictionary, object>> MetaClassCallSite {
             get {
                 if (_metaClassSite == null) {
                     Interlocked.CompareExchange(
                         ref _metaClassSite,
-                        CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, object>>.Create(
+                        CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, PythonDictionary, object>>.Create(
                             Invoke(
-                                new CallSignature(3)
+                                new CallSignature(
+                                    ArgumentType.Simple, // name
+                                    ArgumentType.Simple, // bases
+                                    ArgumentType.Simple, // classdict
+                                    ArgumentType.Dictionary // keywords
+                                )
                             )
                         ),
                         null

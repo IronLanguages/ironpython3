@@ -42,7 +42,6 @@ namespace IronPython.Compiler.Ast {
             _bases = bases?.ToArray() ?? Array.Empty<Arg>();
             _keywords = keywords?.ToArray() ?? Array.Empty<Arg>();
             Body = body ?? EmptyStatement.PreCompiledInstance;
-            Metaclass = _keywords.Where(arg => arg.Name == "metaclass").Select(arg => arg.Expression).FirstOrDefault();
         }
 
         public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
@@ -54,8 +53,6 @@ namespace IronPython.Compiler.Ast {
         public IReadOnlyList<Arg> Bases => _bases;
 
         public IReadOnlyList<Arg> Keywords => _keywords;
-
-        public Expression? Metaclass { get; }
 
         public Statement Body { get; set; }
 
@@ -190,7 +187,7 @@ namespace IronPython.Compiler.Ast {
                 Parent.LocalContext,
                 AstUtils.Constant(_name),
                 UnpackBasesHelper(_bases),
-                Metaclass is null ? AstUtils.Constant(null, typeof(object)) : AstUtils.Convert(Metaclass, typeof(object)),
+                UnpackKeywordsHelper(Parent.LocalContext, _keywords),
                 AstUtils.Constant(FindSelfNames())
             );
 
@@ -229,6 +226,26 @@ namespace IronPython.Compiler.Ast {
                     expressions.Add(Expression.Call(AstMethods.ListToTuple, varExpr));
                     return Expression.Block(typeof(PythonTuple), new MSAst.ParameterExpression[] { varExpr }, expressions);
                 }
+            }
+
+            // Compare to: CallExpression.Reduce.__UnpackDictHelper
+            static MSAst.Expression UnpackKeywordsHelper(MSAst.Expression context, IReadOnlyList<Arg> kwargs) {
+                if (kwargs.Count == 0) {
+                    return AstUtils.Constant(null, typeof(PythonDictionary));
+                }
+
+                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(kwargs.Count + 2);
+                var varExpr = Expression.Variable(typeof(PythonDictionary), "$dict");
+                expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
+                foreach (var arg in kwargs) {
+                    if (arg.ArgumentInfo.Kind == ArgumentType.Dictionary) {
+                        expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, arg.Expression));
+                    } else {
+                        expressions.Add(Expression.Call(AstMethods.DictMergeOne, context, varExpr, AstUtils.Constant(arg.Name, typeof(object)), arg.Expression));
+                    }
+                }
+                expressions.Add(varExpr);
+                return Expression.Block(typeof(PythonDictionary), new MSAst.ParameterExpression[] { varExpr }, expressions);
             }
         }
 

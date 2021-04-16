@@ -156,6 +156,7 @@ namespace IronPython.Compiler.Ast {
                 return Expression.Block(typeof(PythonList), new MSAst.ParameterExpression[] { varExpr }, expressions);
             }
 
+            // Compare to: ClassDefinition.Reduce.__UnpackKeywordsHelper
             static MSAst.Expression UnpackDictHelper(MSAst.Expression context, IReadOnlyList<Arg> kwargs, int numDict, int firstDictPos) {
                 Debug.Assert(kwargs.Count > 0);
                 Debug.Assert(0 < numDict && numDict <= kwargs.Count);

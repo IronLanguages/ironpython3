@@ -1022,17 +1022,14 @@ namespace IronPython.Modules {
         [PythonType]
         public class Call : expr {
             public Call() {
-                _fields = PythonTuple.MakeTuple(new[] { nameof(func), nameof(args), nameof(keywords), nameof(starargs), nameof(kwargs) });
+                _fields = PythonTuple.MakeTuple(new[] { nameof(func), nameof(args), nameof(keywords) });
             }
 
-            public Call(expr func, PythonList args, PythonList keywords, expr starargs, expr kwargs,
-                [Optional]int? lineno, [Optional]int? col_offset)
+            public Call(expr func, PythonList args, PythonList keywords, [Optional] int? lineno, [Optional] int? col_offset)
                 : this() {
                 this.func = func;
                 this.args = args;
                 this.keywords = keywords;
-                this.starargs = starargs;
-                this.kwargs = kwargs;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -1043,16 +1040,15 @@ namespace IronPython.Modules {
                 keywords = new PythonList();
                 func = Convert(call.Target);
                 foreach (Arg arg in call.Args) {
-                    if (arg.Name == null)
+                    if (arg.Name == "*") {
+                        var loc = arg.Start;
+                        args.Add(new Starred(Convert(arg.Expression), Load.Instance, loc.Line, loc.Column));
+                    } else {
                         args.Add(Convert(arg.Expression));
-                    else // name == "*"
-                        starargs = Convert(arg.Expression);
+                    }
                 }
                 foreach (Arg arg in call.Kwargs) {
-                    if (arg.Name == "**")
-                        kwargs = Convert(arg.Expression);
-                    else // name is proper
-                        keywords.Add(new keyword(arg));
+                    keywords.Add(new keyword(arg.Name == "**" ? null : arg.Name, Convert(arg.Expression)));
                 }
             }
 
@@ -1060,14 +1056,17 @@ namespace IronPython.Modules {
                 AstExpression target = expr.Revert(func);
                 List<Arg> newArgs = new List<Arg>();
                 List<Arg> newKwargs = new List<Arg>();
-                foreach (expr ex in args)
-                    newArgs.Add(new Arg(expr.Revert(ex)));
-                if (null != starargs)
-                    newArgs.Add(new Arg("*", expr.Revert(starargs)));
-                foreach (keyword kw in keywords)
-                    newKwargs.Add(new Arg(kw.arg, expr.Revert(kw.value)));
-                if (null != kwargs)
-                    newKwargs.Add(new Arg("**", expr.Revert(kwargs)));
+                foreach (expr ex in args) {
+                    if (ex is Starred starred) {
+                        newArgs.Add(new Arg("*", starred.value?.Revert()));
+                    } else {
+                        newArgs.Add(new Arg(ex?.Revert()));
+                    }
+                }
+                foreach (keyword kw in keywords) {
+                    newKwargs.Add(new Arg(kw.arg is null ? "**" : kw.arg, kw.value?.Revert()));
+                }
+
                 return new CallExpression(target, newArgs, newKwargs);
             }
 
@@ -1076,26 +1075,19 @@ namespace IronPython.Modules {
             public PythonList args { get; set; }
 
             public PythonList keywords { get; set; }
-
-            public expr starargs { get; set; } // TODO: remove in 3.5
-
-            public expr kwargs { get; set; } // TODO: remove in 3.5
         }
 
         [PythonType]
         public class ClassDef : stmt {
             public ClassDef() {
-                _fields = PythonTuple.MakeTuple(new[] { nameof(name), nameof(bases), nameof(keywords), nameof(starargs), nameof(kwargs), nameof(body), nameof(decorator_list) });
+                _fields = PythonTuple.MakeTuple(new[] { nameof(name), nameof(bases), nameof(keywords), nameof(body), nameof(decorator_list) });
             }
 
-            public ClassDef(string name, PythonList bases, PythonList keywords, object starargs, object kwargs, PythonList body, PythonList decorator_list,
-                [Optional]int? lineno, [Optional]int? col_offset)
+            public ClassDef(string name, PythonList bases, PythonList keywords, PythonList body, PythonList decorator_list, [Optional] int? lineno, [Optional] int? col_offset)
                 : this() {
                 this.name = name;
                 this.bases = bases;
                 this.keywords = keywords;
-                this.starargs = starargs;
-                this.kwargs = kwargs;
                 this.body = body;
                 this.decorator_list = decorator_list;
                 _lineno = lineno;
@@ -1107,17 +1099,16 @@ namespace IronPython.Modules {
                 name = def.Name;
                 bases = new PythonList(def.Bases.Count);
                 foreach (Arg arg in def.Bases) {
-                    if (arg.Name == null)
+                    if (arg.Name == "*") {
+                        var loc = arg.Start;
+                        bases.Add(new Starred(Convert(arg.Expression), Load.Instance, loc.Line, loc.Column));
+                    } else {
                         bases.Add(Convert(arg.Expression));
-                    else // name == "*"
-                        starargs = Convert(arg.Expression);
+                    }
                 }
                 keywords = new PythonList(def.Keywords.Count);
                 foreach (Arg arg in def.Keywords) {
-                    if (arg.Name == "**")
-                        kwargs = Convert(arg.Expression);
-                    else // name is proper
-                        keywords.Add(new keyword(arg));
+                    keywords.Add(new keyword(arg.Name == "**" ? null : arg.Name, Convert(arg.Expression)));
                 }
                 body = ConvertStatements(def.Body);
                 if (def.Decorators != null) {
@@ -1132,14 +1123,16 @@ namespace IronPython.Modules {
             internal override Statement Revert() {
                 List<Arg> newBases = new List<Arg>();
                 List<Arg> newKeywords = new List<Arg>();
-                foreach (expr ex in bases)
-                    newBases.Add(new Arg(expr.Revert(ex)));
-                if (null != starargs)
-                    newBases.Add(new Arg("*", expr.Revert(starargs)));
-                foreach (keyword kw in keywords)
-                    newKeywords.Add(new Arg(kw.arg, expr.Revert(kw.value)));
-                if (null != kwargs)
-                    newKeywords.Add(new Arg("**", expr.Revert(kwargs)));
+                foreach (expr ex in bases) {
+                    if (ex is Starred starred) {
+                        newBases.Add(new Arg("*", starred.value?.Revert()));
+                    } else {
+                        newBases.Add(new Arg(ex?.Revert()));
+                    }
+                }
+                foreach (keyword kw in keywords) {
+                    newKeywords.Add(new Arg(kw.arg is null ? "**" : kw.arg, kw.value?.Revert()));
+                }
 
                 ClassDefinition cd = new ClassDefinition(name, newBases, newKeywords, RevertStmts(body));
                 if (decorator_list.Count != 0)
@@ -1152,10 +1145,6 @@ namespace IronPython.Modules {
             public PythonList bases { get; set; }
 
             public PythonList keywords { get; set; }
-
-            public object starargs { get; set; } // TODO: remove in 3.5
-
-            public object kwargs { get; set; } // TODO: remove in 3.5
 
             public PythonList body { get; set; }
 

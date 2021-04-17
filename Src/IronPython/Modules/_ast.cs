@@ -650,7 +650,7 @@ namespace IronPython.Modules {
                 this.value = value;
             }
 
-            internal keyword(IronPython.Compiler.Ast.Arg arg)
+            internal keyword(IronPython.Compiler.Ast.Keyword arg)
                 : this() {
                 this.arg = arg.Name;
                 value = Convert(arg.Expression);
@@ -1037,34 +1037,25 @@ namespace IronPython.Modules {
             internal Call(CallExpression call)
                 : this() {
                 args = new PythonList(call.Args.Count);
-                keywords = new PythonList();
+                foreach (var arg in call.Args) {
+                    args.Add(Convert(arg));
+                }
+                keywords = new PythonList(call.Kwargs.Count);
+                foreach (var arg in call.Kwargs) {
+                    keywords.Add(new keyword(arg));
+                }
                 func = Convert(call.Target);
-                foreach (Arg arg in call.Args) {
-                    if (arg.Name == "*") {
-                        var loc = arg.Start;
-                        args.Add(new Starred(Convert(arg.Expression), Load.Instance, loc.Line, loc.Column));
-                    } else {
-                        args.Add(Convert(arg.Expression));
-                    }
-                }
-                foreach (Arg arg in call.Kwargs) {
-                    keywords.Add(new keyword(arg.Name == "**" ? null : arg.Name, Convert(arg.Expression)));
-                }
             }
 
             internal override AstExpression Revert() {
                 AstExpression target = expr.Revert(func);
-                List<Arg> newArgs = new List<Arg>();
-                List<Arg> newKwargs = new List<Arg>();
+                List<AstExpression> newArgs = new();
+                List<Keyword> newKwargs = new();
                 foreach (expr ex in args) {
-                    if (ex is Starred starred) {
-                        newArgs.Add(new Arg("*", starred.value?.Revert()));
-                    } else {
-                        newArgs.Add(new Arg(ex?.Revert()));
-                    }
+                    newArgs.Add(ex.Revert());
                 }
                 foreach (keyword kw in keywords) {
-                    newKwargs.Add(new Arg(kw.arg is null ? "**" : kw.arg, kw.value?.Revert()));
+                    newKwargs.Add(new Keyword(kw.arg, kw.value.Revert()));
                 }
 
                 return new CallExpression(target, newArgs, newKwargs);
@@ -1098,17 +1089,12 @@ namespace IronPython.Modules {
                 : this() {
                 name = def.Name;
                 bases = new PythonList(def.Bases.Count);
-                foreach (Arg arg in def.Bases) {
-                    if (arg.Name == "*") {
-                        var loc = arg.Start;
-                        bases.Add(new Starred(Convert(arg.Expression), Load.Instance, loc.Line, loc.Column));
-                    } else {
-                        bases.Add(Convert(arg.Expression));
-                    }
+                foreach (var arg in def.Bases) {
+                    bases.Add(Convert(arg));
                 }
                 keywords = new PythonList(def.Keywords.Count);
-                foreach (Arg arg in def.Keywords) {
-                    keywords.Add(new keyword(arg.Name == "**" ? null : arg.Name, Convert(arg.Expression)));
+                foreach (var arg in def.Keywords) {
+                    keywords.Add(new keyword(arg));
                 }
                 body = ConvertStatements(def.Body);
                 if (def.Decorators != null) {
@@ -1121,17 +1107,13 @@ namespace IronPython.Modules {
             }
 
             internal override Statement Revert() {
-                List<Arg> newBases = new List<Arg>();
-                List<Arg> newKeywords = new List<Arg>();
+                List<AstExpression> newBases = new();
+                List<Keyword> newKeywords = new();
                 foreach (expr ex in bases) {
-                    if (ex is Starred starred) {
-                        newBases.Add(new Arg("*", starred.value?.Revert()));
-                    } else {
-                        newBases.Add(new Arg(ex?.Revert()));
-                    }
+                    newBases.Add(ex.Revert());
                 }
                 foreach (keyword kw in keywords) {
-                    newKeywords.Add(new Arg(kw.arg is null ? "**" : kw.arg, kw.value?.Revert()));
+                    newKeywords.Add(new Keyword(kw.arg, kw.value.Revert()));
                 }
 
                 ClassDefinition cd = new ClassDefinition(name, newBases, newKeywords, RevertStmts(body));

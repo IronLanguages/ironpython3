@@ -328,10 +328,10 @@ namespace IronPython.Compiler.Ast {
             } else {
                 // analyze the class definition itself (it is visited while analyzing parent scope):
                 Define(node.Name);
-                foreach (Arg e in node.Bases) {
+                foreach (var e in node.Bases) {
                     e.Walk(this);
                 }
-                foreach (Arg e in node.Keywords) {
+                foreach (var e in node.Keywords) {
                     e.Walk(this);
                 }
                 return false;

@@ -67,6 +67,21 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
+        public override bool Walk(CallExpression node) {
+            node.Target?.Walk(this);
+            foreach (var item in node.Args) {
+                if (item is StarredExpression starred) {
+                    starred.Value.Walk(this);
+                } else {
+                    item.Walk(this);
+                }
+            }
+            foreach (var arg in node.Kwargs) {
+                arg.Walk(this);
+            };
+            return false;
+        }
+
         public override bool Walk(ForStatement node) {
             WalkAssignmentTarget(node.Left);
             node.List?.Walk(this);

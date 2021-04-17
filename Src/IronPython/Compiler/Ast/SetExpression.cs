@@ -24,13 +24,13 @@ namespace IronPython.Compiler.Ast {
             _items = items;
         }
 
-        public IList<Expression> Items => _items;
+        public IReadOnlyList<Expression> Items => _items;
 
         protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
 
         public override MSAst.Expression Reduce() {
             if (HasStarredExpression) {
-                return UnpackSequenceHelper<SetCollection>(Items, AstMethods.MakeEmptySet, AstMethods.SetAdd, AstMethods.SetUpdate);
+                return UnpackSequenceHelper<SetCollection>(_items, AstMethods.MakeEmptySet, AstMethods.SetAdd, AstMethods.SetUpdate);
             }
 
             return Expression.Call(

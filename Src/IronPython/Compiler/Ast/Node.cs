@@ -164,14 +164,6 @@ namespace IronPython.Compiler.Ast {
 
         #region Transformation Helpers
 
-        internal static MSAst.Expression[] ToObjectArray(IList<Expression> expressions) {
-            MSAst.Expression[] to = new MSAst.Expression[expressions.Count];
-            for (int i = 0; i < expressions.Count; i++) {
-                to[i] = AstUtils.Convert(expressions[i], typeof(object));
-            }
-            return to;
-        }
-
         internal static MSAst.Expression[] ToObjectArray(ReadOnlySpan<Expression> expressions) {
             MSAst.Expression[] to = new MSAst.Expression[expressions.Length];
             for (int i = 0; i < expressions.Length; i++) {

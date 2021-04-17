@@ -119,7 +119,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private bool WalkItems(IList<Expression> items) {
+        private bool WalkItems(IReadOnlyList<Expression> items) {
             foreach (var item in items) {
                 if (item is StarredExpression starred) {
                     starred.Value.Walk(this);

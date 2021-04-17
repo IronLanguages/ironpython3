@@ -18,13 +18,15 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     public abstract class SequenceExpression : Expression {
-        private readonly Expression[] _items;
+        protected readonly Expression[] _items;
 
         protected SequenceExpression(Expression[] items) {
             _items = items;
         }
 
-        public IList<Expression> Items => _items;
+        public IReadOnlyList<Expression> Items => _items;
+
+        internal Expression[] UnsafeItems => _items; // TODO: get rid of this
 
         protected bool HasStarredExpression => Items.OfType<StarredExpression>().Any();
 

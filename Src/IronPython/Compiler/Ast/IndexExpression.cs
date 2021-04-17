@@ -32,7 +32,7 @@ namespace IronPython.Compiler.Ast {
 
         private MSAst.Expression[] GetActionArgumentsForGetOrDelete() {
             if (Index is TupleExpression te && te.IsExpandable) {
-                return ArrayUtils.Insert(Target, te.Items);
+                return ArrayUtils.Insert(Target, te.UnsafeItems);
             }
 
             if (Index is SliceExpression se) {

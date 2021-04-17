@@ -29,6 +29,15 @@ namespace IronPython.Modules {
 
         #region Public API
 
+        public const int SEM_FAILCRITICALERRORS = 1;
+        public const int SEM_NOGPFAULTERRORBOX = 2;
+        public const int SEM_NOALIGNMENTFAULTEXCEPT = 4;
+        public const int SEM_NOOPENFILEERRORBOX = 32768;
+
+        public static void SetErrorMode(int mode) {
+            // TODO: fill this up
+        }
+
         [Documentation(@"heapmin() -> None
 
 Force the malloc() heap to clean itself up and return unused blocks
@@ -226,7 +235,9 @@ Wide char variant of ungetch(), accepting a Unicode value.")]
 
         [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
         private static extern ushort _ungetwch(ushort c);
+
         #endregion
     }
 }
+
 #endif

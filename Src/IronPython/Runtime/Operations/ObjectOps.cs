@@ -329,6 +329,11 @@ namespace IronPython.Runtime.Operations {
         /// Implements the default __reduce_ex__ method as specified by PEP 307 case 3 (new-style instance, protocol 2)
         /// </summary>
         private static PythonTuple ReduceProtocol2(CodeContext/*!*/ context, object self) {
+            // builtin types which can't be pickled (due to tp_itemsize != 0)
+            if (self is MemoryView) {
+                throw PythonOps.TypeError("can't pickle memoryview objects");
+            }
+
             PythonType myType = DynamicHelpers.GetPythonType(self);
 
             object? state;

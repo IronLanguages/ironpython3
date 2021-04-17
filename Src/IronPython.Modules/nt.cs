@@ -1583,6 +1583,27 @@ namespace IronPython.Modules {
             }
         }
 
+        public static void truncate(CodeContext context, [NotNull] string path, BigInteger length) {
+            using var stream = new FileStream(path, FileMode.Open);
+            stream.SetLength((long)length);
+        }
+
+        [Documentation("")]
+        public static void truncate(CodeContext context, [NotNull] Bytes path, BigInteger length)
+            => truncate(context, path.ToFsString(), length);
+
+        [Documentation("")]
+        public static void truncate(CodeContext context, [NotNull] IBufferProtocol path, BigInteger length) {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string or bytes, not {PythonTypeOps.GetName(path)}"); // deprecated in 3.6
+            truncate(context, path.ToFsBytes(context), length);
+        }
+
+        public static void truncate(CodeContext context, int fd, BigInteger length)
+            => ftruncate(context, fd, length);
+
+        public static void ftruncate(CodeContext context, int fd, BigInteger length)
+            => context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd).truncate(context, length);
+
 #if FEATURE_FILESYSTEM
         public static object times() {
             System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess();

@@ -2698,6 +2698,7 @@ namespace IronPython.Runtime.Operations {
             {
                 float f => (double)f,
                 double d => d,
+                sbyte sb => (int)sb,
                 byte b => (int)b,
                 char c => (int)c,
                 short s => (int)s,

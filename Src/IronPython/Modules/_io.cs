@@ -1951,6 +1951,7 @@ namespace IronPython.Modules {
             private object _encoder, _decoder;
 
             private bool _line_buffering;
+            private bool _write_through;
             private bool _readUniversal;
             private bool _readTranslate;
             internal bool _writeTranslate;
@@ -1969,12 +1970,12 @@ namespace IronPython.Modules {
 
             internal static TextIOWrapper Create(CodeContext/*!*/ context,
                 object buffer,
-                string encoding=null,
-                string errors=null,
-                string newline=null,
-                bool line_buffering=false) {
+                string encoding = null,
+                string errors = null,
+                string newline = null,
+                bool line_buffering = false, bool write_through = false) {
                 var res = new TextIOWrapper(context);
-                res.__init__(context, buffer, encoding, errors, newline, line_buffering);
+                res.__init__(context, buffer, encoding, errors, newline, line_buffering, write_through);
                 return res;
             }
 
@@ -1983,8 +1984,9 @@ namespace IronPython.Modules {
                 object buffer,
                 string encoding = null,
                 string errors = null,
-                string newline=null,
-                bool line_buffering=false
+                string newline = null,
+                bool line_buffering = false,
+                bool write_through = false
             ) {
                 switch(newline) {
                     case null:
@@ -2017,6 +2019,7 @@ namespace IronPython.Modules {
                     PythonOps.IsTrue(PythonOps.Invoke(context, _buffer, "seekable"));
 
                 _line_buffering = line_buffering;
+                _write_through = write_through;
                 _readUniversal = string.IsNullOrEmpty(newline);
                 _readTranslate = newline == null;
                 _readNL = newline;
@@ -2029,23 +2032,15 @@ namespace IronPython.Modules {
 
             #region Public API
 
-            public object buffer {
-                get {
-                    return _buffer;
-                }
-            }
+            public object buffer => _buffer;
 
-            public override string encoding {
-                get { return _encoding; }
-            }
+            public override string encoding => _encoding;
 
-            public override string errors {
-                get { return _errors; }
-            }
+            public override string errors => _errors;
 
-            public bool line_buffering {
-                get { return _line_buffering; }
-            }
+            public bool line_buffering => _line_buffering;
+
+            public bool write_through => _write_through;
 
             public override object newlines {
                 get {
@@ -2157,7 +2152,7 @@ namespace IronPython.Modules {
                     PythonOps.Invoke(context, _buffer, "write", bytes);
                 }
 
-                if (_line_buffering && (hasLF || str.Contains("\r"))) {
+                if (_write_through || _line_buffering && (hasLF || str.Contains("\r"))) {
                     flush(context);
                 }
 

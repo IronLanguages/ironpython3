@@ -10,6 +10,33 @@ This page documents various differences between IronPython and CPython. Since Ir
 
 * Interaction with COM objects is handled by the CLR rather than a python library binding to the native COM dlls.
 
+# Integers
+
+* `int`/`long` are separate types instead of the unified `int` type used by CPython. _Tracked by [IronLanguages/ironpython3#52](https://github.com/IronLanguages/ironpython3/issues/52)._
+
+The `long` type is no longer exposed in built-ins however it still shows up while getting the type of a long number.
+
+_CPython_
+```
+>>> type(1<<64)
+<class 'int'>
+```
+
+_IronPython_
+```
+>>> type(1<<64)
+<class 'long'>
+```
+
+However, in order to reduce compatibility issues, using `isinstance` to test if a value is an integer will work as it does in CPython:
+
+_CPython_ and _IronPython_
+```
+>>> isinstance(1<<64, int)
+True
+```
+
+
 # Strings
 
 * `str` objects are represented in UTF-16 (like all .NET strings) rather than UTF-32 used by CPython.

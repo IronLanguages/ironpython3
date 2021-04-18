@@ -2151,7 +2151,6 @@ namespace IronPython.Compiler {
                     ParserSink?.NextParameter(GetSourceSpan());
                 } else {
                     Eat(TokenKind.RightParenthesis);
-                    a.SetLoc(_globalParent, start, GetEnd());
                     ParserSink?.EndParameters(GetSourceSpan());
                     return new Node[1] { a };
                 }
@@ -2199,15 +2198,17 @@ namespace IronPython.Compiler {
                 if (MaybeEat(terminator)) {
                     break;
                 }
-                var start = GetStart();
                 Node a;
                 if (MaybeEat(TokenKind.Multiply)) {
+                    var start = GetStart();
                     a = new StarredExpression(ParseTest());
                     a.SetLoc(_globalParent, start, GetEnd());
                 } else if (MaybeEat(TokenKind.Power)) {
-                    a = new Keyword(null, ParseTest());
+                    var e = ParseTest();
+                    a = new Keyword(null, e);
+                    a.SetLoc(_globalParent, e.StartIndex, e.EndIndex);
                 } else {
-                    Expression e = ParseTest();
+                    var e = ParseTest();
                     if (MaybeEat(TokenKind.Assign)) {
                         a = FinishKeywordArgument(e);
                         CheckUniqueArgument(l, (Keyword)a);
@@ -2215,7 +2216,6 @@ namespace IronPython.Compiler {
                         a = e;
                     }
                 }
-                a.SetLoc(_globalParent, start, GetEnd());
                 l.Add(a);
                 if (MaybeEat(TokenKind.Comma)) {
                     ParserSink?.NextParameter(GetSourceSpan());

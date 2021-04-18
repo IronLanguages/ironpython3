@@ -1311,7 +1311,7 @@ namespace IronPython.Runtime.Operations {
             // if available, call the __prepare__ method to get the classdict (PEP 3115)
             if (meta.TryLookupSlot(context, "__prepare__", out PythonTypeSlot pts)) {
                 if (pts.TryGetValue(context, null, meta, out object value)) {
-                    if (keywords is null) {
+                    if (keywords is null || keywords.Count == 0) {
                         classdict = PythonOps.CallWithContext(context, value, name, bases);
                     } else {
                         var args = new object[] { name, bases };
@@ -1380,6 +1380,9 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (metaclass is null) {
+                if (keywords != null && keywords.Count > 0) {
+                    throw TypeError("type() takes no keyword arguments");
+                }
                 // this makes sure that object is a base
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));

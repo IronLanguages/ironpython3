@@ -239,9 +239,9 @@ namespace IronPython.Compiler.Ast {
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
                 foreach (var arg in kwargs) {
                     if (arg.ArgumentInfo.Kind == ArgumentType.Dictionary) {
-                        expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, arg.Expression));
+                        expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
                     } else {
-                        expressions.Add(Expression.Call(AstMethods.DictMergeOne, context, varExpr, AstUtils.Constant(arg.Name, typeof(object)), arg.Expression));
+                        expressions.Add(Expression.Call(AstMethods.DictMergeOne, context, varExpr, AstUtils.Constant(arg.Name, typeof(object)), AstUtils.Convert(arg.Expression, typeof(object))));
                     }
                 }
                 expressions.Add(varExpr);

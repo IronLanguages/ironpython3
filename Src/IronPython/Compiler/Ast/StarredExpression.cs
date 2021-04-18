@@ -69,16 +69,36 @@ namespace IronPython.Compiler.Ast {
 
         public override bool Walk(CallExpression node) {
             node.Target?.Walk(this);
-            foreach (var item in node.Args) {
-                if (item is StarredExpression starred) {
+            foreach (var arg in node.Args) {
+                if (arg is StarredExpression starred) {
                     starred.Value.Walk(this);
                 } else {
-                    item.Walk(this);
+                    arg.Walk(this);
                 }
             }
             foreach (var arg in node.Kwargs) {
                 arg.Walk(this);
             };
+            return false;
+        }
+
+        public override bool Walk(ClassDefinition node) {
+            if (node.Decorators != null) {
+                foreach (Expression decorator in node.Decorators) {
+                    decorator.Walk(this);
+                }
+            }
+            foreach (var b in node.Bases) {
+                if (b is StarredExpression starred) {
+                    starred.Value.Walk(this);
+                } else {
+                    b.Walk(this);
+                }
+            }
+            foreach (var b in node.Keywords) {
+                b.Walk(this);
+            }
+            node.Body.Walk(this);
             return false;
         }
 

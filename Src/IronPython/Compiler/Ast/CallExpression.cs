@@ -160,7 +160,7 @@ namespace IronPython.Compiler.Ast {
 
                 if (args.Length == 1) return ((StarredExpression)args[0]).Value;
 
-                return UnpackSequenceHelper<Expression>(args, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
+                return UnpackSequenceHelper<PythonList>(args, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
             }
 
             // Compare to: CallExpression.Reduce.__UnpackKeywordsHelper

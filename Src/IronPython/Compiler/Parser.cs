@@ -2175,7 +2175,7 @@ namespace IronPython.Compiler {
         }
 
         private void CheckUniqueArgument(List<Node> names, Keyword arg) {
-            if (arg != null && arg.Name != null) {
+            if (arg.Name != null) {
                 for (int i = 0; i < names.Count; i++) {
                     if (names[i] is Keyword k && k.Name == arg.Name) {
                         ReportSyntaxError(IronPython.Resources.DuplicateKeywordArg);
@@ -2201,20 +2201,16 @@ namespace IronPython.Compiler {
                 }
                 var start = GetStart();
                 Node a;
-                if (PeekToken(TokenKind.Multiply)) {
-                    var s = GetStart();
-                    NextToken();
+                if (MaybeEat(TokenKind.Multiply)) {
                     a = new StarredExpression(ParseTest());
-                    a.SetLoc(_globalParent, s, GetEnd());
+                    a.SetLoc(_globalParent, start, GetEnd());
                 } else if (MaybeEat(TokenKind.Power)) {
-                    Expression t = ParseTest();
-                    a = new Keyword(null, t);
+                    a = new Keyword(null, ParseTest());
                 } else {
                     Expression e = ParseTest();
                     if (MaybeEat(TokenKind.Assign)) {
-                        var k = FinishKeywordArgument(e);
-                        a = k;
-                        CheckUniqueArgument(l, k);
+                        a = FinishKeywordArgument(e);
+                        CheckUniqueArgument(l, (Keyword)a);
                     } else {
                         a = e;
                     }

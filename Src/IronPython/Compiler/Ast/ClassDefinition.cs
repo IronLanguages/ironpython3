@@ -209,7 +209,7 @@ namespace IronPython.Compiler.Ast {
                 foreach (var arg in bases) {
                     if (arg is StarredExpression) {
                         return Expression.Call(AstMethods.ListToTuple,
-                            Expression.UnpackSequenceHelper<Expression>(bases, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend)
+                            Expression.UnpackSequenceHelper<PythonList>(bases, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend)
                         );
                     }
                 }

@@ -72,7 +72,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(MemberExpression node) { return true; }
         public virtual void PostWalk(MemberExpression node) { }
 
-
         // NameExpression
         public virtual bool Walk(NameExpression node) { return true; }
         public virtual void PostWalk(NameExpression node) { }
@@ -213,10 +212,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(WithStatement node) { return true; }
         public virtual void PostWalk(WithStatement node) { }
 
-        // Arg
-        public virtual bool Walk(Arg node) { return true; }
-        public virtual void PostWalk(Arg node) { }
-
         // ComprehensionFor
         public virtual bool Walk(ComprehensionFor node) { return true; }
         public virtual void PostWalk(ComprehensionFor node) { }
@@ -232,6 +227,10 @@ namespace IronPython.Compiler.Ast {
         // IfStatementTest
         public virtual bool Walk(IfStatementTest node) { return true; }
         public virtual void PostWalk(IfStatementTest node) { }
+
+        // Keyword
+        public virtual bool Walk(Keyword node) { return true; }
+        public virtual void PostWalk(Keyword node) { }
 
         // ModuleName
         public virtual bool Walk(ModuleName node) { return true; }
@@ -460,10 +459,6 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(WithStatement node) { return false; }
         public override void PostWalk(WithStatement node) { }
 
-        // Arg
-        public override bool Walk(Arg node) { return false; }
-        public override void PostWalk(Arg node) { }
-
         // ComprehensionFor
         public override bool Walk(ComprehensionFor node) { return false; }
         public override void PostWalk(ComprehensionFor node) { }
@@ -479,6 +474,10 @@ namespace IronPython.Compiler.Ast {
         // IfStatementTest
         public override bool Walk(IfStatementTest node) { return false; }
         public override void PostWalk(IfStatementTest node) { }
+
+        // Keyword
+        public override bool Walk(Keyword node) { return false; }
+        public override void PostWalk(Keyword node) { }
 
         // ModuleName
         public override bool Walk(ModuleName node) { return false; }

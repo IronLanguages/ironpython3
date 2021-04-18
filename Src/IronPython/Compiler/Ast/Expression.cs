@@ -21,8 +21,8 @@ namespace IronPython.Compiler.Ast {
     public abstract class Expression : Node {
         internal static readonly Expression[] EmptyArray = Array.Empty<Expression>();
 
-        protected internal static MSAst.BlockExpression UnpackSequenceHelper<T>(IList<Expression> items, MethodInfo makeEmpty, MethodInfo append, MethodInfo extend) {
-            var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(items.Count + 2);
+        protected internal static MSAst.BlockExpression UnpackSequenceHelper<T>(ReadOnlySpan<Expression> items, MethodInfo makeEmpty, MethodInfo append, MethodInfo extend) {
+            var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(items.Length + 2);
             var varExpr = Expression.Variable(typeof(T), "$coll");
             expressions.Add(Expression.Assign(varExpr, Expression.Call(makeEmpty)));
             foreach (var item in items) {

@@ -67,6 +67,41 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
+        public override bool Walk(CallExpression node) {
+            node.Target?.Walk(this);
+            foreach (var arg in node.Args) {
+                if (arg is StarredExpression starred) {
+                    starred.Value.Walk(this);
+                } else {
+                    arg.Walk(this);
+                }
+            }
+            foreach (var arg in node.Kwargs) {
+                arg.Walk(this);
+            };
+            return false;
+        }
+
+        public override bool Walk(ClassDefinition node) {
+            if (node.Decorators != null) {
+                foreach (Expression decorator in node.Decorators) {
+                    decorator.Walk(this);
+                }
+            }
+            foreach (var b in node.Bases) {
+                if (b is StarredExpression starred) {
+                    starred.Value.Walk(this);
+                } else {
+                    b.Walk(this);
+                }
+            }
+            foreach (var b in node.Keywords) {
+                b.Walk(this);
+            }
+            node.Body.Walk(this);
+            return false;
+        }
+
         public override bool Walk(ForStatement node) {
             WalkAssignmentTarget(node.Left);
             node.List?.Walk(this);
@@ -104,7 +139,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private bool WalkItems(IList<Expression> items) {
+        private bool WalkItems(IReadOnlyList<Expression> items) {
             foreach (var item in items) {
                 if (item is StarredExpression starred) {
                     starred.Value.Walk(this);

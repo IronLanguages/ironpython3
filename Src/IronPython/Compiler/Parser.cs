@@ -1009,10 +1009,10 @@ namespace IronPython.Compiler {
                 return new ClassDefinition(string.Empty, null, null, ErrorStmt());
             }
 
-            List<Arg> bases = null;
-            List<Arg> keywords = null;
+            List<Expression> bases = null;
+            List<Keyword> keywords = null;
             if (MaybeEat(TokenKind.LeftParenthesis)) {
-                IReadOnlyList<Arg> args = FinishArgumentList(null);
+                IReadOnlyList<Node> args = FinishArgumentList(null);
                 SplitAndValidateArguments(args, out bases, out keywords);
             }
             var mid = GetEnd();
@@ -1058,7 +1058,7 @@ namespace IronPython.Compiler {
 
                 if (MaybeEat(TokenKind.LeftParenthesis)) {
                     ParserSink?.StartParameters(GetSourceSpan());
-                    IReadOnlyList<Arg> args = FinishArgumentList(null);
+                    IReadOnlyList<Node> args = FinishArgumentList(null);
                     decorator = FinishCallExpr(decorator, args);
                 }
                 decorator.SetLoc(_globalParent, start, GetEnd());
@@ -1982,7 +1982,7 @@ namespace IronPython.Compiler {
                             if (!allowGeneratorExpression) return ret;
 
                             NextToken();
-                            IReadOnlyList<Arg> args = FinishArgListOrGenExpr();
+                            IReadOnlyList<Node> args = FinishArgListOrGenExpr();
                             CallExpression call = FinishCallExpr(ret, args);
                             call.SetLoc(_globalParent, ret.StartIndex, GetEnd());
                             ret = call;
@@ -2120,8 +2120,8 @@ namespace IronPython.Compiler {
         //             expression "=" expression      rest_of_arguments
         //             expression "for" gen_expr_rest
         //
-        private IReadOnlyList<Arg> FinishArgListOrGenExpr() {
-            Arg a = null;
+        private IReadOnlyList<Node> FinishArgListOrGenExpr() {
+            Node a = null;
 
             ParserSink?.StartParameters(GetSourceSpan());
 
@@ -2135,20 +2135,14 @@ namespace IronPython.Compiler {
 
                 if (MaybeEat(TokenKind.Assign)) {               //  Keyword argument
                     a = FinishKeywordArgument(e);
-
-                    if (a == null) {                            // Error recovery
-                        a = new Arg(e);
-                        a.SetLoc(_globalParent, e.StartIndex, GetEnd());
-                    }
                 } else if (PeekToken(Tokens.KeywordForToken)) {    //  Generator expression
-                    a = new Arg(ParseGeneratorExpression(e));
+                    a = ParseGeneratorExpression(e);
                     Eat(TokenKind.RightParenthesis);
                     a.SetLoc(_globalParent, start, GetEnd());
                     ParserSink?.EndParameters(GetSourceSpan());
-                    return new Arg[1] { a };       //  Generator expression is the argument
+                    return new Node[1] { a };       //  Generator expression is the argument
                 } else {
-                    a = new Arg(e);
-                    a.SetLoc(_globalParent, e.StartIndex, e.EndIndex);
+                    a = e;
                 }
 
                 //  Was this all?
@@ -2157,33 +2151,32 @@ namespace IronPython.Compiler {
                     ParserSink?.NextParameter(GetSourceSpan());
                 } else {
                     Eat(TokenKind.RightParenthesis);
-                    a.SetLoc(_globalParent, start, GetEnd());
                     ParserSink?.EndParameters(GetSourceSpan());
-                    return new Arg[1] { a };
+                    return new Node[1] { a };
                 }
             }
 
             return FinishArgumentList(a);
         }
 
-        private Arg FinishKeywordArgument(Expression t) {
+        private Keyword FinishKeywordArgument(Expression t) {
             if (t is NameExpression n) {
                 Expression val = ParseTest();
-                Arg arg = new Arg(n.Name, val);
+                var arg = new Keyword(n.Name, val);
                 arg.SetLoc(_globalParent, n.StartIndex, val.EndIndex);
                 return arg;
             } else {
                 ReportSyntaxError(IronPython.Resources.ExpectedName);
-                Arg arg = new Arg(null, t);
+                var arg = new Keyword(null, t);
                 arg.SetLoc(_globalParent, t.StartIndex, t.EndIndex);
                 return arg;
             }
         }
 
-        private void CheckUniqueArgument(List<Arg> names, Arg arg) {
-            if (arg != null && arg.Name != null) {
+        private void CheckUniqueArgument(List<Node> names, Keyword arg) {
+            if (arg.Name != null) {
                 for (int i = 0; i < names.Count; i++) {
-                    if (names[i].Name == arg.Name) {
+                    if (names[i] is Keyword k && k.Name == arg.Name) {
                         ReportSyntaxError(IronPython.Resources.DuplicateKeywordArg);
                     }
                 }
@@ -2192,9 +2185,9 @@ namespace IronPython.Compiler {
 
         //arglist: (argument ',')* (argument [',']| '*' expression [',' '**' expression] | '**' expression)
         //argument: [expression '='] expression    # Really [keyword '='] expression
-        private IReadOnlyList<Arg> FinishArgumentList(Arg first) {
+        private IReadOnlyList<Node> FinishArgumentList(Node first) {
             const TokenKind terminator = TokenKind.RightParenthesis;
-            List<Arg> l = new List<Arg>();
+            List<Node> l = new List<Node>();
 
             if (first != null) {
                 l.Add(first);
@@ -2205,24 +2198,24 @@ namespace IronPython.Compiler {
                 if (MaybeEat(terminator)) {
                     break;
                 }
-                var start = GetStart();
-                Arg a;
+                Node a;
                 if (MaybeEat(TokenKind.Multiply)) {
-                    Expression t = ParseTest();
-                    a = new Arg("*", t);
+                    var start = GetStart();
+                    a = new StarredExpression(ParseTest());
+                    a.SetLoc(_globalParent, start, GetEnd());
                 } else if (MaybeEat(TokenKind.Power)) {
-                    Expression t = ParseTest();
-                    a = new Arg("**", t);
+                    var e = ParseTest();
+                    a = new Keyword(null, e);
+                    a.SetLoc(_globalParent, e.StartIndex, e.EndIndex);
                 } else {
-                    Expression e = ParseTest();
+                    var e = ParseTest();
                     if (MaybeEat(TokenKind.Assign)) {
                         a = FinishKeywordArgument(e);
-                        CheckUniqueArgument(l, a);
+                        CheckUniqueArgument(l, (Keyword)a);
                     } else {
-                        a = new Arg(e);
+                        a = e;
                     }
                 }
-                a.SetLoc(_globalParent, start, GetEnd());
                 l.Add(a);
                 if (MaybeEat(TokenKind.Comma)) {
                     ParserSink?.NextParameter(GetSourceSpan());
@@ -2887,9 +2880,9 @@ namespace IronPython.Compiler {
             _functions.Push(function);
         }
 
-        private CallExpression FinishCallExpr(Expression target, IEnumerable<Arg> args) {
-            List<Arg> posargs = null;
-            List<Arg> kwargs = null;
+        private CallExpression FinishCallExpr(Expression target, IEnumerable<Node> args) {
+            List<Expression> posargs = null;
+            List<Keyword> kwargs = null;
 
             if (args is not null) {
                 SplitAndValidateArguments(args, out posargs, out kwargs); 
@@ -2898,35 +2891,38 @@ namespace IronPython.Compiler {
             return new CallExpression(target, posargs, kwargs);
         }
 
-        private void SplitAndValidateArguments(IEnumerable<Arg> args, out List<Arg> posargs, out List<Arg> kwargs) {
+        private void SplitAndValidateArguments(IEnumerable<Node> args, out List<Expression> posargs, out List<Keyword> kwargs) {
             bool hasKeyword = false;
             bool hasKeywordUnpacking = false;
 
-            posargs = kwargs = null;
+            posargs = null;
+            kwargs = null;
 
-            foreach (Arg arg in args) {
-                if (arg.Name == null) {
+            foreach (Node arg in args) {
+                if (arg is Keyword keyword) {
+                    if (keyword.Name is null) {
+                        hasKeywordUnpacking = true;
+                    } else {
+                        hasKeyword = true;
+                    }
+                    kwargs ??= new List<Keyword>();
+                    kwargs.Add(keyword);
+                } else if (arg is StarredExpression starredExpression) {
+                    if (hasKeywordUnpacking) {
+                        ReportSyntaxError(arg.StartIndex, arg.EndIndex, "iterable argument unpacking follows keyword argument unpacking");
+                    }
+                    posargs ??= new List<Expression>();
+                    posargs.Add(starredExpression);
+                } else {
+                    var expr = (Expression)arg;
                     if (hasKeywordUnpacking) {
                         ReportSyntaxError(arg.StartIndex, arg.EndIndex, "positional argument follows keyword argument unpacking");
                     } else if (hasKeyword) {
                         ReportSyntaxError(arg.StartIndex, arg.EndIndex, "positional argument follows keyword argument");
                     }
-                    posargs ??= new List<Arg>();
-                    posargs.Add(arg);
-                } else if (arg.Name == "*") {
-                    if (hasKeywordUnpacking) {
-                        ReportSyntaxError(arg.StartIndex, arg.EndIndex, "iterable argument unpacking follows keyword argument unpacking");
-                    }
-                    posargs ??= new List<Arg>();
-                    posargs.Add(arg);
-                } else if (arg.Name == "**") {
-                    hasKeywordUnpacking = true;
-                    kwargs ??= new List<Arg>();
-                    kwargs.Add(arg);
-                } else {
-                    hasKeyword = true;
-                    kwargs ??= new List<Arg>();
-                    kwargs.Add(arg);
+                    posargs ??= new List<Expression>();
+                    posargs.Add(expr);
+
                 }
             }
         }

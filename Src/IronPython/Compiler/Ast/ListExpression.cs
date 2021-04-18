@@ -20,14 +20,14 @@ namespace IronPython.Compiler.Ast {
             }
 
             if (HasStarredExpression) {
-                return UnpackSequenceHelper<PythonList>(Items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
+                return UnpackSequenceHelper<PythonList>(_items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend);
             }
 
             return Call(
                 AstMethods.MakeListNoCopy,  // method
                 NewArrayInit(           // parameters
                     typeof(object),
-                    ToObjectArray(Items)
+                    ToObjectArray(_items)
                 )
             );
         }

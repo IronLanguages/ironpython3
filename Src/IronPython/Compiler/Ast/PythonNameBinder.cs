@@ -206,9 +206,9 @@ namespace IronPython.Compiler.Ast {
             node.PythonVariable = DefineName(node.Name);
 
             // Base references are in the outer context
-            foreach (Arg b in node.Bases) b.Walk(this);
+            foreach (var b in node.Bases) b.Walk(this);
 
-            foreach (Arg a in node.Keywords) a.Walk(this);
+            foreach (var a in node.Keywords) a.Walk(this);
 
             // process the decorators in the outer context
             if (node.Decorators != null) {
@@ -333,11 +333,6 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-        // Arg
-        public override bool Walk(Arg node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
         // AssertStatement
         public override bool Walk(AssertStatement node) {
             node.Parent = _currentScope;
@@ -410,6 +405,11 @@ namespace IronPython.Compiler.Ast {
         }
         // IndexExpression
         public override bool Walk(IndexExpression node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
+        // Keyword
+        public override bool Walk(Keyword node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
@@ -836,8 +836,7 @@ namespace IronPython.Compiler.Ast {
             if (node.Target is NameExpression nameExpr && nameExpr.Name == "super" && _currentScope is FunctionDefinition func) {
                 _currentScope.Reference("__class__");
                 if (node.Args.Count == 0 && node.Kwargs.Count == 0 && func.ParameterNames.Length > 0) {
-                    node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
-                    node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
+                    node.SetImplicitArgs(new NameExpression("__class__"), new NameExpression(func.ParameterNames[0]));
                 }
             }
             return base.Walk(node);

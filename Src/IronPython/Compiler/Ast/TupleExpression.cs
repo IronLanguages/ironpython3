@@ -35,7 +35,7 @@ namespace IronPython.Compiler.Ast {
             if (IsExpandable) {
                 return Expression.NewArrayInit(
                     typeof(object),
-                    ToObjectArray(Items)
+                    ToObjectArray(_items)
                 );
             }
 
@@ -47,14 +47,14 @@ namespace IronPython.Compiler.Ast {
             }
 
             if (HasStarredExpression) {
-                return Expression.Call(AstMethods.ListToTuple, UnpackSequenceHelper<PythonList>(Items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend));
+                return Expression.Call(AstMethods.ListToTuple, UnpackSequenceHelper<PythonList>(_items, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend));
             }
 
             return Expression.Call(
                 AstMethods.MakeTuple,
                 Expression.NewArrayInit(
                     typeof(object),
-                    ToObjectArray(Items)
+                    ToObjectArray(_items)
                 )
             );
         }

@@ -27,8 +27,8 @@ namespace IronPython.Compiler.Ast {
 
     public class ClassDefinition : ScopeStatement {
         private readonly string _name;
-        private readonly Arg[] _bases;
-        private readonly Arg[] _keywords;
+        private readonly Expression[] _bases;
+        private readonly Keyword[] _keywords;
 
         private LightLambdaExpression? _dlrBody;       // the transformed body including all of our initialization, etc...
 
@@ -37,10 +37,10 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, IReadOnlyList<Arg>? bases, IReadOnlyList<Arg>? keywords, Statement? body = null) {
+        public ClassDefinition(string name, IReadOnlyList<Expression>? bases, IReadOnlyList<Keyword>? keywords, Statement? body = null) {
             _name = name;
-            _bases = bases?.ToArray() ?? Array.Empty<Arg>();
-            _keywords = keywords?.ToArray() ?? Array.Empty<Arg>();
+            _bases = bases?.ToArray() ?? Array.Empty<Expression>();
+            _keywords = keywords?.ToArray() ?? Array.Empty<Keyword>();
             Body = body ?? EmptyStatement.PreCompiledInstance;
         }
 
@@ -50,9 +50,9 @@ namespace IronPython.Compiler.Ast {
 
         public override string Name => _name;
 
-        public IReadOnlyList<Arg> Bases => _bases;
+        public IReadOnlyList<Expression> Bases => _bases;
 
-        public IReadOnlyList<Arg> Keywords => _keywords;
+        public IReadOnlyList<Keyword> Keywords => _keywords;
 
         public Statement Body { get; set; }
 
@@ -194,7 +194,7 @@ namespace IronPython.Compiler.Ast {
             classDef = AddDecorators(classDef, Decorators);
 
             return GlobalParent.AddDebugInfoAndVoid(
-                AssignValue(Parent.GetVariableExpression(PythonVariable!), classDef), 
+                AssignValue(Parent.GetVariableExpression(PythonVariable!), classDef),
                 new SourceSpan(
                     GlobalParent.IndexToLocation(StartIndex),
                     GlobalParent.IndexToLocation(HeaderIndex)
@@ -202,34 +202,27 @@ namespace IronPython.Compiler.Ast {
             );
 
             // Compare to: CallExpression.Reduce.__UnpackListHelper
-            static MSAst.Expression UnpackBasesHelper(IReadOnlyList<Arg> bases) {
-                if (bases.Count == 0) {
+            static MSAst.Expression UnpackBasesHelper(ReadOnlySpan<Expression> bases) {
+                if (bases.Length == 0) {
                     return Expression.Call(AstMethods.MakeEmptyTuple);
-                } else if (bases.All(arg => arg.ArgumentInfo.Kind is ArgumentType.Simple)) {
-                    return Expression.Call(AstMethods.MakeTuple,
-                        Expression.NewArrayInit(
-                            typeof(object),
-                            ToObjectArray(bases.Select(arg => arg.Expression).ToList())
-                        )
-                    );
-                } else {
-                    var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(bases.Count + 2);
-                    var varExpr = Expression.Variable(typeof(PythonList), "$coll");
-                    expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyList)));
-                    foreach (var arg in bases) {
-                        if (arg.ArgumentInfo.Kind == ArgumentType.List) {
-                            expressions.Add(Expression.Call(AstMethods.ListExtend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
-                        } else {
-                            expressions.Add(Expression.Call(AstMethods.ListAppend, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
-                        }
-                    }
-                    expressions.Add(Expression.Call(AstMethods.ListToTuple, varExpr));
-                    return Expression.Block(typeof(PythonTuple), new MSAst.ParameterExpression[] { varExpr }, expressions);
                 }
+                foreach (var arg in bases) {
+                    if (arg is StarredExpression) {
+                        return Expression.Call(AstMethods.ListToTuple,
+                            Expression.UnpackSequenceHelper<PythonList>(bases, AstMethods.MakeEmptyList, AstMethods.ListAppend, AstMethods.ListExtend)
+                        );
+                    }
+                }
+                return Expression.Call(AstMethods.MakeTuple,
+                    Expression.NewArrayInit(
+                        typeof(object),
+                        ToObjectArray(bases)
+                    )
+                );
             }
 
             // Compare to: CallExpression.Reduce.__UnpackDictHelper
-            static MSAst.Expression UnpackKeywordsHelper(MSAst.Expression context, IReadOnlyList<Arg> kwargs) {
+            static MSAst.Expression UnpackKeywordsHelper(MSAst.Expression context, IReadOnlyList<Keyword> kwargs) {
                 if (kwargs.Count == 0) {
                     return AstUtils.Constant(null, typeof(PythonDictionary));
                 }
@@ -238,7 +231,7 @@ namespace IronPython.Compiler.Ast {
                 var varExpr = Expression.Variable(typeof(PythonDictionary), "$dict");
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
                 foreach (var arg in kwargs) {
-                    if (arg.ArgumentInfo.Kind == ArgumentType.Dictionary) {
+                    if (arg.Name is null) {
                         expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
                     } else {
                         expressions.Add(Expression.Call(AstMethods.DictMergeOne, context, varExpr, AstUtils.Constant(arg.Name, typeof(object)), AstUtils.Convert(arg.Expression, typeof(object))));
@@ -346,10 +339,10 @@ namespace IronPython.Compiler.Ast {
                         decorator.Walk(walker);
                     }
                 }
-                foreach (Arg b in _bases) {
+                foreach (var b in _bases) {
                     b.Walk(walker);
                 }
-                foreach (Arg b in _keywords) {
+                foreach (var b in _keywords) {
                     b.Walk(walker);
                 }
                 Body.Walk(walker);

@@ -20,7 +20,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo IsTrue = GetMethod((Func<object, bool>)PythonOps.IsTrue);
         public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<CodeContext, object>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo RaiseAssertionErrorNoMessage = GetMethod((Action<CodeContext>)PythonOps.RaiseAssertionError);
-        public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, PythonTuple, object, string, object>)PythonOps.MakeClass);
+        public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, PythonTuple, PythonDictionary, string, object>)PythonOps.MakeClass);
         public static readonly MethodInfo PrintExpressionValue = GetMethod((Action<CodeContext, object>)PythonOps.PrintExpressionValue);
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);
@@ -31,6 +31,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
         public static readonly MethodInfo DictAddForComprehension = GetMethod((Action<PythonDictionary, object, object>)PythonOps.DictAddForComprehension);
+        public static readonly MethodInfo DictMergeOne = GetMethod((Action<CodeContext, PythonDictionary, object, object>)PythonOps.DictMergeOne);
         public static readonly MethodInfo CheckUninitializedFree = GetMethod((Func<object, string, object>)PythonOps.CheckUninitializedFree);
         public static readonly MethodInfo CheckUninitializedLocal = GetMethod((Func<object, string, object>)PythonOps.CheckUninitializedLocal);
         public static readonly MethodInfo PublishModule = GetMethod((Func<CodeContext, string, object>)PythonOps.PublishModule);

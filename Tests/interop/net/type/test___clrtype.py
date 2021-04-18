@@ -835,7 +835,7 @@ class ClrTypeTest(IronPythonTestCase):
             self.fail("type.__new__ signature is wrong")
         except TypeError as e:
             self.assertEqual(str(e),
-                    "__new__() takes exactly 1 argument (4 given)")
+                    "__new__() takes exactly 1 non-keyword argument (4 given)")
         finally:
             self.assertEqual(called, False)
 

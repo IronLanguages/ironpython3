@@ -1305,13 +1305,18 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
+        internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
             object? classdict = dict;
 
             // if available, call the __prepare__ method to get the classdict (PEP 3115)
             if (meta.TryLookupSlot(context, "__prepare__", out PythonTypeSlot pts)) {
                 if (pts.TryGetValue(context, null, meta, out object value)) {
-                    classdict = PythonOps.CallWithContext(context, value, name, bases);
+                    if (keywords is null || keywords.Count == 0) {
+                        classdict = PythonOps.CallWithContext(context, value, name, bases);
+                    } else {
+                        var args = new object[] { name, bases };
+                        classdict = PythonCalls.CallWithKeywordArgs(context, value, args, keywords);
+                    }
                     // copy the contents of dict to the classdict
                     foreach (var pair in dict)
                         context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
@@ -1321,10 +1326,15 @@ namespace IronPython.Runtime.Operations {
             return classdict;
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, object metaclass, string selfNames) {
+        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
-            return MakeClass(parentContext, name, bases, metaclass, selfNames, func(parentContext).Dict);
+            object? metaclass = null;
+            if (keywords is not null && keywords.TryGetValueNoMissing("metaclass", out metaclass)) {
+                keywords.RemoveDirect("metaclass"); // keyword argument consumed
+            }
+
+            return MakeClass(parentContext, name, bases, metaclass, keywords, selfNames, func(parentContext).Dict);
         }
 
         private static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
@@ -1342,7 +1352,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static object MakeClass(CodeContext/*!*/ context, string name, PythonTuple bases, object metaclass, string selfNames, PythonDictionary vars) {
+        private static object MakeClass(CodeContext/*!*/ context, string name, PythonTuple bases, object? metaclass, PythonDictionary? keywords, string selfNames, PythonDictionary vars) {
+            Debug.Assert(metaclass is null || keywords is not null);
+
             foreach (object? dt in bases) {
                 if (dt is TypeGroup) {
                     object?[] newBases = new object[bases.Count];
@@ -1368,6 +1380,9 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (metaclass is null) {
+                if (keywords != null && keywords.Count > 0) {
+                    throw TypeError("type() takes no keyword arguments");
+                }
                 // this makes sure that object is a base
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
@@ -1377,14 +1392,13 @@ namespace IronPython.Runtime.Operations {
 
             object? classdict = vars;
 
-            if (metaclass is PythonType) {
-                classdict = CallPrepare(context, (PythonType)metaclass, name, bases, vars);
+            if (metaclass is PythonType metatype) {
+                classdict = CallPrepare(context, metatype, name, bases, keywords, vars);
             }
 
             // eg:
-            // def foo(*args): print args            
-            // __metaclass__ = foo
-            // class bar: pass
+            // def foo(*args): print(args)
+            // class bar(metaclass=foo): pass
             // calls our function...
             PythonContext pc = context.LanguageContext;
 
@@ -1394,7 +1408,8 @@ namespace IronPython.Runtime.Operations {
                 metaclass,
                 name,
                 bases,
-                classdict
+                classdict,
+                keywords
             );
 
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {
@@ -1506,12 +1521,21 @@ namespace IronPython.Runtime.Operations {
             // enumerate the keys getting their values
             IEnumerator enumerator = GetEnumerator(keys);
             while (enumerator.MoveNext()) {
-                object? o = enumerator.Current;
-                if (dict.ContainsKey(o) && (o is string || o is Extensible<string>)) {
-                    throw TypeError($"function got multiple values for keyword argument '{o}'");
-                }
-                dict[o] = PythonOps.GetIndex(context, item, o);
+                object? key = enumerator.Current;
+                object? value = PythonOps.GetIndex(context, item, key);
+                DictMergeOne(context, dict, key, value);
             }
+        }
+
+        /// <summary>
+        /// Like DictMerge but for a single key/value element
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void DictMergeOne(CodeContext context, PythonDictionary dict, object? key, object? value) {
+            if (dict.ContainsKey(key) && (key is string || key is Extensible<string>)) {
+                throw TypeError($"function got multiple values for keyword argument '{key}'");
+            }
+            dict[key] = value;
         }
 
         /// <summary>

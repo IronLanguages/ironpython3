@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 # ref: http://docs.python.org/ref/metaclasses.html
 
@@ -78,7 +78,7 @@ class sub_type3(sub_type2): # subclass
         return super(sub_type3, cls).__new__(cls, name, bases, dict)
 
 
-class MetaclassTest(unittest.TestCase):
+class MetaclassTest(IronPythonTestCase):
 
     def test_modify(self):
         """Modifying the class dictionary prior to the class being created."""
@@ -344,5 +344,152 @@ class MetaclassTest(unittest.TestCase):
         class test(metaclass=metaTest): pass
 
         self.assertEqual(test, "test")
+
+    def test_keyword_arguments_func(self):
+        def funcMeta(*args):
+            nonlocal recvArgs
+            recvArgs = args
+
+        recvArgs = None
+        class Foo(**{'metaclass':funcMeta}): pass
+        self.assertEqual(recvArgs[0:2], ('Foo', ()))
+
+        recvArgs = None
+        class Bar(*(Foo,), **{'metaclass':funcMeta}): pass
+        self.assertEqual(recvArgs[0:2], ('Bar', (None,)))
+
+        def funcMeta(*args, **kwargs):
+            nonlocal recvArgs, recvKwargs
+            recvArgs = args
+            recvKwargs = kwargs
+
+        recvArgs = recvKwargs = None
+        class Foo(**{'metaclass':funcMeta}): pass
+        self.assertEqual(recvArgs[0:2], ('Foo', ()))
+        self.assertEqual(recvKwargs, {})
+
+        recvArgs = recvKwargs = None
+        class Bar(*(Foo,), **{'metaclass':funcMeta}): pass
+        self.assertEqual(recvArgs[0:2], ('Bar', (None,)))
+        self.assertEqual(recvKwargs, {})
+
+        recvArgs = recvKwargs = None
+        class Foo(test=1, **{'metaclass':funcMeta}): pass
+        self.assertEqual(recvArgs[0:2], ('Foo', ()))
+        self.assertEqual(recvKwargs, {'test':1})
+
+        recvArgs = recvKwargs = None
+        class Foo(test=1, **{'metaclass':funcMeta, 'test2':2}): pass
+        self.assertEqual(recvArgs[0:2], ('Foo', ()))
+        self.assertEqual(recvKwargs, {'test':1, 'test2':2})
+
+    def test_keyword_arguments_class(self):
+        # type() does not accept any keyword arguments
+        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+            class Foo(test=True): pass
+
+        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+            class Foo(test=True, **{}): pass
+
+        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+            class Foo(test=True, metaclass=type): pass
+
+        class MetaP(type):
+            @classmethod
+            def __prepare__(metacls, name, bases, **kwargs):
+                return type.__prepare__(metacls, name, bases)
+
+        msg = "MetaP() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
+        with self.assertRaisesMessage(TypeError, msg):
+            class Foo(test=True, metaclass=MetaP): pass
+
+        class MetaN(type):
+            def __new__(metacls, name, bases, attrdict, **kwargs):
+                return type.__new__(metacls, name, bases, attrdict)
+
+        msg = "__init__() takes at most 3 arguments (4 given)" if is_cli else "type.__init__() takes no keyword arguments"
+        with self.assertRaisesMessage(TypeError, msg):
+            class Foo(test=True, metaclass=MetaN): pass
+
+        class MetaI(type):
+            def __init__(metacls, name, bases, attrdict, **kwargs):
+                return type.__init__(metacls, name, bases, attrdict)
+
+        msg = "MetaI() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
+        with self.assertRaisesMessage(TypeError, msg):
+            class Foo(test=True, metaclass=MetaI): pass
+
+        class MetaNI(type):
+            def __new__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_new_args, recv_new_kwargs 
+                recv_new_args = metacls, name, bases, attrdict
+                recv_new_kwargs = kwargs
+                return type.__new__(metacls, name, bases, attrdict)
+
+            def __init__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_init_args, recv_init_kwargs 
+                recv_init_args = metacls, name, bases, attrdict
+                recv_init_kwargs = kwargs
+                return type.__init__(metacls, name, bases, attrdict)
+
+        recv_new_args = recv_new_kwargs = None
+        recv_init_args = recv_init_kwargs = None
+
+        class Foo(test=True, metaclass=MetaNI): pass
+
+        self.assertEqual(recv_new_args[1:3], ('Foo', ()))
+        self.assertEqual(recv_new_kwargs, {'test':True})
+        self.assertEqual(recv_init_args[1:3], ('Foo', ()))
+        self.assertEqual(recv_init_kwargs, {'test':True})
+
+        class MetaPNI(type):
+            @classmethod
+            def __prepare__(metacls, name, bases, **kwargs):
+                nonlocal prep_cnt
+                prep_cnt += 1
+                nonlocal recv_prep_args, recv_prep_kwargs
+                if prep_cnt == 1:
+                    # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
+                    recv_prep_args = metacls, name, bases
+                    recv_prep_kwargs = kwargs
+                return type.__prepare__(metacls, name, bases)
+
+            def __new__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_new_args, recv_new_kwargs 
+                recv_new_args = metacls, name, bases, attrdict
+                recv_new_kwargs = kwargs
+                return type.__new__(metacls, name, bases, attrdict)
+
+            def __init__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_init_args, recv_init_kwargs 
+                recv_init_args = metacls, name, bases, attrdict
+                recv_init_kwargs = kwargs
+                return type.__init__(metacls, name, bases, attrdict)
+
+        prep_cnt = 0
+        recv_prep_args = recv_prep_kwargs = None
+        recv_new_args = recv_new_kwargs = None
+        recv_init_args = recv_init_kwargs = None
+
+        class Foo(test=True, metaclass=MetaPNI): pass
+
+        if is_cli:
+            # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
+            self.assertEqual(prep_cnt, 2)
+
+        self.assertEqual(recv_prep_args[1:3], ('Foo', ()))
+        self.assertEqual(recv_prep_kwargs, {'test':True})
+        self.assertEqual(recv_new_args[1:3], ('Foo', ()))
+        self.assertEqual(recv_new_kwargs, {'test':True})
+        self.assertEqual(recv_init_args[1:3], ('Foo', ()))
+        self.assertEqual(recv_init_kwargs, {'test':True})
+
+    def tesk_keyword_arguments_duplicated(self):
+        with self.assertRaisesPartialMessage(TypeError, "got multiple values for keyword argument 'test'"):
+            class X(test=1, **{'test':2}): pass
+
+        # SyntaxError in CPython 3.4, but works in CPython 3.5 and IronPython
+        #with self.assertRaisesPartialMessage(TypeError, "got multiple values for keyword argument 'test'"):
+        #    class X(**{'test':1}, **{'test':2}): pass
 
 run_test(__name__)

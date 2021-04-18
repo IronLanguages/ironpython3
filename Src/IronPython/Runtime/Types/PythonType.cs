@@ -267,7 +267,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             object type;
 
             if (meta != TypeCache.PythonType) {
-                object classdict = PythonOps.CallPrepare(context, meta, name, bases, dict);
+                object classdict = PythonOps.CallPrepare(context, meta, name, bases, null, dict);
 
                 if (meta != cls) {
                     // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass

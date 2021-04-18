@@ -176,7 +176,7 @@ namespace IronPython.Compiler.Ast {
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
                 foreach (var arg in kwargs) {
                     if (arg.Name is null) {
-                        expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, arg.Expression));
+                        expressions.Add(Expression.Call(AstMethods.DictMerge, context, varExpr, AstUtils.Convert(arg.Expression, typeof(object))));
                     }
                 }
                 expressions.Add(varExpr);

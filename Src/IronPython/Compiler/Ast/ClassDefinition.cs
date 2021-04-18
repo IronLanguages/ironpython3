@@ -222,12 +222,12 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Compare to: CallExpression.Reduce.__UnpackDictHelper
-            static MSAst.Expression UnpackKeywordsHelper(MSAst.Expression context, IReadOnlyList<Keyword> kwargs) {
-                if (kwargs.Count == 0) {
+            static MSAst.Expression UnpackKeywordsHelper(MSAst.Expression context, ReadOnlySpan<Keyword> kwargs) {
+                if (kwargs.Length == 0) {
                     return AstUtils.Constant(null, typeof(PythonDictionary));
                 }
 
-                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(kwargs.Count + 2);
+                var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(kwargs.Length + 2);
                 var varExpr = Expression.Variable(typeof(PythonDictionary), "$dict");
                 expressions.Add(Expression.Assign(varExpr, Expression.Call(AstMethods.MakeEmptyDict)));
                 foreach (var arg in kwargs) {

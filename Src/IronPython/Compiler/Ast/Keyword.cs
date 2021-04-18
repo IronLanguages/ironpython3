@@ -4,13 +4,13 @@
 
 #nullable enable
 
-using Microsoft.Scripting.Actions;
+using System;
 
 namespace IronPython.Compiler.Ast {
     public class Keyword : Node {
         public Keyword(string? name, Expression expression) {
             Name = name;
-            Expression = expression;
+            Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public string? Name { get; }
@@ -18,12 +18,12 @@ namespace IronPython.Compiler.Ast {
         public Expression Expression { get; }
 
         public override string ToString() {
-            return base.ToString() + ":" + Name;
+            return base.ToString() + ":" + (Name ?? "**{...}");
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                Expression?.Walk(walker);
+                Expression.Walk(walker);
             }
             walker.PostWalk(this);
         }

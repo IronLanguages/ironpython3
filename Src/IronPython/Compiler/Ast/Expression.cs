@@ -19,8 +19,6 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     public abstract class Expression : Node {
-        internal static readonly Expression[] EmptyArray = Array.Empty<Expression>();
-
         protected internal static MSAst.BlockExpression UnpackSequenceHelper<T>(ReadOnlySpan<Expression> items, MethodInfo makeEmpty, MethodInfo append, MethodInfo extend) {
             var expressions = new ReadOnlyCollectionBuilder<MSAst.Expression>(items.Length + 2);
             var varExpr = Expression.Variable(typeof(T), "$coll");

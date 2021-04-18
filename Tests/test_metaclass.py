@@ -114,7 +114,7 @@ class MetaclassTest(IronPythonTestCase):
             self.assertEqual(x.method(), 10)
 
         try_metaclass(type)
-        #try_metaclass(type(Old))  # bug 364938
+        try_metaclass(type(Old))
         try_metaclass(dash_attributes)
         try_metaclass(sub_type1)
 
@@ -167,7 +167,7 @@ class MetaclassTest(IronPythonTestCase):
         # base order: how to see the effect of the order???
         for x in [
                     A1,
-                    #A2,        # bug 364991
+                    A2,
                 ]:
             for y in [B1, B2]:
                 class E(x, y):
@@ -195,19 +195,19 @@ class MetaclassTest(IronPythonTestCase):
 
         flag = 0
         class D(C1, C2): pass
-        #self.assertEqual(flag, 1)   # bug 364991
+        self.assertEqual(flag, 1)
         flag = 0
         class D(C2, C1): pass
-        #self.assertEqual(flag, 1)
+        self.assertEqual(flag, 1)
         flag = 0
         class D(C3, C4): pass  # C4 derive from C3
-        #self.assertEqual(flag, 120)
+        self.assertEqual(flag, 110)
         flag = 0
         class D(C3, C1, C4): pass
-        #self.assertEqual(flag, 120)
+        self.assertEqual(flag, 110)
         flag = 0
         class D(C4, C1): pass
-        #self.assertEqual(flag, 110)
+        self.assertEqual(flag, 110)
 
         def f1():
             class D(C2, C3): pass
@@ -218,7 +218,7 @@ class MetaclassTest(IronPythonTestCase):
 
         for f in [
                 f1,
-                #f2,   # bug 364991
+                f2,
                 f3,
             ]:
             self.assertRaises(TypeError, f)
@@ -229,7 +229,7 @@ class MetaclassTest(IronPythonTestCase):
                 pass
 
         for x in [
-                    #None,   # bug 364967
+                    None,
                     1,
                     [],
                     lambda name, bases, dict, extra: 1,

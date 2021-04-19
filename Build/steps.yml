@@ -81,6 +81,11 @@ steps:
   - powershell: ./make.ps1 test-all
     displayName: Test
 
+    # 32-bit tests on Windows only
+  - ${{ if eq(parameters.os, 'Windows') }}:
+    - powershell: ./make.ps1 -frameworks net462 -platform x86 test-all
+      displayName: Test 32-bit
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:

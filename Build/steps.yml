@@ -109,6 +109,7 @@ steps:
       SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
       Contents: |
         **/*.nupkg
+        **/*.snupkg
         **/*.zip
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
     condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))

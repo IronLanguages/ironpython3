@@ -13,6 +13,7 @@
     <DefineSolutionProperties>false</DefineSolutionProperties>
     <SuppressPdbOutput>true</SuppressPdbOutput>
     <SuppressSpecificWarnings>5151</SuppressSpecificWarnings>
+    <SuppressIces>ICE61</SuppressIces>
     <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(RootDir)Package\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BindInputPaths>
     <BuildDir Condition=" '$(BuildDir)' == '' ">$(RootDir)bin\$(Configuration)</BuildDir>
 

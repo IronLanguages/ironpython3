@@ -18,9 +18,7 @@ Comparison of IronPython vs. C# for 'Hello World'
 C#:
 
 ```cs
-using System;
-
-Console.WriteLine("Hello World");
+System.Console.WriteLine("Hello World");
 ```
 
 IronPython:

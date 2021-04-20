@@ -1332,6 +1332,9 @@ namespace IronPython.Runtime.Operations {
             object? metaclass = null;
             if (keywords is not null && keywords.TryGetValueNoMissing("metaclass", out metaclass)) {
                 keywords.RemoveDirect("metaclass"); // keyword argument consumed
+                if (metaclass is null) {
+                    throw TypeError("metaclass cannot be 'None'"); // CPython: 'NoneType' object is not callable
+                }
             }
 
             return MakeClass(parentContext, name, bases, metaclass, keywords, selfNames, func(parentContext).Dict);

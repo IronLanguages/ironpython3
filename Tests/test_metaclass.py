@@ -8,10 +8,7 @@ from iptest import IronPythonTestCase, is_cli, run_test
 
 # ref: http://docs.python.org/ref/metaclasses.html
 
-class Old:
-    def method(self): return 10
-
-class New(object):
+class SomeClass(object):
     def method(self): return 10
 
 def g_f_modify(new_base=None, new_name=None):
@@ -89,11 +86,11 @@ class MetaclassTest(IronPythonTestCase):
             self.assertEqual(x.__class__.__name__, "D")
 
         for f in [ g_f_modify, g_c_modify ]:
-            class C(object, metaclass=f((New,), "D")):
+            class C(object, metaclass=f((SomeClass,), "D")):
                 pass
             _check(C)
 
-            class C(metaclass=f((New,), "D")):
+            class C(metaclass=f((SomeClass,), "D")):
                 pass
             _check(C)
 
@@ -114,7 +111,6 @@ class MetaclassTest(IronPythonTestCase):
             self.assertEqual(x.method(), 10)
 
         try_metaclass(type)
-        #try_metaclass(type(Old))  # bug 364938
         try_metaclass(dash_attributes)
         try_metaclass(sub_type1)
 
@@ -145,29 +141,29 @@ class MetaclassTest(IronPythonTestCase):
         self.assertTrue(hasattr(D, "start_something_today"))
 
     def test_find_metaclass(self):
+        # A1 hits a slightly different code path in some places than A2, same for B1, B2, etc.
         class A1: pass
         class A2(object): pass
+        self.assertEqual(A1.__class__, type)
         self.assertEqual(A2.__class__, type)
 
-        class B1(metaclass=dash_attributes):
-            pass
-        class B2(object, metaclass=dash_attributes):
-            pass
+        class B1(metaclass=dash_attributes): pass
+        class B2(object, metaclass=dash_attributes): pass
 
         meta = lambda *args: 100
 
-        class D1(metaclass=meta):
-            pass
+        class D1(metaclass=meta): pass
         self.assertEqual(D1, 100)
+        self.assertEqual(D1.__class__, int)
 
-        class D2(object,metaclass=meta):
-            pass
+        class D2(object,metaclass=meta): pass
+        self.assertEqual(D2, 100)
         self.assertEqual(D2.__class__, int)
 
         # base order: how to see the effect of the order???
         for x in [
                     A1,
-                    #A2,        # bug 364991
+                    A2,
                 ]:
             for y in [B1, B2]:
                 class E(x, y):
@@ -195,19 +191,19 @@ class MetaclassTest(IronPythonTestCase):
 
         flag = 0
         class D(C1, C2): pass
-        #self.assertEqual(flag, 1)   # bug 364991
+        self.assertEqual(flag, 1)
         flag = 0
         class D(C2, C1): pass
-        #self.assertEqual(flag, 1)
+        self.assertEqual(flag, 1)
         flag = 0
         class D(C3, C4): pass  # C4 derive from C3
-        #self.assertEqual(flag, 120)
+        self.assertEqual(flag, 110)
         flag = 0
         class D(C3, C1, C4): pass
-        #self.assertEqual(flag, 120)
+        self.assertEqual(flag, 110)
         flag = 0
         class D(C4, C1): pass
-        #self.assertEqual(flag, 110)
+        self.assertEqual(flag, 110)
 
         def f1():
             class D(C2, C3): pass
@@ -218,7 +214,7 @@ class MetaclassTest(IronPythonTestCase):
 
         for f in [
                 f1,
-                #f2,   # bug 364991
+                f2,
                 f3,
             ]:
             self.assertRaises(TypeError, f)
@@ -229,13 +225,12 @@ class MetaclassTest(IronPythonTestCase):
                 pass
 
         for x in [
-                    #None,   # bug 364967
+                    None,
                     1,
                     [],
                     lambda name, bases, dict, extra: 1,
                     lambda name, bases: 1,
-                    Old,
-                    New,
+                    SomeClass,
                 ]:
             self.assertRaises(TypeError, create, x)
 

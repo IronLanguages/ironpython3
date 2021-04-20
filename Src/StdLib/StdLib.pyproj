@@ -24,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="StdLib.License.txt" />
     <Content Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
   </ItemGroup>
 

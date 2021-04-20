@@ -7,7 +7,7 @@
     <authors>IronPython Contributors,Python Contributors</authors>
     <owners>IronPython Community</owners>
     <projectUrl>http://ironpython.net</projectUrl>
-    <license type="expression">PSF-2.0</license>
+    <license type="file">StdLib.License.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The Python Standard Library, for use with IronPython.</description>
     <summary>The Python Standard Library, for use with IronPython.</summary>
@@ -21,6 +21,7 @@
     </contentFiles>
   </metadata>
   <files>
+    <file src="StdLib.License.txt" />
     <file src="Lib\**" target="contentFiles\any\any\Lib" />
     <file src="Lib\**" target="content\Lib" />
   </files>

@@ -16,6 +16,9 @@
         <File Id="ipy.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipy.exe">
           <netfx:NativeImage Id="ngen_ipy.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <File Id="ipy32.exe" Source="$(var.PlatformDir)\ipy32.exe">
+          <netfx:NativeImage Id="ngen_ipy32.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
+        </File>
       </Component>
 
       <Component Guid="{F7E1626D-3007-405D-A656-1A971D172A07}">
@@ -28,6 +31,9 @@
       <Component Guid="{A9A13553-6EAD-4C92-9334-149F223F854C}">
         <File Id="ipyw.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipyw.exe">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
+        </File>
+        <File Id="ipyw32.exe" Source="$(var.PlatformDir)\ipyw32.exe">
+          <netfx:NativeImage Id="ngen_ipyw32.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
       </Component>
 

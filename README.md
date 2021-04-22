@@ -43,6 +43,7 @@ See the following lists for features from each version of CPython that have been
 - [What's New In Python 3.2](WhatsNewInPython32.md)
 - [What's New In Python 3.3](WhatsNewInPython33.md)
 - [What's New In Python 3.4](WhatsNewInPython34.md)
+- [What's New In Python 3.5](WhatsNewInPython35.md)
 
 ## Upgrading from IronPython 2
 For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](Documentation/upgrading-from-ipy2.md) article.

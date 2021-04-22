@@ -1305,66 +1305,17 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        internal static object? CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
-            object? classdict = dict;
-
-            // if available, call the __prepare__ method to get the classdict (PEP 3115)
-            if (meta.TryLookupSlot(context, "__prepare__", out PythonTypeSlot pts)) {
-                if (pts.TryGetValue(context, null, meta, out object value)) {
-                    if (keywords is null || keywords.Count == 0) {
-                        classdict = PythonOps.CallWithContext(context, value, name, bases);
-                    } else {
-                        var args = new object[] { name, bases };
-                        classdict = PythonCalls.CallWithKeywordArgs(context, value, args, keywords);
-                    }
-                    // copy the contents of dict to the classdict
-                    foreach (var pair in dict)
-                        context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
-                }
-            }
-
-            return classdict;
-        }
-
         public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
-            Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
+            Func<CodeContext, CodeContext> func = getClassCode(parentContext, funcCode, body);
 
-            object? metaclass = null;
-            if (keywords is not null && keywords.TryGetValueNoMissing("metaclass", out metaclass)) {
-                keywords.RemoveDirect("metaclass"); // keyword argument consumed
-                if (metaclass is null) {
-                    throw TypeError("metaclass cannot be 'None'"); // CPython: 'NoneType' object is not callable
-                }
-            }
-
-            return MakeClass(parentContext, name, bases, metaclass, keywords, selfNames, func(parentContext).Dict);
-        }
-
-        private static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
-            if (body == null) {
-                if (funcCode.Target == null) {
-                    funcCode.UpdateDelegate(context.LanguageContext, true);
-                }
-                return (Func<CodeContext, CodeContext>)funcCode.Target!;
-            } else {
-                if (funcCode.Target == null) {
-                    funcCode.SetTarget(body);
-                    funcCode._normalDelegate = body;
-                }
-                return body;
-            }
-        }
-
-        private static object MakeClass(CodeContext/*!*/ context, string name, PythonTuple bases, object? metaclass, PythonDictionary? keywords, string selfNames, PythonDictionary vars) {
-            Debug.Assert(metaclass is null || keywords is not null);
-
+            // Check and normalize bases
             foreach (object? dt in bases) {
                 if (dt is TypeGroup) {
                     object?[] newBases = new object[bases.Count];
                     for (int i = 0; i < bases.Count; i++) {
                         if (bases[i] is TypeGroup tc) {
                             if (!tc.TryGetNonGenericType(out Type nonGenericType)) {
-                                throw PythonOps.TypeError("cannot derive from open generic types {0}", Repr(context, tc));
+                                throw PythonOps.TypeError("cannot derive from open generic types {0}", Repr(parentContext, tc));
                             }
                             newBases[i] = DynamicHelpers.GetPythonTypeFromType(nonGenericType);
                         } else {
@@ -1382,6 +1333,23 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
+            // Discover metaclass
+            object? metaclass = null;
+            if (keywords is not null && keywords.TryGetValueNoMissing("metaclass", out metaclass)) {
+                keywords.RemoveDirect("metaclass"); // keyword argument consumed
+                if (metaclass is null) {
+                    throw TypeError("metaclass cannot be 'None'"); // CPython: 'NoneType' object is not callable
+                }
+            }
+
+            if (metaclass is null or PythonType) {
+                metaclass = PythonType.FindMetaClass((PythonType?)metaclass ?? TypeCache.PythonType, bases);
+                if (metaclass == TypeCache.PythonType) {
+                    metaclass = null; // enables fasttrack below
+                }
+            } // else metaclass is expected to be a callable and overrides any inherited metaclass through any bases
+
+            // Fasttrack for metaclass == `type`
             if (metaclass is null) {
                 if (keywords != null && keywords.Count > 0) {
                     throw TypeError("type() takes no keyword arguments");
@@ -1390,36 +1358,82 @@ namespace IronPython.Runtime.Operations {
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
                 }
-                return PythonType.__new__(context, TypeCache.PythonType, name, bases, vars, selfNames);
+                PythonDictionary vars = func(parentContext).Dict;
+                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
             }
 
-            object? classdict = vars;
+            // Prepare classsdict
+            // TODO: prepared classdict should be used by `func` (PEP 3115)
+            object? classdict = callPrepare(parentContext, metaclass, name, bases, keywords, func(parentContext).Dict);
 
-            if (metaclass is PythonType metatype) {
-                classdict = CallPrepare(context, metatype, name, bases, keywords, vars);
-            }
-
-            // eg:
-            // def foo(*args): print(args)
-            // class bar(metaclass=foo): pass
+            // Dispatch to the metaclass to do class creation and initialization
+            // metaclass could be simply a callable, eg:
+            // >>> def foo(*args): print(args)
+            // >>> class bar(metaclass=foo): pass
             // calls our function...
-            PythonContext pc = context.LanguageContext;
+            PythonContext pc = parentContext.LanguageContext;
 
             object obj = pc.MetaClassCallSite.Target(
                 pc.MetaClassCallSite,
-                context,
+                parentContext,
                 metaclass,
                 name,
                 bases,
                 classdict,
-                keywords
+                keywords ?? MakeEmptyDict()
             );
 
+            // Ensure the class derives from `object`
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {
                 newType.BaseTypes.Add(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
             }
 
             return obj;
+            // ------------------------------------------------------------------------
+
+            static Func<CodeContext, CodeContext> getClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
+                if (body == null) {
+                    if (funcCode.Target == null) {
+                        funcCode.UpdateDelegate(context.LanguageContext, true);
+                    }
+                    return (Func<CodeContext, CodeContext>)funcCode.Target!;
+                } else {
+                    if (funcCode.Target == null) {
+                        funcCode.SetTarget(body);
+                        funcCode._normalDelegate = body;
+                    }
+                    return body;
+                }
+            }
+
+            static object? callPrepare(CodeContext/*!*/ context, object meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
+                object? classdict = dict;
+
+                object? prepareFunc = null;
+                // if available, call the __prepare__ method to get the classdict (PEP 3115)
+                if (meta is PythonType metatype) {
+                    if (metatype.TryResolveSlot(context, "__prepare__", out PythonTypeSlot pts)) {
+                        bool ok = pts.TryGetValue(context, null, metatype, out prepareFunc);
+                        Debug.Assert(ok);
+                    }
+                } else if (!TryGetBoundAttr(context, meta, "__prepare__", out prepareFunc)) {
+                    prepareFunc = null;
+                }
+
+                if (prepareFunc is not null) {
+                    if (keywords is null || keywords.Count == 0) {
+                        classdict = PythonCalls.Call(context, prepareFunc, name, bases);
+                    } else {
+                        var args = new object[] { name, bases };
+                        classdict = PythonCalls.CallWithKeywordArgs(context, prepareFunc, args, keywords);
+                    }
+                    // copy the contents of dict to the classdict
+                    foreach (var pair in dict)
+                        context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
+                }
+
+                return classdict;
+            }
         }
 
         public static void RaiseAssertionError(CodeContext context) {

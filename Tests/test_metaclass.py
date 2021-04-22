@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -380,13 +381,13 @@ class MetaclassTest(IronPythonTestCase):
 
     def test_keyword_arguments_class(self):
         # type() does not accept any keyword arguments
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True): pass
 
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, **{}): pass
 
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=type): pass
 
         class MetaP(type):
@@ -394,24 +395,23 @@ class MetaclassTest(IronPythonTestCase):
             def __prepare__(metacls, name, bases, **kwargs):
                 return type.__prepare__(metacls, name, bases)
 
-        msg = "MetaP() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
-        with self.assertRaisesMessage(TypeError, msg):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=MetaP): pass
 
-        class MetaN(type):
-            def __new__(metacls, name, bases, attrdict, **kwargs):
-                return type.__new__(metacls, name, bases, attrdict)
+        if (sys.version_info < (3,6)):
+            class MetaN(type):
+                def __new__(metacls, name, bases, attrdict, **kwargs):
+                    return type.__new__(metacls, name, bases, attrdict)
 
-        msg = "__init__() takes at most 3 arguments (4 given)" if is_cli else "type.__init__() takes no keyword arguments"
-        with self.assertRaisesMessage(TypeError, msg):
-            class Foo(test=True, metaclass=MetaN): pass
+            msg = "__init__() takes at most 3 arguments (4 given)" if is_cli else "type.__init__() takes no keyword arguments"
+            with self.assertRaisesMessage(TypeError, msg):
+                class Foo(test=True, metaclass=MetaN): pass
 
         class MetaI(type):
             def __init__(metacls, name, bases, attrdict, **kwargs):
                 return type.__init__(metacls, name, bases, attrdict)
 
-        msg = "MetaI() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
-        with self.assertRaisesMessage(TypeError, msg):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=MetaI): pass
 
         class MetaNI(type):
@@ -443,10 +443,8 @@ class MetaclassTest(IronPythonTestCase):
                 nonlocal prep_cnt
                 prep_cnt += 1
                 nonlocal recv_prep_args, recv_prep_kwargs
-                if prep_cnt == 1:
-                    # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
-                    recv_prep_args = metacls, name, bases
-                    recv_prep_kwargs = kwargs
+                recv_prep_args = metacls, name, bases
+                recv_prep_kwargs = kwargs
                 return type.__prepare__(metacls, name, bases)
 
             def __new__(metacls, name, bases, attrdict, **kwargs):
@@ -468,9 +466,7 @@ class MetaclassTest(IronPythonTestCase):
 
         class Foo(test=True, metaclass=MetaPNI): pass
 
-        if is_cli:
-            # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
-            self.assertEqual(prep_cnt, 2)
+        self.assertEqual(prep_cnt, 1)
 
         self.assertEqual(recv_prep_args[1:3], ('Foo', ()))
         self.assertEqual(recv_prep_kwargs, {'test':True})

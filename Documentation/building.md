@@ -41,4 +41,8 @@ test-*                          Runs tests from `all` categories, `ironpython` s
                                 `cpython` tests from the CPython stdlib test suite
 ```
 
-If the build is successful the binaries are stored in ironpython3/bin/{Configuration}/{TargetFramework}
+If the build is successful the binaries are stored in `ironpython3/bin/{Configuration}/{TargetFramework}`.
+
+## Run
+
+Before run the IronPython3, you should set the environment variable `IRONPYTHONPATH` to `Src/StdLib/Lib/`.

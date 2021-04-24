@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -380,13 +381,13 @@ class MetaclassTest(IronPythonTestCase):
 
     def test_keyword_arguments_class(self):
         # type() does not accept any keyword arguments
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True): pass
 
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, **{}): pass
 
-        with self.assertRaisesRegex(TypeError, r"^type\(\) takes .* arguments"):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=type): pass
 
         class MetaP(type):
@@ -394,24 +395,32 @@ class MetaclassTest(IronPythonTestCase):
             def __prepare__(metacls, name, bases, **kwargs):
                 return type.__prepare__(metacls, name, bases)
 
-        msg = "MetaP() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
-        with self.assertRaisesMessage(TypeError, msg):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=MetaP): pass
 
         class MetaN(type):
             def __new__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_new_args, recv_new_kwargs 
+                recv_new_args = metacls, name, bases, attrdict
+                recv_new_kwargs = kwargs
                 return type.__new__(metacls, name, bases, attrdict)
 
-        msg = "__init__() takes at most 3 arguments (4 given)" if is_cli else "type.__init__() takes no keyword arguments"
-        with self.assertRaisesMessage(TypeError, msg):
+        if (sys.version_info < (3,6) and not is_cli):
+            with self.assertRaisesMessage(TypeError, "type.__init__() takes no keyword arguments"):
+                class Foo(test=True, metaclass=MetaN): pass
+        else:
+            recv_new_args = recv_new_kwargs = None
+
             class Foo(test=True, metaclass=MetaN): pass
+
+            self.assertEqual(recv_new_args[1:3], ('Foo', ()))
+            self.assertEqual(recv_new_kwargs, {'test':True})
 
         class MetaI(type):
             def __init__(metacls, name, bases, attrdict, **kwargs):
                 return type.__init__(metacls, name, bases, attrdict)
 
-        msg = "MetaI() takes at most 4 arguments (5 given)" if is_cli else "type() takes 1 or 3 arguments"
-        with self.assertRaisesMessage(TypeError, msg):
+        with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=MetaI): pass
 
         class MetaNI(type):
@@ -443,10 +452,8 @@ class MetaclassTest(IronPythonTestCase):
                 nonlocal prep_cnt
                 prep_cnt += 1
                 nonlocal recv_prep_args, recv_prep_kwargs
-                if prep_cnt == 1:
-                    # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
-                    recv_prep_args = metacls, name, bases
-                    recv_prep_kwargs = kwargs
+                recv_prep_args = metacls, name, bases
+                recv_prep_kwargs = kwargs
                 return type.__prepare__(metacls, name, bases)
 
             def __new__(metacls, name, bases, attrdict, **kwargs):
@@ -468,9 +475,7 @@ class MetaclassTest(IronPythonTestCase):
 
         class Foo(test=True, metaclass=MetaPNI): pass
 
-        if is_cli:
-            # FIXME: https://github.com/IronLanguages/ironpython3/issues/1154
-            self.assertEqual(prep_cnt, 2)
+        self.assertEqual(prep_cnt, 1)
 
         self.assertEqual(recv_prep_args[1:3], ('Foo', ()))
         self.assertEqual(recv_prep_kwargs, {'test':True})
@@ -479,12 +484,172 @@ class MetaclassTest(IronPythonTestCase):
         self.assertEqual(recv_init_args[1:3], ('Foo', ()))
         self.assertEqual(recv_init_kwargs, {'test':True})
 
-    def tesk_keyword_arguments_duplicated(self):
+    def test_keyword_arguments_duplicated(self):
         with self.assertRaisesPartialMessage(TypeError, "got multiple values for keyword argument 'test'"):
             class X(test=1, **{'test':2}): pass
 
         # SyntaxError in CPython 3.4, but works in CPython 3.5 and IronPython
         #with self.assertRaisesPartialMessage(TypeError, "got multiple values for keyword argument 'test'"):
         #    class X(**{'test':1}, **{'test':2}): pass
+
+    def test_mixed_metaclass(self):
+        from collections import defaultdict, OrderedDict
+
+        class MetaClass(type):
+            @classmethod
+            def __prepare__(metacls, name, bases, **kwargs):
+                flags['MetaClass.__prepare__'] += 1
+                return OrderedDict(MetaClass_prep="prepared by MetaClass")
+
+            def __new__(metacls, name, bases, attrdict, **kwargs):
+                flags['MetaClass.__new__'] += 1
+                attrdict['MetaClass_new']="created by MetaClass"
+                return type.__new__(metacls, name, bases, attrdict)
+
+            def __init__(cls, name, bases, attrdict, **kwargs):
+                flags['MetaClass.__init__'] += 1
+                attrdict['MetaClass_init']="initialized by MetaClass"
+                type.__init__(cls, name, bases, attrdict)
+
+        class SubMeta(MetaClass): pass
+
+        def metafactory(metabase):
+            def meta(name, bases, classdict, **kwargs):
+                flags['meta'] += 1
+                classdict['meta_func'] = "processed by function meta(" + name + ", ...) using metabase " + str(metabase)
+                cls = metabase.__new__(metabase, name, bases, classdict)
+                metabase.__init__(cls, name, bases, classdict)
+                return cls
+            return meta
+
+        def my_prepare(*args, **kwargs):
+            flags['my_prepare'] += 1
+            return {'my_prepare':"prepared by my_prepare function"}
+
+        meta_prep = metafactory(type)
+        meta_prep.__prepare__ = my_prepare
+
+        # Using a class as a metaclass
+        flags = defaultdict(int)
+        class C1(metaclass=MetaClass, private=True):
+            if is_cli:
+                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('MetaClass_prep', dir())
+
+        self.assertEqual(flags['MetaClass.__prepare__'], 1)
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 1)
+
+        # Using a function as a metaclass
+        flags = defaultdict(int)
+        class C2(metaclass=metafactory(type), private=True):
+            self.assertEqual([], [x for x in dir() if not x.startswith("__")])
+
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(C2.meta_func, "processed by function meta(C2, ...) using metabase <class 'type'>")
+
+        # Metaclass as function with __prepare__
+        flags = defaultdict(int)
+        class C3(metaclass=meta_prep, private=True):
+            if is_cli:
+                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('my_prepare', dir())
+
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(flags['my_prepare'], 1) # !!!
+        self.assertEqual(C3.meta_func, "processed by function meta(C3, ...) using metabase <class 'type'>")
+
+        # Derived from a metaclassed class but metaclass overriden with meta-as-function
+        flags = defaultdict(int)
+        class C2_C1(C1, metaclass=metafactory(type), private=True):
+            self.assertEqual([], [x for x in dir() if not x.startswith("__")])
+
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(flags['MetaClass.__prepare__'], 0) # !!!
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 0) # !!!
+        self.assertEqual(C2_C1.meta_func, "processed by function meta(C2_C1, ...) using metabase <class 'type'>")
+
+        # Derived from a metaclassed class but overriden with meta-as-function w/ __prepare__
+        flags = defaultdict(int)
+        class C3_C1(C1, metaclass=meta_prep, private=True):
+            if is_cli:
+                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('my_prepare', dir())
+            self.assertNotIn('MetaClass_prep', dir())
+
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(flags['my_prepare'], 1) # !!!
+        self.assertEqual(flags['MetaClass.__prepare__'], 0) # !!!
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 0) # !!!
+        self.assertEqual(C3_C1.meta_func, "processed by function meta(C3_C1, ...) using metabase <class 'type'>")
+
+        # Derived from two classes with meta-as-function, but sharing a common base with meta-as-class
+        flags = defaultdict(int)
+        class X(C2_C1, C3_C1):
+            if is_cli:
+                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('MetaClass_prep', dir())
+            self.assertNotIn('my_prepare', dir())
+
+        self.assertEqual(flags['meta'], 0) # !!!
+        self.assertEqual(flags['my_prepare'], 0) # !!!
+        self.assertEqual(flags['MetaClass.__prepare__'], 1)
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 1)
+        self.assertEqual(X.meta_func, "processed by function meta(C2_C1, ...) using metabase <class 'type'>")
+
+        # Derived from two classes with meta-as-function, sharing a common base with meta-as-class, but again overriden here with meta-as-function w/ __prepare__
+        flags = defaultdict(int)
+        class XM(C2_C1, C3_C1, metaclass=meta_prep):
+            if is_cli:
+                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('my_prepare', dir())
+            self.assertNotIn('MetaClass_prep', dir())
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(flags['my_prepare'], 1)
+        self.assertEqual(flags['MetaClass.__prepare__'], 0) # !!!
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 0) # !!!
+        self.assertEqual(XM.meta_func, "processed by function meta(XM, ...) using metabase <class 'type'>")
+
+        # Derived from two classes with meta-as-function, w/o common metaclass
+        flags = defaultdict(int)
+        class XC(C2, C3):
+            self.assertNotIn('my_prepare', dir())
+
+        self.assertEqual(flags['meta'], 0) # !!!
+        self.assertEqual(flags['my_prepare'], 0) # !!!
+        self.assertEqual(XC.meta_func, "processed by function meta(C2, ...) using metabase <class 'type'>")
+
+        # Simple metaclass deriving from another metaclass
+        flags = defaultdict(int)
+        class C5(metaclass=SubMeta):
+            if is_cli:
+                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
+            else:
+                self.assertIn('MetaClass_prep', dir())
+
+        self.assertEqual(flags['MetaClass.__prepare__'], 1)
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 1)
+
+        # Derived from two metaclassed class, one having a subclassed metaclass, but local metaclass overriden with meta-as-function
+        flags = defaultdict(int)
+        class XM2(C2_C1, C5, metaclass=metafactory(type)):
+            self.assertNotIn('my_prepare', dir())
+            self.assertNotIn('MetaClass_prep', dir())
+        self.assertEqual(flags['meta'], 1)
+        self.assertEqual(flags['my_prepare'], 0)
+        self.assertEqual(flags['MetaClass.__prepare__'], 0) # !!!
+        self.assertEqual(flags['MetaClass.__new__'], 1)
+        self.assertEqual(flags['MetaClass.__init__'], 0) # !!!
+        self.assertEqual(XM2.meta_func, "processed by function meta(XM2, ...) using metabase <class 'type'>")
 
 run_test(__name__)

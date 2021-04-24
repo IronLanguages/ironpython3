@@ -398,14 +398,23 @@ class MetaclassTest(IronPythonTestCase):
         with self.assertRaisesRegex(TypeError, r"\(\) takes .* arguments"):
             class Foo(test=True, metaclass=MetaP): pass
 
-        if (sys.version_info < (3,6)):
-            class MetaN(type):
-                def __new__(metacls, name, bases, attrdict, **kwargs):
-                    return type.__new__(metacls, name, bases, attrdict)
+        class MetaN(type):
+            def __new__(metacls, name, bases, attrdict, **kwargs):
+                nonlocal recv_new_args, recv_new_kwargs 
+                recv_new_args = metacls, name, bases, attrdict
+                recv_new_kwargs = kwargs
+                return type.__new__(metacls, name, bases, attrdict)
 
-            msg = "__init__() takes at most 3 arguments (4 given)" if is_cli else "type.__init__() takes no keyword arguments"
-            with self.assertRaisesMessage(TypeError, msg):
+        if (sys.version_info < (3,6) and not is_cli):
+            with self.assertRaisesMessage(TypeError, "type.__init__() takes no keyword arguments"):
                 class Foo(test=True, metaclass=MetaN): pass
+        else:
+            recv_new_args = recv_new_kwargs = None
+
+            class Foo(test=True, metaclass=MetaN): pass
+
+            self.assertEqual(recv_new_args[1:3], ('Foo', ()))
+            self.assertEqual(recv_new_kwargs, {'test':True})
 
         class MetaI(type):
             def __init__(metacls, name, bases, attrdict, **kwargs):

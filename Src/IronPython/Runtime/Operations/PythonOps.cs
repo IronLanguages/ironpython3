@@ -1306,7 +1306,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
-            Func<CodeContext, CodeContext> func = getClassCode(parentContext, funcCode, body);
+            Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
             // Check and normalize bases
             foreach (object? dt in bases) {
@@ -1362,9 +1362,9 @@ namespace IronPython.Runtime.Operations {
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
             }
 
-            // Prepare classsdict
+            // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = callPrepare(parentContext, metaclass, name, bases, keywords, func(parentContext).Dict);
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, func(parentContext).Dict);
 
             // Dispatch to the metaclass to do class creation and initialization
             // metaclass could be simply a callable, eg:
@@ -1391,7 +1391,7 @@ namespace IronPython.Runtime.Operations {
             return obj;
             // ------------------------------------------------------------------------
 
-            static Func<CodeContext, CodeContext> getClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
+            static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
                 if (body == null) {
                     if (funcCode.Target == null) {
                         funcCode.UpdateDelegate(context.LanguageContext, true);
@@ -1406,7 +1406,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            static object? callPrepare(CodeContext/*!*/ context, object meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
+            static object? CallPrepare(CodeContext/*!*/ context, object meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
                 object? classdict = dict;
 
                 object? prepareFunc = null;

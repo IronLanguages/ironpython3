@@ -292,7 +292,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public void __init__(string name, PythonTuple bases, PythonDictionary dict) {
+        public void __init__(string name, PythonTuple bases, PythonDictionary dict, [ParamDictionary] IDictionary<object, object> kwargs) {
         }
 
         internal static PythonType FindMetaClass(PythonType cls, PythonTuple bases) {

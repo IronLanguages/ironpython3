@@ -48,7 +48,7 @@ def greetings(name):
 dynamic greetings = scope.GetVariable("greetings");
 System.Console.WriteLine(greetings("world"));
 ```
-This example assumes that `IronPython` has been added the the C# project as a NuGet package.
+This example assumes that `IronPython` has been added to the C# project as a NuGet package.
 
 ## Code of Conduct
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.

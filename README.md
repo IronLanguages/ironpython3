@@ -76,9 +76,7 @@ While compatibility with CPython is one of our main goals with IronPython 3, the
 Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0-alpha1).
 
 ## Build
-See the [building document](Documentation/building.md)
-
-Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
+See the [building document](Documentation/building.md). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
 
 ## Supported Platforms
 IronPython 3 targets .NET Framework 4.6, .NET Core 2.1/3.1 and .NET 5.0. The support for .NET Core and .NET 5 will follow the lifecycle defined on [.NET Core and .NET 5 Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).

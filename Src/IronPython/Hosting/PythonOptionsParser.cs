@@ -130,85 +130,55 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
+                case "-X":
+                    HandleImplementationSpecificOption(PopNextArg());
+                    break;
+
+                // old implementation specific options for compat
                 case "-X:NoFrames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.False) {
-                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
-                    }
-                    LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
+                    HandleImplementationSpecificOption("NoFrames");
                     break;
                 case "-X:Frames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
-                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
-                    }
-                    LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("Frames");
                     break;
                 case "-X:FullFrames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
-                        throw new InvalidOptionException("Only one of -X:[Full]Frames/-X:NoFrames may be specified");
-                    }
-                    LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("FullFrames");
                     break;
                 case "-X:Tracing":
-                    LanguageSetup.Options["Tracing"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("Tracing");
                     break;
                 case "-X:GCStress":
-                    int gcStress;
-                    if (!int.TryParse(PopNextArg(), out gcStress) || (gcStress < 0 || gcStress > GC.MaxGeneration)) {
-                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be between 0 and {1}.", arg, GC.MaxGeneration));
-                    }
-
-                    LanguageSetup.Options["GCStress"] = gcStress;
+                    HandleImplementationSpecificOption("GCStress=" + PopNextArg());
                     break;
-
                 case "-X:MaxRecursion":
-                    // we need about 6 frames for starting up, so 10 is a nice round number.
-                    int limit;
-                    if (!int.TryParse(PopNextArg(), out limit) || limit < 10) {
-                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be an integer >= 10.", arg));
-                    }
-
-                    LanguageSetup.Options["RecursionLimit"] = limit;
+                    HandleImplementationSpecificOption("MaxRecursion=" + PopNextArg());
                     break;
-
                 case "-X:EnableProfiler":
-                    LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("EnableProfiler");
                     break;
-
                 case "-X:LightweightScopes":
-                    LanguageSetup.Options["LightweightScopes"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("LightweightScopes");
                     break;
-
                 case "-X:MTA":
-                    ConsoleOptions.IsMta = true;
+                    HandleImplementationSpecificOption("MTA");
                     break;
-
                 case "-X:Debug":
-                    RuntimeSetup.DebugMode = true;
-                    LanguageSetup.Options["Debug"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("Debug");
                     break;
-
                 case "-X:NoDebug":
-                    string regex = PopNextArg();
-                    try {
-                        LanguageSetup.Options["NoDebug"] = new Regex(regex);
-                    } catch {
-                        throw InvalidOptionValue("-X:NoDebug", regex);
-                    }
-                    
+                    HandleImplementationSpecificOption("NoDebug=" + PopNextArg());
                     break;
-
                 case "-X:BasicConsole":
-                    ConsoleOptions.BasicConsole = true;
+                    HandleImplementationSpecificOption("BasicConsole");
                     break;
-
 #if DEBUG
                 case "-X:NoImportLib":
-                    LanguageSetup.Options["NoImportLib"] = ScriptingRuntimeHelpers.True;
+                    HandleImplementationSpecificOption("NoImportLib");
                     break;
 #endif
 
                 default:
-                    if(arg.StartsWith("-W")) {
+                    if (arg.StartsWith("-W")) {
                         if (_warningFilters == null) {
                             _warningFilters = new List<string>();
                         }
@@ -230,6 +200,92 @@ namespace IronPython.Hosting {
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     }
                     break;
+            }
+
+            void HandleImplementationSpecificOption(string opt) {
+                var split = opt.Split(new[] { '=' }, 2);
+                var arg = split[0];
+                var val = split.Length > 1 ? split[1] : string.Empty;
+
+                switch (arg) {
+                    case "NoFrames":
+                        if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.False) {
+                            throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
+                        }
+                        LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
+                        break;
+
+                    case "Frames":
+                        if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                            throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
+                        }
+                        LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "FullFrames":
+                        if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                            throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
+                        }
+                        LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "Tracing":
+                        LanguageSetup.Options["Tracing"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "GCStress":
+                        int gcStress;
+                        if (!int.TryParse(val, out gcStress) || gcStress < 0 || gcStress > GC.MaxGeneration) {
+                            throw new InvalidOptionException(string.Format("The argument for the -X {0} option must be between 0 and {1}.", arg, GC.MaxGeneration));
+                        }
+                        LanguageSetup.Options["GCStress"] = gcStress;
+                        break;
+
+                    case "MaxRecursion":
+                        // we need about 6 frames for starting up, so 10 is a nice round number.
+                        int limit;
+                        if (!int.TryParse(val, out limit) || limit < 10) {
+                            throw new InvalidOptionException(string.Format("The argument for the -X {0} option must be an integer >= 10.", arg));
+                        }
+                        LanguageSetup.Options["RecursionLimit"] = limit;
+                        break;
+
+                    case "EnableProfiler":
+                        LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "LightweightScopes":
+                        LanguageSetup.Options["LightweightScopes"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "MTA":
+                        ConsoleOptions.IsMta = true;
+                        break;
+
+                    case "Debug":
+                        RuntimeSetup.DebugMode = true;
+                        LanguageSetup.Options["Debug"] = ScriptingRuntimeHelpers.True;
+                        break;
+
+                    case "NoDebug":
+                        string regex = val;
+                        try {
+                            LanguageSetup.Options["NoDebug"] = new Regex(regex);
+                        } catch {
+                            throw InvalidOptionValue("NoDebug", regex);
+                        }
+                        break;
+
+                    case "BasicConsole":
+                        ConsoleOptions.BasicConsole = true;
+                        break;
+
+#if DEBUG
+                    case "NoImportLib":
+                        LanguageSetup.Options["NoImportLib"] = ScriptingRuntimeHelpers.True;
+                        break;
+#endif
+                }
             }
         }
 
@@ -253,7 +309,7 @@ namespace IronPython.Hosting {
                 { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
 #endif
                 { "-b",                     "issue warnings about str(bytes_instance), str(bytearray_instance) and comparing bytes/bytearray with str. (-bb: issue errors)"},
-                { "-m module",              "run library module as a script"},
+                { "-m mod",                 "run library module as a script"},
                 { "-x",                     "Skip first line of the source" },
                 { "-u",                     "Unbuffered stdout & stderr" },
                 { "-O",                     "generate optimized code" },
@@ -265,20 +321,20 @@ namespace IronPython.Hosting {
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-q",                     "don't print version and copyright messages on interactive startup" },
 
-                { "-X:NoFrames",            "Disable sys._getframe support, can improve execution speed" },
-                { "-X:Frames",              "Enable basic sys._getframe support" },
-                { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
-                { "-X:Tracing",             "Enable support for tracing all methods even before sys.settrace is called" },
-                { "-X:GCStress",            "Specifies the GC stress level (the generation to collect each statement)" },
-                { "-X:MaxRecursion",        "Set the maximum recursion level" },
-                { "-X:Debug",               "Enable application debugging (preferred over -D)" },
-                { "-X:NoDebug <regex>",     "Provides a regular expression of files which should not be emitted in debug mode"},
-                { "-X:MTA",                 "Run in multithreaded apartment" },
-                { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
-                { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
-                { "-X:BasicConsole",        "Use only the basic console features" },
+                { "-X NoFrames",            "Disable sys._getframe support, can improve execution speed" },
+                { "-X Frames",              "Enable basic sys._getframe support" },
+                { "-X FullFrames",          "Enable sys._getframe with access to locals" },
+                { "-X Tracing",             "Enable support for tracing all methods even before sys.settrace is called" },
+                { "-X GCStress=<level>",    "Specifies the GC stress level (the generation to collect each statement)" },
+                { "-X MaxRecursion=<level>","Set the maximum recursion level" },
+                { "-X Debug",               "Enable application debugging (preferred over -D)" },
+                { "-X NoDebug=<regex>",     "Provides a regular expression of files which should not be emitted in debug mode"},
+                { "-X MTA",                 "Run in multithreaded apartment" },
+                { "-X EnableProfiler",      "Enables profiling support in the compiler" },
+                { "-X LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
+                { "-X BasicConsole",        "Use only the basic console features" },
 #if DEBUG
-                { "-X:NoImportLib",         "Don't bootstrap importlib" },
+                { "-X NoImportLib",         "Don't bootstrap importlib [debug only]" },
 #endif
             };
 

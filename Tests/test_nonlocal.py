@@ -7,7 +7,6 @@ import unittest
 
 from iptest import IronPythonTestCase, run_test, is_cli, is_cpython
 
-
 class SyntaxTests(IronPythonTestCase):
 
     def check_compile_error(self, code, msg, lineno):
@@ -319,7 +318,7 @@ class FunctionalTests(IronPythonTestCase):
             from sys import maxunicode
             from sys import maxsize as some_number
         foo()
-        self.assertEqual(maxunicode, 1114111)
+        self.assertEqual(maxunicode, 0xFFFF if is_cli else 0x10FFFF)
         self.assertGreaterEqual(some_number, 0x7FFFFFFF)
 
 run_test(__name__)

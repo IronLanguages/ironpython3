@@ -307,28 +307,19 @@ class BuiltinsTest2(IronPythonTestCase):
         sumtest([1.7976931348623157e+308, long(1.7976931348623157e+308)], inf)
         self.assertRaises(OverflowError, sum, [1.0, 100000000<<2000])
 
-    def test_unichr(self):
+    def test_chr(self):
+        self.assertEqual(sys.maxunicode, 0xFFFF if is_cli else 0x10FFFF)
 
-        #Added the following to resolve Codeplex WorkItem #3220.
-        max_uni = sys.maxunicode
-        self.assertTrue(max_uni==0xFFFF or max_uni==0x10FFFF)
-        max_uni_plus_one = max_uni + 1
+        max_chr = 0x10FFFF
+        max_chr_plus_one = max_chr + 1
+        overflow_chr = 1<<64
 
-        huger_than_max = 100000
-        max_ok_value = u'\uffff'
-
-        #special case for WorkItem #3220
-        if max_uni==0x10FFFF:
-            huger_than_max = 10000000
-            max_ok_value = u'\U0010FFFF'
-
-        unichr = chr
-
-        self.assertRaises(ValueError, unichr, -1) # arg must be in the range [0...65535] or [0...1114111] inclusive
-        self.assertRaises(ValueError, unichr, max_uni_plus_one)
-        self.assertRaises(ValueError, unichr, huger_than_max)
-        self.assertTrue(unichr(0) == '\x00')
-        self.assertTrue(unichr(max_uni) == max_ok_value)
+        # chr() arg must be in range(0x110000)
+        self.assertRaises(ValueError, chr, -1)
+        self.assertRaises(ValueError, chr, max_chr_plus_one)
+        self.assertRaises(OverflowError, chr, overflow_chr)
+        self.assertTrue(chr(0) == '\x00')
+        self.assertTrue(chr(max_chr) == u'\U0010FFFF')
 
     def test_max(self):
         self.assertEqual(max('123123'), '3')

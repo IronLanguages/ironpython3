@@ -2223,7 +2223,7 @@ class CharmapTest(unittest.TestCase):
 
         self.assertRaises(TypeError,
             codecs.charmap_decode, b"\x00\x01\x02", "strict",
-                                   {0: sys.maxunicode + 1, 1: b, 2: c}
+                                   {0: 0x110000, 1: b, 2: c} # ironpython: 0x110000 instead of sys.maxunicode + 1
         )
 
         self.assertRaises(UnicodeDecodeError,

@@ -142,7 +142,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
 
     if os.name == "posix":
         libpython = os.path.join(prefix,
-                                 "lib", "python" + get_python_version())
+                                 "lib", "ironpython" + get_python_version())
         if standard_lib:
             return libpython
         else:

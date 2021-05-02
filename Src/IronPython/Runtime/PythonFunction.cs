@@ -544,11 +544,9 @@ namespace IronPython.Runtime {
 
         public const object __hash__ = null;
 
-        [return: MaybeNotImplemented]
         public object __eq__(CodeContext context, [NotNull] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.Equal);
 
-        [return: MaybeNotImplemented]
         public object __ne__(CodeContext context, [NotNull] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.NotEqual);
 

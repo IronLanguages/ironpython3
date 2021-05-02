@@ -236,7 +236,13 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable DocVariable { get; set; }
 
+        internal PythonVariable LoaderVariable { get; set; }
+
         internal PythonVariable NameVariable { get; set; }
+
+        internal PythonVariable PackageVariable { get; set; }
+
+        internal PythonVariable SpecVariable { get; set; }
 
         internal PythonVariable FileVariable { get; set; }
 
@@ -377,7 +383,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
-            AddInitialiation(block);
+            AddInitialization(block);
 
             string doc = GetDocumentation(_body);
             if (doc != null || IsModule) {
@@ -412,10 +418,13 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
-        private void AddInitialiation(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
+        private void AddInitialization(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
             if (IsModule) {
                 block.Add(AssignValue(GetVariableExpression(FileVariable), Ast.Constant(ModuleFileName)));
+                block.Add(AssignValue(GetVariableExpression(LoaderVariable), Ast.Constant(null)));
                 block.Add(AssignValue(GetVariableExpression(NameVariable), Ast.Constant(ModuleName)));
+                block.Add(AssignValue(GetVariableExpression(PackageVariable), Ast.Constant(null)));
+                block.Add(AssignValue(GetVariableExpression(SpecVariable), Ast.Constant(null)));
             }
 
             if (_languageFeatures != ModuleOptions.None || IsModule) {

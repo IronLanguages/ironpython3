@@ -5,7 +5,7 @@
 
 import unittest
 
-from iptest import is_cli, is_mono, run_test
+from iptest import run_test
 
 unicode = str
 unichr = chr
@@ -45,7 +45,6 @@ class UnicodeTest(unittest.TestCase):
     def test_raw_unicode_escape_trailing_backslash(self):
         self.assertEqual(unicode(b'\\', 'raw_unicode_escape'), u'\\')
 
-    @unittest.skipIf(is_mono, 'throws an exception within Mono, needs debug see https://github.com/IronLanguages/ironpython2/issues/49')
     def test_unicode_error(self):
         from iptest.misc_util import ip_supported_encodings
         from _codecs import register_error

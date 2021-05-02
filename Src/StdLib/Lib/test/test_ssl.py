@@ -160,7 +160,7 @@ class BasicSocketTests(unittest.TestCase):
             self.assertRaises(TypeError, ssl.RAND_egd, 'foo', 1)
         ssl.RAND_add("this is a random string", 75.0)
 
-    @unittest.skipUnless(os.name == 'posix', 'requires posix')
+    @unittest.skipUnless(hasattr(os, 'fork'), 'need os.fork')
     def test_random_fork(self):
         status = ssl.RAND_status()
         if not status:

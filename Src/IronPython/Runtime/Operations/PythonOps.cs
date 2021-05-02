@@ -560,7 +560,10 @@ namespace IronPython.Runtime.Operations {
         internal static object? RichCompare(CodeContext/*!*/ context, object? x, object? y, PythonOperationKind op) {
             var res = InternalCompare(context, op, x, y);
             if (res is NotImplementedType) {
-                throw TypeErrorForBinaryOp(PythonProtocol.GetOperatorDisplay(op), x, y);
+                res = InternalCompare(context, Symbols.OperatorToReverseOperator(op), y, x);
+                if (res is NotImplementedType) {
+                    throw TypeErrorForBinaryOp(PythonProtocol.GetOperatorDisplay(op), x, y);
+                }
             }
             return res;
 

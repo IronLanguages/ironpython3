@@ -1543,4 +1543,64 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         # just ensure this doesn't throw
         getattr(A("abc"), '__iter__')
 
+    def test_ipy3_gh1179(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1197"""
+        class test:
+          def __init__(self, x):
+            self.x = x
+          def __eq__(self, other):
+            z.append(("__eq__", self.x))
+            return NotImplemented
+          def __ne__(self, other):
+            z.append(("__ne__", self.x))
+            return NotImplemented
+          def __lt__(self, other):
+            z.append(("__lt__", self.x))
+            return NotImplemented
+          def __le__(self, other):
+            z.append(("__le__", self.x))
+            return NotImplemented
+          def __gt__(self, other):
+            z.append(("__gt__", self.x))
+            return NotImplemented
+          def __ge__(self, other):
+            z.append(("__ge__", self.x))
+            return NotImplemented
+
+        ops = (lambda x, y: x < y, "__lt__", "__gt__"), (lambda x, y: x <= y, "__le__", "__ge__"), (lambda x, y: x > y, "__gt__", "__lt__"), (lambda x, y: x >= y, "__ge__", "__le__")
+
+        # basic rich comparison tests
+        z = []
+        self.assertEqual(test(1) == test(2), False)
+        self.assertEqual(z, [("__eq__", 1), ("__eq__", 2)])
+
+        z = []
+        self.assertEqual(test(1) != test(2), True)
+        self.assertEqual(z, [("__ne__", 1), ("__ne__", 2)])
+
+        x = test(1)
+        y = test(2)
+
+        for op, a, b in ops:
+            z = []
+            self.assertRaises(TypeError, op, x, y)
+            self.assertEqual(z, [(a, 1), (b, 2)])
+
+        for t in (tuple, list):
+            x = t([test(1)])
+            y = t([test(2)])
+
+            z = []
+            self.assertEqual(x == y, False)
+            self.assertEqual(z, [("__eq__", 1), ("__eq__", 2)])
+
+            z = []
+            self.assertEqual(x != y, True)
+            self.assertEqual(z, [("__eq__", 1), ("__eq__", 2)])
+
+            for op, a, b in ops:
+                z = []
+                self.assertRaises(TypeError, op, x, y)
+                self.assertEqual(z, [("__eq__", 1), ("__eq__", 2), (a, 1), (b, 2)])
+
 run_test(__name__)

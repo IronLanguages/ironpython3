@@ -236,11 +236,7 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable DocVariable { get; set; }
 
-        internal PythonVariable LoaderVariable { get; set; }
-
         internal PythonVariable NameVariable { get; set; }
-
-        internal PythonVariable PackageVariable { get; set; }
 
         internal PythonVariable SpecVariable { get; set; }
 
@@ -421,9 +417,7 @@ namespace IronPython.Compiler.Ast {
         private void AddInitialization(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
             if (IsModule) {
                 block.Add(AssignValue(GetVariableExpression(FileVariable), Ast.Constant(ModuleFileName)));
-                block.Add(AssignValue(GetVariableExpression(LoaderVariable), Ast.Constant(null)));
                 block.Add(AssignValue(GetVariableExpression(NameVariable), Ast.Constant(ModuleName)));
-                block.Add(AssignValue(GetVariableExpression(PackageVariable), Ast.Constant(null)));
                 block.Add(AssignValue(GetVariableExpression(SpecVariable), Ast.Constant(null)));
             }
 

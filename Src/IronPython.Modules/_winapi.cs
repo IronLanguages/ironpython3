@@ -63,11 +63,17 @@ namespace IronPython.Modules {
             string lpCurrentDirectory,
             object lpStartupInfo /* subprocess.py passes STARTUPINFO*/) {
 
-            int dwFlagsInt32 = PythonOps.TryGetBoundAttr(context, lpStartupInfo, "dwFlags", out object dwFlags) ? Converter.ConvertToInt32(dwFlags) : 0;
-            IntPtr hStdInputIntPtr = PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdInput", out object hStdInput) ? new IntPtr(Converter.ConvertToInt32(hStdInput)) : IntPtr.Zero;
-            IntPtr hStdOutputIntPtr = PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdOutput", out object hStdOutput) ? new IntPtr(Converter.ConvertToInt32(hStdOutput)) : IntPtr.Zero;
-            IntPtr hStdErrorIntPtr = PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdError", out object hStdError) ? new IntPtr(Converter.ConvertToInt32(hStdError)) : IntPtr.Zero;
-            short wShowWindowInt16 = PythonOps.TryGetBoundAttr(context, lpStartupInfo, "wShowWindow", out object wShowWindow) ? Converter.ConvertToInt16(wShowWindow) : (short)0;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "dwFlags", out object dwFlags); //public Int32 dwFlags;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdInput", out object hStdInput); //public IntPtr hStdInput;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdOutput", out object hStdOutput); //public IntPtr hStdOutput;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdError", out object hStdError); //public IntPtr hStdError;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "wShowWindow", out object wShowWindow); //Int16 wShowWindow;
+
+            Int32 dwFlagsInt32 = dwFlags != null ? Converter.ConvertToInt32(dwFlags) : 0;
+            IntPtr hStdInputIntPtr = hStdInput != null ? new IntPtr(Converter.ConvertToInt32(hStdInput)) : IntPtr.Zero;
+            IntPtr hStdOutputIntPtr = hStdOutput != null ? new IntPtr(Converter.ConvertToInt32(hStdOutput)) : IntPtr.Zero;
+            IntPtr hStdErrorIntPtr = hStdError != null ? new IntPtr(Converter.ConvertToInt32(hStdError)) : IntPtr.Zero;
+            Int16 wShowWindowInt16 = wShowWindow != null ? Converter.ConvertToInt16(wShowWindow) : (short)0;
 
             STARTUPINFO startupInfo = new STARTUPINFO();
             startupInfo.dwFlags = dwFlagsInt32;

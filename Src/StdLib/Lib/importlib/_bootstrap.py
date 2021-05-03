@@ -823,16 +823,6 @@ class ModuleSpec:
 
     @property
     def cached(self):
-        if self._cached is None:
-            if self.origin is not None and self._set_fileattr:
-                filename = self.origin
-                if filename.endswith(tuple(SOURCE_SUFFIXES)):
-                    try:
-                        self._cached = cache_from_source(filename)
-                    except NotImplementedError:
-                        pass
-                elif filename.endswith(tuple(BYTECODE_SUFFIXES)):
-                    self._cached = filename
         return self._cached
 
     @cached.setter
@@ -1540,46 +1530,9 @@ class SourceLoader(_LoaderBasics):
         """
         source_path = self.get_filename(fullname)
         source_mtime = None
-        try:
-            bytecode_path = cache_from_source(source_path)
-        except NotImplementedError:
-            bytecode_path = None
-        else:
-            try:
-                st = self.path_stats(source_path)
-            except IOError:
-                pass
-            else:
-                source_mtime = int(st['mtime'])
-                try:
-                    data = self.get_data(bytecode_path)
-                except OSError:
-                    pass
-                else:
-                    try:
-                        bytes_data = _validate_bytecode_header(data,
-                                source_stats=st, name=fullname,
-                                path=bytecode_path)
-                    except (ImportError, EOFError):
-                        pass
-                    else:
-                        _verbose_message('{} matches {}', bytecode_path,
-                                        source_path)
-                        return _compile_bytecode(bytes_data, name=fullname,
-                                                 bytecode_path=bytecode_path,
-                                                 source_path=source_path)
         source_bytes = self.get_data(source_path)
         code_object = self.source_to_code(source_bytes, source_path)
         _verbose_message('code object from {}', source_path)
-        if (not sys.dont_write_bytecode and bytecode_path is not None and
-                source_mtime is not None):
-            data = _code_to_bytecode(code_object, source_mtime,
-                    len(source_bytes))
-            try:
-                self._cache_bytecode(source_path, bytecode_path, data)
-                _verbose_message('wrote {!r}', bytecode_path)
-            except NotImplementedError:
-                pass
         return code_object
 
 
@@ -2313,10 +2266,8 @@ def _get_supported_file_loaders():
 
     Each item is a tuple (loader, suffixes).
     """
-    extensions = ExtensionFileLoader, _imp.extension_suffixes()
     source = SourceFileLoader, SOURCE_SUFFIXES
-    bytecode = SourcelessFileLoader, BYTECODE_SUFFIXES
-    return [extensions, source, bytecode]
+    return [source]
 
 
 def __import__(name, globals=None, locals=None, fromlist=(), level=0):
@@ -2435,18 +2386,9 @@ def _setup(sys_module, _imp_module):
     weakref_module = _builtin_from_name('_weakref')
     setattr(self_module, '_weakref', weakref_module)
 
-    # Directly load the winreg module (needed during bootstrap).
-    if builtin_os == 'nt':
-        winreg_module = _builtin_from_name('winreg')
-        setattr(self_module, '_winreg', winreg_module)
-
     # Constants
     setattr(self_module, '_relax_case', _make_relax_case())
     EXTENSION_SUFFIXES.extend(_imp.extension_suffixes())
-    if builtin_os == 'nt':
-        SOURCE_SUFFIXES.append('.pyw')
-        if '_d.pyd' in EXTENSION_SUFFIXES:
-            WindowsRegistryFinder.DEBUG_BUILD = True
 
 
 def _install(sys_module, _imp_module):
@@ -2456,6 +2398,4 @@ def _install(sys_module, _imp_module):
     sys.path_hooks.extend([FileFinder.path_hook(*supported_loaders)])
     sys.meta_path.append(BuiltinImporter)
     sys.meta_path.append(FrozenImporter)
-    if _os.__name__ == 'nt':
-        sys.meta_path.append(WindowsRegistryFinder)
     sys.meta_path.append(PathFinder)

@@ -10,17 +10,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting.Shell;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Compiler;
 using IronPython.Modules;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting.Shell;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Hosting {
     /// <summary>
@@ -270,9 +271,36 @@ namespace IronPython.Hosting {
                 }
             }
 
-            // Make sure there an IronPython Lib directory, and if not keep looking up
-            while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
-                prefix = Path.GetDirectoryName(prefix);
+            if (prefix is not null) {
+                string pyvenv_prefix = null;
+
+                // look for pyvenv.cfg in the current folder and then the parent folder
+                var path = Path.Combine(prefix, "pyvenv.cfg");
+                for (var i = 0; i < 2; i++) {
+                    if (File.Exists(path)) {
+                        foreach (var line in File.ReadAllLines(path, Encoding.UTF8)) { // TODO: this actually needs to be decoded with surrogateescape
+                            if (line.StartsWith("#", StringComparison.Ordinal)) continue;
+                            var split = line.Split(new[] { '=' }, 2);
+                            if (split.Length != 2) continue;
+                            if (split[0].Trim() == "home") {
+                                pyvenv_prefix = split[1].Trim();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    path = Path.Combine(Path.GetDirectoryName(prefix), "pyvenv.cfg");
+                }
+
+                if (pyvenv_prefix is null) {
+                    // Make sure there an IronPython Lib directory, and if not keep looking up
+                    while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
+                        prefix = Path.GetDirectoryName(prefix);
+                    }
+                }
+                else {
+                    prefix = pyvenv_prefix;
+                }
             }
 
             PythonContext.SetHostVariables(prefix ?? "", executable, null);

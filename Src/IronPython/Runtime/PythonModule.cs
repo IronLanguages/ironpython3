@@ -79,8 +79,11 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(string name, string doc) {
-            _dict["__name__"] = name;
             _dict["__doc__"] = doc;
+            _dict["__loader__"] = null;
+            _dict["__name__"] = name;
+            _dict["__package__"] = null;
+            _dict["__spec__"] = null;
         }
 
         public object __getattribute__(CodeContext/*!*/ context, string name) {

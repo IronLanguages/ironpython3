@@ -631,8 +631,16 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public int send(Bytes data, int flags = 0) {
-                byte[] buffer = data.UnsafeByteArray;
+            public int send([NotNull] Bytes data, int flags = 0) {
+                return sendWorker(data.UnsafeByteArray, flags);
+            }
+
+            public int send([NotNull] IBufferProtocol data, int flags = 0) {
+                using IPythonBuffer buffer = data.GetBuffer();
+                return sendWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags);
+            }
+
+            private int sendWorker(byte[] buffer, int flags) {
                 try {
                     return _socket.Send(buffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -640,10 +648,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            public int send(MemoryView data, int flags = 0) {
-                return send(data.tobytes(), flags);
-            }
-
             [Documentation("sendall(string[, flags]) -> None\n\n"
                 + "Send data to the remote socket. The socket must be connected to a remote\n"
                 + "socket (by calling either connect() or accept().\n"
@@ -664,36 +668,13 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public void sendall(string data, int flags = 0) {
-                sendallWorker(data.MakeByteArray(), flags);
-            }
-
-            [Documentation("sendall(string[, flags]) -> None\n\n"
-                + "Send data to the remote socket. The socket must be connected to a remote\n"
-                + "socket (by calling either connect() or accept().\n"
-                + "\n"
-                + "Unlike send(), sendall() blocks until all of the data has been sent or until a\n"
-                + "timeout or an error occurs. None is returned on success. If an error occurs,\n"
-                + "there is no way to tell how much data, if any, was sent.\n"
-                + "\n"
-                + "Difference from CPython: timeouts do not function as you would expect. The\n"
-                + "function is implemented using multiple calls to send(), so the timeout timer\n"
-                + "is reset after each of those calls. That means that the upper bound on the\n"
-                + "time that it will take for sendall() to return is the number of bytes in\n"
-                + "string times the timeout interval.\n"
-                + "\n"
-                + "Also note that there is no guarantee that the data you send will appear on the\n"
-                + "network immediately. To increase network efficiency, the underlying system may\n"
-                + "delay transmission until a significant amount of outgoing data is collected. A\n"
-                + "successful completion of the Send method means that the underlying system has\n"
-                + "had room to buffer your data for a network send"
-                )]
-            public void sendall(Bytes data, int flags = 0) {
+            public void sendall([NotNull] Bytes data, int flags = 0) {
                 sendallWorker(data.UnsafeByteArray, flags);
             }
 
-            public void sendall(MemoryView data, int flags = 0) {
-                sendallWorker(data.tobytes().UnsafeByteArray, flags);
+            public void sendall([NotNull] IBufferProtocol data, int flags = 0) {
+                using IPythonBuffer buffer = data.GetBuffer();
+                sendallWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags);
             }
 
             private void sendallWorker(byte[] buffer, int flags) {
@@ -725,59 +706,29 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public int sendto(string data, int flags, PythonTuple address) {
-                byte[] buffer = data.MakeByteArray();
+            public int sendto([NotNull] Bytes data, int flags, PythonTuple address) {
+                return sendtoWorker(data.UnsafeByteArray, flags, address);
+            }
+
+            public int sendto([NotNull] IBufferProtocol data, int flags, PythonTuple address) {
+                using IPythonBuffer buffer = data.GetBuffer();
+                return sendtoWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags, address);
+            }
+
+            [Documentation("")]
+            public int sendto([NotNull] Bytes data, PythonTuple address)
+                => sendto(data, 0, address);
+
+            public int sendto([NotNull] IBufferProtocol data, PythonTuple address)
+                => sendto(data, 0, address);
+
+            private int sendtoWorker(byte[] buffer, int flags, PythonTuple address) {
                 EndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     return _socket.SendTo(buffer, (SocketFlags)flags, remoteEP);
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
-            }
-
-            [Documentation("sendto(string[, flags], address) -> bytes_sent\n\n"
-                + "Send data to the remote socket. The socket does not need to be connected to a\n"
-                + "remote socket since the address is specified in the call to sendto(). Returns\n"
-                + "the number of bytes sent to the remote socket.\n"
-                + "\n"
-                + "Blocking sockets will block until the all of the bytes in the buffer are sent.\n"
-                + "Since a nonblocking Socket completes immediately, it might not send all of the\n"
-                + "bytes in the buffer. It is your application's responsibility to keep track of\n"
-                + "the number of bytes sent and to retry the operation until the application sends\n"
-                + "all of the bytes in the buffer.\n"
-                + "\n"
-                + "Note that there is no guarantee that the data you send will appear on the\n"
-                + "network immediately. To increase network efficiency, the underlying system may\n"
-                + "delay transmission until a significant amount of outgoing data is collected. A\n"
-                + "successful completion of the Send method means that the underlying system has\n"
-                + "had room to buffer your data for a network send"
-                )]
-            public int sendto(Bytes data, int flags, PythonTuple address) {
-                byte[] buffer = data.UnsafeByteArray;
-                EndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
-                try {
-                    return _socket.SendTo(buffer, (SocketFlags)flags, remoteEP);
-                } catch (Exception e) {
-                    throw MakeException(_context, e);
-                }
-            }
-
-            public int sendto(MemoryView data, int flags, PythonTuple address) {
-                return sendto(data.tobytes(), flags, address);
-            }
-
-            [Documentation("")]
-            public int sendto(string data, PythonTuple address) {
-                return sendto(data, 0, address);
-            }
-
-            [Documentation("")]
-            public int sendto(Bytes data, PythonTuple address) {
-                return sendto(data, 0, address);
-            }
-
-            public int sendto(MemoryView data, PythonTuple address) {
-                return sendto(data, 0, address);
             }
 
             [Documentation("setblocking(flag) -> None\n\n"

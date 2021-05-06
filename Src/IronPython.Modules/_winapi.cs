@@ -63,12 +63,11 @@ namespace IronPython.Modules {
             string lpCurrentDirectory,
             object lpStartupInfo /* subprocess.py passes STARTUPINFO*/) {
 
-
-            object dwFlags = PythonOps.GetBoundAttr(context, lpStartupInfo, "dwFlags"); //public Int32 dwFlags;
-            object hStdInput = PythonOps.GetBoundAttr(context, lpStartupInfo, "hStdInput"); //public IntPtr hStdInput;
-            object hStdOutput = PythonOps.GetBoundAttr(context, lpStartupInfo, "hStdOutput"); //public IntPtr hStdOutput;
-            object hStdError = PythonOps.GetBoundAttr(context, lpStartupInfo, "hStdError"); //public IntPtr hStdError;
-            object wShowWindow = PythonOps.GetBoundAttr(context, lpStartupInfo, "wShowWindow"); //Int16 wShowWindow;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "dwFlags", out object dwFlags); //public Int32 dwFlags;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdInput", out object hStdInput); //public IntPtr hStdInput;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdOutput", out object hStdOutput); //public IntPtr hStdOutput;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdError", out object hStdError); //public IntPtr hStdError;
+            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "wShowWindow", out object wShowWindow); //Int16 wShowWindow;
 
             Int32 dwFlagsInt32 = dwFlags != null ? Converter.ConvertToInt32(dwFlags) : 0;
             IntPtr hStdInputIntPtr = hStdInput != null ? new IntPtr(Converter.ConvertToInt32(hStdInput)) : IntPtr.Zero;
@@ -199,6 +198,10 @@ namespace IronPython.Modules {
             return GetVersionPI();
         }
 
+        public static BigInteger OpenProcess(CodeContext context, int desired_access, bool inherit_handle, int process_id) {
+            return OpenProcessPI(desired_access, inherit_handle, process_id).ToInt64();
+        }
+
         public static bool TerminateProcess(
             BigInteger handle,
             object uExitCode) {
@@ -303,6 +306,9 @@ namespace IronPython.Modules {
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "CloseHandle")]
         internal static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "OpenProcess")]
+        private static extern IntPtr OpenProcessPI(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "TerminateProcess")]
         [return: MarshalAs(UnmanagedType.Bool)]

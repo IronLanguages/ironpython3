@@ -2896,20 +2896,20 @@ namespace IronPython.Modules {
             var cc = context.SharedContext;
             if (type == ConsoleStreamType.Input) {
                 var encoding = StringOps.GetEncodingName(io.InputEncoding);
-                fio = new FileIO(cc, io.InputStream, type) { name = name };
+                fio = new FileIO(cc, io.GetStreamProxy(type), type) { name = name };
                 var buffer = BufferedReader.Create(cc, fio, DEFAULT_BUFFER_SIZE);
                 return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
             }
             else if (type == ConsoleStreamType.Output) {
                 var encoding = StringOps.GetEncodingName(io.OutputEncoding);
-                fio = new FileIO(cc, io.OutputStream, type) { name = name };
+                fio = new FileIO(cc, io.GetStreamProxy(type), type) { name = name };
                 var buffer = BufferedWriter.Create(cc, fio, DEFAULT_BUFFER_SIZE, null);
                 return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
             }
             else {
                 Debug.Assert(type == ConsoleStreamType.ErrorOutput);
                 var encoding = StringOps.GetEncodingName(io.ErrorEncoding);
-                fio = new FileIO(cc, io.ErrorStream, type) { name = name };
+                fio = new FileIO(cc, io.GetStreamProxy(type), type) { name = name };
                 var buffer = BufferedWriter.Create(cc, fio, DEFAULT_BUFFER_SIZE, null);
                 return TextIOWrapper.Create(cc, buffer, encoding, "backslashreplace", null, true);
             }

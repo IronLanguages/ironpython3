@@ -31,3 +31,10 @@ with:
 ```py
 tmpfile = EncodedFile(f, getattr(f, "encoding", "utf-8"))
 ```
+
+## requests (2.21.0)
+
+To install:
+```
+ipy -m pip install requests==2.21.0
+```

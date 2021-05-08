@@ -95,7 +95,7 @@ namespace IronPythonTest {
         public int Method(int arg) {
             if (Event != null)
                 return Event(arg);
-            
+
             return -1;
         }
 
@@ -207,7 +207,7 @@ namespace IronPythonTest {
         // [Test] // https://github.com/IronLanguages/ironpython3/issues/904
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
-            Dictionary<string, object> options = new Dictionary<string,object>();
+            Dictionary<string, object> options = new Dictionary<string, object>();
             // DLR ScriptRuntime options
             options["Debug"] = true;
             options["PrivateBinding"] = true;
@@ -262,8 +262,8 @@ namespace IronPythonTest {
             // basic smoke tests that the engine is alive and working
             Assert.AreEqual((int)(object)scriptEngine.Execute("42"), 42);
 
-            if(options != null) {
-// TODO:
+            if (options != null) {
+                // TODO:
 #pragma warning disable 618 // obsolete API
                 PythonOptions po = (PythonOptions)Microsoft.Scripting.Hosting.Providers.HostingHelpers.CallEngine<object, LanguageOptions>(
                     scriptEngine,
@@ -280,7 +280,7 @@ namespace IronPythonTest {
 
             Assert.AreEqual(Python.GetSysModule(scriptEngine).GetVariable<string>("platform"), "cli");
             Assert.AreEqual(Python.GetBuiltinModule(scriptEngine).GetVariable<bool>("True"), true);
-            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+            if (System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
                 Assert.AreEqual(Python.ImportModule(scriptEngine, "posix").GetVariable<int>("F_OK"), 0);
             } else {
                 Assert.AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
@@ -302,7 +302,7 @@ namespace IronPythonTest {
 
             Assert.AreEqual(Python.GetSysModule(runtime).GetVariable<string>("platform"), "cli");
             Assert.AreEqual(Python.GetBuiltinModule(runtime).GetVariable<bool>("True"), true);
-            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+            if (System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
                 Assert.AreEqual(Python.ImportModule(runtime, "posix").GetVariable<int>("F_OK"), 0);
             } else {
                 Assert.AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
@@ -430,8 +430,7 @@ x = 42", scope);
                 // because the default source file encoding is UTF-8 and there are decoding errors
 
                 throw new Exception("ScenarioCodePlex20472");
-            }
-            catch (SyntaxErrorException) { }
+            } catch (SyntaxErrorException) { }
 
             // Opening the file with explicitly specifying the correct encoding should work
             CompiledCode prog = _pe.CreateScriptSourceFromFile(fileName, Encoding.GetEncoding(1251)).Compile();
@@ -497,8 +496,7 @@ x = 42", scope);
         }
 
         [Test]
-        public void ScenarioCodePlex23562()
-        {
+        public void ScenarioCodePlex23562() {
             string pyCode = @"
 test = TestCodePlex23562()
 test.TestMethod()
@@ -527,7 +525,7 @@ def py_func():
 
             IList<string> str_tuple = scope.GetVariable<IList<string>>("str_tuple");
             Assert.AreEqual(str_tuple.Count, 2);
-            IList<string> str_list  = scope.GetVariable<IList<string>>("str_list");
+            IList<string> str_list = scope.GetVariable<IList<string>>("str_list");
             Assert.AreEqual(str_list.Count, 3);
             VoidDelegate py_func = scope.GetVariable<VoidDelegate>("py_func");
             py_func();
@@ -535,8 +533,7 @@ def py_func():
         }
 
         [Test]
-        public void ScenarioCodePlex24077()
-        {
+        public void ScenarioCodePlex24077() {
             string pyCode = @"
 class K(object):
     def __init__(self, a, b, c):
@@ -548,7 +545,7 @@ class K(object):
             var scope = _pe.CreateScope();
             _pe.Execute(pyCode, scope);
             object KKlass = scope.GetVariable("K");
-            object[] Kparams = new object[] { 1, 3.14, "abc"};
+            object[] Kparams = new object[] { 1, 3.14, "abc" };
             _pe.Operations.CreateInstance(KKlass, Kparams);
             Assert.AreEqual(scope.GetVariable<int>("A"), 1);
         }
@@ -853,7 +850,7 @@ i = int
             object m2 = scope.GetVariable("m2");
             object m3 = scope.GetVariable("m3");
 
-            var tests = new [] {
+            var tests = new[] {
                 new {
                     Obj=f0,
                     Result = new [] {
@@ -1354,7 +1351,7 @@ range = range
 
             foreach (object inst in invokableObjects) {
                 var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1)));
-                VerifyFunction(new[] { "foo"}, new string[0], site2.Target(site2, inst, "foo"));
+                VerifyFunction(new[] { "foo" }, new string[0], site2.Target(site2, inst, "foo"));
 
                 site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1, "bar")));
                 VerifyFunction(new[] { "foo" }, new[] { "bar" }, site2.Target(site2, inst, "foo"));
@@ -1613,7 +1610,7 @@ range = range
                 new {TestCase = "x[1]", Result=(object)1},
 
             };
-            foreach(var test in tests) {
+            foreach (var test in tests) {
                 Assert.AreEqual(test.Result, (object)_pe.Execute(test.TestCase, scope));
             }
 
@@ -1703,7 +1700,7 @@ class foo(object):
 
             // create instance of foo, verify members
 
-            object foo = ops.CreateInstance(klass , 123, 444);
+            object foo = ops.CreateInstance(klass, 123, 444);
 
             Assert.AreEqual(ops.GetMember<int>(foo, "abc"), 3);
             Assert.AreEqual(ops.GetMember<int>(foo, "x"), 123);
@@ -1731,8 +1728,7 @@ class foo(object):
         public delegate int CP19724Delegate(double p1);
 
         [Test]
-        public void ScenarioCP19724()
-        {
+        public void ScenarioCP19724() {
             ScriptScope scope1 = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 class KNew(object):
@@ -2244,7 +2240,7 @@ instOC = TestOC()
         // [Test] // https://github.com/IronLanguages/ironpython3/issues/898
         public void ScenarioPartialTrust() {
             // Mono doesn't implement partial trust
-            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix)
+            if (System.Environment.OSVersion.Platform == System.PlatformID.Unix)
                 return;
 
             // basic check of running a host in partial trust
@@ -2329,8 +2325,7 @@ if id(a) == id(b):
         public void ScenarioStackFrameLineInfo() {
             const string lineNumber = "raise.py:line";
             // TODO: Should this work on Mono?
-            if(Environment.OSVersion.Platform == PlatformID.Unix)
-            {
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
                 Console.WriteLine("Skipping StackFrameLineInfo test on Mono");
                 return;
             }
@@ -2638,7 +2633,7 @@ if r.sum != 110:
 ", SourceCodeKind.Statements).Execute(scope);
         }
 
-// TODO: rewrite
+        // TODO: rewrite
 #if FALSE
         [Test]
         public void ScenarioTrueDivision1() {

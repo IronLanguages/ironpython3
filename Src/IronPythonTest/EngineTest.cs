@@ -2744,8 +2744,30 @@ if r.sum != 110:
 
         public static int Negate(int arg) { return -1 * arg; }
 
-    }
 
+        [Test] // https://github.com/IronLanguages/ironpython3/issues/961
+        public void ScenarioRedirectedIo() {
+            Test1();
+            Test2();
+
+            void Test1() {
+                var memoryStream = new MemoryStream();
+                var engine = Python.CreateEngine();
+                engine.Runtime.IO.SetOutput(memoryStream, Encoding.UTF8);
+                engine.Execute("print('Hello world')");
+                Assert.AreEqual(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim(), "Hello world");
+            }
+
+            void Test2() {
+                var memoryStream = new MemoryStream();
+                var writer = new StreamWriter(memoryStream);
+                var engine = Python.CreateEngine();
+                engine.Runtime.IO.SetOutput(memoryStream, writer);
+                engine.Execute("print('Hello world')");
+                Assert.AreEqual(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim(), "Hello world");
+            }
+        }
+    }
 
     public interface IFooable {
     }
@@ -2783,5 +2805,4 @@ if r.sum != 110:
             }
         }
     }
-
 }

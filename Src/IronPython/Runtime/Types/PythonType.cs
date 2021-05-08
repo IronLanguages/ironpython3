@@ -1320,6 +1320,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             }
 
+            // search the type
+            var myType = DynamicHelpers.GetPythonType(this);
+            if (myType.TryResolveSlot(context, name, out dts) && dts.TrySetValue(context, this, myType, value)) {
+                return;
+            }
+
             if (PythonType._pythonTypeType.TryResolveSlot(context, name, out dts)) {
                 if (dts.TrySetValue(context, this, PythonType._pythonTypeType, value)) {
                     return;

@@ -652,4 +652,23 @@ class MetaclassTest(IronPythonTestCase):
         self.assertEqual(flags['MetaClass.__init__'], 0) # !!!
         self.assertEqual(XM2.meta_func, "processed by function meta(XM2, ...) using metabase <class 'type'>")
 
+    def test_setter_on_metaclass(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1208"""
+        class MetaClass(type):
+            @property
+            def test(self):
+                return 1
+
+            @test.setter
+            def test(self, value):
+                raise Exception
+
+        class Generic(metaclass=MetaClass):
+            pass
+
+        self.assertEqual(Generic.test, 1)
+
+        with self.assertRaises(Exception):
+            Generic.test = 2
+
 run_test(__name__)

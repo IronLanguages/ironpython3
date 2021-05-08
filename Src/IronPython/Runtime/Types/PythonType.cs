@@ -76,7 +76,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [MultiRuntimeAware]
         private static int MasterVersion = 1;
         private static readonly CommonDictionaryStorage _pythonTypes = new CommonDictionaryStorage();
-        internal static readonly PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
         private static readonly WeakReference[] _emptyWeakRef = new WeakReference[0];
         private static object _subtypesLock = new object();
         internal static readonly Func<string, Exception, Exception> DefaultMakeException = (message, innerException) => new Exception(message, innerException);
@@ -514,7 +513,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         [SlotField]
-        public static PythonTypeSlot __dict__ = new PythonTypeDictSlot(_pythonTypeType);
+        public static PythonTypeSlot __dict__ = new PythonTypeDictSlot(TypeCache.PythonType);
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static object Get__doc__(CodeContext/*!*/ context, PythonType self) {
@@ -1314,10 +1313,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Debug.Assert(context != null);
 
             PythonTypeSlot dts;
-            if (TryResolveSlot(context, name, out dts)) {
-                if (dts.TrySetValue(context, null, this, value)) {
-                    return;
-                }
+            if (TryResolveSlot(context, name, out dts) && dts.TrySetValue(context, null, this, value)) {
+                return;
             }
 
             // search the type
@@ -1326,10 +1323,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 return;
             }
 
-            if (PythonType._pythonTypeType.TryResolveSlot(context, name, out dts)) {
-                if (dts.TrySetValue(context, this, PythonType._pythonTypeType, value)) {
-                    return;
-                }
+            if (myType != TypeCache.PythonType && TypeCache.PythonType.TryResolveSlot(context, name, out dts) && dts.TrySetValue(context, this, TypeCache.PythonType, value)) {
+                return;
             }
 
             if (IsSystemType) {

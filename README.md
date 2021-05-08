@@ -72,6 +72,9 @@ For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPyth
 ## Differences with CPython
 While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](Documentation/differences-from-c-python.md) for details.
 
+## Package compatibility
+See the [Package compatibility](Documentation/package-compatibility.md) document for information on compatibility with popular packages.
+
 ## Installation
 Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0-alpha1).
 

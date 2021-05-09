@@ -720,7 +720,6 @@ namespace IronPython.Runtime {
             flags.no_site = PythonOptions.NoSite ? 1 : 0;
             flags.ignore_environment = PythonOptions.IgnoreEnvironment ? 1 : 0;
             flags.verbose = PythonOptions.Verbose ? 1 : 0;
-            flags.unicode = 1;
             flags.bytes_warning = PythonOptions.BytesWarning switch {
                 Severity.Ignore => 0,
                 Severity.Warning => 1,

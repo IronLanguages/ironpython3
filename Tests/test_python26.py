@@ -468,7 +468,10 @@ class Python26Test(unittest.TestCase):
         self.assertEqual(attrs - expected_attrs, set()) # check for too many attrs
 
         for attr in structseq_attrs.union(flag_attrs):
-            IsInt(getattr(sys.flags, attr))
+            if attr == "dev_mode":
+                self.assertEqual(type(getattr(sys.flags, attr)), bool)
+            else:
+                IsInt(getattr(sys.flags, attr))
         for attr in flag_attrs:
             IsFlagInt(getattr(sys.flags, attr))
         self.assertEqual(sys.flags.n_sequence_fields, len(flag_attrs))
@@ -980,7 +983,7 @@ class Python26Test(unittest.TestCase):
         self.assertTrue(not isinstance(GeneratorExit(), Exception))
         self.assertTrue(isinstance(GeneratorExit(), BaseException))
 
-
+    @unittest.skipUnless(sys.platform == "win32", "magic_command only works on windows")
     def test_nt_environ_clear_unsetenv(self):
         bak = dict(os.environ)
         os.environ["BLAH"] = "BLAH"

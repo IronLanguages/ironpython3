@@ -304,7 +304,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
         public sealed class SysFlags : PythonTuple {
-            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_INSPECT = 1;
@@ -315,12 +315,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             private const int INDEX_NO_SITE = 6;
             private const int INDEX_IGNORE_ENVIRONMENT = 7;
             private const int INDEX_VERBOSE = 8;
-            private const int INDEX_UNICODE = 9;
-            private const int INDEX_BYTES_WARNING = 10;
-            private const int INDEX_QUIET = 11;
+            private const int INDEX_BYTES_WARNING = 9;
+            private const int INDEX_QUIET = 10;
 
-            public const int n_fields = 12;
-            public const int n_sequence_fields = 12;
+            public const int n_fields = 11;
+            public const int n_sequence_fields = 11;
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
@@ -334,7 +333,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                     $"{nameof(no_site)}={no_site}",
                     $"{nameof(ignore_environment)}={ignore_environment}",
                     $"{nameof(verbose)}={verbose}",
-                    $"{nameof(unicode)}={unicode}",
                     $"{nameof(bytes_warning)}={bytes_warning}",
                     $"{nameof(quiet)}={quiet}",
                 };
@@ -386,11 +384,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public int verbose {
                 get => (int)_data[INDEX_VERBOSE];
                 internal set => _data[INDEX_VERBOSE] = value;
-            }
-
-            public int unicode {
-                get => (int)_data[INDEX_UNICODE];
-                internal set => _data[INDEX_UNICODE] = value;
             }
 
             public int bytes_warning {

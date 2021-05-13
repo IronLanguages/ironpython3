@@ -161,6 +161,16 @@ namespace IronPython.Modules {
 
             }
 
+            public void set_ecdh_curve(CodeContext context, [NotNull] string curve) {
+                if (curve != "prime256v1")
+                    throw PythonOps.ValueError($"unknown elliptic curve name {PythonOps.Repr(context, curve)}");
+            }
+
+            public void set_ecdh_curve(CodeContext context, [NotNull] Bytes curve) {
+                if (curve.MakeString() != "prime256v1")
+                    throw PythonOps.ValueError($"unknown elliptic curve name {PythonOps.Repr(context, curve)}");
+            }
+
             public void load_cert_chain(string certfile, string keyfile = null, object password = null) {
 
             }

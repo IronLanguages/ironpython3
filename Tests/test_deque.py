@@ -14,5 +14,9 @@ class DequeTest(unittest.TestCase):
 
         self.assertFalse(deque([AlwaysLessThan()]) < deque())
 
+    def test_deque_equality_issue(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1216"""
+        self.assertNotEqual(deque(range(8)), deque([1]*8))
+
 if __name__ == "__main__":
     unittest.main()

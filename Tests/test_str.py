@@ -63,6 +63,13 @@ class StrTest(IronPythonTestCase):
         self.assertEqual(str(array.array('B', b'abc')), "array('B', [97, 98, 99])")
         self.assertEqual(str(array.array('B', b'abc'), 'ascii'), 'abc')
 
+        # https://github.com/IronLanguages/ironpython3/pull/1218
+        class myint(int):
+          def __str__(self):
+            return "success"
+
+        self.assertEqual(str(myint()), "success")
+
     def test_add_mul(self):
         self.assertRaises(TypeError, lambda: "a" + 3)
         self.assertRaises(TypeError, lambda: 3 + "a")

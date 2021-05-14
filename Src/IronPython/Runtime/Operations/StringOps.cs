@@ -207,13 +207,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]ExtensibleString @object) {
-            if (cls == TypeCache.String) {
-                return FastNew(context, @object);
-            } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
-            }
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] ExtensibleString @object)
+            => __new__(context, cls, (object)@object);
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, char @object) {
@@ -234,13 +229,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]Extensible<BigInteger> @object) {
-            if (cls == TypeCache.String) {
-                return FastNew(context, @object);
-            } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
-            }
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] Extensible<BigInteger> @object)
+            => __new__(context, cls, (object)@object);
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, int @object) {
@@ -250,6 +240,10 @@ namespace IronPython.Runtime.Operations {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] Extensible<int> @object)
+            => __new__(context, cls, (object)@object);
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, bool @object) {
@@ -270,13 +264,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]Extensible<double> @object) {
-            if (cls == TypeCache.String) {
-                return FastNew(context, @object);
-            } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
-            }
-        }
+        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] Extensible<double> @object)
+            => __new__(context, cls, (object)@object);
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, float @object) {

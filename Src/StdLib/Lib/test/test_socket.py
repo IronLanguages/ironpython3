@@ -689,6 +689,7 @@ class GeneralModuleTests(unittest.TestCase):
         self.assertEqual(p.fileno(), s.fileno())
         s.close()
         s = None
+        support.gc_collect() # required for IronPython
         try:
             p.fileno()
         except ReferenceError:
@@ -716,11 +717,11 @@ class GeneralModuleTests(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             s.sendto('\u2620', sockname)
         self.assertEqual(str(cm.exception),
-                         "'str' does not support the buffer interface")
+                         "expected bytes, got str" if sys.implementation.name == "ironpython" else "'str' does not support the buffer interface")
         with self.assertRaises(TypeError) as cm:
             s.sendto(5j, sockname)
         self.assertEqual(str(cm.exception),
-                         "'complex' does not support the buffer interface")
+                         "expected bytes, got complex" if sys.implementation.name == "ironpython" else "'complex' does not support the buffer interface")
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', None)
         self.assertIn('not NoneType',str(cm.exception))
@@ -1265,7 +1266,8 @@ class GeneralModuleTests(unittest.TestCase):
                                flags=socket.AI_PASSIVE)
         self.assertEqual(a, b)
         # Issue #6697.
-        self.assertRaises(UnicodeEncodeError, socket.getaddrinfo, 'localhost', '\uD800')
+        if sys.implementation.name != 'ironpython':
+            self.assertRaises(UnicodeEncodeError, socket.getaddrinfo, 'localhost', '\uD800')
 
         # Issue 17269: test workaround for OS X platform bug segfault
         if hasattr(socket, 'AI_NUMERICSERV'):
@@ -4217,6 +4219,8 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.write(self.write_msg)
         self.write_file.flush()
 
+    @unittest.skipUnless(hasattr(sys, 'getrefcount'),
+                         'test needs sys.getrefcount()')
     def testMakefileCloseSocketDestroy(self):
         refcount_before = sys.getrefcount(self.cli_conn)
         self.read_file.close()

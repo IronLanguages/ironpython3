@@ -937,6 +937,14 @@ namespace IronPython.Modules {
 
             #endregion
 
+            public string __repr__(CodeContext/*!*/ context) {
+                string name = string.Empty;
+                if (PythonOps.TryGetBoundAttr(this, "name", out var nameObj))
+                    name = $" name={PythonOps.Repr(context, nameObj)}";
+
+                return $"<_io.BufferedReader{name}>";
+            }
+
             #region IDynamicMetaObjectProvider Members
 
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
@@ -1273,6 +1281,14 @@ namespace IronPython.Modules {
             }
 
             #endregion
+
+            public string __repr__(CodeContext/*!*/ context) {
+                string name = string.Empty;
+                if (PythonOps.TryGetBoundAttr(this, "name", out var nameObj))
+                    name = $" name={PythonOps.Repr(context, nameObj)}";
+
+                return $"<_io.BufferedWriter{name}>";
+            }
 
             #region IDynamicMetaObjectProvider Members
 

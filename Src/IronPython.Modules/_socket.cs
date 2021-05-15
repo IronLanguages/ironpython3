@@ -7,9 +7,9 @@
 #if FEATURE_FULL_NET
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -26,7 +26,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("_socket", typeof(IronPython.Modules.PythonSocket))]
@@ -35,7 +34,6 @@ namespace IronPython.Modules {
         private static readonly object _defaultTimeoutKey = new object();
         private static readonly object _defaultBufsizeKey = new object();
         private const int DefaultBufferSize = 8192;
-        public static PythonTuple _delegate_methods = PythonTuple.MakeTuple("recv", "recvfrom", "recv_into", "recvfrom_into", "send", "sendto");
 
 #pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
@@ -106,7 +104,7 @@ namespace IronPython.Modules {
             internal Socket _socket;
             internal string? _hostName;
             private WeakRefTracker? _weakRefTracker;
-            private int _referenceCount = 1;
+            private int _referenceCount = 1; // TODO: this is no longer incremented by anything...
             public const string __module__ = "socket";
             internal CodeContext/*!*/ _context;
             private int _timeout;
@@ -116,7 +114,7 @@ namespace IronPython.Modules {
             #region Public API
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-            public socket() { }
+            public socket() { } // TODO: _socket and _context are null!
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
             public void __init__(CodeContext/*!*/ context, int family = DefaultAddressFamily,
@@ -137,13 +135,13 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                Socket socket;
+                Socket? socket;
                 if (fileno is socket sock) {
                     socket = sock._socket;
                     _hostName = sock._hostName;
                     // we now own the lifetime of the socket
                     GC.SuppressFinalize(sock);
-                } else if (fileno != null && (socket = HandleToSocket((long)fileno)!) != null) {
+                } else if (fileno != null && (socket = HandleToSocket((long)fileno)) != null) {
                     // nothing to do here
                 } else {
                     try {
@@ -239,7 +237,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal void _close() {
+            private void _close() {
                 if (_socket != null) {
                     lock (_handleToSocket) {
                         if (_handleToSocket.TryGetValue(_socket.Handle, out WeakReference? weakref)) {
@@ -251,7 +249,9 @@ namespace IronPython.Modules {
                     }
 
                     ((IDisposable)_socket).Dispose();
-                    _referenceCount = 0;
+                    if (System.Threading.Interlocked.Exchange(ref _referenceCount, 0) > 0) {
+                        PythonOps.Warn(_context, PythonExceptions.ResourceWarning, $"unclosed {PythonOps.Repr(_context, this)}");
+                    }
                 }
             }
 
@@ -299,7 +299,7 @@ namespace IronPython.Modules {
 
             public long detach() {
                 var fd = fileno();
-                _socket = null!;
+                _socket = null!; // TODO: this is wrong, no null checks on _socket anywhere!
                 return fd;
             }
 
@@ -322,7 +322,7 @@ namespace IronPython.Modules {
                 try {
                     IPEndPoint? remoteEP = _socket.RemoteEndPoint as IPEndPoint;
                     if (remoteEP == null) {
-                        throw MakeException(_context, new SocketException((int)SocketError.AddressFamilyNotSupported));
+                        throw MakeException(_context, new SocketException((int)SocketError.NotConnected));
                     }
                     return EndPointToTuple(remoteEP);
                 } catch (Exception e) {
@@ -390,6 +390,8 @@ namespace IronPython.Modules {
                 }
             }
 
+            private static ArrayPool<byte> ArrayPool => ArrayPool<byte>.Shared;
+
             [Documentation("recv(bufsize[, flags]) -> string\n\n"
                 + "Receive data from the socket, up to bufsize bytes. For connection-oriented\n"
                 + "protocols (e.g. SOCK_STREAM), you must first call either connect() or\n"
@@ -399,74 +401,25 @@ namespace IronPython.Modules {
                 + "settimeout(). If the timeout was exceeded, socket.timeout is raised."
                 + "recv() returns immediately with zero bytes when the connection is closed."
                 )]
-            public Bytes recv(int maxBytes, int flags = 0) {
-                int bytesRead;
-                if (maxBytes < 0)
-                    throw PythonOps.ValueError("negative buffersize in recv");
-                byte[] buffer = new byte[maxBytes];
+            public Bytes recv(int bufsize, int flags = 0) {
+                if (bufsize < 0) throw PythonOps.ValueError($"negative buffersize in {nameof(recv)}");
+
+                var buffer = ArrayPool.Rent(bufsize);
                 try {
-                    bytesRead = _socket.Receive(buffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.NotConnected);
+                    int bytesRead;
+                    try {
+                        bytesRead = _socket.Receive(buffer, bufsize, (SocketFlags)flags);
+                    } catch (Exception e) {
+                        throw MakeRecvException(e, SocketError.NotConnected);
+                    }
+
+                    var bytes = new byte[bytesRead];
+                    Array.Copy(buffer, bytes, bytes.Length);
+
+                    return Bytes.Make(bytes);
+                } finally {
+                    ArrayPool.Return(buffer);
                 }
-                if (bytesRead == buffer.Length)
-                    return Bytes.Make(buffer);
-                var bytes = new byte[bytesRead];
-                Array.Copy(buffer, bytes, bytes.Length);
-                return Bytes.Make(bytes);
-            }
-
-            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
-                + "A version of recv() that stores its data into a buffer rather than creating\n"
-                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
-                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
-                + "See recv() for documentation about the flags.\n"
-                )]
-            public int recv_into([NotNull] string buffer, int nbytes = 0, int flags = 0) {
-                throw PythonOps.TypeError("Cannot use string as modifiable buffer");
-            }
-
-            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
-                + "A version of recv() that stores its data into a buffer rather than creating\n"
-                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
-                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
-                + "See recv() for documentation about the flags.\n"
-                )]
-            public int recv_into([NotNull] PythonArray buffer, int nbytes = 0, int flags = 0) {
-                int bytesRead;
-                byte[] byteBuffer = new byte[byteBufferSize("recv_into", nbytes, buffer.__len__(), buffer.itemsize)];
-
-                try {
-                    bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.NotConnected);
-                }
-
-                buffer.FromStream(new MemoryStream(byteBuffer), 0);
-                return bytesRead;
-            }
-
-
-            [Documentation("recv_into(bytearray, [nbytes[, flags]]) -> nbytes_read\n\n"
-                + "A version of recv() that stores its data into a bytearray rather than creating\n"
-                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
-                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
-                + "See recv() for documentation about the flags.\n"
-                )]
-            public int recv_into([NotNull] ByteArray buffer, int nbytes = 0, int flags = 0) {
-                int bytesRead;
-                byte[] byteBuffer = new byte[byteBufferSize("recv_into", nbytes, buffer.Count, 1)];
-
-                try {
-                    bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.NotConnected);
-                }
-
-                for (int i = 0; i < bytesRead; i++) {
-                    buffer[i] = byteBuffer[i];
-                }
-                return bytesRead;
             }
 
             [Documentation("recv_into(memoryview, [nbytes[, flags]]) -> nbytes_read\n\n"
@@ -475,27 +428,42 @@ namespace IronPython.Modules {
                 + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
                 + "See recv() for documentation about the flags.\n"
                 )]
-            public int recv_into([NotNull] MemoryView buffer, int nbytes = 0, int flags = 0) {
-                int bytesRead;
-                byte[] byteBuffer = buffer.tobytes().ToArray();
+            public int recv_into([NotNull] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
+                using var buf = buffer.GetBufferNoThrow(BufferFlags.Writable);
+                if (buf is null) throw PythonOps.TypeError($"{nameof(recv_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
+                var span = buf.AsSpan();
+
+                if (nbytes < 0) throw PythonOps.ValueError("negative buffersize in " + nameof(recv_into));
+                if (nbytes > span.Length) throw PythonOps.ValueError("buffer too small for requested bytes");
+                if (nbytes == 0) nbytes = span.Length;
+
+                var byteBuffer = ArrayPool.Rent(nbytes);
                 try {
-                    bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    if (_socket.SendTimeout == 0) {
-                        var s = new SocketException((int)SocketError.NotConnected);
-                        throw PythonExceptions.CreateThrowable(error, (int)SocketError.NotConnected, s.Message);
-                    } else
-                        throw MakeException(_context, e);
+                    IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
+                    EndPoint remoteEP = remoteIPEP;
 
+                    int bytesRead;
+                    try {
+                        bytesRead = _socket.Receive(byteBuffer, nbytes, (SocketFlags)flags);
+                    } catch (Exception e) {
+                        throw MakeRecvException(e, SocketError.NotConnected);
+                    }
+
+                    byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
+
+                    return bytesRead;
+                } finally {
+                    ArrayPool.Return(byteBuffer);
                 }
-
-                buffer[new Slice(0, bytesRead)] = byteBuffer.Slice(new Slice(0, bytesRead));
-                return bytesRead;
-
             }
 
+            [Documentation("")]
             public int recv_into(object? buffer, int nbytes = 0, int flags = 0) {
-                throw PythonOps.TypeError(string.Format("recv_into() argument 1 must be read-write buffer, not {0}", PythonOps.GetPythonTypeName(buffer)));
+                if (Converter.TryConvert<IBufferProtocol>(buffer, out var bufferProtocol) && bufferProtocol is not null) {
+                    return recv_into(bufferProtocol, nbytes, flags);
+                }
+
+                throw PythonOps.TypeError($"{nameof(recv_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
             }
 
             [Documentation("recvfrom(bufsize[, flags]) -> (string, address)\n\n"
@@ -503,103 +471,72 @@ namespace IronPython.Modules {
                 + "received, and address (whose format is protocol-dependent) is the address of\n"
                 + "the socket from which the data was received."
                 )]
-            public PythonTuple recvfrom(int maxBytes, int flags = 0) {
-                if (maxBytes < 0) {
-                    throw PythonOps.ValueError("negative buffersize in recvfrom");
-                }
+            public PythonTuple recvfrom(int bufsize, int flags = 0) {
+                if (bufsize < 0) throw PythonOps.ValueError($"negative buffersize in {nameof(recvfrom)}");
 
-                int bytesRead;
-                byte[] buffer = new byte[maxBytes];
-                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
-                EndPoint remoteEP = remoteIPEP;
+                var buffer = ArrayPool.Rent(bufsize);
                 try {
-                    bytesRead = _socket.ReceiveFrom(buffer, (SocketFlags)flags, ref remoteEP);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.InvalidArgument);
-                }
+                    IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
+                    EndPoint remoteEP = remoteIPEP;
 
-                var bytes = new byte[bytesRead];
-                Array.Copy(buffer, 0, bytes, 0, bytes.Length);
-                var data = Bytes.Make(bytes);
-                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
-                return PythonTuple.MakeTuple(data, remoteAddress);
+                    int bytesRead;
+                    try {
+                        bytesRead = _socket.ReceiveFrom(buffer, bufsize, (SocketFlags)flags, ref remoteEP);
+                    } catch (Exception e) {
+                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                    }
+
+                    var bytes = new byte[bytesRead];
+                    Array.Copy(buffer, bytes, bytes.Length);
+
+                    return PythonTuple.MakeTuple(Bytes.Make(bytes), EndPointToTuple((IPEndPoint)remoteEP));
+                } finally {
+                    ArrayPool.Return(buffer);
+                }
             }
 
             [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                +"Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
                 )]
-            public PythonTuple recvfrom_into([NotNull] string buffer, int nbytes = 0, int flags = 0) {
-                throw PythonOps.TypeError("Cannot use string as modifiable buffer");
-            }
+            public PythonTuple recvfrom_into([NotNull] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
+                using var buf = buffer.GetBufferNoThrow(BufferFlags.Writable);
+                if (buf is null) throw PythonOps.TypeError($"{nameof(recvfrom_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
+                var span = buf.AsSpan();
 
-            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
-                )]
-            public PythonTuple recvfrom_into([NotNull] PythonArray buffer, int nbytes = 0, int flags = 0) {
-                int bytesRead;
-                byte[] byteBuffer = new byte[byteBufferSize("recvfrom_into", nbytes, buffer.__len__(), buffer.itemsize)];
-                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
-                EndPoint remoteEP = remoteIPEP;
+                if (nbytes < 0) throw PythonOps.ValueError("negative buffersize in " + nameof(recvfrom_into));
+                if (nbytes > span.Length) throw PythonOps.ValueError("nbytes is greater than the length of the buffer");
+                if (nbytes == 0) nbytes = span.Length;
 
+                var byteBuffer = ArrayPool.Rent(nbytes);
                 try {
-                    bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.InvalidArgument);
-                }
+                    IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
+                    EndPoint remoteEP = remoteIPEP;
 
-                buffer.FromStream(new MemoryStream(byteBuffer), 0);
-                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
-                return PythonTuple.MakeTuple(bytesRead, remoteAddress);
+                    int bytesRead;
+                    try {
+                        bytesRead = _socket.ReceiveFrom(byteBuffer, nbytes, (SocketFlags)flags, ref remoteEP);
+                    } catch (Exception e) {
+                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                    }
+
+                    byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
+
+                    return PythonTuple.MakeTuple(bytesRead, EndPointToTuple((IPEndPoint)remoteEP));
+                } finally {
+                    ArrayPool.Return(byteBuffer);
+                }
             }
 
-            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-               + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
-               )]
-            public PythonTuple recvfrom_into([NotNull] MemoryView buffer, int nbytes = 0, int flags = 0) {
-
-                int bytesRead;
-                byte[] byteBuffer = buffer.tobytes().ToArray();
-                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
-                EndPoint remoteEP = remoteIPEP;
-
-                try {
-                    bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.InvalidArgument);
-                }
-
-                buffer[new Slice(0, bytesRead)] = byteBuffer.Slice(new Slice(0, bytesRead));
-                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
-                return PythonTuple.MakeTuple(bytesRead, remoteAddress);
-            }
-
-            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
-                )]
-            public PythonTuple recvfrom_into([NotNull] IList<byte> buffer, int nbytes = 0, int flags = 0) {
-                int bytesRead;
-                byte[] byteBuffer = new byte[byteBufferSize("recvfrom_into", nbytes, buffer.Count, 1)];
-                IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
-                EndPoint remoteEP = remoteIPEP;
-
-                try {
-                    bytesRead = _socket.ReceiveFrom(byteBuffer, (SocketFlags)flags, ref remoteEP);
-                } catch (Exception e) {
-                    throw MakeRecvException(e, SocketError.InvalidArgument);
-                }
-
-                for (int i = 0; i < byteBuffer.Length; i++) {
-                    buffer[i] = byteBuffer[i];
-                }
-                PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
-                return PythonTuple.MakeTuple(bytesRead, remoteAddress);
-            }
-
+            [Documentation("")]
             public PythonTuple recvfrom_into(object? buffer, int nbytes = 0, int flags = 0) {
-                throw PythonOps.TypeError(string.Format("recvfrom_into() argument 1 must be read-write buffer, not {0}", PythonOps.GetPythonTypeName(buffer)));
+                if (Converter.TryConvert<IBufferProtocol>(buffer, out var bufferProtocol) && bufferProtocol is not null) {
+                    return recvfrom_into(bufferProtocol, nbytes, flags);
+                }
+
+                throw PythonOps.TypeError($"{nameof(recvfrom_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
             }
 
-            private static int byteBufferSize(string funcName, int nbytes, int bufLength, int itemSize) {
+            private static int byteBufferSize(string funcName, int nbytes, int bufLength, int itemSize = 1) {
                 if (nbytes < 0) {
                     throw PythonOps.ValueError("negative buffersize in " + funcName);
                 } else if (nbytes == 0) {
@@ -615,7 +552,7 @@ namespace IronPython.Modules {
                 // on the socket recv throw a special socket error code when SendTimeout is zero
                 if (_socket.SendTimeout == 0) {
                     var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, (int)SocketError.InvalidArgument, s.Message);
+                    return PythonExceptions.CreateThrowable(error, (int)errorCode, s.Message);
                 } else {
                     return MakeException(_context, e);
                 }
@@ -900,13 +837,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override string ToString() {
+            public string __repr__(CodeContext context) {
                 try {
-
-                    return String.Format("<socket object, fd={0}, family={1}, type={2}, protocol={3}>",
-                        fileno(), family, type, proto);
+                    return $"<socket object, fd={fileno()}, family={family}, type={type}, proto={proto}>";
                 } catch {
-                    return "<socket object, fd=?, family=?, type=, protocol=>";
+                    return "<socket object, fd=-1, family=0, type=0, proto=0>";
                 }
             }
 
@@ -990,8 +925,6 @@ namespace IronPython.Modules {
         #endregion
 
         #region Public API
-
-        public static object _GLOBAL_DEFAULT_TIMEOUT = new object();
 
         [Documentation("")]
         public static PythonList getaddrinfo(
@@ -1081,15 +1014,8 @@ namespace IronPython.Modules {
             return (PythonType)context.LanguageContext.GetModuleState("socketgaierror");
         }
 
-        [Documentation("getfqdn([hostname_or_ip]) -> hostname\n\n"
-            + "Return the fully-qualified domain name for the specified hostname or IP\n"
-            + "address. An unspecified or empty name is interpreted as the local host. If the\n"
-            + "name lookup fails, the passed-in name is returned as-is."
-            )]
-        public static string getfqdn(string? host) {
-            if (host == null) {
-                throw PythonOps.TypeError("expected string, got None");
-            }
+        private static string getfqdn() {
+            string host = LocalhostAddrToken;
             host = host.Trim();
             if (host == string.Empty || host == "0.0.0.0") {
                 host = gethostname();
@@ -1114,11 +1040,6 @@ namespace IronPython.Modules {
             }
             // seems to match CPython behavior, although docs say gethostname() should be returned
             return host;
-        }
-
-        [Documentation("")]
-        public static string getfqdn() {
-            return getfqdn(LocalhostAddrToken);
         }
 
         [Documentation("gethostbyname(hostname) -> ip address\n\n"
@@ -1219,7 +1140,8 @@ namespace IronPython.Modules {
             + "\n"
             )]
         public static object getnameinfo(CodeContext/*!*/ context, [NotNull] PythonTuple socketAddr, int flags) {
-            if (socketAddr.__len__() < 2 || socketAddr.__len__() > 4) {
+            var socketAddrLen = socketAddr.__len__();
+            if (socketAddrLen < 2 || socketAddrLen > 4) {
                 throw PythonOps.TypeError("socket address must be a 2-tuple (IPv4 or IPv6) or 4-tuple (IPv6)");
             }
 
@@ -1230,6 +1152,15 @@ namespace IronPython.Modules {
                 port = (int)socketAddr[1]!;
             } catch (InvalidCastException) {
                 throw PythonOps.TypeError("an integer is required");
+            }
+
+            if (socketAddrLen > 2) {
+                if (!Converter.TryConvertToBigInteger(socketAddr[2], out var flowinfo)) {
+                    throw PythonOps.TypeError("an integer is required");
+                }
+                if (flowinfo < 0 || flowinfo > 0xfffff) {
+                    throw PythonOps.OverflowError($"{nameof(getnameinfo)}(): flowinfo must be 0-1048575.");
+                }
             }
 
             string resultHost;
@@ -1524,7 +1455,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_pton() supports IPv4 and IPv6."
             )]
-        public static string inet_pton(CodeContext/*!*/ context, int addressFamily, [NotNull] string ipString) {
+        public static Bytes inet_pton(CodeContext/*!*/ context, int addressFamily, [NotNull] string ipString) {
             if (addressFamily != (int)AddressFamily.InterNetwork && addressFamily != (int)AddressFamily.InterNetworkV6) {
                 throw MakeException(context, new SocketException((int)SocketError.AddressFamilyNotSupported));
             }
@@ -1538,7 +1469,7 @@ namespace IronPython.Modules {
             } catch (FormatException) {
                 throw PythonExceptions.CreateThrowable(error, "illegal IP address passed to inet_pton");
             }
-            return ip.GetAddressBytes().MakeString();
+            return Bytes.Make(ip.GetAddressBytes());
         }
 
         [Documentation("inet_ntop(address_family, packed_ip) -> ip_string\n\n"
@@ -1575,7 +1506,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_aton() supports only IPv4."
             )]
-        public static string inet_aton(CodeContext/*!*/ context, [NotNull] string ipString) {
+        public static Bytes inet_aton(CodeContext/*!*/ context, [NotNull] string ipString) {
             return inet_pton(context, (int)AddressFamily.InterNetwork, ipString);
         }
 
@@ -1636,9 +1567,13 @@ namespace IronPython.Modules {
         public const int AF_IRDA = (int)AddressFamily.Irda;
         public const int AF_SNA = (int)AddressFamily.Sna;
         public const int AF_UNSPEC = (int)AddressFamily.Unspecified;
+        public const int AI_ADDRCONFIG = (int)0x400;
+        public const int AI_ALL = (int)0x100;
         public const int AI_CANONNAME = (int)0x2;
         public const int AI_NUMERICHOST = (int)0x4;
+        public const int AI_NUMERICSERV = (int)0x8;
         public const int AI_PASSIVE = (int)0x1;
+        public const int AI_V4MAPPED = (int)0x800;
         public const int EAI_AGAIN = (int)SocketError.TryAgain;
         public const int EAI_BADFLAGS = (int)SocketError.InvalidArgument;
         public const int EAI_FAIL = (int)SocketError.NoRecovery;
@@ -1648,8 +1583,8 @@ namespace IronPython.Modules {
         public const int EAI_NONAME = (int)SocketError.HostNotFound;
         public const int EAI_SERVICE = (int)SocketError.TypeNotFound;
         public const int EAI_SOCKTYPE = (int)SocketError.SocketNotSupported;
-        public const int EAI_SYSTEM = (int)SocketError.SocketError;
-        public const int EBADF = (int)0x9;
+        public const int EAI_SYSTEM = (int)SocketError.SocketError; // TODO: not on windows?
+        public const int EBADF = (int)0x9; // TODO: not in _socket in CPython, can we remove it?
         public const int INADDR_ALLHOSTS_GROUP = unchecked((int)0xe0000001);
         public const int INADDR_ANY = (int)0x00000000;
         public const int INADDR_BROADCAST = unchecked((int)0xFFFFFFFF);
@@ -1680,20 +1615,19 @@ namespace IronPython.Modules {
         public const int IPPROTO_ROUTING = (int)ProtocolType.IPv6RoutingHeader;
         public const int IPPROTO_TCP = (int)ProtocolType.Tcp;
         public const int IPPROTO_UDP = (int)ProtocolType.Udp;
+        public const int IPV6_CHECKSUM = 26;
         public const int IPV6_HOPLIMIT = (int)SocketOptionName.HopLimit;
+        public const int IPV6_HOPOPTS = 1;
         public const int IPV6_JOIN_GROUP = (int)SocketOptionName.AddMembership;
         public const int IPV6_LEAVE_GROUP = (int)SocketOptionName.DropMembership;
         public const int IPV6_MULTICAST_HOPS = (int)SocketOptionName.MulticastTimeToLive;
         public const int IPV6_MULTICAST_IF = (int)SocketOptionName.MulticastInterface;
         public const int IPV6_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback;
         public const int IPV6_PKTINFO = (int)SocketOptionName.PacketInformation;
+        public const int IPV6_RECVRTHDR = 38;
+        public const int IPV6_TCLASS = 39;
         public const int IPV6_UNICAST_HOPS = (int)SocketOptionName.IpTimeToLive;
-#if FEATURE_IPV6 && __MonoCS__
-        //TODO: Is this filed in a Mono bug report?
-        public const int IPV6_V6ONLY = 27;
-#elif FEATURE_IPV6
-        public const int IPV6_V6ONLY = (int) SocketOptionName.IPv6Only;
-#endif
+        public const int IPV6_V6ONLY = (int)SocketOptionName.IPv6Only;
         public const int IP_ADD_MEMBERSHIP = (int)SocketOptionName.AddMembership;
         public const int IP_DROP_MEMBERSHIP = (int)SocketOptionName.DropMembership;
         public const int IP_HDRINCL = (int)SocketOptionName.HeaderIncluded;
@@ -1704,6 +1638,7 @@ namespace IronPython.Modules {
         public const int IP_TOS = (int)SocketOptionName.TypeOfService;
         public const int IP_TTL = (int)SocketOptionName.IpTimeToLive;
         public const int MSG_DONTROUTE = (int)SocketFlags.DontRoute;
+        public const int MSG_MCAST = (int)SocketFlags.Multicast;
         public const int MSG_OOB = (int)SocketFlags.OutOfBand;
         public const int MSG_PEEK = (int)SocketFlags.Peek;
         public const int NI_DGRAM = 0x0010;
@@ -1722,7 +1657,7 @@ namespace IronPython.Modules {
         public const int SOCK_SEQPACKET = (int)System.Net.Sockets.SocketType.Seqpacket;
         public const int SOCK_STREAM = (int)System.Net.Sockets.SocketType.Stream;
         public const int SOL_IP = (int)SocketOptionLevel.IP;
-        public const int SOL_IPV6 = (int)SocketOptionLevel.IPv6;
+        public const int SOL_IPV6 = (int)SocketOptionLevel.IPv6; // not in CPython
         public const int SOL_SOCKET = (int)SocketOptionLevel.Socket;
         public const int SOL_TCP = (int)SocketOptionLevel.Tcp;
         public const int SOL_UDP = (int)SocketOptionLevel.Udp;
@@ -1884,7 +1819,6 @@ namespace IronPython.Modules {
         private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family) {
             host = ConvertSpecialAddresses(host);
             try {
-
                 bool numeric = true;
                 int dotCount = 0;
                 foreach (char c in host) {
@@ -1945,7 +1879,8 @@ namespace IronPython.Modules {
         ///  - address[1] is not an int
         /// </summary>
         private static IPEndPoint TupleToEndPoint(CodeContext/*!*/ context, PythonTuple address, AddressFamily family, out string host) {
-            if (address.__len__() != 2 && address.__len__() != 4) {
+            var addressLen = address.__len__();
+            if (addressLen < 2 || addressLen > 4) {
                 throw PythonOps.TypeError("address tuple must have exactly 2 (IPv4) or exactly 4 (IPv6) elements");
             }
 
@@ -1967,29 +1902,31 @@ namespace IronPython.Modules {
             }
 
             IPAddress ip = HostToAddress(context, host, family);
+            var endPoint = new IPEndPoint(ip, port);
 
-            if (address.__len__() == 2) {
-                return new IPEndPoint(ip, port);
-            } else {
-                try {
-                    Converter.ConvertToInt64(address[2]);
-                } catch (ArgumentTypeException) {
-                    throw PythonOps.TypeError("flowinfo must be integer");
+            if (addressLen > 2) {
+                if (!Converter.TryConvertToBigInteger(address[2], out var flowinfo)) {
+                    throw PythonOps.TypeError("an integer is required");
+                }
+                if (flowinfo < 0 || flowinfo > 0xfffff) {
+                    throw PythonOps.OverflowError($"{nameof(socket.bind)}(): flowinfo must be 0-1048575.");
                 }
                 // We don't actually do anything with flowinfo right now, but we validate it
                 // in case we want to do something in the future.
 
-                long scopeId;
-                try {
-                    scopeId = Converter.ConvertToInt64(address[3]);
-                } catch (ArgumentTypeException) {
-                    throw PythonOps.TypeError("scopeid must be integer");
-                }
+                if (addressLen > 3) {
+                    long scopeId;
+                    try {
+                        scopeId = Converter.ConvertToInt64(address[3]);
+                    } catch (ArgumentTypeException) {
+                        throw PythonOps.TypeError("scopeid must be integer");
+                    }
 
-                IPEndPoint endPoint = new IPEndPoint(ip, port);
-                endPoint.Address.ScopeId = scopeId;
-                return endPoint;
+                    endPoint.Address.ScopeId = scopeId;
+                }
             }
+
+            return endPoint;
         }
 
         /// <summary>
@@ -2135,7 +2072,6 @@ namespace IronPython.Modules {
                 return GetServiceByNameWindows(service, protocol);
 
             static ushort GetServiceByNameWindows(string service, string? protocol) {
-
                 var test = Socket.OSSupportsIPv6; // make sure Winsock library is initiliazed
 
                 var result = getservbyname(service, protocol);
@@ -2150,7 +2086,6 @@ namespace IronPython.Modules {
 
                 var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
                 return unchecked((ushort)hostport);
-
             }
 
             static ushort GetServiceByNameNonWindows(string service, string? protocol) {

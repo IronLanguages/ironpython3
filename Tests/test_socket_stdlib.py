@@ -170,7 +170,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.NetworkConnectionNoServer('test_create_connection'))
         suite.addTest(test.test_socket.NetworkConnectionNoServer('test_create_connection_timeout'))
         if not is_posix: # TODO: figure out - failure in teardown
-            suite.addTest(unittest.expectedFailure(test.test_socket.NonBlockingTCPTests('testAccept')))
+            suite.addTest(test.test_socket.NonBlockingTCPTests('testAccept'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testConnect'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testInheritFlags'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testInitNonBlocking'))

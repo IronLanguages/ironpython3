@@ -30,9 +30,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.BasicSocketPairTest('testDefaults'))
         suite.addTest(test.test_socket.BasicSocketPairTest('testRecv'))
         suite.addTest(test.test_socket.BasicSocketPairTest('testSend'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testDetach'))) # Object reference not set to an instance of an object.
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testDup'))) # NameError: name 'dup' is not defined
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testFromFd'))) # NameError: name 'dup' is not defined
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testDetach'))) # https://github.com/IronLanguages/ironpython3/issues/1224
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testDup'))) # https://github.com/IronLanguages/ironpython3/issues/1223
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest('testFromFd'))) # https://github.com/IronLanguages/ironpython3/issues/1223
         suite.addTest(test.test_socket.BasicTCPTest('testOverFlowRecv'))
         suite.addTest(test.test_socket.BasicTCPTest('testOverFlowRecvFrom'))
         suite.addTest(test.test_socket.BasicTCPTest('testRecv'))
@@ -40,9 +40,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.BasicTCPTest('testSendAll'))
         suite.addTest(test.test_socket.BasicTCPTest('testShutdown'))
         suite.addTest(test.test_socket.BasicTCPTest('testShutdown_overflow'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testDetach'))) # Object reference not set to an instance of an object.
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testDup'))) # NameError: name 'dup' is not defined
-        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testFromFd'))) # NameError: name 'dup' is not defined
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testDetach'))) # https://github.com/IronLanguages/ironpython3/issues/1224
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testDup'))) # https://github.com/IronLanguages/ironpython3/issues/1223
+        suite.addTest(unittest.expectedFailure(test.test_socket.BasicTCPTest2('testFromFd'))) # https://github.com/IronLanguages/ironpython3/issues/1223
         suite.addTest(test.test_socket.BasicTCPTest2('testOverFlowRecv'))
         suite.addTest(test.test_socket.BasicTCPTest2('testOverFlowRecvFrom'))
         suite.addTest(test.test_socket.BasicTCPTest2('testRecv'))
@@ -106,10 +106,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.GeneralModuleTests('testStringToIPv4'))
         suite.addTest(test.test_socket.GeneralModuleTests('testStringToIPv6'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_SocketType_is_socketobject'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_csocket_repr'))) # fd not -1 after close
+        suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_csocket_repr'))) # https://github.com/IronLanguages/ironpython3/issues/1221
         suite.addTest(test.test_socket.GeneralModuleTests('test_dealloc_warn'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_flowinfo'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_getnameinfo'))) # only IP addresses are allowed
+        suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_getnameinfo'))) # https://github.com/IronLanguages/ironpython3/issues/1222
         suite.addTest(test.test_socket.GeneralModuleTests('test_getsockaddrarg'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_host_resolution'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_idna'))
@@ -127,10 +127,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.GeneralModuleTests('test_unusable_closed_socketio'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_weakref'))
         suite.addTest(test.test_socket.InheritanceTest('test_SOCK_CLOEXEC'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_default_inheritable'))) # AttributeError: 'module' object has no attribute 'get_handle_inheritable'
-        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_dup'))) # NameError: name 'dup' is not defined
+        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_default_inheritable'))) # https://github.com/IronLanguages/ironpython3/issues/1225
+        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_dup'))) # https://github.com/IronLanguages/ironpython3/issues/1223
         suite.addTest(test.test_socket.InheritanceTest('test_get_inheritable_cloexec'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_set_inheritable'))) # AttributeError: 'module' object has no attribute 'set_handle_inheritable'
+        suite.addTest(unittest.expectedFailure(test.test_socket.InheritanceTest('test_set_inheritable'))) # https://github.com/IronLanguages/ironpython3/issues/1225
         suite.addTest(test.test_socket.InheritanceTest('test_set_inheritable_cloexec'))
         suite.addTest(test.test_socket.InheritanceTest('test_socketpair'))
         suite.addTest(test.test_socket.InterruptedRecvTimeoutTest('testInterruptedRecvIntoTimeout'))
@@ -486,10 +486,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.TestLinuxAbstractNamespace('testMaxName'))
         suite.addTest(test.test_socket.TestLinuxAbstractNamespace('testNameOverflow'))
         suite.addTest(test.test_socket.TestLinuxAbstractNamespace('testStrName'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShare'))) # AttributeError: 'socket' object has no attribute 'share'
-        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShareLength'))) # AttributeError: 'socket' object has no attribute 'share'
-        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShareLocal'))) # AttributeError: 'socket' object has no attribute 'share'
-        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testTypes'))) # AttributeError: 'socket' object has no attribute 'share'
+        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShare'))) # https://github.com/IronLanguages/ironpython3/issues/1226
+        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShareLength'))) # https://github.com/IronLanguages/ironpython3/issues/1226
+        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testShareLocal'))) # https://github.com/IronLanguages/ironpython3/issues/1226
+        suite.addTest(unittest.expectedFailure(test.test_socket.TestSocketSharing('testTypes'))) # https://github.com/IronLanguages/ironpython3/issues/1226
         suite.addTest(test.test_socket.TestUnixDomain('testBytesAddr'))
         suite.addTest(test.test_socket.TestUnixDomain('testStrAddr'))
         suite.addTest(test.test_socket.TestUnixDomain('testSurrogateescapeBind'))
@@ -501,13 +501,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testClosedAttr'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testFullRead'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileAfterMakefileClose'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileClose')))
+        suite.addTest(unittest.expectedFailure(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileClose'))) # SystemError: Cannot access a disposed object.
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileCloseSocketDestroy'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testReadAfterTimeout'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testReadline'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testRealClose'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testSmallRead'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking')))
+        suite.addTest(unittest.expectedFailure(test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking'))) # TODO: figure out
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testUnbufferedRead'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testUnbufferedReadline'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testWriteNonBlocking'))

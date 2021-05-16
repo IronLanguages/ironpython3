@@ -1566,6 +1566,9 @@ namespace IronPython.Modules {
         public const int AF_IPX = (int)AddressFamily.Ipx;
         public const int AF_IRDA = (int)AddressFamily.Irda;
         public const int AF_SNA = (int)AddressFamily.Sna;
+        // TODO: adding this causes test failures since bind does not support it
+        //[PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        //public const int AF_UNIX = (int)AddressFamily.Unix;
         public const int AF_UNSPEC = (int)AddressFamily.Unspecified;
         public const int AI_ADDRCONFIG = (int)0x400;
         public const int AI_ALL = (int)0x100;

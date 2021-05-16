@@ -4593,6 +4593,7 @@ class TestExceptions(unittest.TestCase):
         self.assertTrue(issubclass(socket.timeout, OSError))
 
 @unittest.skipUnless(sys.platform == 'linux', 'Linux specific test')
+@unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'test needs socket.AF_UNIX')
 class TestLinuxAbstractNamespace(unittest.TestCase):
 
     UNIX_PATH_MAX = 108

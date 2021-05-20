@@ -109,9 +109,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_csocket_repr'))) # https://github.com/IronLanguages/ironpython3/issues/1221
         suite.addTest(test.test_socket.GeneralModuleTests('test_dealloc_warn'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_flowinfo'))
-        if is_posix: # TODO: figure out, passes but not for the right reasons
-            suite.addTest(test.test_socket.GeneralModuleTests('test_getnameinfo'))
-        else:
+        if not is_posix: # TODO: figure out
             suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_getnameinfo'))) # https://github.com/IronLanguages/ironpython3/issues/1222
         suite.addTest(test.test_socket.GeneralModuleTests('test_getsockaddrarg'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_host_resolution'))

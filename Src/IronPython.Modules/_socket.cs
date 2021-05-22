@@ -250,7 +250,9 @@ namespace IronPython.Modules {
 
                     ((IDisposable)_socket).Dispose();
                     if (System.Threading.Interlocked.Exchange(ref _referenceCount, 0) > 0) {
-                        PythonOps.Warn(_context, PythonExceptions.ResourceWarning, $"unclosed {PythonOps.Repr(_context, this)}");
+                        try { // this may throw when called from the Finalizer (on Mono) so just swallow any exception
+                            PythonOps.Warn(_context, PythonExceptions.ResourceWarning, $"unclosed {PythonOps.Repr(_context, this)}");
+                        } catch { }
                     }
                 }
             }

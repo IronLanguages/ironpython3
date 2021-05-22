@@ -342,7 +342,7 @@ class StdConsoleTest(IronPythonTestCase):
         if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1061
             self.TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
 
-  File "-c", line 1, in <module>
+  File "<string>", line 1, in <module>
 
 AssertionError
 

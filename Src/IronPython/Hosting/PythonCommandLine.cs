@@ -205,6 +205,7 @@ namespace IronPython.Hosting {
             PythonContext.PublishModule("__main__", modCtx.Module);
             modCtx.Globals["__doc__"] = null;
             modCtx.Globals["__name__"] = "__main__";
+            modCtx.Globals["__package__"] = null;
 
             return modCtx.GlobalScope;
         }
@@ -531,7 +532,7 @@ namespace IronPython.Hosting {
             PythonModule module = PythonContext.CompileModule(
                 "", // there is no file, it will be set to <module>
                 "__main__",
-                PythonContext.CreateSnippet(command, "-c", SourceCodeKind.File),
+                PythonContext.CreateSnippet(command, "<string>", SourceCodeKind.File),
                 modOpt,
                 out compiledCode);
             PythonContext.PublishModule("__main__", module);

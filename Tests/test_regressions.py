@@ -1603,4 +1603,19 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
                 self.assertRaises(TypeError, op, x, y)
                 self.assertEqual(z, [("__eq__", 1), ("__eq__", 2), (a, 1), (b, 2)])
 
+    def test_ipy3_gh1229(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1229"""
+        self.assertIn("__package__", globals())
+        self.assertIs(__package__, None)
+
+        filename = os.path.join(self.temporary_dir, "test_ipy3_gh1229.{}.py".format(os.getpid()))
+        try:
+            with open(filename, 'w') as f:
+                f.write("assert '__package__' in globals()\nassert __package__ is None\n")
+            import subprocess
+            res = subprocess.call([sys.executable, '-S', filename])
+            self.assertEqual(res, 0)
+        finally:
+            os.remove(filename)
+
 run_test(__name__)

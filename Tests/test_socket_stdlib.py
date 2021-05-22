@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import is_posix, run_test
+from iptest import is_linux, is_posix, run_test
 
 import test.test_socket
 
@@ -113,7 +113,7 @@ def load_tests(loader, standard_tests, pattern):
             suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_getnameinfo'))) # https://github.com/IronLanguages/ironpython3/issues/1222
         suite.addTest(test.test_socket.GeneralModuleTests('test_getsockaddrarg'))
         suite.addTest(test.test_socket.GeneralModuleTests('test_host_resolution'))
-        if is_posix:
+        if is_linux:
             suite.addTest(unittest.expectedFailure(test.test_socket.GeneralModuleTests('test_idna'))) # TODO: figure out
         else:
             suite.addTest(test.test_socket.GeneralModuleTests('test_idna'))

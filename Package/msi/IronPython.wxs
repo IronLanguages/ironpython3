@@ -16,9 +16,17 @@
         <File Id="ipy.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipy.exe">
           <netfx:NativeImage Id="ngen_ipy.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
+          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" KeyPath="no" />
+          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[#ipy.exe]" KeyPath="no" />
+        </RegistryKey>
         <File Id="ipy32.exe" Source="$(var.PlatformDir)\ipy32.exe">
           <netfx:NativeImage Id="ngen_ipy32.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
+          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" KeyPath="no" />
+          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[#ipy32.exe]" KeyPath="no" />
+        </RegistryKey>
       </Component>
 
       <Component Guid="{F7E1626D-3007-405D-A656-1A971D172A07}">
@@ -32,9 +40,15 @@
         <File Id="ipyw.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipyw.exe">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
+          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[#ipyw.exe]" KeyPath="no" />
+        </RegistryKey>
         <File Id="ipyw32.exe" Source="$(var.PlatformDir)\ipyw32.exe">
           <netfx:NativeImage Id="ngen_ipyw32.exe" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
+          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[#ipyw32.exe]" KeyPath="no" />
+        </RegistryKey>
       </Component>
 
       <Directory Id="IronPython_DLLs" Name="DLLs">
@@ -68,12 +82,45 @@
         <RegistryValue Id="InstallationKey"
           Root="HKLM" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)\InstallPath" Type="string" Value="[INSTALLDIR]" />
       </Component>
-      
+
       <Component>
         <RegistryValue Id="VSNet45ReferenceAssemblyKey"
           Root="HKLM" Key="SOFTWARE\Microsoft\.NETFramework\v4.5.50709\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)" Type="string" Value="[INSTALLDIR]" />
       </Component>
-      
+
+      <Component Id="CommonPythonRegistration">
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython">
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython" KeyPath="yes" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="PythonRegistration">
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (64-bit)" KeyPath="yes" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
+          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" KeyPath="no" />
+          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" KeyPath="no" />
+          <RegistryValue Name="SysArchitecture" Type="string" Value="64bit" KeyPath="no" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (32-bit)" KeyPath="no" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
+          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" KeyPath="no" />
+          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" KeyPath="no" />
+          <RegistryValue Name="SysArchitecture" Type="string" Value="32bit" KeyPath="no" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="PythonPathRegistry">
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
+          <RegistryValue Key="PythonPath" Type="string" Value="[INSTALLDIR]Lib;[INSTALLDIR]DLLs" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
+          <RegistryValue Key="PythonPath" Type="string" Value="[INSTALLDIR]Lib;[INSTALLDIR]DLLs" />
+        </RegistryKey>
+      </Component>
+
     </DirectoryRef>
 
     <DirectoryRef Id="GAC">
@@ -82,24 +129,24 @@
           <netfx:NativeImage Id="ngen_IronPython.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
       </Component>
-<!--       
+<!--
       <Component Guid="{40B104FB-E966-425C-A960-7DB19E3344E3}">
-        <File Id="policy.$(var.ReleaseSeries).IronPython.dll" KeyPath="yes" 
+        <File Id="policy.$(var.ReleaseSeries).IronPython.dll" KeyPath="yes"
               Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.dll" Assembly=".net" />
-        <File Id="policy.$(var.ReleaseSeries).IronPython.config" KeyPath="no" 
+        <File Id="policy.$(var.ReleaseSeries).IronPython.config" KeyPath="no"
               Source="$(var.BuildDir)\policy.IronPython.config" />
       </Component> -->
-      
+
       <Component Guid="{24B20236-2211-46B6-816E-A2118BDE76C9}">
         <File Id="gac_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes" Source="$(var.PlatformDir)\IronPython.Modules.dll" >
           <netfx:NativeImage Id="ngen_IronPython.Modules.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
         </File>
       </Component>
-      
+
       <!-- <Component Guid="{9883A38B-A77C-4818-A13E-029F33A2D914}">
-        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll" KeyPath="yes" 
+        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll" KeyPath="yes"
               Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.Modules.dll" Assembly=".net" />
-        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.config" KeyPath="no" 
+        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.config" KeyPath="no"
               Source="$(var.BuildDir)\policy.IronPython.Modules.config" />
       </Component> -->
     </DirectoryRef>
@@ -119,6 +166,9 @@
       <ComponentRef Id="LICENSE"/>
       <ComponentRef Id="InstallationKey"/>
       <ComponentRef Id="VSNet45ReferenceAssemblyKey"/>
+      <ComponentRef Id="CommonPythonRegistration"/>
+      <ComponentRef Id="PythonRegistration"/>
+      <ComponentRef Id="PythonPathRegistry"/>
     </ComponentGroup>
 
     <ComponentGroup Id="IronPythonGac">

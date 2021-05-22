@@ -462,7 +462,7 @@ namespace IronPython.Runtime {
             // Therefore we keep track of a limited number of threads in an array
             // that only gets created once, and we access each of the elements
             // from only a single thread.
-            uint tid = (uint)Thread.CurrentThread.ManagedThreadId;
+            uint tid = (uint)Environment.CurrentManagedThreadId;
 
             if (tid < _depth_fast.Length) {
                 return _depth_fast[tid] += change;

@@ -63,7 +63,7 @@ namespace IronPython.SQLite
             internal Sqlite3.sqlite3 db;
 
             internal bool inTransaction = false;
-            internal int thread_ident = Thread.CurrentThread.ManagedThreadId;
+            internal int thread_ident = Environment.CurrentManagedThreadId;
 
             private static readonly Dictionary<object, object> emptyKwargs= new Dictionary<object, object>();
 
@@ -536,10 +536,10 @@ namespace IronPython.SQLite
             internal void checkThread()
             {
                 if(this.check_same_thread)
-                    if(this.thread_ident != System.Threading.Thread.CurrentThread.ManagedThreadId)
+                    if(this.thread_ident != Environment.CurrentManagedThreadId)
                         throw MakeProgrammingError("SQLite objects created in a thread can only be used in that same thread." +
                             "The object was created in thread id {0} and this is thread id {1}".Format(
-                            this.thread_ident, System.Threading.Thread.CurrentThread.ManagedThreadId));
+                            this.thread_ident, Environment.CurrentManagedThreadId));
             }
 
             internal static void verify(Connection connection)

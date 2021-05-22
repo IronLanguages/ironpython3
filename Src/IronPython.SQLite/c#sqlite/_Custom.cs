@@ -552,7 +552,7 @@ static void x_CountFinalize( sqlite3_context context )
 //---------------------WIN32 Definitions
 static int GetCurrentThreadId()
 {
-  return Thread.CurrentThread.ManagedThreadId;
+  return Environment.CurrentManagedThreadId;
 }
 static long InterlockedIncrement( long location )
 {

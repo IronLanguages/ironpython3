@@ -89,7 +89,7 @@ namespace IronPython.Modules {
         }
 
         public static object get_ident() {
-            return Thread.CurrentThread.ManagedThreadId;
+            return Environment.CurrentManagedThreadId;
         }
 
         public static int stack_size(CodeContext/*!*/ context) {

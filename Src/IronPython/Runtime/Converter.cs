@@ -255,6 +255,16 @@ namespace IronPython.Runtime {
             return (T)Convert(value, typeof(T));
         }
 
+        internal static bool TryConvert<T>(object value, out T result) {
+            try {
+                result = Convert<T>(value);
+                return true;
+            } catch {
+                result = default;
+                return false;
+            }
+        }
+
         /// <summary>
         /// General conversion routine TryConvert - tries to convert the object to the desired type.
         /// Try to avoid using this method, the goal is to ultimately remove it!

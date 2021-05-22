@@ -158,7 +158,7 @@ namespace IronPython.Modules {
             static LiteralParser.ParseBytesErrorHandler<byte>? getErrorHandler(string? errors) {
                 if (errors == null) return default;
 
-                Func<int, IReadOnlyList<byte>>? eh = null;
+                Func<int, IReadOnlyList<byte>?>? eh = null;
 
                 return delegate (in ReadOnlySpan<byte> data, int start, int end, string message) {
                     eh ??= errors switch

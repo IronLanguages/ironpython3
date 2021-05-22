@@ -47,7 +47,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     </Property>
 
     <!-- Same thing but used to decide if we should install the default info for the file type -->
-    <Property Id="PYTHONFILETYPENODEFAULT" >
+    <Property Id="PYTHONFILETYPENODEFAULT">
       <RegistrySearch Id="PythonFileTypeNoDefaultSearch" Root="HKCR" Key=".py" Type="raw" />
     </Property>
 
@@ -73,7 +73,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <Shortcut Id="IronPython_Readme" Name="IronPython Readme" Target="[INSTALLDIR]README.md" />
         <Shortcut Id="IronPython_Console" Name="IronPython Console" Target="[INSTALLDIR]ipy.exe" />
         
-        <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy" Type="integer" Value="1" KeyPath="yes"/>
+        <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy" Type="integer" Value="1" KeyPath="yes" />
         <RemoveFolder Id="IronPythonStartMenu" On="uninstall" />
       </Component>
     </DirectoryRef>
@@ -115,8 +115,8 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <CustomAction Id="RemovePip" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" />
     <?endif ?>
     
-    <SetProperty Id="UpdatePip" Value="&quot;[#ipy.exe]&quot; -E -s -m ensurepip -U --default-pip" Before="UpdatePip" Sequence="execute"/>
-    <SetProperty Id="RemovePip" Value="&quot;[#ipy.exe]&quot; -E -s -B -m ensurepip._uninstall" Before="RemovePip" Sequence="execute"/>
+    <SetProperty Id="UpdatePip" Value="&quot;[#ipy.exe]&quot; -E -s -m ensurepip -U --default-pip" Before="UpdatePip" Sequence="execute" />
+    <SetProperty Id="RemovePip" Value="&quot;[#ipy.exe]&quot; -E -s -B -m ensurepip._uninstall" Before="RemovePip" Sequence="execute" />
 
     <!-- Sequences -->
     <InstallExecuteSequence>

@@ -3,7 +3,7 @@
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
       <Component Guid="{3C386FF0-9BC5-4B45-9628-4EE4AC1916A2}">
-        <File Id="Microsoft.Scripting.dll" KeyPath="yes" Source="$(var.PlatformDir)\Microsoft.Scripting.dll"/>
+        <File Id="Microsoft.Scripting.dll" KeyPath="yes" Source="$(var.PlatformDir)\Microsoft.Scripting.dll" />
       </Component>
 
       <Component Guid="{9D15CFB0-C88B-4223-A9E6-C8FA6B336E2B}">
@@ -14,13 +14,13 @@
     <DirectoryRef Id="GAC">
       <Component Guid="{24AAD7FE-15E3-440C-84E7-26DBDF7F9EBE}">
         <File Id="gac_Microsoft.Scripting.dll" Name="Microsoft.Scripting.dll" Assembly=".net" KeyPath="yes" Source="$(var.PlatformDir)\Microsoft.Scripting.dll">
-          <netfx:NativeImage Id="ngen_Microsoft.Scripting.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
+          <netfx:NativeImage Id="ngen_Microsoft.Scripting.dll" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
 
       <Component Guid="{A62AD5D3-18CE-4933-9FF7-AA593537C4C2}">
         <File Id="gac_Microsoft.Dynamic.dll" Name="Microsoft.Dynamic.dll" Assembly=".net" KeyPath="yes" Source="$(var.PlatformDir)\Microsoft.Dynamic.dll">
-          <netfx:NativeImage Id="ngen_Microsoft.Dynamic.dll" Platform="all" AppBaseDirectory="INSTALLDIR"/>
+          <netfx:NativeImage Id="ngen_Microsoft.Dynamic.dll" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
     </DirectoryRef>

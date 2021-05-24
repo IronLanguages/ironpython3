@@ -34,15 +34,12 @@ namespace IronPython.Modules {
             private int _head, _tail;
             private int _itemCnt, _maxLen, _version;
 
-            public deque() {
-                _maxLen = -1;
-                clear();
-            }
+            public deque() : this(-1) { }
 
             private deque(int maxlen) {
                 // internal private constructor accepts maxlen < 0
                 _maxLen = maxlen;
-                clear();
+                _data = _maxLen < 0 ? new object[8] : new object[Math.Min(_maxLen, 8)];
             }
 
             public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
@@ -186,6 +183,9 @@ namespace IronPython.Modules {
                 }
             }
 
+            public object copy(CodeContext context)
+                => __copy__(context);
+
             public void extend(object iterable) {
                 // d.extend(d)
                 if (ReferenceEquals(iterable, this)) {
@@ -215,6 +215,81 @@ namespace IronPython.Modules {
                 IEnumerator e = PythonOps.GetEnumerator(iterable);
                 while (e.MoveNext()) {
                     appendleft(e.Current);
+                }
+            }
+
+            public int index(CodeContext context, object value) {
+                lock (_lockObj) {
+                    return index(context, value, 0, _itemCnt);
+                }
+            }
+
+            public int index(CodeContext context, object value, int start) {
+                lock (_lockObj) {
+                    return index(context, value, start, _itemCnt);
+                }
+            }
+
+            public int index(CodeContext context, object value, int start, int stop) {
+                lock (_lockObj) {
+                    if (start < 0) {
+                        start += _itemCnt;
+                        if (start < 0) start = 0;
+                    }
+                    if (stop < 0) {
+                        stop += _itemCnt;
+                        if (stop < 0) stop = 0;
+                    }
+                    int found = -1;
+                    int cnt = 0;
+                    var startVersion = _version;
+                    try {
+                        WalkDeque((int index) => {
+                            if (cnt >= start) {
+                                if (cnt >= stop) return false;
+                                if (PythonOps.IsOrEqualsRetBool(_data[index], value)) {
+                                    found = index;
+                                    return false;
+                                }
+                            }
+                            cnt += 1;
+                            return true;
+                        });
+                    } catch (IndexOutOfRangeException) {
+                        Debug.Assert(startVersion != _version);
+                    }
+                    if (startVersion != _version) {
+                        throw PythonOps.RuntimeError("deque mutated during iteration");
+                    }
+                    if (found == -1) {
+                        throw PythonOps.ValueError($"{value} not in deque");
+                    }
+                    return cnt;
+                }
+            }
+
+            public int index(CodeContext context, object item, object start)
+                => index(context, item, Converter.ConvertToIndex(start));
+
+            public int index(CodeContext context, object item, object start, object stop)
+                => index(context, item, Converter.ConvertToIndex(start), Converter.ConvertToIndex(stop));
+
+            public void insert(CodeContext context, int index, object @object) {
+                lock (_lockObj) {
+                    if (_itemCnt == _maxLen) throw PythonOps.IndexError("deque already at its maximum size");
+                    if (index >= _itemCnt) {
+                        append(@object);
+                    } else if (index <= -_itemCnt || index == 0) {
+                        appendleft(@object);
+                    } else {
+                        rotate(context, -index);
+                        if (index < 0) {
+                            append(@object);
+                        } else {
+                            appendleft(@object);
+                        }
+                        rotate(context, index);
+                    }
                 }
             }
 
@@ -262,13 +337,17 @@ namespace IronPython.Modules {
                 lock (_lockObj) {
                     int found = -1;
                     int startVersion = _version;
-                    WalkDeque((int index) => {
-                        if (PythonOps.IsOrEqualsRetBool(_data[index], value)) {
-                            found = index;
-                            return false;
-                        }
-                        return true;
-                    });
+                    try {
+                        WalkDeque((int index) => {
+                            if (PythonOps.IsOrEqualsRetBool(_data[index], value)) {
+                                found = index;
+                                return false;
+                            }
+                            return true;
+                        });
+                    } catch (IndexOutOfRangeException) {
+                        Debug.Assert(_version != startVersion);
+                    }
                     if (_version != startVersion) {
                         throw PythonOps.IndexError("deque mutated during remove().");
                     }
@@ -363,7 +442,6 @@ namespace IronPython.Modules {
                 }
                 set {
                     lock (_lockObj) {
-                        _version++;
                         _data[IndexToSlot(context, index)] = value;
                     }
                 }
@@ -406,6 +484,28 @@ namespace IronPython.Modules {
             public object maxlen => _maxLen == -1 ? null : (object)_maxLen;
 
             #endregion
+
+            public bool __contains__(CodeContext/*!*/ context, object key) {
+                lock (_lockObj) {
+                    int found = -1;
+                    var startVersion = _version;
+                    try {
+                        WalkDeque((int index) => {
+                            if (PythonOps.IsOrEqualsRetBool(_data[index], key)) {
+                                found = index;
+                                return false;
+                            }
+                            return true;
+                        });
+                    } catch (IndexOutOfRangeException) {
+                        Debug.Assert(startVersion != _version);
+                    }
+                    if (startVersion != _version) {
+                        throw PythonOps.RuntimeError("deque mutated during iteration");
+                    }
+                    return found != -1;
+                }
+            }
 
             public object __copy__(CodeContext/*!*/ context) {
                 if (GetType() == typeof(deque)) {
@@ -474,6 +574,78 @@ namespace IronPython.Modules {
                 extend(other);
                 return this;
             }
+
+
+            #region binary operators
+
+            public static deque operator +([NotNull] deque x, object y) {
+                if (y is deque t) return x + t;
+                throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonTypeOps.GetName(y)}\") to deque");
+            }
+
+            public static deque operator +([NotNull] deque x, [NotNull] deque y) {
+                var d = new deque(x._maxLen);
+                d.extend(x);
+                d.extend(y);
+                return d;
+            }
+
+            private static deque MultiplyWorker(deque self, int count) {
+                var d = new deque(self._maxLen);
+                if (count <= 0 || self._itemCnt == 0) return d;
+                d.extend(self);
+                if (count == 1) return d;
+
+                if (d._maxLen < 0 || d._itemCnt * count <= d._maxLen) {
+                    var data = ArrayOps.Multiply(d._data, d._itemCnt, count);
+                    d._data = data;
+                    d._itemCnt = data.Length;
+                    Debug.Assert(d._head == 0);
+                    d._tail = 0;
+                } else {
+                    var tempdata = ArrayOps.Multiply(d._data, d._itemCnt, (d._maxLen + (d._itemCnt - 1)) / d._itemCnt);
+                    var data = new object[d._maxLen];
+                    Array.Copy(tempdata, tempdata.Length - d._maxLen, data, 0, data.Length);
+                    d._data = data;
+                    d._itemCnt = data.Length;
+                    Debug.Assert(d._head == 0);
+                    d._tail = 0;
+                }
+                return d;
+            }
+
+            public static deque operator *([NotNull] deque x, int n) {
+                return MultiplyWorker(x, n);
+            }
+
+            public static deque operator *(int n, [NotNull] deque x) {
+                return MultiplyWorker(x, n);
+            }
+
+            public static object operator *([NotNull] deque self, [NotNull] Runtime.Index count) {
+                return PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
+            }
+
+            public static object operator *([NotNull] Runtime.Index count, [NotNull] deque self) {
+                return PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
+            }
+
+            public static object operator *([NotNull] deque self, object count) {
+                if (Converter.TryConvertToIndex(count, out int index)) {
+                    return self * index;
+                }
+                throw PythonOps.TypeErrorForUnIndexableObject(count);
+            }
+
+            public static object operator *(object count, [NotNull] deque self) {
+                if (Converter.TryConvertToIndex(count, out int index)) {
+                    return index * self;
+                }
+
+                throw PythonOps.TypeErrorForUnIndexableObject(count);
+            }
+
+            #endregion
 
             #region IEnumerable Members
 

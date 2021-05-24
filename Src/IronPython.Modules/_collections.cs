@@ -600,12 +600,16 @@ namespace IronPython.Modules {
                     var data = ArrayOps.Multiply(d._data, d._itemCnt, count);
                     d._data = data;
                     d._itemCnt = data.Length;
+                    Debug.Assert(d._head == 0);
+                    d._tail = 0;
                 } else {
                     var tempdata = ArrayOps.Multiply(d._data, d._itemCnt, (d._maxLen + (d._itemCnt - 1)) / d._itemCnt);
                     var data = new object[d._maxLen];
                     Array.Copy(tempdata, tempdata.Length - d._maxLen, data, 0, data.Length);
                     d._data = data;
                     d._itemCnt = data.Length;
+                    Debug.Assert(d._head == 0);
+                    d._tail = 0;
                 }
                 return d;
             }

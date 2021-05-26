@@ -342,5 +342,15 @@ class SlotsTest(IronPythonTestCase):
         #f(long)
         #f(tuple)
 
+    def test_ipy3_gh1235(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1235"""
+        class Test(object):
+            __slots__ = 'attr'
+
+            def __setattr__(self, name, value):
+                super().__setattr__(name, value)
+
+        with self.assertRaises(AttributeError):
+            Test().undefined_attr = 0
 
 run_test(__name__)

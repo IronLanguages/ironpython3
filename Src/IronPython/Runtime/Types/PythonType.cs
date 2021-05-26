@@ -1645,10 +1645,15 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // set the attribute on the instance
             if (instance is IPythonObject sdo) {
                 PythonDictionary iac = sdo.Dict;
-                if (iac == null && sdo.PythonType.HasDictionary) {
-                    iac = MakeDictionary();
+                if (iac is null) {
+                    if (sdo.PythonType.HasDictionary) {
+                        iac = MakeDictionary();
 
-                    if ((iac = sdo.SetDict(iac)) == null) {
+                        if ((iac = sdo.SetDict(iac)) == null) {
+                            return false;
+                        }
+                    }
+                    else {
                         return false;
                     }
                 }

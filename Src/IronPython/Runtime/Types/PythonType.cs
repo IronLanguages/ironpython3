@@ -1879,7 +1879,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 // we need to calculate the number of slots from resolution
                 // order to deal with multiple bases having __slots__ that
                 // directly inherit from each other.
-                _originalSlotCount += pt.GetUsedSlotCount();
+                _originalSlotCount += pt.SlotCount;
                 if (pt._optimizedInstanceNames != null) {
                     if (optimizedInstanceNames == null) {
                         optimizedInstanceNames = new HashSet<string>();

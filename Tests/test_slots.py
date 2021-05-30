@@ -353,4 +353,18 @@ class SlotsTest(IronPythonTestCase):
         with self.assertRaises(AttributeError):
             Test().undefined_attr = 0
 
+    def test_ipy3_gh1237(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1237"""
+
+        for s in ['__dict__', '__weakref__']:
+            class A(object): __slots__ = ['a', s]
+
+            class B(A): __slots__ = ['b']
+
+            b = B()
+            b.a = 1
+
+            with self.assertRaises(AttributeError):
+                b.b
+
 run_test(__name__)

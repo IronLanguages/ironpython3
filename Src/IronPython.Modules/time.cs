@@ -123,6 +123,14 @@ namespace IronPython.Modules {
             return asctime(context, localtime(seconds));
         }
 
+        public static object get_clock_info(string name) {
+            // TODO: Fill with correct values
+            if (name == "monotonic")
+                return new SimpleNamespace(new Dictionary<string, object> { { "adjustable", false }, { "implementation", "Stopwatch.GetTimestamp" }, { "monotonic", true }, { "resolution", 0.015625 } });
+
+            throw new NotImplementedException();
+        }
+
         public static void sleep(double tm) {
             Thread.Sleep((int)(tm * 1000));
         }

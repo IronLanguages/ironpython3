@@ -14,10 +14,48 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Runtime;
+
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinApi {
         #region Public API
+
+        public static object? ConnectNamedPipe(BigInteger handle, bool overlapped = false) {
+            if (overlapped) throw new NotImplementedException();
+
+            if (overlapped) {
+                throw new NotImplementedException();
+            }
+            else {
+                var result = ConnectNamedPipe((IntPtr)(long)handle, IntPtr.Zero);
+
+                if (!result) throw PythonNT.GetLastWin32Error();
+
+                return null;
+            }
+        }
+
+        public static BigInteger CreateFile([NotNull] string file_name, int desired_access, int share_mode, int security_attributes, int creation_disposition, int flags_and_attributes, BigInteger template_file) {
+            if (security_attributes != 0) throw new NotImplementedException();
+            if (template_file != 0) throw new NotImplementedException();
+
+            var handle = CreateFile(file_name, desired_access, share_mode, IntPtr.Zero, creation_disposition, flags_and_attributes, IntPtr.Zero);
+
+            if (handle == new IntPtr(-1)) throw PythonNT.GetLastWin32Error();
+
+            return (long)handle;
+        }
+
+        public static BigInteger CreateNamedPipe([NotNull] string name, int open_mode, int pipe_mode, int max_instances, int out_buffer_size, int in_buffer_size, int default_timeout, int security_attributes) {
+            if (security_attributes != 0) throw new NotImplementedException();
+
+            var handle = CreateNamedPipePI(name, (uint)open_mode, (uint)pipe_mode, (uint)max_instances, (uint)out_buffer_size, (uint)in_buffer_size, (uint)default_timeout, IntPtr.Zero);
+
+            if (handle == new IntPtr(-1)) throw PythonNT.GetLastWin32Error();
+
+            return (long)handle;
+        }
 
         public static PythonTuple CreatePipe(object? pipe_attrs, int size) {
             SECURITY_ATTRIBUTES pSecA = new SECURITY_ATTRIBUTES();
@@ -155,14 +193,16 @@ namespace IronPython.Modules {
             return (long)lpTargetHandle;
         }
 
-        public static BigInteger GetCurrentProcess() {
-            return (long)GetCurrentProcessPI();
-        }
+        public static void ExitProcess(int exit_code) => Environment.Exit(exit_code);
+
+        public static BigInteger GetCurrentProcess() => (long)GetCurrentProcessPI();
 
         public static int GetExitCodeProcess(BigInteger process) {
             GetExitCodeProcessPI(new IntPtr((long)process), out int exitCode);
             return exitCode;
         }
+
+        public static int GetLastError() => Marshal.GetLastWin32Error();
 
         public static string? GetModuleFileName(int module_handle) {
             // Alternative Managed API: System.Diagnostics.ProcessModule.FileName or System.Reflection.Module.FullyQualifiedName.
@@ -177,7 +217,7 @@ namespace IronPython.Modules {
             return GetVersionPI();
         }
 
-        public static BigInteger OpenProcess(CodeContext context, int desired_access, bool inherit_handle, int process_id) {
+        public static BigInteger OpenProcess(int desired_access, bool inherit_handle, int process_id) {
             return OpenProcessPI(desired_access, inherit_handle, process_id).ToInt64();
         }
 
@@ -242,6 +282,22 @@ namespace IronPython.Modules {
         #endregion
 
         #region Privates / PInvokes
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool ConnectNamedPipe(IntPtr hNamedPipe, IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern IntPtr CreateFile(
+            string lpFileName,
+            int dwDesiredAccess,
+            int dwShareMode,
+            IntPtr securityAttrs,
+            int dwCreationDisposition,
+            int dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateNamedPipe", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateNamedPipePI(string lpName, uint dwOpenMode, uint dwPipeMode, uint nMaxInstances, uint nOutBufferSize, uint nInBufferSize, uint nDefaultTimeOut, IntPtr lpSecurityAttributes);
 
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true, CharSet = CharSet.Unicode)]

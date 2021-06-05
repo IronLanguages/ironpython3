@@ -2221,7 +2221,7 @@ the 'status' value."),
             return buf.ToString().TrimEnd('\r', '\n', '.');
         }
 
-        private static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
+        internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
             => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
 
         private static Exception GetWin32Error(int error, string? filename = null, string? filename2 = null) {

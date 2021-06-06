@@ -300,7 +300,7 @@ namespace IronPython.Modules {
         private static extern IntPtr CreateNamedPipePI(string lpName, uint dwOpenMode, uint dwPipeMode, uint nMaxInstances, uint nOutBufferSize, uint nInBufferSize, uint nDefaultTimeOut, IntPtr lpSecurityAttributes);
 
         [return: MarshalAs(UnmanagedType.Bool)]
-        [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true)]
         private static extern bool CreateProcessPI(string? lpApplicationName,
             string? lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
             ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)]bool bInheritHandles,

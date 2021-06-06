@@ -79,6 +79,9 @@ IntEnum._convert(
         __name__,
         lambda C: C.isupper() and C.startswith('SOCK_'))
 
+_LOCALHOST    = '127.0.0.1'
+_LOCALHOST_V6 = '::1'
+
 def _intenum_converter(value, enum_klass):
     """Convert a numeric family value to an IntEnum member.
 

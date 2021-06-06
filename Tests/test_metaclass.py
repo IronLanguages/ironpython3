@@ -671,4 +671,14 @@ class MetaclassTest(IronPythonTestCase):
         with self.assertRaises(Exception):
             Generic.test = 2
 
+    def test_repr_on_metaclass(self):
+        class MetaClass(type):
+            def __repr__(self):
+                return "qwerty"
+
+        class test(metaclass=MetaClass):
+            pass
+
+        self.assertEqual(repr(test), "qwerty")
+
 run_test(__name__)

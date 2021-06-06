@@ -60,7 +60,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_builtin.BuiltinTest('test_oct'))
         suite.addTest(test.test_builtin.BuiltinTest('test_open'))
         suite.addTest(test.test_builtin.BuiltinTest('test_open_default_encoding'))
-        suite.addTest(unittest.expectedFailure(test.test_builtin.BuiltinTest('test_open_non_inheritable')))
+        suite.addTest(unittest.expectedFailure(test.test_builtin.BuiltinTest('test_open_non_inheritable'))) # https://github.com/IronLanguages/ironpython3/issues/1225
         suite.addTest(test.test_builtin.BuiltinTest('test_ord'))
         suite.addTest(test.test_builtin.BuiltinTest('test_pow'))
         suite.addTest(test.test_builtin.BuiltinTest('test_repr'))

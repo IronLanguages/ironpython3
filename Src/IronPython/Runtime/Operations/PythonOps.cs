@@ -231,6 +231,15 @@ namespace IronPython.Runtime.Operations {
                     //     def __repr__(self): return "qwerty"
                     //
                     // assert repr(MyException) == "qwerty"
+                } else if (o is PythonType && o.GetType() != typeof(PythonType)) {
+                    // let is fall through since metaclass may be defining __repr__, resolves the following:
+                    // class MyMetaClass(type):
+                    //     def __repr__(self):
+                    //         return "qwerty"
+                    //
+                    // class test(metaclass=MyMetaClass): pass
+                    //
+                    // assert repr(test) == "qwerty"
                 } else {
                     return f.__repr__(context);
                 }

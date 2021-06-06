@@ -14,7 +14,7 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     public class CompiledLoader {
-        private Dictionary<string, OnDiskScriptCode> _codes = new Dictionary<string, OnDiskScriptCode>();
+        private readonly Dictionary<string, OnDiskScriptCode> _codes = new Dictionary<string, OnDiskScriptCode>();
 
         internal void AddScriptCode(ScriptCode code) {
             if (code is OnDiskScriptCode onDiskCode) {

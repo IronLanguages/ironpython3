@@ -33,7 +33,7 @@ namespace IronPython.Runtime {
     [DebuggerDisplay("{co_name}, FileName = {co_filename}")]
     public class FunctionCode : IExpressionSerializable, ICodeFormattable {
         internal Delegate _normalDelegate;                          // the normal delegate - this can be a compiled or interpreted delegate.
-        private Compiler.Ast.ScopeStatement _lambda;                // the original DLR lambda that contains the code
+        private readonly Compiler.Ast.ScopeStatement _lambda;       // the original DLR lambda that contains the code
         internal readonly string _initialDoc;                       // the initial doc string
         private readonly int _localCount;                           // the number of local variables in the code
         private bool _compilingLight;                               // true if we're compiling for light exceptions
@@ -51,7 +51,7 @@ namespace IronPython.Runtime {
         /// This lock is also acquired whenever we need to calculate how a function's delegate should be created 
         /// so that we don't race against sys.settrace/sys.setprofile.
         /// </summary>
-        private static CodeList _CodeCreateAndUpdateDelegateLock = new CodeList();
+        private static readonly CodeList _CodeCreateAndUpdateDelegateLock = new CodeList();
 
         /// <summary>
         /// Constructor used to create a FunctionCode for code that's been serialized to disk.  

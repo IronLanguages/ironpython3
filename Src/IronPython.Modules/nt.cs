@@ -49,8 +49,8 @@ namespace IronPython.Modules {
          */
 
 #if FEATURE_PROCESS
-        private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
-        private static List<int> _freeProcessIds = new List<int>();
+        private static readonly Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
+        private static readonly List<int> _freeProcessIds = new List<int>();
         private static int _processCount;
 #endif
 

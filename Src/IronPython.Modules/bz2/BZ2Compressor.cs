@@ -28,12 +28,12 @@ compress() function instead. The compresslevel parameter, if given,
 must be a number between 1 and 9.
 ";
 
-            private int compresslevel;
-            private MemoryStream output;
-            private BZip2OutputStream bz2Output;
+            private readonly int compresslevel;
+            private readonly MemoryStream output;
+            private readonly BZip2OutputStream bz2Output;
             private long lastPosition = 0;
 
-            public BZ2Compressor(int compresslevel=DEFAULT_COMPRESSLEVEL) {
+            public BZ2Compressor(int compresslevel = DEFAULT_COMPRESSLEVEL) {
                 this.compresslevel = compresslevel;
 
                 this.output = new MemoryStream();

@@ -32,8 +32,8 @@ namespace IronPython.Runtime.Binding {
     internal partial class PythonBinder : DefaultBinder {
         private PythonContext/*!*/ _context;
         private SlotCache/*!*/ _typeMembers = new SlotCache();
-        private SlotCache/*!*/ _resolvedMembers = new SlotCache();
-        private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes;
+        private readonly SlotCache/*!*/ _resolvedMembers = new SlotCache();
+        private readonly Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes;
         private bool _registeredInterfaceExtensions;    // true if someone has registered extensions for interfaces
 
         [MultiRuntimeAware]

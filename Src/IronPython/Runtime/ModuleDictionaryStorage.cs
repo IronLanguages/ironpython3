@@ -17,11 +17,11 @@ namespace IronPython.Runtime {
     /// Enables lazy initialization of module dictionaries.
     /// </summary>
     internal class ModuleDictionaryStorage : GlobalDictionaryStorage {
-        private Type/*!*/ _type;
+        private readonly Type/*!*/ _type;
         private bool _cleared;
 
         private static readonly Dictionary<string, PythonGlobal> _emptyGlobalDict = new Dictionary<string, PythonGlobal>(0);
-        private static readonly PythonGlobal[] _emptyGlobals = new PythonGlobal[0];
+        private static readonly PythonGlobal[] _emptyGlobals = Array.Empty<PythonGlobal>();
 
         public ModuleDictionaryStorage(Type/*!*/ moduleType)
             : base(_emptyGlobalDict, _emptyGlobals) {
@@ -49,8 +49,7 @@ namespace IronPython.Runtime {
             }
 
             bool found = base.Remove(ref storage, key);
-            object value;
-            if (TryGetLazyValue(strKey, out value)) {
+            if (TryGetLazyValue(strKey, out _)) {
                 // hide the deleted value
                 Add(key, Uninitialized.Instance);
                 found = true;
@@ -64,8 +63,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            object dummy;
-            return TryGetValue(key, out dummy);
+            return TryGetValue(key, out _);
         }
 
         public override void Clear(ref DictionaryStorage storage) {

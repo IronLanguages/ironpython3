@@ -127,8 +127,7 @@ namespace IronPython.Runtime.Operations {
 
         private static void AddFinalizer(CodeContext/*!*/ context, PythonType dt, object newObject) {
             // check if object has finalizer...
-            PythonTypeSlot dummy;
-            if (dt.TryResolveSlot(context, "__del__", out dummy)) {
+            if (dt.TryResolveSlot(context, "__del__", out _)) {
                 IWeakReferenceable iwr = context.LanguageContext.ConvertToWeakReferenceable(newObject);
                 Debug.Assert(iwr != null);
 
@@ -159,7 +158,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             AssemblyName assemblyName = new AssemblyName(assembly.FullName);
-            if (assemblyName.Name.Equals("IronPython.Modules")) { // IronPython.Modules.dll
+            if (assemblyName.Name.Equals("IronPython.Modules", StringComparison.Ordinal)) { // IronPython.Modules.dll
                 return true;
             }
 
@@ -426,7 +425,7 @@ namespace IronPython.Runtime.Operations {
             return GetBuiltinFunction(type, name, null, mems);
         }
 
-#pragma warning disable 414  // unused fields - they're used by GetHashCode()
+#pragma warning disable IDE0052 // Remove unread private members - they're used by GetHashCode()
         internal readonly struct BuiltinFunctionKey {
             private readonly Type DeclaringType;
             private readonly ReflectionCache.MethodBaseCache Cache;
@@ -438,7 +437,7 @@ namespace IronPython.Runtime.Operations {
                 DeclaringType = declaringType;
             }
         }
-#pragma warning restore 169
+#pragma warning restore IDE0052 // Remove unread private members
 
         public static MethodBase[] GetNonBaseHelperMethodInfos(MemberInfo[] members) {
             List<MethodBase> res = new List<MethodBase>();

@@ -2184,7 +2184,7 @@ namespace IronPython.Runtime.Operations {
                 return tb;
             }
 
-            var frames = ((IList<DynamicStackFrame>)e.GetFrameList()) ?? new DynamicStackFrame[0];
+            var frames = ((IList<DynamicStackFrame>)e.GetFrameList()) ?? Array.Empty<DynamicStackFrame>();
             var stacks = GetFunctionStackNoCreate();
             return CreateTraceBack(e, frames, stacks, frames.Count);
         }

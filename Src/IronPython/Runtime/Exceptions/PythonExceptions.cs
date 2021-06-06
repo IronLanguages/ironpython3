@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Exceptions {
     /// for convenience their's also an _TypeName version which is the PythonType.
     /// </summary>
     public static partial class PythonExceptions {
-        private static object _pythonExceptionKey = typeof(BaseException);
+        private static readonly object _pythonExceptionKey = typeof(BaseException);
         internal const string DefaultExceptionModule = "exceptions";
         public const string __doc__ = "Provides the most commonly used exceptions for Python programs";
 
@@ -970,7 +970,7 @@ for k, v in toError.items():
             List<DynamicStackFrame> frames = e.GetFrameList();
 
             if (frames == null) {
-                return new DynamicStackFrame[0];
+                return Array.Empty<DynamicStackFrame>();
             }
 
             frames = new List<DynamicStackFrame>(frames);
@@ -983,9 +983,9 @@ for k, v in toError.items():
                 List<StackFrame> clrFrames = new List<StackFrame>();
 
                 foreach (StackTrace trace in otherTraces) {
-                    clrFrames.AddRange(trace.GetFrames() ?? new StackFrame[0]); // rare, sometimes GetFrames returns null
+                    clrFrames.AddRange(trace.GetFrames() ?? Array.Empty<StackFrame>()); // rare, sometimes GetFrames returns null
                 }
-                clrFrames.AddRange(outermostTrace.GetFrames() ?? new StackFrame[0]);    // rare, sometimes GetFrames returns null
+                clrFrames.AddRange(outermostTrace.GetFrames() ?? Array.Empty<StackFrame>());    // rare, sometimes GetFrames returns null
 
                 int lastFound = 0;
                 foreach (StackFrame clrFrame in InterpretedFrame.GroupStackFrames(clrFrames)) {

@@ -784,7 +784,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType map => DynamicHelpers.GetPythonTypeFromType(typeof(Map));
 
-        private static object UndefinedKeywordArgument = new object();
+        private static readonly object UndefinedKeywordArgument = new object();
 
         public static object? max(CodeContext/*!*/ context, object? x) {
             IEnumerator i = PythonOps.GetEnumerator(x);
@@ -1512,8 +1512,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static BigInteger MaxDouble = new BigInteger(double.MaxValue);
-        private static BigInteger MinDouble = new BigInteger(double.MinValue);
+        private static readonly BigInteger MaxDouble = new BigInteger(double.MaxValue);
+        private static readonly BigInteger MinDouble = new BigInteger(double.MinValue);
 
         private static void SumBigIntAndDouble(ref SumState state, BigInteger bigInt, double dbl) {
             if (bigInt <= MaxDouble && bigInt >= MinDouble) {

@@ -36,8 +36,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            object dummy;
-            return TryGetValue(key, out dummy);
+            return TryGetValue(key, out _);
         }
 
         public override bool Remove(ref DictionaryStorage storage, object key) {

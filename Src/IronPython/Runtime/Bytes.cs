@@ -28,7 +28,7 @@ namespace IronPython.Runtime {
         internal static readonly Bytes Empty = new Bytes();
 
         public Bytes() {
-            _bytes = new byte[0];
+            _bytes = Array.Empty<byte>();
         }
 
         public Bytes([NotNull] Bytes bytes) {

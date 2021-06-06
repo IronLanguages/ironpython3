@@ -272,8 +272,8 @@ namespace IronPython.Runtime.Binding {
             private readonly DynamicMetaObjectBinder/*!*/ _call;               // the signature for the method call
             private readonly Expression _codeContext;               // the code context expression if one is available.
 
-            private List<ParameterExpression>/*!*/ _temps;           // temporary variables allocated to create the rule
-            private ParameterExpression _dict, _params, _paramsLen;  // splatted dictionary & params + the initial length of the params array, null if not provided.
+            private readonly List<ParameterExpression>/*!*/ _temps; // temporary variables allocated to create the rule
+            private ParameterExpression _dict, _params, _paramsLen; // splatted dictionary & params + the initial length of the params array, null if not provided.
             private List<Expression> _init;                         // a set of initialization code (e.g. creating a list for the params array)
             private Expression _error;                              // a custom error expression if the default needs to be overridden.
             private bool _extractedParams;                          // true if we needed to extract a parameter from the parameter list.

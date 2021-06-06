@@ -37,7 +37,7 @@ namespace IronPython.Runtime {
         private int _size;
         private GCHandle? _dataHandle;
 
-        private static readonly T[] empty = new T[0];
+        private static readonly T[] empty = Array.Empty<T>();
 
         public ArrayData() : this(0) { }
 

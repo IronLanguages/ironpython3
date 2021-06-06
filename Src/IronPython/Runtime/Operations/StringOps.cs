@@ -821,7 +821,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         // required for better match with cpython upper/lower
-        private static CultureInfo CasingCultureInfo = new CultureInfo("en");
+        private static readonly CultureInfo CasingCultureInfo = new CultureInfo("en");
 
         public static string lower([NotNull]this string self) {
             return self.ToLower(CasingCultureInfo);
@@ -1784,7 +1784,7 @@ namespace IronPython.Runtime.Operations {
             return name.Replace('_', '-');
         }
 
-        private static IDictionary<string, string> DotNetNames = new Dictionary<string, string>(5) {
+        private static readonly IDictionary<string, string> DotNetNames = new Dictionary<string, string>(5) {
             // names that are supposed to have underscores
             { "ks_c_5601_1987", "ks_c_5601-1987"  },
             { "shift_jis",      "shift_jis"       },
@@ -1806,7 +1806,7 @@ namespace IronPython.Runtime.Operations {
             return UserDecode(context, codecTuple, data, errors);
         }
 
-        private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+        private static readonly DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 
         internal static string DoDecode(CodeContext context, IPythonBuffer buffer, string? errors, string encoding, Encoding e, int numBytes = -1) {
             // Precondition: only bytes-like buffers accepted
@@ -2341,7 +2341,7 @@ namespace IronPython.Runtime.Operations {
 
         private class BackslashEncoderReplaceFallback : EncoderFallback {
             private class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {
-                private List<char> _buffer = new List<char>();
+                private readonly List<char> _buffer = new List<char>();
                 private int _index;
 
                 public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
@@ -2405,7 +2405,7 @@ namespace IronPython.Runtime.Operations {
 
         private class XmlCharRefEncoderReplaceFallback : EncoderFallback {
             private class XmlCharRefEncoderReplaceFallbackBuffer : EncoderFallbackBuffer {
-                private List<char> _buffer = new List<char>();
+                private readonly List<char> _buffer = new List<char>();
                 private int _index;
 
                 public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
@@ -2457,7 +2457,7 @@ namespace IronPython.Runtime.Operations {
         // * GetChars(Byte[], Int32, Int32, Char[], Int32)
         // * GetChars(Byte*, Int32, Char*, Int32)
         private class ExceptionFallback : DecoderFallback {
-            private bool _isUtf8;
+            private readonly bool _isUtf8;
 
             public ExceptionFallback(bool isUtf8 = false) {
                 _isUtf8 = isUtf8;

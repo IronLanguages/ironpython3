@@ -61,12 +61,10 @@ namespace IronPython.Runtime {
         // Marker object used to indicate we have a removed value
         private static readonly object _removed = new object();
 
- 
         /// <summary>
         /// Creates a new dictionary storage with no buckets
         /// </summary>
-        public CommonDictionaryStorage() {            
-        }
+        public CommonDictionaryStorage() { }
 
         /// <summary>
         /// Creates a new dictionary storage with no buckets
@@ -112,7 +110,7 @@ namespace IronPython.Runtime {
         }
 
         public int Version {
-            get{
+            get {
                 return _version;
             }
         }
@@ -207,7 +205,7 @@ namespace IronPython.Runtime {
                 } else if (t == typeof(PythonTuple)) {
                     _hashFunc = _tupleHash;
                     _eqFunc = _tupleEquals;
-                } else if(t == typeof(Type).GetType()) {    // this odd check checks for RuntimeType.
+                } else if (t == typeof(Type).GetType()) {    // this odd check checks for RuntimeType.
                     _hashFunc = _primitiveHash;
                     _eqFunc = _objectEq;
                 } else {
@@ -255,7 +253,7 @@ namespace IronPython.Runtime {
             Bucket[] oldBuckets = _buckets;
             Bucket[] newBuckets = new Bucket[newSize];
 
-            for (int i = 0; i < oldBuckets.Length; i++ ) {
+            for (int i = 0; i < oldBuckets.Length; i++) {
                 Bucket curBucket = oldBuckets[i];
                 if (curBucket.Key != null && curBucket.Key != _removed) {
                     AddWorker(newBuckets, curBucket.Key, curBucket.Value, curBucket.HashCode);
@@ -344,27 +342,26 @@ namespace IronPython.Runtime {
             return true;
         }
 
-       private static int ProbeNext(Bucket[] buckets, int index) {
-           // probe to next bucket               
-           index++;
-           if (index == buckets.Length) {
-               index = 0;
-           }
-           return index;
-       }
+        private static int ProbeNext(Bucket[] buckets, int index) {
+            // probe to next bucket
+            index++;
+            if (index == buckets.Length) {
+                index = 0;
+            }
+            return index;
+        }
 
         /// <summary>
         /// Removes an entry from the dictionary and returns true if the
         /// entry was removed or false.
         /// </summary>
-       public override bool Remove(ref DictionaryStorage storage, object key) {
-           return Remove(key);
+        public override bool Remove(ref DictionaryStorage storage, object key) {
+            return Remove(key);
         }
 
-       public bool Remove(object key) {
-           object dummy;
-           return TryRemoveValue(key, out dummy);
-       }
+        public bool Remove(object key) {
+            return TryRemoveValue(key, out _);
+        }
 
         /// <summary>
         /// Removes an entry from the dictionary and returns true if the
@@ -372,14 +369,13 @@ namespace IronPython.Runtime {
         /// so if it is unhashable an exception will be thrown - even
         /// if the dictionary has no buckets.
         /// </summary>
-        internal bool RemoveAlwaysHash(object key) {            
+        internal bool RemoveAlwaysHash(object key) {
             lock (this) {
-                object dummy;
                 if (key == null) {
-                    return TryRemoveNull(out dummy);
+                    return TryRemoveNull(out _);
                 }
 
-                return TryRemoveNoLock(key, out dummy);
+                return TryRemoveNoLock(key, out _);
             }
         }
 
@@ -472,8 +468,7 @@ namespace IronPython.Runtime {
         public override bool Contains(object key) {
             if (!PythonContext.IsHashable(key))
                 throw PythonOps.TypeErrorForUnhashableObject(key);
-            object dummy;
-            return TryGetValue(key, out dummy);
+            return TryGetValue(key, out _);
         }
 
         /// <summary>
@@ -849,7 +844,7 @@ namespace IronPython.Runtime {
         }
 
         private DeserializationNullValue GetDeserializationBucket() {
-            return _nullValue  as DeserializationNullValue;
+            return _nullValue as DeserializationNullValue;
         }
 
         #region ISerializable Members
@@ -884,8 +879,7 @@ namespace IronPython.Runtime {
             NullValue nullVal = null;
             try {
                 nullVal = (NullValue)info.GetValue("nullvalue", typeof(NullValue));
-            }
-            catch (SerializationException) {
+            } catch (SerializationException) {
                 // for compatibility with dictionary serialized in 2.6.
             }
             if (nullVal != null) {

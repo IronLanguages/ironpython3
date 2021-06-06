@@ -467,14 +467,12 @@ namespace IronPython.Runtime {
         public static Type ConvertToType(object value) {
             if (value == null) return null;
 
-            Type TypeVal = value as Type;
-            if (TypeVal != null) return TypeVal;
+            if (value is Type typeVal) return typeVal;
 
             if (value is PythonType pythonTypeVal) return pythonTypeVal.UnderlyingSystemType;
 
             if (value is TypeGroup typeCollision) {
-                Type nonGenericType;
-                if (typeCollision.TryGetNonGenericType(out nonGenericType)) {
+                if (typeCollision.TryGetNonGenericType(out Type nonGenericType)) {
                     return nonGenericType;
                 }
             }
@@ -864,24 +862,21 @@ namespace IronPython.Runtime {
             if (o is int) {
                 return (int)o;
             } else if (o is BigInteger) {
-                int res;
-                if (((BigInteger)o).AsInt32(out res)) {
+                if (((BigInteger)o).AsInt32(out int res)) {
                     return res;
                 }
             } else if (o is Extensible<int>) {
                 return Converter.ConvertToInt32(o);
             } else if (o is Extensible<BigInteger>) {
-                int res;
-                if (Converter.TryConvertToInt32(o, out res)) {
+                if (Converter.TryConvertToInt32(o, out int res)) {
                     return res;
                 }
             }
 
             if (!(o is double) && !(o is float) && !(o is Extensible<double>)) {
-                object objres;
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__int__", out objres)) {
-                    if (objres is int) {
-                        return (int)objres;
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__int__", out object objres)) {
+                    if (objres is int res) {
+                        return res;
                     }
                 }
             }

@@ -1118,7 +1118,7 @@ namespace IronPython.Compiler {
             FunctionDefinition ret;
             if (parameters == null) {
                 // error in parameters
-                ret = new FunctionDefinition(name, new Parameter[0], isAsync);
+                ret = new FunctionDefinition(name, Array.Empty<Parameter>(), isAsync);
                 ret.SetLoc(_globalParent, start, lEnd);
                 return ret;
             }
@@ -1308,7 +1308,7 @@ namespace IronPython.Compiler {
             Parameter[] parameters = ParseParameterList(TokenKind.Colon, allowAnnotations: false);
             var mid = GetEnd();
 
-            FunctionDefinition func = new FunctionDefinition(name, parameters ?? new Parameter[0]); // new Parameter[0] for error handling of incomplete lambda
+            FunctionDefinition func = new FunctionDefinition(name, parameters ?? Array.Empty<Parameter>()); // new Parameter[0] for error handling of incomplete lambda
             func.HeaderIndex = mid;
             func.StartIndex = start;
 
@@ -2617,7 +2617,7 @@ namespace IronPython.Compiler {
                 if (dictMembers != null) {
                     exprs = dictMembers.ToArray();
                 } else {
-                    exprs = new SliceExpression[0];
+                    exprs = Array.Empty<SliceExpression>();
                 }
                 DictionaryExpression ret = new DictionaryExpression(exprs);
                 ret.SetLoc(_globalParent, oStart, cEnd);

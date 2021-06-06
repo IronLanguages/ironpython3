@@ -613,7 +613,7 @@ import Namespace.")]
         /// Decorator for verifying the arguments to a function are of a specified type.
         /// </summary>
         public class ArgChecker {
-            private object[] expected;
+            private readonly object[] expected;
 
             public ArgChecker(object[] prms) {
                 expected = prms;
@@ -636,9 +636,9 @@ import Namespace.")]
         /// then calls the original function.
         /// </summary>
         public class RuntimeArgChecker : PythonTypeSlot {
-            private object[] _expected;
-            private object _func;
-            private object _inst;
+            private readonly object[] _expected;
+            private readonly object _func;
+            private readonly object _inst;
 
             public RuntimeArgChecker(object function, object[] expectedArgs) {
                 _expected = expectedArgs;
@@ -733,9 +733,9 @@ import Namespace.")]
         /// validates the return type is of a specified type.
         /// </summary>
         public class RuntimeReturnChecker : PythonTypeSlot {
-            private object _retType;
-            private object _func;
-            private object _inst;
+            private readonly object _retType;
+            private readonly object _func;
+            private readonly object _inst;
 
             public RuntimeReturnChecker(object function, object expectedReturn) {
                 _retType = expectedReturn;
@@ -1084,10 +1084,9 @@ import Namespace.")]
             Dictionary<string, string> packageMap = new Dictionary<string, string>();
             foreach (string packageName in modules) {
                 string dirName = Path.GetDirectoryName(packageName);    // remove __init__.py
-                string pkgName = String.Empty;
                 string fullName = Path.GetFileName(Path.GetDirectoryName(packageName));
 
-                if (packageMap.TryGetValue(Path.GetDirectoryName(dirName), out pkgName)) {   // remove directory name
+                if (packageMap.TryGetValue(Path.GetDirectoryName(dirName), out string pkgName)) {   // remove directory name
                     fullName = pkgName + "." + fullName;
                 }
 

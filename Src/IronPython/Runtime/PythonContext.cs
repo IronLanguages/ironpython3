@@ -310,7 +310,7 @@ namespace IronPython.Runtime {
         }
 
         private sealed class ResourceStreamContentProvider : StreamContentProvider {
-            private string resourceName;
+            private readonly string resourceName;
             public ResourceStreamContentProvider(string resourceName) {
                 this.resourceName = resourceName;
             }

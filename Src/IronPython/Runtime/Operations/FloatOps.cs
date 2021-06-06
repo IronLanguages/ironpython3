@@ -101,7 +101,7 @@ namespace IronPython.Runtime.Operations {
             return PythonTuple.MakeTuple((BigInteger)self, dem);
         }
 
-        private static char[] _whitespace = new[] { ' ', '\t', '\n', '\f', '\v', '\r' };
+        private static readonly char[] _whitespace = new[] { ' ', '\t', '\n', '\f', '\v', '\r' };
 
         [ClassMethod, StaticExtensionMethod]
         public static object fromhex(CodeContext/*!*/ context, PythonType/*!*/ cls, string self) {

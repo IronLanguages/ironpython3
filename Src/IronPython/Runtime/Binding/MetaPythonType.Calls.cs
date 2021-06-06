@@ -44,10 +44,9 @@ namespace IronPython.Runtime.Binding {
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
             
             foreach (PythonType pt in Value.ResolutionOrder) {
-                PythonTypeSlot dummy;
                 if (pt.IsSystemType) {
                     return action.FallbackInvokeMember(this, args);
-                } else if (pt.TryResolveSlot(DefaultContext.DefaultCLS, action.Name, out dummy)) {
+                } else if (pt.TryResolveSlot(DefaultContext.DefaultCLS, action.Name, out _)) {
                     break;
                 }
             }
@@ -172,7 +171,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             Expression res;
-            BindingRestrictions additionalRestrictions = BindingRestrictions.Empty;
+            BindingRestrictions additionalRestrictions;
             if (!Value.IsSystemType && (!(newAdapter is DefaultNewAdapter) || HasFinalizer(call))) {
                 // we need to dynamically check the return value to see if it's a subtype of
                 // the type that we are calling.  If it is then we need to call __init__/__del__
@@ -663,8 +662,7 @@ namespace IronPython.Runtime.Binding {
             // only user types have finalizers...
             if (Value.IsSystemType) return false;
 
-            PythonTypeSlot del;
-            bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, "__del__", out del);
+            bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, "__del__", out _);
             return hasDel;
         }
 

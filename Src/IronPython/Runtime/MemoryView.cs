@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
         private const int MaximumDimensions = 64;
         private const string ValidCodes = "cbB?hHiIlLqQnNfdPrR";
 
-        private IBufferProtocol _exporter;
+        private readonly IBufferProtocol _exporter;
         private IPythonBuffer? _buffer;   // null if disposed
         // TODO: rename _offset to _startOffset
         private readonly BufferFlags _flags;
@@ -77,7 +77,7 @@ namespace IronPython.Runtime {
 
             _itemSize = _buffer.ItemSize;
             // for convenience _shape and _strides are never null, even if _numDims == 0 or _flags indicate no _shape or _strides
-            _shape = _buffer.Shape ?? (_numDims > 0 ? new int[] { _buffer.ItemCount } : new int[0]);  // TODO: use a static singleton
+            _shape = _buffer.Shape ?? (_numDims > 0 ? new int[] { _buffer.ItemCount } : Array.Empty<int>());
 
             if (_shape.Count == 0) {
                 _strides = _shape; // TODO: use a static singleton

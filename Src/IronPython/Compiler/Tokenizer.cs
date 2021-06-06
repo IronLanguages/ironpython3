@@ -45,8 +45,8 @@ namespace IronPython.Compiler {
         private const int MaxIndent = 80;
         private const int DefaultBufferCapacity = 1024;
 
-        private Dictionary<object, NameToken> _names;
-        private static object _currentName = new object();
+        private readonly Dictionary<object, NameToken> _names;
+        private static readonly object _currentName = new object();
 
         public Tokenizer() {
             _errors = ErrorSink.Null;
@@ -1549,7 +1549,7 @@ namespace IronPython.Compiler {
             }
 
             public static bool operator ==(IncompleteString left, IncompleteString right) {
-                if ((object)left == null) return (object)right == null;
+                if (left is null) return right is null;
 
                 return left.Equals(right);
             }
@@ -1608,8 +1608,7 @@ namespace IronPython.Compiler {
             }
 
             public override bool Equals(object obj) {
-                if (obj is State) {
-                    State other = (State)obj;
+                if (obj is State other) {
                     return other == this;
                 } else {
                     return false;

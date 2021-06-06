@@ -576,7 +576,7 @@ namespace IronPython.Runtime {
         }
 
         internal class DictEnumerator : IDictionaryEnumerator {
-            private IEnumerator<KeyValuePair<object, object>> _enumerator;
+            private readonly IEnumerator<KeyValuePair<object, object>> _enumerator;
             private bool _moved;
 
             public DictEnumerator(IEnumerator<KeyValuePair<object, object>> enumerator) {
@@ -857,7 +857,7 @@ namespace IronPython.Runtime {
     [PythonType("dict_valueiterator")]
     public sealed class DictionaryValueEnumerator : IEnumerator<object> {
         private readonly int _size;
-        private DictionaryStorage _dict;
+        private readonly DictionaryStorage _dict;
         private readonly object[] _values;
         private int _pos;
 

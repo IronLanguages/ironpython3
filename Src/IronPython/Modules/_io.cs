@@ -2942,7 +2942,7 @@ namespace IronPython.Modules {
                 All = CR | LF | CRLF
             }
 
-            private object _decoder;
+            private readonly object _decoder;
             private bool _translate;
             private LineEnding _seenNL;
             private bool _pendingCR;
@@ -3110,7 +3110,7 @@ namespace IronPython.Modules {
 
         #region Private implementation details
 
-        private static HashSet<char> _validModes = MakeSet("abrtwxU+");
+        private static readonly HashSet<char> _validModes = MakeSet("abrtwxU+");
 
         private static HashSet<char> MakeSet(string chars) {
             HashSet<char> res = new HashSet<char>();

@@ -435,7 +435,7 @@ namespace IronPython.Runtime.Binding {
             private readonly int _version;
             private readonly int _metaVersion;
             private bool _canOptimize;
-            private List<FastGetDelegate> _gets = new List<FastGetDelegate>();
+            private readonly List<FastGetDelegate> _gets = new List<FastGetDelegate>();
 
             public FastGetBinderHelper(PythonType type, CodeContext context, PythonGetMemberBinder binder)
                 : base(type, context, binder.Name) {

@@ -69,7 +69,7 @@ namespace IronPython.Modules {
         public static readonly object _OPENSSL_API_VERSION = OPENSSL_VERSION_INFO;
         public const string OPENSSL_VERSION = "OpenSSL 0.0.0 (.NET SSL)";
 
-        private static List<Asn1Object> _asn1Objects = new List<Asn1Object>();
+        private static readonly List<Asn1Object> _asn1Objects = new List<Asn1Object>();
 
         static PythonSsl() {
             _asn1Objects.AddRange(new Asn1Object[] {
@@ -109,7 +109,7 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class _SSLContext {
-            private X509Certificate2Collection _cert_store = new X509Certificate2Collection();
+            private readonly X509Certificate2Collection _cert_store = new X509Certificate2Collection();
             private string _cafile;
             private int _verify_mode = SSL_VERIFY_NONE;
 
@@ -215,7 +215,7 @@ namespace IronPython.Modules {
         [PythonType]
         public class _SSLSocket {
             private SslStream _sslStream;
-            private PythonSocket.socket _socket;
+            private readonly PythonSocket.socket _socket;
             private readonly X509Certificate2Collection _certCollection;
             private readonly X509Certificate _cert;
             private readonly int _protocol, _certsMode;

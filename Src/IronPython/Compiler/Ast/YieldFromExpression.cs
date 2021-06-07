@@ -47,6 +47,7 @@ else:
                 __yieldfromprefix_m()
             raise __yieldfromprefix_e
         except BaseException as __yieldfromprefix_e:
+            import sys
             __yieldfromprefix_x = sys.exc_info()
             try:
                 __yieldfromprefix_m = __yieldfromprefix_i.throw

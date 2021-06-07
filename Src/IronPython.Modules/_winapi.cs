@@ -2,85 +2,108 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_PROCESS
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 using IronPython.Runtime;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinApi {
-        public const string __doc__ = "_subprocess Module";
-
         #region Public API
 
-        public static PythonTuple CreatePipe(
-            CodeContext context,
-            object pSec /*Python passes None*/,
-            int bufferSize) {
-            IntPtr hReadPipe;
-            IntPtr hWritePipe;
-            
+        public static object? ConnectNamedPipe(BigInteger handle, bool overlapped = false) {
+            if (overlapped) throw new NotImplementedException();
+
+            if (overlapped) {
+                throw new NotImplementedException();
+            }
+            else {
+                var result = ConnectNamedPipe((IntPtr)(long)handle, IntPtr.Zero);
+
+                if (!result) throw PythonNT.GetLastWin32Error();
+
+                return null;
+            }
+        }
+
+        public static BigInteger CreateFile([NotNull] string file_name, int desired_access, int share_mode, int security_attributes, int creation_disposition, int flags_and_attributes, BigInteger template_file) {
+            if (security_attributes != 0) throw new NotImplementedException();
+            if (template_file != 0) throw new NotImplementedException();
+
+            var handle = CreateFile(file_name, desired_access, share_mode, IntPtr.Zero, creation_disposition, flags_and_attributes, IntPtr.Zero);
+
+            if (handle == new IntPtr(-1)) throw PythonNT.GetLastWin32Error();
+
+            return (long)handle;
+        }
+
+        public static BigInteger CreateNamedPipe([NotNull] string name, int open_mode, int pipe_mode, int max_instances, int out_buffer_size, int in_buffer_size, int default_timeout, int security_attributes) {
+            if (security_attributes != 0) throw new NotImplementedException();
+
+            var handle = CreateNamedPipePI(name, (uint)open_mode, (uint)pipe_mode, (uint)max_instances, (uint)out_buffer_size, (uint)in_buffer_size, (uint)default_timeout, IntPtr.Zero);
+
+            if (handle == new IntPtr(-1)) throw PythonNT.GetLastWin32Error();
+
+            return (long)handle;
+        }
+
+        public static PythonTuple CreatePipe(object? pipe_attrs, int size) {
             SECURITY_ATTRIBUTES pSecA = new SECURITY_ATTRIBUTES();
             pSecA.nLength = Marshal.SizeOf(pSecA);
-            if (pSec != null) {
-                /* If pSec paseed in from Python is not NULL 
+            if (pipe_attrs != null) {
+                /* If pSec passed in from Python is not NULL
                  * there needs to be some conversion done here...*/
+                throw new NotImplementedException();
             }
 
-            // TODO: handle failures
-            CreatePipePI(
-                out hReadPipe,
-                out hWritePipe,
-                ref pSecA,
-                (uint)bufferSize);
+            var result = CreatePipePI(out IntPtr hReadPipe, out IntPtr hWritePipe, ref pSecA, (uint)size);
+
+            if (!result) throw PythonNT.GetLastWin32Error();
 
             return PythonTuple.MakeTuple((BigInteger)(long)hReadPipe, (BigInteger)(long)hWritePipe);
         }
 
-        private static string FormatError(int errorCode) {
-            return new Win32Exception(errorCode).Message;
-        }
-
         public static PythonTuple CreateProcess(
             CodeContext context,
-            string applicationName,
-            string commandLineArgs,
-            object pSec /*subprocess.py passes None*/,
-            object tSec /*subprocess.py passes None*/,
-            int? bInheritHandles,
-            uint? dwCreationFlags,
-            object lpEnvironment,
-            string lpCurrentDirectory,
-            object lpStartupInfo /* subprocess.py passes STARTUPINFO*/) {
+            string? application_name,
+            string? command_line,
+            object? proc_attrs /*subprocess.py passes None*/,
+            object? thread_attrs /*subprocess.py passes None*/,
+            int? inherit_handles,
+            uint? creation_flags,
+            object? env_mapping,
+            string? current_directory,
+            object? startup_info /* subprocess.py passes STARTUPINFO*/) {
 
-            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "dwFlags", out object dwFlags); //public Int32 dwFlags;
-            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdInput", out object hStdInput); //public IntPtr hStdInput;
-            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdOutput", out object hStdOutput); //public IntPtr hStdOutput;
-            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "hStdError", out object hStdError); //public IntPtr hStdError;
-            PythonOps.TryGetBoundAttr(context, lpStartupInfo, "wShowWindow", out object wShowWindow); //Int16 wShowWindow;
+            PythonOps.TryGetBoundAttr(context, startup_info, "dwFlags", out object? dwFlags); //public Int32 dwFlags;
+            PythonOps.TryGetBoundAttr(context, startup_info, "hStdInput", out object? hStdInput); //public IntPtr hStdInput;
+            PythonOps.TryGetBoundAttr(context, startup_info, "hStdOutput", out object? hStdOutput); //public IntPtr hStdOutput;
+            PythonOps.TryGetBoundAttr(context, startup_info, "hStdError", out object? hStdError); //public IntPtr hStdError;
+            PythonOps.TryGetBoundAttr(context, startup_info, "wShowWindow", out object? wShowWindow); //Int16 wShowWindow;
 
-            Int32 dwFlagsInt32 = dwFlags != null ? Converter.ConvertToInt32(dwFlags) : 0;
+            int dwFlagsInt32 = dwFlags != null ? Converter.ConvertToInt32(dwFlags) : 0;
             IntPtr hStdInputIntPtr = hStdInput != null ? new IntPtr(Converter.ConvertToInt32(hStdInput)) : IntPtr.Zero;
             IntPtr hStdOutputIntPtr = hStdOutput != null ? new IntPtr(Converter.ConvertToInt32(hStdOutput)) : IntPtr.Zero;
             IntPtr hStdErrorIntPtr = hStdError != null ? new IntPtr(Converter.ConvertToInt32(hStdError)) : IntPtr.Zero;
-            Int16 wShowWindowInt16 = wShowWindow != null ? Converter.ConvertToInt16(wShowWindow) : (short)0;
+            short wShowWindowInt16 = wShowWindow != null ? Converter.ConvertToInt16(wShowWindow) : (short)0;
 
-            STARTUPINFO startupInfo = new STARTUPINFO();
-            startupInfo.dwFlags = dwFlagsInt32;
-            startupInfo.hStdInput = hStdInputIntPtr;
-            startupInfo.hStdOutput = hStdOutputIntPtr;
-            startupInfo.hStdError = hStdErrorIntPtr;
-            startupInfo.wShowWindow = wShowWindowInt16;
+            STARTUPINFO startupInfo = new STARTUPINFO {
+                dwFlags = dwFlagsInt32,
+                hStdInput = hStdInputIntPtr,
+                hStdOutput = hStdOutputIntPtr,
+                hStdError = hStdErrorIntPtr,
+                wShowWindow = wShowWindowInt16
+            };
 
             // No special security
             SECURITY_ATTRIBUTES pSecSA = new SECURITY_ATTRIBUTES();
@@ -89,34 +112,30 @@ namespace IronPython.Modules {
             SECURITY_ATTRIBUTES tSecSA = new SECURITY_ATTRIBUTES();
             tSecSA.nLength = Marshal.SizeOf(tSecSA);
 
-            if (pSec != null) {
+            if (proc_attrs != null) {
                 /* If pSec paseed in from Python is not NULL 
                  * there needs to be some conversion done here...*/
             }
-            if (tSec != null) {
+            if (thread_attrs != null) {
                 /* If tSec paseed in from Python is not NULL 
                  * there needs to be some conversion done here...*/
             }
 
             // If needed convert lpEnvironment Dictionary to lpEnvironmentIntPtr
-            string lpEnvironmentStr = EnvironmentToNative(context, lpEnvironment);
+            string? lpEnvironment = EnvironmentToNative(context, env_mapping);
 
-            PROCESS_INFORMATION lpProcessInformation = new PROCESS_INFORMATION();
             bool result = CreateProcessPI(
-                String.IsNullOrEmpty(applicationName) ? null : applicationName/*applicationNameHelper*//*processStartInfo.FileName*/,
-                String.IsNullOrEmpty(commandLineArgs) ? null : commandLineArgs/*commandLineArgsHelper*//*processStartInfo.Arguments*/,
+                string.IsNullOrEmpty(application_name) ? null : application_name/*applicationNameHelper*//*processStartInfo.FileName*/,
+                string.IsNullOrEmpty(command_line) ? null : command_line/*commandLineArgsHelper*//*processStartInfo.Arguments*/,
                 ref pSecSA, ref tSecSA,
-                bInheritHandles.HasValue && bInheritHandles.Value > 0 ? true : false,
-                dwCreationFlags.HasValue ? dwCreationFlags.Value : 0,
-                lpEnvironmentStr,
-                lpCurrentDirectory,
+                inherit_handles.HasValue && inherit_handles.Value > 0,
+                creation_flags ?? 0,
+                lpEnvironment,
+                current_directory,
                 ref startupInfo,
-                out lpProcessInformation);
+                out PROCESS_INFORMATION lpProcessInformation);
 
-            if (!result) {
-                int error = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, FormatError(error), null, error);
-            }
+            if (!result) throw PythonNT.GetLastWin32Error();
 
             IntPtr hp = lpProcessInformation.hProcess;
             IntPtr ht = lpProcessInformation.hThread;
@@ -124,21 +143,21 @@ namespace IronPython.Modules {
             int tid = lpProcessInformation.dwThreadId;
 
             return PythonTuple.MakeTuple((BigInteger)(long)hp, (BigInteger)(long)ht, pid, tid);
-        }
 
-        private static string EnvironmentToNative(CodeContext context, object environment) {
-            if (environment == null) {
-                return null;
+            static string? EnvironmentToNative(CodeContext context, object? environment) {
+                if (environment == null) {
+                    return null;
+                }
+                var dict = environment as PythonDictionary ?? new PythonDictionary(context, environment);
+                var res = new StringBuilder();
+                foreach (var keyValue in dict) {
+                    res.Append(keyValue.Key);
+                    res.Append('=');
+                    res.Append(keyValue.Value);
+                    res.Append('\0');
+                }
+                return res.ToString();
             }
-            var dict = environment as PythonDictionary ?? new PythonDictionary(context, environment);
-            var res = new StringBuilder();
-            foreach (var keyValue in dict) {
-                res.Append(keyValue.Key);
-                res.Append('=');
-                res.Append(keyValue.Value);
-                res.Append('\0');
-            }
-            return res.ToString();
         }
 
         public static void CloseHandle(BigInteger handle) {
@@ -146,48 +165,48 @@ namespace IronPython.Modules {
         }
 
         public static BigInteger DuplicateHandle(
-            CodeContext context,
-            BigInteger sourceProcess,
-            BigInteger handle,
-            BigInteger targetProcess,
-            int desiredAccess,
+            BigInteger source_process_handle,
+            BigInteger source_handle,
+            BigInteger target_process_handle,
+            int desired_access,
             bool inherit_handle,
-            object DUPLICATE_SAME_ACCESS) {
+            object? DUPLICATE_SAME_ACCESS) {
             
-            IntPtr currentProcessIntPtr = new IntPtr((long)sourceProcess);
-            IntPtr handleIntPtr = new IntPtr((long)handle);
-            IntPtr currentProcess2IntPtr = new IntPtr((long)targetProcess);
+            IntPtr currentProcessIntPtr = new IntPtr((long)source_process_handle);
+            IntPtr handleIntPtr = new IntPtr((long)source_handle);
+            IntPtr currentProcess2IntPtr = new IntPtr((long)target_process_handle);
 
-            IntPtr lpTargetHandle;
             bool sameAccess = DUPLICATE_SAME_ACCESS != null && Converter.ConvertToBoolean(DUPLICATE_SAME_ACCESS);
 
-            // TODO: handle failures
-            DuplicateHandlePI(
+            var result = DuplicateHandlePI(
                 currentProcessIntPtr,
                 handleIntPtr,
                 currentProcess2IntPtr,
-                out lpTargetHandle,
-                Converter.ConvertToUInt32(desiredAccess),
+                out IntPtr lpTargetHandle,
+                Converter.ConvertToUInt32(desired_access),
                 inherit_handle,
                 sameAccess ? (uint)DuplicateOptions.DUPLICATE_SAME_ACCESS : (uint)DuplicateOptions.DUPLICATE_CLOSE_SOURCE
             );
 
+            if (!result) throw PythonNT.GetLastWin32Error();
+
             return (long)lpTargetHandle;
         }
 
-        public static BigInteger GetCurrentProcess() {
-            return (long)GetCurrentProcessPI();
-        }
+        public static void ExitProcess(int exit_code) => Environment.Exit(exit_code);
 
-        public static int GetExitCodeProcess(BigInteger hProcess) {
-            int exitCode;
-            GetExitCodeProcessPI(new IntPtr((long)hProcess), out exitCode);
+        public static BigInteger GetCurrentProcess() => (long)GetCurrentProcessPI();
+
+        public static int GetExitCodeProcess(BigInteger process) {
+            GetExitCodeProcessPI(new IntPtr((long)process), out int exitCode);
             return exitCode;
         }
 
-        public static string GetModuleFileName(object ignored) {
+        public static int GetLastError() => Marshal.GetLastWin32Error();
+
+        public static string? GetModuleFileName(int module_handle) {
             // Alternative Managed API: System.Diagnostics.ProcessModule.FileName or System.Reflection.Module.FullyQualifiedName.
-            return System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            return System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
         }
 
         public static object GetStdHandle(int STD_OUTPUT_HANDLE) {
@@ -198,20 +217,15 @@ namespace IronPython.Modules {
             return GetVersionPI();
         }
 
-        public static BigInteger OpenProcess(CodeContext context, int desired_access, bool inherit_handle, int process_id) {
+        public static BigInteger OpenProcess(int desired_access, bool inherit_handle, int process_id) {
             return OpenProcessPI(desired_access, inherit_handle, process_id).ToInt64();
         }
 
-        public static bool TerminateProcess(
-            BigInteger handle,
-            object uExitCode) {
+        public static void TerminateProcess(BigInteger handle, object? exit_code) {
+            uint uExitCodeUint = Converter.ConvertToUInt32(exit_code);
+            bool result = TerminateProcessPI(new IntPtr((long)handle), uExitCodeUint);
 
-            uint uExitCodeUint = Converter.ConvertToUInt32(uExitCode);
-            bool result = TerminateProcessPI(
-                new IntPtr((long)handle),
-                uExitCodeUint);
-
-            return result;
+            if (!result) throw PythonNT.GetLastWin32Error();
         }
 
         public static int WaitForSingleObject(BigInteger handle, int dwMilliseconds) {
@@ -224,20 +238,20 @@ namespace IronPython.Modules {
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct STARTUPINFO {
-            public Int32 cb;
+            public int cb;
             public string lpReserved;
             public string lpDesktop;
             public string lpTitle;
-            public Int32 dwX;
-            public Int32 dwY;
-            public Int32 dwXSize;
-            public Int32 dwYSize;
-            public Int32 dwXCountChars;
-            public Int32 dwYCountChars;
-            public Int32 dwFillAttribute;
-            public Int32 dwFlags;
-            public Int16 wShowWindow;
-            public Int16 cbReserved2;
+            public int dwX;
+            public int dwY;
+            public int dwXSize;
+            public int dwYSize;
+            public int dwXCountChars;
+            public int dwYCountChars;
+            public int dwFillAttribute;
+            public int dwFlags;
+            public short wShowWindow;
+            public short cbReserved2;
             public IntPtr lpReserved2;
             public IntPtr hStdInput;
             public IntPtr hStdOutput;
@@ -269,12 +283,28 @@ namespace IronPython.Modules {
 
         #region Privates / PInvokes
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool ConnectNamedPipe(IntPtr hNamedPipe, IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern IntPtr CreateFile(
+            string lpFileName,
+            int dwDesiredAccess,
+            int dwShareMode,
+            IntPtr securityAttrs,
+            int dwCreationDisposition,
+            int dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateNamedPipe", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateNamedPipePI(string lpName, uint dwOpenMode, uint dwPipeMode, uint nMaxInstances, uint nOutBufferSize, uint nInBufferSize, uint nDefaultTimeOut, IntPtr lpSecurityAttributes);
+
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true)]
-        private static extern bool CreateProcessPI(string lpApplicationName,
-            string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
+        private static extern bool CreateProcessPI(string? lpApplicationName,
+            string? lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
             ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)]bool bInheritHandles,
-            uint dwCreationFlags, string lpEnvironment, string lpCurrentDirectory,
+            uint dwCreationFlags, string? lpEnvironment, string? lpCurrentDirectory,
             [In] ref STARTUPINFO lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);
 
@@ -300,7 +330,6 @@ namespace IronPython.Modules {
         private static extern IntPtr GetStdHandlePI(int nStdHandle);
 
         [DllImport("kernel32.dll", EntryPoint = "GetVersion")]
-        [SuppressMessage("Microsoft.Usage", "CA2205:UseManagedEquivalentsOfWin32Api")]
         private static extern int GetVersionPI();
 
         [return: MarshalAs(UnmanagedType.Bool)]

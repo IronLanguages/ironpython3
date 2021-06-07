@@ -27,11 +27,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.BasicRDSTest('testCreateSocket'))
         suite.addTest(test.test_socket.BasicRDSTest('testCrucialConstants'))
         suite.addTest(test.test_socket.BasicRDSTest('testSocketBufferSize'))
-        if is_posix: # TODO: figure out
-            suite.addTest(unittest.expectedFailure(test.test_socket.BasicSocketPairTest('testDefaults')))
-            suite.addTest(unittest.expectedFailure(test.test_socket.BasicSocketPairTest('testRecv')))
-            suite.addTest(unittest.expectedFailure(test.test_socket.BasicSocketPairTest('testSend')))
-        else:
+        if not is_posix: # TODO: figure out - failure in setup
             suite.addTest(test.test_socket.BasicSocketPairTest('testDefaults'))
             suite.addTest(test.test_socket.BasicSocketPairTest('testRecv'))
             suite.addTest(test.test_socket.BasicSocketPairTest('testSend'))

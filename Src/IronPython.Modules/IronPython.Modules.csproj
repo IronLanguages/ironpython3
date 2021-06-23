@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.1.21102.12  " />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

@@ -1,4 +1,13 @@
-This page documents various differences between IronPython and CPython. Since IronPython is under active development, any of the differences described here may change or disappear in the future.
+This page documents various differences between IronPython and CPython. Since IronPython is under active development, any of the differences described here may change or disappear in the future:
+
+- [Environment Variables](#environment-variables)
+- [COM Interaction](#com-interaction)
+- [Integers](#integers)
+- [Strings](#strings)
+- [Interaction with the Operating System](#interaction-with-the-operating-system)
+- [Codecs](#codecs)
+- [Source File Encoding](#source-file-encoding)
+- [Recursion](#recursion)
 
 # Environment Variables
 
@@ -274,3 +283,15 @@ If both BOM and PEP-263 methods are used simultaneously in the same file, they s
 
   * In case of UTF-8 BOM, an error will be reported (by both CPython and IronPython).
   * In case of other BOMs, the encoding specified in the PEP-263 comment is silently ignored.
+
+# Recursion
+
+By default, instead of raising a `RecursionError` when the maximum recursion depth is reached, IronPython will terminate with a `StackOverflowException`. You can enable the recursion limit in IronPython in a number of ways:
+
+  1. From the command line: `ipy -X MaxRecursion=100`.
+  2. In hosted scenarios: `Python.CreateEngine(new Dictionary<string, object>() { { "RecursionLimit", 100 } });`.
+  3. From Python: `sys.setrecursionlimit(100)`.
+
+*There is a significant performance cost when the recursion limit is enabled*.
+
+Note that IronPython 3.4 adopts the CPython 3.5 behavior and throws a `RecursionError` instead of a `RuntimeError`.

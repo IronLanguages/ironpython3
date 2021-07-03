@@ -292,7 +292,7 @@ namespace IronPython.Runtime.Operations {
             return new StringFormatter(context, str, data).Format();
         }
 
-        public static object Plus(object o) {
+        public static object Plus(object? o) {
             if (o is int) return o;
             else if (o is double) return o;
             else if (o is BigInteger) return o;
@@ -309,7 +309,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("bad operand type for unary +");
         }
 
-        public static object Negate(object o) {
+        public static object Negate(object? o) {
             if (o is int) return Int32Ops.Negate((int)o);
             else if (o is double) return DoubleOps.Negate((double)o);
             else if (o is long) return Int64Ops.Negate((long)o);
@@ -467,7 +467,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object OnesComplement(object o) {
+        public static object OnesComplement(object? o) {
             if (o is int) return ~(int)o;
             if (o is long) return ~(long)o;
             if (o is BigInteger) return ~((BigInteger)o);

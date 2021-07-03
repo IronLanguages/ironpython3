@@ -892,7 +892,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         private static Tuple<object?, object?> GetMaxKwArg(IDictionary<string, object?> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError("max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
-            if (dict.Keys.Contains("default") && !isDefaultAllowed) {
+            if (dict.ContainsKey("default") && !isDefaultAllowed) {
                 throw PythonOps.TypeError("Cannot specify a default for max() with multiple positional arguments");
             }
 
@@ -1002,7 +1002,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError("min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
 
-            if (dict.Keys.Contains("default") && !isDefaultAllowed)
+            if (dict.ContainsKey("default") && !isDefaultAllowed)
                 throw PythonOps.TypeError("Cannot specify a default for min() with multiple positional arguments");
 
             return VerifyKeys("min", dict);

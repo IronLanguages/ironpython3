@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,7 +28,7 @@ namespace IronPython.Runtime {
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
-        private GeneratorFinalizer _finalizer;                      // finalizer object
+        private GeneratorFinalizer? _finalizer;                     // finalizer object
 
         private ExceptionState _state = new ExceptionState();
 
@@ -36,20 +38,20 @@ namespace IronPython.Runtime {
         /// the object. Reusing objects with a finalizer is good because it reduces
         /// the load on the GC's finalizer queue.
         /// </summary>
-        private static GeneratorFinalizer _LastFinalizer;
+        private static GeneratorFinalizer? _LastFinalizer;
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
         /// These are plumbed through the generator to become parameters to Raise(...) invoked 
         /// at the yield suspension point in the generator.
         /// </summary>
-        private object[] _excInfo;
+        private object?[]? _excInfo;
         /// <summary>
         /// Value sent by generator.send().
         /// Since send() could send an exception, we need to keep this different from throwable's value.
         /// </summary>
-        private object _sendValue;
-        private WeakRefTracker _tracker;
+        private object? _sendValue;
+        private WeakRefTracker? _tracker;
 
         internal PythonGenerator(PythonFunction function, Func<MutableTuple, object>/*!*/ next, MutableTuple data) {
             _function = function;
@@ -58,7 +60,7 @@ namespace IronPython.Runtime {
             _dataTuple = GetDataTuple();
             State = GeneratorRewriter.NotStarted;
 
-            if (_LastFinalizer == null || (_finalizer = Interlocked.Exchange(ref _LastFinalizer, null)) == null) {
+            if (_LastFinalizer == null || (_finalizer = Interlocked.Exchange<GeneratorFinalizer?>(ref _LastFinalizer, null)) == null) {
                 _finalizer = new GeneratorFinalizer(this);
             } else {
                 _finalizer.Generator = this;
@@ -93,17 +95,17 @@ namespace IronPython.Runtime {
         /// Use multiple overloads to resolve the default parameters.
         /// </summary>
         [LightThrowing]
-        public object @throw(object type) {
+        public object @throw(object? type) {
             return @throw(type, null, null, false);
         }
 
         [LightThrowing]
-        public object @throw(object type, object value) {
+        public object @throw(object? type, object? value) {
             return @throw(type, value, null, false);
         }
 
         [LightThrowing]
-        public object @throw(object type, object value, object traceback) {
+        public object @throw(object? type, object? value, object? traceback) {
             return @throw(type, value, traceback, false);
         }
 
@@ -115,7 +117,7 @@ namespace IronPython.Runtime {
         /// If the generator catches the exception and yields another value, that is the return value of g.throw().
         /// </summary>
         [LightThrowing]
-        private object @throw(object type, object value, object traceback, bool finalizing) {
+        private object @throw(object? type, object? value, object? traceback, bool finalizing) {
             // Do argument validation outside of the generator's body and do not update the state on failure
             if (type is Exception || type is PythonExceptions.BaseException) {
                 if (value is not null)
@@ -129,7 +131,7 @@ namespace IronPython.Runtime {
             // Set fields which will then be used by CheckThrowable.
             // We create the actual exception from inside the generator so that if the exception's __init__ 
             // throws, the traceback matches that which we get from CPython2.5.
-            _excInfo = new object[] { type, value, traceback };
+            _excInfo = new object?[] { type, value, traceback };
             Debug.Assert(_sendValue == null);
 
             // Pep explicitly says that Throw on a closed generator throws the exception, 
@@ -156,7 +158,7 @@ namespace IronPython.Runtime {
         /// the result of yield when used as an expression.
         /// </summary>
         [LightThrowing]
-        public object send(object value) {
+        public object send(object? value) {
             Debug.Assert(_excInfo == null);
 
             // CPython2.5's behavior is that Send(non-null) on unstarted generator should:
@@ -171,7 +173,7 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
-        public object close() {
+        public object? close() {
             return close(false);
         }
 
@@ -179,7 +181,7 @@ namespace IronPython.Runtime {
         /// Close introduced in Pep 342.
         /// </summary>
         [LightThrowing]
-        private object close(bool finalizing) {
+        private object? close(bool finalizing) {
             // This is nop if the generator is already closed.
             // Optimization to avoid throwing + catching an exception if we're already closed.
             if (Closed) {
@@ -260,7 +262,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private object FinalValue { get; set; }
+        private object? FinalValue { get; set; }
 
         private MutableTuple<int, object> GetDataTuple() {
             if (!(_data is MutableTuple<int, object> res)) {
@@ -270,7 +272,7 @@ namespace IronPython.Runtime {
         }
 
         private static MutableTuple<int, object> GetBigData(MutableTuple data) {
-            MutableTuple<int, object> smallGen;
+            MutableTuple<int, object>? smallGen;
             do {
                 data = (MutableTuple)data.GetValue(0);
             } while ((smallGen = (data as MutableTuple<int, object>)) == null);
@@ -298,7 +300,7 @@ namespace IronPython.Runtime {
             if (CanSetSysExcInfo || ContainsTryFinally) {
                 try {
                     // This may run the users generator.
-                    object res = close(true);
+                    object? res = close(true);
                     Exception ex = LightExceptions.GetLightException(res);
                     if (ex != null) {
                         HandleFinalizerException(ex);
@@ -360,9 +362,9 @@ namespace IronPython.Runtime {
             if (!done) {
                 var stack = PythonOps.GetFunctionStack();
                 var functionStack = stack[stack.Count - 1];
-                Debug.Assert(functionStack.Context != null);
                 stack.RemoveAt(stack.Count - 1);
-                fnStack = new FunctionStack(functionStack.Context, functionStack.Code); // don't keep the frame since f_back may be invalid
+                Debug.Assert(functionStack.Context is not null);
+                fnStack = new FunctionStack(functionStack.Context!, functionStack.Code); // don't keep the frame since f_back may be invalid
             }
             else {
                 fnStack = null;
@@ -476,7 +478,7 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns></returns>
         [LightThrowing]
-        internal object CheckThrowableAndReturnSendValue() {
+        internal object? CheckThrowableAndReturnSendValue() {
             // Since this method is called from the generator body's execution, the generator must be running 
             // and not closed.
             Debug.Assert(!Closed);
@@ -500,7 +502,7 @@ namespace IronPython.Runtime {
         /// Called to throw an exception set by Throw().
         /// </summary>
         [LightThrowing]
-        private object CheckThrowable() {
+        private object? CheckThrowable() {
             if (_excInfo != null) {
                 return ThrowThrowable();
             }
@@ -509,7 +511,8 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         private object ThrowThrowable() {
-            object[] throwableBackup = _excInfo;
+            Debug.Assert(_excInfo is not null);
+            object?[] throwableBackup = _excInfo!;
 
             // Clear it so that any future Next()/MoveNext() call doesn't pick up the exception again.
             _excInfo = null;
@@ -627,7 +630,7 @@ namespace IronPython.Runtime {
         #endregion
 
         private class GeneratorFinalizer {
-            public PythonGenerator Generator;
+            public PythonGenerator? Generator;
             public GeneratorFinalizer(PythonGenerator generator) {
                 Generator = generator;
             }
@@ -656,7 +659,7 @@ namespace IronPython.Runtime {
 
         #region IWeakReferenceable Members
 
-        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+        WeakRefTracker? IWeakReferenceable.GetWeakRef() {
             return _tracker;
         }
 

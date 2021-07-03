@@ -992,7 +992,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static IList<string> GetStringMemberList(IPythonMembersList pyMemList) {
             List<string> res = new List<string>();
-            foreach (object o in pyMemList.GetMemberNames(DefaultContext.Default)) {
+            foreach (object? o in pyMemList.GetMemberNames(DefaultContext.Default)) {
                 if (o is string) {
                     res.Add((string)o);
                 }
@@ -2314,7 +2314,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static PythonExceptions.BaseException? GetRawContextException() => GetCurrentException()?.GetPythonException();
 
-        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
+        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause) {
             Exception e = MakeExceptionWorker(context, type, value, traceback, cause, suppressContext: false, forRethrow: false);
             e.RemoveFrameList();
             return e;
@@ -3059,7 +3059,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [LightThrowing]
-        public static object GeneratorCheckThrowableAndReturnSendValue(object self) {
+        public static object? GeneratorCheckThrowableAndReturnSendValue(object self) {
             return ((PythonGenerator)self).CheckThrowableAndReturnSendValue();
         }
 

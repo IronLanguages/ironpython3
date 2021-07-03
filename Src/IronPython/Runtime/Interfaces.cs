@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections;
 using System.Collections.Generic;
+
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -21,7 +24,7 @@ namespace IronPython.Runtime {
         /// Gets the current WeakRefTracker for an object that can be used to
         /// append additional weak references.
         /// </summary>
-        WeakRefTracker GetWeakRef();
+        WeakRefTracker? GetWeakRef();
 
         /// <summary>
         /// Attempts to set the WeakRefTracker for an object.  Used on the first
@@ -72,6 +75,6 @@ namespace IronPython.Runtime {
     /// flag by flowing in the code context.
     /// </summary>
     public interface IPythonMembersList : IMembersList {
-        IList<object> GetMemberNames(CodeContext context);
+        IList<object?> GetMemberNames(CodeContext context);
     }
 }

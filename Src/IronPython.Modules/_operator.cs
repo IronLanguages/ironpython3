@@ -23,7 +23,7 @@ namespace IronPython.Modules {
     public static class PythonOperator {
         public const string __doc__ = "Provides programmatic access to various operators (addition, accessing members, etc...)";
 
-        public sealed class attrgetter {
+        public sealed class attrgetter : ICodeFormattable {
             private readonly object[] _names;
 
             public attrgetter([NotNull] params object[] attrs) {
@@ -53,8 +53,7 @@ namespace IronPython.Modules {
             }
 
             private static object GetOneAttr(CodeContext context, object param, object val) {
-                string? s = val as string;
-                if (s == null) {
+                if (val is not string s) {
                     throw PythonOps.TypeError("attribute name must be string");
                 }
                 int dotPos = s.IndexOf('.');
@@ -66,10 +65,10 @@ namespace IronPython.Modules {
             }
         }
 
-        public sealed class itemgetter {
-            private readonly object[] _items;
+        public sealed class itemgetter : ICodeFormattable {
+            private readonly object?[] _items;
 
-            public itemgetter([NotNull] params object[] items) {
+            public itemgetter([NotNull] params object?[] items) {
                 if (items.Length == 0) {
                     throw PythonOps.TypeError("itemgetter needs at least one argument");
                 }
@@ -129,7 +128,7 @@ namespace IronPython.Modules {
                     foreach (var pair in _dict) {
                         sb.Append(", ");
                         sb.Append(PythonOps.ToString(pair.Key));
-                        sb.Append("=");
+                        sb.Append('=');
                         sb.Append(PythonOps.Repr(context, pair.Value));
                     }
                 }
@@ -404,26 +403,26 @@ types and lengths of a and b--but not their values.")]
                 return CompareBytes(aBuf.AsReadOnlySpan().ToArray(), bBuf.AsReadOnlySpan().ToArray());
             }
             throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}'", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
-        }
 
-        private static bool CompareBytes(IEnumerable<byte> a, IEnumerable<byte> b) {
-            var aList = a.ToList();
-            var bList = b.ToList();
-            int len_b = bList.Count, len_a = aList.Count, length = len_b, result = 0;
-            List<byte> right = bList;
-            List<byte>? left;
-            if (len_a == length) {
-                left = aList;
-                result = 0;
-            } else {
-                left = bList;
-                result = 1;
-            }
+            static bool CompareBytes(IReadOnlyList<byte> a, IReadOnlyList<byte> b) {
+                int length = b.Count;
+                IReadOnlyList<byte> right = b;
 
-            for (int i = 0; i < length; i++) {
-                result |= left[i] ^ right[i];
+                IReadOnlyList<byte>? left;
+                int result;
+                if (a.Count == length) {
+                    left = a;
+                    result = 0;
+                } else {
+                    left = b;
+                    result = 1;
+                }
+
+                for (int i = 0; i < length; i++) {
+                    result |= left[i] ^ right[i];
+                }
+                return result == 0;
             }
-            return result == 0;
         }
 
         private static void TestBothSequence(object? a, object? b) {

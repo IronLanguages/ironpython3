@@ -710,9 +710,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // first format using Python's specific formatting rules...
-            StringFormatter sf = new StringFormatter(context, "%.17g", self);
-            sf._TrailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat;
-            string res = sf.Format();
+            string res = StringFormatter.Format(context, "%.17g", self, trailingZeroAfterWholeFloat: trailingZeroAfterWholeFloat);
             if (LiteralParser.ParseFloat(res) == self) {
                 return res;
             }
@@ -1137,9 +1135,7 @@ namespace IronPython.Runtime.Operations {
         public static string __str__(CodeContext/*!*/ context, float x) {
             // Python does not natively support System.Single. However, we try to provide
             // formatting consistent with System.Double.
-            StringFormatter sf = new StringFormatter(context, "%.6g", x);
-            sf._TrailingZeroAfterWholeFloat = true;
-            return sf.Format();
+            return StringFormatter.Format(context, "%.6g", x, trailingZeroAfterWholeFloat: true);
         }
 
         public static string __repr__(CodeContext/*!*/ context, float self) {

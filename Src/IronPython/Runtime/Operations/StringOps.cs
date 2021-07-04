@@ -1332,18 +1332,18 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static string Mod(CodeContext/*!*/ context, [NotNull]string self, object? other) {
-            return new StringFormatter(context, self, other).Format();
+            return StringFormatter.Format(context, self, other);
         }
 
         [SpecialName]
         [return: MaybeNotImplemented] // TODO: revisit
         public static object Mod(CodeContext/*!*/ context, object? other, string? self) {
             if (other is string str) {
-                return new StringFormatter(context, str, self).Format();
+                return StringFormatter.Format(context, str, self);
             }
 
             if (other is Extensible<string> es) {
-                return new StringFormatter(context, es.Value, self).Format();
+                return StringFormatter.Format(context, es.Value, self);
             }
 
             return NotImplementedType.Value;

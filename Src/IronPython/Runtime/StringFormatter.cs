@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
 
         #region Constructors
 
-        public StringFormatter(CodeContext/*!*/ context, string str, object data) {
+        private StringFormatter(CodeContext/*!*/ context, string str, object data) {
             _str = str;
             _data = data;
             _context = context;
@@ -84,7 +84,15 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Public API Surface
-        public string Format() {
+
+        public static string Format(CodeContext/*!*/ context, string str, object data, bool trailingZeroAfterWholeFloat = false)
+            => new StringFormatter(context, str, data) { _TrailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
+
+        #endregion
+
+        #region Private APIs
+
+        private string Format() {
             _index = 0;
             _buf = new StringBuilder(_str.Length * 2);
             int modIndex;
@@ -100,9 +108,6 @@ namespace IronPython.Runtime {
 
             return _buf.ToString();
         }
-        #endregion
-
-        #region Private APIs
 
         private void DoFormatCode() {
             // we already pulled the first %

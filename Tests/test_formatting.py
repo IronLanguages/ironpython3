@@ -126,7 +126,40 @@ class FormattingTest(IronPythonTestCase):
         for v in values:
             self.assertEqual("%g" % v[0], v[1])
             self.assertEqual("%.6g" % v[0], v[1])
-            # self.assertEqual("% .6g" % v[0], v[1])
+            self.assertEqual("% .6g" % v[0], " " + v[1])
+
+    def test_formatting_issues(self):
+        # these were not working properly
+        values = (
+        )
+
+        for a, b in values:
+            self.assertEqual(a, b)
+
+        # TODO: fix these
+        values = (
+            ("0%.1f" % -0.01, "0-0.0"),
+            #("%+01.0f" % -0.0, "-0"), # IndexError
+            ("%#9f" % 1.0, " 1.000000"),
+            ("%#9e" % 1.0, "1.000000e+00"),
+            ("%-#3.0f" % 1.0, "1. "),
+            ( "%104.100f" % 1.0, "  1." + ("0" * 100)),
+            ("% 104.100f" % 1.0, "  1." + ("0" * 100)),
+            ("%+104.100f" % 1.0, " +1." + ("0" * 100)),
+            #("%.200f" % 1.0, "1." + ("0" * 200)), # OverflowError
+            ("%#9g" % 1.0, "  1.00000"),
+            ("%+07.0e" % -0.0, "-00e+00"),
+            ( "% 7.0e" % -0.0, " -0e+00"),
+            ("%0104.100f" % 1.0, "001." + ("0" * 100)),
+            ("%0#7.0e" % 1.0, "01.e+00"),
+        )
+
+        if is_cli:
+            for a, b in values:
+                self.assertNotEqual(a, b)
+        else:
+            for a, b in values:
+                self.assertEqual(a, b)
 
     @skipUnlessIronPython()
     def test_single(self):

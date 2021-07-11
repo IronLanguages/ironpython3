@@ -138,7 +138,7 @@ class FormattingTest(IronPythonTestCase):
 
         # TODO: fix these
         values = (
-            ("0%.1f" % -0.01, "0-0.0"),
+            #("0%.1f" % -0.01, "0-0.0"), # passes .NET 5.0
             #("%+01.0f" % -0.0, "-0"), # IndexError
             ("%#9f" % 1.0, " 1.000000"),
             ("%#9e" % 1.0, "1.000000e+00"),

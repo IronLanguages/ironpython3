@@ -455,26 +455,27 @@ namespace IronPython.Runtime {
             }
         }
 
+        private static readonly bool supportsPrecisionGreaterThan99 = 0.ToString("D100", CultureInfo.InvariantCulture) != "D100"; // support is new in .NET 6
+
         private string ZeroPadInt(object val, bool fPos, int minNumDigits) {
             if (minNumDigits < 2) {
                 return string.Format(_nfi, "{0:D}", val);
             }
 
-            string res;
-            if (minNumDigits < 100) {
-                res = string.Format(_nfi, "{0:D" + minNumDigits + "}", val);
+            if (minNumDigits < 100 || supportsPrecisionGreaterThan99) {
+                return string.Format(_nfi, "{0:D" + minNumDigits + "}", val);
+            }
+
+            var res = string.Format(_nfi, "{0:D}", val);
+            if (fPos) {
+                var zeroPad = minNumDigits - res.Length;
+                if (zeroPad > 0) {
+                    res = new string('0', zeroPad) + res;
+                }
             } else {
-                res = string.Format(_nfi, "{0:D}", val);
-                if (fPos) {
-                    var zeroPad = minNumDigits - res.Length;
-                    if (zeroPad > 0) {
-                        res = new string('0', zeroPad) + res;
-                    }
-                } else {
-                    var zeroPad = minNumDigits - res.Length + 1; // '-' does not count
-                    if (zeroPad > 0) {
-                        res = '-' + new string('0', zeroPad) + res.Substring(1);
-                    }
+                var zeroPad = minNumDigits - res.Length + 1; // '-' does not count
+                if (zeroPad > 0) {
+                    res = '-' + new string('0', zeroPad) + res.Substring(1);
                 }
             }
             return res;

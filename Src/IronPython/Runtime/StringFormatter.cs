@@ -411,16 +411,73 @@ namespace IronPython.Runtime {
         }
 
         private void AppendInt() {
-            bool fPos;
-            object val = GetIntegerValue(out fPos);
+            object val = GetIntegerValue(out bool fPos);
 
             if (_opts.LeftAdj) {
-                AppendLeftAdjInt(val, fPos);
+                string str = ZeroPadInt(val, fPos, _opts.Precision);
+
+                var pad = _opts.FieldWidth - str.Length;
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                    pad--;
+                }
+                _buf.Append(str);
+                if (pad > 0) _buf.Append(' ', pad);
             } else if (_opts.ZeroPad || _opts.Precision > 0) {
-                AppendZeroPadInt(val, fPos);
+                int minNumDigits = _opts.Precision;
+                if (_opts.ZeroPad && _opts.FieldWidth > minNumDigits) {
+                    minNumDigits = _opts.FieldWidth;
+                    if (!fPos || _opts.SignChar || _opts.Space) minNumDigits--;
+                }
+
+                var str = ZeroPadInt(val, fPos, minNumDigits);
+
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    var pad = _opts.FieldWidth - str.Length - 1;
+                    if (pad > 0) _buf.Append(' ', pad);
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                } else {
+                    var pad = _opts.FieldWidth - str.Length;
+                    if (pad > 0) _buf.Append(' ', pad);
+                }
+
+                _buf.Append(str);
             } else {
-                AppendNumericInt(val, fPos);
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    var str = string.Format(_nfi, "{0:D}", val);
+                    var pad = _opts.FieldWidth - (str.Length + 1);
+                    if (pad > 0) _buf.Append(' ', pad);
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                    _buf.Append(str);
+                } else {
+                    _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":D}", val);
+                }
             }
+        }
+
+        private string ZeroPadInt(object val, bool fPos, int minNumDigits) {
+            if (minNumDigits < 2) {
+                return string.Format(_nfi, "{0:D}", val);
+            }
+
+            string res;
+            if (minNumDigits < 100) {
+                res = string.Format(_nfi, "{0:D" + minNumDigits + "}", val);
+            } else {
+                res = string.Format(_nfi, "{0:D}", val);
+                if (fPos) {
+                    var zeroPad = minNumDigits - res.Length;
+                    if (zeroPad > 0) {
+                        res = new string('0', zeroPad) + res;
+                    }
+                } else {
+                    var zeroPad = minNumDigits - res.Length + 1; // '-' does not count
+                    if (zeroPad > 0) {
+                        res = '-' + new string('0', zeroPad) + res.Substring(1);
+                    }
+                }
+            }
+            return res;
         }
 
         private static readonly char[] zero = new char[] { '0' };
@@ -589,53 +646,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        private string ZeroPadInt(object val, bool fPos, int minNumDigits) {
-            if (minNumDigits < 2) {
-                return string.Format(_nfi, "{0:D}", val);
-            }
-
-            string res;
-            if (minNumDigits < 100) {
-                res = string.Format(_nfi, "{0:D" + minNumDigits + "}", val);
-            } else {
-                res = string.Format(_nfi, "{0:D}", val);
-                if (fPos) {
-                    var zeroPad = minNumDigits - res.Length;
-                    if (zeroPad > 0) {
-                        res = new string('0', zeroPad) + res;
-                    }
-                } else {
-                    var zeroPad = minNumDigits - res.Length + 1; // '-' does not count
-                    if (zeroPad > 0) {
-                        res = '-' + new string('0', zeroPad) + res.Substring(1);
-                    }
-                }
-            }
-            return res;
-        }
-
-        private void AppendZeroPadInt(object val, bool fPos) {
-            int minNumDigits = _opts.Precision;
-            if (_opts.ZeroPad && _opts.FieldWidth > minNumDigits) {
-                minNumDigits = _opts.FieldWidth;
-                if (!fPos || _opts.SignChar || _opts.Space) minNumDigits--;
-            }
-
-            var res = ZeroPadInt(val, fPos, minNumDigits);
-
-            // pad with spaces
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                var pad = _opts.FieldWidth - res.Length - 1;
-                if (pad > 0) _buf.Append(' ', pad);
-                _buf.Append(_opts.SignChar ? '+' : ' ');
-            } else {
-                var pad = _opts.FieldWidth - res.Length;
-                if (pad > 0) _buf.Append(' ', pad);
-            }
-
-            _buf.Append(res);
-        }
-
         private void AppendZeroPadFloat(double val, bool fPos, char format) {
             StringBuilder res = new StringBuilder(val.ToString($"{format}{_opts.Precision}", _nfi));
             if (fPos) {
@@ -658,20 +668,6 @@ namespace IronPython.Runtime {
                     res.Insert(1, new string('0', _opts.FieldWidth - res.Length));
                 }
                 _buf.Append(res);
-            }
-        }
-
-        private void AppendNumericInt(object val, bool fPos) {
-            Debug.Assert(_opts.Precision < 1);
-
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                var res = string.Format(_nfi, "{0:D}", val);
-                var pad = _opts.FieldWidth - (res.Length + 1);
-                if (pad > 0) _buf.Append(' ', pad);
-                _buf.Append(_opts.SignChar ? '+' : ' ');
-                _buf.Append(res);
-            } else {
-                _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":D}", val);
             }
         }
 
@@ -766,18 +762,6 @@ namespace IronPython.Runtime {
             } else {
                 return val;
             }
-        }
-
-        private void AppendLeftAdjInt(object val, bool fPos) {
-            string str = ZeroPadInt(val, fPos, _opts.Precision);
-
-            var pad = _opts.FieldWidth - str.Length;
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                _buf.Append(_opts.SignChar ? '+' : ' ');
-                pad--;
-            }
-            _buf.Append(str);
-            if (pad > 0) _buf.Append(' ', pad);
         }
 
         private void AppendLeftAdjFloat(double val, bool fPos, char format) {

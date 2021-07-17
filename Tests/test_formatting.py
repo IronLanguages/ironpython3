@@ -131,6 +131,8 @@ class FormattingTest(IronPythonTestCase):
     def test_formatting_issues(self):
         # these were not working properly
         values = (
+            ("0%.1f" % -0.01, "0-0.0"),
+            ("%+01.0f" % -0.0, "-0"),
         )
 
         for a, b in values:
@@ -138,8 +140,6 @@ class FormattingTest(IronPythonTestCase):
 
         # TODO: fix these
         values = (
-            #("0%.1f" % -0.01, "0-0.0"), # passes .NET 5.0
-            #("%+01.0f" % -0.0, "-0"), # IndexError
             ("%#9f" % 1.0, " 1.000000"),
             ("%#9e" % 1.0, "1.000000e+00"),
             ("%-#3.0f" % 1.0, "1. "),

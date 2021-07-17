@@ -593,9 +593,6 @@ namespace IronPython.Runtime {
             } else {
                 AppendNumericFloat(v, fPos, type);
             }
-            if (!fPos && v > -1 && _buf[0] != '-') {
-                FixupFloatMinus();
-            }
 
             if (forceDot) {
                 FixupAltFormDot(v);
@@ -619,36 +616,23 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void FixupFloatMinus() {
-            // Python always appends a - even if precision is 0 and the value would appear to be zero.
-            bool fNeedMinus = true;
-            for (int i = 0; i < _buf.Length; i++) {
-                if (_buf[i] != '.' && _buf[i] != '0' && _buf[i] != ' ') {
-                    fNeedMinus = false;
-                    break;
-                }
-            }
+        private static readonly bool needsFixupFloatMinus = $"{-0.1:f0}" == "0"; // fixed in .NET Core 3.1
 
-            if (fNeedMinus) {
-                if (_opts.FieldWidth != 0) {
-                    // trim us back down to the correct field width...
-                    if (_buf[_buf.Length - 1] == ' ') {
-                        _buf.Insert(0, "-");
-                        _buf.Remove(_buf.Length - 1, 1);
-                    } else {
-                        int index = 0;
-                        while (_buf[index] == ' ') index++;
-                        if (index > 0) index--;
-                        _buf[index] = '-';
-                    }
-                } else {
-                    _buf.Insert(0, "-");
-                }
+        /// <summary>
+        /// Ensure negative values rounded to 0 show up as -0.
+        /// </summary>
+        private static string FixupFloatMinus(double val, bool fPos, string x) {
+            if (needsFixupFloatMinus && !fPos && val >= -0.5 && x[0] != '-') {
+                Debug.Assert(x[0] == '0');
+                return "-" + x;
             }
+            return x;
         }
 
         private void AppendZeroPadFloat(double val, bool fPos, char format) {
-            StringBuilder res = new StringBuilder(val.ToString($"{format}{_opts.Precision}", _nfi));
+            var strVal = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
+            StringBuilder res = new StringBuilder(strVal);
+            if (_opts.Precision == 0 && _opts.AltForm) res.Append('.');
             if (fPos) {
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(0, new string('0', _opts.FieldWidth - res.Length));
@@ -720,6 +704,7 @@ namespace IronPython.Runtime {
             if (_opts.Precision < 100) {
                 // CLR formatting has a maximum precision of 100.
                 var res = val.ToString($"{format}{_opts.Precision}", _nfi);
+                res = FixupFloatMinus(val, fPos, res);
                 var pad = _opts.FieldWidth - res.Length;
                 var needsSign = fPos && (_opts.SignChar || _opts.Space);
                 if (needsSign) pad--;
@@ -766,7 +751,7 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdjFloat(double val, bool fPos, char format) {
-            var str = val.ToString($"{format}{_opts.Precision}", _nfi);
+            var str = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
             if (format == 'e' || format == 'E') str = AdjustExponent(str);
 
             var pad = _opts.FieldWidth - str.Length;

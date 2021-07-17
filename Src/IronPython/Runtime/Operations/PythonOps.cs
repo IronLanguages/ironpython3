@@ -289,7 +289,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string FormatString(CodeContext/*!*/ context, string str, object data) {
-            return new StringFormatter(context, str, data).Format();
+            return StringFormatter.Format(context, str, data);
         }
 
         public static object Plus(object? o) {

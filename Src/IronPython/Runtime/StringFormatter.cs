@@ -9,8 +9,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -74,7 +72,7 @@ namespace IronPython.Runtime {
 
         #region Constructors
 
-        public StringFormatter(CodeContext/*!*/ context, string str, object data) {
+        private StringFormatter(CodeContext/*!*/ context, string str, object data) {
             _str = str;
             _data = data;
             _context = context;
@@ -84,7 +82,15 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Public API Surface
-        public string Format() {
+
+        public static string Format(CodeContext/*!*/ context, string str, object data, bool trailingZeroAfterWholeFloat = false)
+            => new StringFormatter(context, str, data) { _TrailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
+
+        #endregion
+
+        #region Private APIs
+
+        private string Format() {
             _index = 0;
             _buf = new StringBuilder(_str.Length * 2);
             int modIndex;
@@ -100,9 +106,6 @@ namespace IronPython.Runtime {
 
             return _buf.ToString();
         }
-        #endregion
-
-        #region Private APIs
 
         private void DoFormatCode() {
             // we already pulled the first %
@@ -408,22 +411,74 @@ namespace IronPython.Runtime {
         }
 
         private void AppendInt() {
-            bool fPos;
-            object val = GetIntegerValue(out fPos);
+            object val = GetIntegerValue(out bool fPos);
 
             if (_opts.LeftAdj) {
-                AppendLeftAdj(val, fPos, 'D');
-            } else if (_opts.Precision > 0) {
-                // in this case the precision means
-                // the minimum number of characters
-                _opts.FieldWidth = (_opts.Space || _opts.SignChar) ?
-                     _opts.Precision + 1 : _opts.Precision;
-                AppendZeroPad(val, fPos, 'D');
-            } else if (_opts.ZeroPad) {
-                AppendZeroPad(val, fPos, 'D');
+                string str = ZeroPadInt(val, fPos, _opts.Precision);
+
+                var pad = _opts.FieldWidth - str.Length;
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                    pad--;
+                }
+                _buf.Append(str);
+                if (pad > 0) _buf.Append(' ', pad);
+            } else if (_opts.ZeroPad || _opts.Precision > 0) {
+                int minNumDigits = _opts.Precision;
+                if (_opts.ZeroPad && _opts.FieldWidth > minNumDigits) {
+                    minNumDigits = _opts.FieldWidth;
+                    if (!fPos || _opts.SignChar || _opts.Space) minNumDigits--;
+                }
+
+                var str = ZeroPadInt(val, fPos, minNumDigits);
+
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    var pad = _opts.FieldWidth - str.Length - 1;
+                    if (pad > 0) _buf.Append(' ', pad);
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                } else {
+                    var pad = _opts.FieldWidth - str.Length;
+                    if (pad > 0) _buf.Append(' ', pad);
+                }
+
+                _buf.Append(str);
             } else {
-                AppendNumeric(val, fPos, 'D');
+                if (fPos && (_opts.SignChar || _opts.Space)) {
+                    var str = string.Format(_nfi, "{0:D}", val);
+                    var pad = _opts.FieldWidth - (str.Length + 1);
+                    if (pad > 0) _buf.Append(' ', pad);
+                    _buf.Append(_opts.SignChar ? '+' : ' ');
+                    _buf.Append(str);
+                } else {
+                    _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":D}", val);
+                }
             }
+        }
+
+        private static readonly bool supportsPrecisionGreaterThan99 = 0.ToString("D100", CultureInfo.InvariantCulture) != "D100"; // support is new in .NET 6
+
+        private string ZeroPadInt(object val, bool fPos, int minNumDigits) {
+            if (minNumDigits < 2) {
+                return string.Format(_nfi, "{0:D}", val);
+            }
+
+            if (minNumDigits < 100 || supportsPrecisionGreaterThan99) {
+                return string.Format(_nfi, "{0:D" + minNumDigits + "}", val);
+            }
+
+            var res = string.Format(_nfi, "{0:D}", val);
+            if (fPos) {
+                var zeroPad = minNumDigits - res.Length;
+                if (zeroPad > 0) {
+                    res = new string('0', zeroPad) + res;
+                }
+            } else {
+                var zeroPad = minNumDigits - res.Length + 1; // '-' does not count
+                if (zeroPad > 0) {
+                    res = '-' + new string('0', zeroPad) + res.Substring(1);
+                }
+            }
+            return res;
         }
 
         private static readonly char[] zero = new char[] { '0' };
@@ -481,8 +536,7 @@ namespace IronPython.Runtime {
                             convertType = false;
                         }
                     }
-                }
-                else {
+                } else {
                     fixedPointForm = absV.ToString("G" + _opts.Precision, CultureInfo.InvariantCulture);
                 }
                 if (convertType) {
@@ -517,27 +571,29 @@ namespace IronPython.Runtime {
             if (_opts.Precision != UnspecifiedPrecision) {
                 if (_opts.Precision == 0 && _opts.AltForm) forceDot = true;
                 if (_opts.Precision > 50)
-                    _opts.Precision = 50;
+                    _opts.Precision = 50; // TODO: remove this restriction
             } else {
                 // alternate form (#) specified, set precision to zero...
                 if (_opts.AltForm) {
                     _opts.Precision = 0;
                     forceDot = true;
-                } else _opts.Precision = 6;
+                } else {
+                    _opts.Precision = 6;
+                }
             }
 
             type = AdjustForG(type, v);
-            _nfi.NumberDecimalDigits = _opts.Precision;
 
+            var fPos = DoubleOps.Sign(v) >= 0;
             // then append
             if (_opts.LeftAdj) {
-                AppendLeftAdj(v, DoubleOps.Sign(v) >= 0, type);
+                AppendLeftAdjFloat(v, fPos, type);
             } else if (_opts.ZeroPad) {
-                AppendZeroPadFloat(v, type);
+                AppendZeroPadFloat(v, fPos, type);
             } else {
-                AppendNumeric(v, DoubleOps.Sign(v) >= 0, type);
+                AppendNumericFloat(v, fPos, type);
             }
-            if (DoubleOps.Sign(v) < 0 && v > -1 && _buf[0] != '-') {
+            if (!fPos && v > -1 && _buf[0] != '-') {
                 FixupFloatMinus();
             }
 
@@ -591,46 +647,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AppendZeroPad(object val, bool fPos, char format) {
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                // produce [' '|'+']0000digits
-                // first get 0 padded number to field width
-                string res = string.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
-
-                char signOrSpace = _opts.SignChar ? '+' : ' ';
-                // then if we ended up with a leading zero replace it, otherwise
-                // append the space / + to the front.
-                if (res[0] == '0' && res.Length > 1) {
-                    res = signOrSpace + res.Substring(1);
-                } else {
-                    res = signOrSpace + res;
-                }
-                _buf.Append(res);
-            } else {
-                string res = string.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
-
-                // Difference: 
-                //   System.String.Format("{0:D3}", -1)      '-001'
-                //   "%03d" % -1                             '-01'
-
-                if (res[0] == '-') {
-                    // negative
-                    _buf.Append("-");
-                    if (res[1] != '0') {
-                        _buf.Append(res.Substring(1));
-                    } else {
-                        _buf.Append(res.Substring(2));
-                    }
-                } else {
-                    // positive
-                    _buf.Append(res);
-                }
-            }
-        }
-
-        private void AppendZeroPadFloat(double val, char format) {
-            if (val >= 0) {
-                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), _nfi));
+        private void AppendZeroPadFloat(double val, bool fPos, char format) {
+            StringBuilder res = new StringBuilder(val.ToString($"{format}{_opts.Precision}", _nfi));
+            if (fPos) {
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(0, new string('0', _opts.FieldWidth - res.Length));
                 }
@@ -646,7 +665,6 @@ namespace IronPython.Runtime {
                 }
                 _buf.Append(res);
             } else {
-                StringBuilder res = new StringBuilder(val.ToString(format.ToString(), _nfi));
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(1, new string('0', _opts.FieldWidth - res.Length));
                 }
@@ -654,16 +672,17 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AppendNumeric(object val, bool fPos, char format) {
+        private void AppendNumericFloat(double val, bool fPos, char format) {
             if (format == 'e' || format == 'E') {
                 AppendNumericExp(val, fPos, format);
             } else {
-                // f, F, g, D
+                // f, F, g, G
                 AppendNumericDecimal(val, fPos, format);
             }
         }
 
-        private void AppendNumericExp(object val, bool fPos, char format) {
+        private void AppendNumericExp(double val, bool fPos, char format) {
+            Debug.Assert("eE".Contains(char.ToString(format)));
             Debug.Assert(_opts.Precision != UnspecifiedPrecision);
             var forceMinus = false;
             double doubleVal = (double)val;
@@ -672,8 +691,8 @@ namespace IronPython.Runtime {
                 val = 0.0;
             }
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + string.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);
-                strval = adjustExponent(strval);
+                string strval = (_opts.SignChar ? "+" : " ") + val.ToString($"{format}{_opts.Precision}", _nfi);
+                strval = AdjustExponent(strval);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
@@ -682,9 +701,9 @@ namespace IronPython.Runtime {
                 }
                 _buf.Append(strval);
             } else if (_opts.Precision < 100) {
-                //CLR formatting has a maximum precision of 100.
+                // CLR formatting has a maximum precision of 100.
                 string num = string.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
-                num = adjustExponent(num);
+                num = AdjustExponent(num);
                 if (num.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - num.Length);
                 }
@@ -696,18 +715,17 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AppendNumericDecimal(object val, bool fPos, char format) {
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + string.Format(_nfi, "{0:" + format + "}", val);
-                if (strval.Length < _opts.FieldWidth) {
-                    _buf.Append(' ', _opts.FieldWidth - strval.Length);
-                }
-                _buf.Append(strval);
-            } else if (_opts.Precision == UnspecifiedPrecision) {
-                _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
-            } else if (_opts.Precision < 100) {
-                //CLR formatting has a maximum precision of 100.
-                _buf.Append(string.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
+        private void AppendNumericDecimal(double val, bool fPos, char format) {
+            Debug.Assert("fFgG".Contains(char.ToString(format)));
+            if (_opts.Precision < 100) {
+                // CLR formatting has a maximum precision of 100.
+                var res = val.ToString($"{format}{_opts.Precision}", _nfi);
+                var pad = _opts.FieldWidth - res.Length;
+                var needsSign = fPos && (_opts.SignChar || _opts.Space);
+                if (needsSign) pad--;
+                if (pad > 0) { _buf.Append(' ', pad); }
+                if (needsSign) _buf.Append(_opts.SignChar ? '+' : ' ');
+                _buf.Append(res);
             } else {
                 AppendNumericCommon(val, format);
             }
@@ -719,7 +737,8 @@ namespace IronPython.Runtime {
                 _buf.Append(".0");
         }
 
-        private void AppendNumericCommon(object val, char format) {
+        private void AppendNumericCommon(double val, char format) {
+            Debug.Assert(_opts.Precision >= 100);
             StringBuilder res = new StringBuilder();
             res.AppendFormat("{0:" + format + "}", val);
             if (res.Length < _opts.Precision) {
@@ -738,7 +757,7 @@ namespace IronPython.Runtime {
         //  format string "e16" ==> "9.3126672485384569e+023", but we want "e+23", not "e+023"
         //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
         //  so, we have to format with "e16" and strip the zero manually
-        private string adjustExponent(string val) {
+        private static string AdjustExponent(string val) {
             if (val[val.Length - 3] == '0') {
                 return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
             } else {
@@ -746,16 +765,22 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AppendLeftAdj(object val, bool fPos, char type) {
-            var str = (type == 'e' || type == 'E') ?
-                adjustExponent(string.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)) :
-                string.Format(_nfi, "{0:" + type + "}", val);
+        private void AppendLeftAdjFloat(double val, bool fPos, char format) {
+            var str = val.ToString($"{format}{_opts.Precision}", _nfi);
+            if (format == 'e' || format == 'E') str = AdjustExponent(str);
+
+            var pad = _opts.FieldWidth - str.Length;
             if (fPos) {
-                if (_opts.SignChar) str = '+' + str;
-                else if (_opts.Space) str = ' ' + str;
+                if (_opts.SignChar) {
+                    _buf.Append('+');
+                    pad--;
+                } else if (_opts.Space) {
+                    _buf.Append(' ');
+                    pad--;
+                }
             }
             _buf.Append(str);
-            if (str.Length < _opts.FieldWidth) _buf.Append(' ', _opts.FieldWidth - str.Length);
+            if (pad > 0) _buf.Append(' ', pad);
         }
 
         private static bool NeedsAltForm(char format, char last) {

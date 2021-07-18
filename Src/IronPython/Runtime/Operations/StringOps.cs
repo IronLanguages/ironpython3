@@ -316,7 +316,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ValueError("'=' alignment not allowed in string format specifier");
             } else if (spec.ThousandsComma) {
                 throw PythonOps.ValueError("Cannot specify ',' with 's'.");
-            } else if (spec.IncludeType) {
+            } else if (spec.AlternateForm) {
                 throw PythonOps.ValueError("Alternate form (#) not allowed in string format specifier");
             }
 

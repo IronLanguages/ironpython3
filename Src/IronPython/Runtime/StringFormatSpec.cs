@@ -32,10 +32,11 @@ namespace IronPython.Runtime {
     internal class StringFormatSpec {
         internal readonly char? Fill, Alignment, Sign, Type;
         internal readonly int? Width, Precision;
-        internal readonly bool IncludeType, ThousandsComma;
+        internal readonly bool AlternateForm, ThousandsComma;
         internal readonly bool IsEmpty;
+        internal readonly bool AlignmentIsZeroPad;
 
-        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool includeType, bool isEmpty) {
+        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool alternateForm, bool isEmpty, bool alignmentIsZeroPad) {
             Fill = fill;
             Alignment = alignment;
             Sign = sign;
@@ -43,8 +44,9 @@ namespace IronPython.Runtime {
             ThousandsComma = thousandsComma;
             Precision = precision;
             Type = type;
-            IncludeType = includeType;
+            AlternateForm = alternateForm;
             IsEmpty = isEmpty;
+            AlignmentIsZeroPad = alignmentIsZeroPad;
         }
 
         internal string TypeRepr => (0x20 < Type && Type < 0x80) ? Type.ToString() : $"\\x{(int)Type:x}";
@@ -57,8 +59,9 @@ namespace IronPython.Runtime {
 
             char? fill = null, sign = null, align = null, type = null;
             int? width = null, precision = null;
-            bool includeType = false, thousandsComma = false;
+            bool alternateForm = false, thousandsComma = false;
             bool isEmpty = formatSpec.Length == 0;
+            bool alignmentIsZeroPad = false;
 
             int curOffset = 0;
             if (formatSpec.Length >= 2) {
@@ -97,7 +100,7 @@ namespace IronPython.Runtime {
             // include 0b, 0x, etc...
             if (curOffset != formatSpec.Length &&
                 formatSpec[curOffset] == '#') {
-                includeType = true;
+                alternateForm = true;
                 curOffset++;
             }
 
@@ -109,6 +112,7 @@ namespace IronPython.Runtime {
                 }
                 if (fill == null) {
                     fill = '0';
+                    alignmentIsZeroPad = true;
                 }
                 curOffset++;
             }
@@ -164,8 +168,9 @@ namespace IronPython.Runtime {
                 thousandsComma,
                 precision,
                 type,
-                includeType,
-                isEmpty
+                alternateForm,
+                isEmpty,
+                alignmentIsZeroPad
             );
         }
 
@@ -282,7 +287,7 @@ namespace IronPython.Runtime {
 
         private string GetTypeString() {
             string type = null;
-            if (IncludeType) {
+            if (AlternateForm) {
                 switch (Type) {
                     case 'X': type = "0X"; break;
                     case 'x': type = "0x"; break;

@@ -140,7 +140,11 @@ namespace IronPython.Runtime {
                     throw PythonOps.ValueError("Format specifier missing precision");
                 }
 
-                precision = ParseInt(formatSpec, ref curOffset);
+                try {
+                    precision = ParseInt(formatSpec, ref curOffset);
+                } catch (OverflowException) {
+                    throw PythonOps.ValueError("Too many decimal digits in format string");
+                }
             }
 
             // read type

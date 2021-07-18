@@ -507,7 +507,7 @@ namespace IronPython.Runtime {
 
                 // For e/E formatting, precision means the number of digits after the decimal point.
                 // One digit is displayed before the decimal point.
-                int fractionDigitsRequired = (_opts.Precision - 1);
+                int fractionDigitsRequired = _opts.Precision - 1;
                 string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
                 string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
                 if (mantissa.Length == 1) {
@@ -549,7 +549,11 @@ namespace IronPython.Runtime {
                         _opts.Precision = fraction.Length;
                     } else {
                         int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
-                        _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
+                        if (_opts.AltForm) {
+                            _opts.Precision = _opts.Precision - digitsBeforeDecimalPoint;
+                        } else {
+                            _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
+                        }
                     }
                 }
             }
@@ -566,20 +570,12 @@ namespace IronPython.Runtime {
                          type == 'F' || type == 'f' || // floating point decimal
                          type == 'G' || type == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
 
-            bool forceDot = false;
             // update our precision first...
-            if (_opts.Precision != UnspecifiedPrecision) {
-                if (_opts.Precision == 0 && _opts.AltForm) forceDot = true;
+            if (_opts.Precision == UnspecifiedPrecision) {
+                _opts.Precision = 6;
+            } else {
                 if (_opts.Precision > 50)
                     _opts.Precision = 50; // TODO: remove this restriction
-            } else {
-                // alternate form (#) specified, set precision to zero...
-                if (_opts.AltForm) {
-                    _opts.Precision = 0;
-                    forceDot = true;
-                } else {
-                    _opts.Precision = 6;
-                }
             }
 
             type = AdjustForG(type, v);
@@ -594,7 +590,7 @@ namespace IronPython.Runtime {
                 AppendNumericFloat(v, fPos, type);
             }
 
-            if (forceDot) {
+            if (_opts.Precision == 0 && _opts.AltForm) {
                 FixupAltFormDot(v);
             }
         }

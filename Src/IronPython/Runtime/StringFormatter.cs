@@ -768,16 +768,9 @@ namespace IronPython.Runtime {
             if (pad > 0) _buf.Append(' ', pad);
         }
 
-        private static bool NeedsAltForm(char format, char last) {
-            if (format == 'X' || format == 'x') return true;
-
-            if (last == '0') return false;
-            return true;
-        }
-
         private static string GetAltFormPrefixForRadix(char format, int radix) {
             switch (radix) {
-                case 8: return "0";
+                case 8: return format + "0";
                 case 16: return format + "0";
             }
             return "";
@@ -809,7 +802,7 @@ namespace IronPython.Runtime {
 
                 if (len > 0) {
                     // we account for the size of the alternate form, if we'll end up adding it.
-                    if (_opts.AltForm && NeedsAltForm(format, (!_opts.LeftAdj && _opts.ZeroPad) ? '0' : str[str.Length - 1])) {
+                    if (_opts.AltForm) {
                         len -= GetAltFormPrefixForRadix(format, radix).Length;
                     }
 
@@ -829,7 +822,7 @@ namespace IronPython.Runtime {
             }
 
             // append the alternate form
-            if (_opts.AltForm && NeedsAltForm(format, str[str.Length - 1]))
+            if (_opts.AltForm)
                 str.Append(GetAltFormPrefixForRadix(format, radix));
 
 

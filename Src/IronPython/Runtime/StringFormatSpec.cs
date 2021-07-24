@@ -334,7 +334,11 @@ namespace IronPython.Runtime {
             } while (curOffset < formatSpec.Length && char.IsDigit(formatSpec[curOffset]));
 
             if (start != curOffset) {
-                value = int.Parse(formatSpec.Substring(start, curOffset - start));
+                try {
+                    value = int.Parse(formatSpec.Substring(start, curOffset - start));
+                } catch (OverflowException) {
+                    throw PythonOps.ValueError("Too many decimal digits in format string");
+                }
             }
             return value;
         }

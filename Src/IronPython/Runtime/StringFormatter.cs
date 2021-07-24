@@ -9,7 +9,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -367,9 +370,14 @@ namespace IronPython.Runtime {
             throw PythonOps.KeyError(key);
         }
 
-        private object GetIntegerValue(out bool fPos) {
+        private object GetIntegerValue(out bool fPos, bool allowDouble = true) {
             object val;
             int intVal;
+
+            if (!allowDouble && _opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>) {
+                // TODO: this should fail in 3.5
+                PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
+            }
 
             if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out intVal)) {
                 val = intVal;
@@ -777,7 +785,7 @@ namespace IronPython.Runtime {
         /// special forms for Python.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos));
+            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos, allowDouble: false));
 
             if (!fPos) {
                 // if negative number, the leading space has no impact

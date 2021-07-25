@@ -301,6 +301,11 @@ class FormatTest(unittest.TestCase):
             sep = localeconv['thousands_sep']
             point = localeconv['decimal_point']
 
+            # ironpython has non-empty thousands_sep+grouping which is still technically valid?
+            grouping = localeconv['grouping']
+            if not grouping or grouping[0] == locale.CHAR_MAX:
+                sep = ''
+
             text = format(123456789, "n")
             self.assertIn(sep, text)
             self.assertEqual(text.replace(sep, ''), '123456789')

@@ -9,7 +9,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -367,9 +370,14 @@ namespace IronPython.Runtime {
             throw PythonOps.KeyError(key);
         }
 
-        private object GetIntegerValue(out bool fPos) {
+        private object GetIntegerValue(out bool fPos, bool allowDouble = true) {
             object val;
             int intVal;
+
+            if (!allowDouble && _opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>) {
+                // TODO: this should fail in 3.5
+                PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
+            }
 
             if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out intVal)) {
                 val = intVal;
@@ -507,7 +515,7 @@ namespace IronPython.Runtime {
 
                 // For e/E formatting, precision means the number of digits after the decimal point.
                 // One digit is displayed before the decimal point.
-                int fractionDigitsRequired = (_opts.Precision - 1);
+                int fractionDigitsRequired = _opts.Precision - 1;
                 string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
                 string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
                 if (mantissa.Length == 1) {
@@ -549,7 +557,11 @@ namespace IronPython.Runtime {
                         _opts.Precision = fraction.Length;
                     } else {
                         int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
-                        _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
+                        if (_opts.AltForm) {
+                            _opts.Precision = _opts.Precision - digitsBeforeDecimalPoint;
+                        } else {
+                            _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
+                        }
                     }
                 }
             }
@@ -566,20 +578,12 @@ namespace IronPython.Runtime {
                          type == 'F' || type == 'f' || // floating point decimal
                          type == 'G' || type == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
 
-            bool forceDot = false;
             // update our precision first...
-            if (_opts.Precision != UnspecifiedPrecision) {
-                if (_opts.Precision == 0 && _opts.AltForm) forceDot = true;
+            if (_opts.Precision == UnspecifiedPrecision) {
+                _opts.Precision = 6;
+            } else {
                 if (_opts.Precision > 50)
                     _opts.Precision = 50; // TODO: remove this restriction
-            } else {
-                // alternate form (#) specified, set precision to zero...
-                if (_opts.AltForm) {
-                    _opts.Precision = 0;
-                    forceDot = true;
-                } else {
-                    _opts.Precision = 6;
-                }
             }
 
             type = AdjustForG(type, v);
@@ -593,11 +597,8 @@ namespace IronPython.Runtime {
             } else {
                 AppendNumericFloat(v, fPos, type);
             }
-            if (!fPos && v > -1 && _buf[0] != '-') {
-                FixupFloatMinus();
-            }
 
-            if (forceDot) {
+            if (_opts.Precision == 0 && _opts.AltForm) {
                 FixupAltFormDot(v);
             }
         }
@@ -619,36 +620,23 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void FixupFloatMinus() {
-            // Python always appends a - even if precision is 0 and the value would appear to be zero.
-            bool fNeedMinus = true;
-            for (int i = 0; i < _buf.Length; i++) {
-                if (_buf[i] != '.' && _buf[i] != '0' && _buf[i] != ' ') {
-                    fNeedMinus = false;
-                    break;
-                }
-            }
+        private static readonly bool needsFixupFloatMinus = $"{-0.1:f0}" == "0"; // fixed in .NET Core 3.1
 
-            if (fNeedMinus) {
-                if (_opts.FieldWidth != 0) {
-                    // trim us back down to the correct field width...
-                    if (_buf[_buf.Length - 1] == ' ') {
-                        _buf.Insert(0, "-");
-                        _buf.Remove(_buf.Length - 1, 1);
-                    } else {
-                        int index = 0;
-                        while (_buf[index] == ' ') index++;
-                        if (index > 0) index--;
-                        _buf[index] = '-';
-                    }
-                } else {
-                    _buf.Insert(0, "-");
-                }
+        /// <summary>
+        /// Ensure negative values rounded to 0 show up as -0.
+        /// </summary>
+        private static string FixupFloatMinus(double val, bool fPos, string x) {
+            if (needsFixupFloatMinus && !fPos && val >= -0.5 && x[0] != '-') {
+                Debug.Assert(x[0] == '0');
+                return "-" + x;
             }
+            return x;
         }
 
         private void AppendZeroPadFloat(double val, bool fPos, char format) {
-            StringBuilder res = new StringBuilder(val.ToString($"{format}{_opts.Precision}", _nfi));
+            var strVal = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
+            StringBuilder res = new StringBuilder(strVal);
+            if (_opts.Precision == 0 && _opts.AltForm) res.Append('.');
             if (fPos) {
                 if (res.Length < _opts.FieldWidth) {
                     res.Insert(0, new string('0', _opts.FieldWidth - res.Length));
@@ -720,6 +708,7 @@ namespace IronPython.Runtime {
             if (_opts.Precision < 100) {
                 // CLR formatting has a maximum precision of 100.
                 var res = val.ToString($"{format}{_opts.Precision}", _nfi);
+                res = FixupFloatMinus(val, fPos, res);
                 var pad = _opts.FieldWidth - res.Length;
                 var needsSign = fPos && (_opts.SignChar || _opts.Space);
                 if (needsSign) pad--;
@@ -766,7 +755,7 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdjFloat(double val, bool fPos, char format) {
-            var str = val.ToString($"{format}{_opts.Precision}", _nfi);
+            var str = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
             if (format == 'e' || format == 'E') str = AdjustExponent(str);
 
             var pad = _opts.FieldWidth - str.Length;
@@ -783,16 +772,9 @@ namespace IronPython.Runtime {
             if (pad > 0) _buf.Append(' ', pad);
         }
 
-        private static bool NeedsAltForm(char format, char last) {
-            if (format == 'X' || format == 'x') return true;
-
-            if (last == '0') return false;
-            return true;
-        }
-
         private static string GetAltFormPrefixForRadix(char format, int radix) {
             switch (radix) {
-                case 8: return "0";
+                case 8: return format + "0";
                 case 16: return format + "0";
             }
             return "";
@@ -803,7 +785,7 @@ namespace IronPython.Runtime {
         /// special forms for Python.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos));
+            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos, allowDouble: false));
 
             if (!fPos) {
                 // if negative number, the leading space has no impact
@@ -824,7 +806,7 @@ namespace IronPython.Runtime {
 
                 if (len > 0) {
                     // we account for the size of the alternate form, if we'll end up adding it.
-                    if (_opts.AltForm && NeedsAltForm(format, (!_opts.LeftAdj && _opts.ZeroPad) ? '0' : str[str.Length - 1])) {
+                    if (_opts.AltForm) {
                         len -= GetAltFormPrefixForRadix(format, radix).Length;
                     }
 
@@ -844,7 +826,7 @@ namespace IronPython.Runtime {
             }
 
             // append the alternate form
-            if (_opts.AltForm && NeedsAltForm(format, str[str.Length - 1]))
+            if (_opts.AltForm)
                 str.Append(GetAltFormPrefixForRadix(format, radix));
 
 

@@ -71,7 +71,7 @@ class FormatTest(unittest.TestCase):
         testformat("%#.*g", (110, -1.e+49/3.))
         testformat("%#.*g", (110, -1.e+100/3.))
         # test some ridiculously large precision, expect overflow
-        testformat('%12.*f', (123456, 1.0))
+        testformat('%12.*f', (123456, 1.0), overflowok=True)
 
         # check for internal overflow validation on length of precision
         # these tests should no longer cause overflow in Python
@@ -300,6 +300,11 @@ class FormatTest(unittest.TestCase):
             localeconv = locale.localeconv()
             sep = localeconv['thousands_sep']
             point = localeconv['decimal_point']
+
+            # ironpython has non-empty thousands_sep+grouping which is still technically valid?
+            grouping = localeconv['grouping']
+            if not grouping or grouping[0] == locale.CHAR_MAX:
+                sep = ''
 
             text = format(123456789, "n")
             self.assertIn(sep, text)

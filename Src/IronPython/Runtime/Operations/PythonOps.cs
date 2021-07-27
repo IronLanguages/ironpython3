@@ -393,7 +393,8 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool IsInstance(CodeContext/*!*/ context, object? o, PythonTuple typeinfo) {
             PythonContext pyContext = context.LanguageContext;
-            foreach (object? type in typeinfo) {
+            // loop on the underlying data object - https://github.com/IronLanguages/ironpython3/issues/1255
+            foreach (object? type in typeinfo._data) {
                 try {
                     PythonOps.FunctionPushFrame(pyContext);
                     if (type is PythonType) {

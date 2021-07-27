@@ -36,5 +36,14 @@ class IsInstanceTest(unittest.TestCase):
             self.assertNotEqual(type(0), type(l))
         self.assertTrue(isinstance(l, int))
 
+    def test_isinstance_tuple_subclass(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1255"""
+        class T(tuple):
+            def __iter__(self):
+                yield self
+
+        # isinstance should not be invoking __iter__ on the subclass
+        self.assertFalse(isinstance(3, T()))
+
 if __name__ == '__main__':
     unittest.main()

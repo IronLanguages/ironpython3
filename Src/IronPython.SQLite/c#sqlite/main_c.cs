@@ -2232,7 +2232,7 @@ static int sqlite3ParseUri(
       while ( iIn < nUri && zUri[iIn] != '/' )
         iIn++;
 
-      if ( iIn != 7 && ( iIn != 16 || String.Compare( "localhost", zUri.Substring( 7, 9 ), StringComparison.OrdinalIgnoreCase ) != 0 ) )//memcmp("localhost", &zUri[7], 9)) )
+      if ( iIn != 7 && ( iIn != 16 || !string.Equals("localhost", zUri.Substring( 7, 9 ), StringComparison.OrdinalIgnoreCase)) )//memcmp("localhost", &zUri[7], 9)) )
       {
         pzErrMsg = sqlite3_mprintf("invalid uri authority: %.*s", 
             iIn-7, zUri.Substring(7));

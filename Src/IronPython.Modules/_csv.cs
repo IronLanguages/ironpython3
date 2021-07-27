@@ -320,14 +320,14 @@ The Dialect type records CSV parsing and generation options.")]
 
             [SpecialName]
             public void DeleteMember(CodeContext/*!*/ context, string name) {
-                if (string.Compare(name, "delimiter") == 0 ||
-                    string.Compare(name, "skipinitialspace") == 0 ||
-                    string.Compare(name, "doublequote") == 0 ||
-                    string.Compare(name, "strict") == 0 ||
-                    string.Compare(name, "escapechar") == 0 ||
-                    string.Compare(name, "lineterminator") == 0 ||
-                    string.Compare(name, "quotechar") == 0 ||
-                    string.Compare(name, "quoting") == 0) {
+                if (string.Equals(name, "delimiter") ||
+                    string.Equals(name, "skipinitialspace") ||
+                    string.Equals(name, "doublequote")||
+                    string.Equals(name, "strict") ||
+                    string.Equals(name, "escapechar") ||
+                    string.Equals(name, "lineterminator") ||
+                    string.Equals(name, "quotechar") ||
+                    string.Equals(name, "quoting")) {
                     throw PythonOps.AttributeError("attribute '{0}' of " +
                         "'_csv.Dialect' objects is not writable", name);
                 } else {
@@ -338,14 +338,14 @@ The Dialect type records CSV parsing and generation options.")]
 
             [SpecialName]
             public void SetMember(CodeContext/*!*/ context, string name, object value) {
-                if (string.Compare(name, "delimiter") == 0 ||
-                    string.Compare(name, "skipinitialspace") == 0 ||
-                    string.Compare(name, "doublequote") == 0 ||
-                    string.Compare(name, "strict") == 0 ||
-                    string.Compare(name, "escapechar") == 0 ||
-                    string.Compare(name, "lineterminator") == 0 ||
-                    string.Compare(name, "quotechar") == 0 ||
-                    string.Compare(name, "quoting") == 0) {
+                if (string.Equals(name, "delimiter") ||
+                    string.Equals(name, "skipinitialspace") ||
+                    string.Equals(name, "doublequote") ||
+                    string.Equals(name, "strict") ||
+                    string.Equals(name, "escapechar") ||
+                    string.Equals(name, "lineterminator") ||
+                    string.Equals(name, "quotechar") ||
+                    string.Equals(name, "quoting")) {
                     throw PythonOps.AttributeError("attribute '{0}' of " +
                         "'_csv.Dialect' objects is not writable", name);
                 } else {

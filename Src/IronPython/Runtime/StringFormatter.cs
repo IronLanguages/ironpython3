@@ -278,7 +278,7 @@ namespace IronPython.Runtime {
                 _curCh = _str[_index++];
                 // possibility: "8.f", "8.0f", or "8.2f"
                 _opts.Precision = ReadNumberOrStar();
-                if (_opts.Precision > 116) throw PythonOps.OverflowError("formatted integer is too long (precision too large?)");
+                if (_opts.Precision > 1048575) throw PythonOps.OverflowError("precision too large"); // CPython allows for larger precision values but what's the point...
             } else {
                 _opts.Precision = UnspecifiedPrecision;
             }
@@ -581,9 +581,6 @@ namespace IronPython.Runtime {
             // update our precision first...
             if (_opts.Precision == UnspecifiedPrecision) {
                 _opts.Precision = 6;
-            } else {
-                if (_opts.Precision > 50)
-                    _opts.Precision = 50; // TODO: remove this restriction
             }
 
             format = AdjustForG(format, val);
@@ -629,9 +626,13 @@ namespace IronPython.Runtime {
                     }
                 }
                 return res;
-            }
-            else {
-                res = val.ToString($"{format}{_opts.Precision}", _nfi);
+            } else {
+                if (_opts.Precision < 100 || supportsPrecisionGreaterThan99) {
+                    res = val.ToString($"{format}{_opts.Precision}", _nfi);
+                } else {
+                    res = val.ToString($"{format}99", _nfi);
+                    res += new string('0', _opts.Precision - 99);
+                }
                 res = FixupFloatMinus(val, fPos, res);
                 if (fPos) {
                     if (_opts.SignChar) {

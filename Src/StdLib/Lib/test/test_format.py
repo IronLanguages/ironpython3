@@ -71,7 +71,7 @@ class FormatTest(unittest.TestCase):
         testformat("%#.*g", (110, -1.e+49/3.))
         testformat("%#.*g", (110, -1.e+100/3.))
         # test some ridiculously large precision, expect overflow
-        testformat('%12.*f', (123456, 1.0), overflowok=True)
+        testformat('%12.*f', (123456, 1.0))
 
         # check for internal overflow validation on length of precision
         # these tests should no longer cause overflow in Python

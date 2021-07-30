@@ -569,14 +569,14 @@ namespace IronPython.Runtime {
             return type;
         }
 
-        private void AppendFloat(char type) {
-            double v;
-            if (!Converter.TryConvertToDouble(_opts.Value, out v))
+        private void AppendFloat(char format) {
+            double val;
+            if (!Converter.TryConvertToDouble(_opts.Value, out val))
                 throw PythonOps.TypeError("float argument required");
 
-            Debug.Assert(type == 'E' || type == 'e' || // scientific exponential format
-                         type == 'F' || type == 'f' || // floating point decimal
-                         type == 'G' || type == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
+            Debug.Assert(format == 'E' || format == 'e' || // scientific exponential format
+                         format == 'F' || format == 'f' || // floating point decimal
+                         format == 'G' || format == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
 
             // update our precision first...
             if (_opts.Precision == UnspecifiedPrecision) {
@@ -586,16 +586,32 @@ namespace IronPython.Runtime {
                     _opts.Precision = 50; // TODO: remove this restriction
             }
 
-            type = AdjustForG(type, v);
+            format = AdjustForG(format, val);
 
-            var fPos = DoubleOps.Sign(v) >= 0 || double.IsNaN(v);
+            var fPos = DoubleOps.Sign(val) >= 0 || double.IsNaN(val);
+            var str = FormatWithPrecision(val, fPos, format);
+            var pad = _opts.FieldWidth - str.Length;
+
             // then append
             if (_opts.LeftAdj) {
-                AppendLeftAdjFloat(v, fPos, type);
+                _buf.Append(str);
+                if (pad > 0) _buf.Append(' ', pad);
             } else if (_opts.ZeroPad) {
-                AppendZeroPadFloat(v, fPos, type);
+                if (pad > 0) {
+                    if (!fPos || _opts.SignChar || _opts.Space) {
+                        _buf.Append(str[0]);
+                        _buf.Append('0', pad);
+                        _buf.Append(str.Substring(1));
+                    } else {
+                        _buf.Append('0', pad);
+                        _buf.Append(str);
+                    }
+                } else {
+                    _buf.Append(str);
+                }
             } else {
-                AppendNumericFloat(v, fPos, type);
+                if (pad > 0) _buf.Append(' ', pad);
+                _buf.Append(str);
             }
         }
 
@@ -669,53 +685,6 @@ namespace IronPython.Runtime {
                     return val;
                 }
             }
-        }
-
-        private void AppendZeroPadFloat(double val, bool fPos, char format) {
-            var strVal = FormatWithPrecision(val, fPos, format);
-            var pad = _opts.FieldWidth - strVal.Length;
-            if (pad > 0) {
-                if (!fPos || _opts.SignChar || _opts.Space) {
-                    _buf.Append(strVal[0]);
-                    _buf.Append('0', pad);
-                    _buf.Append(strVal.Substring(1));
-                } else {
-                    _buf.Append('0', pad);
-                    _buf.Append(strVal);
-                }
-            } else {
-                _buf.Append(strVal);
-            }
-        }
-
-        private void AppendNumericFloat(double val, bool fPos, char format) {
-            if (_opts.Precision < 100) {
-                // CLR formatting has a maximum precision of 100.
-                var strVal = FormatWithPrecision(val, fPos, format);
-                var pad = _opts.FieldWidth - strVal.Length;
-                if (pad > 0) {
-                    _buf.Append(' ', pad);
-                }
-                _buf.Append(strVal);
-            } else {
-                StringBuilder res = new StringBuilder();
-                res.AppendFormat("{0:" + format + "}", val);
-                if (res.Length < _opts.Precision) {
-                    res.Insert(0, new string('0', _opts.Precision - res.Length));
-                }
-                if (res.Length < _opts.FieldWidth) {
-                    res.Insert(0, new string(' ', _opts.FieldWidth - res.Length));
-                }
-                _buf.Append(res.ToString());
-            }
-        }
-
-        private void AppendLeftAdjFloat(double val, bool fPos, char format) {
-            var str = FormatWithPrecision(val, fPos, format);
-
-            var pad = _opts.FieldWidth - str.Length;
-            _buf.Append(str);
-            if (pad > 0) _buf.Append(' ', pad);
         }
 
         private static string GetAltFormPrefixForRadix(char format, int radix) {

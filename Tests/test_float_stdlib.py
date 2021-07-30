@@ -47,7 +47,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_float.InfNanTest('test_nan_signs')))
         suite.addTest(test.test_float.ReprTestCase('test_repr'))
         suite.addTest(unittest.expectedFailure(test.test_float.ReprTestCase('test_short_repr')))
-        suite.addTest(unittest.expectedFailure(test.test_float.RoundTestCase('test_format_specials')))
+        suite.addTest(test.test_float.RoundTestCase('test_format_specials'))
         suite.addTest(test.test_float.RoundTestCase('test_inf_nan'))
         suite.addTest(unittest.expectedFailure(test.test_float.RoundTestCase('test_large_n')))
         suite.addTest(unittest.expectedFailure(test.test_float.RoundTestCase('test_matches_float_format')))

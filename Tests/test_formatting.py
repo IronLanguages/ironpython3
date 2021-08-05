@@ -398,13 +398,6 @@ class FormattingTest(IronPythonTestCase):
         expected_failures = []
         if is_cli:
             expected_failures = """
-%#.2g 0 -> 0.0
-%#.3g 0 -> 0.00
-%#.4g 0 -> 0.000
-%#.2g 0.2 -> 0.20
-%#.3g 0.2 -> 0.200
-%#.4g 0.2 -> 0.2000
-%#.10g 0.2 -> 0.2000000000
 %r 0.03 -> 0.03
 %r 0.04 -> 0.04
 %r 0.05 -> 0.05

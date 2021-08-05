@@ -551,17 +551,13 @@ namespace IronPython.Runtime {
                     type = (type == 'G') ? 'F' : 'f';
 
                     // For f/F formatting, precision means the number of digits after the decimal point.
-                    var decimalPointIdx = fixedPointForm.IndexOf('.');
-                    string fraction = decimalPointIdx == -1 ? string.Empty : fixedPointForm.Substring(decimalPointIdx + 1);
-                    if (absV < 1.0) {
-                        _opts.Precision = fraction.Length;
+                    var mostSignificantDigit = 1 + (absV == 0 ? 0 : (int)Math.Floor(Math.Log10(absV)));
+                    if (_opts.AltForm) {
+                        _opts.Precision = _opts.Precision - mostSignificantDigit;
                     } else {
-                        int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
-                        if (_opts.AltForm) {
-                            _opts.Precision = _opts.Precision - digitsBeforeDecimalPoint;
-                        } else {
-                            _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
-                        }
+                        var decimalPointIdx = fixedPointForm.IndexOf('.');
+                        var fractionLength = decimalPointIdx == -1 ? 0 : (fixedPointForm.Length - decimalPointIdx - 1);
+                        _opts.Precision = Math.Min(_opts.Precision - mostSignificantDigit, fractionLength);
                     }
                 }
             }

@@ -594,7 +594,7 @@ namespace IronPython.Runtime {
                     if (!fPos || _opts.SignChar || _opts.Space) {
                         _buf.Append(str[0]);
                         _buf.Append('0', pad);
-                        _buf.Append(str.Substring(1));
+                        _buf.Append(str, 1, str.Length - 1);
                     } else {
                         _buf.Append('0', pad);
                         _buf.Append(str);
@@ -677,7 +677,7 @@ namespace IronPython.Runtime {
             //  so, we have to format with "e16" and strip the zero manually
             static string AdjustExponent(string val) {
                 if (val[val.Length - 3] == '0') {
-                    return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
+                    return val.Remove(val.Length - 3, 1);
                 } else {
                     return val;
                 }

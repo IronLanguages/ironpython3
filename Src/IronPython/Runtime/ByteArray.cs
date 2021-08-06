@@ -48,6 +48,10 @@ namespace IronPython.Runtime {
             _bytes = bytes;
         }
 
+        private ByteArray(ReadOnlySpan<byte> bytes) {
+            _bytes = new ArrayData<byte>(bytes);
+        }
+
         internal ByteArray(IEnumerable<byte> bytes) {
             _bytes = new ArrayData<byte>(bytes);
         }
@@ -109,10 +113,6 @@ namespace IronPython.Runtime {
                 _bytes.Clear();
                 _bytes.AddRange(StringOps.encode(context, source, encoding, errors));
             }
-        }
-
-        internal static ByteArray Make(List<byte> bytes) {
-            return new ByteArray(bytes);
         }
 
         [PythonHidden]
@@ -1077,6 +1077,15 @@ namespace IronPython.Runtime {
                 return "bytearray(" + _bytes.BytesRepr() + ")";
             }
         }
+
+        public ByteArray __mod__(CodeContext context, object? value)
+            => new ByteArray(StringFormatter.FormatBytes(context, UnsafeByteList.AsByteSpan(), value).AsSpan());
+
+        public ByteArray __rmod__(CodeContext context, [NotNull] ByteArray value)
+            => new ByteArray(StringFormatter.FormatBytes(context, value.UnsafeByteList.AsByteSpan(), this).AsSpan());
+
+        [return: MaybeNotImplemented]
+        public NotImplementedType __rmod__(CodeContext context, object? value) => NotImplementedType.Value;
 
         public virtual string __str__(CodeContext context) {
             if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {

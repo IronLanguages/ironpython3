@@ -869,6 +869,15 @@ namespace IronPython.Runtime {
         public IEnumerator<int> __iter__()
             => IListOfByteOps.BytesEnumerator(this);
 
+        public Bytes __mod__(CodeContext context, object? value)
+            => Make(StringFormatter.FormatBytes(context, UnsafeByteArray, value));
+
+        public Bytes __rmod__(CodeContext context, [NotNull] Bytes value)
+            => Make(StringFormatter.FormatBytes(context, value.UnsafeByteArray, this));
+
+        [return: MaybeNotImplemented]
+        public NotImplementedType __rmod__(CodeContext context, object? value) => NotImplementedType.Value;
+
         public virtual string __str__(CodeContext context) {
             if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {
                 PythonOps.Warn(context, PythonExceptions.BytesWarning, "str() on a bytes instance");
@@ -1006,7 +1015,7 @@ namespace IronPython.Runtime {
             return _bytes.AsMemory();
         }
 
-        private static bool TryInvokeBytesOperator(CodeContext context, object? obj, [NotNullWhen(true)] out Bytes? bytes) {
+        internal static bool TryInvokeBytesOperator(CodeContext context, object? obj, [NotNullWhen(true)] out Bytes? bytes) {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, obj, "__bytes__", out object? res)) {
                 if (res is Bytes b) {
                     bytes = b;

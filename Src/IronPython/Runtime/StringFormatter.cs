@@ -36,6 +36,8 @@ namespace IronPython.Runtime {
         // Should ddd.0 be displayed as "ddd" or "ddd.0". "'%g' % ddd.0" needs "ddd", but str(ddd.0) needs "ddd.0"
         private bool _trailingZeroAfterWholeFloat;
 
+        private bool _asBytes;
+
         private StringBuilder _buf;
 
         // This is a ThreadStatic since so that formatting operations on one thread do not interfere with other threads
@@ -92,6 +94,9 @@ namespace IronPython.Runtime {
         public static string Format(CodeContext/*!*/ context, string str, object? data, bool trailingZeroAfterWholeFloat = false)
             => new StringFormatter(context, str, data) { _trailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
 
+        internal static byte[] FormatBytes(CodeContext/*!*/ context, ReadOnlySpan<byte> str, object? data)
+            => new StringFormatter(context, str.MakeString(), data) { _asBytes = true }.Format().MakeByteArray();
+
         #endregion
 
         #region Private APIs
@@ -129,7 +134,7 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            string? key = ReadMappingKey();
+            var key = ReadMappingKey();
 
             _opts = new FormatSettings();
 
@@ -159,7 +164,7 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>The key name enclosed between the '%(key)s', 
         /// or null if there are no paranthesis such as '%s'.</returns>
-        private string? ReadMappingKey() {
+        private object? ReadMappingKey() {
             // Caller has set _curCh to the character past the %, and
             // _index to 2 characters past the original '%'.
             Debug.Assert(_curCh == _str[_index - 1]);
@@ -210,6 +215,8 @@ namespace IronPython.Runtime {
                         throw PythonOps.ValueError("incomplete format");
                     }
                     _curCh = _str[_index++];
+
+                    if (_asBytes) return Bytes.Make(key.MakeByteArray());
                     return key;
                 }
 
@@ -328,7 +335,13 @@ namespace IronPython.Runtime {
                 // string (repr() version)
                 case 'r': AppendRepr(); return;
                 // string (str() version)
-                case 's': AppendString(); return;
+                case 's':
+                    if (_asBytes) goto case 'b';
+                    AppendString(); return;
+                // bytes
+                case 'b':
+                    if (!_asBytes) goto default;
+                    AppendBytes(); return;
                 default:
                     if (_curCh > 0xff)
                         throw PythonOps.ValueError("unsupported format character '{0}' (0x{1:X}) at index {2}", '?', (int)_curCh, _index - 1);
@@ -351,7 +364,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("not enough arguments for format string");
         }
 
-        private object? GetKey(string key) {
+        private object? GetKey(object key) {
             if (_data is IDictionary<object, object> map) {
                 if (map.TryGetValue(key, out object? res)) {
                     return res;
@@ -392,7 +405,29 @@ namespace IronPython.Runtime {
         }
 
         private void AppendChar() {
-            char val = Converter.ExplicitConvertToChar(_opts.Value);
+            char val;
+            if (_asBytes) {
+                if (_opts.Value is Bytes bytes && bytes.Count == 1) {
+                    val = (char)bytes[0];
+                } else if (_opts.Value is ByteArray byteArray && byteArray.Count == 1) {
+                    val = (char)byteArray[0];
+                } else if (Converter.TryConvertToIndex(_opts.Value, out object index)) {
+                    try {
+                        val = index switch {
+                            int i => (char)checked((byte)i),
+                            BigInteger bi => (char)checked((byte)bi),
+                            _ => throw new InvalidOperationException(), // unreachable
+                        };
+                    } catch (OverflowException) {
+                        throw PythonOps.ValueError("%c arg not in range(256)");
+                    }
+                }
+                else {
+                    throw PythonOps.TypeError("%c requires an integer in range(256) or a single byte");
+                }
+            } else {
+                val = Converter.ExplicitConvertToChar(_opts.Value);
+            }
             if (_opts.FieldWidth > 1) {
                 if (!_opts.LeftAdj) {
                     _buf.Append(' ', _opts.FieldWidth - 1);
@@ -819,6 +854,17 @@ namespace IronPython.Runtime {
 
         private void AppendOctal() {
             AppendBase('o', 8);
+        }
+
+        private void AppendBytes() {
+            Debug.Assert(_asBytes);
+            if (_opts.Value is Bytes bytes || Bytes.TryInvokeBytesOperator(_context, _opts.Value, out bytes!)) {
+                AppendString(StringOps.Latin1Encoding.GetString(bytes.UnsafeByteArray));
+            } else if (_opts.Value is ByteArray byteArray) {
+                AppendString(StringOps.Latin1Encoding.GetString(byteArray.UnsafeByteList.AsByteSpan()));
+            } else {
+                throw PythonOps.TypeError($"%b requires bytes, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
+            }
         }
 
         private void AppendString() {

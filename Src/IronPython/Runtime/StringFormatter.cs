@@ -278,7 +278,7 @@ namespace IronPython.Runtime {
                 _curCh = _str[_index++];
                 // possibility: "8.f", "8.0f", or "8.2f"
                 _opts.Precision = ReadNumberOrStar();
-                if (_opts.Precision > 116) throw PythonOps.OverflowError("formatted integer is too long (precision too large?)");
+                if (_opts.Precision > 1048575) throw PythonOps.OverflowError("precision too large"); // CPython allows for larger precision values but what's the point...
             } else {
                 _opts.Precision = UnspecifiedPrecision;
             }
@@ -551,17 +551,13 @@ namespace IronPython.Runtime {
                     type = (type == 'G') ? 'F' : 'f';
 
                     // For f/F formatting, precision means the number of digits after the decimal point.
-                    var decimalPointIdx = fixedPointForm.IndexOf('.');
-                    string fraction = decimalPointIdx == -1 ? string.Empty : fixedPointForm.Substring(decimalPointIdx + 1);
-                    if (absV < 1.0) {
-                        _opts.Precision = fraction.Length;
+                    var mostSignificantDigit = 1 + (absV == 0 ? 0 : (int)Math.Floor(Math.Log10(absV)));
+                    if (_opts.AltForm) {
+                        _opts.Precision = _opts.Precision - mostSignificantDigit;
                     } else {
-                        int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
-                        if (_opts.AltForm) {
-                            _opts.Precision = _opts.Precision - digitsBeforeDecimalPoint;
-                        } else {
-                            _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
-                        }
+                        var decimalPointIdx = fixedPointForm.IndexOf('.');
+                        var fractionLength = decimalPointIdx == -1 ? 0 : (fixedPointForm.Length - decimalPointIdx - 1);
+                        _opts.Precision = Math.Min(_opts.Precision - mostSignificantDigit, fractionLength);
                     }
                 }
             }
@@ -569,207 +565,123 @@ namespace IronPython.Runtime {
             return type;
         }
 
-        private void AppendFloat(char type) {
-            double v;
-            if (!Converter.TryConvertToDouble(_opts.Value, out v))
+        private void AppendFloat(char format) {
+            double val;
+            if (!Converter.TryConvertToDouble(_opts.Value, out val))
                 throw PythonOps.TypeError("float argument required");
 
-            Debug.Assert(type == 'E' || type == 'e' || // scientific exponential format
-                         type == 'F' || type == 'f' || // floating point decimal
-                         type == 'G' || type == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
+            Debug.Assert(format == 'E' || format == 'e' || // scientific exponential format
+                         format == 'F' || format == 'f' || // floating point decimal
+                         format == 'G' || format == 'g');  // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
 
             // update our precision first...
             if (_opts.Precision == UnspecifiedPrecision) {
                 _opts.Precision = 6;
-            } else {
-                if (_opts.Precision > 50)
-                    _opts.Precision = 50; // TODO: remove this restriction
             }
 
-            type = AdjustForG(type, v);
+            format = AdjustForG(format, val);
 
-            var fPos = DoubleOps.Sign(v) >= 0;
+            var fPos = DoubleOps.Sign(val) >= 0 || double.IsNaN(val);
+            var str = FormatWithPrecision(val, fPos, format);
+            var pad = _opts.FieldWidth - str.Length;
+
             // then append
             if (_opts.LeftAdj) {
-                AppendLeftAdjFloat(v, fPos, type);
+                _buf.Append(str);
+                if (pad > 0) _buf.Append(' ', pad);
             } else if (_opts.ZeroPad) {
-                AppendZeroPadFloat(v, fPos, type);
-            } else {
-                AppendNumericFloat(v, fPos, type);
-            }
-
-            if (_opts.Precision == 0 && _opts.AltForm) {
-                FixupAltFormDot(v);
-            }
-        }
-
-        private void FixupAltFormDot(double v) {
-            if (!double.IsInfinity(v) && !double.IsNaN(v)) {
-                _buf.Append('.');
-            }
-            if (_opts.FieldWidth != 0) {
-                // try and remove the extra character we're adding.
-                for (int i = 0; i < _buf.Length; i++) {
-                    if (_buf[i] == ' ' || _buf[i] == '0') {
-                        _buf.Remove(i, 1);
-                        break;
-                    } else if (_buf[i] != '-' && _buf[i] != '+') {
-                        break;
+                if (pad > 0) {
+                    if (!fPos || _opts.SignChar || _opts.Space) {
+                        _buf.Append(str[0]);
+                        _buf.Append('0', pad);
+                        _buf.Append(str, 1, str.Length - 1);
+                    } else {
+                        _buf.Append('0', pad);
+                        _buf.Append(str);
                     }
+                } else {
+                    _buf.Append(str);
                 }
+            } else {
+                if (pad > 0) _buf.Append(' ', pad);
+                _buf.Append(str);
             }
         }
 
         private static readonly bool needsFixupFloatMinus = $"{-0.1:f0}" == "0"; // fixed in .NET Core 3.1
 
-        /// <summary>
-        /// Ensure negative values rounded to 0 show up as -0.
-        /// </summary>
-        private static string FixupFloatMinus(double val, bool fPos, string x) {
-            if (needsFixupFloatMinus && !fPos && val >= -0.5 && x[0] != '-') {
-                Debug.Assert(x[0] == '0');
-                return "-" + x;
-            }
-            return x;
-        }
-
-        private void AppendZeroPadFloat(double val, bool fPos, char format) {
-            var strVal = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
-            StringBuilder res = new StringBuilder(strVal);
-            if (_opts.Precision == 0 && _opts.AltForm) res.Append('.');
-            if (fPos) {
-                if (res.Length < _opts.FieldWidth) {
-                    res.Insert(0, new string('0', _opts.FieldWidth - res.Length));
-                }
-                if (_opts.SignChar || _opts.Space) {
-                    char signOrSpace = _opts.SignChar ? '+' : ' ';
-                    // then if we ended up with a leading zero replace it, otherwise
-                    // append the space / + to the front.
-                    if (res[0] == '0' && res[1] != '.') {
-                        res[0] = signOrSpace;
-                    } else {
-                        res.Insert(0, signOrSpace.ToString());
+        private string FormatWithPrecision(double val, bool fPos, char format) {
+            string res;
+            if (double.IsNaN(val) || double.IsInfinity(val)) {
+                res = val.ToString(_nfi);
+                if (fPos) {
+                    if (_opts.SignChar) {
+                        res = "+" + res;
+                    } else if (_opts.Space) {
+                        res = " " + res;
                     }
                 }
-                _buf.Append(res);
+                return res;
             } else {
-                if (res.Length < _opts.FieldWidth) {
-                    res.Insert(1, new string('0', _opts.FieldWidth - res.Length));
+                if (_opts.Precision < 100 || supportsPrecisionGreaterThan99) {
+                    res = val.ToString($"{format}{_opts.Precision}", _nfi);
+                } else {
+                    res = val.ToString($"{format}99", _nfi);
+                    res += new string('0', _opts.Precision - 99);
                 }
-                _buf.Append(res);
-            }
-        }
-
-        private void AppendNumericFloat(double val, bool fPos, char format) {
-            if (format == 'e' || format == 'E') {
-                AppendNumericExp(val, fPos, format);
-            } else {
-                // f, F, g, G
-                AppendNumericDecimal(val, fPos, format);
-            }
-        }
-
-        private void AppendNumericExp(double val, bool fPos, char format) {
-            Debug.Assert("eE".Contains(char.ToString(format)));
-            Debug.Assert(_opts.Precision != UnspecifiedPrecision);
-            var forceMinus = false;
-            double doubleVal = (double)val;
-            if (IsNegativeZero(doubleVal)) {
-                forceMinus = true;
-                val = 0.0;
-            }
-            if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + val.ToString($"{format}{_opts.Precision}", _nfi);
-                strval = AdjustExponent(strval);
-                if (strval.Length < _opts.FieldWidth) {
-                    _buf.Append(' ', _opts.FieldWidth - strval.Length);
-                }
-                if (forceMinus) {
-                    _buf.Append('-');
-                }
-                _buf.Append(strval);
-            } else if (_opts.Precision < 100) {
-                // CLR formatting has a maximum precision of 100.
-                string num = string.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
-                num = AdjustExponent(num);
-                if (num.Length < _opts.FieldWidth) {
-                    _buf.Append(' ', _opts.FieldWidth - num.Length);
-                }
-                if (forceMinus)
-                    _buf.Append('-');
-                _buf.Append(num);
-            } else {
-                AppendNumericCommon(val, format);
-            }
-        }
-
-        private void AppendNumericDecimal(double val, bool fPos, char format) {
-            Debug.Assert("fFgG".Contains(char.ToString(format)));
-            if (_opts.Precision < 100) {
-                // CLR formatting has a maximum precision of 100.
-                var res = val.ToString($"{format}{_opts.Precision}", _nfi);
                 res = FixupFloatMinus(val, fPos, res);
-                var pad = _opts.FieldWidth - res.Length;
-                var needsSign = fPos && (_opts.SignChar || _opts.Space);
-                if (needsSign) pad--;
-                if (pad > 0) { _buf.Append(' ', pad); }
-                if (needsSign) _buf.Append(_opts.SignChar ? '+' : ' ');
-                _buf.Append(res);
+                if (fPos) {
+                    if (_opts.SignChar) {
+                        res = "+" + res;
+                    } else if (_opts.Space) {
+                        res = " " + res;
+                    }
+                }
+            }
+
+            if (format == 'e' || format == 'E') {
+                res = AdjustExponent(res);
+                if (_opts.Precision == 0 && _opts.AltForm) {
+                    res = res.Insert(res.IndexOf(format), ".");
+                }
             } else {
-                AppendNumericCommon(val, format);
+                if (_opts.Precision == 0 && _opts.AltForm) {
+                    res += ".";
+                }
             }
 
             // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
             // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a 
             // decorative ".0". ie. to display "123.0"
             if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
-                _buf.Append(".0");
-        }
+                res += ".0";
 
-        private void AppendNumericCommon(double val, char format) {
-            Debug.Assert(_opts.Precision >= 100);
-            StringBuilder res = new StringBuilder();
-            res.AppendFormat("{0:" + format + "}", val);
-            if (res.Length < _opts.Precision) {
-                res.Insert(0, new string('0', _opts.Precision - res.Length));
+            return res;
+
+            // Ensure negative values rounded to 0 show up as -0.
+            static string FixupFloatMinus(double val, bool fPos, string x) {
+                if (needsFixupFloatMinus && !fPos && val >= -0.5 && x[0] != '-') {
+                    Debug.Assert(x[0] == '0');
+                    return "-" + x;
+                }
+                return x;
             }
-            if (res.Length < _opts.FieldWidth) {
-                res.Insert(0, new string(' ', _opts.FieldWidth - res.Length));
-            }
-            _buf.Append(res.ToString());
-        }
 
-        // A strange string formatting bug requires that we use Standard Numeric Format and
-        // not Custom Numeric Format. Standard Numeric Format produces always a 3 digit exponent
-        // which needs to be taken care off.
-        // Example: 9.3126672485384569e+23, precision=16
-        //  format string "e16" ==> "9.3126672485384569e+023", but we want "e+23", not "e+023"
-        //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
-        //  so, we have to format with "e16" and strip the zero manually
-        private static string AdjustExponent(string val) {
-            if (val[val.Length - 3] == '0') {
-                return val.Substring(0, val.Length - 3) + val.Substring(val.Length - 2, 2);
-            } else {
-                return val;
-            }
-        }
 
-        private void AppendLeftAdjFloat(double val, bool fPos, char format) {
-            var str = FixupFloatMinus(val, fPos, val.ToString($"{format}{_opts.Precision}", _nfi));
-            if (format == 'e' || format == 'E') str = AdjustExponent(str);
-
-            var pad = _opts.FieldWidth - str.Length;
-            if (fPos) {
-                if (_opts.SignChar) {
-                    _buf.Append('+');
-                    pad--;
-                } else if (_opts.Space) {
-                    _buf.Append(' ');
-                    pad--;
+            // A strange string formatting bug requires that we use Standard Numeric Format and
+            // not Custom Numeric Format. Standard Numeric Format produces always a 3 digit exponent
+            // which needs to be taken care off.
+            // Example: 9.3126672485384569e+23, precision=16
+            //  format string "e16" ==> "9.3126672485384569e+023", but we want "e+23", not "e+023"
+            //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
+            //  so, we have to format with "e16" and strip the zero manually
+            static string AdjustExponent(string val) {
+                if (val[val.Length - 3] == '0') {
+                    return val.Remove(val.Length - 3, 1);
+                } else {
+                    return val;
                 }
             }
-            _buf.Append(str);
-            if (pad > 0) _buf.Append(' ', pad);
         }
 
         private static string GetAltFormPrefixForRadix(char format, int radix) {

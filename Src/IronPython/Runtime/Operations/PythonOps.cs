@@ -1135,7 +1135,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static bool IsMappingType(CodeContext/*!*/ context, object o) {
+        public static bool IsMappingType(CodeContext/*!*/ context, object? o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
                 return true;
             }

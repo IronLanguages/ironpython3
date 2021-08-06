@@ -44,7 +44,7 @@ namespace IronPython.Runtime {
         [ThreadStatic]
         private static NumberFormatInfo? NumberFormatInfoForThreadUpper;
 
-        internal static NumberFormatInfo nfil {
+        private static NumberFormatInfo nfil {
             get {
                 if (NumberFormatInfoForThreadLower == null) {
                     NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
@@ -58,7 +58,7 @@ namespace IronPython.Runtime {
                 return NumberFormatInfoForThreadLower;
             }
         }
-        internal static NumberFormatInfo nfiu {
+        private static NumberFormatInfo nfiu {
             get {
                 if (NumberFormatInfoForThreadUpper == null) {
                     NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
@@ -844,13 +844,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static readonly long NegativeZeroBits = BitConverter.DoubleToInt64Bits(-0.0);
-
-        internal static bool IsNegativeZero(double x) {
-            // -0.0 == 0.0 is True, so detecting -0.0 uses memory representation
-            return BitConverter.DoubleToInt64Bits(x) == NegativeZeroBits;
-        }
-
         #endregion
 
         #region Private data structures
@@ -866,7 +859,7 @@ namespace IronPython.Runtime {
         //   %(varName)#4o - Display "varName" as octal and prepend with leading 0 if necessary, for a total of atleast 4 characters
 
         [Flags]
-        internal enum FormatOptions {
+        private enum FormatOptions {
             ZeroPad = 0x01, // Use zero-padding to fit FieldWidth
             LeftAdj = 0x02, // Use left-adjustment to fit FieldWidth. Overrides ZeroPad
             AltForm = 0x04, // Add a leading 0 if necessary for octal, or add a leading 0x or 0X for hex
@@ -874,7 +867,7 @@ namespace IronPython.Runtime {
             SignChar = 0x10 // Force usage of a sign char even if the value is positive
         }
 
-        internal struct FormatSettings {
+        private struct FormatSettings {
 
             #region FormatOptions property accessors
 

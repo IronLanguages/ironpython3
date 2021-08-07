@@ -1059,7 +1059,7 @@ namespace IronPython.Runtime {
         }
 
         public IEnumerator<int> __iter__()
-            => IListOfByteOps.BytesEnumerator(this);
+            => new ByteArrayIterator(this);
 
         public PythonTuple __reduce__(CodeContext context) {
             return PythonTuple.MakeTuple(

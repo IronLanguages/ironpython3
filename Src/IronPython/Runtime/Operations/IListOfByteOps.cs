@@ -1056,11 +1056,11 @@ namespace IronPython.Runtime.Operations {
         #region Conversion and Enumeration
 
         internal static IEnumerable BytesEnumerable(IList<byte> bytes) {
-            return new PythonBytesIterator(bytes);
+            return new BytesIterator(bytes);
         }
 
         internal static IEnumerator<int> BytesEnumerator(IList<byte> bytes) {
-            return new PythonBytesIterator(bytes);
+            return new BytesIterator(bytes);
         }
 
         #endregion

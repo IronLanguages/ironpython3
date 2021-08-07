@@ -4,21 +4,22 @@
 
 #nullable enable
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
-
-using Microsoft.Scripting.Utils;
 
 using IronPython.Modules;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Utils;
+
 namespace IronPython.Runtime {
     [PythonType("bytes_iterator")]
-    public sealed class PythonBytesIterator : IEnumerable, IEnumerator<int> {
-        private readonly IList<byte> _bytes;
+    public sealed class BytesIterator : IEnumerable, IEnumerator<int> {
+        private IList<byte>? _bytes;
         private int _index;
 
-        internal PythonBytesIterator(IList<byte> bytes) {
+        internal BytesIterator(IList<byte> bytes) {
             Assert.NotNull(bytes);
 
             _bytes = bytes;
@@ -26,7 +27,7 @@ namespace IronPython.Runtime {
         }
 
         public int __length_hint__()
-            => _index < _bytes.Count ? _bytes.Count - _index - 1 : 0;
+            => _bytes is null ? 0 : _bytes.Count - _index - 1;
 
         #region Pickling Protocol
 
@@ -35,17 +36,15 @@ namespace IronPython.Runtime {
             // Older versions of CPython may have a different behaviour
             object? iter = PythonOps.GetBoundAttr(context, context.LanguageContext.BuiltinModuleInstance, nameof(Builtin.iter));
 
-            if (_index < _bytes.Count) {
-                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_bytes), _index + 1);
-            } else {
-                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(Bytes.Empty));
+            if (_bytes is null) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonTuple.EMPTY)); // CPython 3.7 uses empty tuple
             }
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_bytes), _index + 1);
         }
 
         public void __setstate__(int state) {
-            if (_index < _bytes.Count) {
-                _index = state <= 0 ? -1 : state - 1;
-            }
+            if (_bytes is null) return;
+            _index = Math.Min(Math.Max(0, state), _bytes.Count) - 1;
         }
 
         #endregion
@@ -53,16 +52,7 @@ namespace IronPython.Runtime {
         #region IEnumerator<T> Members
 
         [PythonHidden]
-        public int Current {
-            get {
-                if (_index < 0) {
-                    throw PythonOps.SystemError("Enumeration has not started. Call MoveNext.");
-                } else if (_index >= _bytes.Count) {
-                    throw PythonOps.SystemError("Enumeration already finished.");
-                }
-                return _bytes[_index];
-            }
-        }
+        public int Current => _bytes![_index];
 
         #endregion
 
@@ -75,34 +65,25 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
-        object IEnumerator.Current {
-            get {
-                return ((IEnumerator<int>)this).Current;
-            }
-        }
+        object IEnumerator.Current => ((IEnumerator<int>)this).Current;
 
         [PythonHidden]
         public bool MoveNext() {
-            if (_index >= _bytes.Count) {
+            if (_bytes is null || ++_index >= _bytes.Count) {
+                _bytes = null; // free after iteration
                 return false;
             }
-            _index++;
-            return _index != _bytes.Count;
+            return true;
         }
 
-        [PythonHidden]
-        public void Reset() {
-            _index = -1;
-        }
+        void IEnumerator.Reset() => throw new NotSupportedException();
 
         #endregion
 
         #region IEnumerable Members
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return this;
-        }
+        public IEnumerator GetEnumerator() => this;
 
         #endregion
     }

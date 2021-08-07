@@ -867,7 +867,7 @@ namespace IronPython.Runtime {
             => PythonTuple.MakeTuple(AsBytes());
 
         public IEnumerator<int> __iter__()
-            => IListOfByteOps.BytesEnumerator(this);
+            => new BytesIterator(this);
 
         public virtual string __str__(CodeContext context) {
             if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {

@@ -410,7 +410,7 @@ namespace IronPython.Runtime {
                 if (_opts.Value is Bytes bytes && bytes.Count == 1) {
                     val = (char)bytes[0];
                 } else if (_opts.Value is ByteArray byteArray && byteArray.Count == 1) {
-                    val = (char)byteArray[0];
+                    val = (char)(int)byteArray[0];
                 } else if (Converter.TryConvertToIndex(_opts.Value, out object index)) {
                     try {
                         val = index switch {

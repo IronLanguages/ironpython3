@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,27 +24,29 @@ namespace IronPython.Runtime {
         private const int UnspecifiedPrecision = -1; // Use the default precision
 
         private readonly CodeContext/*!*/ _context;
-        private object _data;
+        private readonly object? _data;
         private int _dataIndex;
 
-        private string _str;
+        private readonly string _str;
         private int _index;
         private char _curCh;
 
         // The options for formatting the current formatting specifier in the format string
-        internal FormatSettings _opts;
+        private FormatSettings _opts;
         // Should ddd.0 be displayed as "ddd" or "ddd.0". "'%g' % ddd.0" needs "ddd", but str(ddd.0) needs "ddd.0"
-        internal bool _TrailingZeroAfterWholeFloat = false;
+        private bool _trailingZeroAfterWholeFloat;
+
+        private bool _asBytes;
 
         private StringBuilder _buf;
 
         // This is a ThreadStatic since so that formatting operations on one thread do not interfere with other threads
         [ThreadStatic]
-        private static NumberFormatInfo NumberFormatInfoForThreadLower;
+        private static NumberFormatInfo? NumberFormatInfoForThreadLower;
         [ThreadStatic]
-        private static NumberFormatInfo NumberFormatInfoForThreadUpper;
+        private static NumberFormatInfo? NumberFormatInfoForThreadUpper;
 
-        internal static NumberFormatInfo nfil {
+        private static NumberFormatInfo nfil {
             get {
                 if (NumberFormatInfoForThreadLower == null) {
                     NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
@@ -56,7 +60,7 @@ namespace IronPython.Runtime {
                 return NumberFormatInfoForThreadLower;
             }
         }
-        internal static NumberFormatInfo nfiu {
+        private static NumberFormatInfo nfiu {
             get {
                 if (NumberFormatInfoForThreadUpper == null) {
                     NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
@@ -75,19 +79,23 @@ namespace IronPython.Runtime {
 
         #region Constructors
 
-        private StringFormatter(CodeContext/*!*/ context, string str, object data) {
+        private StringFormatter(CodeContext/*!*/ context, string str, object? data) {
             _str = str;
             _data = data;
             _context = context;
             _nfi = nfil;
+            _buf = null!;
         }
 
         #endregion
 
         #region Public API Surface
 
-        public static string Format(CodeContext/*!*/ context, string str, object data, bool trailingZeroAfterWholeFloat = false)
-            => new StringFormatter(context, str, data) { _TrailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
+        public static string Format(CodeContext/*!*/ context, string str, object? data, bool trailingZeroAfterWholeFloat = false)
+            => new StringFormatter(context, str, data) { _trailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
+
+        internal static byte[] FormatBytes(CodeContext/*!*/ context, ReadOnlySpan<byte> str, object? data)
+            => new StringFormatter(context, str.MakeString(), data) { _asBytes = true }.Format().MakeByteArray();
 
         #endregion
 
@@ -126,7 +134,7 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            string key = ReadMappingKey();
+            var key = ReadMappingKey();
 
             _opts = new FormatSettings();
 
@@ -139,7 +147,7 @@ namespace IronPython.Runtime {
             ReadLengthModifier();
 
             // use the key (or lack thereof) to get the value
-            object value;
+            object? value;
             if (key == null) {
                 value = GetData(_dataIndex++);
             } else {
@@ -156,7 +164,7 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>The key name enclosed between the '%(key)s', 
         /// or null if there are no paranthesis such as '%s'.</returns>
-        private string ReadMappingKey() {
+        private object? ReadMappingKey() {
             // Caller has set _curCh to the character past the %, and
             // _index to 2 characters past the original '%'.
             Debug.Assert(_curCh == _str[_index - 1]);
@@ -207,6 +215,8 @@ namespace IronPython.Runtime {
                         throw PythonOps.ValueError("incomplete format");
                     }
                     _curCh = _str[_index++];
+
+                    if (_asBytes) return Bytes.Make(key.MakeByteArray());
                     return key;
                 }
 
@@ -325,7 +335,13 @@ namespace IronPython.Runtime {
                 // string (repr() version)
                 case 'r': AppendRepr(); return;
                 // string (str() version)
-                case 's': AppendString(); return;
+                case 's':
+                    if (_asBytes) goto case 'b';
+                    AppendString(); return;
+                // bytes
+                case 'b':
+                    if (!_asBytes) goto default;
+                    AppendBytes(); return;
                 default:
                     if (_curCh > 0xff)
                         throw PythonOps.ValueError("unsupported format character '{0}' (0x{1:X}) at index {2}", '?', (int)_curCh, _index - 1);
@@ -334,7 +350,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private object GetData(int index) {
+        private object? GetData(int index) {
             if (_data is PythonTuple dt) {
                 if (index < dt.__len__()) {
                     return dt[index];
@@ -348,43 +364,37 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("not enough arguments for format string");
         }
 
-        private object GetKey(string key) {
-            if (!(_data is IDictionary<object, object> map)) {
-                if (!(_data is PythonDictionary dict)) {
-                    if (PythonOps.IsMappingType(DefaultContext.Default, _data)) {
-                        return PythonOps.GetIndex(_context, _data, key);
-                    }
-
-                    throw PythonOps.TypeError("format requires a mapping");
-                }
-
-                object res;
-                if (dict.TryGetValue(key, out res)) return res;
-            } else {
-                object res;
-                if (map.TryGetValue(key, out res)) {
+        private object? GetKey(object key) {
+            if (_data is IDictionary<object, object> map) {
+                if (map.TryGetValue(key, out object? res)) {
                     return res;
                 }
-            }
+            } else if (_data is PythonDictionary dict) {
+                if (dict.TryGetValue(key, out object? res)) {
+                    return res;
+                }
+            } else {
+                if (PythonOps.IsMappingType(DefaultContext.Default, _data)) {
+                    return PythonOps.GetIndex(_context, _data, key);
+                }
 
+                throw PythonOps.TypeError("format requires a mapping");
+            }
             throw PythonOps.KeyError(key);
         }
 
         private object GetIntegerValue(out bool fPos, bool allowDouble = true) {
-            object val;
-            int intVal;
-
             if (!allowDouble && _opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>) {
                 // TODO: this should fail in 3.5
                 PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
             }
 
-            if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out intVal)) {
+            object val;
+            if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out int intVal)) {
                 val = intVal;
                 fPos = intVal >= 0;
             } else {
-                BigInteger bigInt;
-                if (Converter.TryConvertToBigInteger(_opts.Value, out bigInt)) {
+                if (Converter.TryConvertToBigInteger(_opts.Value, out BigInteger bigInt)) {
                     val = bigInt;
                     fPos = bigInt >= BigInteger.Zero;
                 } else {
@@ -395,7 +405,29 @@ namespace IronPython.Runtime {
         }
 
         private void AppendChar() {
-            char val = Converter.ExplicitConvertToChar(_opts.Value);
+            char val;
+            if (_asBytes) {
+                if (_opts.Value is Bytes bytes && bytes.Count == 1) {
+                    val = (char)bytes[0];
+                } else if (_opts.Value is ByteArray byteArray && byteArray.Count == 1) {
+                    val = (char)(int)byteArray[0];
+                } else if (Converter.TryConvertToIndex(_opts.Value, out object index)) {
+                    try {
+                        val = index switch {
+                            int i => (char)checked((byte)i),
+                            BigInteger bi => (char)checked((byte)bi),
+                            _ => throw new InvalidOperationException(), // unreachable
+                        };
+                    } catch (OverflowException) {
+                        throw PythonOps.ValueError("%c arg not in range(256)");
+                    }
+                }
+                else {
+                    throw PythonOps.TypeError("%c requires an integer in range(256) or a single byte");
+                }
+            } else {
+                val = Converter.ExplicitConvertToChar(_opts.Value);
+            }
             if (_opts.FieldWidth > 1) {
                 if (!_opts.LeftAdj) {
                     _buf.Append(' ', _opts.FieldWidth - 1);
@@ -492,7 +524,7 @@ namespace IronPython.Runtime {
         private static readonly char[] zero = new char[] { '0' };
 
         // With .NET Framework "F" formatting is truncated after 15 digits:
-        private static bool truncatedToString = (1.0 / 3).ToString("F17", CultureInfo.InvariantCulture) == "0.33333333333333300";
+        private static readonly bool truncatedToString = (1.0 / 3).ToString("F17", CultureInfo.InvariantCulture) == "0.33333333333333300";
 
         // Return the new type char to use
         private char AdjustForG(char type, double v) {
@@ -553,7 +585,7 @@ namespace IronPython.Runtime {
                     // For f/F formatting, precision means the number of digits after the decimal point.
                     var mostSignificantDigit = 1 + (absV == 0 ? 0 : (int)Math.Floor(Math.Log10(absV)));
                     if (_opts.AltForm) {
-                        _opts.Precision = _opts.Precision - mostSignificantDigit;
+                        _opts.Precision -= mostSignificantDigit;
                     } else {
                         var decimalPointIdx = fixedPointForm.IndexOf('.');
                         var fractionLength = decimalPointIdx == -1 ? 0 : (fixedPointForm.Length - decimalPointIdx - 1);
@@ -653,7 +685,7 @@ namespace IronPython.Runtime {
             // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
             // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a 
             // decorative ".0". ie. to display "123.0"
-            if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
+            if (_trailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
                 res += ".0";
 
             return res;
@@ -685,11 +717,11 @@ namespace IronPython.Runtime {
         }
 
         private static string GetAltFormPrefixForRadix(char format, int radix) {
-            switch (radix) {
-                case 8: return format + "0";
-                case 16: return format + "0";
-            }
-            return "";
+            return radix switch {
+                8 => format + "0",
+                16 => format + "0",
+                _ => "",
+            };
         }
 
         /// <summary>
@@ -824,6 +856,17 @@ namespace IronPython.Runtime {
             AppendBase('o', 8);
         }
 
+        private void AppendBytes() {
+            Debug.Assert(_asBytes);
+            if (_opts.Value is Bytes bytes || Bytes.TryInvokeBytesOperator(_context, _opts.Value, out bytes!)) {
+                AppendString(StringOps.Latin1Encoding.GetString(bytes.UnsafeByteArray));
+            } else if (_opts.Value is ByteArray byteArray) {
+                AppendString(StringOps.Latin1Encoding.GetString(byteArray.UnsafeByteList.AsByteSpan()));
+            } else {
+                throw PythonOps.TypeError($"%b requires bytes, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
+            }
+        }
+
         private void AppendString() {
             AppendString(PythonOps.ToString(_context, _opts.Value));
         }
@@ -847,13 +890,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static readonly long NegativeZeroBits = BitConverter.DoubleToInt64Bits(-0.0);
-
-        internal static bool IsNegativeZero(double x) {
-            // -0.0 == 0.0 is True, so detecting -0.0 uses memory representation
-            return BitConverter.DoubleToInt64Bits(x) == NegativeZeroBits;
-        }
-
         #endregion
 
         #region Private data structures
@@ -869,7 +905,7 @@ namespace IronPython.Runtime {
         //   %(varName)#4o - Display "varName" as octal and prepend with leading 0 if necessary, for a total of atleast 4 characters
 
         [Flags]
-        internal enum FormatOptions {
+        private enum FormatOptions {
             ZeroPad = 0x01, // Use zero-padding to fit FieldWidth
             LeftAdj = 0x02, // Use left-adjustment to fit FieldWidth. Overrides ZeroPad
             AltForm = 0x04, // Add a leading 0 if necessary for octal, or add a leading 0x or 0X for hex
@@ -877,7 +913,7 @@ namespace IronPython.Runtime {
             SignChar = 0x10 // Force usage of a sign char even if the value is positive
         }
 
-        internal struct FormatSettings {
+        private struct FormatSettings {
 
             #region FormatOptions property accessors
 
@@ -957,7 +993,7 @@ namespace IronPython.Runtime {
             // format string, and the value to be passed in to StringBuilder.AppendFormat
             internal int Precision;
 
-            internal object Value;
+            internal object? Value;
         }
         #endregion
     }

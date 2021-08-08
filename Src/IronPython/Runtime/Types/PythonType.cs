@@ -1312,9 +1312,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Debug.Assert(context != null);
 
             PythonTypeSlot dts;
-            if (TryResolveSlot(context, name, out dts) && dts.TrySetValue(context, null, this, value)) {
-                return;
-            }
 
             // search the type
             var myType = DynamicHelpers.GetPythonType(this);

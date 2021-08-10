@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Types {
                 return true;
             }
 
-            if (instance == null) throw PythonOps.AttributeError("'__dict__' of '{0}' objects is not writable", owner.Name);
+            if (instance == null || instance is PythonType) throw PythonOps.AttributeError("attribute '__dict__' of '{0}' objects is not writable", owner.Name);
             return false;
         }
 

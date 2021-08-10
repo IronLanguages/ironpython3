@@ -1618,4 +1618,23 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         finally:
             os.remove(filename)
 
+
+    def test_ipy3_gh1271(self):
+        """https://github.com/IronLanguages/ironpython3/issues/1271"""
+
+        class MyDescriptor(object):
+            def __set__(_self, inst, value):
+                raise Exception
+
+        class MyClass(object):
+            x = MyDescriptor()
+
+        try:
+            MyClass.x = 2
+        except:
+            self.fail()
+
+        self.assertEqual(MyClass.x, 2)
+
+
 run_test(__name__)

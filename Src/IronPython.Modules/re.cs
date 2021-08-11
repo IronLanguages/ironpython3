@@ -892,7 +892,7 @@ namespace IronPython.Modules {
         }
 
         private static readonly char[] _endOfLineChars = new[] { '\r', '\n' };
-        private static readonly char[] _preParsedChars = new[] { '(', '{', '[', ']', '#' };
+        private static readonly char[] _preParsedChars = new[] { '(', '{', '[', ']' };
         private const string _mangledNamedGroup = "___PyRegexNameMangled";
 
         /// <summary>
@@ -904,12 +904,10 @@ namespace IronPython.Modules {
             options = default;
             if (verbose) options |= ReFlags.VERBOSE;
 
-            //string newPattern;
             int cur = 0, nameIndex;
             int curGroup = 0;
             bool isCharList = false;
             bool containsNamedGroup = false;
-            bool inComment = false;
 
             int groupCount = 0;
             var namedGroups = new Dictionary<string, int>();
@@ -967,14 +965,6 @@ namespace IronPython.Modules {
             }
 
             for (; ; ) {
-                if (verbose && inComment) {
-                    // read to end of line
-                    inComment = false;
-                    var idx = pattern.IndexOfAny(_endOfLineChars, cur);
-                    if (idx < 0) break;
-                    cur = idx;
-                }
-
                 nameIndex = pattern.IndexOfAny(_preParsedChars, cur);
                 if (nameIndex > 0 && pattern[nameIndex - 1] == '\\') {
                     int curIndex = nameIndex - 2;
@@ -1009,12 +999,6 @@ namespace IronPython.Modules {
                     case ']':
                         nameIndex++;
                         isCharList = false;
-                        break;
-                    case '#':
-                        if (verbose && !isCharList) {
-                            inComment = true;
-                        }
-                        nameIndex++;
                         break;
                     case '(':
                         // make sure we're not dealing with [(]

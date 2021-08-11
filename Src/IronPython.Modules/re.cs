@@ -624,6 +624,9 @@ namespace IronPython.Modules {
 
             #region Public API Surface
 
+            public string __repr__(CodeContext context)
+                => $"<re.Match object; span=({start()}, {end()}), match={PythonOps.Repr(context, group(0))}>";
+
             public int end() => _m.Index + _m.Length;
 
             public int start() => _m.Index;

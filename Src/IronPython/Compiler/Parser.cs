@@ -1420,6 +1420,7 @@ namespace IronPython.Compiler {
         // async_stmt: 'async' (funcdef | with_stmt | for_stmt)
         private Statement ParseAsyncStmt() {
             Eat(TokenKind.KeywordAsync);
+            ReportSyntaxError("invalid syntax");
 
             if (PeekToken().Kind == TokenKind.KeywordDef) {
                 FunctionDefinition def = ParseFuncDef(true);

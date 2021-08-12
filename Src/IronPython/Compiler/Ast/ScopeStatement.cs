@@ -5,16 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
 
 using MSAst = System.Linq.Expressions;
 
@@ -351,7 +352,8 @@ namespace IronPython.Compiler.Ast {
             List<ClosureInfo> closureVariables = null;
 
             if (FreeVariables != null && FreeVariables.Count > 0) {
-                LocalParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
+                var tupleType = Parent.GetClosureTupleType();
+                LocalParentTuple = Ast.Parameter(tupleType, "$tuple");
 
                 var parentClosure = Parent._closureVariables;
                 Debug.Assert(parentClosure != null);
@@ -359,7 +361,11 @@ namespace IronPython.Compiler.Ast {
                 foreach (var variable in FreeVariables) {
                     for (int i = 0; i < parentClosure.Length; i++) {
                         if (parentClosure[i].Variable == variable) {
-                            _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(LocalParentTuple, String.Format("Item{0:D3}", i)), null);
+                            Ast prop = LocalParentTuple;
+                            foreach (PropertyInfo pi in MutableTuple.GetAccessPath(tupleType, parentClosure.Length, i)) {
+                                prop = Ast.Property(prop, pi);
+                            }
+                            _variableMapping[variable] = new ClosureExpression(variable, prop, null);
                             break;
                         }
                     }

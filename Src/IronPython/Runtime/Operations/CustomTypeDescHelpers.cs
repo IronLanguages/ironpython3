@@ -162,10 +162,10 @@ namespace IronPython.Runtime.Operations {
                 _componentType = componentType;
             }
 
-            public override object GetValue(object component) {
+            public override object GetValue(object? component) {
                 return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, component, _name);
             }
-            public override void SetValue(object component, object value) {
+            public override void SetValue(object? component, object? value) {
                 PythonOps.SetAttr(DefaultContext.DefaultCLS, component, _name, value);
             }
 
@@ -202,35 +202,35 @@ namespace IronPython.Runtime.Operations {
             }
 
             #region TypeConverter overrides
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) {
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) {
                 return Converter.TryConvert(convObj, destinationType, out _);
             }
 
-            public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) {
                 return Converter.CanConvertFrom(sourceType, convObj.GetType(), NarrowingLevel.All);
             }
 
-            public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) {
+            public override object ConvertFrom(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) {
                 return Converter.Convert(value, convObj.GetType());
             }
 
-            public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType) {
+            public override object ConvertTo(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, Type destinationType) {
                 return Converter.Convert(convObj, destinationType);
             }
 
-            public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) {
+            public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) {
                 return false;
             }
 
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context) {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) {
                 return false;
             }
 
-            public override bool GetStandardValuesSupported(ITypeDescriptorContext context) {
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) {
                 return false;
             }
 
-            public override bool IsValid(ITypeDescriptorContext context, object value) {
+            public override bool IsValid(ITypeDescriptorContext? context, object? value) {
                 return Converter.TryConvert(value, convObj.GetType(), out _);
             }
             #endregion

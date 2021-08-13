@@ -6,20 +6,19 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Text;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -600,13 +599,13 @@ namespace IronPython.Runtime.Types {
             LocalBuilder retVal = il.DeclareLocal(typeof(DynamicMetaObject));
             Label retLabel = il.DefineLabel();
             if (explicitDynamicObject) {
-                _explicitMO = _tg.DefineField("__gettingMO", typeof(ThreadLocal<bool>), FieldAttributes.InitOnly | FieldAttributes.Private);
+                _explicitMO = _tg.DefineField("__gettingMO", typeof(Microsoft.Scripting.Utils.ThreadLocal<bool>), FieldAttributes.InitOnly | FieldAttributes.Private);
 
                 Label ipyImpl = il.DefineLabel();
                 Label noOverride = il.DefineLabel();
                 Label retNull = il.DefineLabel();
 
-                var valueProperty = typeof(ThreadLocal<bool>).GetDeclaredProperty("Value");
+                var valueProperty = typeof(Microsoft.Scripting.Utils.ThreadLocal<bool>).GetDeclaredProperty("Value");
 
                 // check if the we're recursing (this enables the user to refer to self
                 // during GetMetaObject calls)
@@ -655,7 +654,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, _explicitMO);
                 il.Emit(OpCodes.Ldc_I4_0);
-                il.EmitPropertySet(typeof(ThreadLocal<bool>).GetDeclaredProperty("Value"));
+                il.EmitPropertySet(typeof(Microsoft.Scripting.Utils.ThreadLocal<bool>).GetDeclaredProperty("Value"));
 
                 il.EndExceptionBlock();
 

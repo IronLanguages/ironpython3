@@ -87,7 +87,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_locale_caching'))) # fails on .NET Core linux/macos
         suite.addTest(test.test_re.ReTests('test_lookahead'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_lookbehind')))
-        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_match_repr')))
+        suite.addTest(test.test_re.ReTests('test_match_repr'))
         suite.addTest(test.test_re.ReTests('test_not_literal'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_pickling')))
         suite.addTest(test.test_re.ReTests('test_qualified_re_split'))

@@ -812,4 +812,28 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(re.match(r'\s+', "\xa0", flags=re.UNICODE).group(0), "\xa0")
         self.assertIsNone(re.match(r'\s+', "\xa0", flags=re.ASCII))
 
+    def test_pos_endpos(self):
+        p = re.compile("a")
+        for func in (p.match, p.fullmatch, p.search):
+            m = func("a", 100)
+            self.assertIsNone(m)
+
+            m = func("a")
+            for m2 in (func("a", -100), func("a", -100, 100), func("a", endpos=100)):
+                self.assertEqual(m.span(), m2.span())
+
+        m = p.findall("a", 100)
+        self.assertEqual(m, [])
+
+        m = p.findall("a")
+        for m2 in (p.findall("a", -100), p.findall("a", -100, 100), p.findall("a", endpos=100)):
+            self.assertEqual(m, m2)
+
+        m = list(p.finditer("a", 100))
+        self.assertEqual(m, [])
+
+        m = next(p.finditer("a"))
+        for m2 in (p.finditer("a", -100), p.finditer("a", -100, 100), p.finditer("a", endpos=100)):
+            self.assertEqual(m.span(), next(m2).span())
+
 run_test(__name__)

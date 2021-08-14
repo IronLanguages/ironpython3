@@ -65,6 +65,7 @@ namespace IronPython.Modules {
         }
 
         // short forms
+        public const int T = (int)ReFlags.TEMPLATE;
         public const int I = (int)ReFlags.IGNORECASE;
         public const int L = (int)ReFlags.LOCALE;
         public const int M = (int)ReFlags.MULTILINE;
@@ -74,6 +75,7 @@ namespace IronPython.Modules {
         public const int A = (int)ReFlags.ASCII;
 
         // long forms
+        public const int TEMPLATE   = (int)ReFlags.TEMPLATE;
         public const int IGNORECASE = (int)ReFlags.IGNORECASE;
         public const int LOCALE     = (int)ReFlags.LOCALE;
         public const int MULTILINE  = (int)ReFlags.MULTILINE;
@@ -204,6 +206,27 @@ namespace IronPython.Modules {
                 if (position <= 0) return 0;
                 if (position > text.Length) return text.Length;
                 return position;
+            }
+
+            public string __repr__(CodeContext context) {
+                var pattern = PythonOps.Repr(context, this.pattern);
+                if (pattern.Length > 200) pattern = pattern.Substring(0, 200);
+
+                var flags = (ReFlags)this.flags;
+                if (flags == default || flags == ReFlags.UNICODE)
+                    return $"re.compile({pattern})";
+
+                List<string> flagsRepr = new();
+                foreach (var val in Enum.GetValues(typeof(ReFlags)).Cast<ReFlags>()) {
+                    if (flags.HasFlag(val)) {
+                        flags ^= val;
+                        if (val != ReFlags.UNICODE) flagsRepr.Add("re." + val.ToString());
+                    }
+                }
+                if (flags != default) flagsRepr.Add(Builtin.hex((uint)flags));
+                Debug.Assert(flagsRepr.Count > 0);
+
+                return $"re.compile({pattern}, {string.Join("|", flagsRepr)})";
             }
 
             public Match? match(object? @string) {

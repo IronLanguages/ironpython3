@@ -1863,13 +1863,16 @@ namespace IronPython.Modules {
             }
 
             internal override Statement Revert() {
-                ModuleName root = null;
-                if (module != null)
+                ModuleName root;
+                if (module is null) {
+                    root = new RelativeModuleName(Array.Empty<string>(), level);
+                } else {
                     if (module[0] == '.') // relative module
                         root = new RelativeModuleName(module.Split(MODULE_NAME_SPLITTER), level);
                     else {
                         root = new ModuleName(module.Split(MODULE_NAME_SPLITTER));
                     }
+                }
 
                 if (names.Count == 1 && ((alias)names[0]).name == "*")
                     return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false);

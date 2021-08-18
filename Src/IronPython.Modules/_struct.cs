@@ -1059,28 +1059,21 @@ namespace IronPython.Modules {
             throw Error(context, "expected bool value got " + val.ToString());
         }
 
-        internal static char GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
+        internal static byte GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            if (val is string strVal && strVal.Length == 1) return strVal[0];
-            if (val is IList<byte> byteVal && byteVal.Count == 1) return (char)byteVal[0];
+            if (val is IList<byte> byteVal && byteVal.Count == 1) return byteVal[0];
             throw Error(context, "char format requires string of length 1");
         }
 
         internal static sbyte GetSByteValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            if (Converter.TryConvertToSByte(val, out sbyte res)) {
-                return res;
-            }
+            if (Converter.TryConvertToSByte(val, out sbyte res)) return res;
             throw Error(context, "expected sbyte value got " + val.ToString());
         }
 
         internal static byte GetByteValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-
             if (Converter.TryConvertToByte(val, out byte res)) return res;
-
-            if (Converter.TryConvertToChar(val, out char cres)) return (byte)cres;
-
             throw Error(context, "expected byte value got " + val.ToString());
         }
 

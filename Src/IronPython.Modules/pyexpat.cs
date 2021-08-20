@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using IronPython.Runtime;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,6 +11,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("pyexpat", typeof(IronPython.Modules.PythonExpat))]
 [assembly: PythonModule("pyexpat.errors", typeof(IronPython.Modules.PythonExpat.PyExpatErrors))]
@@ -278,6 +280,7 @@ namespace IronPython.Modules {
             private int _buffer_size = 8192;
             private bool _use_foreign_dtd = true;
             private bool _parsing_done = false;
+            private string _base;
 
             public object buffer_size {
                 get => _buffer_size;
@@ -336,8 +339,13 @@ namespace IronPython.Modules {
                 this.namespace_separator = namespace_separator;
             }
 
+            public string GetBase() => _base;
+
+            public void SetBase([NotNull]string @base) => _base = @base;
+
             public bool SetParamEntityParsing(int flag) {
-                throw new NotImplementedException();
+                // TODO: implement this
+                return flag == 0;
             }
 
             public void UseForeignDTD(bool use_foreign_dtd = true) {
@@ -349,7 +357,7 @@ namespace IronPython.Modules {
             public int CurrentColumnNumber => (xmlReader as IXmlLineInfo)?.LinePosition ?? 0;
             public int CurrentLineNumber => (xmlReader as IXmlLineInfo)?.LineNumber ?? 0;
 
-            public long CurrentByteIndex { get; private set; } = 0;
+            public int CurrentByteIndex { get; private set; } = 0;
 
             private void parse(CodeContext context) {
                 try {

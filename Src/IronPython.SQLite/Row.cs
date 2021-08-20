@@ -64,7 +64,7 @@ namespace IronPython.SQLite
                     for(int i = 0; i < data.Count; ++i)
                     {
                         PythonTuple col_desc = (PythonTuple)description[i];
-                        if(s.Equals((string)col_desc[0], StringComparison.InvariantCultureIgnoreCase))
+                        if(s.Equals((string)col_desc[0], StringComparison.OrdinalIgnoreCase))
                             return data[i];
                     }
 

@@ -816,19 +816,19 @@ of bytes written.")]
         }
 
         private static PythonTuple IssuerFieldToPython(CodeContext context, string p) {
-            if (String.Compare(p, 0, "CN=", 0, 3) == 0) {
+            if (p.StartsWith("CN=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("commonName", p.Substring(3));
-            } else if (String.Compare(p, 0, "OU=", 0, 3) == 0) {
+            } else if (p.StartsWith("OU=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("organizationalUnitName", p.Substring(3));
-            } else if (String.Compare(p, 0, "O=", 0, 2) == 0) {
+            } else if (p.StartsWith("O=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("organizationName", p.Substring(2));
-            } else if (String.Compare(p, 0, "L=", 0, 2) == 0) {
+            } else if (p.StartsWith("L=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("localityName", p.Substring(2));
-            } else if (String.Compare(p, 0, "S=", 0, 2) == 0) {
+            } else if (p.StartsWith("S=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("stateOrProvinceName", p.Substring(2));
-            } else if (String.Compare(p, 0, "C=", 0, 2) == 0) {
+            } else if (p.StartsWith("C=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("countryName", p.Substring(2));
-            } else if (String.Compare(p, 0, "E=", 0, 2) == 0) {
+            } else if (p.StartsWith("E=", StringComparison.Ordinal)) {
                 return PythonTuple.MakeTuple("email", p.Substring(2));
             }
 

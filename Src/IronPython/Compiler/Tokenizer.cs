@@ -1465,7 +1465,7 @@ namespace IronPython.Compiler {
 
             // we have magic comment line
             int codingIndex;
-            if ((codingIndex = line.IndexOf("coding")) == -1) return null;
+            if ((codingIndex = line.IndexOf("coding", StringComparison.Ordinal)) == -1) return null;
             if (line.Length <= (codingIndex + 6)) return null;
             // [:=]
             if (line[codingIndex + 6] != ':' && line[codingIndex + 6] != '=') return null;

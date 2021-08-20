@@ -19,19 +19,19 @@ namespace IronPython.Runtime.Types {
             string prefix = "";
 
 #if FEATURE_REFEMIT
-            if (methodName.StartsWith(NewTypeMaker.BaseMethodPrefix)) {
+            if (methodName.StartsWith(NewTypeMaker.BaseMethodPrefix, StringComparison.Ordinal)) {
                 methodName = methodName.Substring(NewTypeMaker.BaseMethodPrefix.Length);
                 prefix = NewTypeMaker.BaseMethodPrefix;
             }
 #endif
 
-            if (methodName.StartsWith("Get") || methodName.StartsWith("Set")) {
+            if (methodName.StartsWith("Get", StringComparison.Ordinal) || methodName.StartsWith("Set", StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, "Get", "Set", "Delete");
-            } else if(methodName.StartsWith("get_") || methodName.StartsWith("set_")) {
+            } else if(methodName.StartsWith("get_", StringComparison.Ordinal) || methodName.StartsWith("set_", StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, "get_", "set_", null);
             } 
 #if FEATURE_REFEMIT
-            else if (methodName.StartsWith(NewTypeMaker.FieldGetterPrefix) || methodName.StartsWith(NewTypeMaker.FieldSetterPrefix)) {
+            else if (methodName.StartsWith(NewTypeMaker.FieldGetterPrefix, StringComparison.Ordinal) || methodName.StartsWith(NewTypeMaker.FieldSetterPrefix, StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, NewTypeMaker.FieldGetterPrefix, NewTypeMaker.FieldSetterPrefix, null);
             }
 #endif
@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Types {
         private void GetPropertyMethods(MethodInfo mi, string methodName, string prefix, string get, string set, string delete) {
             string propname = methodName.Substring(get.Length);
 
-            if (String.Compare(mi.Name, 0, get, 0, get.Length) == 0) {
+            if (mi.Name.StartsWith(get, StringComparison.Ordinal)) {
                 _getter = mi;
                 _setter = mi.DeclaringType.GetMethod(prefix + set + propname);
             } else {

@@ -317,7 +317,7 @@ namespace IronPython.Hosting {
             string dir = Path.Combine(PythonContext.InitialPrefix, "DLLs");
             if (Directory.Exists(dir)) {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.dll")) {
-                    if (file.ToLower().EndsWith(".dll")) {
+                    if (file.ToLower().EndsWith(".dll", StringComparison.Ordinal)) {
                         try {
                             ClrModule.AddReferenceToFile(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {
@@ -617,7 +617,7 @@ namespace IronPython.Hosting {
         public override IList<string> GetGlobals(string name) {
             IList<string> res = base.GetGlobals(name);
             foreach (object builtinName in PythonContext.BuiltinModuleInstance.__dict__.Keys) {
-                if (builtinName is string strName && strName.StartsWith(name)) {
+                if (builtinName is string strName && strName.StartsWith(name, StringComparison.Ordinal)) {
                     res.Add(strName);
                 }
             }

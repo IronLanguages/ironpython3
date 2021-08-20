@@ -75,7 +75,7 @@ namespace IronPython.Modules {
                         throw new NotImplementedException("simple type " + sVal);
                 }
 
-                if (!name.EndsWith("_be") && !name.EndsWith("_le") && swappedTypes.IndexOf(_charType) != -1) {
+                if (!name.EndsWith("_be", StringComparison.Ordinal) && !name.EndsWith("_le", StringComparison.Ordinal) && swappedTypes.IndexOf(_charType) != -1) {
                     CreateSwappedType(context, name, bases, dict);
                 }
                 _format = (BitConverter.IsLittleEndian ? '<' : '>') + _charType.ToString();

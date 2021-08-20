@@ -676,7 +676,7 @@ namespace IronPython.Modules {
             private static string FormatExpatMsg(XmlException e, out int code) {
                 var res = e.Message;
                 code = 0;
-                if (e.Message.StartsWith("Syntax for an XML declaration")) {
+                if (e.Message.StartsWith("Syntax for an XML declaration", StringComparison.Ordinal)) {
                     res = $"XML declaration not well-formed: line {e.LineNumber}, column {e.LinePosition}";
                     code = (int)XmlErrors.XML_ERROR_XML_DECL;
                 }

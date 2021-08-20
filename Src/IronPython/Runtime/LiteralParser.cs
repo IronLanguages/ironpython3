@@ -640,7 +640,7 @@ namespace IronPython.Runtime {
                 }
                 res = ParseFloatNoCatch(text, replaceUnicode: replaceUnicode);
             } catch (OverflowException) {
-                res = text.lstrip().StartsWith("-") ? Double.NegativeInfinity : Double.PositiveInfinity;
+                res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
             } catch(FormatException) {
                 res = default;
                 return false;
@@ -660,7 +660,7 @@ namespace IronPython.Runtime {
                 }
                 return ParseFloatNoCatch(text);
             } catch (OverflowException) {
-                return text.lstrip().StartsWith("-") ? Double.NegativeInfinity : Double.PositiveInfinity;
+                return text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
             }
         }
 
@@ -682,7 +682,7 @@ namespace IronPython.Runtime {
                 default:
                     // pass NumberStyles to disallow ,'s in float strings.
                     double res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
-                    return (res == 0.0 && text.lstrip().StartsWith("-")) ? DoubleOps.NegativeZero : res;
+                    return (res == 0.0 && text.lstrip().StartsWith("-", StringComparison.Ordinal)) ? DoubleOps.NegativeZero : res;
             }
         }
 
@@ -717,7 +717,7 @@ namespace IronPython.Runtime {
             string text = s.Trim().ToLower();
 
             // remove 1 layer of parens
-            if (text.StartsWith("(") && text.EndsWith(")")) {
+            if (text.StartsWith("(", StringComparison.Ordinal) && text.EndsWith(")", StringComparison.Ordinal)) {
                 text = text.Substring(1, text.Length - 2);
             }
 

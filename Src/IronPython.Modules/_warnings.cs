@@ -119,7 +119,7 @@ namespace IronPython.Modules {
 
             if (string.IsNullOrEmpty(module)) {
                 module = (filename == null || filename == "") ? "<unknown>" : filename;
-                if (module.EndsWith(".py")) {
+                if (module.EndsWith(".py", StringComparison.Ordinal)) {
                     module = module.Substring(0, module.Length - 3);
                 }
             }

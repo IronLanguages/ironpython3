@@ -484,7 +484,7 @@ namespace IronPythonTest {
 
         private class MyComparer : IComparer {
             public int Compare(object x, object y) {
-                return string.Compare(x.ToString(), y.ToString());
+                return string.Compare(x.ToString(), y.ToString(), StringComparison.Ordinal);
             }
         }
     }
@@ -540,7 +540,7 @@ namespace IronPythonTest {
         }
 
         private static int KeyValueComparer(KeyValuePair<string, int> x, KeyValuePair<string, int> y) {
-            return String.Compare(x.Key, y.Key);
+            return string.Compare(x.Key, y.Key, StringComparison.Ordinal);
         }
 
         public void Loop(out string keys, out int values) {

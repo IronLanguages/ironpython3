@@ -264,7 +264,7 @@ namespace IronPython.Compiler {
             int autoIndentSize = startingSpaces;
             // Increase the indent if this looks like the start of a compounds statement.
             // Ideally, we would ask the parser to tell us the exact indentation level
-            if (lastLine.TrimEnd(whiteSpace).EndsWith(":"))
+            if (lastLine.TrimEnd(whiteSpace).EndsWith(":", StringComparison.Ordinal))
                 autoIndentSize += autoIndentTabWidth;
 
             return autoIndentSize;
@@ -371,7 +371,7 @@ namespace IronPython.Compiler {
         #region LL(1) Parsing
 
         private static bool IsPrivateName(string name) {
-            return name.StartsWith("__") && !name.EndsWith("__");
+            return name.StartsWith("__", StringComparison.Ordinal) && !name.EndsWith("__", StringComparison.Ordinal);
         }
 
         private string FixName(string name) {

@@ -368,7 +368,7 @@ namespace IronPython.Modules {
             }
 
             private void BuildNameLookup() {
-                nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key, StringComparer.OrdinalIgnoreCase);
+                nameLookup = database.Where(c => !c.Value.Name.StartsWith("<", StringComparison.Ordinal)).ToDictionary(c => c.Value.Name, c => c.Key, StringComparer.OrdinalIgnoreCase);
             }
 
             internal bool TryGetInfo(int unichr, out CharInfo charInfo, bool excludeRanges = false) {

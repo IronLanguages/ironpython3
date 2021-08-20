@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Operations {
             bool include = true;
             foreach (Attribute attr in attributes) {
                 if (attr.GetType() == typeof(BrowsableAttribute)) {
-                    if (memberName.StartsWith("__") && memberName.EndsWith("__")) {
+                    if (memberName.StartsWith("__", StringComparison.Ordinal) && memberName.EndsWith("__", StringComparison.Ordinal)) {
                         include = false;
                     }
                 } else {

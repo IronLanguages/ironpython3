@@ -2555,7 +2555,7 @@ namespace IronPython.Modules {
                         }
                     } else {
                         // Non-universal newlines
-                        pos = line.IndexOf(_readNL);
+                        pos = line.IndexOf(_readNL, StringComparison.Ordinal);
                         if (pos >= 0) {
                             endPos = pos + _readNL.Length;
                             break;

@@ -290,10 +290,10 @@ module, or raises ResourceImportError if it wasn't found."
                 var compareName = _resourceNameBase.ToLowerInvariant();
                 var fullResourceNameQuery =
                     from name in _fromAssembly.GetManifestResourceNames()
-                    where name.ToLowerInvariant().EndsWith(compareName)
+                    where name.ToLowerInvariant().EndsWith(compareName, StringComparison.Ordinal)
                     select name;
                 var fullResourceName = fullResourceNameQuery.FirstOrDefault();
-                return String.IsNullOrEmpty(fullResourceName)
+                return string.IsNullOrEmpty(fullResourceName)
                            ? null
                            : _fromAssembly.GetManifestResourceStream(fullResourceName);
             }

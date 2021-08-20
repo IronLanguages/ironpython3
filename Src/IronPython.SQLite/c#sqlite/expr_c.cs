@@ -746,7 +746,7 @@ sqlite3Dequote(ref pNew.u._zToken);
         */
       ynVar i;
       for(i=0; i<pParse.nzVar; i++){
-        if( pParse.azVar[i] != null && z.CompareTo(pParse.azVar[i] ) == 0 ) //memcmp(pParse.azVar[i],z,n+1)==0 )
+        if( pParse.azVar[i] != null && string.Equals(z, pParse.azVar[i], StringComparison.Ordinal) ) //memcmp(pParse.azVar[i],z,n+1)==0 )
         {
           pExpr.iColumn = x = (ynVar)( i + 1 );
           break;
@@ -2825,7 +2825,7 @@ static int usedAsColumnCache( Parse pParse, int iFrom, int iTo ){return 0;}
             if ( pExpr.u.zToken.Length > 1 )
             {
               Debug.Assert( pExpr.u.zToken[0] == '?'
-                   || pExpr.u.zToken.CompareTo(pParse.azVar[pExpr.iColumn - 1] ) == 0 );
+                   || string.Equals(pExpr.u.zToken, pParse.azVar[pExpr.iColumn - 1], StringComparison.Ordinal) );
               sqlite3VdbeChangeP4( v, -1, pParse.azVar[pExpr.iColumn - 1], P4_STATIC );
             }
             break;

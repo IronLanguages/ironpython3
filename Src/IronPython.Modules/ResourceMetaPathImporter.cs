@@ -287,15 +287,8 @@ module, or raises ResourceImportError if it wasn't found."
             }
 
             private Stream GetZipArchive() {
-                var compareName = _resourceNameBase.ToLowerInvariant();
-                var fullResourceNameQuery =
-                    from name in _fromAssembly.GetManifestResourceNames()
-                    where name.ToLowerInvariant().EndsWith(compareName, StringComparison.Ordinal)
-                    select name;
-                var fullResourceName = fullResourceNameQuery.FirstOrDefault();
-                return string.IsNullOrEmpty(fullResourceName)
-                           ? null
-                           : _fromAssembly.GetManifestResourceStream(fullResourceName);
+                var fullResourceName = _fromAssembly.GetManifestResourceNames().Where(name => name.EndsWith(_resourceNameBase, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                return string.IsNullOrEmpty(fullResourceName) ? null : _fromAssembly.GetManifestResourceStream(fullResourceName);
             }
 
             private bool ReadZipDirectory(out IDictionary<string, PackedResourceInfo> result,

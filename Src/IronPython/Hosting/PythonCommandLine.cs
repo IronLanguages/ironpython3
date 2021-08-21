@@ -317,7 +317,7 @@ namespace IronPython.Hosting {
             string dir = Path.Combine(PythonContext.InitialPrefix, "DLLs");
             if (Directory.Exists(dir)) {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.dll")) {
-                    if (file.ToLower().EndsWith(".dll", StringComparison.Ordinal)) {
+                    if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) {
                         try {
                             ClrModule.AddReferenceToFile(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {

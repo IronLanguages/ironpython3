@@ -290,19 +290,16 @@ tc.assertEqual(l, ["called f", "called g"])
 
 class ExecTestCase(IronPythonTestCase):
 
-    # testing exec accepts \n eolns only
+    # testing exec accepts \n, \r, \r\n as eolns
     def test_eolns(self):
         def f1(sep): exec('x = 2$y=4$'.replace('$', sep))
         def f2(sep): exec('''x = 3$y = 5$'''.replace('$', sep))
         def f3(sep): exec("exec('''x = 3$y = 5$''')".replace('$', sep))
 
         for x in [f1, f2, f3]:
-            if is_cli: #http://ironpython.codeplex.com/workitem/27991
-                self.assertRaises(SyntaxError, x, '\r\n')
-                self.assertRaises(SyntaxError, x, '\r')
-            else:
-                temp = x('\r\n')
-                temp = x('\r')
+            # http://ironpython.codeplex.com/workitem/27991
+            x('\r\n')
+            x('\r')
 
             self.assertRaises(SyntaxError, x, '\a')
             x('\n')

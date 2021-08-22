@@ -20,31 +20,19 @@ namespace IronPython.Runtime {
     public static class LiteralParser {
         internal delegate IReadOnlyList<char> ParseStringErrorHandler<T>(in ReadOnlySpan<T> data, int start, int end, string reason);
 
-        internal static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
-            Debug.Assert(text != null);
-            Debug.Assert(start + length <= text.Length);
+        internal static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings)
+            => ParseString(text.AsSpan(start, length), isRaw, isUniEscape, normalizeLineEndings);
 
-            if (isRaw && !isUniEscape && !normalizeLineEndings) return new string(text, start, length);
-
-            string result = DoParseString<char>(text.AsSpan(start, length), isRaw, isUniEscape, normalizeLineEndings);
-
-            return result ?? new string(text, start, length);
+        internal static string ParseString(in ReadOnlySpan<char> text, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
+            if (isRaw && !isUniEscape && !normalizeLineEndings) return text.ToString();
+            return DoParseString(text, isRaw, isUniEscape, normalizeLineEndings) ?? text.ToString();
         }
 
-        internal static string ParseString(byte[] bytes, int start, int length, bool isRaw, ParseStringErrorHandler<byte> errorHandler) {
-            Debug.Assert(bytes != null);
-            Debug.Assert(start + length <= bytes.Length);
+        internal static string ParseString(byte[] bytes, int start, int length, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
+            => ParseString(bytes.AsSpan(start, length), isRaw, errorHandler);
 
-            string result = DoParseString(bytes.AsSpan(start, length), isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler);
-
-            return result ?? bytes.AsSpan(start, length).MakeString();
-        }
-
-        internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler) {
-            string result = DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler);
-
-            return result ?? bytes.MakeString();
-        }
+        internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
+            => DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler) ?? bytes.MakeString();
 
         private static string DoParseString<T>(ReadOnlySpan<T> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default)
             where T : unmanaged, IConvertible {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 //#define DUMP_TOKENS
 
 using System;
@@ -10,14 +11,13 @@ using System.IO;
 using System.Numerics;
 using System.Text;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Compiler {
 
@@ -29,7 +29,6 @@ namespace IronPython.Compiler {
         private State _state;
         private readonly bool _verbatim;
         internal bool _dontImplyDedent;
-        private bool _disableLineFeedLineSeparator;
         private SourceUnit _sourceUnit;
         private ErrorSink _errors;
         private bool _endContinues;
@@ -37,7 +36,6 @@ namespace IronPython.Compiler {
         private SourceLocation _initialLocation;
         private TextReader _reader;
         private char[] _buffer;
-        private bool _multiEolns;
         private int _position, _end, _tokenEnd, _start, _tokenStartIndex, _tokenEndIndex;
         private bool _bufferResized;
 
@@ -167,7 +165,6 @@ namespace IronPython.Compiler {
             }
 
             _sourceUnit = sourceUnit;
-            _disableLineFeedLineSeparator = reader is NoLineFeedSourceContentProvider.Reader;
 
             _reader = reader;
             
@@ -177,7 +174,6 @@ namespace IronPython.Compiler {
             
             _newLineLocations = new List<int>();
             _tokenEnd = -1;
-            _multiEolns = !_disableLineFeedLineSeparator;
             _initialLocation = initialLocation;
 
             _tokenEndIndex = -1;
@@ -670,16 +666,12 @@ namespace IronPython.Compiler {
 
         private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int start, int length) {
             try {
-                if (!isBytes) {
-                    var contents = LiteralParser.ParseString(_buffer, start, length, isRaw, !isRaw, !_disableLineFeedLineSeparator);
-                    return new ConstantValueToken(contents);
+                if (isBytes) {
+                    List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, isAscii: true, normalizeLineEndings: true);
+                    return new ConstantValueToken(data.Count == 0 ? Bytes.Empty : new Bytes(data));
                 } else {
-                    List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, isAscii: true, !_disableLineFeedLineSeparator);
-                    if (data.Count == 0) {
-                        return new ConstantValueToken(Bytes.Empty);
-                    }
-
-                    return new ConstantValueToken(new Bytes(data));
+                    var contents = LiteralParser.ParseString(_buffer, start, length, isRaw, isUniEscape: !isRaw, normalizeLineEndings: true);
+                    return new ConstantValueToken(contents);
                 }
             } catch (DecoderFallbackException ex) {
                 var msg = $"(unicode error) {PythonOps.ToString(PythonExceptions.GetPythonException(ex))}";
@@ -1794,7 +1786,7 @@ namespace IronPython.Compiler {
         private int ReadEolnOpt(int current) {
             if (current == '\n') return 1;
 
-            if (current == '\r' && _multiEolns) {
+            if (current == '\r') {
 
                 if (Peek() == '\n') {
                     SeekRelative(+1);
@@ -1810,7 +1802,7 @@ namespace IronPython.Compiler {
         private bool IsEoln(int current) {
             if (current == '\n') return true;
 
-            if (current == '\r' && _multiEolns) {
+            if (current == '\r') {
                 if (Peek() == '\n') {
                     return true;
                 }

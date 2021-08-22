@@ -655,7 +655,7 @@ static int analysisLoader( object pData, sqlite3_int64 argc, object Oargv, objec
     pIndex.aiRowEst[i] = v;
     if ( zIndex < z.Length && z[zIndex] == ' ' )
       zIndex++;
-    if ( z.Substring(zIndex).CompareTo("unordered")==0)//memcmp( z, "unordered", 10 ) == 0 )
+    if ( string.Equals(z.Substring(zIndex), "unordered", StringComparison.Ordinal) )//memcmp( z, "unordered", 10 ) == 0 )
     {
       pIndex.bUnordered = 1;
       break;

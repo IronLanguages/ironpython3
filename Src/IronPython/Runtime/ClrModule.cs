@@ -1068,7 +1068,7 @@ import Namespace.")]
             // we need to get a list of all the modules...
             List<string> modules = new List<string>();
             foreach (string filename in filenames) {
-                if (filename.EndsWith("__init__.py")) {
+                if (filename.EndsWith("__init__.py", StringComparison.Ordinal)) {
                     // this is a package
                     modules.Add(filename);
                 }

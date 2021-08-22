@@ -178,7 +178,7 @@ namespace IronPython.Hosting {
 #endif
 
                 default:
-                    if (arg.StartsWith("-W")) {
+                    if (arg.StartsWith("-W", StringComparison.Ordinal)) {
                         if (_warningFilters == null) {
                             _warningFilters = new List<string>();
                         }
@@ -187,7 +187,7 @@ namespace IronPython.Hosting {
                         break;
                     }
 
-                    if (arg.StartsWith("-m")) {
+                    if (arg.StartsWith("-m", StringComparison.Ordinal)) {
                         ConsoleOptions.ModuleToRun = arg.Substring(2);
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                         break;

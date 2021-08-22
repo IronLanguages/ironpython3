@@ -223,7 +223,7 @@ namespace IronPython.Runtime.Types {
         /// Is this a type used for instances Python types (and not for the types themselves)?
         /// </summary>
         public static bool IsInstanceType(Type type) {
-            return type.FullName.IndexOf(NewTypeMaker.TypePrefix) == 0 ||
+            return type.FullName.StartsWith(NewTypeMaker.TypePrefix, StringComparison.Ordinal) ||
                 // Users can create sub-types of instance-types using __clrtype__ without using 
                 // NewTypeMaker.TypePrefix
                 ((type.BaseType != null) && IsInstanceType(type.BaseType));
@@ -938,7 +938,7 @@ namespace IronPython.Runtime.Types {
                 // TODO: A better check here would be mi.IsFamily && mi.IsSpecialName.  But we need to also check
                 // the other property method (getter if we're a setter, setter if we're a getter) because if one is protected
                 // and the other isn't we need to still override both (so our newslot property is also both a getter and a setter).
-                if ((mi.IsProtected() || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
+                if ((mi.IsProtected() || mi.IsSpecialName) && (mi.Name.StartsWith("get_", StringComparison.Ordinal) || mi.Name.StartsWith("set_", StringComparison.Ordinal))) {
                     // need to be able to call into protected getter/setter methods from derived types,
                     // even if these methods aren't virtual and we are in partial trust.
                     specialNames[mi.Name] = new[] { mi.Name };
@@ -1574,9 +1574,9 @@ namespace IronPython.Runtime.Types {
                 if (IsInstanceType(finishedType.BaseType) && IsInstanceType(mi.DeclaringType)) continue;
 
                 string methodName = mi.Name;
-                if (methodName.StartsWith(BaseMethodPrefix) || methodName.StartsWith(FieldGetterPrefix) || methodName.StartsWith(FieldSetterPrefix)) {
+                if (methodName.StartsWith(BaseMethodPrefix, StringComparison.Ordinal) || methodName.StartsWith(FieldGetterPrefix, StringComparison.Ordinal) || methodName.StartsWith(FieldSetterPrefix, StringComparison.Ordinal)) {
                     foreach (string newName in GetBaseName(mi, specialNames)) {
-                        if (mi.IsSpecialName && (newName.StartsWith("get_") || newName.StartsWith("set_"))) {
+                        if (mi.IsSpecialName && (newName.StartsWith("get_", StringComparison.Ordinal) || newName.StartsWith("set_", StringComparison.Ordinal))) {
                             // if it's a property we want to override it
                             string propName = newName.Substring(4);
 
@@ -1593,7 +1593,7 @@ namespace IronPython.Runtime.Types {
                             }
 
                             StoreOverriddenProperty(mi, newName);
-                        } else if (mi.IsSpecialName && (newName.StartsWith(FieldGetterPrefix) || newName.StartsWith(FieldSetterPrefix))) {
+                        } else if (mi.IsSpecialName && (newName.StartsWith(FieldGetterPrefix, StringComparison.Ordinal) || newName.StartsWith(FieldSetterPrefix, StringComparison.Ordinal))) {
                             StoreOverriddenField(mi, newName);
                         } else {
                             // not a property, just store the overridden method.
@@ -1610,9 +1610,9 @@ namespace IronPython.Runtime.Types {
             lock (PythonTypeOps._propertyCache) {
                 foreach (FieldInfo pi in baseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
                     if (pi.Name == fieldName) {
-                        if (newName.StartsWith(FieldGetterPrefix)) {
+                        if (newName.StartsWith(FieldGetterPrefix, StringComparison.Ordinal)) {
                             AddPropertyInfo(pi.DeclaringType, fieldName, mi, null);
-                        } else if (newName.StartsWith(FieldSetterPrefix)) {
+                        } else if (newName.StartsWith(FieldSetterPrefix, StringComparison.Ordinal)) {
                             AddPropertyInfo(pi.DeclaringType, fieldName, null, mi);
                         }
                     }
@@ -1708,9 +1708,9 @@ namespace IronPython.Runtime.Types {
                 foreach (PropertyInfo pi in baseType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {                    
                     if (pi.Name == propName) {
                         Type declType = pi.DeclaringType;
-                        if (newName.StartsWith("get_")) {                            
+                        if (newName.StartsWith("get_", StringComparison.Ordinal)) {
                             newProp = AddPropertyInfo(declType, propName, mi, null);
-                        } else if (newName.StartsWith("set_")) {
+                        } else if (newName.StartsWith("set_", StringComparison.Ordinal)) {
                             newProp = AddPropertyInfo(declType, propName, null, mi);
                         }
                     }
@@ -1741,11 +1741,11 @@ namespace IronPython.Runtime.Types {
 
         private static IEnumerable<string> GetBaseName(MethodInfo mi, Dictionary<string, string[]> specialNames) {
             string newName;
-            if (mi.Name.StartsWith(BaseMethodPrefix)) {
+            if (mi.Name.StartsWith(BaseMethodPrefix, StringComparison.Ordinal)) {
                 newName = mi.Name.Substring(BaseMethodPrefix.Length);
-            } else if (mi.Name.StartsWith(FieldGetterPrefix)) {
+            } else if (mi.Name.StartsWith(FieldGetterPrefix, StringComparison.Ordinal)) {
                 newName = mi.Name.Substring(FieldGetterPrefix.Length);
-            } else if (mi.Name.StartsWith(FieldSetterPrefix)) {
+            } else if (mi.Name.StartsWith(FieldSetterPrefix, StringComparison.Ordinal)) {
                 newName = mi.Name.Substring(FieldSetterPrefix.Length);
             } else {
                 throw new InvalidOperationException();

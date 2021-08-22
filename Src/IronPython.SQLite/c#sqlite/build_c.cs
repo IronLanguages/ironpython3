@@ -4135,7 +4135,7 @@ Debug.Assert( !SAVEPOINT_BEGIN && SAVEPOINT_RELEASE==1 && SAVEPOINT_ROLLBACK==2 
       for ( i = 0; i < db.nDb; i++ )
       {
         Db pDb = db.aDb[i];
-        if ( pDb.pBt != null && ( null == zDb || 0 == zDb.CompareTo(pDb.zName ) ) )
+        if ( pDb.pBt != null && ( null == zDb || string.Equals( zDb, pDb.zName, StringComparison.Ordinal ) ) )
         {
           sqlite3CodeVerifySchema( pParse, i );
         }

@@ -1530,7 +1530,7 @@ namespace IronPython.Runtime.Operations {
 
             if (CodecsInfo.Codecs.TryGetValue(name, out Lazy<Encoding?>? proxy)) {
                 encoding = proxy.Value;
-            } else if (name.StartsWith("cp") && int.TryParse(name.Substring(2), out int codepage)) {
+            } else if (name.StartsWith("cp", StringComparison.Ordinal) && int.TryParse(name.Substring(2), out int codepage)) {
                 if (codepage < 0 || 65535 < codepage) return false;
                 try {
                     Encoding enc = Encoding.GetEncoding(codepage);
@@ -1770,14 +1770,14 @@ namespace IronPython.Runtime.Operations {
                 return dotNetName;
             }
 
-            if (name.StartsWith("iso8859_")) {
+            if (name.StartsWith("iso8859_", StringComparison.Ordinal)) {
                 return "iso-8859-" + name.Substring(8);
             }
-            if (name.StartsWith("iso2022_")) {
+            if (name.StartsWith("iso2022_", StringComparison.Ordinal)) {
                 return "iso-2022-" + name.Substring(8);
             }
 
-            if (name.StartsWith("mac_")) {
+            if (name.StartsWith("mac_", StringComparison.Ordinal)) {
                 name = "x-" + name;
             }
 

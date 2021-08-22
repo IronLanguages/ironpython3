@@ -2104,7 +2104,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 string typeName = IronPython.Compiler.Parser.GetPrivatePrefix(name);
                 for (int i = 0; i < slots.Count; i++) {
                     string slotName = slots[i];
-                    if (slotName.StartsWith("__") && !slotName.EndsWith("__")) {
+                    if (slotName.StartsWith("__", StringComparison.Ordinal) && !slotName.EndsWith("__", StringComparison.Ordinal)) {
                         slotName = "_" + typeName + slotName;
                     }
 

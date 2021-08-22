@@ -472,7 +472,7 @@ namespace IronPython.Modules {
                         string[] names = _re.GetGroupNames();
                         int[] nums = _re.GetGroupNumbers();
                         for (int i = 1; i < names.Length; i++) {
-                            if (char.IsDigit(names[i][0]) || names[i].StartsWith(_mangledNamedGroup)) {
+                            if (char.IsDigit(names[i][0]) || names[i].StartsWith(_mangledNamedGroup, StringComparison.Ordinal)) {
                                 // skip numeric names and our mangling for unnamed groups mixed w/ named groups.
                                 continue;
                             }

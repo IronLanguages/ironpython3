@@ -32,7 +32,7 @@ namespace IronPythonCompiler {
             var u = new Universe();
             var aName = new AssemblyName(Path.GetFileNameWithoutExtension(new FileInfo(config.Output).Name));
             var ab = u.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Save, config.OutputPath);
-            var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe") ? string.Empty : ".exe"));
+            var mb = ab.DefineDynamicModule(config.Output, aName.Name + (aName.Name.EndsWith(".exe", StringComparison.Ordinal) ? string.Empty : ".exe"));
             var tb = mb.DefineType("PythonMain", IKVM.Reflection.TypeAttributes.Public);
 
             if (!string.IsNullOrEmpty(config.Win32Icon)) {
@@ -64,7 +64,7 @@ namespace IronPythonCompiler {
 
                 foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies()) {
                     var n = new AssemblyName(a.FullName);
-                    if (!a.IsDynamic && a.EntryPoint == null && (n.Name.StartsWith("IronPython") || n.Name == "Microsoft.Dynamic" || n.Name == "Microsoft.Scripting")) {
+                    if (!a.IsDynamic && a.EntryPoint == null && (n.Name.StartsWith("IronPython", StringComparison.Ordinal) || n.Name == "Microsoft.Dynamic" || n.Name == "Microsoft.Scripting")) {
                         ConsoleOps.Info($"\tEmbedded {n.Name} {n.Version}");
                         var f = new FileStream(a.Location, FileMode.Open, FileAccess.Read);
                         mb.DefineManifestResource("Dll." + n.Name, f, IKVM.Reflection.ResourceAttributes.Public);
@@ -255,7 +255,7 @@ namespace IronPythonCompiler {
 
             tb.CreateType();
             ab.SetEntryPoint(mainMethod, config.Target);
-            string fileName = aName.Name.EndsWith(".exe") ? aName.Name : aName.Name + ".exe";
+            string fileName = aName.Name.EndsWith(".exe", StringComparison.Ordinal) ? aName.Name : aName.Name + ".exe";
             ab.Save(fileName, config.Platform, config.Machine);
         }
 

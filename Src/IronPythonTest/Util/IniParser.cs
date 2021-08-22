@@ -72,7 +72,7 @@ namespace IronPythonTest.Util {
 
                 if (string.IsNullOrEmpty(line)) continue;
 
-                if (line.StartsWith("[") && line.EndsWith("]")) {
+                if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal)) {
                     var sectionName = line.Substring(1, line.Length - 2);
                     if (!options.TryGetValue(sectionName, out currentSection)) {
                         currentSection = new Section();

@@ -747,7 +747,7 @@ zulu_time:
             ** weekday N where 0==Sunday, 1==Monday, and so forth.  If the
             ** date is already on the appropriate weekday, this is a no-op.
             */
-            if ( z.ToString().StartsWith( "weekday " )
+            if ( z.ToString().StartsWith( "weekday ", StringComparison.Ordinal )
             && sqlite3AtoF( z.ToString().Substring( 8 ), ref r, sqlite3Strlen30( z.ToString().Substring( 8 ) ), SQLITE_UTF8 )
             && ( n = (int)r ) == r && n >= 0 && r < 7 )
             {

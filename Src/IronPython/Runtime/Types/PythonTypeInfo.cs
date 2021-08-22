@@ -232,10 +232,10 @@ namespace IronPython.Runtime.Types {
 
                             if (meth.IsSpecialName) {
                                 if (meth.IsDefined(typeof(PropertyMethodAttribute), true)) {
-                                    if (meth.Name.StartsWith("Get") || meth.Name.StartsWith("Set")) {
+                                    if (meth.Name.StartsWith("Get", StringComparison.Ordinal) || meth.Name.StartsWith("Set", StringComparison.Ordinal)) {
                                         yield return meth.Name.Substring(3);
                                     } else {
-                                        Debug.Assert(meth.Name.StartsWith("Delete"));
+                                        Debug.Assert(meth.Name.StartsWith("Delete", StringComparison.Ordinal));
                                         yield return meth.Name.Substring(6);
                                     }
                                 }
@@ -524,7 +524,7 @@ namespace IronPython.Runtime.Types {
                 if (binder.DomainManager.Configuration.PrivateBinding) {
                     // in private binding mode Python exposes private members under a mangled name.
                     string header = "_" + type.Name + "__";
-                    if (name.StartsWith(header)) {
+                    if (name.StartsWith(header, StringComparison.Ordinal)) {
                         string memberName = name.Substring(header.Length);
 
                         MemberGroup res = new MemberGroup(type.GetMember(memberName, _privateFlags));
@@ -602,10 +602,10 @@ namespace IronPython.Runtime.Types {
                             if (meth.IsSpecialName) {
                                 if (meth.IsDefined(typeof(PropertyMethodAttribute), true)) {
                                     if (ProtectedOnly(mi)) {
-                                        if (meth.Name.StartsWith("Get") || meth.Name.StartsWith("Set")) {
+                                        if (meth.Name.StartsWith("Get", StringComparison.Ordinal) || meth.Name.StartsWith("Set", StringComparison.Ordinal)) {
                                             yield return meth.Name.Substring(3);
                                         } else {
-                                            Debug.Assert(meth.Name.StartsWith("Delete"));
+                                            Debug.Assert(meth.Name.StartsWith("Delete", StringComparison.Ordinal));
                                             yield return meth.Name.Substring(6);
                                         }
                                     }
@@ -1382,7 +1382,7 @@ namespace IronPython.Runtime.Types {
                 string genName = name + ReflectionUtils.GenericArityDelimiter;
                 List<Type> genTypes = null;
                 foreach (Type t in types) {
-                    if (t.Name.StartsWith(genName)) {
+                    if (t.Name.StartsWith(genName, StringComparison.Ordinal)) {
                         if (genTypes == null) genTypes = new List<Type>();
                         genTypes.Add(t);
                     }
@@ -1957,14 +1957,14 @@ namespace IronPython.Runtime.Types {
         }
 
         private static bool IsPropertyWithParameters(MethodTracker/*!*/ meth) {            
-            if (meth.Method.Name.StartsWith("get_")) {
+            if (meth.Method.Name.StartsWith("get_", StringComparison.Ordinal)) {
                 if (!IsMethodDefaultMember(meth)) {
                     ParameterInfo[] args = meth.Method.GetParameters();
                     if (args.Length > 0) {
                         return true;
                     }
                 }
-            } else if (meth.Method.Name.StartsWith("set_")) {
+            } else if (meth.Method.Name.StartsWith("set_", StringComparison.Ordinal)) {
                 if (!IsMethodDefaultMember(meth)) {
                     ParameterInfo[] args = meth.Method.GetParameters();
                     if (args.Length > 1) {
@@ -1981,7 +1981,7 @@ namespace IronPython.Runtime.Types {
         /// a method that is callable by name.
         /// </summary>
         private static bool IsPythonRecognizedOperator(string name) {
-            if (name.StartsWith("get_") || name.StartsWith("set_")) {
+            if (name.StartsWith("get_", StringComparison.Ordinal) || name.StartsWith("set_", StringComparison.Ordinal)) {
                 return true;
             }
 

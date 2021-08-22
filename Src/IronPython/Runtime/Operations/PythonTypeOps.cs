@@ -443,7 +443,7 @@ namespace IronPython.Runtime.Operations {
             List<MethodBase> res = new List<MethodBase>();
             foreach (MemberInfo mi in members) {
                 MethodBase mb = mi as MethodBase;
-                if (mb != null && !mb.Name.StartsWith(NewTypeMaker.BaseMethodPrefix)) {
+                if (mb != null && !mb.Name.StartsWith(NewTypeMaker.BaseMethodPrefix, StringComparison.Ordinal)) {
                     res.Add(mb);
                 }
             }
@@ -455,7 +455,7 @@ namespace IronPython.Runtime.Operations {
             List<MemberInfo> res = new List<MemberInfo>(members.Length);
             foreach (MemberInfo mi in members) {
                 MethodBase mb = mi as MethodBase;
-                if (mb == null || !mb.Name.StartsWith(NewTypeMaker.BaseMethodPrefix)) {
+                if (mb == null || !mb.Name.StartsWith(NewTypeMaker.BaseMethodPrefix, StringComparison.Ordinal)) {
                     res.Add(mi);
                 }
             }
@@ -560,7 +560,7 @@ namespace IronPython.Runtime.Operations {
                 } else if (y.DeclaringType.FullName == null) {
                     return 1;
                 }
-                return x.DeclaringType.FullName.CompareTo(y.DeclaringType.FullName);
+                return string.Compare(x.DeclaringType.FullName, y.DeclaringType.FullName, StringComparison.Ordinal);
             });
 
             // then if the provided type is a subclass of the most derived type

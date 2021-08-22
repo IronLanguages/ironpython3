@@ -134,19 +134,19 @@ namespace IronPythonCompiler {
 
             foreach (var a in args) {
                 var arg = a.Trim();
-                if (arg.StartsWith("#")) {
+                if (arg.StartsWith("#", StringComparison.Ordinal)) {
                     continue;
                 }
 
-                if (arg.StartsWith("/main:")) {
+                if (arg.StartsWith("/main:", StringComparison.Ordinal)) {
                     MainName = Main = arg.Substring(6).Trim('"');
                     // only override the target kind if its currently a DLL
                     if (Target == PEFileKinds.Dll) {
                         Target = PEFileKinds.ConsoleApplication;
                     }
-                } else if (arg.StartsWith("/out:")) {
+                } else if (arg.StartsWith("/out:", StringComparison.Ordinal)) {
                     Output = arg.Substring(5).Trim('"');
-                } else if (arg.StartsWith("/target:")) {
+                } else if (arg.StartsWith("/target:", StringComparison.Ordinal)) {
                     string tgt = arg.Substring(8).Trim('"');
                     switch (tgt) {
                         case "exe":
@@ -159,7 +159,7 @@ namespace IronPythonCompiler {
                             Target = PEFileKinds.Dll;
                             break;
                     }
-                } else if (arg.StartsWith("/platform:")) {
+                } else if (arg.StartsWith("/platform:", StringComparison.Ordinal)) {
                     string plat = arg.Substring(10).Trim('"');
                     switch (plat) {
                         case "x86":
@@ -175,25 +175,25 @@ namespace IronPythonCompiler {
                             Machine = IKVM.Reflection.ImageFileMachine.AMD64;
                             break;
                     }
-                } else if (arg.StartsWith("/win32icon:")) {
+                } else if (arg.StartsWith("/win32icon:", StringComparison.Ordinal)) {
                     Win32Icon = arg.Substring(11).Trim('"');
-                } else if (arg.StartsWith("/fileversion:")) {
+                } else if (arg.StartsWith("/fileversion:", StringComparison.Ordinal)) {
                     FileVersion = arg.Substring(13).Trim('"');
-                } else if (arg.StartsWith("/productversion:")) {
+                } else if (arg.StartsWith("/productversion:", StringComparison.Ordinal)) {
                     ProductVersion = arg.Substring(16).Trim('"');
-                } else if (arg.StartsWith("/productname:")) {
+                } else if (arg.StartsWith("/productname:", StringComparison.Ordinal)) {
                     ProductName = arg.Substring(13).Trim('"');
-                } else if (arg.StartsWith("/copyright:")) {
+                } else if (arg.StartsWith("/copyright:", StringComparison.Ordinal)) {
                     Copyright = arg.Substring(11).Trim('"');
-                } else if (arg.StartsWith("/errfmt:")) {
+                } else if (arg.StartsWith("/errfmt:", StringComparison.Ordinal)) {
                     ErrorMessageFormat = arg.Substring(8);
-                } else if (arg.StartsWith("/embed")) {
+                } else if (arg.StartsWith("/embed", StringComparison.Ordinal)) {
                     Embed = true;
-                } else if (arg.StartsWith("/standalone")) {
+                } else if (arg.StartsWith("/standalone", StringComparison.Ordinal)) {
                     Standalone = true;
-                } else if (arg.StartsWith("/mta")) {
+                } else if (arg.StartsWith("/mta", StringComparison.Ordinal)) {
                     UseMta = true;
-                } else if (arg.StartsWith("/recurse:")) {
+                } else if (arg.StartsWith("/recurse:", StringComparison.Ordinal)) {
                     string pattern = arg.Substring(9);
                     if (string.IsNullOrWhiteSpace(pattern)) {
                         ConsoleOps.Error(true, "Missing pattern for /recurse option");
@@ -203,7 +203,7 @@ namespace IronPythonCompiler {
                     }
                 } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
-                } else if (arg.StartsWith("/py:")) {
+                } else if (arg.StartsWith("/py:", StringComparison.Ordinal)) {
                     // if you add a parameter that takes a different type then 
                     // ScriptingRuntimeHelpers.True/False or int
                     // you need ot also modify Program.cs for standalone generation.
@@ -250,7 +250,7 @@ namespace IronPythonCompiler {
                             break;
                     }
                 } else {
-                    if (arg.StartsWith("@")) {
+                    if (arg.StartsWith("@", StringComparison.Ordinal)) {
                         var respFile = Path.GetFullPath(arg.Substring(1));
                         if (respFiles == null) {
                             respFiles = new List<string>();
@@ -263,7 +263,7 @@ namespace IronPythonCompiler {
                             ConsoleOps.Warning($"Already parsed response file '{arg.Substring(1)}'");
                         }
                     } else {
-                        if (arg.ToLower().EndsWith(".dll")) {
+                        if (arg.ToLower().EndsWith(".dll", StringComparison.Ordinal)) {
                             DLLs.Add(arg);
                         } else {
                             Files.Add(arg);

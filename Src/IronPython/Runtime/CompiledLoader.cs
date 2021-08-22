@@ -23,7 +23,7 @@ namespace IronPython.Runtime {
                 } else {
                     string name = code.SourceUnit.Path;
                     name = name.Replace(Path.DirectorySeparatorChar, '.');
-                    if (name.EndsWith("__init__.py")) {
+                    if (name.EndsWith("__init__.py", StringComparison.Ordinal)) {
                         name = name.Substring(0, name.Length - ".__init__.py".Length);
                     }
                     _codes[name] = onDiskCode;

@@ -383,7 +383,7 @@ namespace Community.CsharpSqlite
     */
     static int sqlite3_compileoption_used( string zOptName )
     {
-      if ( zOptName.EndsWith( "=" ) )
+      if ( zOptName.EndsWith( "=", StringComparison.Ordinal ) )
         return 0;
       int i, n = 0;
       if ( zOptName.StartsWith( "SQLITE_", System.StringComparison.OrdinalIgnoreCase ) )

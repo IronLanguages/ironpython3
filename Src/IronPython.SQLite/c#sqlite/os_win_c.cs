@@ -2621,7 +2621,7 @@ int isTemp = 0;
 
       // /* Convert the filename to the system encoding. */
       zConverted = zUtf8Name;// convertUtf8Filename( zUtf8Name );
-      if ( zConverted.StartsWith( "/" ) && !zConverted.StartsWith( "//" ) )
+      if ( zConverted.StartsWith( "/", StringComparison.Ordinal ) && !zConverted.StartsWith( "//", StringComparison.Ordinal ) )
         zConverted = zConverted.Substring( 1 );
       //if ( String.IsNullOrEmpty( zConverted ) )
       //{

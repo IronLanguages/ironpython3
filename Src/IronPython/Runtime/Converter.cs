@@ -920,11 +920,11 @@ namespace IronPython.Runtime {
         }
 
         private static bool IsPythonType(Type t) {
-            return t.FullName.StartsWith("IronPython."); //!!! this and the check below are hacks
+            return t.FullName.StartsWith("IronPython.", StringComparison.Ordinal); //!!! this and the check below are hacks
         }
 
         private static bool HasPythonProtocol(Type t, string name) {
-            if (t.FullName.StartsWith(NewTypeMaker.TypePrefix)) return true;
+            if (t.FullName.StartsWith(NewTypeMaker.TypePrefix, StringComparison.Ordinal)) return true;
             PythonType dt = DynamicHelpers.GetPythonTypeFromType(t);
             if (dt == null) return false;
             return dt.TryResolveSlot(DefaultContext.Default, name, out _);

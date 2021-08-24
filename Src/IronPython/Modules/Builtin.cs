@@ -364,7 +364,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         public static void exec(CodeContext/*!*/ context, [NotNull]string code, PythonDictionary? globals = null, object? locals = null) {
-            SourceUnit source = context.LanguageContext.CreateSourceUnit(new NoLineFeedSourceContentProvider(code), "<string>", SourceCodeKind.Statements);
+            SourceUnit source = context.LanguageContext.CreateSnippet(code, "<string>", SourceCodeKind.Statements);
             PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
 

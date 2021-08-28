@@ -14,6 +14,8 @@
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
     <ProjectReference Include="..\IronPython.Modules\IronPython.Modules.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
   </ItemGroup>
 

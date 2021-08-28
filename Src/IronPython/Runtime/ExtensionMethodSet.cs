@@ -122,7 +122,6 @@ namespace IronPython.Runtime {
                             }
                         }
 
-#if FEATURE_ASSEMBLY_GETFORWARDEDTYPES
                         Type[] forwardedTypes;
                         try {
                             forwardedTypes = _asm.GetForwardedTypes();
@@ -134,7 +133,6 @@ namespace IronPython.Runtime {
                                 loadedTypes.Add(DynamicHelpers.GetPythonTypeFromType(type));
                             }
                         }
-#endif
                     }
 
                     var info = new AssemblyLoadInfo(_asm);
@@ -220,7 +218,7 @@ namespace IronPython.Runtime {
 
                     Debug.Assert(info.Types != null);
                     foreach (var containingType in info.Types) {
-                        foreach(var methodList in containingType.ExtensionMethods.Values) {
+                        foreach (var methodList in containingType.ExtensionMethods.Values) {
                             foreach (var method in methodList) {
                                 var methodParams = method.GetParameters();
                                 if (methodParams.Length == 0) {
@@ -317,15 +315,15 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static bool operator  == (ExtensionMethodSet set1, ExtensionMethodSet set2) {
+        public static bool operator ==(ExtensionMethodSet set1, ExtensionMethodSet set2) {
             if ((object)set1 != (object)null) {
                 return set1.Equals(set2);
             }
 
             return (object)set2 == (object)null;
         }
-        
-        public static bool operator  != (ExtensionMethodSet set1, ExtensionMethodSet set2) {
+
+        public static bool operator !=(ExtensionMethodSet set1, ExtensionMethodSet set2) {
             return !(set1 == set2);
         }
 
@@ -487,4 +485,22 @@ namespace IronPython.Runtime {
         }
 #endif
     }
+
+#if !FEATURE_ASSEMBLY_GETFORWARDEDTYPES
+    internal static class AssemblyExtensions {
+#if NETSTANDARD2_0
+        private static readonly MethodInfo GetForwardedTypesMethodInfo = typeof(Assembly).GetMethod("GetForwardedTypes", Array.Empty<Type>());
+
+        internal static Type[] GetForwardedTypes(this Assembly assembly) {
+            if (GetForwardedTypesMethodInfo is not null) {
+                // just in case we're running on .NET Core 2.1...
+                return GetForwardedTypesMethodInfo.Invoke(assembly, null) as Type[] ?? Array.Empty<Type>();
+            }
+            return Array.Empty<Type>();
+        }
+#else
+        internal static Type[] GetForwardedTypes(this Assembly assembly) => Array.Empty<Type>();
+#endif
+    }
+#endif
 }

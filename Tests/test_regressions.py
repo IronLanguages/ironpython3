@@ -18,7 +18,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython, stdout_trapper
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython, stdout_trapper
 
 class RegressionTest(IronPythonTestCase):
 
@@ -1357,6 +1357,7 @@ class test(object):
         self.assertTrue(16 in x)
         self.assertTrue(16 in set(x))
 
+    @unittest.skipIf(is_netcoreapp21, 'IronPython.SQLite.dll does not end up in the netcoreapp2.1/DLLs folder')
     def test_ipy2_gh522(self):
         """https://github.com/IronLanguages/ironpython2/issues/522"""
         import sqlite3

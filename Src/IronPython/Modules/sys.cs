@@ -425,7 +425,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1_OR_GREATER
         public static string float_repr_style = "short";
 #else
         public static string float_repr_style = "legacy";

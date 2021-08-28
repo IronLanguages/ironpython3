@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;netcoreapp2.1;netcoreapp3.1;netstandard2.0;net5.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp3.1;netstandard2.0;net5.0</TargetFrameworks>
     <BaseAddress>885063680</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -32,7 +32,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' or '$(TargetFramework)' == 'netstandard2.0' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
   </ItemGroup>
 

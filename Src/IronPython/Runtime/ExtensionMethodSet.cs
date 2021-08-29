@@ -494,7 +494,11 @@ namespace IronPython.Runtime {
         internal static Type[] GetForwardedTypes(this Assembly assembly) {
             if (GetForwardedTypesMethodInfo is not null) {
                 // just in case we're running on .NET Core 2.1...
-                return GetForwardedTypesMethodInfo.Invoke(assembly, null) as Type[] ?? Array.Empty<Type>();
+                try {
+                    return GetForwardedTypesMethodInfo.Invoke(assembly, null) as Type[] ?? Array.Empty<Type>();
+                } catch (TargetInvocationException ex) {
+                    throw ex.InnerException;
+                }
             }
             return Array.Empty<Type>();
         }

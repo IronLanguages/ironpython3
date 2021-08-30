@@ -24,9 +24,9 @@ is_mono = False
 if is_ironpython:
     import clr
     is_netcoreapp = clr.IsNetCoreApp
-    is_netcoreapp21 = clr.TargetFramework == ".NETCoreApp,Version=v2.1"
-    is_netcoreapp31 = clr.TargetFramework == ".NETCoreApp,Version=v3.1"
-    is_net50 = clr.TargetFramework == ".NETCoreApp,Version=v5.0"
+    is_netcoreapp21 = clr.FrameworkDescription.startswith(".NET Core 2.x")
+    is_netcoreapp31 = clr.FrameworkDescription.startswith(".NET Core 3.1")
+    is_net50 = clr.FrameworkDescription.startswith(".NET 5.0")
     is_mono = clr.IsMono
 
 #--The bittedness of the Python implementation

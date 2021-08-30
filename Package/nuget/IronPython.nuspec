@@ -19,11 +19,6 @@
         <dependency id="DynamicLanguageRuntime" version="1.3.0" />
         <dependency id="System.Memory" version="4.5.4" />
       </group>
-      <group targetFramework="netcoreapp2.1">
-        <dependency id="DynamicLanguageRuntime" version="1.3.0" />
-        <dependency id="System.Text.Encoding.CodePages" version="4.6.0" />
-        <dependency id="Microsoft.Win32.Registry" version="4.5.0" />
-      </group>
       <group targetFramework="netstandard2.0">
         <dependency id="DynamicLanguageRuntime" version="1.3.0" />
         <dependency id="System.Memory" version="4.5.4" />
@@ -37,9 +32,9 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;net5.0*\**\*" />
-    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;net5.0*\**\*" />
-    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;net5.0*\**\*" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp2.1\**\*;net5.0*\**\*" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp2.1\**\*;net5.0*\**\*" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp2.1\**\*;net5.0*\**\*" />
     <file src="LICENSE;README.md" />
   </files>
 </package>

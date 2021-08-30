@@ -29,6 +29,8 @@
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+
     <!-- Don't include SourceRevisionId in InformationalVersion (SourceLink) - causes issues with IronPython.Runtime.CurrentVersion if true -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 

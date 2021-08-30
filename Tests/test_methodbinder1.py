@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 myint1,     myint2      = myint(20),    myint(-20)
@@ -780,6 +780,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         result = nt.Method(None)
         self.assertEqual(result, None)
 
+    @unittest.skipIf(is_netcoreapp, "System.Configuration.ConfigurationManager")
     def test_xequals_call_for_optimization(self):
         """
         Testing specifically for System.Configuration.ConfigurationManager

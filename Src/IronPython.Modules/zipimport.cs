@@ -286,7 +286,7 @@ the file wasn't found.")]
                     throw MakeError(context, "path too long");
                 }
 
-                path = path.Replace(_archive, string.Empty).TrimStart(Path.DirectorySeparatorChar);                
+                path = path.Replace(_archive, string.Empty).TrimStart(Path.DirectorySeparatorChar);
                 if (!__files.ContainsKey(path)) {
                     throw PythonOps.IOError(path);
                 }
@@ -612,22 +612,17 @@ contain the module, but has no source for it.")]
             }
         }
 
-        public static PythonType get_ZipImportError(CodeContext context) {
-            PythonContext pyContext = context.LanguageContext;
-            PythonType zipImportError = (PythonType)pyContext.GetModuleState("zipimport.ZipImportError");
-            return zipImportError;
-        }
+        internal static PythonType ZipImportError(CodeContext context)
+            => (PythonType)context.LanguageContext.GetModuleState("zipimport.ZipImportError");
 
-        internal static Exception MakeError(CodeContext context, params object[] args) {
-            return PythonOps.CreateThrowable(get_ZipImportError(context), args);
-        }
+        internal static Exception MakeError(CodeContext context, params object[] args)
+            => PythonExceptions.CreateThrowable(ZipImportError(context), args);
 
-        private static void InitModuleExceptions(PythonContext context,
-            PythonDictionary dict) {
+        private static void InitModuleExceptions(PythonContext context, PythonDictionary dict) {
             context.EnsureModuleException(
                 "zipimport.ZipImportError",
                 PythonExceptions.ImportError,
-                typeof(PythonExceptions.BaseException),
+                typeof(PythonExceptions._ImportError),
                 dict, "ZipImportError", "zipimport",
                 (msg, innerException) => new ImportException(msg, innerException));
         }

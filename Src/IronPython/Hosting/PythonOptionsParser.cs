@@ -180,20 +180,19 @@ namespace IronPython.Hosting {
                                 // of old/new style errors (e.g. -X:CompilationThreshold=1).
                                 throw new InvalidOptionException($"Unknown option: {arg}");
                             }
-                            return;
+                            break;
                     }
                 } else {
                     var options = arg.AsSpan(1);
                     while (options.Length > 0) {
                         options = HandleOptions(options);
                     }
-                    return;
                 }
+            } else {
+                ConsoleOptions.FileName = arg.Trim();
+                PushArgBack();
+                LanguageSetup.Options["Arguments"] = PopRemainingArgs();
             }
-
-            ConsoleOptions.FileName = arg.Trim();
-            PushArgBack();
-            LanguageSetup.Options["Arguments"] = PopRemainingArgs();
         }
 
         protected override void HandleImplementationSpecificOption(string arg, string val) {

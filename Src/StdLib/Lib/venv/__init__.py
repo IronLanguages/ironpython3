@@ -252,7 +252,7 @@ class EnvBuilder:
         # We run ensurepip in isolated mode to avoid side effects from
         # environment vars, the current directory and anything else
         # intended for the global Python environment
-        cmd = [context.env_exe, '-I', '-m', 'ensurepip', '--upgrade', # https://github.com/IronLanguages/ironpython3/issues/1075
+        cmd = [context.env_exe, '-Im', 'ensurepip', '--upgrade',
                                                     '--default-pip']
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 

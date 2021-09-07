@@ -3,14 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+
+using IronPython.Hosting;
+using IronPython.Runtime;
 
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-
-using IronPython.Hosting;
-using IronPython.Runtime;
+using Microsoft.Scripting.Utils;
 
 internal sealed class PythonConsoleHost : ConsoleHost {
 
@@ -52,6 +55,62 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         }
     }
 
+    public override void PrintLanguageHelp(StringBuilder output) {
+        new PythonOptionsParser().GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments);
+
+        // only display language specific options if one or more optinos exists.
+        if (commandLine != null || options != null || environmentVariables != null || comments != null) {
+            var appendLine = false;
+
+            if (commandLine != null) {
+                appendLine = true;
+                output.AppendLine(commandLine);
+            }
+
+            if (options != null) {
+                if (appendLine) output.AppendLine();
+                appendLine = true;
+
+                // reformat the implementation-specific options
+                var newOptions = new List<KeyValuePair<string, string>>();
+                bool first = true;
+                for (int i = 0; i < options.GetLength(0); i++) {
+                    var pair = new KeyValuePair<string, string>(options[i, 0], ": " + options[i, 1]);
+                    if (pair.Key.StartsWith("-X", StringComparison.Ordinal)) {
+                        if (first) {
+                            first = false;
+                            newOptions.Add(new KeyValuePair<string, string>("-X opt", ": set implementation-specific option. The following options are available:"));
+                            newOptions.Add(new KeyValuePair<string, string>(string.Empty, string.Empty));
+                        }
+                        newOptions.Add(new KeyValuePair<string, string>(string.Empty, pair.Key + pair.Value));
+                    } else {
+                        newOptions.Add(pair);
+                    }
+                }
+                options = new string[newOptions.Count, 2];
+                for (int i = 0; i < newOptions.Count; i++) {
+                    options[i, 0] = newOptions[i].Key;
+                    options[i, 1] = newOptions[i].Value;
+                }
+
+                output.AppendLine("Options:");
+                ArrayUtils.PrintTable(output, options);
+            }
+
+            if (environmentVariables != null) {
+                if (appendLine) output.AppendLine();
+                appendLine = true;
+                output.AppendLine("Environment variables:");
+                ArrayUtils.PrintTable(output, environmentVariables);
+            }
+
+            if (comments != null) {
+                if (appendLine) output.AppendLine();
+                output.AppendLine(comments);
+            }
+        }
+    }
+
     protected override void ExecuteInternal() {
         var pc = HostingHelpers.GetLanguageContext(Engine) as PythonContext;
         pc.SetModuleState(typeof(ScriptEngine), Engine);
@@ -88,7 +147,7 @@ internal sealed class PythonConsoleHost : ConsoleHost {
 #if DEBUG
         args = MaybeAttachDebugger(args);
 #endif
-        
+
         return new PythonConsoleHost().Run(args);
     }
 }

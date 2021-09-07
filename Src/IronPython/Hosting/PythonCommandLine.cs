@@ -247,7 +247,7 @@ namespace IronPython.Hosting {
             string prefix = null;
 
             Assembly entryAssembly = Assembly.GetEntryAssembly();
-            //Can be null if called from unmanaged code (VS integration scenario)
+            // Can be null if called from unmanaged code (VS integration scenario)
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
@@ -293,14 +293,10 @@ namespace IronPython.Hosting {
                     path = Path.Combine(Path.GetDirectoryName(prefix), "pyvenv.cfg");
                 }
 
-                if (pyvenv_prefix is null) {
-                    // Make sure there an IronPython Lib directory, and if not keep looking up
-                    while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
-                        prefix = Path.GetDirectoryName(prefix);
-                    }
-                }
-                else {
-                    prefix = pyvenv_prefix;
+                prefix = pyvenv_prefix ?? prefix;
+                // Make sure there an IronPython Lib directory, and if not keep looking up
+                while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
+                    prefix = Path.GetDirectoryName(prefix);
                 }
             }
 

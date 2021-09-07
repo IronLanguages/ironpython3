@@ -72,17 +72,17 @@ internal sealed class PythonConsoleHost : ConsoleHost {
                 appendLine = true;
 
                 // reformat the implementation-specific options
-                List<KeyValuePair<string, string>> newOptions = new List<KeyValuePair<string, string>>();
+                var newOptions = new List<KeyValuePair<string, string>>();
                 bool first = true;
-                for (int i = 0; i < options.Length / 2; i++) {
+                for (int i = 0; i < options.GetLength(0); i++) {
                     var pair = new KeyValuePair<string, string>(options[i, 0], ": " + options[i, 1]);
                     if (pair.Key.StartsWith("-X", StringComparison.Ordinal)) {
                         if (first) {
                             first = false;
                             newOptions.Add(new KeyValuePair<string, string>("-X opt", ": set implementation-specific option. The following options are available:"));
-                            newOptions.Add(new KeyValuePair<string, string>("", ""));
+                            newOptions.Add(new KeyValuePair<string, string>(string.Empty, string.Empty));
                         }
-                        newOptions.Add(new KeyValuePair<string, string>("", pair.Key + pair.Value));
+                        newOptions.Add(new KeyValuePair<string, string>(string.Empty, pair.Key + pair.Value));
                     } else {
                         newOptions.Add(pair);
                     }

@@ -249,18 +249,6 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            /// <summary>
-            /// Helper function for reading char/wchar's.  This is used for reading from
-            /// arrays and pointers to avoid creating lots of 1-char strings.
-            /// </summary>
-            internal char ReadChar(MemoryHolder/*!*/ owner, int offset) {
-                switch (_type) {
-                    case SimpleTypeKind.Char: return (char)owner.ReadByte(offset);
-                    case SimpleTypeKind.WChar: return (char)owner.ReadInt16(offset);
-                    default: throw new InvalidOperationException();
-                }
-            }
-
             object INativeType.SetValue(MemoryHolder/*!*/ owner, int offset, object value) {
                 if (value is SimpleCData data && data.NativeType == this) {
                     data._memHolder.CopyTo(owner, offset, ((INativeType)this).Size);

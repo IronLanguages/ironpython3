@@ -266,8 +266,12 @@ namespace IronPython.Modules {
         }
 
         public static IntPtr GetCharPointer(object value) {
-            if (value is string strVal) {
-                return Marshal.StringToCoTaskMemAnsi(strVal);
+            if (value is Bytes bytes) {
+                var data = bytes.UnsafeByteArray;
+                var ptr = Marshal.AllocCoTaskMem(data.Length + 1);
+                Marshal.Copy(data, 0, ptr, data.Length);
+                Marshal.WriteByte(ptr, data.Length, 0);
+                return ptr;
             }
 
             if (value == null) {

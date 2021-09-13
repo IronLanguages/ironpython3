@@ -53,8 +53,10 @@ namespace IronPython.Modules {
                         }
                         break;
                     case SimpleTypeKind.WChar: {
-                            if (!(value is string t && t.Length == 1)) {
-                                throw PythonOps.TypeError("one character unicode string expected");
+                            if (value is string t) {
+                                if (t.Length != 1) throw PythonOps.TypeError("one character unicode string expected");
+                            } else {
+                                throw PythonOps.TypeError("unicode string expected instead of {0} instance", DynamicHelpers.GetPythonType(value).Name);
                             }
                         }
                         break;

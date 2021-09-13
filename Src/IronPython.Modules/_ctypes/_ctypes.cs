@@ -708,49 +708,49 @@ namespace IronPython.Modules {
         }
 
         // TODO: Move these to an Ops class
+        [PythonHidden]
         public static object GetCharArrayValue(_Array arr) {
             return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
         }
 
+        [PythonHidden]
         public static void SetCharArrayValue(_Array arr, object value) {
             arr.NativeType.SetValue(arr._memHolder, 0, value);
         }
 
-        public static void DeleteCharArrayValue(_Array arr, object value) {
+        [PythonHidden]
+        public static void DeleteCharArrayValue(_Array arr) {
             throw PythonOps.TypeError("cannot delete char array value");
         }
 
+        [PythonHidden]
+        public static object GetCharArrayRaw(_Array arr) {
+            return ((ArrayType)arr.NativeType).GetRawValue(arr._memHolder, 0);
+        }
+
+        [PythonHidden]
+        public static void SetCharArrayRaw(_Array arr, object value) {
+            ((ArrayType)arr.NativeType).SetRawValue(arr._memHolder, 0, value);
+        }
+
+        [PythonHidden]
+        public static void DeleteCharArrayRaw(_Array arr) {
+            throw PythonOps.AttributeError("cannot delete char array raw");
+        }
+
+        [PythonHidden]
         public static object GetWCharArrayValue(_Array arr) {
             return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
         }
 
+        [PythonHidden]
         public static void SetWCharArrayValue(_Array arr, object value) {
             arr.NativeType.SetValue(arr._memHolder, 0, value);
         }
 
+        [PythonHidden]
         public static object DeleteWCharArrayValue(_Array arr) {
             throw PythonOps.TypeError("cannot delete wchar array value");
-        }
-
-        public static object GetWCharArrayRaw(_Array arr) {
-            return ((ArrayType)arr.NativeType).GetRawValue(arr._memHolder, 0);
-        }
-
-        public static void SetWCharArrayRaw(_Array arr, object value) {
-            MemoryView view = value as MemoryView;
-            if ((object)view != null) {
-                string strVal = view.tobytes().MakeString();
-                if (strVal.Length > arr.__len__()) {
-                    throw PythonOps.ValueError("string too long");
-                }
-                value = strVal;
-            }
-
-            arr.NativeType.SetValue(arr._memHolder, 0, value);
-        }
-
-        public static object DeleteWCharArrayRaw(_Array arr) {
-            throw PythonOps.TypeError("cannot delete wchar array raw");
         }
 
         private class RefCountInfo {

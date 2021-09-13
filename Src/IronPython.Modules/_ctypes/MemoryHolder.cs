@@ -206,13 +206,13 @@ namespace IronPython.Modules {
         internal static Bytes ReadBytes(IntPtr addr, int offset, int length) {
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
-            MemoryStream res = new MemoryStream();
-            if (checked(offset + length) < Int32.MaxValue) {
+            var buffer = new byte[length];
+            if (checked(offset + length) < int.MaxValue) {
                 for (int i = 0; i < length; i++) {
-                    res.WriteByte(Marshal.ReadByte(addr, offset + i));
+                    buffer[i] = Marshal.ReadByte(addr, offset + i);
                 }
             }
-            return Bytes.Make(res.ToArray());
+            return Bytes.Make(buffer);
         }
 
         internal static Bytes ReadBytes(IntPtr addr, int offset) {
@@ -280,11 +280,9 @@ namespace IronPython.Modules {
                 WriteInt16(checked(offset + i * 2), (short)value[i]);
             }
         }
-
-        internal void WriteAnsiString(int offset, string value) {
-            // TODO: There's gotta be a better way to do this
+        internal void WriteSpan(int offset, ReadOnlySpan<byte> value) {
             for (int i = 0; i < value.Length; i++) {
-                WriteByte(checked(offset + i), (byte)value[i]);
+                WriteByte(checked(offset + i), value[i]);
             }
         }
 

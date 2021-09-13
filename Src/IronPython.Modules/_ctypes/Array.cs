@@ -6,15 +6,15 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Collections.Generic;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -33,7 +33,11 @@ namespace IronPython.Modules {
                 if (args.Length > ((ArrayType)nativeType).Length) {
                     throw PythonOps.IndexError("too many arguments");
                 }
-                nativeType.SetValue(_memHolder, 0, args);
+
+                INativeType elementType = ElementType;
+                for (var i = 0; i < args.Length; i++) {
+                    elementType.SetValue(_memHolder, checked(i * elementType.Size), args[i]);
+                }
             }
 
             public object this[int index] {

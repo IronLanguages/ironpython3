@@ -4,9 +4,9 @@
 
 #if FEATURE_CTYPES
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 
@@ -67,7 +67,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object this[[NotNull]Slice slice] {
+            public object this[[NotNull] Slice slice] {
                 get {
                     int start, stop, step, count;
                     int size = ((ArrayType)NativeType).Length;
@@ -75,31 +75,46 @@ namespace IronPython.Modules {
 
                     slice.GetIndicesAndCount(size, out start, out stop, out step, out count);
                     if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
-                        if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
-                            return String.Empty;
+                        if (elemType != null) {
+                            if (elemType._type == SimpleTypeKind.Char) return Bytes.Empty;
+                            if (elemType._type == SimpleTypeKind.WChar) return string.Empty;
                         }
                         return new PythonList();
                     }
 
-                    if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
-                        int elmSize = ((INativeType)elemType).Size;
-                        StringBuilder res = new StringBuilder(count);
-
-                        for (int i = 0, index = start; i < count; i++, index += step) {
-                            char c = elemType.ReadChar(_memHolder, checked(index * elmSize));
-                            res.Append(c);
+                    if (elemType != null) {// && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
+                        if (elemType._type == SimpleTypeKind.Char) {
+                            Debug.Assert(((INativeType)elemType).Size == 1);
+                            if (step == 1) {
+                                return _memHolder.ReadBytes(start, count);
+                            } else {
+                                var buffer = new byte[count];
+                                for (int i = 0, index = start; i < count; i++, index += step) {
+                                    buffer[i] = _memHolder.ReadByte(index);
+                                }
+                                return Bytes.Make(buffer);
+                            }
                         }
-
-                        return res.ToString();
-                    } else {
-                        object[] ret = new object[count];
-                        int ri = 0;
-                        for (int i = 0, index = start; i < count; i++, index += step) {
-                            ret[ri++] = this[index];
+                        if (elemType._type == SimpleTypeKind.WChar) {
+                            int elmSize = ((INativeType)elemType).Size;
+                            if (step == 1) {
+                                return _memHolder.ReadUnicodeString(checked(start * elmSize), count);
+                            } else {
+                                var res = new StringBuilder(count);
+                                for (int i = 0, index = start; i < count; i++, index += step) {
+                                    res.Append((char)_memHolder.ReadInt16(checked(index * elmSize)));
+                                }
+                                return res.ToString();
+                            }
                         }
-
-                        return new PythonList(ret);
                     }
+
+                    object[] ret = new object[count];
+                    for (int i = 0, index = start; i < count; i++, index += step) {
+                        ret[i++] = this[index];
+                    }
+
+                    return PythonList.FromArrayNoCopy(ret);
                 }
                 set {
                     int start, stop, step, count;
@@ -151,7 +166,7 @@ namespace IronPython.Modules {
                 );
             }
 
-#region IBufferProtocol
+            #region IBufferProtocol
 
             public override int ItemCount {
                 [PythonHidden]
@@ -168,7 +183,7 @@ namespace IronPython.Modules {
                         curType = ((ArrayType)curType).ElementType;
                     }
 
-                    return curType.Size; 
+                    return curType.Size;
                 }
             }
 
@@ -185,8 +200,9 @@ namespace IronPython.Modules {
 
             // TODO: if this.NativeType.ElementType is ArrayType, suboffsets need to be reported
 
-#endregion
+            #endregion
         }
     }
 }
+
 #endif

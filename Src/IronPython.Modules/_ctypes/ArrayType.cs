@@ -289,7 +289,7 @@ namespace IronPython.Modules {
             private void WriteBytes(MemoryHolder address, int offset, Bytes bytes) {
                 SimpleType st = (SimpleType)_type;
                 Debug.Assert(st._type == SimpleTypeKind.Char && bytes.Count <= _length);
-                address.WriteSpan(offset, bytes.AsMemory().Span);
+                address.WriteSpan(offset, bytes.AsSpan());
                 if (bytes.Count < _length) {
                     address.WriteByte(checked(offset + bytes.Count), 0);
                 }

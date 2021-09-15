@@ -1011,9 +1011,9 @@ namespace IronPython.Runtime {
 
         #region Implementation Details
 
-        internal ReadOnlyMemory<byte> AsMemory() {
-            return _bytes.AsMemory();
-        }
+        internal ReadOnlyMemory<byte> AsMemory() => _bytes.AsMemory();
+
+        internal ReadOnlySpan<byte> AsSpan() => _bytes.AsSpan();
 
         internal static bool TryInvokeBytesOperator(CodeContext context, object? obj, [NotNullWhen(true)] out Bytes? bytes) {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, obj, "__bytes__", out object? res)) {

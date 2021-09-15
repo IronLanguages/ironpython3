@@ -82,7 +82,7 @@ namespace IronPython.Modules {
                         return new PythonList();
                     }
 
-                    if (elemType != null) {// && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
+                    if (elemType != null) {
                         if (elemType._type == SimpleTypeKind.Char) {
                             Debug.Assert(((INativeType)elemType).Size == 1);
                             if (step == 1) {

@@ -287,7 +287,9 @@ namespace IronPython.Modules {
 
         public static Bytes IntPtrToBytes(IntPtr ptr) {
             // TODO: optimize this?
-            return Bytes.Make(Marshal.PtrToStringAnsi(ptr).MakeByteArray());
+            var str = Marshal.PtrToStringAnsi(ptr);
+            if (str is null) return null;
+            return Bytes.Make(str.MakeByteArray());
         }
 
         public static IntPtr GetPointer(object value) {

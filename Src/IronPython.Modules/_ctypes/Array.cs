@@ -111,7 +111,7 @@ namespace IronPython.Modules {
 
                     object[] ret = new object[count];
                     for (int i = 0, index = start; i < count; i++, index += step) {
-                        ret[i++] = this[index];
+                        ret[i] = this[index];
                     }
 
                     return PythonList.FromArrayNoCopy(ret);

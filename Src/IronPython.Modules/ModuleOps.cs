@@ -266,8 +266,12 @@ namespace IronPython.Modules {
         }
 
         public static IntPtr GetCharPointer(object value) {
-            if (value is string strVal) {
-                return Marshal.StringToCoTaskMemAnsi(strVal);
+            if (value is Bytes bytes) {
+                var data = bytes.UnsafeByteArray;
+                var ptr = Marshal.AllocCoTaskMem(data.Length + 1);
+                Marshal.Copy(data, 0, ptr, data.Length);
+                Marshal.WriteByte(ptr, data.Length, 0);
+                return ptr;
             }
 
             if (value == null) {
@@ -596,23 +600,31 @@ namespace IronPython.Modules {
         }
 
         public static byte GetChar(object value, object type) {
-            if (value is string strVal && strVal.Length == 1) {
-                return (byte)strVal[0];
+            // TODO: .NET interop?
+            if (value is Bytes bytes && bytes.Count == 1) {
+                return ((IList<byte>)bytes)[0];
             }
-
-            if(value is Bytes bytesVal && bytesVal.Count == 1) {
-                return ((IList<byte>)bytesVal)[0];
+            if (value is ByteArray bytearray && bytearray.Count == 1) {
+                return ((IList<byte>)bytearray)[0];
+            }
+            if (value is int i) {
+                try {
+                    return checked((byte)i);
+                } catch (OverflowException) {
+                    throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
+                }
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
                 return GetChar(asParam, type);
             }
 
-            throw ArgumentError(type, "char", value);
+            throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
         }
 
         public static char GetWChar(object value, object type) {
-            if (value is string strVal && strVal.Length == 1) {
+            if (value is string strVal) {
+                if (strVal.Length != 1) throw PythonOps.TypeError("one character unicode string expected");
                 return strVal[0];
             }
 
@@ -620,7 +632,7 @@ namespace IronPython.Modules {
                 return GetWChar(asParam, type);
             }
 
-            throw ArgumentError(type, "wchar", value);
+            throw PythonOps.TypeError("unicode string expected instead of {0} instance", DynamicHelpers.GetPythonType(value).Name);
         }
 
         public static object IntPtrToObject(IntPtr address) {

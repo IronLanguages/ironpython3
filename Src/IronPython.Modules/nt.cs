@@ -2230,7 +2230,7 @@ the 'status' value."),
         }
 
 #endif
-        private static string ToFsString(this Bytes b) => _filesystemEncoding.GetString(b.AsMemory().Span);
+        private static string ToFsString(this Bytes b) => _filesystemEncoding.GetString(b.AsSpan());
 
         private static Bytes ToFsBytes(this string s) => Bytes.Make(_filesystemEncoding.GetBytes(s));
 

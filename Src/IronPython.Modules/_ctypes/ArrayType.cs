@@ -34,13 +34,20 @@ namespace IronPython.Modules {
 
             public ArrayType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
-                int iLen;
-                if (!dict.TryGetValue("_length_", out object len) || !(len is int) || (iLen = (int)len) < 0) {
+
+                // TODO: is using TryGetBoundAttr the proper way to check the base types? similarly on the _type_ check
+                if (!dict.TryGetValue("_length_", out object len) && !TryGetBoundAttr(context, this, "_length_", out len)) {
                     throw PythonOps.AttributeError("arrays must have _length_ attribute and it must be a positive integer");
                 }
+                int iLen = len switch {
+                    BigInteger bi => checked((int)bi),
+                    int i => i,
+                    _ => throw PythonOps.AttributeError("arrays must have _length_ attribute and it must be a positive integer"),
+                };
+                if (iLen < 0) throw PythonOps.AttributeError("arrays must have _length_ attribute and it must be a positive integer"); // TODO: ValueError with 3.8
 
                 object type;
-                if (!dict.TryGetValue("_type_", out type)) {
+                if (!dict.TryGetValue("_type_", out type) && !TryGetBoundAttr(context, this, "_type_", out type)) {
                     throw PythonOps.AttributeError("class must define a '_type_' attribute");
                 }
 

@@ -1,7 +1,11 @@
 # This tests the internal _objects attribute
 import unittest
 from ctypes import *
-from sys import getrefcount as grc
+from test import support
+try:
+    from sys import getrefcount as grc
+except ImportError:
+    pass
 
 # XXX This test must be reviewed for correctness!!!
 
@@ -18,6 +22,7 @@ class ObjectsTestCase(unittest.TestCase):
     def assertSame(self, a, b):
         self.assertEqual(id(a), id(b))
 
+    @support.refcount_test
     def test_ints(self):
         i = 42000123
         refcnt = grc(i)
@@ -25,6 +30,7 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(refcnt, grc(i))
         self.assertEqual(ci._objects, None)
 
+    @support.refcount_test
     def test_c_char_p(self):
         s = b"Hello, World"
         refcnt = grc(s)

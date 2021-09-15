@@ -207,8 +207,8 @@ namespace IronPython.Modules {
             return null;
         }
 
-        public static string CharToString(byte c) {
-            return new string((char)c, 1);
+        public static Bytes CharToBytes(byte c) {
+            return Bytes.FromByte(c);
         }
 
         public static string WCharToString(char c) {
@@ -283,6 +283,11 @@ namespace IronPython.Modules {
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("char pointer", value);
+        }
+
+        public static Bytes IntPtrToBytes(IntPtr ptr) {
+            // TODO: optimize this?
+            return Bytes.Make(Marshal.PtrToStringAnsi(ptr).MakeByteArray());
         }
 
         public static IntPtr GetPointer(object value) {

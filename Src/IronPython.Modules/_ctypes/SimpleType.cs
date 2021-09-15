@@ -595,9 +595,10 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Boolean:
                         return typeof(bool);
                     case SimpleTypeKind.CharPointer:
+                    case SimpleTypeKind.Char:
+                        return typeof(Bytes);
                     case SimpleTypeKind.WCharPointer:
                     case SimpleTypeKind.WChar:
-                    case SimpleTypeKind.Char:
                     case SimpleTypeKind.BStr:
                         return typeof(string);
                     case SimpleTypeKind.VariantBool:
@@ -657,13 +658,13 @@ namespace IronPython.Modules {
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.CharPointer:
-                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringAnsi", new[] { typeof(IntPtr) }));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.IntPtrToBytes)));
                         break;
                     case SimpleTypeKind.BStr:
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.Char:
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToString)));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToBytes)));
                         break;
                     case SimpleTypeKind.WChar:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.WCharToString)));

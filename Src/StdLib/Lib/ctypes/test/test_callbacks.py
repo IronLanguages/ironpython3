@@ -1,5 +1,6 @@
 import functools
 import unittest
+from test import support
 from ctypes import *
 from ctypes.test import need_symbol
 import _ctypes_test
@@ -95,6 +96,7 @@ class Callbacks(unittest.TestCase):
         self.check_type(c_char_p, "abc")
         self.check_type(c_char_p, "def")
 
+    @support.refcount_test
     def test_pyobject(self):
         o = ()
         from sys import getrefcount as grc
@@ -121,6 +123,7 @@ class Callbacks(unittest.TestCase):
         prototype = self.functype.__func__(object)
         self.assertRaises(TypeError, prototype, lambda: None)
 
+    @support.cpython_only
     def test_issue_7959(self):
         proto = self.functype.__func__(None)
 

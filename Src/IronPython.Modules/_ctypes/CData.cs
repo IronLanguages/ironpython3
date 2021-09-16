@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_CTYPES
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Numerics;
-using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -41,64 +40,33 @@ namespace IronPython.Modules {
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
             protected CData() {
+                _memHolder = null!;
             }
 
-            public int Size {
-                [PythonHidden]
-                get {
-                    // TODO: What if a user directly subclasses CData?
-                    return NativeType.Size;
-                }
-            }
+            // TODO: What if a user directly subclasses CData?
+            [PythonHidden]
+            public int Size => NativeType.Size;
 
             // TODO: Accesses via Ops class
-            public IntPtr UnsafeAddress {
-                [PythonHidden]
-                get {
-                    return _memHolder.UnsafeAddress;
-                }
-            }
+            [PythonHidden]
+            public IntPtr UnsafeAddress => _memHolder.UnsafeAddress;
 
-            private byte[] GetBytes(int offset, int length) {
-                int maxLen = checked(offset + length);
-                byte[] res = new byte[length];
-                for (int i = offset; i < maxLen; i++) {
-                    res[i - offset] = _memHolder.ReadByte(i);
-                }
-                return res;
-            }
+            internal INativeType NativeType => (INativeType)DynamicHelpers.GetPythonType(this);
 
-            internal INativeType NativeType {
-                get {
-                    return (INativeType)DynamicHelpers.GetPythonType(this);
-                }
-            }
-
-            public virtual object _objects {
-                get {
-                    return _memHolder.Objects;
-                }
-            }
+            public virtual object _objects => _memHolder.Objects;
 
             internal void SetAddress(IntPtr address) {
                 Debug.Assert(_memHolder == null);
                 _memHolder = new MemoryHolder(address, NativeType.Size);
             }
 
-            internal virtual PythonTuple GetBufferInfo() {
-                return PythonTuple.MakeTuple(
-                    NativeType.TypeFormat,
-                    0,
-                    PythonTuple.EMPTY
-                );
-            }
+            internal virtual PythonTuple GetBufferInfo()
+                => PythonTuple.MakeTuple(NativeType.TypeFormat, 0, PythonTuple.EMPTY);
 
 
             #region IBufferProtocol Members
 
-            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
-                return this;
-            }
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
 
             void IDisposable.Dispose() { }
 
@@ -112,54 +80,38 @@ namespace IronPython.Modules {
 
             int IPythonBuffer.Offset => 0;
 
-            public virtual int ItemCount {
-                [PythonHidden]
-                get {
-                    return 1;
-                }
-            }
-
-            string IPythonBuffer.Format {
-                get { return NativeType.TypeFormat; }
-            }
-
-            // TODO: change sig
-            public virtual BigInteger ItemSize {
-                [PythonHidden]
-                get { return this.NativeType.Size; }
-            }
-
-            int IPythonBuffer.ItemSize => (int)this.ItemSize;
-
-            int IPythonBuffer.NumOfDims {
-                get {
-                    return GetShape(0, null)?.Count ?? (ItemCount > 1 ? 1 : 0);
-                }
-            }
-
-            bool IPythonBuffer.IsReadOnly {
-                get { return false; }
-            }
-
-            // TODO: change sig
             [PythonHidden]
-            public virtual IList<BigInteger> GetShape(int start, int? end) {
-                return null;
+            public virtual int ItemCount {
+                get {
+                    var shape = Shape;
+                    if (shape is null) return 1;
+                    var count = 1;
+                    foreach (var item in shape) {
+                        count *= item;
+                    }
+                    return count;
+                }
             }
 
-            IReadOnlyList<int> IPythonBuffer.Shape => GetShape(0, null)?.Select(big => (int)big).ToArray();  // TODO: remove using Linq when done with sig change
+            string IPythonBuffer.Format => NativeType.TypeFormat;
 
+            [PythonHidden]
+            public virtual int ItemSize => NativeType.Size;
 
-            IReadOnlyList<int> IPythonBuffer.Strides {
-                get { return null; }
-            }
+            int IPythonBuffer.NumOfDims => Shape?.Count ?? (ItemCount > 1 ? 1 : 0);
 
-            IReadOnlyList<int> IPythonBuffer.SubOffsets {
-                get { return null; }
-            }
+            bool IPythonBuffer.IsReadOnly => false;
+
+            [PythonHidden]
+            public virtual IReadOnlyList<int>? Shape => null;
+
+            IReadOnlyList<int>? IPythonBuffer.Strides => null;
+
+            IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
 
             #endregion
         }
     }
 }
+
 #endif

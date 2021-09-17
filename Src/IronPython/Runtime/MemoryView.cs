@@ -150,7 +150,7 @@ namespace IronPython.Runtime {
         }
 
         private MemoryView(MemoryView mv, string newFormat, int newItemSize, IReadOnlyList<int> newShape) : this(mv) {
-            // arguemnts already checked for consistency
+            // arguments already checked for consistency
 
             // reformat
             _format = newFormat;

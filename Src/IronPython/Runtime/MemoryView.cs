@@ -197,18 +197,39 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#numpy-style-shape-and-strides"/>
         private static bool VerifyStructure(int memlen, int itemsize, int ndim, IReadOnlyList<int>? shape, IReadOnlyList<int>? strides, int offset) {
-            if (offset % itemsize != 0)
+            // do some basic checks on shape and stride
+            if (shape != null && shape.Count != ndim)
                 return false;
-            if (offset < 0 || offset + itemsize > memlen)
+            if (strides != null && strides.Count != ndim)
                 return false;
-            if (strides != null && strides.Any(v => v % itemsize != 0))
+            if (shape != null && shape.Any(v => v < 0))
                 return false;
+
+            // ----------------
+            // verify_structure
+
+            if (itemsize == 0) {
+                // itemsize == 0 is not checked in verify_structure, but can cause a failure below
+                // such a buffer can be built with ctypes and an empty struct
+                if (offset != 0)
+                    return false;
+                if (memlen != 0)
+                    return false;
+                if (strides != null && strides.Any(v => v != 0))
+                    return false;
+            } else {
+                if (offset % itemsize != 0)
+                    return false;
+                if (offset < 0 || offset + itemsize > memlen)
+                    return false;
+                if (strides != null && strides.Any(v => v % itemsize != 0))
+                    return false;
+            }
 
             if (ndim <= 0)
                 return ndim == 0 && shape == null && strides == null;
-            if (shape != null && shape.Contains(0))
-                return true;
 
+            // ----------------
             // additional tests of shape and strides that were not in the original verify_structure
             // but which are described in other places in Python documentation about buffer protocol
             if (strides != null && shape == null)
@@ -223,7 +244,11 @@ namespace IronPython.Runtime {
                 return true;
 
             if (strides == null)
-                return shape.Aggregate(1, (num, size) => num * size) <= memlen;
+                return shape.Aggregate(1, (num, size) => num * size) * itemsize <= memlen;
+            // ----------------
+
+            if (shape.Contains(0))
+                return true;
 
             /*
             imin = sum(strides[j] * (shape[j] - 1) for j in range(ndim)

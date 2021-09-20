@@ -5,6 +5,8 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 using IronPython.Runtime;
@@ -94,33 +96,44 @@ namespace IronPython.Modules {
                     SimpleType elemType = type as SimpleType;
 
                     if ((stop < start && step > 0) || (start < stop && step < 0)) {
-                        if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
-                            return String.Empty;
+                        if (elemType != null) {
+                            if (elemType._type == SimpleTypeKind.Char) return Bytes.Empty;
+                            if (elemType._type == SimpleTypeKind.WChar) return string.Empty;
                         }
                         return new PythonList();
                     }
 
                     MemoryHolder address = _memHolder.ReadMemoryHolder(0);
-                    if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
-                        int elmSize = ((INativeType)elemType).Size;
-                        StringBuilder res = new StringBuilder();
+                    if (elemType != null) {
+                        if (elemType._type == SimpleTypeKind.Char) {
+                            Debug.Assert(((INativeType)elemType).Size == 1);
+                            var sb = new MemoryStream();
 
-                        for (int i = start; stop > start ? i < stop : i > stop; i += step) {
-                            res.Append(
-                                elemType.ReadChar(address, checked(i * elmSize))
-                            );
-                        }
+                            for (int i = start; stop > start ? i < stop : i > stop; i += step) {
+                                sb.WriteByte(address.ReadByte(i));
+                            }
 
-                        return res.ToString();
-                    } else {
-                        PythonList res = new PythonList((stop - start) / step);
-                        for (int i = start; stop > start ? i < stop : i > stop; i += step) {
-                            res.AddNoLock(
-                                type.GetValue(address, this, checked(type.Size * i), false)
-                            );
+                            return Bytes.Make(sb.ToArray());
                         }
-                        return res;
+                        if (elemType._type == SimpleTypeKind.WChar) {
+                            int elmSize = ((INativeType)elemType).Size;
+                            var sb = new StringBuilder();
+
+                            for (int i = start; stop > start ? i < stop : i > stop; i += step) {
+                                sb.Append((char)address.ReadInt16(checked(i * elmSize)));
+                            }
+
+                            return sb.ToString();
+                        }
                     }
+
+                    PythonList res = new PythonList((stop - start) / step);
+                    for (int i = start; stop > start ? i < stop : i > stop; i += step) {
+                        res.AddNoLock(
+                            type.GetValue(address, this, checked(type.Size * i), false)
+                        );
+                    }
+                    return res;
                 }
             }
         }

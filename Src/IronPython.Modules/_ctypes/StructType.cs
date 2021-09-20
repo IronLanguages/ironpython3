@@ -239,7 +239,7 @@ namespace IronPython.Modules {
                     StringBuilder res = new StringBuilder();
                     res.Append("T{");
                     foreach (Field f in _fields) {
-                        res.Append(f.NativeType.TypeFormat);
+                        res.Append(f.NativeType is ArrayType arrayType ? arrayType.ShapeAndFormatRepr() : f.NativeType.TypeFormat);
                         res.Append(':');
                         res.Append(f.FieldName);
                         res.Append(':');

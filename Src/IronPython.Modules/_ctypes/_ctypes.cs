@@ -311,7 +311,7 @@ namespace IronPython.Modules {
         }
 
         // for testing purposes only
-        public static PythonTuple _buffer_info(CData data) {
+        public static PythonTuple buffer_info(CData data) {
             return data.GetBufferInfo();
         }
 

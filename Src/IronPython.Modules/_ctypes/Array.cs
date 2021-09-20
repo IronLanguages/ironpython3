@@ -146,56 +146,39 @@ namespace IronPython.Modules {
                 }
             }
 
-
             internal override PythonTuple GetBufferInfo() {
-                INativeType elemType = ElementType;
-                int dimensions = 1;
-                List<object> shape = new List<object>();
-                shape.Add((BigInteger)__len__());
-                while (elemType is ArrayType) {
-                    dimensions++;
-                    shape.Add((BigInteger)((ArrayType)elemType).Length);
-                    elemType = ((ArrayType)elemType).ElementType;
-                }
-
-
+                var shape = Shape;
                 return PythonTuple.MakeTuple(
                     NativeType.TypeFormat,
-                    dimensions,
+                    shape.Count,
                     PythonTuple.Make(shape)
                 );
             }
 
             #region IBufferProtocol
 
-            public override int ItemCount {
-                [PythonHidden]
+            [PythonHidden]
+            public override int ItemSize {
                 get {
-                    return __len__();
-                }
-            }
-
-            public override BigInteger ItemSize {
-                [PythonHidden]
-                get {
-                    var curType = this.NativeType;
-                    while (curType is ArrayType) {
-                        curType = ((ArrayType)curType).ElementType;
+                    var curType = NativeType;
+                    while (curType is ArrayType arrayType) {
+                        curType = arrayType.ElementType;
                     }
-
                     return curType.Size;
                 }
             }
 
             [PythonHidden]
-            public override IList<BigInteger> GetShape(int start, int? end) {
-                List<BigInteger> shape = new List<BigInteger>();
-                var curType = this.NativeType as ArrayType;
-                while (curType != null) {
-                    shape.Add(curType.Length);
-                    curType = curType.ElementType as ArrayType;
+            public override IReadOnlyList<int> Shape {
+                get {
+                    List<int> shape = new List<int>();
+                    var curType = NativeType;
+                    while (curType is ArrayType arrayType) {
+                        shape.Add(arrayType.Length);
+                        curType = arrayType.ElementType;
+                    }
+                    return shape;
                 }
-                return shape;
             }
 
             // TODO: if this.NativeType.ElementType is ArrayType, suboffsets need to be reported

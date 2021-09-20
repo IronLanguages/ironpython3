@@ -198,7 +198,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Size in bytes of one element. It matches the element <see cref="Format"/>.
-        /// If Format is null (indicating unformmatted access), it matches the original element type.
+        /// If Format is null (indicating unformatted access), it matches the original element type.
         /// </summary>
         /// <seealso href="https://docs.python.org/3/c-api/buffer.html#c.Py_buffer.itemsize"/>
         int ItemSize { get; }

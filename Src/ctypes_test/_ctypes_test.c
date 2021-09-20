@@ -1,5 +1,4 @@
 #ifdef MS_WIN32
-#define HAVE_WCHAR_H
 #include <windows.h>
 #endif
 
@@ -216,7 +215,6 @@ EXPORT(void)my_free(void *ptr)
     free(ptr);
 }
 
-#ifdef HAVE_WCHAR_H
 EXPORT(wchar_t *) my_wcsdup(wchar_t *src)
 {
     size_t len = wcslen(src);
@@ -231,7 +229,6 @@ EXPORT(size_t) my_wcslen(wchar_t *src)
 {
     return wcslen(src);
 }
-#endif
 
 #ifndef MS_WIN32
 # ifndef __stdcall

@@ -249,18 +249,6 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            /// <summary>
-            /// Helper function for reading char/wchar's.  This is used for reading from
-            /// arrays and pointers to avoid creating lots of 1-char strings.
-            /// </summary>
-            internal char ReadChar(MemoryHolder/*!*/ owner, int offset) {
-                switch (_type) {
-                    case SimpleTypeKind.Char: return (char)owner.ReadByte(offset);
-                    case SimpleTypeKind.WChar: return (char)owner.ReadInt16(offset);
-                    default: throw new InvalidOperationException();
-                }
-            }
-
             object INativeType.SetValue(MemoryHolder/*!*/ owner, int offset, object value) {
                 if (value is SimpleCData data && data.NativeType == this) {
                     data._memHolder.CopyTo(owner, offset, ((INativeType)this).Size);
@@ -595,9 +583,10 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.Boolean:
                         return typeof(bool);
                     case SimpleTypeKind.CharPointer:
+                    case SimpleTypeKind.Char:
+                        return typeof(Bytes);
                     case SimpleTypeKind.WCharPointer:
                     case SimpleTypeKind.WChar:
-                    case SimpleTypeKind.Char:
                     case SimpleTypeKind.BStr:
                         return typeof(string);
                     case SimpleTypeKind.VariantBool:
@@ -657,13 +646,13 @@ namespace IronPython.Modules {
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.CharPointer:
-                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringAnsi", new[] { typeof(IntPtr) }));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.IntPtrToBytes)));
                         break;
                     case SimpleTypeKind.BStr:
                         method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", new[] { typeof(IntPtr) }));
                         break;
                     case SimpleTypeKind.Char:
-                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToString)));
+                        method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToBytes)));
                         break;
                     case SimpleTypeKind.WChar:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.WCharToString)));

@@ -39,7 +39,7 @@ namespace IronPython.Modules {
                 }
                 _type = (INativeType)type;
                 if (_type != null) {
-                    _typeFormat = _type.TypeFormat;
+                    _typeFormat = _type is ArrayType arrayType ? arrayType.ShapeAndFormatRepr() : _type.TypeFormat;
                 }
             }
 

@@ -362,15 +362,19 @@ namespace IronPython.Modules {
 
             string INativeType.TypeFormat {
                 get {
-                    string size = "(" + Length;
-                    INativeType elemType = ElementType;
-                    while (elemType is ArrayType) {
-                        size += "," + ((ArrayType)elemType).Length;
-                        elemType = ((ArrayType)elemType).ElementType;
-                    }
-                    size += ")";
-                    return size + elemType.TypeFormat;
+                    return _type.TypeFormat;
                 }
+            }
+
+            internal string ShapeAndFormatRepr() {
+                string size = "(" + Length;
+                INativeType elemType = _type;
+                while (elemType is ArrayType arrayType) {
+                    size += "," + arrayType.Length;
+                    elemType = arrayType.ElementType;
+                }
+                size += ")";
+                return size + _type.TypeFormat;
             }
         }
 

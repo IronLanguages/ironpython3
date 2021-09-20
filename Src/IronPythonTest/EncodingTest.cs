@@ -365,7 +365,7 @@ namespace IronPythonTest {
             public void TestAsciiByte(Encoding codec, int charWidth) {
                 Encoding penc = new PythonSurrogateEscapeEncoding(codec);
 
-                Assert.That(() => penc.GetBytes(_chars),
+                Assert.That<byte[]>(() => penc.GetBytes(_chars),
                             Throws.TypeOf<EncoderFallbackException>()
                             .With.Property("Index").EqualTo(3)
                             .And.Property("CharUnknown").EqualTo(_chars[3]));
@@ -374,15 +374,15 @@ namespace IronPythonTest {
                 var bytes = new byte[_chars.Length * charWidth];
 
                 Assert.That(enc.GetByteCount(_chars, 0, 3, flush: false), Is.EqualTo(3 * charWidth));
-                Assert.That(() => enc.GetBytes(_chars, 0, 3, bytes, 0, flush: false), Throws.Nothing);
-                Assert.That(() => enc.GetBytes(_chars, 3, 2, bytes, 3 * charWidth, flush: false),
+                Assert.That<int>(() => enc.GetBytes(_chars, 0, 3, bytes, 0, flush: false), Throws.Nothing);
+                Assert.That<int>(() => enc.GetBytes(_chars, 3, 2, bytes, 3 * charWidth, flush: false),
                             Throws.TypeOf<EncoderFallbackException>()
                             .With.Property("Index").EqualTo(0)
                             .And.Property("CharUnknown").EqualTo(_chars[3]));
 
                 enc.Reset();
 
-                Assert.That(() => enc.GetBytes(_chars, 0, 5, bytes, 3 * charWidth, flush: false),
+                Assert.That<int>(() => enc.GetBytes(_chars, 0, 5, bytes, 3 * charWidth, flush: false),
                             Throws.TypeOf<EncoderFallbackException>()
                             .With.Property("Index").EqualTo(3)
                             .And.Property("CharUnknown").EqualTo(_chars[3]));
@@ -568,7 +568,7 @@ namespace IronPythonTest {
 
                 // broken lone high surrogate
                 var bytes = "abc\xed-\xa0\x90xyz".AsBytes();
-                Assert.That(() => penc.GetChars(bytes),
+                Assert.That<char[]>(() => penc.GetChars(bytes),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(3)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
@@ -576,14 +576,14 @@ namespace IronPythonTest {
                 var dec = penc.GetDecoder();
                 Assert.That(dec.GetCharCount(bytes, 0, 4, flush: false), Is.EqualTo(3));
                 Assert.That(dec.GetChars(bytes, 0, 4, chars, 0, flush: false), Is.EqualTo(3));
-                Assert.That(() => dec.GetCharCount(bytes, 4, 4, flush: false),
+                Assert.That<int>(() => dec.GetCharCount(bytes, 4, 4, flush: false),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(-1)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
 
                 // broken in a different way
                 bytes = "abc\xed\xa0-\x90xyz".AsBytes();
-                Assert.That(() => penc.GetChars(bytes),
+                Assert.That<char[]>(() => penc.GetChars(bytes),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(3)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
@@ -591,7 +591,7 @@ namespace IronPythonTest {
                 dec.Reset();
                 Assert.That(dec.GetCharCount(bytes, 0, 4, flush: false), Is.EqualTo(3));
                 Assert.That(dec.GetChars(bytes, 0, 4, chars, 0, flush: false), Is.EqualTo(3));
-                Assert.That(() => dec.GetCharCount(bytes, 4, 4, flush: false),
+                Assert.That<int>(() => dec.GetCharCount(bytes, 4, 4, flush: false),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(-1)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
@@ -599,14 +599,14 @@ namespace IronPythonTest {
                 dec.Reset();
                 Assert.That(dec.GetCharCount(bytes, 0, 5, flush: false), Is.EqualTo(3));
                 Assert.That(dec.GetChars(bytes, 0, 5, chars, 0, flush: false), Is.EqualTo(3));
-                Assert.That(() => dec.GetCharCount(bytes, 5, 3, flush: false),
+                Assert.That<int>(() => dec.GetCharCount(bytes, 5, 3, flush: false),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(-2)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
 
                 // unfinished surrogate sequence in the middle
                 bytes = "abc\xed\xa0xyz".AsBytes();
-                Assert.That(() => penc.GetChars(bytes),
+                Assert.That<char[]>(() => penc.GetChars(bytes),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(3)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
@@ -614,14 +614,14 @@ namespace IronPythonTest {
                 dec.Reset();
                 Assert.That(dec.GetCharCount(bytes, 0, 5, flush: false), Is.EqualTo(3));
                 Assert.That(dec.GetChars(bytes, 0, 5, chars, 0, flush: false), Is.EqualTo(3));
-                Assert.That(() => dec.GetCharCount(bytes, 5, 2, flush: false),
+                Assert.That<int>(() => dec.GetCharCount(bytes, 5, 2, flush: false),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(-2)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
 
                 // unfinished surrogate sequence at the end
                 bytes = "abcxyz\xed\xa0".AsBytes();
-                Assert.That(() => penc.GetChars(bytes),
+                Assert.That<char[]>(() => penc.GetChars(bytes),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(6)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));
@@ -629,7 +629,7 @@ namespace IronPythonTest {
                 dec.Reset();
                 Assert.That(dec.GetCharCount(bytes, 0, 7, flush: false), Is.EqualTo(6));
                 Assert.That(dec.GetChars(bytes, 0, 7, chars, 0, flush: false), Is.EqualTo(6));
-                Assert.That(() => dec.GetCharCount(bytes, 7, 1, flush: true),
+                Assert.That<int>(() => dec.GetCharCount(bytes, 7, 1, flush: true),
                             Throws.TypeOf<DecoderFallbackException>()
                             .With.Property("Index").EqualTo(-1)
                             .And.Property("BytesUnknown").One.EqualTo(0xed));

@@ -216,6 +216,8 @@ namespace IronPython.Modules {
         }
 
         internal static Bytes ReadBytes(IntPtr addr, int offset) {
+            if (addr == IntPtr.Zero && offset == 0) return null;
+
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
             MemoryStream res = new MemoryStream();

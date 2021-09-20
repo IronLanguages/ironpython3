@@ -243,7 +243,7 @@ namespace IronPython.Modules {
 
                             return null;
                         }
-                        throw PythonOps.TypeError("bytes expected instead of {0} instance", PythonOps.GetPythonTypeName(value));
+                        throw PythonOps.TypeError("expected bytes, {0} found", PythonOps.GetPythonTypeName(value));
                     }
                     if (st._type == SimpleTypeKind.WChar) {
                         if (value is string str) {

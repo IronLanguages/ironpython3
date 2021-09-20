@@ -1,8 +1,12 @@
+import sys
 import unittest
 from ctypes import *
 from ctypes.test import need_symbol
 from struct import calcsize
-import _testcapi
+try:
+    import _testcapi
+except ImportError:
+    _testcapi = None
 
 class SubclassesTest(unittest.TestCase):
     def test_subclass(self):
@@ -201,13 +205,14 @@ class StructureTestCase(unittest.TestCase):
              "_pack_": -1}
         self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
 
-        # Issue 15989
-        d = {"_fields_": [("a", c_byte)],
-             "_pack_": _testcapi.INT_MAX + 1}
-        self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
-        d = {"_fields_": [("a", c_byte)],
-             "_pack_": _testcapi.UINT_MAX + 2}
-        self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
+        if _testcapi:
+            # Issue 15989
+            d = {"_fields_": [("a", c_byte)],
+                 "_pack_": _testcapi.INT_MAX + 1}
+            self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
+            d = {"_fields_": [("a", c_byte)],
+                 "_pack_": _testcapi.UINT_MAX + 2}
+            self.assertRaises(ValueError, type(Structure), "X", (Structure,), d)
 
     def test_initializers(self):
         class Person(Structure):

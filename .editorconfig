@@ -95,3 +95,6 @@ dotnet_diagnostic.CA5372.severity = suggestion  # CA5372: Use XmlReader For XPat
 
 # TODO: remove this
 dotnet_diagnostic.CA1825.severity = suggestion  # CA1825: Avoid zero-length array allocations
+
+# TODO: remove this - workaround for crash when compiling with .NET 6.0 RC1
+dotnet_diagnostic.CA2252.severity = none

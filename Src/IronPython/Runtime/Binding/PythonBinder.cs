@@ -388,6 +388,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool IncludeExtensionMember(MemberInfo member) {
+            // exclude static virtual members on interfaces
+            if (member.DeclaringType.IsInterface && member.IsStaticVirtual()) return false;
             return !member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
         }
 

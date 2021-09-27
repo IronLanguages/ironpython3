@@ -20,6 +20,7 @@ is_netcoreapp =  False
 is_netcoreapp21 = False
 is_netcoreapp31 = False
 is_net50 = False
+is_net60 = False
 is_mono = False
 if is_ironpython:
     import clr

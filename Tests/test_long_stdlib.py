@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_net60, run_test
 
 import test.test_long
 
@@ -19,7 +19,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_long.LongTest('test__format__'))
         suite.addTest(test.test_long.LongTest('test_access_to_nonexistent_digit_0'))
         suite.addTest(test.test_long.LongTest('test_bit_length'))
-        suite.addTest(test.test_long.LongTest('test_bitop_identities'))
+        if is_net60: # https://github.com/dotnet/runtime/issues/59509
+            suite.addTest(unittest.expectedFailure(test.test_long.LongTest('test_bitop_identities')))
+        else:
+            suite.addTest(test.test_long.LongTest('test_bitop_identities'))
         suite.addTest(test.test_long.LongTest('test_conversion'))
         suite.addTest(unittest.expectedFailure(test.test_long.LongTest('test_correctly_rounded_true_division'))) # https://github.com/IronLanguages/ironpython3/issues/907
         suite.addTest(test.test_long.LongTest('test_division'))

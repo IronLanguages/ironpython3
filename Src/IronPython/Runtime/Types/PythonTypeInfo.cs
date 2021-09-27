@@ -2058,14 +2058,16 @@ namespace IronPython.Runtime.Types {
             return filtered;
         }
 
+        private static bool IsStaticVirtual(this MethodInfo member)
+            => member.IsStatic && member.IsVirtual;
+
         internal static bool IsStaticVirtual(this MemberInfo member) {
             switch (member) {
                 case MethodInfo mi:
-                    if (mi.IsStatic && mi.IsVirtual) return true;
-                    break;
+                    return mi.IsStaticVirtual();
                 case PropertyInfo pi:
-                    if (pi.GetMethod?.IsStatic == true && pi.GetMethod?.IsVirtual == true) return true;
-                    if (pi.SetMethod?.IsStatic == true && pi.GetMethod?.IsVirtual == true) return true;
+                    if (pi.GetMethod?.IsStaticVirtual() == true) return true;
+                    if (pi.SetMethod?.IsStaticVirtual() == true) return true;
                     break;
             }
             return false;

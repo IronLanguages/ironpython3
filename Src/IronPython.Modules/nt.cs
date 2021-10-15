@@ -290,7 +290,7 @@ namespace IronPython.Modules {
         public static void chdir(CodeContext context, [NotNull] IBufferProtocol path)
             => chdir(path.ToFsBytes(context));
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
         private static void chmodUnix(string path, int mode) {
             if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
             throw GetLastUnixError(path);
@@ -1353,7 +1353,7 @@ namespace IronPython.Modules {
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
         private static object statUnix(string path) {
             if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
                 return new stat_result(buf);

@@ -329,7 +329,7 @@ namespace IronPython.Modules {
 
                 return IsConsole && !isRedirected();
 
-                // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+                // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
                 bool isattyUnix() {
                     if (IsConsole) {
                         if (_consoleStreamType == ConsoleStreamType.Input) {

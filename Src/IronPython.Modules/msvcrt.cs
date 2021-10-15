@@ -92,7 +92,7 @@ to os.fdopen() to create a file object.
             handle = null;
             return false;
 
-            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
             object GetFileHandleUnix() {
                 if (stream is Mono.Unix.UnixStream) {
                     return ((Mono.Unix.UnixStream)stream).Handle;

@@ -1758,7 +1758,7 @@ namespace IronPython.Modules {
             }
 
             // precision is lost when using FileInfo on Linux, use a syscall instead
-            if (ns != null && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            if (ns != null && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || !ClrModule.IsMono && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))) {
                 utimeUnix(path, Converter.ConvertToInt64(ns[0]), Converter.ConvertToInt64(ns[1]));
                 return;
             }

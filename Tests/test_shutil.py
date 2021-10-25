@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 
-from iptest import is_mono, is_osx
+from iptest import is_mono, is_osx, run_test
 
 class ShutilTest(unittest.TestCase):
     def setUp(self):
@@ -114,5 +114,4 @@ class ShutilTest(unittest.TestCase):
         # TODO: implement me!
         pass
 
-if __name__ == '__main__':
-    unittest.main()
+run_test(__name__)

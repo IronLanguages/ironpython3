@@ -290,7 +290,7 @@ namespace IronPython.Modules {
         public static void chdir(CodeContext context, [NotNull] IBufferProtocol path)
             => chdir(path.ToFsBytes(context));
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
         private static void chmodUnix(string path, int mode) {
             if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
             throw GetLastUnixError(path);
@@ -1353,7 +1353,7 @@ namespace IronPython.Modules {
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
         private static object statUnix(string path) {
             if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
                 return new stat_result(buf);
@@ -1758,7 +1758,7 @@ namespace IronPython.Modules {
             }
 
             // precision is lost when using FileInfo on Linux, use a syscall instead
-            if (ns != null && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            if (ns != null && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || !ClrModule.IsMono && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))) {
                 utimeUnix(path, Converter.ConvertToInt64(ns[0]), Converter.ConvertToInt64(ns[1]));
                 return;
             }

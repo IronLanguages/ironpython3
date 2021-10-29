@@ -174,54 +174,55 @@ namespace IronPython.Modules {
 
         [Documentation("a2b_qp(data, header=False)\n    Decode a string of qp-encoded data.")]
         public static Bytes a2b_qp([NotNull] IBufferProtocol data, bool header = false) {
-            using var buffer = data.GetBuffer();
-            return a2b_qp_impl(buffer.AsReadOnlySpan(), header);
-        }
-
-        public static Bytes a2b_qp([NotNull] string data, bool header = false) {
-            var bytes = data.ToBytes();
-            return a2b_qp_impl(bytes.UnsafeByteArray.AsSpan(), header);
-        }
-
-        private static Bytes a2b_qp_impl(ReadOnlySpan<byte> ascii_data, bool header) {
-            var datalen = ascii_data.Length;
-
-            var incount = 0;
-
-            MemoryStream odata = new MemoryStream();
-
-            while (incount < datalen) {
-                if (ascii_data[incount] == '=') {
-                    incount++;
-                    if (incount >= datalen) break;
-                    // Soft line breaks
-                    if ((ascii_data[incount] == '\n') || (ascii_data[incount] == '\r')) {
-                        if (ascii_data[incount] != '\n') {
-                            while (incount < datalen && ascii_data[incount] != '\n') incount++;
-                        }
-                        if (incount < datalen) incount++;
-                    } else if (ascii_data[incount] == '=') {
-                        // broken case from broken python qp
-                        odata.WriteByte((byte)'=');
-                        incount++;
-                    } else if ((incount + 1 < datalen) && TryParseHex(ascii_data[incount], out byte x) && TryParseHex(ascii_data[incount + 1], out byte x2)) {
-                        // hexval
-                        odata.WriteByte(unchecked((byte)((x << 4) | x2)));
-                        incount += 2;
-                    } else {
-                        odata.WriteByte((byte)'=');
-                    }
-                } else if (header && ascii_data[incount] == '_') {
-                    odata.WriteByte((byte)' ');
-                    incount++;
-                } else {
-                    odata.WriteByte(ascii_data[incount]);
-                    incount++;
-                }
+            using var buffer = data.GetBufferNoThrow();
+            if (buffer is null) {
+                throw PythonOps.TypeError($"argument should be bytes, buffer or ASCII string, not '{PythonOps.GetPythonTypeName(data)}'");
             }
+            return a2b_qp_impl(buffer.AsReadOnlySpan(), header);
 
-            return Bytes.Make(odata.ToArray());
+            static Bytes a2b_qp_impl(ReadOnlySpan<byte> ascii_data, bool header) {
+                var datalen = ascii_data.Length;
+
+                var incount = 0;
+
+                MemoryStream odata = new MemoryStream();
+
+                while (incount < datalen) {
+                    if (ascii_data[incount] == '=') {
+                        incount++;
+                        if (incount >= datalen) break;
+                        // Soft line breaks
+                        if ((ascii_data[incount] == '\n') || (ascii_data[incount] == '\r')) {
+                            if (ascii_data[incount] != '\n') {
+                                while (incount < datalen && ascii_data[incount] != '\n') incount++;
+                            }
+                            if (incount < datalen) incount++;
+                        } else if (ascii_data[incount] == '=') {
+                            // broken case from broken python qp
+                            odata.WriteByte((byte)'=');
+                            incount++;
+                        } else if ((incount + 1 < datalen) && TryParseHex(ascii_data[incount], out byte x) && TryParseHex(ascii_data[incount + 1], out byte x2)) {
+                            // hexval
+                            odata.WriteByte(unchecked((byte)((x << 4) | x2)));
+                            incount += 2;
+                        } else {
+                            odata.WriteByte((byte)'=');
+                        }
+                    } else if (header && ascii_data[incount] == '_') {
+                        odata.WriteByte((byte)' ');
+                        incount++;
+                    } else {
+                        odata.WriteByte(ascii_data[incount]);
+                        incount++;
+                    }
+                }
+
+                return Bytes.Make(odata.ToArray());
+            }
         }
+
+        public static Bytes a2b_qp([NotNull] string data, bool header = false)
+            => a2b_qp(data.ToBytes(), header);
 
         [Documentation(@"b2a_qp(data, quotetabs=False, istext=True, header=False) -> s;
  Encode a string using quoted-printable encoding.

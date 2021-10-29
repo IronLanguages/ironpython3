@@ -83,7 +83,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]string data)
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull] string data)
             => a2b_uu(context, data.ToBytes());
 
         public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
@@ -136,7 +136,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]string data)
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull] string data)
             => a2b_base64(context, data.ToBytes());
 
         public static Bytes b2a_base64([NotNull] IBufferProtocol data) {
@@ -381,7 +381,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         #region crc32
 
         [Documentation("crc32(data[, crc]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of data.")]
-        public static object crc32([NotNull]IBufferProtocol data, uint crc = 0) {
+        public static object crc32([NotNull] IBufferProtocol data, uint crc = 0) {
             // TODO: [PythonIndex(overflow=mask)] uint crc = 0
             using var buffer = data.GetBuffer();
             var res = crc32(buffer.AsReadOnlySpan(), crc);
@@ -408,7 +408,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region hex
 
-        public static Bytes b2a_hex([NotNull]IBufferProtocol data) {
+        public static Bytes b2a_hex([NotNull] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             return b2a_hex_impl(buffer.AsReadOnlySpan());
 
@@ -427,7 +427,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        public static Bytes hexlify([NotNull]IBufferProtocol data)
+        public static Bytes hexlify([NotNull] IBufferProtocol data)
             => b2a_hex(data);
 
         public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
@@ -457,13 +457,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]string data)
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull] string data)
             => a2b_hex(context, data.ToBytes());
 
-        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]IBufferProtocol hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull] IBufferProtocol hexstr)
             => a2b_hex(context, hexstr);
 
-        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]string hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull] string hexstr)
             => a2b_hex(context, hexstr);
 
         #endregion

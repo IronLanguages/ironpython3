@@ -6,7 +6,7 @@ import _locale
 import _random
 import unittest
 
-from iptest import is_cli, is_net60, is_netcoreapp, is_posix, run_test
+from iptest import is_cli, is_netcoreapp, is_posix, run_test
 
 class _LocaleTest(unittest.TestCase):
 
@@ -136,7 +136,7 @@ class _LocaleTest(unittest.TestCase):
             resultLocale = _locale.setlocale(c)
             self.assertEqual(resultLocale,"French_France.1252")
 
-    @unittest.skipIf(is_netcoreapp and is_posix or is_net60, 'TODO: figure out') # https://github.com/dotnet/runtime/issues/57310
+    @unittest.skipIf(is_netcoreapp and is_posix, 'TODO: figure out')
     def test_setlocale_negative(self):
         #the locale is empty string
         c= _locale.LC_ALL

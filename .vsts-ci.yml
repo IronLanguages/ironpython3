@@ -6,7 +6,7 @@ jobs:
   displayName: Windows
   timeoutInMinutes: 180
   pool:
-    vmImage: windows-latest
+    vmImage: windows-2022
   steps:
   - template: Build/steps.yml
     parameters:

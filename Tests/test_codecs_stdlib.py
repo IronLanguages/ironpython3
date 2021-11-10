@@ -10,7 +10,7 @@ import unittest
 import codecs
 import sys
 
-from iptest import run_test, is_mono, is_netcoreapp31, is_net50
+from iptest import run_test, is_mono, is_netcoreapp31, is_net50, is_net60
 
 import test.test_codecs
 
@@ -28,7 +28,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.CP65001Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.CP65001Test('test_bug1175396'))
-        if is_netcoreapp31 or is_net50:
+        if is_netcoreapp31 or is_net50 or is_net60:
             suite.addTest(test.test_codecs.CP65001Test('test_decode'))
         else:
             suite.addTest(unittest.expectedFailure(test.test_codecs.CP65001Test('test_decode'))) # '[��]' != '[���]' (bug in .NET: dotnet/corefx#36163, fixed in .NET Core 3.x)
@@ -206,7 +206,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1601501'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_decoder_state'))
-        if is_netcoreapp31 or is_net50:
+        if is_netcoreapp31 or is_net50 or is_net60:
             suite.addTest(test.test_codecs.UTF8SigTest('test_lone_surrogates'))
         else:
             suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
@@ -221,7 +221,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8Test('test_decoder_state'))
-        if is_netcoreapp31 or is_net50:
+        if is_netcoreapp31 or is_net50 or is_net60:
             suite.addTest(test.test_codecs.UTF8Test('test_lone_surrogates'))
         else:
             suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'

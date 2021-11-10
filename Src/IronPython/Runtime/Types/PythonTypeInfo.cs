@@ -1351,6 +1351,11 @@ namespace IronPython.Runtime.Types {
 
                 IEnumerable<MemberInfo> foundMembers = type.GetMember(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | flags);
 
+                if (type.IsInterface) {
+                    // exclude static virtual members on interfaces
+                    foundMembers = foundMembers.Where(mi => !mi.IsStaticVirtual());
+                }
+
                 if (!Binder.DomainManager.Configuration.PrivateBinding) {
                     foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
                 }
@@ -2051,6 +2056,21 @@ namespace IronPython.Runtime.Types {
             }
             Debug.Assert(j == expected);
             return filtered;
+        }
+
+        private static bool IsStaticVirtual(this MethodInfo member)
+            => member.IsStatic && member.IsVirtual;
+
+        internal static bool IsStaticVirtual(this MemberInfo member) {
+            switch (member) {
+                case MethodInfo mi:
+                    return mi.IsStaticVirtual();
+                case PropertyInfo pi:
+                    if (pi.GetMethod?.IsStaticVirtual() == true) return true;
+                    if (pi.SetMethod?.IsStaticVirtual() == true) return true;
+                    break;
+            }
+            return false;
         }
 
         #endregion

@@ -4,7 +4,7 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "build",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0'),
+    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0','net6.0'),
     [String] $platform = "x64",
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount
@@ -22,7 +22,7 @@ function EnsureMSBuild() {
     $_VSINSTPATH = ''
 
     if([System.IO.File]::Exists($_VSWHERE)) {
-        $_VSINSTPATH = & "$_VSWHERE" -latest -requires Microsoft.Component.MSBuild -property installationPath
+        $_VSINSTPATH = & "$_VSWHERE" -latest -prerelease -requires Microsoft.Component.MSBuild -property installationPath
     } else {
         Write-Error "Visual Studio 2019 16.8 or later is required"
         Exit 1

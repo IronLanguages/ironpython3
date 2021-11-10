@@ -20,6 +20,7 @@ is_netcoreapp =  False
 is_netcoreapp21 = False
 is_netcoreapp31 = False
 is_net50 = False
+is_net60 = False
 is_mono = False
 if is_ironpython:
     import clr
@@ -27,6 +28,7 @@ if is_ironpython:
     is_netcoreapp21 = clr.FrameworkDescription.startswith(".NET Core 2.x")
     is_netcoreapp31 = clr.FrameworkDescription.startswith(".NET Core 3.1")
     is_net50 = clr.FrameworkDescription.startswith(".NET 5.0")
+    is_net60 = clr.FrameworkDescription.startswith(".NET 6.0")
     is_mono = clr.IsMono
 
 #--The bittedness of the Python implementation

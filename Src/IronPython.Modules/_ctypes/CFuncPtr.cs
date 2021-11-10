@@ -4,29 +4,27 @@
 
 #if FEATURE_CTYPES
 
-using System.Linq.Expressions;
-using System.Numerics;
-
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Diagnostics;
+using System.Dynamic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -388,7 +386,7 @@ namespace IronPython.Modules {
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                                 Expression.NewArrayInit(
                                     typeof(object),
-                                    ArrayUtils.ConvertAll(args, x => Utils.Convert(x.Expression, typeof(object)))
+                                    Microsoft.Scripting.Utils.ArrayUtils.ConvertAll(args, x => Utils.Convert(x.Expression, typeof(object)))
                                 )
                             )
                         );
@@ -609,7 +607,7 @@ namespace IronPython.Modules {
 #endif
 
                     method.Emit(OpCodes.Ldarg_0);
-                    method.Emit(OpCodes.Calli, GetCalliSignature(convention, sig, calliRetType));
+                    method.EmitCalli(OpCodes.Calli, convention, calliRetType, sig.Select(x => x.NativeType).ToArray());
 
                     // if we have a return value we need to store it and marshal to Python
                     // before we run any cleanup code.
@@ -656,25 +654,6 @@ namespace IronPython.Modules {
 #else
                     return dm;
 #endif
-                }
-
-                private static SignatureHelper GetMethodSigHelper(CallingConvention convention, Type calliRetType) {
-#if FEATURE_REFEMIT_FULL
-                    return SignatureHelper.GetMethodSigHelper(convention, calliRetType);
-#else
-                    var helper = typeof(SignatureHelper).GetMethod("GetMethodSigHelper", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(CallingConvention), typeof(Type) }, null);
-                    return (SignatureHelper)helper.Invoke(null, new object[] { convention, calliRetType });
-#endif
-                }
-
-                private static SignatureHelper GetCalliSignature(CallingConvention convention, ArgumentMarshaller/*!*/[] sig, Type calliRetType) {
-                    SignatureHelper signature = GetMethodSigHelper(convention, calliRetType);
-
-                    foreach (ArgumentMarshaller argMarshaller in sig) {
-                        signature.AddArgument(argMarshaller.NativeType);
-                    }
-
-                    return signature;
                 }
 
                 #region Argument Marshalling
@@ -960,6 +939,19 @@ namespace IronPython.Modules {
             }
         }
     }
+
+#if NETSTANDARD2_0
+#nullable enable
+    internal static class ILGeneratorExtensions {
+        private static MethodInfo? EmitCalliMethodInfo = typeof(ILGenerator).GetMethod("EmitCalli", new Type[] { typeof(OpCode), typeof(CallingConvention), typeof(Type), typeof(Type[]) });
+
+        public static void EmitCalli(this ILGenerator ilgen, OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) {
+            // should exist in runtimes of interest, but just in case, let it throw if the method doesn't exist...
+            EmitCalliMethodInfo!.Invoke(ilgen, new object[] { opcode, unmanagedCallConv, returnType!, parameterTypes! });
+        }
+    }
+#nullable restore
+#endif
 }
 
 #endif

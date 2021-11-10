@@ -261,7 +261,7 @@ namespace IronPython.Runtime {
             return _bytes.EndsWith(suffix, start, end);
         }
 
-        public bool endswith([NotNull]IList<byte> suffix, object? start) {
+        public bool endswith([BytesLike, NotNull] IList<byte> suffix, object? start) {
             return endswith(suffix, start, null);
         }
 

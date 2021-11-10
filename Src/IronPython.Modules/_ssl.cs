@@ -874,7 +874,9 @@ of bytes written.")]
             if (cert != null) {
                 if (key != null) {
                     try {
+#pragma warning disable SYSLIB0028 // Type or member is obsolete
                         cert.PrivateKey = key;
+#pragma warning restore SYSLIB0028 // Type or member is obsolete
                     } catch (CryptographicException e) {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }

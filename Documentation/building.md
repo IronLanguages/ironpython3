@@ -1,12 +1,12 @@
 # Building IronPython3
 
-To build IronPython3 you will need the [.NET SDK (minimum v5.0.100)](https://dotnet.microsoft.com/download/visual-studio-sdks).
+To build IronPython3 you will need the [.NET SDK (minimum v6.0.100)](https://dotnet.microsoft.com/download/visual-studio-sdks).
 
 See [Getting the Sources](getting-the-sources.md) for information on getting the source for IronPython3.
 
 ## Building from Visual Studio
 
-Visual Studio 2019 v16.8 or above is required to build IronPython3.
+Visual Studio 2022 v17.0 or above is required to build IronPython3.
 
  * Open the `IronPython.sln` solution file
  * Select the configuration options (Release, Debug, etc.)

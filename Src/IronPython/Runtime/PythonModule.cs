@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -15,9 +14,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -349,8 +348,9 @@ namespace IronPython.Runtime {
         #region IMembersList Members
 
         IList<string> IMembersList.GetMemberNames() {
-            List<string> res = new List<string>(__dict__.Keys.Count);
-            foreach (object o in __dict__.Keys) {
+            var keys = __dict__.Keys;
+            List<string> res = new List<string>(keys.Count);
+            foreach (object o in keys) {
                 if (o is string strKey) {
                     res.Add(strKey);
                 }

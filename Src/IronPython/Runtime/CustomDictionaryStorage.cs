@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -58,9 +59,7 @@ namespace IronPython.Runtime {
             return _storage.TryGetValue(key, out value);
         }
 
-        public override int Count {
-            get { return GetItems().Count; }
-        }
+        public override int Count => _storage.Count + GetExtraItems().Count();
 
         public override void Clear(ref DictionaryStorage storage) {
             _storage.Clear(ref storage);

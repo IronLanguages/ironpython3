@@ -118,9 +118,10 @@ namespace IronPython.Runtime {
             return _storage.Contains(key);
         }
 
+        [PythonHidden]
         public ICollection<object> Keys {
-            [PythonHidden]
-            get { return keys(); }
+            // Convert to an array since keys() is slow to iterate over in most of the cases where we use this
+            get { return _storage.GetKeys().ToArray(); }
         }
 
         [PythonHidden]

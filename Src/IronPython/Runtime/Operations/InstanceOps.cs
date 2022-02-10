@@ -238,7 +238,7 @@ namespace IronPython.Runtime.Operations {
 
         public static string SimpleRepr(object self) {
             return String.Format("<{0} object at {1}>",
-                PythonTypeOps.GetName(self),
+                PythonOps.GetPythonTypeName(self),
                 PythonOps.HexId(self));
         }
 

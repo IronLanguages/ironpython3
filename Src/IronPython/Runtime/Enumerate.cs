@@ -219,7 +219,7 @@ namespace IronPython.Runtime {
         public static IEnumerator Create(object baseObject) {
             IEnumerator res;
             if (!TryCreate(baseObject, out res)) {
-                throw PythonOps.TypeError("cannot convert {0} to IEnumerator", PythonTypeOps.GetName(baseObject));
+                throw PythonOps.TypeError("cannot convert {0} to IEnumerator", PythonOps.GetPythonTypeName(baseObject));
             }
             return res;
         }
@@ -305,7 +305,7 @@ namespace IronPython.Runtime {
         public static IEnumerable Create(object baseObject) {
             IEnumerable res;
             if (!TryCreate(baseObject, out res)) {
-                throw PythonOps.TypeError("cannot convert {0} to IEnumerable", PythonTypeOps.GetName(baseObject));
+                throw PythonOps.TypeError("cannot convert {0} to IEnumerable", PythonOps.GetPythonTypeName(baseObject));
             }
             return res;
         }

@@ -219,7 +219,7 @@ namespace IronPython.Modules {
                 if (iter == null ||
                     !PythonOps.HasAttr(context, iter, "__iter__") &&
                     !PythonOps.HasAttr(context, iter, "__getitem__")) {
-                        throw PythonOps.TypeError("'{0}' object is not iterable", PythonTypeOps.GetName(iter));
+                        throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(iter));
                 }
             }
 

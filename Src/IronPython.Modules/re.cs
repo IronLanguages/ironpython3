@@ -567,7 +567,7 @@ namespace IronPython.Modules {
                             break;
                         case string _:
                         case ExtensibleString _:
-                            throw PythonOps.TypeError($"expected a bytes-like object, {PythonTypeOps.GetName(repl)} found");
+                            throw PythonOps.TypeError($"expected a bytes-like object, {PythonOps.GetPythonTypeName(repl)} found");
                         default:
                             break;
                     }
@@ -581,7 +581,7 @@ namespace IronPython.Modules {
                             break;
                         case IBufferProtocol _:
                         case IList<byte> _:
-                            throw PythonOps.TypeError($"expected str instance, {PythonTypeOps.GetName(repl)} found");
+                            throw PythonOps.TypeError($"expected str instance, {PythonOps.GetPythonTypeName(repl)} found");
                         default:
                             break;
                     }

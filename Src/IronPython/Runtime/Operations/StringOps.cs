@@ -1230,7 +1230,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (!PythonTypeOps.TryGetOperator(context, table, "__getitem__", out object getitem)) {
-                throw PythonOps.TypeError($"'{PythonTypeOps.GetName(table)}' object is not subscriptable");
+                throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(table)}' object is not subscriptable");
             }
 
             StringBuilder ret = new StringBuilder();

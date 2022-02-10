@@ -113,12 +113,12 @@ namespace IronPython.Modules {
                     using IPythonBuffer buffer = bp.GetBuffer();
                     return StringOps.DoDecode(context, buffer, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding);
                 } else {
-                    throw PythonOps.TypeError("expected bytes-like object, got {0}", PythonTypeOps.GetName(obj));
+                    throw PythonOps.TypeError("expected bytes-like object, got {0}", PythonOps.GetPythonTypeName(obj));
                 }
             } else {
                 object? decoder = lookup(context, encoding)[DecoderIndex];
                 if (!PythonOps.IsCallable(context, decoder)) {
-                    throw PythonOps.TypeError("decoding with '{0}' codec failed; decoder must be callable ('{1}' object is not callable)", encoding, PythonTypeOps.GetName(decoder));
+                    throw PythonOps.TypeError("decoding with '{0}' codec failed; decoder must be callable ('{1}' object is not callable)", encoding, PythonOps.GetPythonTypeName(decoder));
                 }
                 return PythonOps.GetIndex(context, PythonCalls.Call(context, decoder, obj, errors), 0);
             }
@@ -130,12 +130,12 @@ namespace IronPython.Modules {
                     PythonContext lc = context.LanguageContext;
                     return StringOps.DoEncode(context, str, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding, includePreamble: true);
                 } else {
-                    throw PythonOps.TypeError("expected str, got {0}", PythonTypeOps.GetName(obj));
+                    throw PythonOps.TypeError("expected str, got {0}", PythonOps.GetPythonTypeName(obj));
                 }
             } else {
                 object? encoder = lookup(context, encoding)[EncoderIndex];
                 if (!PythonOps.IsCallable(context, encoder)) {
-                    throw PythonOps.TypeError("encoding with '{0}' codec failed; encoder must be callable ('{1}' object is not callable)", encoding, PythonTypeOps.GetName(encoder));
+                    throw PythonOps.TypeError("encoding with '{0}' codec failed; encoder must be callable ('{1}' object is not callable)", encoding, PythonOps.GetPythonTypeName(encoder));
                 }
                 return PythonOps.GetIndex(context, PythonCalls.Call(context, encoder, obj, errors), 0);
             }
@@ -885,7 +885,7 @@ namespace IronPython.Modules {
                     return 1;
 
                 default:
-                    throw PythonOps.TypeError("character mapping must return integer, bytes or None, not {0}", PythonTypeOps.GetName(replacement));
+                    throw PythonOps.TypeError("character mapping must return integer, bytes or None, not {0}", PythonOps.GetPythonTypeName(replacement));
             }
         }
 
@@ -928,7 +928,7 @@ namespace IronPython.Modules {
                             continue;
                         }
                     } else {
-                        throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonTypeOps.GetName(val));
+                        throw PythonOps.TypeError("character mapping must return integer, None or str, not {0}", PythonOps.GetPythonTypeName(val));
                     }
                 }
 

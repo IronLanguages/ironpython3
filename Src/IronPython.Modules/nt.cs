@@ -1594,7 +1594,7 @@ namespace IronPython.Modules {
 
         [Documentation("")]
         public static void truncate(CodeContext context, [NotNull] IBufferProtocol path, BigInteger length) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string or bytes, not {PythonTypeOps.GetName(path)}"); // deprecated in 3.6
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string or bytes, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
             truncate(context, path.ToFsBytes(context), length);
         }
 
@@ -2240,7 +2240,7 @@ the 'status' value."),
 
         private static Bytes ToFsBytes(this IBufferProtocol bp, CodeContext context) {
             // TODO: Python 3.6: "path should be string, bytes or os.PathLike"
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonTypeOps.GetName(bp));
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonOps.GetPythonTypeName(bp));
             return new Bytes(bp); // accepts FULL_RO buffers in CPython
         }
 

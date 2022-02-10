@@ -427,9 +427,9 @@ types and lengths of a and b--but not their values.")]
 
         private static void TestBothSequence(object? a, object? b) {
             if (!isSequenceType(a)) {
-                throw PythonOps.TypeError("'{0}' object cannot be concatenated", PythonTypeOps.GetName(a));
+                throw PythonOps.TypeError("'{0}' object cannot be concatenated", PythonOps.GetPythonTypeName(a));
             } else if (!isSequenceType(b)) {
-                throw PythonOps.TypeError("cannot concatenate '{0}' and '{1} objects", PythonTypeOps.GetName(a), PythonTypeOps.GetName(b));
+                throw PythonOps.TypeError("cannot concatenate '{0}' and '{1} objects", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
             }
         }
     }

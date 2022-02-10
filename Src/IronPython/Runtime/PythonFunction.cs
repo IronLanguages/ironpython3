@@ -188,7 +188,7 @@ namespace IronPython.Runtime {
         public PythonDictionary/*!*/ __dict__ {
             get { return EnsureDict(); }
             set {
-                _dict = value ?? throw PythonOps.TypeError("__dict__ must be set to a dictionary, not a '{0}'", PythonTypeOps.GetName(value));
+                _dict = value ?? throw PythonOps.TypeError("__dict__ must be set to a dictionary, not a '{0}'", PythonOps.GetPythonTypeName(value));
             }
         }
 
@@ -537,7 +537,7 @@ namespace IronPython.Runtime {
                 return "empty";
             }
 
-            return $"{PythonTypeOps.GetName(Value)} object at 0x{IdDispenser.GetId(Value):X}";
+            return $"{PythonOps.GetPythonTypeName(Value)} object at 0x{IdDispenser.GetId(Value):X}";
         }
 
         #endregion

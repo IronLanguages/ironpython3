@@ -433,7 +433,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (s == null) {
                     return string.Format(
                         "sequence item {0}: expected string, {1} found",
-                        i, PythonTypeOps.GetName(en.Current)
+                        i, PythonOps.GetPythonTypeName(en.Current)
                     );
                 }
 
@@ -460,14 +460,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static void Set__bases__(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
             // validate we got a tuple...
-            if (!(value is PythonTuple t)) throw PythonOps.TypeError("expected tuple of types or old-classes, got '{0}'", PythonTypeOps.GetName(value));
+            if (!(value is PythonTuple t)) throw PythonOps.TypeError("expected tuple of types or old-classes, got '{0}'", PythonOps.GetPythonTypeName(value));
 
             List<PythonType> ldt = new List<PythonType>();
 
             foreach (object o in t) {
                 // gather all the type objects...
                 if (!(o is PythonType adt)) {
-                    throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
+                    throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonOps.GetPythonTypeName(o));
                 }
                 ldt.Add(adt);
             }

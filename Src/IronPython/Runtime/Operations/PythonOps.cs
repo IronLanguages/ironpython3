@@ -279,7 +279,7 @@ namespace IronPython.Runtime.Operations {
             object value = PythonContext.InvokeUnaryOperator(context, UnaryOperators.String, o);
             if (!(value is string ret)) {
                 if (!(value is Extensible<string> es)) {
-                    throw PythonOps.TypeError("expected str, got {0} from __str__", PythonTypeOps.GetName(value));
+                    throw PythonOps.TypeError("expected str, got {0} from __str__", PythonOps.GetPythonTypeName(value));
                 }
 
                 ret = es.Value;
@@ -535,7 +535,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static int GetSequenceMultiplier(object sequence, object count) {
             if (!Converter.TryConvertToIndex(count, out int icount)) {
-                throw TypeError("can't multiply sequence by non-int of type '{0}'", PythonTypeOps.GetName(count));
+                throw TypeError("can't multiply sequence by non-int of type '{0}'", PythonOps.GetPythonTypeName(count));
             }
             return icount;
         }
@@ -742,7 +742,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object Index(object? o) {
             if (TryToIndex(o, out object? index)) return index;
-            throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
+            throw TypeError("'{0}' object cannot be interpreted as an integer", PythonOps.GetPythonTypeName(o));
         }
 
         internal static bool TryToIndex(object? o, [NotNullWhen(true)] out object? index) {
@@ -784,10 +784,10 @@ namespace IronPython.Runtime.Operations {
                 if (index is int || index is BigInteger)
                     return true;
                 if (index is Extensible<int> || index is Extensible<BigInteger>) {
-                    Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonTypeOps.GetName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                    Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonOps.GetPythonTypeName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
                     return true;
                 }
-                throw TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
+                throw TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(index));
             }
 
             index = default;
@@ -966,7 +966,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object GetBoundAttr(CodeContext/*!*/ context, object? o, string name) {
             if (!DynamicHelpers.GetPythonType(o).TryGetBoundAttr(context, o, name, out object ret)) {
-                throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(o), name);
+                throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonOps.GetPythonTypeName(o), name);
             }
 
             return ret;
@@ -1034,7 +1034,7 @@ namespace IronPython.Runtime.Operations {
         public static void CheckInitializedAttribute(object o, object self, string name) {
             if (o == Uninitialized.Instance) {
                 throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'",
-                    PythonTypeOps.GetName(self),
+                    PythonOps.GetPythonTypeName(self),
                     name);
             }
         }
@@ -1545,7 +1545,7 @@ namespace IronPython.Runtime.Operations {
         public static void DictMerge(CodeContext context, PythonDictionary dict, object? item) {
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
-                throw TypeError($"'{PythonTypeOps.GetName(item)}' object is not a mapping");
+                throw TypeError($"'{PythonOps.GetPythonTypeName(item)}' object is not a mapping");
             }
 
             // enumerate the keys getting their values
@@ -1575,7 +1575,7 @@ namespace IronPython.Runtime.Operations {
         public static void DictUpdate(CodeContext context, PythonDictionary dict, object? item) {
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
-                throw TypeError($"'{PythonTypeOps.GetName(item)}' object is not a mapping");
+                throw TypeError($"'{PythonOps.GetPythonTypeName(item)}' object is not a mapping");
             }
 
             // enumerate the keys getting their values
@@ -1995,7 +1995,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static Exception TypeErrorForNotAnIterator(object? enumerable) {
-            return PythonOps.TypeError("'{0}' object is not an iterator", PythonTypeOps.GetName(enumerable));
+            return PythonOps.TypeError("'{0}' object is not an iterator", PythonOps.GetPythonTypeName(enumerable));
         }
 
         // Lack of type restrictions allows this method to return the direct result of __iter__ without
@@ -2018,7 +2018,7 @@ namespace IronPython.Runtime.Operations {
             if (PythonTypeOps.TryGetOperator(context, o, "__iter__", out object? iterFunc) && iterFunc != null) {
                 var iter = PythonCalls.Call(context, iterFunc);
                 if (!PythonTypeOps.TryGetOperator(context, iter, "__next__", out _)) {
-                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
+                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonOps.GetPythonTypeName(iter));
                 }
                 enumerator = iter!;
                 return true;
@@ -2034,11 +2034,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForNotIterable(object? enumerable) {
-            return PythonOps.TypeError("'{0}' object is not iterable", PythonTypeOps.GetName(enumerable));
+            return PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(enumerable));
         }
 
         public static KeyValuePair<IEnumerator, IDisposable> ThrowTypeErrorForBadIteration(CodeContext/*!*/ context, object enumerable) {
-            throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonTypeOps.GetName(enumerable));
+            throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonOps.GetPythonTypeName(enumerable));
         }
 
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
@@ -2402,7 +2402,7 @@ namespace IronPython.Runtime.Operations {
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, "keys", out object keys)) {
                 throw TypeError("{0}() argument after ** must be a mapping, not {1}",
                     funcName,
-                    PythonTypeOps.GetName(dict));
+                    PythonOps.GetPythonTypeName(dict));
             }
 
             PythonDictionary res = new PythonDictionary();
@@ -2414,7 +2414,7 @@ namespace IronPython.Runtime.Operations {
                 if (!(o is string) && !(o is Extensible<string>)) {
                     throw TypeError("{0}() keywords must be strings, not {1}",
                         funcName,
-                        PythonTypeOps.GetName(o));
+                        PythonOps.GetPythonTypeName(o));
                 }
                 res[o] = PythonOps.GetIndex(context, dict, o);
             }
@@ -2470,7 +2470,7 @@ namespace IronPython.Runtime.Operations {
         public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {
             if (!TryGetEnumeratorObject(context, list, out object? enumerator)) {
                 // TODO: CPython 3.5 uses "an iterable" in the error message instead of "a sequence"
-                throw TypeError($"{funcName}() argument after * must be a sequence, not {PythonTypeOps.GetName(list)}");
+                throw TypeError($"{funcName}() argument after * must be a sequence, not {PythonOps.GetPythonTypeName(list)}");
             }
 
             return PythonTuple.Make(enumerator);
@@ -2834,32 +2834,32 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object ThrowingConvertToInt(object value) {
-            if (!CheckingConvertToInt(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToInt(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 
         public static object ThrowingConvertToFloat(object value) {
-            if (!CheckingConvertToFloat(value)) throw TypeError(" __float__ returned non-float (type {0})", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToFloat(value)) throw TypeError(" __float__ returned non-float (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 
         public static object ThrowingConvertToComplex(object value) {
-            if (!CheckingConvertToComplex(value)) throw TypeError(" __complex__ returned non-complex (type {0})", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToComplex(value)) throw TypeError(" __complex__ returned non-complex (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 
         public static object ThrowingConvertToLong(object value) {
-            if (!CheckingConvertToComplex(value)) throw TypeError(" __long__ returned non-long (type {0})", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToComplex(value)) throw TypeError(" __long__ returned non-long (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 
         public static object ThrowingConvertToString(object value) {
-            if (!CheckingConvertToString(value)) throw TypeError(" __str__ returned non-str (type {0})", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToString(value)) throw TypeError(" __str__ returned non-str (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 
         public static bool ThrowingConvertToBool(object value) {
-            if (!CheckingConvertToBool(value)) throw TypeError("__bool__ should return bool, returned {0}", PythonTypeOps.GetName(value));
+            if (!CheckingConvertToBool(value)) throw TypeError("__bool__ should return bool, returned {0}", PythonOps.GetPythonTypeName(value));
             return (bool)value;
         }
 
@@ -3670,10 +3670,10 @@ namespace IronPython.Runtime.Operations {
             if (o is PythonType dt) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
             } else if (o is NamespaceTracker) {
-                return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+                return PythonOps.AttributeErrorForMissingAttribute(PythonOps.GetPythonTypeName(o), name);
             }
 
-            return AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(o), name);
+            return AttributeErrorForReadonlyAttribute(PythonOps.GetPythonTypeName(o), name);
         }
 
 
@@ -3877,7 +3877,7 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception TypeErrorForUnboundMethodCall(string methodName, PythonType methodType, object instance) {
             string message = string.Format("unbound method {0}() must be called with {1} instance as first argument (got {2} instead)",
-                                           methodName, methodType.Name, PythonTypeOps.GetName(instance));
+                                           methodName, methodType.Name, PythonOps.GetPythonTypeName(instance));
             return TypeError(message);
         }
 
@@ -3914,7 +3914,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForUnhashableObject(object? obj) {
-            return TypeErrorForUnhashableType(PythonTypeOps.GetName(obj));
+            return TypeErrorForUnhashableType(PythonOps.GetPythonTypeName(obj));
         }
 
         internal static Exception TypeErrorForIncompatibleObjectLayout(string prefix, PythonType type, Type newType) {
@@ -3942,7 +3942,7 @@ namespace IronPython.Runtime.Operations {
         public static Exception TypeErrorForNonIterableObject(object? o) {
             return PythonOps.TypeError(
                 "argument of type '{0}' is not iterable",
-                PythonTypeOps.GetName(o)
+                PythonOps.GetPythonTypeName(o)
             );
         }
 
@@ -3967,7 +3967,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
-            return AttributeErrorForMissingAttribute(PythonTypeOps.GetName(obj), attributeName);
+            return AttributeErrorForMissingAttribute(PythonOps.GetPythonTypeName(obj), attributeName);
         }
 
         public static Exception AttributeErrorForMissingAttribute(string typeName, string attributeName) {
@@ -3983,7 +3983,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception UncallableError(object? func) {
-            return PythonOps.TypeError("'{0}' object is not callable", PythonTypeOps.GetName(func));
+            return PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(func));
         }
 
         public static Exception TypeErrorForProtectedMember(Type/*!*/ type, string/*!*/ name) {

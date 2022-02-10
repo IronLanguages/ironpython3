@@ -781,7 +781,7 @@ namespace IronPython.Modules {
             if (proxy == null)
                 throw PythonOps.TypeError("descriptor for {0} object doesn't apply to {1} object",
                     PythonOps.Repr(context, _type.Name),
-                    PythonOps.Repr(context, PythonTypeOps.GetName(instance)));
+                    PythonOps.Repr(context, PythonOps.GetPythonTypeName(instance)));
 
             if (!DynamicHelpers.GetPythonType(proxy.Target).TryGetBoundMember(context, proxy.Target, _name, out value))
                 return false;

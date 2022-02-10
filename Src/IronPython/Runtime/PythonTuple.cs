@@ -203,7 +203,7 @@ namespace IronPython.Runtime {
 
         public static PythonTuple operator +([NotNull]PythonTuple x, object? y) {
             if (y is PythonTuple t) return x + t;
-            throw PythonOps.TypeError($"can only concatenate tuple (not \"{PythonTypeOps.GetName(y)}\") to tuple");
+            throw PythonOps.TypeError($"can only concatenate tuple (not \"{PythonOps.GetPythonTypeName(y)}\") to tuple");
         }
 
         public static PythonTuple operator +([NotNull]PythonTuple x, [NotNull]PythonTuple y) {

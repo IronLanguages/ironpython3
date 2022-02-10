@@ -25,7 +25,7 @@ namespace IronPython.Runtime.Operations {
             if (o is string && o != null) {
                 return (string)o;
             }
-            throw PythonOps.TypeError("__str__ returned non-string type ({0})", PythonTypeOps.GetName(o));
+            throw PythonOps.TypeError("__str__ returned non-string type ({0})", PythonOps.GetPythonTypeName(o));
         }
 
         public static PythonDictionary SetDictHelper(ref PythonDictionary dict, PythonDictionary value) {
@@ -100,7 +100,7 @@ namespace IronPython.Runtime.Operations {
 
             if (!PythonOps.IsCallable(DefaultContext.Default, callable)) {
                 throw PythonOps.TypeError("Expected callable value for {0}, but found {1}", name.ToString(),
-                    PythonTypeOps.GetName(method));
+                    PythonOps.GetPythonTypeName(method));
             }
 
             PythonCalls.Call(callable, eventValue);

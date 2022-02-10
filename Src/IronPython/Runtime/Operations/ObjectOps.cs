@@ -253,7 +253,7 @@ namespace IronPython.Runtime.Operations {
 
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
             if (formatSpec != string.Empty)
-                throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonTypeOps.GetName(self));
+                throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonOps.GetPythonTypeName(self));
 
             return PythonOps.ToString(context, self);
         }

@@ -1010,7 +1010,7 @@ namespace IronPython.Runtime {
                 return translate(table, buffer.AsReadOnlySpan().ToArray());
             }
             ValidateTable(table);
-            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonOps.GetPythonTypeName(delete));
         }
 
         public ByteArray upper() {
@@ -1055,7 +1055,7 @@ namespace IronPython.Runtime {
                 return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
             }
 
-            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetName(value));
+            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonOps.GetPythonTypeName(value));
         }
 
         public IEnumerator<int> __iter__()
@@ -1130,7 +1130,7 @@ namespace IronPython.Runtime {
         }
 
         private static Exception TypeErrorForConcat(object self, object? other)
-            => PythonOps.TypeError($"can't concat {PythonTypeOps.GetName(self)} to {PythonTypeOps.GetName(other)}");
+            => PythonOps.TypeError($"can't concat {PythonOps.GetPythonTypeName(self)} to {PythonOps.GetPythonTypeName(other)}");
 
         private static ByteArray MultiplyWorker(ByteArray self, int count) {
             lock (self) {
@@ -1323,7 +1323,7 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public void DeleteItem(object? slice) {
-            throw PythonOps.TypeError("bytearray indices must be integers or slices, not {0}", PythonTypeOps.GetName(slice));
+            throw PythonOps.TypeError("bytearray indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(slice));
         }
 
         #endregion

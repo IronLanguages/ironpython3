@@ -64,11 +64,11 @@ namespace IronPython.Runtime.Operations {
                             result = ed.Value; // Python 3.6: return the int value
                             return true;
                         default:
-                            throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(result));
+                            throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonOps.GetPythonTypeName(result));
                     }
 
                     static void Warn(CodeContext context, object result) {
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonTypeOps.GetName(result)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
                     }
                 }
                 return false;

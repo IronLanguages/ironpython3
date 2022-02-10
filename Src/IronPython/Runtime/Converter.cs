@@ -410,7 +410,7 @@ namespace IronPython.Runtime {
         }
 
         internal static Exception CannotConvertOverflow(string name, object value) {
-            return PythonOps.OverflowError("Cannot convert {0}({1}) to {2}", PythonTypeOps.GetName(value), value, name);
+            return PythonOps.OverflowError("Cannot convert {0}({1}) to {2}", PythonOps.GetPythonTypeName(value), value, name);
         }
 
         private static Exception MakeTypeError(Type expectedType, object o) {

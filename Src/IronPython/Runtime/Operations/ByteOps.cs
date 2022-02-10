@@ -103,7 +103,7 @@ namespace IronPython.Runtime.Operations {
                     return buf.AsReadOnlySpan().ToArray();
                 }
             }
-            throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(obj));
         }
 
         internal static IList<byte> GetBytes(object? value, bool useHint, CodeContext? context = null) {
@@ -163,7 +163,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            throw PythonOps.TypeError($"'{PythonTypeOps.GetName(o)}' object cannot be interpreted as an integer");
+            throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(o)}' object cannot be interpreted as an integer");
         }
     }
 }

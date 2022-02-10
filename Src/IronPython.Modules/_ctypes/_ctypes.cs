@@ -577,12 +577,12 @@ namespace IronPython.Modules {
 
             fieldName = pt[0] as string;
             if (fieldName == null) {
-                throw PythonOps.TypeError("first item in _fields_ tuple must be a string, got", PythonTypeOps.GetName(pt[0]));
+                throw PythonOps.TypeError("first item in _fields_ tuple must be a string, got", PythonOps.GetPythonTypeName(pt[0]));
             }
 
             cdata = pt[1] as INativeType;
             if (cdata == null) {
-                throw PythonOps.TypeError("second item in _fields_ tuple must be a C type, got {0}", PythonTypeOps.GetName(pt[0]));
+                throw PythonOps.TypeError("second item in _fields_ tuple must be a C type, got {0}", PythonOps.GetPythonTypeName(pt[0]));
             } else if (cdata == type) {
                 throw StructureCannotContainSelf();
             }

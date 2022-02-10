@@ -145,7 +145,7 @@ namespace IronPython.Modules {
                 )]
             public BigInteger readinto([NotNull] IBufferProtocol buffer) {
                 using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
-                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
 
                 _checkClosed();
 
@@ -198,7 +198,7 @@ namespace IronPython.Modules {
 
                 _checkClosed();
 
-                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonTypeOps.GetName(size));
+                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(size));
             }
 
             [Documentation("readlines([size]) -> list of bytes objects, each a line from the file.\n\n"
@@ -317,7 +317,7 @@ namespace IronPython.Modules {
 
                 _checkClosed();
 
-                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonTypeOps.GetName(size));
+                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(size));
             }
 
             public override bool writable(CodeContext/*!*/ context) {
@@ -331,7 +331,7 @@ namespace IronPython.Modules {
             public override BigInteger write(CodeContext/*!*/ context, [NotNull] object bytes) {
                 _checkClosed();
                 if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
-                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(bytes));
+                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(bytes));
             }
 
             // TODO: get rid of virtual? see https://github.com/IronLanguages/ironpython3/issues/1070
@@ -371,11 +371,11 @@ namespace IronPython.Modules {
 
                 var initial_bytes = tuple[0] as IBufferProtocol;
                 if (!(tuple[0] is IBufferProtocol)) {
-                    throw PythonOps.TypeError($"'{PythonTypeOps.GetName(tuple[0])}' does not support the buffer interface");
+                    throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(tuple[0])}' does not support the buffer interface");
                 }
 
                 if (!(tuple[1] is int i)) {
-                    throw PythonOps.TypeError($"second item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
+                    throw PythonOps.TypeError($"second item of state must be an integer, not {PythonOps.GetPythonTypeName(tuple[1])}");
                 }
                 if (i < 0) {
                     throw PythonOps.ValueError("position value cannot be negative");
@@ -383,7 +383,7 @@ namespace IronPython.Modules {
 
                 var dict = tuple[2] as PythonDictionary;
                 if (!(tuple[2] is PythonDictionary || tuple[2] is null)) {
-                    throw PythonOps.TypeError($"third item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
+                    throw PythonOps.TypeError($"third item of state should be a dict, got a {PythonOps.GetPythonTypeName(tuple[2])}");
                 }
 
                 __init__(initial_bytes);

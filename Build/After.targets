@@ -43,7 +43,7 @@
   </Target>
 
   <Target Name="_StoreInDLLs" Condition=" '$(StoreInDLLs)' == 'true' ">
-    <Move SourceFiles="@(StageItem)" DestinationFolder="$(TargetDir)\%(StageItem.RecursiveDir)\DLLs" />
+    <Move SourceFiles="@(StageItem)" DestinationFolder="$(TargetDir)%(StageItem.RecursiveDir)DLLs" />
   </Target>
 
   <Target Name="Stage" DependsOnTargets="_LateStage;_MainStage;_StoreInDLLs" />

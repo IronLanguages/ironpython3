@@ -97,6 +97,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)' == '' ">obj\</BaseIntermediateOutputPath>
     <BaseOutputPath>$(RootDir)bin\$(Configuration)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
   </PropertyGroup>

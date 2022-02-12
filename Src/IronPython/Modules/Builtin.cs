@@ -346,7 +346,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (globals == null) globals = context.GlobalDict;
 
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
-                throw PythonOps.TypeError($"locals must be mapping or None, not {DynamicHelpers.GetPythonType(locals).Name}");
+                throw PythonOps.TypeError($"locals must be mapping or None, not {PythonOps.GetPythonTypeName(locals)}");
             }
 
             CodeContext execContext = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);

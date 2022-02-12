@@ -3995,7 +3995,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForUnIndexableObject(object? o) {
-            return TypeError("'{0}' object cannot be interpreted as an integer", DynamicHelpers.GetPythonType(o).Name);
+            return TypeError("'{0}' object cannot be interpreted as an integer", PythonOps.GetPythonTypeName(o));
         }
 
         public static T TypeErrorForBadEnumConversion<T>(object? value) {

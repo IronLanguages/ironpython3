@@ -47,7 +47,7 @@ namespace IronPython.Runtime {
 
             int length;
             if (!DynamicHelpers.GetPythonType(o).TryGetLength(context, o, out length)) {
-                throw PythonOps.TypeError("object of type '{0}' has no len()", DynamicHelpers.GetPythonType(o).Name);
+                throw PythonOps.TypeError("object of type '{0}' has no len()", PythonOps.GetPythonTypeName(o));
             }
 
             if (type.UnderlyingSystemType == typeof(ReversedEnumerator)) {

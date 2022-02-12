@@ -37,7 +37,7 @@ namespace IronPython.Runtime.Operations {
         public static object GetPropertyHelper(object prop, object instance, string name) {
             if (!(prop is PythonTypeSlot desc)) {
                 throw PythonOps.TypeError("Expected property for {0}, but found {1}",
-                    name.ToString(), DynamicHelpers.GetPythonType(prop).Name);
+                    name.ToString(), PythonOps.GetPythonTypeName(prop));
             }
             object value;
             desc.TryGetValue(DefaultContext.Default, instance, DynamicHelpers.GetPythonType(instance), out value);
@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Operations {
         public static void SetPropertyHelper(object prop, object instance, object newValue, string name) {
             if (!(prop is PythonTypeSlot desc)) {
                 throw PythonOps.TypeError("Expected settable property for {0}, but found {1}",
-                    name.ToString(), DynamicHelpers.GetPythonType(prop).Name);
+                    name.ToString(), PythonOps.GetPythonTypeName(prop));
             }
             desc.TrySetValue(DefaultContext.Default, instance, DynamicHelpers.GetPythonType(instance), newValue);
         }

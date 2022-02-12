@@ -314,7 +314,7 @@ namespace IronPython.Modules {
                     if (!_data.CanStore(ie.Current)) {
                         throw PythonOps.TypeError("expected {0}, got {1}",
                             DynamicHelpers.GetPythonTypeFromType(_data.StorageType).Name,
-                            DynamicHelpers.GetPythonType(ie.Current).Name);
+                            PythonOps.GetPythonTypeName(ie.Current));
                     }
                     items.Add(ie.Current);
                 }

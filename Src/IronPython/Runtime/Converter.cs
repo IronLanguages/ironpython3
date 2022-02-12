@@ -363,10 +363,10 @@ namespace IronPython.Runtime {
                     return res;
                 }
 
-                throw PythonOps.TypeError("__index__ returned non-int (type {0})", DynamicHelpers.GetPythonType(index).Name);
+                throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(index));
             }
 
-            throw PythonOps.TypeError("expected integer value, got {0}", DynamicHelpers.GetPythonType(value).Name);
+            throw PythonOps.TypeError("expected integer value, got {0}", PythonOps.GetPythonTypeName(value));
         }
 
         internal static bool TryGetInt(object o, out int value, bool throwOverflowError) {

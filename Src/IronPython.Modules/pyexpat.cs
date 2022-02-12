@@ -649,7 +649,7 @@ namespace IronPython.Modules {
                         }
                     }
                 } else {
-                    throw PythonOps.TypeError("read() did not return a bytes object (type={0})", DynamicHelpers.GetPythonType(readResult).Name);
+                    throw PythonOps.TypeError("read() did not return a bytes object (type={0})", PythonOps.GetPythonTypeName(readResult));
                 }
 
 

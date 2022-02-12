@@ -92,7 +92,7 @@ namespace IronPython.Runtime.Exceptions {
                 if (args[0] is string || args[0] is Extensible<string>) {
                     @object = args[0];
                 } else {
-                    throw PythonOps.TypeError("argument 4 must be unicode, not {0}", DynamicHelpers.GetPythonType(args[0]).Name);
+                    throw PythonOps.TypeError("argument 4 must be unicode, not {0}", PythonOps.GetPythonTypeName(args[0]));
                 }
 
                 start = args[1];
@@ -101,7 +101,7 @@ namespace IronPython.Runtime.Exceptions {
                 if (args[3] is string || args[3] is Extensible<string>) {
                     reason = args[3];
                 } else {
-                    throw PythonOps.TypeError("argument 4 must be str, not {0}", DynamicHelpers.GetPythonType(args[3]).Name);
+                    throw PythonOps.TypeError("argument 4 must be str, not {0}", PythonOps.GetPythonTypeName(args[3]));
                 }
 
                 base.__init__(args);

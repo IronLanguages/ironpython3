@@ -95,7 +95,7 @@ namespace IronPython.Modules {
 
         public static void RAND_add(object buf, double entropy) {
             if (!(buf is string) && !(buf is IBufferProtocol)) {
-                throw PythonOps.TypeError($"'{DynamicHelpers.GetPythonType(buf).Name}' does not support the buffer interface");
+                throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(buf)}' does not support the buffer interface");
             }
         }
 

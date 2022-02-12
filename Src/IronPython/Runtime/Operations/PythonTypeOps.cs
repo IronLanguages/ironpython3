@@ -176,7 +176,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static string GetName(object o) {
             // Resolve Namespace-Tracker name, which would end in `namespace#` if 
-            // it is not handled indivdualy
+            // it is not handled individually
             if (o is NamespaceTracker nt)
                 return nt.Name;
 

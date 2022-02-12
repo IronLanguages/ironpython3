@@ -192,7 +192,7 @@ namespace IronPython.Modules {
             PythonContext pc = ((PythonType)type).Context;
             return PythonExceptions.CreateThrowable(
                 (PythonType)pc.GetModuleState("ArgumentError"),
-                string.Format("expected {0}, got {1}", expected, DynamicHelpers.GetPythonType(got).Name)
+                string.Format("expected {0}, got {1}", expected, PythonOps.GetPythonTypeName(got))
             );
         }
 
@@ -639,7 +639,7 @@ namespace IronPython.Modules {
                 return GetWChar(asParam, type);
             }
 
-            throw PythonOps.TypeError("unicode string expected instead of {0} instance", DynamicHelpers.GetPythonType(value).Name);
+            throw PythonOps.TypeError("unicode string expected instead of {0} instance", PythonOps.GetPythonTypeName(value));
         }
 
         public static object IntPtrToObject(IntPtr address) {

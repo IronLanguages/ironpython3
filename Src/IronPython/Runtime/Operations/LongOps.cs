@@ -94,7 +94,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
-                    DynamicHelpers.GetPythonType(x).Name);
+                    PythonOps.GetPythonTypeName(x));
         }
 
         private static object ReturnObject(CodeContext context, PythonType cls, object value) {

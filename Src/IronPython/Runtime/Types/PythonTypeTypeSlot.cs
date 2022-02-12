@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Types {
                 throw PythonOps.TypeError("__class__ assignment: only for user defined types");
             }
 
-            if (!(value is PythonType dt)) throw PythonOps.TypeError("__class__ must be set to new-style class, not '{0}' object", DynamicHelpers.GetPythonType(value).Name);
+            if (!(value is PythonType dt)) throw PythonOps.TypeError("__class__ must be set to new-style class, not '{0}' object", PythonOps.GetPythonTypeName(value));
 
             if(dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__class__ assignment", DynamicHelpers.GetPythonType(instance), dt.UnderlyingSystemType);

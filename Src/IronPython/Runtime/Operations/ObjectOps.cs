@@ -158,7 +158,7 @@ namespace IronPython.Runtime.Operations {
         /// a string which consists of the type and a unique numerical identifier.
         /// </summary>
         public static string __repr__(object self) {
-            return $"<{DynamicHelpers.GetPythonType(self).Name} object at {PythonOps.HexId(self)}>";
+            return $"<{PythonOps.GetPythonTypeName(self)} object at {PythonOps.HexId(self)}>";
         }
 
         /// <summary>

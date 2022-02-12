@@ -808,7 +808,7 @@ namespace IronPython.Modules {
             if (fmt is IList<byte> b) {
                 return PythonOps.MakeString(b);
             }
-            throw PythonOps.TypeError("Struct() argument 1 must be a str or bytes object, not {0}", DynamicHelpers.GetPythonType(fmt).Name);
+            throw PythonOps.TypeError("Struct() argument 1 must be a str or bytes object, not {0}", PythonOps.GetPythonTypeName(fmt));
         }
 
         private static Struct GetStructFromCache(CodeContext/*!*/ context, object fmt) {

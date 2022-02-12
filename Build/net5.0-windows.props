@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath Condition=" '$(TargetFramework)' == 'net5.0-windows' ">$(BaseIntermediateOutputPath)$(Configuration)\net5.0</IntermediateOutputPath>
     <OutputPath Condition=" '$(TargetFramework)' == 'net5.0-windows' ">$(BaseOutputPath)\net5.0</OutputPath>
   </PropertyGroup>
 

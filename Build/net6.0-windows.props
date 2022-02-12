@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath Condition=" '$(TargetFramework)' == 'net6.0-windows' ">$(BaseIntermediateOutputPath)$(Configuration)\net6.0</IntermediateOutputPath>
     <OutputPath Condition=" '$(TargetFramework)' == 'net6.0-windows' ">$(BaseOutputPath)\net6.0</OutputPath>
   </PropertyGroup>
 

@@ -206,7 +206,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string GetPythonTypeName(object? obj) {
+#pragma warning disable IPY04 // Direct call to PythonTypeOps.GetName
             return PythonTypeOps.GetName(obj);
+#pragma warning restore IPY04
         }
 
         public static string Ascii(CodeContext/*!*/ context, object? o) {

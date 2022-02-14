@@ -716,7 +716,9 @@ namespace IronPython.Runtime {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public string TypeInfo {
                 get {
+#pragma warning disable IPY04 // Direct call to PythonTypeOps.GetName
                     return "Key: " + PythonTypeOps.GetName(Key) + ", " + "Value: " + PythonTypeOps.GetName(Value);
+#pragma warning restore IPY04
                 }
             }
         }

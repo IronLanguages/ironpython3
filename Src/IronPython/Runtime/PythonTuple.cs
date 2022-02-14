@@ -141,7 +141,7 @@ namespace IronPython.Runtime {
             } else if (o is object[] arr) {
                 return ArrayOps.CopyArray(arr, arr.Length);
             } else {
-                PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonTypeOps.GetName(o));
+                PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonOps.GetPythonTypeName(o));
 
                 var l = new List<object?>();
                 IEnumerator i = PythonOps.GetEnumerator(o);

@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace IronPythonAnalyzer {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -21,14 +22,16 @@ namespace IronPythonAnalyzer {
         private static readonly DiagnosticDescriptor Rule1 = new DiagnosticDescriptor("IPY01", title: "Parameter which is marked not nullable does not have the NotNullAttribute", messageFormat: "Parameter '{0}' does not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Non-nullable reference type parameters should have the NotNullAttribute.");
         private static readonly DiagnosticDescriptor Rule2 = new DiagnosticDescriptor("IPY02", title: "Parameter which is marked nullable has the NotNullAttribute", messageFormat: "Parameter '{0}' should not have the NotNullAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Nullable reference type parameters should not have the NotNullAttribute.");
         private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type IReadOnlyList<byte>, or IList<byte>.");
+        private static readonly DiagnosticDescriptor Rule4 = new DiagnosticDescriptor("IPY04", title: "Call to PythonTypeOps.GetName", messageFormat: "Direct call to PythonTypeOps.GetName", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "To obtain a name of a python type of a given object to display to a user, use PythonOps.GetPythonTypeName.");
 #pragma warning restore RS2008 // Enable analyzer release tracking
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4); } }
 
         public override void Initialize(AnalysisContext context) {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
             context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Method);
+            context.RegisterOperationAction(AnalyzeInvocation, OperationKind.Invocation);
         }
 
         private static void AnalyzeSymbol(SymbolAnalysisContext context) {
@@ -95,6 +98,20 @@ namespace IronPythonAnalyzer {
             }
 
 #pragma warning restore RS1024 // Compare symbols correctly
+
+        }
+
+        private static void AnalyzeInvocation(OperationAnalysisContext context) {
+            var invocationOperation = (IInvocationOperation)context.Operation;
+
+            if (invocationOperation.Instance is null) { // static invocation
+                var pythonTypeOps = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.Operations.PythonTypeOps");
+                IMethodSymbol methodSymbol = invocationOperation.TargetMethod;
+                if (methodSymbol.Name == "GetName" && methodSymbol.ContainingType.Equals(pythonTypeOps, SymbolEqualityComparer.Default)) {
+                    var diagnostic = Diagnostic.Create(Rule4, invocationOperation.Syntax.GetLocation());
+                    context.ReportDiagnostic(diagnostic);
+                }
+            }
 
         }
     }

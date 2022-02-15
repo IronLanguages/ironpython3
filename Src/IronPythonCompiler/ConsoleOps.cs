@@ -57,6 +57,7 @@ EXE/WinEXE specific options:
     /embed                                    Embeds the generated DLL as a resource into the executable which is loaded at runtime
     /standalone                               Embeds the IronPython assemblies into the stub executable.
     /mta                                      Set MTAThreadAttribute on Main instead of STAThreadAttribute, only valid for /target:winexe
+    /sta                                      Set STAThreadAttribute on Main instead of MTAThreadAttribute, only valid for /target:exe
     /errfmt:msg                               A string that will be used when showing an error occured, {{0}} will be replaced by the exception message
     /win32icon:file.ico                       Sets file.ico as the icon for the executable
 

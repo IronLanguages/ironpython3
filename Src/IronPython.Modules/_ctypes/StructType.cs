@@ -116,7 +116,7 @@ namespace IronPython.Modules {
             /// </summary>
             public object from_param(object obj) {
                 if (!Builtin.isinstance(obj, this)) {
-                    throw PythonOps.TypeError("expected {0} instance got {1}", Name, PythonTypeOps.GetName(obj));
+                    throw PythonOps.TypeError("expected {0} instance got {1}", Name, PythonOps.GetPythonTypeName(obj));
                 }
 
                 return obj;

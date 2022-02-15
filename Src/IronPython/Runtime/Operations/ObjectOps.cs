@@ -158,7 +158,7 @@ namespace IronPython.Runtime.Operations {
         /// a string which consists of the type and a unique numerical identifier.
         /// </summary>
         public static string __repr__(object self) {
-            return $"<{DynamicHelpers.GetPythonType(self).Name} object at {PythonOps.HexId(self)}>";
+            return $"<{PythonOps.GetPythonTypeName(self)} object at {PythonOps.HexId(self)}>";
         }
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace IronPython.Runtime.Operations {
 
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
             if (formatSpec != string.Empty)
-                throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonTypeOps.GetName(self));
+                throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonOps.GetPythonTypeName(self));
 
             return PythonOps.ToString(context, self);
         }

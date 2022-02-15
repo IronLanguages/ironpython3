@@ -414,7 +414,7 @@ namespace IronPython.Modules {
                 EnsureReadable();
 
                 using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
-                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonTypeOps.GetName(buffer));
+                    ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
 
                 _checkClosed();
 

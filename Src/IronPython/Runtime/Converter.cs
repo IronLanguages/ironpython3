@@ -363,10 +363,10 @@ namespace IronPython.Runtime {
                     return res;
                 }
 
-                throw PythonOps.TypeError("__index__ returned non-int (type {0})", DynamicHelpers.GetPythonType(index).Name);
+                throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(index));
             }
 
-            throw PythonOps.TypeError("expected integer value, got {0}", DynamicHelpers.GetPythonType(value).Name);
+            throw PythonOps.TypeError("expected integer value, got {0}", PythonOps.GetPythonTypeName(value));
         }
 
         internal static bool TryGetInt(object o, out int value, bool throwOverflowError) {
@@ -410,7 +410,7 @@ namespace IronPython.Runtime {
         }
 
         internal static Exception CannotConvertOverflow(string name, object value) {
-            return PythonOps.OverflowError("Cannot convert {0}({1}) to {2}", PythonTypeOps.GetName(value), value, name);
+            return PythonOps.OverflowError("Cannot convert {0}({1}) to {2}", PythonOps.GetPythonTypeName(value), value, name);
         }
 
         private static Exception MakeTypeError(Type expectedType, object o) {

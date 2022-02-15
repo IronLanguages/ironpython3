@@ -822,7 +822,7 @@ namespace IronPython.Runtime {
                 return translate(table, buffer.AsReadOnlySpan().ToArray());
             }
             ValidateTable(table);
-            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonTypeOps.GetName(delete));
+            throw PythonOps.TypeError("a bytes-like object is required, not '{0}", PythonOps.GetPythonTypeName(delete));
         }
 
         public Bytes upper() {
@@ -860,7 +860,7 @@ namespace IronPython.Runtime {
                     return IndexOf(ebi.Value.ToByteChecked()) != -1;
             }
 
-            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetName(value));
+            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonOps.GetPythonTypeName(value));
         }
 
         public PythonTuple __getnewargs__()
@@ -911,7 +911,7 @@ namespace IronPython.Runtime {
 
         public static Bytes operator +([NotNull] Bytes self, [NotNull] IBufferProtocol other) {
             using var buffer = other.GetBufferNoThrow();
-            if (buffer is null) throw PythonOps.TypeError("can't concat {0} to bytes", PythonTypeOps.GetName(other));
+            if (buffer is null) throw PythonOps.TypeError("can't concat {0} to bytes", PythonOps.GetPythonTypeName(other));
             var span = buffer.AsReadOnlySpan();
             var bytes = new byte[self._bytes.Length + span.Length];
             self._bytes.CopyTo(bytes, 0);
@@ -920,7 +920,7 @@ namespace IronPython.Runtime {
         }
 
         public static Bytes operator +([NotNull]Bytes self, object? other) {
-            throw PythonOps.TypeError("can't concat {0} to bytes", PythonTypeOps.GetName(other));
+            throw PythonOps.TypeError("can't concat {0} to bytes", PythonOps.GetPythonTypeName(other));
         }
 
         private static Bytes MultiplyWorker(Bytes self, int count) {

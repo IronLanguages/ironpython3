@@ -902,7 +902,7 @@ elements will be converted to string.")]
             public void writerow(CodeContext/*!*/ context, object sequence) {
                 IEnumerator e;
                 if (!PythonOps.TryGetEnumerator(context, sequence, out e))
-                    throw MakeError($"iterable expected, not {PythonTypeOps.GetName(sequence)}");
+                    throw MakeError($"iterable expected, not {PythonOps.GetPythonTypeName(sequence)}");
 
                 // join all fields in internal buffer
                 JoinReset();

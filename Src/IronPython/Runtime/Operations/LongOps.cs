@@ -80,7 +80,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return ReturnObject(context, cls, result);
                 } else {
-                    throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonTypeOps.GetName(result));
+                    throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonOps.GetPythonTypeName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, x, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -89,12 +89,12 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return ReturnObject(context, cls, bigintRes);
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonOps.GetPythonTypeName(result));
                 }
             }
 
             throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
-                    DynamicHelpers.GetPythonType(x).Name);
+                    PythonOps.GetPythonTypeName(x));
         }
 
         private static object ReturnObject(CodeContext context, PythonType cls, object value) {

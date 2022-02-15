@@ -29,7 +29,9 @@ namespace IronPython.Runtime {
         }
 
         public string GetClassName() {
+#pragma warning disable IPY04 // Direct call to PythonTypeOps.GetName
             return PythonTypeOps.GetName(_value);
+#pragma warning restore IPY04
         }
 
         public string GetName() {

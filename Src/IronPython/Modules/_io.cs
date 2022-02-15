@@ -393,7 +393,7 @@ namespace IronPython.Modules {
             internal Exception UnsupportedOperation(CodeContext/*!*/ context, string attr) {
                 throw PythonExceptions.CreateThrowable(
                     (PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey),
-                    string.Format("{0}.{1} not supported", PythonTypeOps.GetName(this), attr)
+                    string.Format("{0}.{1} not supported", PythonOps.GetPythonTypeName(this), attr)
                 );
             }
 
@@ -401,7 +401,7 @@ namespace IronPython.Modules {
                 => PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey), msg);
 
             internal Exception AttributeError(string attrName) {
-                throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(this), attrName);
+                throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonOps.GetPythonTypeName(this), attrName);
             }
 
             internal Exception InvalidPosition(BigInteger pos) {
@@ -516,7 +516,7 @@ namespace IronPython.Modules {
                     return data.Count;
                 }
 
-                throw PythonOps.TypeError("must be read-write buffer, not " + PythonTypeOps.GetName(buf));
+                throw PythonOps.TypeError("must be read-write buffer, not " + PythonOps.GetPythonTypeName(buf));
             }
 
             public override BigInteger write(CodeContext/*!*/ context, object buf) {
@@ -1918,16 +1918,16 @@ namespace IronPython.Modules {
 
                 var initial_value = tuple[0] as string;
                 if (!(tuple[0] is string || tuple[0] is null)) {
-                    throw PythonOps.TypeError($"initial_value must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                    throw PythonOps.TypeError($"initial_value must be str or None, not '{PythonOps.GetPythonTypeName(tuple[0])}'");
                 }
 
                 var newline = tuple[1] as string;
                 if (!(tuple[1] is string || tuple[1] is null)) {
-                    throw PythonOps.TypeError($"newline must be str or None, not '{PythonTypeOps.GetName(tuple[0])}'");
+                    throw PythonOps.TypeError($"newline must be str or None, not '{PythonOps.GetPythonTypeName(tuple[0])}'");
                 }
 
                 if (!(tuple[2] is int i)) {
-                    throw PythonOps.TypeError($"third item of state must be an integer, not {PythonTypeOps.GetName(tuple[1])}");
+                    throw PythonOps.TypeError($"third item of state must be an integer, not {PythonOps.GetPythonTypeName(tuple[1])}");
                 }
                 if (i < 0) {
                     throw PythonOps.ValueError("position value cannot be negative");
@@ -1935,7 +1935,7 @@ namespace IronPython.Modules {
 
                 var dict = tuple[3] as PythonDictionary;
                 if (!(tuple[3] is PythonDictionary || tuple[3] is null)) {
-                    throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonTypeOps.GetName(tuple[2])}");
+                    throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonOps.GetPythonTypeName(tuple[2])}");
                 }
 
                 __init__(context, initial_value: initial_value, newline: newline);
@@ -2147,7 +2147,7 @@ namespace IronPython.Modules {
             public override BigInteger write(CodeContext/*!*/ context, object s) {
                 if (!(s is string str)) {
                     if (!(s is Extensible<string> es)) {
-                        throw PythonOps.TypeError("must be unicode, not {0}", PythonTypeOps.GetName(s));
+                        throw PythonOps.TypeError("must be unicode, not {0}", PythonOps.GetPythonTypeName(s));
                     }
                     str = es.Value;
                 }
@@ -2974,7 +2974,7 @@ namespace IronPython.Modules {
                     if (output is Extensible<string>) {
                         decoded = ((Extensible<string>)output).Value;
                     } else {
-                        throw PythonOps.TypeError("decoder produced {0}, expected str", PythonTypeOps.GetName(output));
+                        throw PythonOps.TypeError("decoder produced {0}, expected str", PythonOps.GetPythonTypeName(output));
                     }
                 }
 
@@ -3176,7 +3176,7 @@ namespace IronPython.Modules {
             }
 
             if (msg == null) {
-                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonTypeOps.GetName(i));
+                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(i));
             }
             
             throw PythonOps.TypeError(msg, args);

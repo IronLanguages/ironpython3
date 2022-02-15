@@ -38,7 +38,7 @@ namespace IronPython.Modules {
 
         private static array ArrayReconstructor(CodeContext context, [NotNull]PythonType cls, [NotNull]string typecode, int mformat_code, [NotNull]Bytes items) {
             if (typecode.Length != 1)
-                throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(typecode));
+                throw PythonOps.TypeError("expected character, got {0}", PythonOps.GetPythonTypeName(typecode));
             if (!typecodes.Contains(typecode))
                 throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
 
@@ -117,7 +117,7 @@ namespace IronPython.Modules {
 
             public array([NotNull]string type) {
                 if (type == null || type.Length != 1) {
-                    throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(type));
+                    throw PythonOps.TypeError("expected character, got {0}", PythonOps.GetPythonTypeName(type));
                 }
 
                 _typeCode = type[0];
@@ -314,7 +314,7 @@ namespace IronPython.Modules {
                     if (!_data.CanStore(ie.Current)) {
                         throw PythonOps.TypeError("expected {0}, got {1}",
                             DynamicHelpers.GetPythonTypeFromType(_data.StorageType).Name,
-                            DynamicHelpers.GetPythonType(ie.Current).Name);
+                            PythonOps.GetPythonTypeName(ie.Current));
                     }
                     items.Add(ie.Current);
                 }
@@ -531,7 +531,7 @@ namespace IronPython.Modules {
 
             private array CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
                 if (!(value is array pa)) {
-                    throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
+                    throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonOps.GetPythonTypeName(value));
                 } else if (pa._typeCode != _typeCode) {
                     throw PythonOps.TypeError("bad argument type for built-in operation");
                 }

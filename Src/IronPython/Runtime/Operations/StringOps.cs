@@ -174,7 +174,7 @@ namespace IronPython.Runtime.Operations {
                 return value;
             }
 
-            throw PythonOps.TypeError("expected str, got {0} from __str__", DynamicHelpers.GetPythonType(value).Name);
+            throw PythonOps.TypeError("expected str, got {0} from __str__", PythonOps.GetPythonTypeName(value));
         }
 
         #region Python Constructors
@@ -1230,7 +1230,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (!PythonTypeOps.TryGetOperator(context, table, "__getitem__", out object getitem)) {
-                throw PythonOps.TypeError($"'{PythonTypeOps.GetName(table)}' object is not subscriptable");
+                throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(table)}' object is not subscriptable");
             }
 
             StringBuilder ret = new StringBuilder();
@@ -1949,7 +1949,7 @@ namespace IronPython.Runtime.Operations {
         private static Bytes UserEncode(CodeContext context, string encoding, PythonTuple codecInfo, string data, string? errors) {
             var res = CallUserDecodeOrEncode(context, codecInfo[0], data, errors);
             if (res[0] is Bytes b) return b;
-            throw PythonOps.TypeError("'{0}' encoder returned '{1}' instead of 'bytes'; use codecs.encode() to encode to arbitrary types", encoding, DynamicHelpers.GetPythonType(res[0]).Name);
+            throw PythonOps.TypeError("'{0}' encoder returned '{1}' instead of 'bytes'; use codecs.encode() to encode to arbitrary types", encoding, PythonOps.GetPythonTypeName(res[0]));
         }
 
         private static string UserDecode(CodeContext context, PythonTuple codecInfo, object data, string? errors) {
@@ -2144,14 +2144,14 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("expected string or tuple, got NoneType");
             }
             if (!(prefix is string) && !(prefix is PythonTuple) && !(prefix is Extensible<string>)) {
-                throw PythonOps.TypeError("expected string or tuple, got {0}", DynamicHelpers.GetPythonType(prefix).Name);
+                throw PythonOps.TypeError("expected string or tuple, got {0}", PythonOps.GetPythonTypeName(prefix));
             }
         }
 
         private static string GetString(object? obj) {
             string? ret = AsString(obj);
             if (ret == null) {
-                throw PythonOps.TypeError("expected string, got {0}", DynamicHelpers.GetPythonType(obj).Name);
+                throw PythonOps.TypeError("expected string, got {0}", PythonOps.GetPythonTypeName(obj));
             }
             return ret;
         }

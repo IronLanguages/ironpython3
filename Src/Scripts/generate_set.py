@@ -279,7 +279,7 @@ def gen_mutating_op(cw, t, arg_t, symbol, upname, clrname):
             '''"unsupported operand type(s) for %s=: '{0}' and '{1}'",''' %
             symbol
         )
-        cw.writeline('%s(this), %s(set)' % (('PythonTypeOps.GetName',) * 2))
+        cw.writeline('%s(this), %s(set)' % (('PythonOps.GetPythonTypeName',) * 2))
         cw.dedent()
         cw.writeline(');')
 

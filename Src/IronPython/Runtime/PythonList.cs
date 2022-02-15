@@ -564,7 +564,7 @@ namespace IronPython.Runtime {
 
         public virtual void __delitem__(object? index) {
             if (!Converter.TryConvertToIndex(index, out int idx))
-                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
+                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
 
             __delitem__(idx);
         }
@@ -1120,7 +1120,7 @@ namespace IronPython.Runtime {
                 if (Converter.TryConvertToIndex(index, out int idx))
                     return this[idx];
 
-                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonTypeOps.GetName(index));
+                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
             set {
                 this[Converter.ConvertToIndex(index)] = value;

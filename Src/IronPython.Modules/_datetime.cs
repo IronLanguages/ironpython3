@@ -606,7 +606,7 @@ namespace IronPython.Modules {
 
             private static bool CheckTypeError(object other, bool shouldThrow) {
                 if (shouldThrow) {
-                    throw PythonOps.TypeError("can't compare datetime.date to {0}", PythonTypeOps.GetName(other));
+                    throw PythonOps.TypeError("can't compare datetime.date to {0}", PythonOps.GetPythonTypeName(other));
                 } else {
                     return true;
                 }
@@ -766,7 +766,7 @@ namespace IronPython.Modules {
                 }
 
                 if (args.Length > 7 && !(args[7] is tzinfo || args[7] == null)) {
-                    throw PythonOps.TypeError("tzinfo argument must be None or of a tzinfo subclass, not type '{0}'", PythonTypeOps.GetName(args[7]));
+                    throw PythonOps.TypeError("tzinfo argument must be None or of a tzinfo subclass, not type '{0}'", PythonOps.GetPythonTypeName(args[7]));
                 }
 
                 // the above cases should cover all binding failures...
@@ -1113,7 +1113,7 @@ namespace IronPython.Modules {
 
                 datetime combo = other as datetime;
                 if (combo == null)
-                    throw PythonOps.TypeError("can't compare datetime.datetime to {0}", PythonTypeOps.GetName(other));
+                    throw PythonOps.TypeError("can't compare datetime.datetime to {0}", PythonOps.GetPythonTypeName(other));
 
                 if (CheckTzInfoBeforeCompare(this, combo)) {
                     int res = this.InternalDateTime.CompareTo(combo.InternalDateTime);
@@ -1411,7 +1411,7 @@ namespace IronPython.Modules {
             private int CompareTo(object other) {
                 time other2 = other as time;
                 if (other2 == null)
-                    throw PythonOps.TypeError("can't compare datetime.time to {0}", PythonTypeOps.GetName(other));
+                    throw PythonOps.TypeError("can't compare datetime.time to {0}", PythonOps.GetPythonTypeName(other));
 
                 if (CheckTzInfoBeforeCompare(this, other2)) {
                     int res = this._timeSpan.CompareTo(other2._timeSpan);

@@ -580,7 +580,7 @@ namespace IronPython.Modules {
 
             public static deque operator +([NotNull] deque x, object y) {
                 if (y is deque t) return x + t;
-                throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonTypeOps.GetName(y)}\") to deque");
+                throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonOps.GetPythonTypeName(y)}\") to deque");
             }
 
             public static deque operator +([NotNull] deque x, [NotNull] deque y) {

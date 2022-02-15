@@ -33,8 +33,8 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, [Optional] object? real, [Optional] object? imag) {
-            if (real == null) throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonTypeOps.GetName(real)}'");
-            if (imag == null) throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonTypeOps.GetName(real)}'");
+            if (real == null) throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonOps.GetPythonTypeName(real)}'");
+            if (imag == null) throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonOps.GetPythonTypeName(real)}'");
 
             Complex imag2;
             if (imag is Missing) {
@@ -43,7 +43,7 @@ namespace IronPython.Runtime.Operations {
                 if (real is string) throw PythonOps.TypeError("complex() can't take second arg if first is a string");
                 if (imag is string) throw PythonOps.TypeError("complex() second arg can't be a string");
                 if (!Converter.TryConvertToComplex(imag, out imag2)) {
-                    throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonTypeOps.GetName(real)}'");
+                    throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonOps.GetPythonTypeName(real)}'");
                 }
             }
 
@@ -58,7 +58,7 @@ namespace IronPython.Runtime.Operations {
                 if (imag is Missing && cls == TypeCache.Complex) return real;
                 else real2 = (Complex)real;
             } else if (!Converter.TryConvertToComplex(real, out real2)) {
-                throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonTypeOps.GetName(real)}'");
+                throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonOps.GetPythonTypeName(real)}'");
             }
 
             double real3 = real2.Real - imag2.Imaginary;

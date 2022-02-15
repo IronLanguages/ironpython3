@@ -100,7 +100,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return value;
             }
 
-            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonTypeOps.GetName(o));
+            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonOps.GetPythonTypeName(o));
         }
 
         public static bool all(CodeContext context, object? x) {
@@ -346,7 +346,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (globals == null) globals = context.GlobalDict;
 
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
-                throw PythonOps.TypeError($"locals must be mapping or None, not {DynamicHelpers.GetPythonType(locals).Name}");
+                throw PythonOps.TypeError($"locals must be mapping or None, not {PythonOps.GetPythonTypeName(locals)}");
             }
 
             CodeContext execContext = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);
@@ -400,7 +400,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 out res);
 
             if (!(res is string strRes)) {
-                throw PythonOps.TypeError("{0}.__format__ must return string, not {1}", PythonTypeOps.GetName(argValue), PythonTypeOps.GetName(res));
+                throw PythonOps.TypeError("{0}.__format__ must return string, not {1}", PythonOps.GetPythonTypeName(argValue), PythonOps.GetPythonTypeName(res));
             }
 
             return strRes;
@@ -1170,7 +1170,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return bytes[0];
             }
 
-            throw PythonOps.TypeError("expected a character, but {0} found", PythonTypeOps.GetName(value));
+            throw PythonOps.TypeError("expected a character, but {0} found", PythonOps.GetPythonTypeName(value));
         }
 
         public static object pow(CodeContext/*!*/ context, object? x, object? y) {
@@ -1192,12 +1192,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> kwargs, [NotNull]params object?[] args) {
             object? sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
-                throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
+                throw PythonOps.TypeError("sep must be None or str, not {0}", PythonOps.GetPythonTypeName(sep));
             }
 
             object? end = AttrCollectionPop(kwargs, "end", "\n");
             if (end != null && !(end is string)) {
-                throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
+                throw PythonOps.TypeError("end must be None or str, not {0}", PythonOps.GetPythonTypeName(end));
             }
 
             object? file = AttrCollectionPop(kwargs, "file", null);
@@ -1338,7 +1338,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return val;
             }
 
-            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonTypeOps.GetName(number));
+            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonOps.GetPythonTypeName(number));
         }
 
         public static object? round(CodeContext/*!*/ context, object? number, object? ndigits) {
@@ -1375,7 +1375,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return val;
             }
 
-            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonTypeOps.GetName(number));
+            throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonOps.GetPythonTypeName(number));
         }
 
         public static void setattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? val) {

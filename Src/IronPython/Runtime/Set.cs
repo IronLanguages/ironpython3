@@ -612,7 +612,7 @@ namespace IronPython.Runtime {
 
             throw PythonOps.TypeError(
                 "unsupported operand type(s) for |=: '{0}' and '{1}'",
-                PythonTypeOps.GetName(this), PythonTypeOps.GetName(set)
+                PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(set)
             );
         }
 
@@ -637,7 +637,7 @@ namespace IronPython.Runtime {
 
             throw PythonOps.TypeError(
                 "unsupported operand type(s) for &=: '{0}' and '{1}'",
-                PythonTypeOps.GetName(this), PythonTypeOps.GetName(set)
+                PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(set)
             );
         }
 
@@ -662,7 +662,7 @@ namespace IronPython.Runtime {
 
             throw PythonOps.TypeError(
                 "unsupported operand type(s) for ^=: '{0}' and '{1}'",
-                PythonTypeOps.GetName(this), PythonTypeOps.GetName(set)
+                PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(set)
             );
         }
 
@@ -687,7 +687,7 @@ namespace IronPython.Runtime {
 
             throw PythonOps.TypeError(
                 "unsupported operand type(s) for -=: '{0}' and '{1}'",
-                PythonTypeOps.GetName(this), PythonTypeOps.GetName(set)
+                PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(set)
             );
         }
 

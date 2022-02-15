@@ -202,10 +202,10 @@ namespace IronPython.Runtime {
             if (value != null && typeof(T).IsPrimitive && typeof(T) != typeof(char))
                 throw PythonOps.OverflowError("couldn't convert {1} to {0}",
                     DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
-                    DynamicHelpers.GetPythonType(value).Name);
+                    PythonOps.GetPythonTypeName(value));
             throw PythonOps.TypeError("expected {0}, got {1}",
                 DynamicHelpers.GetPythonTypeFromType(typeof(T)).Name,
-                DynamicHelpers.GetPythonType(value).Name);
+                PythonOps.GetPythonTypeName(value));
         }
 
         public int IndexOf(T item)

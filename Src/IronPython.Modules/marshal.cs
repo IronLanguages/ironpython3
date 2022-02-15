@@ -42,7 +42,7 @@ namespace IronPython.Modules {
 
         private static IEnumerator<byte> FileEnumerator(CodeContext/*!*/ context, PythonIOModule._IOBase/*!*/ file) {
             object bytes = file.read(context, 0);
-            if (!(bytes is Bytes)) throw PythonOps.TypeError($"file.read() returned not bytes but {Runtime.Types.DynamicHelpers.GetPythonType(bytes).Name}");
+            if (!(bytes is Bytes)) throw PythonOps.TypeError($"file.read() returned not bytes but {PythonOps.GetPythonTypeName(bytes)}");
 
             for (; ; ) {
                 Bytes data = (Bytes)file.read(context, 1);

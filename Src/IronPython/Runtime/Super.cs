@@ -43,7 +43,7 @@ namespace IronPython.Runtime {
                     _selfClass = obj;
                     _self = obj;
                 } else {
-                    throw PythonOps.TypeError("super(type, obj): obj must be an instance or subtype of type {1}, not {0}", PythonTypeOps.GetName(obj), type.Name);
+                    throw PythonOps.TypeError("super(type, obj): obj must be an instance or subtype of type {1}, not {0}", PythonOps.GetPythonTypeName(obj), type.Name);
                 }
             } else {
                 _thisClass = type;
@@ -192,7 +192,7 @@ namespace IronPython.Runtime {
                 selfRepr = "<super object>";
             else
                 selfRepr = PythonOps.Repr(context, _self);
-            return string.Format("<{0}: {1}, {2}>", PythonTypeOps.GetName(this), PythonOps.Repr(context, _thisClass), selfRepr);
+            return string.Format("<{0}: {1}, {2}>", PythonOps.GetPythonTypeName(this), PythonOps.Repr(context, _thisClass), selfRepr);
         }
 
         #endregion

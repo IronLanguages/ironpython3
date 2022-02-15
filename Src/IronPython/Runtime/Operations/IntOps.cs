@@ -73,12 +73,12 @@ namespace IronPython.Runtime.Operations {
                             if (TryInvokeInt(context, result, out var intResult)) {
                                 return intResult;
                             }
-                            throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
+                            throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonOps.GetPythonTypeName(result));
                         }
                 }
             }
 
-            throw PythonOps.TypeError("int() argument must be a string, a bytes-like object or a number, not '{0}'", PythonTypeOps.GetName(o));
+            throw PythonOps.TypeError("int() argument must be a string, a bytes-like object or a number, not '{0}'", PythonOps.GetPythonTypeName(o));
 
             static bool TryInvokeInt(CodeContext context, object o, out object result) {
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result)) {
@@ -101,11 +101,11 @@ namespace IronPython.Runtime.Operations {
                             result = ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
                             return true;
                         default:
-                            throw PythonOps.TypeError("__int__ returned non-int (type {0})", PythonTypeOps.GetName(result));
+                            throw PythonOps.TypeError("__int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(result));
                     }
 
                     static void Warn(CodeContext context, object result) {
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__int__ returned non-int (type {PythonTypeOps.GetName(result)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__int__ returned non-int (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
                     }
                 }
                 return false;

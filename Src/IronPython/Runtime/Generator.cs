@@ -125,7 +125,7 @@ namespace IronPython.Runtime {
             } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
                 // ok
             } else {
-                throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonTypeOps.GetName(type));
+                throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonOps.GetPythonTypeName(type));
             }
 
             // Set fields which will then be used by CheckThrowable.

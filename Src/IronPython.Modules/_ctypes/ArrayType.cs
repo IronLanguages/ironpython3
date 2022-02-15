@@ -243,7 +243,7 @@ namespace IronPython.Modules {
 
                             return null;
                         }
-                        throw PythonOps.TypeError("bytes expected instead of {0} instance", DynamicHelpers.GetPythonType(value).Name);
+                        throw PythonOps.TypeError("bytes expected instead of {0} instance", PythonOps.GetPythonTypeName(value));
                     }
                     if (st._type == SimpleTypeKind.WChar) {
                         if (value is string str) {
@@ -255,7 +255,7 @@ namespace IronPython.Modules {
 
                             return null;
                         }
-                        throw PythonOps.TypeError("unicode string expected instead of {0} instance", DynamicHelpers.GetPythonType(value).Name);
+                        throw PythonOps.TypeError("unicode string expected instead of {0} instance", PythonOps.GetPythonTypeName(value));
                     }
                 }
 
@@ -280,7 +280,7 @@ namespace IronPython.Modules {
                         return arr._memHolder.EnsureObjects();
                     }
 
-                    throw PythonOps.TypeError("unexpected {0} instance, got {1}", Name, DynamicHelpers.GetPythonType(value).Name);
+                    throw PythonOps.TypeError("unexpected {0} instance, got {1}", Name, PythonOps.GetPythonTypeName(value));
                 }
 
                 return null;

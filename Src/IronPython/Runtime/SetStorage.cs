@@ -1272,7 +1272,7 @@ namespace IronPython.Runtime {
             } else if (setType == typeof(FrozenSetCollection)) {
                 setTypeStr = "frozenset";
             } else {
-                setTypeStr = PythonTypeOps.GetName(set);
+                setTypeStr = PythonOps.GetPythonTypeName(set);
             }
 
             StringBuilder sb = new StringBuilder();

@@ -114,7 +114,7 @@ namespace IronPython.Modules {
             public int lineno {
                 get {
                     if (_lineno != null) return (int)_lineno;
-                    throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(this), "lineno");
+                    throw PythonOps.AttributeErrorForMissingAttribute(PythonOps.GetPythonTypeName(this), "lineno");
                 }
                 set { _lineno = value; }
             }
@@ -122,7 +122,7 @@ namespace IronPython.Modules {
             public int col_offset {
                 get {
                     if (_col_offset != null) return (int)_col_offset;
-                    throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(this), "col_offset");
+                    throw PythonOps.AttributeErrorForMissingAttribute(PythonOps.GetPythonTypeName(this), "col_offset");
                 }
                 set { _col_offset = value; }
             }

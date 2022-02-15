@@ -120,7 +120,7 @@ namespace IronPython.Runtime {
                 // http://bugs.python.org/issue5890
                 PythonDictionary dict = UserTypeOps.GetDictionary((IPythonObject)this);
                 if (dict == null) {
-                    throw PythonOps.AttributeError("{0} object has no __doc__ attribute", PythonTypeOps.GetName(this));
+                    throw PythonOps.AttributeError("{0} object has no __doc__ attribute", PythonOps.GetPythonTypeName(this));
                 }
 
                 dict["__doc__"] = ((PythonFunction)_fget).__doc__;

@@ -259,8 +259,8 @@ namespace IronPython.Modules {
         }
 
         public static object ParserCreate(object encoding, object namespace_separator, object intern) {
-            var encoding_str = encoding == null ? null : (encoding as string ?? throw PythonOps.TypeError($"ParserCreate() argument 1 must be string or None, not {PythonTypeOps.GetName(encoding)}"));
-            var namespace_separator_str = namespace_separator == null ? null : (namespace_separator as string ?? throw PythonOps.TypeError($"ParserCreate() argument 2 must be string or None, not {PythonTypeOps.GetName(namespace_separator)}"));
+            var encoding_str = encoding == null ? null : (encoding as string ?? throw PythonOps.TypeError($"ParserCreate() argument 1 must be string or None, not {PythonOps.GetPythonTypeName(encoding)}"));
+            var namespace_separator_str = namespace_separator == null ? null : (namespace_separator as string ?? throw PythonOps.TypeError($"ParserCreate() argument 2 must be string or None, not {PythonOps.GetPythonTypeName(namespace_separator)}"));
 
             return ParserCreateImpl(encoding_str, namespace_separator_str, intern);
         }
@@ -649,7 +649,7 @@ namespace IronPython.Modules {
                         }
                     }
                 } else {
-                    throw PythonOps.TypeError("read() did not return a bytes object (type={0})", DynamicHelpers.GetPythonType(readResult).Name);
+                    throw PythonOps.TypeError("read() did not return a bytes object (type={0})", PythonOps.GetPythonTypeName(readResult));
                 }
 
 

@@ -398,7 +398,7 @@ namespace IronPython.Runtime.Binding {
                                         "AttributeErrorForMissingAttribute",
                                         new Type[] { typeof(string), typeof(string) }
                                     ),
-                                    AstUtils.Constant(DynamicHelpers.GetPythonType(Value).Name),
+                                    AstUtils.Constant(PythonOps.GetPythonTypeName(Value)),
                                     AstUtils.Constant(pb.Name)
                                 ),
                                 typeof(object)

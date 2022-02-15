@@ -21,6 +21,7 @@ namespace IronPythonCompiler {
             Standalone = false;
             Target = PEFileKinds.Dll;
             UseMta = false;
+            UseSta = false;
             MainName = Main = string.Empty;
             Output = string.Empty;
             OutputPath = string.Empty;
@@ -90,6 +91,11 @@ namespace IronPythonCompiler {
         }
 
         public bool UseMta {
+            get;
+            private set;
+        }
+
+        public bool UseSta {
             get;
             private set;
         }
@@ -187,12 +193,14 @@ namespace IronPythonCompiler {
                     Copyright = arg.Substring(11).Trim('"');
                 } else if (arg.StartsWith("/errfmt:", StringComparison.Ordinal)) {
                     ErrorMessageFormat = arg.Substring(8);
-                } else if (arg.StartsWith("/embed", StringComparison.Ordinal)) {
+                } else if (arg.Equals("/embed", StringComparison.Ordinal)) {
                     Embed = true;
-                } else if (arg.StartsWith("/standalone", StringComparison.Ordinal)) {
+                } else if (arg.Equals("/standalone", StringComparison.Ordinal)) {
                     Standalone = true;
-                } else if (arg.StartsWith("/mta", StringComparison.Ordinal)) {
+                } else if (arg.Equals("/mta", StringComparison.Ordinal)) {
                     UseMta = true;
+                } else if (arg.Equals("/sta", StringComparison.Ordinal)) {
+                    UseSta = true;
                 } else if (arg.StartsWith("/recurse:", StringComparison.Ordinal)) {
                     string pattern = arg.Substring(9);
                     if (string.IsNullOrWhiteSpace(pattern)) {

@@ -125,9 +125,9 @@ namespace IronPythonCompiler {
 
             var mainMethod = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, u.Import(typeof(int)), Type.EmptyTypes);
             if (config.Target == PEFileKinds.WindowApplication && config.UseMta) {
-                mainMethod.SetCustomAttribute(u.Import(typeof(System.MTAThreadAttribute)).GetConstructor(Type.EmptyTypes), new byte[0]);
-            } else if (config.Target == PEFileKinds.WindowApplication) {
-                mainMethod.SetCustomAttribute(u.Import(typeof(System.STAThreadAttribute)).GetConstructor(Type.EmptyTypes), new byte[0]);
+                mainMethod.SetCustomAttribute(u.Import(typeof(System.MTAThreadAttribute)).GetConstructor(Type.EmptyTypes), Array.Empty<byte>());
+            } else if (config.Target == PEFileKinds.WindowApplication || config.Target == PEFileKinds.ConsoleApplication && config.UseSta) {
+                mainMethod.SetCustomAttribute(u.Import(typeof(System.STAThreadAttribute)).GetConstructor(Type.EmptyTypes), Array.Empty<byte>());
             }
 
             gen = mainMethod.GetILGenerator();

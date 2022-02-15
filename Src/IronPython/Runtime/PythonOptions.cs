@@ -145,9 +145,7 @@ namespace IronPython.Runtime {
             Tracing = GetOption(options, "Tracing", false);
             NoDebug = GetOption(options, "NoDebug", (Regex)null);
             Quiet = GetOption(options, "Quiet", false);
-#if DEBUG
             NoImportLib = GetOption(options, "NoImportLib", false);
-#endif
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

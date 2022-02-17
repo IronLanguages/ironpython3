@@ -66,6 +66,9 @@ See the following lists for features from each version of CPython that have been
 - [What's New In Python 3.4](WhatsNewInPython34.md)
 - [What's New In Python 3.5](WhatsNewInPython35.md)
 
+## Contributing
+For details on contributing see the [Contributing](CONTRIBUTING.md) article.
+
 ## Upgrading from IronPython 2
 For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](Documentation/upgrading-from-ipy2.md) article.
 

@@ -180,7 +180,7 @@ namespace IronPython.Runtime.Operations {
 
             for (int i = 0; i < indices.Length; i++) indices[i] += a.GetLowerBound(i);
 
-            Type elm = a.GetType().GetElementType()!;
+            Type elm = t.GetElementType()!;
             a.SetValue(Converter.Convert(indexAndValue[indexAndValue.Length - 1], elm), indices);
         }
 

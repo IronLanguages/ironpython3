@@ -164,8 +164,7 @@ namespace IronPython.Runtime.Operations {
         public static void SetItem(Array a, params object[] indexAndValue) {
             if (indexAndValue == null || indexAndValue.Length < 2) throw PythonOps.TypeError("__setitem__ requires at least 2 parameters");
 
-            int iindex;
-            if (indexAndValue.Length == 2 && Converter.TryConvertToInt32(indexAndValue[0], out iindex)) {
+            if (indexAndValue.Length == 2 && Converter.TryConvertToInt32(indexAndValue[0], out int iindex)) {
                 SetItem(a, iindex, indexAndValue[1]);
                 return;
             }
@@ -180,7 +179,9 @@ namespace IronPython.Runtime.Operations {
             if (a.Rank != args.Length) throw PythonOps.ValueError("bad dimensions for array, got {0} expected {1}", args.Length, a.Rank);
 
             for (int i = 0; i < indices.Length; i++) indices[i] += a.GetLowerBound(i);
-            a.SetValue(indexAndValue[indexAndValue.Length - 1], indices);
+
+            Type elm = t.GetElementType()!;
+            a.SetValue(Converter.Convert(indexAndValue[indexAndValue.Length - 1], elm), indices);
         }
 
         [SpecialName]

@@ -41,6 +41,7 @@ class ArrayTest(IronPythonTestCase):
         # 2-dimension array
         array4 = System.Array.CreateInstance(int, 2, 2)
         array4[0, 1] = 1
+        array4[0, 1] = 1 << 64 >> 64
         self.assertTrue(repr(array4).startswith("<2 dimensional Array[int] at"), "bad repr for 2-dimensional array")
 
         # 3-dimension array

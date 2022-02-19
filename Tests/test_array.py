@@ -49,13 +49,6 @@ class ArrayTest(IronPythonTestCase):
         array5[0, 1, 1] = int
         self.assertTrue(repr(array5).startswith("<3 dimensional Array[object] at "), "bad repr for 3-dimensional array")
 
-        ## index access
-        self.assertRaises(TypeError, lambda : array5['s'])
-        def f1(): array5[0, 1] = 0
-        self.assertRaises(ValueError, f1)
-        def f2(): array5['s'] = 0
-        self.assertRaises(TypeError, f2)
-
         ## __add__/__mul__
         for f in (
             lambda a, b : System.Array.__add__(a, b),
@@ -83,6 +76,62 @@ class ArrayTest(IronPythonTestCase):
             self.assertEqual([x for x in f(array1, 5)], [0, 10, 0, 10, 0, 10, 0, 10, 0, 10])
             self.assertEqual([x for x in f(array1, 0)], [])
             self.assertEqual([x for x in f(array1, -10)], [])
+
+    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    def test_invalid_index(self):
+        ## types and messages follow memoryview behaviour
+        rank3array = System.Array.CreateInstance(object, 2, 2, 2)
+
+        self.assertRaisesMessage(TypeError, "expected int, got str", lambda : rank3array['s'])
+        self.assertRaisesMessage(TypeError, "expected int, got str", lambda : rank3array[0, 's'])
+        self.assertRaisesMessage(TypeError, "expected int, got str", lambda : rank3array[0, 0, 's'])
+        self.assertRaisesMessage(TypeError, "expected int, got str", lambda : rank3array[0, 0, 0, 's'])
+        self.assertRaisesMessage(TypeError, "expected int, got str", lambda : rank3array[0, 0, 0, 0, 's'])
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 1 expected 3", lambda : rank3array[0])
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 2 expected 3", lambda : rank3array[0, 0])
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 4 expected 3", lambda : rank3array[0, 0, 0, 0])
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 5 expected 3", lambda : rank3array[0, 0, 0, 0, 0])
+
+        def f1(): rank3array['s'] = 0
+        self.assertRaisesMessage(TypeError, "expected int, got str", f1)
+        def f1(): rank3array[0, 's'] = 0
+        self.assertRaisesMessage(TypeError, "expected int, got str", f1)
+        def f1(): rank3array[0, 0, 's'] = 0
+        self.assertRaisesMessage(TypeError, "expected int, got str", f1)
+        def f1(): rank3array[0, 0, 0, 's'] = 0
+        self.assertRaisesMessage(TypeError, "expected int, got str", f1)
+        def f1(): rank3array[0, 0, 0, 0, 's'] = 0
+        self.assertRaisesMessage(TypeError, "expected int, got str", f1)
+
+        def f2(): rank3array[0] = 0
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 1 expected 3", f2)
+        def f2(): rank3array[0, 0] = 0
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 2 expected 3", f2)
+        def f2(): rank3array[0, 0, 0, 0] = 0
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 4 expected 3", f2)
+        def f2(): rank3array[0, 0, 0, 0, 0] = 0
+        self.assertRaisesMessage(TypeError, "bad dimensions for array, got 5 expected 3", f2)
+
+        self.assertRaisesMessage(IndexError, "index out of range: 2", lambda : rank3array[2, 0, 0])
+        self.assertRaisesMessage(IndexError, "index out of range: 2", lambda : rank3array[0, 2, 0])
+        self.assertRaisesMessage(IndexError, "index out of range: 2", lambda : rank3array[0, 0, 2])
+        self.assertRaisesMessage(IndexError, "index out of range: -3", lambda : rank3array[-3, 0, 0])
+        self.assertRaisesMessage(IndexError, "index out of range: -3", lambda : rank3array[0, -3, 0])
+        self.assertRaisesMessage(IndexError, "index out of range: -3", lambda : rank3array[0, 0, -3])
+
+        def f3(): rank3array[2, 0, 0] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: 2", f3)
+        def f3(): rank3array[0, 2, 0] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: 2", f3)
+        def f3(): rank3array[0, 0, 2] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: 2", f3)
+
+        def f4(): rank3array[-3, 0, 0] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: -3", f4)
+        def f4(): rank3array[0, -3, 0] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: -3", f4)
+        def f4(): rank3array[0, 0, -3] = 0
+        self.assertRaisesMessage(IndexError, "index out of range: -3", f4)
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_slice(self):

@@ -117,6 +117,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object? GetItem(Array data, int index) {
             if (data == null) throw PythonOps.TypeError("expected Array, got None");
+            if (data.Rank != 1) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", 1, data.Rank);
 
             return data.GetValue(PythonOps.FixIndex(index, data.Length) + data.GetLowerBound(0));
         }
@@ -138,8 +139,7 @@ namespace IronPython.Runtime.Operations {
         public static object? GetItem(Array data, params object?[] indices) {
             if (indices == null || indices.Length < 1) throw PythonOps.TypeError("__getitem__ requires at least 1 parameter");
 
-            int iindex;
-            if (indices.Length == 1 && Converter.TryConvertToInt32(indices[0], out iindex)) {
+            if (indices.Length == 1 && Converter.TryConvertToInt32(indices[0], out int iindex)) {
                 return GetItem(data, iindex);
             }
 
@@ -147,7 +147,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(t.HasElementType);
 
             int[] iindices = TupleToIndices(data, indices);
-            if (data.Rank != indices.Length) throw PythonOps.ValueError("bad dimensions for array, got {0} expected {1}", indices.Length, data.Rank);
+            if (data.Rank != indices.Length) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", indices.Length, data.Rank);
 
             for (int i = 0; i < iindices.Length; i++) iindices[i] += data.GetLowerBound(i);
             return data.GetValue(iindices);
@@ -156,6 +156,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static void SetItem(Array data, int index, object value) {
             if (data == null) throw PythonOps.TypeError("expected Array, got None");
+            if (data.Rank != 1) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", 1, data.Rank);
 
             data.SetValue(Converter.Convert(value, data.GetType().GetElementType()), PythonOps.FixIndex(index, data.Length) + data.GetLowerBound(0));
         }
@@ -176,7 +177,7 @@ namespace IronPython.Runtime.Operations {
 
             int[] indices = TupleToIndices(a, args);
 
-            if (a.Rank != args.Length) throw PythonOps.ValueError("bad dimensions for array, got {0} expected {1}", args.Length, a.Rank);
+            if (a.Rank != args.Length) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", args.Length, a.Rank);
 
             for (int i = 0; i < indices.Length; i++) indices[i] += a.GetLowerBound(i);
 
@@ -371,7 +372,8 @@ namespace IronPython.Runtime.Operations {
         private static int[] TupleToIndices(Array a, IList<object?> tuple) {
             int[] indices = new int[tuple.Count];
             for (int i = 0; i < indices.Length; i++) {
-                indices[i] = PythonOps.FixIndex(Converter.ConvertToInt32(tuple[i]), a.GetUpperBound(i) + 1);
+                int iindex = Converter.ConvertToInt32(tuple[i]);
+                indices[i] = i < a.Rank ? PythonOps.FixIndex(iindex, a.GetLength(i)) : int.MinValue;
             }
             return indices;
         }

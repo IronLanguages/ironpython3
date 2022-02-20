@@ -373,7 +373,7 @@ namespace IronPython.Runtime.Operations {
             int[] indices = new int[tuple.Count];
             for (int i = 0; i < indices.Length; i++) {
                 int iindex = Converter.ConvertToInt32(tuple[i]);
-                indices[i] = i < a.Rank ? PythonOps.FixIndex(iindex, a.GetUpperBound(i) + 1) : int.MinValue;
+                indices[i] = i < a.Rank ? PythonOps.FixIndex(iindex, a.GetLength(i)) : int.MinValue;
             }
             return indices;
         }

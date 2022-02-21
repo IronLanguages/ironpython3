@@ -172,6 +172,15 @@ namespace IronPython.Compiler.Ast {
             return to;
         }
 
+        internal static MSAst.Expression[] ToExpressionArray<T>(ReadOnlySpan<Expression> expressions) {
+            MSAst.Expression[] to = new MSAst.Expression[expressions.Length];
+            for (int i = 0; i < expressions.Length; i++) {
+                to[i] = AstUtils.Convert(expressions[i], typeof(T));
+            }
+            return to;
+        }
+
+
         internal static MSAst.Expression TransformOrConstantNull(Expression expression, Type/*!*/ type) {
             if (expression == null) {
                 return AstUtils.Constant(null, type);

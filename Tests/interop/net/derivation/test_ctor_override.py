@@ -12,10 +12,10 @@ from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 class CtorOverrideTest(IronPythonTestCase):
     def setUp(self):
         super(CtorOverrideTest, self).setUp()
-        from System import Array
+        from System import Array, Int32
         from clr import StrongBox
-        self.box_int = StrongBox[int]
-        self.array_int = Array[int]
+        self.box_int = StrongBox[Int32]
+        self.array_int = Array[Int32]
 
         self.add_clr_assemblies("baseclasscs", "typesamples")
 

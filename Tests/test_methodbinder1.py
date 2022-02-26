@@ -11,18 +11,22 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
+from System import Int32
+
 myint1,     myint2      = myint(20),    myint(-20)
-mylong1,    mylong2     = mylong(3),    mylong(-4)
 myfloat1,   myfloat2    = myfloat(4.5), myfloat(-4.5)
 mycomplex1              = mycomplex(3)
+
+def bint(s):
+    return tuple(map(big, s))
 
 funcs = '''
 M100   M201   M202   M203   M204   M205   M301   M302   M303   M304
 M310   M311   M312   M313   M320   M321   M400   M401   M402   M403
 M404   M410   M411   M450   M451
-M500   M510   M600   M610   M611   M620   M630
+M500   M510   M600   M601   M610   M611   M620   M630
 M650   M651   M652   M653
-M680   M700   M701
+M680   M681   M700   M701   M705   M706
 M710   M715
 '''.split()
 
@@ -30,9 +34,9 @@ args  = '''
 NoArg  Int32  Double BigInt Bool   String SByte  Int16  Int64  Single
 Byte   UInt16 UInt32 UInt64 Char   Decml  Object I      C1     C2
 S1     A      C6     E1     E2
-ArrInt32  ArrI   ParamArrInt32  ParamArrI       ParamArrS   Int32ParamArrInt32  IParamArrI
+ArrInt32  ArrI   ParamArrInt32  ParamArrBigInt  ParamArrI  ParamArrS   Int32ParamArrInt32  IParamArrI
 IListInt  Array  IEnumerableInt IEnumeratorInt
-NullableInt RefInt32  OutInt32
+NullableInt  NullableBigInt  RefInt32  OutInt32  RefBigInt  OutBigInt
 DefValInt32 Int32DefValInt32
 '''.split()
 
@@ -96,96 +100,95 @@ class MethodBinder1Test(IronPythonTestCase):
         print_the_matrix = False
 
 
-        funcnames =     "M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400".split()
+        funcnames =     "M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400".split()
         matrix = (
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (        "SByteMax", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (         "ByteMax", True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (        "Int16Max", True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  OverF, True,  True,  True,  TypeE, True,  True,  ),
-    (       "UInt16Max", True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, True,  True,  True,  TypeE, True,  True,  ),
-    (          "intMax", True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, True,  True,  TypeE, True,  True,  ),
-    (       "UInt32Max", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, True,  True,  TypeE, True,  True,  ),
-    (        "Int64Max", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
-    (       "UInt64Max", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
-    (      "DecimalMax", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (       "SingleMax", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMax", TypeE, TypeE, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (        "SByteMin", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (         "ByteMin", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (        "Int16Min", True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (       "UInt16Min", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (          "intMin", True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (       "UInt32Min", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (        "Int64Min", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (       "UInt64Min", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (      "DecimalMin", OverF, OverF, True , True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True , True,  ),
-    (       "SingleMin", OverF, OverF, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMin", TypeE, TypeE, True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (    "SBytePlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (     "BytePlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (    "Int16PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (   "UInt16PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (      "intPlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (            myint1, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (   "UInt32PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (    "Int64PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (   "UInt64PlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (  "DecimalPlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE,  True,  True,  ),
-    (   "SinglePlusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (    "floatPlusOne", TypeE, TypeE, True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (          myfloat1, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (   "SByteMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (   "Int16MinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (     "intMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (            myint2, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (   "Int64MinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    ( "DecimalMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (  "SingleMinusOne", True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (   "floatMinusOne", TypeE, TypeE, True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (          myfloat2, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (        "SByteMax", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (         "ByteMax", True,  True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (        "Int16Max", True,  True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  OverF, True,  True,  True,  TypeE, True,  True,  ),
+    (       "UInt16Max", True,  True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, True,  True,  True,  TypeE, True,  True,  ),
+    (        "Int32Max", True,  True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, True,  True,  TypeE, True,  True,  ),
+    (       "UInt32Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, True,  True,  TypeE, True,  True,  ),
+    (        "Int64Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
+    (       "UInt64Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
+    (      "DecimalMax", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (       "SingleMax", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (        "floatMax", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (        "SByteMin", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (         "ByteMin", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (        "Int16Min", True,  True,  True,  True,  True,  True,  TypeE, OverF, True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (       "UInt16Min", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (        "Int32Min", True,  True,  True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (       "UInt32Min", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (        "Int64Min", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (       "UInt64Min", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (      "DecimalMin", OverF, OverF, True , True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True , True,  ),
+    (       "SingleMin", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (        "floatMin", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (    "SBytePlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (     "BytePlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (    "Int16PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (   "UInt16PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (    "Int32PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (            myint1, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (   "UInt32PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (    "Int64PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (   "UInt64PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (  "DecimalPlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE,  True,  True,  ),
+    (   "SinglePlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (    "floatPlusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (          myfloat1, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (   "SByteMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (   "Int16MinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (   "Int32MinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (            myint2, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (   "Int64MinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    ( "DecimalMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (  "SingleMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (   "floatMinusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (          myfloat2, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     ##################################################   pass in bool   #########################################################
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (              True, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (             False, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (              True, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (             False, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     ##################################################  pass in BigInt #########################################################
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    (               10, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (              -10, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    ( 1234567890123456, OverF, OverF, True , True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
-    (           mylong1, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (           mylong2, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (           big(10), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (          big(-10), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    (  1234567890123456, OverF, OverF, True , True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
     ##################################################  pass in Complex #########################################################
-    ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-    ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-    (            (3+0j), TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
-    (            (3+1j), TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
-    (        mycomplex1, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  )
+    ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+    ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+    (            (3+0j), TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
+    (            (3+1j), TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
+    (        mycomplex1, TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  )
         )
 
         
         InvariantCulture = System.Globalization.CultureInfo.InvariantCulture
         matrix = list(matrix)
         ##################################################  pass in char    #########################################################
-        ####                                     M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-        ####                                     int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-        matrix.append((System.Char.Parse('A'), TypeE, TypeE, TypeE, TypeE, True,  True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  True, True,  ))
+        ####                                     M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+        ####                                     int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+        matrix.append((System.Char.Parse('A'),   TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  True, True,  ))
         
         ##################################################  pass in float   #########################################################
-        ####    single/double becomes Int32, but this does not apply to other primitive types
-        ####                                                           int    int?  double  bigint bool   str    sbyte i16   i64   single byte   ui16   ui32   ui64   char   decm   obj
-        matrix.append((System.Single.Parse("8.01", InvariantCulture), True,  True,  True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  True,  True,  TypeE, True, True, True, True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True,  True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  True,  True,  TypeE, True, True, True, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
+        ####    single/double becomes Int32/BigInteger, but this does not apply to other primitive types
+        ####                                                          M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
+        ####                                                           int   int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
+        matrix.append((System.Single.Parse("8.01", InvariantCulture), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ))
+        matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
         matrix = tuple(matrix)
         
         for scenario in matrix:
@@ -289,8 +292,8 @@ class MethodBinder1Test(IronPythonTestCase):
 
         ### 1. not work for Nullable<Int32> required (?)
         ### 2. (out int): should pass in nothing
-        ###      int  params int int?          ref int   defVal  int+defVal
-        works = 'M201 M600       M680     M620   M700      M710    M715'
+        ###      int  BigInteger params int  params BigInteger  int?  BigInteger? ref int  ref BigInteger  defVal  int+defVal
+        works = 'M201 M203       M600 M620   M601               M680  M681        M700     M705            M710    M715'
         for fn in works.split():
             self._helper(getattr(self.target, fn), [cp1, cp2, ], int(fn[1:]), [cp3, ], TypeError)
         
@@ -322,7 +325,7 @@ class MethodBinder1Test(IronPythonTestCase):
         self._helper(self.target.M411, [C6(), cp2, cp4, ], 411, [C3(), object(), C1(), cp1, cp3,], TypeError)
         
     def test_nullable_int(self):
-        self._helper(self.target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, mylong2, ], 680, [(), 3+1j], TypeError)
+        self._helper(self.target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, myint2, ], 680, [(), 3+1j], TypeError)
         
     def test_out_int(self):
         self._helper(self.target.M701, [], 701, [1, 10, None, System.Byte.Parse('3')], TypeError)    # not allow to pass in anything
@@ -345,10 +348,10 @@ class MethodBinder1Test(IronPythonTestCase):
         # Array
         self._helper(self.target.M651, [arrayInt, arrayObj, arrayByte, ], 651, [listInt, tupleInt, tupleLong1, tupleLong2, ], TypeError)
         
-        # IEnumerable[int]
+        # IEnumerable<int>
         self._helper(self.target.M652, [arrayInt, arrayObj, arrayByte, listInt, tupleInt, tupleLong1, tupleLong2, ], 652, [], TypeError)
         
-        # IEnumerator[int]
+        # IEnumerator<int>
         self._helper(self.target.M653, [], 653, [arrayInt, arrayObj, arrayByte, listInt, tupleInt, tupleLong1, tupleLong2, ], TypeError)
         
         # Int32[]
@@ -406,22 +409,22 @@ class MethodBinder1Test(IronPythonTestCase):
     def test_pass_in_none(self):
         test_str = '''
 Bool String Object I C1 C2 A C6
-ArrInt32 ArrI ParamArrInt32 ParamArrI ParamArrS IParamArrI
-IListInt Array IEnumerableInt IEnumeratorInt NullableInt
+ArrInt32 ArrI ParamArrInt32 ParamArrBigInt ParamArrI ParamArrS IParamArrI
+IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
 '''
         self._repeat_with_one_arg(test_str, lambda : None)
 
     def test_pass_in_clrReference(self):
         import clr
-        self._repeat_with_one_arg('Object RefInt32  OutInt32', lambda : clr.Reference[int](0))
+        self._repeat_with_one_arg('Object RefInt32  OutInt32', lambda : clr.Reference[Int32](0))
         self._repeat_with_one_arg('Object', lambda : clr.Reference[object](None))
-        self._repeat_with_one_arg('Object RefInt32  OutInt32', lambda : clr.Reference[int](10))
+        self._repeat_with_one_arg('Object RefInt32  OutInt32', lambda : clr.Reference[Int32](10))
         self._repeat_with_one_arg('Object ', lambda : clr.Reference[float](123.123))
         self._repeat_with_one_arg('Object', lambda : clr.Reference[type](str)) # ref.Value = (type)
 
     def test_pass_in_nothing(self):
         from IronPythonTest.BinderTest import Flag
-        passSet = _get_funcs('NoArg ParamArrInt32 ParamArrS ParamArrI OutInt32 DefValInt32')
+        passSet = _get_funcs('NoArg ParamArrInt32 ParamArrBigInt ParamArrS ParamArrI OutInt32 OutBigInt DefValInt32')
         skipSet = [ ]  # be empty before release
         
         for fn in passSet:
@@ -468,6 +471,14 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         self.assertRaises(TypeError, COtherConcern.M102, self.target)
         
         # generic method
+        self.target.M200[System.Int32](100)
+        self.assertEqual(Flag.Value, 200); Flag.Value = 99
+        with self.assertRaises(TypeError):
+            self.target.M200[System.Int32](100.1234)
+        self.assertEqual(Flag.Value, 99)
+        self.target.M200[System.Int32](100)
+        self.assertEqual(Flag.Value, 200); Flag.Value = 99
+        
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
         with self.assertRaises(TypeError):
@@ -475,8 +486,9 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         self.assertEqual(Flag.Value, 99)
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
+        
         self.assertRaises(OverflowError, self.target.M200[System.Byte], 300)
-        self.assertRaises(OverflowError, self.target.M200[int], 12345678901234)
+        self.assertRaises(OverflowError, self.target.M200[System.Int32], 12345678901234)
         
         # We should ignore Out attribute on non-byref.
         # It's used in native interop scenarios to designate a buffer (StringBUilder, arrays, etc.) 
@@ -577,8 +589,8 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         self.target.M855(clr.Reference[bool](True)); self.assertEqual(Flag.Value, 855)
         
         # practical
-        ref = clr.Reference[int](0)
-        ref2 = clr.Reference[int](0)
+        ref = clr.Reference[System.Int32](0)
+        ref2 = clr.Reference[System.Int32](0)
         ref.Value = 300
         ref2.Value = 100
         ## M860(ref arg1, arg2, out arg3): arg3 = arg1 + arg2; arg1 = 100;
@@ -602,6 +614,15 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             self.assertEqual(Flag.Value, 100); Flag.Value = 99
         
         GOtherConcern[int].M100(self.target, 200)
+        self.assertEqual(Flag.Value, 100); Flag.Value = 99
+        self.assertRaises(TypeError, self.target.M100, 'abc')
+    
+        self.target = GOtherConcern[System.Int32]()
+        for x in [100, 200, myint1]:
+            self.target.M100(x)
+            self.assertEqual(Flag.Value, 100); Flag.Value = 99
+        
+        GOtherConcern[System.Int32].M100(self.target, 200)
         self.assertEqual(Flag.Value, 100); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M100, 'abc')
         self.assertRaises(OverflowError, self.target.M100, 12345678901234)
@@ -903,12 +924,12 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         class UserGenericType(GenericTypeInferenceInstance): pass
 
         # public PythonType MInst<T>(T x) -> pytype(T)
-        self.assertEqual(UserGenericType().MInst(42), int)
+        self.assertEqual(UserGenericType().MInst(42), Int32)
 
         class UserObject(object): pass
             
         userInst = UserObject()
-        userInt, userLong, userFloat, userComplex, userStr = myint(), mylong(), myfloat(), mycomplex(), mystr()
+        userInt, userFloat, userComplex, userStr = myint(), myfloat(), mycomplex(), mystr()
         userTuple, userList, userDict = mytuple(), mylist(), mydict()
         objArray = System.Array[object]( (1,2,3) )
         doubleArray = System.Array[float]( (1.0,2.0,3.0) )
@@ -919,11 +940,11 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             # simple single type tests, no constraints
             # public static PythonType M0<T>(T x) -> pytypeof(T)
             # target method,   args,                            Result,     KeywordCall,      Exception
-            (target.M0,        (1, ),                          int,        True,             None),
+            (target.M0,        (1, ),                          Int32,      True,             None),
+            (target.M0,        ((1).ToBigInteger(), ),         int,        True,             None),
             (target.M0,        (userInst, ),                   object,     True,             None),
             (target.M0,        (userInt, ),                    object,     True,             None),
             (target.M0,        (userStr, ),                    object,     True,             None),
-            (target.M0,        (userLong, ),                   object,     True,             None),
             (target.M0,        (userFloat, ),                  object,     True,             None),
             (target.M0,        (userComplex, ),                object,     True,             None),
             (target.M0,        (userTuple, ),                  tuple,      True,             None),
@@ -936,8 +957,10 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             # multiple arguments
             # public static PythonType M1<T>(T x, T y) -> pytypeof(T)
             # public static PythonType M2<T>(T x, T y, T z) -> pytypeof(T)
-            (target.M1,        (1, 2),                         int,        True,             None),
-            (target.M2,        (1, 2, 3),                      int,        True,             None),
+            (target.M1,        (1, 2),                         Int32,      True,             None),
+            (target.M2,        (1, 2, 3),                      Int32,      True,             None),
+            (target.M1,        bint((1, 2)),                   int,        True,             None),
+            (target.M2,        bint((1, 2, 3)),                int,        True,             None),
             (target.M1,        (userInst, userInst),           object,     True,             None),
             (target.M2,        (userInst, userInst, userInst), object,     True,             None),
             (target.M1,        (1, 2.0),                       None,       True,             TypeError),
@@ -948,16 +971,20 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             # params arguments
             # public static PythonType M3<T>(params T[] args) -> pytypeof(T)
             (target.M3,        (),                             None,       False,           TypeError),
-            (target.M3,        (1, ),                          int,        False,            None),
-            (target.M3,        (1, 2),                         int,        False,            None),
-            (target.M3,        (1, 2, 3),                      int,        False,            None),
+            (target.M3,        (1, ),                          Int32,        False,            None),
+            (target.M3,        (1, 2),                         Int32,        False,            None),
+            (target.M3,        (1, 2, 3),                      Int32,        False,            None),
+            (target.M3,        bint((1, )),                    int,        False,            None),
+            (target.M3,        bint((1, 2)),                   int,        False,            None),
+            (target.M3,        bint((1, 2, 3)),                int,        False,            None),
             (target.M3,        (1, 2.0),                       object,     False,            TypeError),
             (target.M3,        (1, 'abc'),                     object,     False,            TypeError),
             (target.M3,        (object(), userInst),           object,     False,            None),
             (target.M3,        ([], userList),                 list,       False,            None),
             
             # public static PythonType M4<T>(T x, params T[] args) -> pytypeof(T)
-            (target.M4,        (1, 2),                         int,        False,            None),
+            (target.M4,        (1, 2),                         Int32,      False,            None),
+            (target.M4,        bint((1, 2)),                   int,        False,            None),
             (target.M4,        (1, 2.0),                       object,     False,            TypeError),
             (target.M4,        (1, 'abc'),                     object,     False,            TypeError),
             (target.M4,        (object(), userInst),           object,     False,            None),
@@ -968,21 +995,28 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             # public static PythonType M6<T>(T x) where T : struct -> pytype(T)
             # public static PythonType M7<T>(T x) where T : IList -> pytype(T)
             (target.M5,        (1, ),                           None,      False,           TypeError),
+            (target.M5,        bint((1, )),                     None,      False,           TypeError),
             (target.M6,        ('abc', ),                       None,      False,           TypeError),
             (target.M7,        (object(), ),                    None,      False,           TypeError),
             (target.M7,        (2, ),                           None,      False,           TypeError),
+            (target.M7,        bint((2, )),                     None,      False,           TypeError),
             (target.M5,        ('abc', ),                       str,        False,           None),
             (target.M5,        (object(), ),                    object,     False,           None),
-            (target.M6,        (1, ),                           int,        False,           None),
+            (target.M6,        (1, ),                           Int32,      False,           None),
+            (target.M6,        bint((1, )),                     int,        False,           None),
             (target.M7,        ([], ),                          list,       False,           None),
             (target.M7,        (objArray, ),                    type(objArray),False,        None),
         
             # simple dependent constraints
             # public static PythonTuple M8<T0, T1>(T0 x, T1 y) where T0 : T1 -> (pytype(T0), pytype(T1))     
-            (target.M8,        (1, 2),                         (int, int),   False,           None),
+            (target.M8,        (1, 2),                         (Int32, Int32), False,           None),
+            (target.M8,        bint((1, 2)),                   (int, int),   False,           None),
+            (target.M8,        (big(1), 2),                    None,         False,           TypeError),
+            (target.M8,        (1, big(2)),                     None,         False,           TypeError),
             (target.M8,        ('abc', object()),              (str, object),False,           None),
             (target.M8,        (object(), 'abc'),              None,         False,           TypeError),
-            (target.M8,        (1, object()),                  (int, object),False,           None),
+            (target.M8,        (1, object()),                  (Int32, object),False,           None),
+            (target.M8,        (big(1), object()),             (int, object),False,           None),
             (target.M8,        (object(), 1),                  None,         False,           TypeError),
         
             # no types can be inferred, error
@@ -1033,11 +1067,13 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
             
             # public static PythonType M19<T0, T1>(T0 x, T1 y) where T0 : IList<T1> -> pytype(T0), pytype(T1)
             (target.M19,       ([], 1),                       None,             True,         TypeError),
-            (target.M19,       (List[int](), 1),              (List[int], int), True,         None),
+            (target.M19,       (List[Int32](), 1),            (List[Int32], Int32), True,         None),
+            (target.M19,       (List[int](), big(1)),         (List[int], int), True,         None),
             
             # public static PythonType M20<T0, T1>(T0 x, T1 y) -> pytype(T0), pytype(T1)
-            (target.M20,       ([], 1),                       (list, int),      True,         None),
-            (target.M20,       (List[int](), 1),              (List[int], int), True,         None),
+            (target.M20,       ([], 1),                       (list, Int32),    True,         None),
+            (target.M20,       ([], big(1)),                  (list, int),      True,         None),
+            (target.M20,       (List[int](), 1),              (List[int], Int32), True,         None),
             
             # constructed types
             # public static PythonType M21<T>(IEnumerable<T> enumerable)

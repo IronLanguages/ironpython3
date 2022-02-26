@@ -11,7 +11,7 @@ import unittest
 
 from _io import BytesIO
 
-from iptest import long, run_test
+from iptest import big, run_test
 
 def bytesio_helper():
     return (BytesIO(bytearray(b'')),
@@ -117,19 +117,19 @@ class BytesIOTest(unittest.TestCase):
 
         # these should all succeed
         x.seek(0)
-        x.seek(long(0))
+        x.seek(big(0))
         x.seek(0, 0)
-        x.seek(long(0), 0)
-        x.seek(0, long(0))
-        x.seek(long(0), long(0))
+        x.seek(big(0), 0)
+        x.seek(0, big(0))
+        x.seek(big(0), big(0))
 
         # these should all fail
         self.assertRaises(TypeError, x.seek, 0, 0.0)
-        self.assertRaises(TypeError, x.seek, long(0), 0.0)
+        self.assertRaises(TypeError, x.seek, big(0), 0.0)
         self.assertRaises(ValueError, x.seek, 0, 1000)
-        self.assertRaises(ValueError, x.seek, long(0), 1000)
+        self.assertRaises(ValueError, x.seek, big(0), 1000)
         self.assertRaises(OverflowError, x.seek, 0, sys.maxsize+1)
-        self.assertRaises(OverflowError, x.seek, long(0), sys.maxsize+1)
+        self.assertRaises(OverflowError, x.seek, big(0), sys.maxsize+1)
         self.assertRaises(TypeError, x.seek, 0.0)
         self.assertRaises(TypeError, x.seek, 0.0, 0)
         self.assertRaises(OverflowError, x.seek, sys.maxsize+1)
@@ -244,11 +244,11 @@ class BytesIOTest(unittest.TestCase):
                             [('I',),
                             [[],[],[],[],[],[],[],[],[],[]],
                             [0,0,0,0,0,0,0,0,0,0]],
-                            [('I',[long(1)]),
-                            [[long(1)],[long(97)],[long(25185)],[long(6513249)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)]],
+                            [('I',[big(1)]),
+                            [[big(1)],[big(97)],[big(25185)],[big(6513249)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)]],
                             [0,1,2,3,4,4,4,4,4,4]],
-                            [('I',[long(1),long(999),long(47)]),
-                            [[long(1),long(999),long(47)],[long(97),long(999),long(47)],[long(25185),long(999),long(47)],[long(6513249),long(999),long(47)],[long(1684234849),long(999),long(47)],[long(1684234849),long(869),long(47)],[long(1684234849),long(26213),long(47)],[long(1684234849),long(6776421),long(47)],[long(1684234849),long(1751606885),long(47)],[long(1684234849),long(1751606885),long(105)]],
+                            [('I',[big(1),big(999),big(47)]),
+                            [[big(1),big(999),big(47)],[big(97),big(999),big(47)],[big(25185),big(999),big(47)],[big(6513249),big(999),big(47)],[big(1684234849),big(999),big(47)],[big(1684234849),big(869),big(47)],[big(1684234849),big(26213),big(47)],[big(1684234849),big(6776421),big(47)],[big(1684234849),big(1751606885),big(47)],[big(1684234849),big(1751606885),big(105)]],
                             [0,1,2,3,4,5,6,7,8,9]],
                             [('l',),
                             [[],[],[],[],[],[],[],[],[],[]],
@@ -268,11 +268,11 @@ class BytesIOTest(unittest.TestCase):
                             [('L',),
                             [[],[],[],[],[],[],[],[],[],[]],
                             [0,0,0,0,0,0,0,0,0,0]],
-                            [('L',[long(100000000)]),
-                            [[long(100000000)],[long(100000097)],[long(99967585)],[long(90399329)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)],[long(1684234849)]],
+                            [('L',[big(100000000)]),
+                            [[big(100000000)],[big(100000097)],[big(99967585)],[big(90399329)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)],[big(1684234849)]],
                             [0,1,2,3,4,4,4,4,4,4]],
-                            [('L',[long(1),long(99),long(47)]),
-                            [[long(1),long(99),long(47)],[long(97),long(99),long(47)],[long(25185),long(99),long(47)],[long(6513249),long(99),long(47)],[long(1684234849),long(99),long(47)],[long(1684234849),long(101),long(47)],[long(1684234849),long(26213),long(47)],[long(1684234849),long(6776421),long(47)],[long(1684234849),long(1751606885),long(47)],[long(1684234849),long(1751606885),long(105)]],
+                            [('L',[big(1),big(99),big(47)]),
+                            [[big(1),big(99),big(47)],[big(97),big(99),big(47)],[big(25185),big(99),big(47)],[big(6513249),big(99),big(47)],[big(1684234849),big(99),big(47)],[big(1684234849),big(101),big(47)],[big(1684234849),big(26213),big(47)],[big(1684234849),big(6776421),big(47)],[big(1684234849),big(1751606885),big(47)],[big(1684234849),big(1751606885),big(105)]],
                             [0,1,2,3,4,5,6,7,8,9]],
                             [('f',[]),
                             [[],[],[],[],[],[],[],[],[],[]],

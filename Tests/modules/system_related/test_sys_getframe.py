@@ -5,9 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test
-
-long = type(sys.maxsize + 1)
+from iptest import IronPythonTestCase, big, is_cli, run_test
 
 def g(self):
     y = 42
@@ -63,7 +61,7 @@ class SysGetFrameTest(IronPythonTestCase):
 
         _getframe = sys._getframe
 
-        for val in [None, 0, long(1), str, False]:
+        for val in [None, 0, big(1), str, False]:
             sys._getframe = val
             self.assertEqual(sys._getframe, val)
 

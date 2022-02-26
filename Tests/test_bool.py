@@ -4,11 +4,11 @@
 
 import unittest
 
-from iptest import is_cli, long, run_test
+from iptest import is_cli, run_test
 
 class BoolTest(unittest.TestCase):
     def test_types(self):
-        for x in [str, int, long, float, bool]:
+        for x in [str, int, float, bool]:
             if not x:
                 self.fail("should be true: %r", x)
 
@@ -38,9 +38,9 @@ class BoolTest(unittest.TestCase):
         self.assertEqual(True.__index__(), 1)
         self.assertEqual(False.__index__(), 0)
 
-    def test__long__(self):
-        self.assertEqual(long(True), long(1))
-        self.assertEqual(long(False), long(0))
+    def test__int__(self):
+        self.assertEqual(int(True), 1)
+        self.assertEqual(int(False), 0)
 
     def test__rdivmod__(self):
         self.assertEqual(divmod(True, True),  (1, 0))
@@ -78,10 +78,8 @@ class BoolTest(unittest.TestCase):
             def __index__(self):
                 return self.val
 
-        class MyLong(long): pass
-
         bool_cases = [
-            (True, True), (False, False), (MyIndex(0), TypeError),
+            (True, True), (False, False), (0.0, TypeError), (-1, TypeError), (1<<64, TypeError), (MyIndex(0), TypeError),
         ]
         len_cases = [
             (1, True), (0, False), (0.0, TypeError), (-1, ValueError), (1<<64, OverflowError),
@@ -90,8 +88,6 @@ class BoolTest(unittest.TestCase):
         cases = []
         cases += [(ClassWithBool(x), y) for x, y in bool_cases]
         cases += [(ClassWithLen(x), y) for x, y in len_cases]
-        cases += [(ClassWithLen(long(x)), y) for x, y in len_cases if isinstance(x, int)]
-        cases += [(ClassWithLen(MyLong(x)), y) for x, y in len_cases if isinstance(x, int)]
         cases += [(ClassWithLen(MyIndex(x)), y) for x, y in len_cases]
 
         for val, res in cases:

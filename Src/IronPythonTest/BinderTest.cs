@@ -43,9 +43,9 @@ namespace IronPythonTest.BinderTest {
         // primitive types: 
         //
         // 1. python native
-        public void M201(Int32 arg) { Flag.Value = 201; }  // int
+        public void M201(Int32 arg) { Flag.Value = 201; }  // small int
         public void M202(Double arg) { Flag.Value = 202; } // float
-        public void M203(BigInteger arg) { Flag.Value = 203; } // long
+        public void M203(BigInteger arg) { Flag.Value = 203; } // int
         public void M204(Boolean arg) { Flag.BValue = arg; Flag.Value = 204; } // bool
         public void M205(String arg) { Flag.Value = 205; } // str
 
@@ -90,6 +90,7 @@ namespace IronPythonTest.BinderTest {
         // params array 
         //
         public void M600(params Int32[] arg) { Flag.Value = 600; }
+        public void M601(params BigInteger[] arg) { Flag.Value = 601; }
         public void M610(params I[] arg) { Flag.Value = 610; }
         public void M611(params S1[] arg) { Flag.Value = 611; }
         public void M620(Int32 arg, params Int32[] arg2) { Flag.Value = 620; }
@@ -105,10 +106,13 @@ namespace IronPythonTest.BinderTest {
 
         // Nullable
         public void M680(Int32? arg) { Flag.Value = 680; }
+        public void M681(BigInteger? arg) { Flag.Value = 681; }
 
         // ByRef, Out
         public void M700(ref Int32 arg) { arg = 1; Flag.Value = 700; }
         public void M701(out Int32 arg) { arg = 2; Flag.Value = 701; }
+        public void M705(ref BigInteger arg) { arg = 1; Flag.Value = 705; }
+        public void M706(out BigInteger arg) { arg = 2; Flag.Value = 706; }
 
         // Default Value
         public void M710(Int32 arg=10) { Flag.Value = 710; }

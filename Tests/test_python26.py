@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from iptest import is_cli, long, run_test, skipUnlessIronPython
+from iptest import is_cli, big, run_test, skipUnlessIronPython
 
 class OutputCatcher(object):
     def __enter__(self):
@@ -80,10 +80,10 @@ class Python26Test(unittest.TestCase):
         self.assertEqual(type(0b01), int)
         self.assertEqual(type(0b10), int)
         self.assertEqual(type(0b01111111111111111111111111111111), int)
-        self.assertEqual(type(0b10000000000000000000000000000000), long)
+        self.assertEqual(type(0b10000000000000000000000000000000), int)
         self.assertEqual(type(-0b01111111111111111111111111111111), int)
         self.assertEqual(type(-0b10000000000000000000000000000000), int)
-        self.assertEqual(type(-0b10000000000000000000000000000001), long)
+        self.assertEqual(type(-0b10000000000000000000000000000001), int)
         self.assertEqual(type(0b00000000000000000000000000000000000001), int)
 
         self.assertEqual(0b01, 0B01)
@@ -576,14 +576,11 @@ class Python26Test(unittest.TestCase):
     def test_log(self):
         import math
 
-        zeros = [-1, -1.0, long(-1), 0, 0.0, long(0)]
-        nonzeros = [2, 2.0, long(2)]
-        ones = [1, 1.0, long(1)]
+        zeros = [-1, -1.0, big(-1), 0, 0.0, big(0)]
+        nonzeros = [2, 2.0, big(2)]
+        ones = [1, 1.0, big(1)]
 
-        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/52
-            self.assertNotEqual(type(zeros[0]), type(zeros[2]))
-        else:
-            self.assertEqual(type(zeros[0]), type(zeros[2]))
+        self.assertEqual(type(zeros[0]), type(zeros[2]))
 
         for z0 in zeros:
             self.assertRaises(ValueError, math.log, z0)
@@ -601,11 +598,11 @@ class Python26Test(unittest.TestCase):
     def test_trunc(self):
         import sys, math
 
-        test_values = [-1, 0, 1, long(-1), long(0), long(1), -1.0, 0.0, 1.0, sys.maxsize + 0.5,
+        test_values = [-1, 0, 1, big(-1), big(0), big(1), -1.0, 0.0, 1.0, sys.maxsize + 0.5,
                     -sys.maxsize - 0.5, 9876543210, -9876543210, -1e100, 1e100]
 
         for value in test_values:
-            self.assertEqual(long(value), math.trunc(value))
+            self.assertEqual(int(value), math.trunc(value))
             self.assertTrue(isinstance(math.trunc(value), int))
 
     # A small extension of CPython's test_struct.py, which does not make sure that empty
@@ -865,8 +862,8 @@ class Python26Test(unittest.TestCase):
         #bin and oct
         test_cases = [  (0B11, "0b11", "0o3"),
                         (2147483648, "0b10000000000000000000000000000000", "0o20000000000"),
-                        (long(-2147483649), "-0b10000000000000000000000000000001", "-0o20000000001"),
-                        (long(-1),          "-0b1", "-0o1"),
+                        (big(-2147483649), "-0b10000000000000000000000000000001", "-0o20000000001"),
+                        (big(-1),          "-0b1", "-0o1"),
                         (-0b10000000000000000000000000000000, "-0b10000000000000000000000000000000", "-0o20000000000"),
                         (-0o17777777777, "-0b1111111111111111111111111111111", "-0o17777777777"),
                         (0o17777777777, "0b1111111111111111111111111111111", "0o17777777777"),

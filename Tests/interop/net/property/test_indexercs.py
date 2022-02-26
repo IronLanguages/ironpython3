@@ -113,15 +113,15 @@ class IndexerCSTest(IronPythonTestCase):
             self.assertTrue(not hasattr(x, 'get_Item'))
                     
             # bad arg count
-            self.assertRaisesRegex(TypeError, "expected int, got tuple", lambda: x[()])
+            self.assertRaisesRegex(TypeError, "expected Int32, got tuple", lambda: x[()])
             self.assertRaisesRegex(TypeError, "__getitem__\(\) takes at most 3 arguments \(4 given\)", lambda: x[1, 2, 3, 4])
             
             # bad arg type
-            self.assertRaisesRegex(TypeError, "expected str, got int", lambda: x[1, 2, 3])
+            self.assertRaisesRegex(TypeError, "expected str, got Int32", lambda: x[1, 2, 3])
             
             # bad value type
             def f(): x[1] = 'abc'
-            self.assertRaisesRegex(TypeError, "expected int, got str", f)
+            self.assertRaisesRegex(TypeError, "expected Int32, got str", f)
             
 
     def test_readonly(self):

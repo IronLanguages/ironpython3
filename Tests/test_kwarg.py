@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 #############################################################
 # Helper functions for verifying the calls.  On each call
@@ -639,7 +639,7 @@ class KwargTest(unittest.TestCase):
             c = C(overloads=1)
             self.assertEqual(c.overloads, 1)
 
-        for base in [int, long, float]:
+        for base in [int, float]:
             class C(int):
                 def __new__(cls, args=None): return base()
             c = C(args=1)

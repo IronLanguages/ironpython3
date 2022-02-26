@@ -94,13 +94,14 @@ class OpImplicitTest(IronPythonTestCase):
             Flag.Check(flag)
 
     def test_generic(self):
+        from System import Int32
         from Merlin.Testing import Flag
         from Merlin.Testing.Call import Consumer, G1, G2, G3, GInt
-        a = G1[int](5)
+        a = G1[Int32](5)
         b = GInt(6)
-        c = G2[int](7) 
-        d = G3[int, str](8, 'nine')
-        e = G3[int, int](10, 11)
+        c = G2[Int32](7) 
+        d = G3[Int32, str](8, 'nine')
+        e = G3[Int32, Int32](10, 11)
         
         f = Consumer.EatG1OfInt
         self.assertEqual(f(a), 5); Flag.Check(180)

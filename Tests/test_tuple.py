@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
 
 class TupleTest(IronPythonTestCase):
 
@@ -47,13 +47,13 @@ class TupleTest(IronPythonTestCase):
         self.assertEqual((1,2,3) * 2, (1,2,3,1,2,3))
         self.assertEqual(2 * (1,2,3), (1,2,3,1,2,3))
 
-        class mylong(long): pass
+        class mylong(int): pass
         self.assertEqual((1,2) * mylong(2), (1, 2, 1, 2))
         self.assertEqual((3, 4).__mul__(mylong(2)), (3, 4, 3, 4))
         self.assertEqual((5, 6).__rmul__(mylong(2)), (5, 6, 5, 6))
         self.assertEqual(mylong(2) * (7,8) , (7, 8, 7, 8))
         
-        class mylong2(long):
+        class mylong2(int):
             def __rmul__(self, other):
                 return 42
                 
@@ -175,7 +175,7 @@ class TupleTest(IronPythonTestCase):
 
 
     def test_wacky_contains(self):
-        for retval in [None, 0, [], (), 0.0, long(0), {}]:
+        for retval in [None, 0, [], (), 0.0, big(0), {}]:
             class x(tuple):
                 def  __contains__(self, other):
                     return retval

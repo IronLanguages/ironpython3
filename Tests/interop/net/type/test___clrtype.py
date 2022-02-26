@@ -32,7 +32,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
 
 if is_posix:
     import posix as _os
@@ -627,7 +627,7 @@ class ClrTypeTest(IronPythonTestCase):
         self.assertRaisesPartialMessage(TypeError, ", got float",
                                     type.__clrtype__, 3.14)
 
-        for x in [None, [], (None,), Exception("message"), 3.14, long(3), 0, 5j, "string", u"string",
+        for x in [None, [], (None,), Exception("message"), 3.14, big(3), 0, 5j, "string", u"string",
                 True, System, _os, os, lambda: 3.14]:
             self.assertRaises(TypeError,
                         type.__clrtype__, x)
@@ -734,7 +734,8 @@ class ClrTypeTest(IronPythonTestCase):
                                 [3.14, "expected Type, got float"],
                                 ["a string", "expected Type, got str"],
                                 [System.UInt16(32), "expected Type, got UInt16"],
-                                [long(1), "expected Type, got long"],
+                                [0, "expected Type, got int"],
+                                [big(1), "expected Type, got int"],
                     ]:
             called = False
 
@@ -849,6 +850,7 @@ class ClrTypeTest(IronPythonTestCase):
         import clr
         clr.AddReference("IronPythonTest")
         import IronPythonTest.interop.net.type.clrtype as IPT
+        import System
 
         from IronPython.Runtime.Types import PythonType
         called = False
@@ -875,7 +877,7 @@ class ClrTypeTest(IronPythonTestCase):
             pass
 
         a = X()
-        self.assertEqual(clr.GetClrType(type(a)), clr.GetClrType(int))
+        self.assertEqual(clr.GetClrType(type(a)), clr.GetClrType(System.Int32))
 
 
 run_test(__name__)

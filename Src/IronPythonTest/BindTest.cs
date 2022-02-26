@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting.Runtime;
@@ -1196,5 +1197,16 @@ namespace IronPythonTest {
         public static bool Compare(object x, object y) {
             return true;
         }
+    }
+
+    public class BigIntCompare {
+
+        private readonly BigInteger _value;
+        public BigIntCompare(BigInteger value) => _value = value;
+
+        public bool IsEqual(IEquatable<BigInteger> other) => other.Equals(_value);
+        public int CompareTo(IComparable<BigInteger> other) => -other.CompareTo(_value);
+
+        public BigInteger Value => _value;
     }
 }

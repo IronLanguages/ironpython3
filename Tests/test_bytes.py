@@ -9,7 +9,7 @@ import sys
 import unittest
 import warnings
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, myint, myfloat, mycomplex, run_test, skipUnlessIronPython
 
 types = [bytearray, bytes]
 
@@ -1390,17 +1390,15 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(OverflowError, lambda: "a" * (sys.maxsize + 1))
             self.assertRaises(OverflowError, lambda: (sys.maxsize + 1) * "a")
 
-            class mylong(long): pass
-
             # multiply
             self.assertEqual("aaaa", "a" * 4)
-            self.assertEqual("aaaa", "a" * mylong(4))
+            self.assertEqual("aaaa", "a" * myint(4))
             self.assertEqual("aaa", "a" * 3)
             self.assertEqual("a", "a" * True)
             self.assertEqual("", "a" * False)
 
             self.assertEqual("aaaa", 4 * "a")
-            self.assertEqual("aaaa", mylong(4) * "a")
+            self.assertEqual("aaaa", myint(4) * "a")
             self.assertEqual("aaa", 3 * "a")
             self.assertEqual("a", True * "a")
             self.assertEqual("", False * "a" )
@@ -1500,12 +1498,6 @@ class BytesTest(IronPythonTestCase):
                 def __int__(self): return 1
                 def __complex__(self): return 1j
                 def __float__(self): return 1.0
-                def __long__(self): return 1
-
-            class myfloat(float): pass
-            class mylong(long): pass
-            class myint(int): pass
-            class mycomplex(complex): pass
 
             v = substring(b"123")
 
@@ -1514,8 +1506,8 @@ class BytesTest(IronPythonTestCase):
             self.assertEqual(type(myfloat(v)), myfloat)
 
             self.assertEqual(int(v), 1)
-            self.assertEqual(mylong(v), 1)
-            self.assertEqual(type(mylong(v)), mylong)
+            self.assertEqual(myint(v), 1)
+            self.assertEqual(type(myint(v)), myint)
 
             self.assertEqual(int(v), 1)
             self.assertEqual(myint(v), 1)
@@ -1529,11 +1521,8 @@ class BytesTest(IronPythonTestCase):
             v = substring(b"123")
 
             self.assertEqual(int(v), 123)
-            self.assertEqual(int(v), 123)
             self.assertEqual(float(v), 123.0)
 
-            self.assertEqual(mylong(v), 123)
-            self.assertEqual(type(mylong(v)), mylong)
             self.assertEqual(myint(v), 123)
             self.assertEqual(type(myint(v)), myint)
 

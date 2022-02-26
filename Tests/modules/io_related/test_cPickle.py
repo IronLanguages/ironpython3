@@ -12,7 +12,7 @@ import unittest
 
 from io import BytesIO
 
-from iptest import IronPythonTestCase, is_cli, long, path_modifier, run_test
+from iptest import IronPythonTestCase, is_cli, big, path_modifier, run_test
 
 # We test IronPython's cPickle bytecode output against CPython's pickle.py
 # output, since pickle.py's output (specifically its memoization behavior) is
@@ -178,15 +178,15 @@ class TestBank:
             0:b'L1073741824L\n.',
             1:b'J\x00\x00\x00\x40.',
             }),
-        (long(0), {
+        (big(0), {
             0:b'L0L\n.',
             1:b'K\x00.',
             }),
-        (long(1), {
+        (big(1), {
             0:b'L1L\n.',
             1:b'K\x01.',
             }),
-        (long(-1), {
+        (big(-1), {
             0:b'L-1L\n.',
             1:b'J\xff\xff\xff\xff.',
             }),

@@ -41,10 +41,7 @@ from functools import cmp_to_key, reduce
 from operator import neg
 import random
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test
-
-if not is_cli:
-    long = int
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, big
 
 def callable(x):
     return isinstance(x, collections.Callable)
@@ -281,30 +278,30 @@ class BuiltinsTest2(IronPythonTestCase):
         uo = user_object()
         # int + other
         sumtest([1, 1], 2)
-        sumtest([2147483647, 1], long(2147483648))
+        sumtest([2147483647, 1], big(2147483648))
         sumtest([1, 1.0], 2.0)
-        sumtest([1, long(1)], long(2))
+        sumtest([1, big(1)], big(2))
         sumtest([1, uo], uo)
 
         # double and other
         sumtest([1.0, 1], 2.0)
         sumtest([2147483647.0, 1], 2147483648.0)
         sumtest([1.0, 1.0], 2.0)
-        sumtest([1.0, long(1)], 2.0)
+        sumtest([1.0, big(1)], 2.0)
         sumtest([1.0, uo], uo)
 
         # long and other
-        sumtest([long(1), 1], long(2))
-        sumtest([long(2147483647), 1], long(2147483648))
-        sumtest([long(1), 1.0], 2.0)
-        sumtest([long(1), long(1)], long(2))
-        sumtest([long(1), uo], uo)
+        sumtest([big(1), 1], big(2))
+        sumtest([big(2147483647), 1], big(2147483648))
+        sumtest([big(1), 1.0], 2.0)
+        sumtest([big(1), big(1)], big(2))
+        sumtest([big(1), uo], uo)
 
         # corner cases
-        sumtest([long(1), 2.0, 3], 6.0)
+        sumtest([big(1), 2.0, 3], 6.0)
         sumtest([2147483647, 1, 1.0], 2147483649.0)
         inf = 1.7976931348623157e+308*2
-        sumtest([1.7976931348623157e+308, long(1.7976931348623157e+308)], inf)
+        sumtest([1.7976931348623157e+308, int(1.7976931348623157e+308)], inf)
         self.assertRaises(OverflowError, sum, [1.0, 100000000<<2000])
 
     def test_chr(self):
@@ -433,8 +430,8 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertRaises(TypeError,abs,None)
 
         #long integer passed to abs
-        self.assertEqual(long(22), abs(long(22)))
-        self.assertEqual(long(22), abs(-long(22)))
+        self.assertEqual(big(22), abs(big(22)))
+        self.assertEqual(big(22), abs(-big(22)))
 
         #bool passed to abs
         self.assertEqual(1, abs(True))
@@ -630,8 +627,8 @@ class BuiltinsTest2(IronPythonTestCase):
     def test_int_ctor(self):
         self.assertEqual(int('0x10', 16), 16)
         self.assertEqual(int('0X10', 16), 16)
-        self.assertEqual(long('0x10', 16), long(16))
-        self.assertEqual(long('0X10', 16), long(16))
+        self.assertEqual(big(int('0x10', 16)), 16)
+        self.assertEqual(big(int('0X10', 16)), 16)
 
     def test_type(self):
         self.assertEqual(len(type.__bases__), 1)
@@ -725,7 +722,7 @@ class BuiltinsTest2(IronPythonTestCase):
 
     # Regress bug 319126: __int__ on long should return long, not overflow
     def test_long_int(self):
-        l=long(1.23e300)
+        l=int(1.23e300)
         i = l.__int__()
         self.assertTrue(type(l) == type(i))
         self.assertTrue(i == l)
@@ -755,7 +752,7 @@ class BuiltinsTest2(IronPythonTestCase):
             self.index = index
 
         def __index__(self):
-            return long(self.index)
+            return big(self.index)
 
     class NonIntegralIndex:
         def __index__(self):
@@ -859,27 +856,27 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqualAndCheckType(round(250, -2), 200, int)
         self.assertEqualAndCheckType(round(251, -2), 300, int)
 
-        self.assertEqualAndCheckType(round(2147483647, -3), 2147484000, long)
+        self.assertEqualAndCheckType(round(2147483647, -3), 2147484000, int)
 
         self.assertEqualAndCheckType(
             round(111111111111111111111111111111, 111111111111111111111111111111), 
             111111111111111111111111111111, 
-            long)
+            int)
 
-        self.assertEqualAndCheckType(round(111111111111111111111111111111, 0), 111111111111111111111111111111, long)
-        self.assertEqualAndCheckType(round(111111111111111111111111111111, -2), 111111111111111111111111111100, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, 0), 111111111111111111111111111111, int)
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, -2), 111111111111111111111111111100, int)
 
-        self.assertEqualAndCheckType(round(111111111111111111111111111124, -1), 111111111111111111111111111120, long)
-        self.assertEqualAndCheckType(round(111111111111111111111111111125, -1), 111111111111111111111111111120, long)
-        self.assertEqualAndCheckType(round(111111111111111111111111111126, -1), 111111111111111111111111111130, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111124, -1), 111111111111111111111111111120, int)
+        self.assertEqualAndCheckType(round(111111111111111111111111111125, -1), 111111111111111111111111111120, int)
+        self.assertEqualAndCheckType(round(111111111111111111111111111126, -1), 111111111111111111111111111130, int)
 
-        self.assertEqualAndCheckType(round(111111111111111111111111111249, -2), 111111111111111111111111111200, long)
-        self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, long)
-        self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111249, -2), 111111111111111111111111111200, int)
+        self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, int)
+        self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, int)
 
         if is_cli:
-            self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
-            self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+            self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, int)
+            self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, int)
 
         try:
             round(number=2, ndigits=1.1)
@@ -987,8 +984,8 @@ class BuiltinsTest2(IronPythonTestCase):
                 return K.FOO * 3.14
 
 
-        temp_list = [   None, str, int, long, K,
-                        "", "abc", u"abc", 34, long(1111111111111), 3.14, K(), K.FOO,
+        temp_list = [   None, str, int, K,
+                        "", "abc", u"abc", 34, big(1111111111111), 3.14, K(), K.FOO,
                         id, hex, K.fooFunc, K.memberFunc, K().memberFunc,
                     ]
 
@@ -998,7 +995,7 @@ class BuiltinsTest2(IronPythonTestCase):
                             System.Single, System.UInt16(5), System.Version(0, 0)]
 
         for x in temp_list:
-            self.assertTrue(type(id(x)) in [int, long],
+            self.assertTrue(type(id(x)) is int,
                 str(type(id(x))))
 
 

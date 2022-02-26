@@ -5,9 +5,7 @@
 import sys
 import unittest
 
-from iptest import run_test
-
-long = type(sys.maxsize + 1)
+from iptest import big, run_test
 
 x="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 class SliceTest(unittest.TestCase):
@@ -2681,7 +2679,6 @@ class SliceTest(unittest.TestCase):
     def test_getslice_missing_values(self):
         # missing values are different from passing None explicitly
         class myint(int): pass
-        class mylong(long): pass
 
         class foo:
             def __getitem__(self, index):
@@ -2694,18 +2691,15 @@ class SliceTest(unittest.TestCase):
 
         # only numeric types are passed to __getslice__
         validate_slice_result(foo()[:], slice(None))
-        validate_slice_result(foo()[long(2):], slice(2, None))
+        validate_slice_result(foo()[big(2):], slice(2, None))
         validate_slice_result(foo()[2<<64:], slice(36893488147419103232, None))
-        validate_slice_result(foo()[:long(2)], slice(2))
+        validate_slice_result(foo()[:big(2)], slice(2))
         validate_slice_result(foo()[:2<<64], slice(36893488147419103232))
-        validate_slice_result(foo()[long(2):long(3)], slice(2, 3))
+        validate_slice_result(foo()[big(2):big(3)], slice(2, 3))
         validate_slice_result(foo()[2<<64:3<<64], slice(36893488147419103232, 55340232221128654848))
         validate_slice_result(foo()[myint(2):], slice(2, None))
         validate_slice_result(foo()[:myint(2)], slice(2))
         validate_slice_result(foo()[myint(2):myint(3)], slice(2, 3))
-        validate_slice_result(foo()[mylong(2):], slice(2, None))
-        validate_slice_result(foo()[:mylong(2)], slice(2))
-        validate_slice_result(foo()[mylong(2):mylong(3)], slice(2, 3))
         validate_slice_result(foo()[True:], slice(True, None))
         validate_slice_result(foo()[:True], slice(True))
         validate_slice_result(foo()[False:True], slice(False, True))
@@ -2738,8 +2732,6 @@ class SliceTest(unittest.TestCase):
         # missing values are different from passing None explicitly
         class myint(int): pass
 
-        class mylong(long): pass
-
         global setVal
         class foo:
             def __setslice__(self, i, j, value):
@@ -2753,15 +2745,15 @@ class SliceTest(unittest.TestCase):
         # only numeric types are passed to __getslice__
         foo()[:] = 123
         self.assertEqual(setVal, (slice(None), 123))
-        foo()[long(2):] = 123
+        foo()[big(2):] = 123
         self.assertEqual(setVal, (slice(2, None), 123))
         foo()[2<<64:] = 123
         self.assertEqual(setVal, (slice(36893488147419103232, None), 123))
-        foo()[:long(2)] = 123
+        foo()[:big(2)] = 123
         self.assertEqual(setVal, (slice(2), 123))
         foo()[:2<<64] = 123
         self.assertEqual(setVal, (slice(36893488147419103232), 123))
-        foo()[long(2):long(3)] = 123
+        foo()[big(2):big(3)] = 123
         self.assertEqual(setVal, (slice(2, 3), 123))
         foo()[2<<64:3<<64] = 123
         self.assertEqual(setVal, (slice(36893488147419103232, 55340232221128654848), 123))
@@ -2770,12 +2762,6 @@ class SliceTest(unittest.TestCase):
         foo()[:myint(2)] = 123
         self.assertEqual(setVal, (slice(2), 123))
         foo()[myint(2):myint(3)] = 123
-        self.assertEqual(setVal, (slice(2, 3), 123))
-        foo()[mylong(2):] = 123
-        self.assertEqual(setVal, (slice(2, None), 123))
-        foo()[:mylong(2)] = 123
-        self.assertEqual(setVal, (slice(2), 123))
-        foo()[mylong(2):mylong(3)] = 123
         self.assertEqual(setVal, (slice(2, 3), 123))
         foo()[True:] = 123
         self.assertEqual(setVal, (slice(True, None), 123))
@@ -2826,7 +2812,6 @@ class SliceTest(unittest.TestCase):
     def test_delslice_missing_values(self):
         # missing values are different from passing None explicitly
         class myint(int): pass
-        class mylong(long): pass
 
         global setVal
         class foo:
@@ -2841,15 +2826,15 @@ class SliceTest(unittest.TestCase):
         # only numeric types are passed to __getslice__
         del foo()[:]
         self.assertEqual(setVal, slice(None))
-        del foo()[long(2):]
+        del foo()[big(2):]
         self.assertEqual(setVal, slice(2, None))
         del foo()[2<<64:]
         self.assertEqual(setVal, slice(36893488147419103232, None))
-        del foo()[:long(2)]
+        del foo()[:big(2)]
         self.assertEqual(setVal, slice(2))
         del foo()[:2<<64]
         self.assertEqual(setVal, slice(36893488147419103232))
-        del foo()[long(2):long(3)]
+        del foo()[big(2):big(3)]
         self.assertEqual(setVal, slice(2, 3))
         del foo()[2<<64:3<<64]
         self.assertEqual(setVal, slice(36893488147419103232, 55340232221128654848))
@@ -2858,12 +2843,6 @@ class SliceTest(unittest.TestCase):
         del foo()[:myint(2)]
         self.assertEqual(setVal, slice(2))
         del foo()[myint(2):myint(3)]
-        self.assertEqual(setVal, slice(2, 3))
-        del foo()[mylong(2):]
-        self.assertEqual(setVal, slice(2, None))
-        del foo()[:mylong(2)]
-        self.assertEqual(setVal, slice(2))
-        del foo()[mylong(2):mylong(3)]
         self.assertEqual(setVal, slice(2, 3))
         del foo()[:True]
         self.assertEqual(setVal, slice(True))

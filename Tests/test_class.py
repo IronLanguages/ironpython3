@@ -7,16 +7,14 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, long, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, myint, big, run_test
 
 GETATTRIBUTE_CALLED = False
-class myint(int): pass
-class mylong(long): pass
 
 class ClassTest(IronPythonTestCase):
 
     def test_common_attributes(self):
-        builtin_type_instances = [None, object(), 1, "Hello", [0,1], {"a":0}]
+        builtin_type_instances = [None, object(), big(1), "Hello", [0,1], {"a":0}, 0]
         builtin_hashable_type_instances = [None, object(), 1, "Hello"]
         builtin_types = [type(None), object, int, str, list, dict]
 
@@ -35,7 +33,9 @@ class ClassTest(IronPythonTestCase):
             # Modifying __class__ causes a TypeError
             self.assertRaises(TypeError, i.__setattr__, "__class__")
 
-            self.assertEqual(type(i), i.__getattribute__("__class__"))
+            if i != 0:
+                # skip test for Int32
+                self.assertEqual(type(i), i.__getattribute__("__class__"))
             # Non-existent attribute
             self.assertRaises(AttributeError, i.__getattribute__, "foo")
 
@@ -70,7 +70,7 @@ class ClassTest(IronPythonTestCase):
 
 
     def test_type_in(self):
-        self.assertEqual(type in (None, True, False, 1, {}, [], (), 1.0, long(1), (1+0j)), False)
+        self.assertEqual(type in (None, True, False, 1, {}, [], (), 1.0, big(1), (1+0j)), False)
 
     def test_init_defaults(self):
         class A:
@@ -476,7 +476,7 @@ class ClassTest(IronPythonTestCase):
         def f(x): x.__module__
         def g(x): getattr(x, '__module__')
         import errno
-        for thing in "", 1, errno, long(1), 1+2j, (), [], {}:
+        for thing in "", 1, errno, big(1), 1+2j, (), [], {}:
             self.assertEqual(getattr(thing, '__module__', 'does_not_exist'), 'does_not_exist')
             self.assertEqual(hasattr(thing, '__module__'), False)
             self.assertRaises(AttributeError, f, thing)
@@ -1011,9 +1011,6 @@ class ClassTest(IronPythonTestCase):
                 (('__int__', 1), 'int(obj)'),
                 (('__float__', 1.0), 'float(obj)'),
             ]
-
-            if is_cli: # https://github.com/IronLanguages/ironpython3/issues/894
-                testCases.append((('__long__', long(1)), 'long(obj)'))
 
             @staticmethod
             def NegativeTest(method, testCase):
@@ -1994,9 +1991,9 @@ class ClassTest(IronPythonTestCase):
         class C2:
             def __int__(self): return myint(100)
         class C3:
-            def __int__(self): return long(100)
+            def __int__(self): return big(100)
         class C4:
-            def __int__(self): return mylong(100)
+            def __int__(self): return myint(-123456789012345678910)
         class C5:
             def __int__(self): return -123456789012345678910
         class C6:
@@ -2004,8 +2001,8 @@ class ClassTest(IronPythonTestCase):
         class C7:
             def __int__(self): return "100"
 
-        for x in [C1, C2, C3, C4]:   self.assertEqual(int(x()), 100)
-        self.assertEqual(int(C5()), -123456789012345678910)
+        for x in [C1, C2, C3]:  self.assertEqual(int(x()), 100)
+        for x in [C4, C5]:      self.assertEqual(int(x()), -123456789012345678910)
         for x in [C6, C7]:      self.assertRaises(TypeError, int, x())
 
         class C1(object):
@@ -2013,9 +2010,9 @@ class ClassTest(IronPythonTestCase):
         class C2(object):
             def __int__(self): return myint(100)
         class C3(object):
-            def __int__(self): return long(100)
+            def __int__(self): return big(100)
         class C4(object):
-            def __int__(self): return mylong(100)
+            def __int__(self): return myint(-123456789012345678910)
         class C5(object):
             def __int__(self): return -123456789012345678910
         class C6(object):
@@ -2023,8 +2020,8 @@ class ClassTest(IronPythonTestCase):
         class C7(object):
             def __int__(self): return "100"
 
-        for x in [C1, C2, C3, C4]:   self.assertEqual(int(x()), 100)
-        self.assertEqual(int(C5()), -123456789012345678910)
+        for x in [C1, C2, C3]:  self.assertEqual(int(x()), 100)
+        for x in [C4, C5]:      self.assertEqual(int(x()), -123456789012345678910)
         for x in [C6, C7]:      self.assertRaises(TypeError, int, x())
 
 
@@ -2049,7 +2046,7 @@ class ClassTest(IronPythonTestCase):
 
     def test_hash_return_values(self):
         # new-style classes do conversion to int
-        for retval in [1, long(1), 1<<30]:
+        for retval in [1, big(1), 1<<30]:
             for type in [object, int, str, float, int]:
                 class foo(object):
                     def __hash__(self): return retval
@@ -2066,8 +2063,8 @@ class ClassTest(IronPythonTestCase):
             else:
                 self.assertRaises(TypeError, hash, foo())
 
-        tests = {   long(1):1,
-                    long(2):2,
+        tests = {   big(1):1,
+                    big(2):2,
                 }
 
         for retval in list(tests.keys()):
@@ -2982,7 +2979,7 @@ class ClassTest(IronPythonTestCase):
             def __len__(self):
                 return self.len
 
-        vals = (42, long(42))
+        vals = (42, big(42))
         if is_cli:
             from iptest.type_util import clr_int_types
             vals += tuple(t(42) for t in clr_int_types)

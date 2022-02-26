@@ -5,11 +5,11 @@
 # Test that hash and equality operations cooperate for numbers.
 #  cmp(x,y)==0 --> hash(x) == hash(y).
 #
-# Python has equality comparisons between int, float, long (BigInteger), and Complex
+# Python has equality comparisons between int (BigInteger/Int32), float, and complex
 
 import unittest
 
-from iptest import is_32, is_cli, run_test, skipUnlessIronPython
+from iptest import is_32, is_cli, big, run_test, skipUnlessIronPython
 
 class NumberHashTest(unittest.TestCase):
 
@@ -21,6 +21,7 @@ class NumberHashTest(unittest.TestCase):
     def test_integer(self):
         i = 123456
         self.check(i, int(i))
+        self.check(i, big(int(i)))
         self.check(i, float(i))
         self.check(i, complex(i,0))
 
@@ -95,7 +96,6 @@ class NumberHashTest(unittest.TestCase):
             if value == -1:
                 self.assertEqual(hash(value), -2)
 
-    @unittest.skipIf(is_cli, "https://github.com/IronLanguages/ironpython2/issues/528")
     def test_bigint_hash_subclass(self):
         class x(int):
             def __hash__(self): return 42
@@ -109,10 +109,13 @@ class NumberHashTest(unittest.TestCase):
 
     @skipUnlessIronPython()
     def test_edge_cases(self):
-        # these are dependany on sys.hash_info.modulo = 2147483647
+        # these are dependant on sys.hash_info.modulo = 2147483647
         self.assertEqual(hash(2147483647), 0) # int.MaxValue
         self.assertEqual(hash(-2147483648), -2) # int.MinValue
         self.assertEqual(hash(-2147483647), 0) # int.MinValue+1
+        self.assertEqual(hash(big(2147483647)), 0) # int.MaxValue
+        self.assertEqual(hash(big(-2147483648)), -2) # int.MinValue
+        self.assertEqual(hash(big(-2147483647)), 0) # int.MinValue+1
         self.assertEqual(hash(9223372036854775807), 1) # long.MaxValue
         self.assertEqual(hash(-9223372036854775808), -2) # long.MinValue
         self.assertEqual(hash(-9223372036854775807), -2) # long.MinValue+1

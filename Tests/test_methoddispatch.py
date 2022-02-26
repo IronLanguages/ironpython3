@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class MethodDispatchTest(IronPythonTestCase):
@@ -1132,7 +1132,7 @@ class MethodDispatchTest(IronPythonTestCase):
         import System
         maxint = System.Int32.MaxValue
         maxlong1 = System.Int64.MaxValue
-        maxlong2 = long(str(maxlong1))
+        maxlong2 = int(str(maxlong1))
 
         class MyInt(int):
             def __repr__(self):
@@ -1145,8 +1145,8 @@ class MethodDispatchTest(IronPythonTestCase):
         #        public int M0(long arg) { return 2; }
 
         func = c.M0
-        AllEqual(1, func, [(0,), (1,), (maxint,), (myint,)])
-        AllEqual(2, func, [(maxint + 1,), (-maxint-10,), (long(10),)])
+        AllEqual(1, func, [(0,), (1,), (maxint,)])
+        AllEqual(2, func, [(maxint + 1,), (-maxint-10,), (big(10),), (myint,)])
         AllAssert(TypeError, func, [
                                     (-10.2,),
                                     (1+2j,),
@@ -1165,15 +1165,20 @@ class MethodDispatchTest(IronPythonTestCase):
                             (1,),
                             (maxint,),
                             (System.Byte.Parse("2"),),
-                            (myint, ),
-                            #(10L,),
-                            #(-1234.0,),
                 ])
         AllEqual(2, func, [
-                            #(maxint + 1,),
-                            #(-maxint-10,),
-                            ])
-        AllEqual(3, func, [(-10.2,), (1+2j,), ("10",),])
+                            (System.Int64(maxint + 1),),
+                            (System.Int64(-maxint-10),),
+                ])
+        AllEqual(3, func, [
+                            (-10.2,),
+                            (1+2j,),
+                            ("10",),
+                            (big(10),),
+                            (myint, ),
+                            (maxint + 1,),
+                            (-maxint-10,),
+                ])
 
         #############################################################################################
         #        public int M2(int arg1, int arg2) { return 1; }
@@ -1185,34 +1190,37 @@ class MethodDispatchTest(IronPythonTestCase):
         func = c.M2
         AllEqual(1, func, [
             (0, 0), (1, maxint), (maxint, 1), (maxint, maxint),
-            #(10L, 0),
+            (int(10), 0),
             ])
         
         AllEqual(2, func, [
-            #(maxint+1, 0),
-            #(maxint+10, 10),
-            #(maxint+10, 10L),
-            #(maxlong1, 0),
-            #(maxlong2, 0),
+            (System.Int64(maxint+1), 0),
+            (System.Int64(maxint+10), 10),
+            (maxlong1, 0),
+            (System.Int64(maxlong1), 0),
+            (System.Int64(maxlong2), 0),
             ])
 
         AllEqual(3, func, [
-            #(0, maxint+1),
-            #(10, maxint+10),
-            #(10L, maxint+10),
+            (0, maxlong1),
+            (10, maxlong1),
             ])
         
         AllEqual(4, func, [
-            #(maxint+10, maxint+1),
-            #(-maxint-10, maxint+10),
-            #(-maxint-10L, maxint+100),
-            #(maxlong1, maxlong1),
-            #(maxlong2, maxlong1),
+            (maxlong1, maxlong1),
             ])
         
         AllEqual(5, func, [
+            (big(10), 0),
+            (maxint+1, 0),
+            (maxint+10, 10),
+            (maxint+10, big(10)),
+            (maxlong2, 0),
             (maxlong1 + 1, 1),
             (maxlong2 + 1, 1),
+            (maxlong2, maxlong1),
+            (maxlong1, maxlong2),
+            (maxlong2, maxlong2),
             (maxint, maxlong1 + 10),
             (maxint, maxlong2 + 10),
             (1, "100L"),
@@ -1227,7 +1235,7 @@ class MethodDispatchTest(IronPythonTestCase):
                 System.UInt32, System.Int32, System.UInt64, System.Int64,
                 System.Char, System.Decimal, System.Single, System.Double] ]
         
-        one.extend([True, False, long(5), DispatchHelpers.Color.Red ])
+        one.extend([True, False, big(5), DispatchHelpers.Color.Red ])
         
         two = [t.Parse("5.5") for t in [ System.Decimal, System.Single, System.Double] ]
         
@@ -1271,7 +1279,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
         AllEqual(1, func, [(b, b), (d, b)])
         AllEqual(2, func, [(b, d), (d, d)])
-        AllEqual(3, func, [(1, d), (long(6), d)])
+        AllEqual(3, func, [(1, d), (big(6), d)])
         AllAssert(TypeError, func, [(1,1), (None, None), (None, d), (3, b)])
         
         #############################################################################################
@@ -1343,7 +1351,7 @@ class MethodDispatchTest(IronPythonTestCase):
         self.assertEqual(x[0], 10)
         self.assertEqual(x[1], a)
         # doc for this method should have the out & ref params as return values
-        self.assertEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (int, Dispatch)%s' % os.linesep)
+        self.assertEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (Int32, Dispatch)%s' % os.linesep)
         
         # call type.InvokeMember on String.ToString - all methods have more arguments than max args.
         res = clr.GetClrType(str).InvokeMember('ToString',
@@ -1421,7 +1429,7 @@ class MethodDispatchTest(IronPythonTestCase):
         from IronPythonTest import BinderTest
         
         x = BinderTest.CNoOverloads()
-        self.assertRaisesMessage(TypeError, 'expected Array[int], got Array[Byte]', x.M500, System.Array[System.Byte]([1,2,3]))
+        self.assertRaisesMessage(TypeError, 'expected Array[Int32], got Array[Byte]', x.M500, System.Array[System.Byte]([1,2,3]))
 
     def test_max_args(self):
         """verify the correct number of max args are reported, this may need to be updated if file ever takes more args"""

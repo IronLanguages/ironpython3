@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, big, run_test
 
 # ref: http://docs.python.org/ref/metaclasses.html
 
@@ -151,7 +151,7 @@ class MetaclassTest(IronPythonTestCase):
         class B1(metaclass=dash_attributes): pass
         class B2(object, metaclass=dash_attributes): pass
 
-        meta = lambda *args: 100
+        meta = lambda *args: big(100)
 
         class D1(metaclass=meta): pass
         self.assertEqual(D1, 100)

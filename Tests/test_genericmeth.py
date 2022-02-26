@@ -35,13 +35,13 @@ class GenericMethTest(IronPythonTestCase):
         expected = os.linesep.join([
             'InstMeth[T](self: GenMeth) -> str',
             'InstMeth[(T, U)](self: GenMeth) -> str',
-            'InstMeth[T](self: GenMeth, arg1: int) -> str',
+            'InstMeth[T](self: GenMeth, arg1: Int32) -> str',
             'InstMeth[T](self: GenMeth, arg1: str) -> str',
-            'InstMeth[(T, U)](self: GenMeth, arg1: int) -> str',
+            'InstMeth[(T, U)](self: GenMeth, arg1: Int32) -> str',
             'InstMeth[T](self: GenMeth, arg1: T) -> str',
             'InstMeth[(T, U)](self: GenMeth, arg1: T, arg2: U) -> str',
             'InstMeth(self: GenMeth) -> str',
-            'InstMeth(self: GenMeth, arg1: int) -> str',
+            'InstMeth(self: GenMeth, arg1: Int32) -> str',
             'InstMeth(self: GenMeth, arg1: str) -> str']) + os.linesep
             
         self.assertDocEqual(gm.InstMeth.__doc__, expected)
@@ -50,13 +50,13 @@ class GenericMethTest(IronPythonTestCase):
         expected_static_methods = os.linesep.join([
                 'StaticMeth[T]() -> str' , 
                 'StaticMeth[(T, U)]() -> str' , 
-                'StaticMeth[T](arg1: int) -> str' , 
+                'StaticMeth[T](arg1: Int32) -> str' , 
                 'StaticMeth[T](arg1: str) -> str' , 
-                'StaticMeth[(T, U)](arg1: int) -> str' , 
+                'StaticMeth[(T, U)](arg1: Int32) -> str' , 
                 'StaticMeth[T](arg1: T) -> str' , 
                 'StaticMeth[(T, U)](arg1: T, arg2: U) -> str' , 
                 'StaticMeth() -> str' , 
-                'StaticMeth(arg1: int) -> str' , 
+                'StaticMeth(arg1: Int32) -> str' , 
                 'StaticMeth(arg1: str) -> str']) + os.linesep
         
         self.assertDocEqual(GenMeth.StaticMeth.__doc__, expected_static_methods)
@@ -65,26 +65,26 @@ class GenericMethTest(IronPythonTestCase):
         # because each target method returns a unique string we can compare.
         self.assertEqual(gm.InstMeth(), "InstMeth()")
         self.assertEqual(gm.InstMeth[str](), "InstMeth<String>()")
-        self.assertEqual(gm.InstMeth[(int, str)](), "InstMeth<Int32, String>()")
+        self.assertEqual(gm.InstMeth[(int, str)](), "InstMeth<BigInteger, String>()")
         self.assertEqual(gm.InstMeth(1), "InstMeth(Int32)")
         self.assertEqual(gm.InstMeth(""), "InstMeth(String)")
+        self.assertEqual(gm.InstMeth[int](1), "InstMeth<BigInteger>(Int32)")
         #This ordering never worked, but new method binding rules reveal the bug.  Open a new bug here.
-        #self.assertEqual(gm.InstMeth[int](1), "InstMeth<Int32>(Int32)")
         #self.assertEqual(gm.InstMeth[str](""), "InstMeth<String>(String)")
-        self.assertEqual(gm.InstMeth[(str, int)](1), "InstMeth<String, Int32>(Int32)")
+        self.assertEqual(gm.InstMeth[(str, int)](1), "InstMeth<String, BigInteger>(Int32)")
         self.assertEqual(gm.InstMeth[GenMeth](gm), "InstMeth<GenMeth>(GenMeth)")
-        self.assertEqual(gm.InstMeth[(str, int)]("", 1), "InstMeth<String, Int32>(String, Int32)")
+        self.assertEqual(gm.InstMeth[(str, int)]("", 1), "InstMeth<String, BigInteger>(String, BigInteger)")
 
         # And the same for the static methods.
         self.assertEqual(GenMeth.StaticMeth(), "StaticMeth()")
         self.assertEqual(GenMeth.StaticMeth[str](), "StaticMeth<String>()")
-        self.assertEqual(GenMeth.StaticMeth[(int, str)](), "StaticMeth<Int32, String>()")
+        self.assertEqual(GenMeth.StaticMeth[(int, str)](), "StaticMeth<BigInteger, String>()")
         self.assertEqual(GenMeth.StaticMeth(1), "StaticMeth(Int32)")
         self.assertEqual(GenMeth.StaticMeth(""), "StaticMeth(String)")
-        #self.assertEqual(GenMeth.StaticMeth[int](1), "StaticMeth<Int32>(Int32)")
+        self.assertEqual(GenMeth.StaticMeth[int](1), "StaticMeth<BigInteger>(Int32)")
         #self.assertEqual(GenMeth.StaticMeth[str](""), "StaticMeth<String>(String)")
-        self.assertEqual(GenMeth.StaticMeth[(str, int)](1), "StaticMeth<String, Int32>(Int32)")
+        self.assertEqual(GenMeth.StaticMeth[(str, int)](1), "StaticMeth<String, BigInteger>(Int32)")
         self.assertEqual(GenMeth.StaticMeth[GenMeth](gm), "StaticMeth<GenMeth>(GenMeth)")
-        self.assertEqual(GenMeth.StaticMeth[(str, int)]("", 1), "StaticMeth<String, Int32>(String, Int32)")
+        self.assertEqual(GenMeth.StaticMeth[(str, int)]("", 1), "StaticMeth<String, BigInteger>(String, BigInteger)")
 
 run_test(__name__)

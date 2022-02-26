@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from iptest import IronPythonTestCase, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, myint, big, run_test, skipUnlessIronPython
 
 hitCount = 0
 
@@ -131,13 +131,12 @@ class ListTest(IronPythonTestCase):
         self.assertEqual(x * 2, [1,2,3,1,2,3])
         self.assertEqual(2 * x, [1,2,3,1,2,3])
 
-        class mylong(long): pass
-        self.assertEqual([1, 2] * mylong(2), [1, 2, 1, 2])
-        self.assertEqual([3, 4].__mul__(mylong(2)), [3, 4, 3, 4])
-        self.assertEqual([5, 6].__rmul__(mylong(2)), [5, 6, 5, 6])
-        self.assertEqual(mylong(2) * [7,8] , [7, 8, 7, 8])
+        self.assertEqual([1, 2] * myint(2), [1, 2, 1, 2])
+        self.assertEqual([3, 4].__mul__(myint(2)), [3, 4, 3, 4])
+        self.assertEqual([5, 6].__rmul__(myint(2)), [5, 6, 5, 6])
+        self.assertEqual(myint(2) * [7,8] , [7, 8, 7, 8])
         self.assertRaises(TypeError, lambda: [1,2] * [3,4])
-        self.assertRaises(OverflowError, lambda: [1,2] * mylong(203958720984752098475023957209))
+        self.assertRaises(OverflowError, lambda: [1,2] * myint(203958720984752098475023957209))
 
     def test_reverse(self):
         x = ["begin",1,2,3,4,5,6,7,8,9,0,"end"]
@@ -247,7 +246,7 @@ class ListTest(IronPythonTestCase):
 
         # test ListWrapperForIList
         pl = list(range(40))
-        cl = System.Collections.Generic.List[int]()
+        cl = System.Collections.Generic.List[System.Int32]()
         for x in pl: cl.Add(x)
 
         def check_content():
@@ -257,7 +256,7 @@ class ListTest(IronPythonTestCase):
 
         # test DictWrapperForIDict
         pl = {"redmond" : 10, "seattle" : 20}
-        cl = System.Collections.Generic.Dictionary[str, int]()
+        cl = System.Collections.Generic.Dictionary[str, System.Int32]()
         for x, y in pl.items(): cl.Add(x, y)
 
         pll = list(pl.items())
@@ -327,7 +326,7 @@ class ListTest(IronPythonTestCase):
         #negative cases
         neg_cases = [   ([],    None),
                         ([],    1),
-                        ([],    long(1)),
+                        ([],    big(1)),
                         ([],    3.14),
                         ([],    object),
                         ([],    object()),

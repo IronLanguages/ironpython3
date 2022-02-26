@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class InitOnlyFieldsTest(IronPythonTestCase):
@@ -293,7 +293,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         types = [
             StructWithInitOnlys, 
             GenericStructWithInitOnlys[int], GenericStructWithInitOnlys[str], 
-            ClassWithInitOnlys, GenericClassWithInitOnlys[long], GenericClassWithInitOnlys[object],
+            ClassWithInitOnlys, GenericClassWithInitOnlys[int], GenericClassWithInitOnlys[object],
             ]
             
         for i in range(len(types)):

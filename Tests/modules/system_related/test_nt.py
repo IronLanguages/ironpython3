@@ -8,7 +8,7 @@ import random
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test, skipUnlessIronPython, stderr_trapper
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, big, run_test, skipUnlessIronPython, stderr_trapper
 
 if sys.platform == "win32":
     import nt
@@ -882,7 +882,7 @@ class NtTest(IronPythonTestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "nt only")
     def test__getfullpathname_neg(self):
-        for bad in [None, 0, 34, -long(12345), 3.14, object, self.test__getfullpathname]:
+        for bad in [None, 0, 34, -big(12345), 3.14, object, self.test__getfullpathname]:
             self.assertRaises(TypeError, nt._getfullpathname, bad)
 
     @unittest.skipIf(is_netcoreapp, 'TODO: figure out')

@@ -36,9 +36,10 @@ class FourDotZeroTest(IronPythonTestCase):
         temp_list_output = []
 
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25859
-        Parallel.For.Overloads[int, int, System.Action[int]](0,
-                                                            len(temp_list),
-                                                            lambda x: temp_list_output.append(x))
+        Parallel.For.Overloads[System.Int32, System.Int32, System.Action[System.Int32]](
+            0,
+            len(temp_list),
+            lambda x: temp_list_output.append(x))
         self.assertEqual(len(temp_list), len(temp_list_output))
         temp_list_output.sort()
         self.assertEqual(temp_list, temp_list_output)

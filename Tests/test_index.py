@@ -410,7 +410,11 @@ class IndexTest(IronPythonTestCase):
 
         if is_cli:
             from System.Collections.Generic import List
-            List[int]
+            cli_list = List[int](range(5))
+            self.assertEqual(list(cli_list), list(range(5)))
+            self.assertEqual(cli_list[cust_index(0)], 0)
+            self.assertEqual(list(cli_list[cust_index(0) : cust_index(3)]), list(range(3)))
+            self.assertEqual(type(cli_list[cust_index(0) : cust_index(3)]), List[int])
         
     @skipUnlessIronPython()
     def test_csharp_enumeration(self):

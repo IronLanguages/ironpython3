@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using IronPython.Runtime;
@@ -1096,6 +1097,15 @@ namespace IronPythonTest {
             IEnumerable<string> actualSecond = Yielder(second);
             int len = i.Wild<string, double, int>(first, ref actualSecond, out obj, value);
             object[] result = new object[len];
+            result[0] = (object)obj;
+            return result;
+        }
+
+        public static object[] GoWildBig(IGenericMethods i, bool first, string second, IList<BigInteger> value) {
+            double obj;
+            IEnumerable<string> actualSecond = Yielder(second);
+            BigInteger len = i.Wild<string, double, BigInteger>(first, ref actualSecond, out obj, value);
+            object[] result = new object[(int)len];
             result[0] = (object)obj;
             return result;
         }

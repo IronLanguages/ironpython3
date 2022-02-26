@@ -15,7 +15,7 @@ TODO:
 '''
 
 import unittest
-from iptest import is_cli, long, run_test
+from iptest import is_cli, run_test
 
 #Test Python/CLR number interop.
 clr_integer_types = [ "System.Byte",
@@ -25,7 +25,9 @@ clr_integer_types = [ "System.Byte",
                       "System.Int32",
                       "System.UInt32",
                       "System.Int64",
-                      "System.UInt64"]
+                      "System.UInt64",
+                      "System.Numerics.BigInteger",
+                    ]
 
 clr_float_types = [ "System.Single",
                     "System.Double",
@@ -35,7 +37,7 @@ clr_float_types = [ "System.Single",
 #TODO - char???
 clr_types = clr_integer_types + clr_float_types
 
-py_integer_types = ["int", "long"]
+py_integer_types = ["int"]
 py_float_types   = ["float"]
 
 #TODO - special case complex???
@@ -43,22 +45,10 @@ py_types = py_integer_types + py_float_types
 
 bug_operands = []
 unsupported_operands = [
-                         #System.Decimal +: System.Single, System.Double, long, float
-                         "System.Decimal+long",
-                         "long+System.Decimal",
-
-                         #System.Decimal -: System.Single, System.Double, long, float
-                         "System.Decimal-long",
-                         "long-System.Decimal",
-
-                         #System.Decimal *: System.Single, System.Double, long, float
-                         "System.Decimal*long",
-                         "long*System.Decimal",
-
-                         #System.Decimal /:System.Single, System.Double, long, float
-                         "System.Decimal/long",
-                         "long/System.Decimal",
-
+                         #System.Decimal +: System.Single, System.Double, float
+                         #System.Decimal -: System.Single, System.Double, float
+                         #System.Decimal *: System.Single, System.Double, float
+                         #System.Decimal /:System.Single, System.Double, float
                          #System.Decimal //:System.Byte System.SByte
                          "System.Decimal//System.Byte",
                          "System.Decimal//System.SByte",
@@ -69,8 +59,8 @@ unsupported_operands = [
                          "System.Decimal//System.Int64",
                          "System.Decimal//System.UInt64",
                          "System.Decimal//System.Decimal",
+                         "System.Decimal//System.Numerics.BigInteger",
                          "System.Decimal//int",
-                         "System.Decimal//long",
                          "System.Byte//System.Decimal",
                          "System.SByte//System.Decimal",
                          "System.Int16//System.Decimal",
@@ -80,8 +70,8 @@ unsupported_operands = [
                          "System.Int64//System.Decimal",
                          "System.UInt64//System.Decimal",
                          "System.Decimal//System.Decimal",
+                         "System.Numerics.BigInteger//System.Decimal",
                          "int//System.Decimal",
-                         "long//System.Decimal",
 
                          "System.Decimal**System.Byte",
                          "System.Decimal**System.SByte",
@@ -92,8 +82,8 @@ unsupported_operands = [
                          "System.Decimal**System.Int64",
                          "System.Decimal**System.UInt64",
                          "System.Decimal**System.Decimal",
+                         "System.Decimal**System.Numerics.BigInteger",
                          "System.Decimal**int",
-                         "System.Decimal**long",
                          "System.Byte**System.Decimal",
                          "System.SByte**System.Decimal",
                          "System.Int16**System.Decimal",
@@ -103,11 +93,8 @@ unsupported_operands = [
                          "System.Int64**System.Decimal",
                          "System.UInt64**System.Decimal",
                          "System.Decimal**System.Decimal",
+                         "System.Numerics.BigInteger**System.Decimal",
                          "int**System.Decimal",
-                         "long**System.Decimal",
-
-                         "System.Decimal%long",
-                         "long%System.Decimal",
                             ] + bug_operands
 
 
@@ -282,8 +269,11 @@ class ClrNumInteropTest(unittest.TestCase):
         import clr
         import System
         #handle special cases first
-        if proposed_type=="long":
-            #arbitrary precision
+        if proposed_type=="int":
+            #arbitrary size
+            return True
+        if proposed_type == "System.Numerics.BigInteger":
+            #arbitrary size
             return True
         if proposed_type=="float":
             #arbitrary precision
@@ -417,7 +407,6 @@ class ClrNumInteropTest(unittest.TestCase):
                         ["System.Single", -3.40282e+038, 3.40282e+038],
                         ["System.Double", -1.79769313486e+308, 1.79769313486e+308],
                         ["System.Decimal", -79228162514264337593543950335, 79228162514264337593543950335],
-                        ["int", -2147483648, 2147483647]
                     ]
 
         for num_type, small_val, large_val in temp_list:
@@ -442,12 +431,12 @@ class ClrNumInteropTest(unittest.TestCase):
                 self.assertTrue(not self.num_ok_for_type(large_val + 2, num_type))
 
         #Special cases
-        self.assertTrue(self.num_ok_for_type(0, "long"))
-        self.assertTrue(self.num_ok_for_type(1, "long"))
-        self.assertTrue(self.num_ok_for_type(-1, "long"))
-        self.assertTrue(self.num_ok_for_type(5, "long"))
-        self.assertTrue(self.num_ok_for_type(-92233720368547758080000, "long"))
-        self.assertTrue(self.num_ok_for_type( 18446744073709551615000, "long"))
+        self.assertTrue(self.num_ok_for_type(0, "int"))
+        self.assertTrue(self.num_ok_for_type(1, "int"))
+        self.assertTrue(self.num_ok_for_type(-1, "int"))
+        self.assertTrue(self.num_ok_for_type(5, "int"))
+        self.assertTrue(self.num_ok_for_type(-92233720368547758080000, "int"))
+        self.assertTrue(self.num_ok_for_type( 18446744073709551615000, "int"))
 
         self.assertTrue(self.num_ok_for_type(0.0, "float"))
         self.assertTrue(self.num_ok_for_type(1.0, "float"))

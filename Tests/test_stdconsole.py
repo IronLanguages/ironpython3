@@ -143,14 +143,13 @@ class StdConsoleTest(IronPythonTestCase):
         # Test exit code with sys.exit(int)
         self.TestCommandLine(("-c", "import sys; sys.exit(0)"),          "",         0)
         self.TestCommandLine(("-c", "import sys; sys.exit(200)"),        "",         200)
+        self.TestCommandLine(("-c", "import sys; sys.exit(2147483647)"), "",         2147483647)
+        self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "",         -1)
         self.TestScript((), "import sys\nclass C(int): pass\nc = C(200)\nsys.exit(c)\n", "", 200)
 
         # Test exit code with sys.exit(non-int)
         self.TestCommandLine(("-c", "import sys; sys.exit(None)"),       "",         0)
         self.TestCommandLine(("-c", "import sys; sys.exit('goodbye')"),  "goodbye\n\n" if is_cli else "goodbye\n", 1) # https://github.com/IronLanguages/ironpython3/issues/1061
-        self.TestCommandLine(("-c", "import sys; sys.exit(2147483647)"), "", 2147483647)
-        if is_cli: # raises an OSError with CPython
-            self.TestCommandLine(("-c", "import sys; sys.exit(2147483648)"), "OverflowError: Arithmetic operation resulted in an overflow.\n\n", 1)
 
     def test_os__exit(self):
         self.TestCommandLine(("-c", "import os; os._exit(0)"),          "",         0)

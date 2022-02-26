@@ -10,12 +10,15 @@ namespace IronPython.Runtime.Types {
         public static string __doc__ = "the object's class";
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (instance == null) {
+            if (instance is null) {
                 if (owner == TypeCache.Null) {
                     value = owner;
                 } else {
                     value = DynamicHelpers.GetPythonType(owner);
                 }
+            } else if (instance is int) {
+                // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
+                value = TypeCache.BigInteger;
             } else {
                 value = DynamicHelpers.GetPythonType(instance);
             }

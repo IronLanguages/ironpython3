@@ -274,10 +274,6 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("can't convert complex to int; use int(abs(z))");
         }
 
-        public static BigInteger __long__(Complex self) {
-            throw PythonOps.TypeError("can't convert complex to long; use long(abs(z))");
-        }
-
         private static string FormatComplexValue(CodeContext/*!*/ context, double x)
             => DoubleOps.Repr(context, x, trailingZeroAfterWholeFloat: false);
 

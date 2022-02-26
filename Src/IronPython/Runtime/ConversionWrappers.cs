@@ -5,18 +5,28 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace IronPython.Runtime {
 
     public class ListGenericWrapper<T> : IList<T> {
         private readonly IList<object> _value;
+        // PEP 237: int/long unification (GH #52)
+        private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
         public ListGenericWrapper(IList<object> value) { _value = value; }
 
         #region IList<T> Members
 
         public int IndexOf(T item) {
-            return _value.IndexOf(item);
+            int pos = _value.IndexOf(item);
+            if (IsBigIntWrapper && item is BigInteger bi && bi >= int.MinValue && bi <= int.MaxValue) {
+                int pos32 = _value.IndexOf((int)bi);
+                if (pos32 >= 0 && (pos32 < pos || pos < 0)) {
+                    pos = pos32;
+                }
+            }
+            return pos;
         }
 
         public void Insert(int index, T item) {
@@ -28,7 +38,14 @@ namespace IronPython.Runtime {
         }
 
         public T this[int index] {
-            get => (T)_value[index];
+            get {
+                object item = _value[index];
+                if (IsBigIntWrapper && item is int i32) {
+                    item = new BigInteger(i32);
+                }
+                return (T)item;
+            }
+
             set => _value[index] = value;
         }
 
@@ -45,12 +62,16 @@ namespace IronPython.Runtime {
         }
 
         public bool Contains(T item) {
-            return _value.Contains(item);
+            bool found = _value.Contains(item);
+            if (!found && IsBigIntWrapper && item is BigInteger bi && bi >= int.MinValue && bi <= int.MaxValue) {
+                found = _value.Contains((int)bi);
+            }
+            return found;
         }
 
         public void CopyTo(T[] array, int arrayIndex) {
             for (int i = 0; i < _value.Count; i++) {
-                array[arrayIndex + i] = (T)_value[i];
+                array[arrayIndex + i] = this[i];
             }
         }
 
@@ -63,7 +84,12 @@ namespace IronPython.Runtime {
         }
 
         public bool Remove(T item) {
-            return _value.Remove(item);
+            int pos = IndexOf(item);
+            if (pos >= 0) {
+                _value.RemoveAt(pos);
+                return true;
+            }
+            return false;
         }
 
         #endregion
@@ -87,6 +113,9 @@ namespace IronPython.Runtime {
 
     public class DictionaryGenericWrapper<K, V> : IDictionary<K, V> {
         private readonly IDictionary<object, object> self;
+        // PEP 237: int/long unification (GH #52)
+        private static readonly bool IsBigIntWrapperK = typeof(K) == typeof(BigInteger) || typeof(K) == typeof(BigInteger?);
+        private static readonly bool IsBigIntWrapperV = typeof(V) == typeof(BigInteger) || typeof(V) == typeof(BigInteger?);
 
         public DictionaryGenericWrapper(IDictionary<object, object> self) {
             this.self = self;
@@ -95,30 +124,38 @@ namespace IronPython.Runtime {
         #region IDictionary<K,V> Members
 
         public void Add(K key, V value) {
-            self.Add(key, value);
+            object okey = key;
+            if (IsValidKey32(key, out object i32) && self.ContainsKey(i32)) {
+                okey = i32;
+            }
+            self.Add(okey, value);
         }
 
         public bool ContainsKey(K key) {
-            return self.ContainsKey(key);
+            return self.ContainsKey(key) || (IsValidKey32(key, out object i32) && self.ContainsKey(i32));
         }
 
         public ICollection<K> Keys {
             get {
-                List<K> res = new List<K>();
+                List<K> res = new List<K>(Count);
                 foreach (object o in self.Keys) {
-                    res.Add((K)o);
+                    res.Add(CastKey(o));
                 }
                 return res;
             }
         }
 
         public bool Remove(K key) {
-            return self.Remove(key);
+            return self.Remove(key) || (IsValidKey32(key, out object i32) && self.Remove(i32));
         }
 
         public bool TryGetValue(K key, out V value) {
             if (self.TryGetValue(key, out object outValue)) {
-                value = (V)outValue;
+                value = CastValue(outValue);
+                return true;
+            }
+            if (IsValidKey32(key, out object i32) && self.TryGetValue(i32, out object outValue2)) {
+                value = CastValue(outValue2);
                 return true;
             }
             value = default;
@@ -129,7 +166,7 @@ namespace IronPython.Runtime {
             get {
                 List<V> res = new List<V>();
                 foreach (object o in self.Values) {
-                    res.Add((V)o);
+                    res.Add(CastValue(o));
                 }
                 return res;
             }
@@ -137,9 +174,13 @@ namespace IronPython.Runtime {
 
         public V this[K key] {
             get {
-                return (V)self[key];
+                if (TryGetValue(key, out V value)) {
+                    return value;
+                }
+                throw new KeyNotFoundException($"The given key '{key}' was not present in the dictionary.");
             }
             set {
+                Remove(key);
                 self[key] = value;
             }
         }
@@ -149,7 +190,11 @@ namespace IronPython.Runtime {
         #region ICollection<KeyValuePair<K,V>> Members
 
         public void Add(KeyValuePair<K, V> item) {
-            self.Add(new KeyValuePair<object, object>(item.Key, item.Value));
+            object key = item.Key;
+            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+                key = i32;
+            }
+            self.Add(new KeyValuePair<object, object>(key, item.Value));
         }
 
         public void Clear() {
@@ -157,7 +202,11 @@ namespace IronPython.Runtime {
         }
 
         public bool Contains(KeyValuePair<K, V> item) {
-            return self.Contains(new KeyValuePair<object, object>(item.Key, item.Value));
+            object key = item.Key;
+            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+                key = i32;
+            }
+            return self.Contains(new KeyValuePair<object, object>(key, item.Value));
         }
 
         public void CopyTo(KeyValuePair<K, V>[] array, int arrayIndex) {
@@ -175,7 +224,11 @@ namespace IronPython.Runtime {
         }
 
         public bool Remove(KeyValuePair<K, V> item) {
-            return self.Remove(new KeyValuePair<object, object>(item.Key, item.Value));
+            object key = item.Key;
+            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+                key = i32;
+            }
+            return self.Remove(new KeyValuePair<object, object>(key, item.Value));
         }
 
         #endregion
@@ -184,7 +237,7 @@ namespace IronPython.Runtime {
 
         public IEnumerator<KeyValuePair<K, V>> GetEnumerator() {
             foreach (KeyValuePair<object, object> kv in self) {
-                yield return new KeyValuePair<K, V>((K)kv.Key, (V)kv.Value);
+                yield return new KeyValuePair<K, V>(CastKey(kv.Key), CastValue(kv.Value));
             }
         }
 
@@ -197,10 +250,35 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        private static K CastKey(object key) {
+            if (IsBigIntWrapperK && key is int i32) {
+                key = new BigInteger(i32);
+            }
+            return (K)key;
+        }
+
+        private static V CastValue(object val) {
+            if (IsBigIntWrapperV && val is int i32) {
+                val = new BigInteger(i32);
+            }
+            return (V)val;
+        }
+        private static bool IsValidKey32(K key, out object key32) {
+            if (IsBigIntWrapperK && key is BigInteger bi && bi >= int.MinValue && bi <= int.MaxValue) {
+                key32 = (int)bi;
+                return true;
+            }
+            key32 = 0;
+            return false;
+        }
+
     }
 
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
         private readonly IEnumerator enumerable;
+        // PEP 237: int/long unification (GH #52)
+        private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
         public IEnumeratorOfTWrapper(IEnumerator enumerable) {
             this.enumerable = enumerable;
@@ -210,9 +288,13 @@ namespace IronPython.Runtime {
         public T Current {
             get {
                 try {
-                    return (T)enumerable.Current;
+                    object current = enumerable.Current;
+                    if (IsBigIntWrapper && current is int i32) {
+                        current = new BigInteger(i32);
+                    }
+                    return (T)current;
                 } catch (System.InvalidCastException iex) {
-                    throw new System.InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: {0} in {1}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
+                    throw new System.InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from {1} to {0}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
                 }
             }
         }

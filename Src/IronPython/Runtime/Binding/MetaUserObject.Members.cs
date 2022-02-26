@@ -729,11 +729,11 @@ namespace IronPython.Runtime.Binding {
             return AstUtils.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeSlot));
         }
 
-        private static Expression/*!*/ MakeTypeError(DynamicMetaObjectBinder binder, string/*!*/ name, PythonType/*!*/ type) {
+        private static Expression/*!*/ MakeTypeError(DynamicMetaObjectBinder binder, string/*!*/ name, string/*!*/ typeName) {
             return binder.Throw(
                 Ast.Call(
                     typeof(PythonOps).GetMethod(nameof(PythonOps.AttributeErrorForMissingAttribute), new Type[] { typeof(string), typeof(string) }),
-                    AstUtils.Constant(type.Name),
+                    AstUtils.Constant(typeName),
                     AstUtils.Constant(name)
                 ),
                 typeof(object)
@@ -1063,7 +1063,7 @@ namespace IronPython.Runtime.Binding {
                     return _target._baseMetaObject.BindSetMember(action, value);
                 } else if (action is PythonSetMemberBinder) {
                     return new DynamicMetaObject(
-                        MakeTypeError(action, action.Name, Instance.PythonType),
+                        MakeTypeError(action, action.Name, Instance.PythonType.Name),
                         BindingRestrictions.Empty
                     );
                 }
@@ -1437,7 +1437,7 @@ namespace IronPython.Runtime.Binding {
                 );
             } else if (action is PythonGetMemberBinder) {
                 return new DynamicMetaObject(
-                    MakeTypeError(action, GetGetMemberName(action), PythonType),
+                    MakeTypeError(action, GetGetMemberName(action), GetPythonTypeName(this)),
                     BindingRestrictions.Empty
                 );
             }
@@ -1454,7 +1454,7 @@ namespace IronPython.Runtime.Binding {
                 return _baseMetaObject.BindDeleteMember(action);
             } else if (action is PythonDeleteMemberBinder) {
                 return new DynamicMetaObject(
-                    MakeTypeError(action, action.Name, ((IPythonObject)args[0].Value).PythonType),
+                    MakeTypeError(action, action.Name, MetaPythonObject.GetPythonTypeName(args[0])),
                     BindingRestrictions.Empty
                 );
             }

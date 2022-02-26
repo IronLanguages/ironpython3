@@ -350,10 +350,6 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
-        public static BigInteger __long__(int self) {
-            return (BigInteger)self;
-        }
-
         public static double __float__(int self) {
             return (double)self;
         }
@@ -520,6 +516,7 @@ namespace IronPython.Runtime.Operations {
         [ClassMethod, StaticExtensionMethod]
         public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
+            // TODO: merge with BigIntegerOps.from_bytes
 
             bool isLittle = byteorder == "little";
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
@@ -569,6 +566,11 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.RuntimeError(
                 "Unreachable code was reached. "
                 + "PythonOps.Index is guaranteed to either throw or return an integral value.");
+        }
+
+        [PythonHidden]
+        public static BigInteger ToBigInteger(this int self) {
+            return self;
         }
 
         private static string ToHex(int self, bool lowercase) {

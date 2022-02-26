@@ -722,16 +722,6 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(CodeContext/*!*/ context, double self)
             => Repr(context, self, trailingZeroAfterWholeFloat: true);
 
-        public static BigInteger/*!*/ __long__(double self) {
-            if (double.IsInfinity(self)) {
-                throw PythonOps.OverflowError("cannot convert float infinity to integer");
-            } else if (double.IsNaN(self)) {
-                throw PythonOps.ValueError("cannot convert float NaN to integer");
-            } else {
-                return (BigInteger)self;
-            }
-        }
-
         public static double __float__(double self) {
             return self;
         }

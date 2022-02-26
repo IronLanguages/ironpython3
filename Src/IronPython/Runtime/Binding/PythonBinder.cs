@@ -217,7 +217,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.Call(
                     typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForTypeMismatch)),
-                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
+                    AstUtils.Constant(PythonOps.GetPythonTypeNameFromType(toType)),
                     AstUtils.Convert(value, typeof(object))
                )
             );
@@ -772,13 +772,13 @@ namespace IronPython.Runtime.Binding {
             // Native CLR types
             res[typeof(object)] = new ExtensionTypeInfo(typeof(ObjectOps), "object");
             res[typeof(string)] = new ExtensionTypeInfo(typeof(StringOps), "str");
-            res[typeof(int)] = new ExtensionTypeInfo(typeof(Int32Ops), "int");
+            res[typeof(int)] = new ExtensionTypeInfo(typeof(Int32Ops), "Int32");              // PEP 237: int/long unification (GH #52)
             res[typeof(bool)] = new ExtensionTypeInfo(typeof(BoolOps), "bool");
             res[typeof(double)] = new ExtensionTypeInfo(typeof(DoubleOps), "float");
-            res[typeof(ValueType)] = new ExtensionTypeInfo(typeof(ValueType), "ValueType");   // just hiding it's methods in the inheritance hierarchy
+            res[typeof(ValueType)] = new ExtensionTypeInfo(typeof(ValueType), "ValueType");   // just hiding its methods in the inheritance hierarchy
 
             // MS.Math types
-            res[typeof(BigInteger)] = new ExtensionTypeInfo(typeof(BigIntegerOps), "long");
+            res[typeof(BigInteger)] = new ExtensionTypeInfo(typeof(BigIntegerOps), "int");    // PEP 237: int/long unification (GH #52)
             res[typeof(Complex)] = new ExtensionTypeInfo(typeof(ComplexOps), "complex");
 
             // DLR types

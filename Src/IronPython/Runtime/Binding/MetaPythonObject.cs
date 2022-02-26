@@ -81,6 +81,14 @@ namespace IronPython.Runtime.Binding {
             return DynamicHelpers.GetPythonTypeFromType(value.GetLimitType());
         }
 
+        public static string/*!*/ GetPythonTypeName(DynamicMetaObject/*!*/ value) {
+            if (value.HasValue) {
+                return PythonOps.GetPythonTypeName(value.Value);
+            }
+
+            return DynamicHelpers.GetPythonTypeFromType(value.GetLimitType()).Name;
+        }
+
         /// <summary>
         /// Creates a target which creates a new dynamic method which contains a single
         /// dynamic site that invokes the callable object.

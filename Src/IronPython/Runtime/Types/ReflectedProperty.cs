@@ -141,6 +141,10 @@ namespace IronPython.Runtime.Types {
 
             BuiltinFunction target = PythonTypeOps.GetBuiltinFunction(type, __name__, members);
 
+            // Workaround for https://github.com/IronLanguages/ironpython3/issues/1326
+            Debug.Assert(members.Length == 1);
+            if (members[0].IsStatic) instance = null;
+
             return target.Call0(context, storage, instance);
         }
 

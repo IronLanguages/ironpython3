@@ -4,9 +4,9 @@
 
 import unittest
 
-from iptest import big, run_test
+from iptest import IronPythonTestCase, big, run_test
 
-class BigIntTest(unittest.TestCase):
+class BigIntTest(IronPythonTestCase):
 
     def axiom_helper(self, a, b):
         self.assertTrue((a // b) * b + (a % b) == a, "(" + str(a) + " // " + str(b) + ") * " + str(b) + " + (" + str(a) + " % " + str(b) + ") != " + str(a))
@@ -51,5 +51,9 @@ class BigIntTest(unittest.TestCase):
 
         s = hex(-big(27))
         self.assertTrue(s == "-0x1b", "-27: Expect lowercase digits. Received: %s." % (s));
+
+    def test_negative_misc(self):
+        self.assertRaisesMessage(ValueError, "invalid literal for int() with base 10: ''",
+                    lambda: int(''))
 
 run_test(__name__)

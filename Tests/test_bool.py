@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import is_cli, big, myint, run_test
 
 class BoolTest(unittest.TestCase):
     def test_types(self):
@@ -88,6 +88,8 @@ class BoolTest(unittest.TestCase):
         cases = []
         cases += [(ClassWithBool(x), y) for x, y in bool_cases]
         cases += [(ClassWithLen(x), y) for x, y in len_cases]
+        cases += [(ClassWithLen(big(x)), y) for x, y in len_cases if isinstance(x, int)]
+        cases += [(ClassWithLen(myint(x)), y) for x, y in len_cases if isinstance(x, int)]
         cases += [(ClassWithLen(MyIndex(x)), y) for x, y in len_cases]
 
         for val, res in cases:

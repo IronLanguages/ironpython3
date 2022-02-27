@@ -264,15 +264,15 @@ namespace IronPython.Runtime {
             }
             return (V)val;
         }
+
         private static bool IsValidKey32(K key, out object key32) {
             if (IsBigIntWrapperK && key is BigInteger bi && bi >= int.MinValue && bi <= int.MaxValue) {
                 key32 = (int)bi;
                 return true;
             }
-            key32 = 0;
+            key32 = null;
             return false;
         }
-
     }
 
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {

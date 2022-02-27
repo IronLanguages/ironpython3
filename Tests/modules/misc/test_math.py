@@ -412,8 +412,8 @@ class MathTest(IronPythonTestCase):
         self.assertEqualAndCheckType((-2.4).__round__(), -2, int)
         self.assertEqualAndCheckType((-2.5).__round__(), -2, int)
         self.assertEqualAndCheckType((-2.6).__round__(), -3, int)
-        self.assertEqualAndCheckType(sys.float_info.max.__round__(), big(int(sys.float_info.max)), int)
-        self.assertEqualAndCheckType(-sys.float_info.max.__round__(), big(int(-sys.float_info.max)), int)
+        self.assertEqualAndCheckType(sys.float_info.max.__round__(), int(sys.float_info.max), int)
+        self.assertEqualAndCheckType(-sys.float_info.max.__round__(), int(-sys.float_info.max), int)
         self.assertEqualAndCheckType(round(88.3), 88, int)
         self.assertEqualAndCheckType(round(-88.3), -88, int)
         self.assertEqualAndCheckType(round(2.1123E25), 21122999999999999263899648, int)
@@ -626,8 +626,6 @@ def %s(self, other):
             def __float__(self):
                 return 10.0
             def __int__(self):
-                return 100
-            def __long__(self):
                 return 100
 
         self.assertEqual(round(math.log10(N()), 5),1.0)

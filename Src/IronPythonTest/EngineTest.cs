@@ -1077,7 +1077,6 @@ class ns(object):
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): raise TypeError
     def __complex__(self): return 42j
     def __bool__(self): return False
 
@@ -1182,7 +1181,6 @@ class os:
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): raise TypeError
     def __bool__(self): return False
     def __complex__(self): return 42j
 

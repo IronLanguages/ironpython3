@@ -41,7 +41,7 @@ class IronMathTest(IronPythonTestCase):
         self.assertEqual(big(-123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement().OnesComplement() , -123456781234567812345678123456781234567812345678123456781234567812345678)
         self.assertEqual(big(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement() , -(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678 + big(1) ))
         self.assertTrue(BigInteger.Xor(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678,big(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement()) , -big(1))
-        self.assertEqual(BigInteger.BitwiseAnd(0xff00ff00,BigInteger.BitwiseOr(0x00ff00ff,0xaabbaabb)) , (0xaa00aa00).ToBigInteger())
+        self.assertEqual(BigInteger.BitwiseAnd(0xff00ff00,BigInteger.BitwiseOr(0x00ff00ff,0xaabbaabb)) , big(0xaa00aa00))
         self.assertEqual(BigInteger.Mod(big(-9999999999999999999999999999999999999999),1000000000000000000) , -BigInteger.Mod(9999999999999999999999999999999999999999,big(-1000000000000000000)))
 
         self.assertEqual(BigInteger.ToInt64(0x7fffffffffffffff) , 9223372036854775807)
@@ -51,8 +51,8 @@ class IronMathTest(IronPythonTestCase):
         self.assertEqual(big(int(-1212321.3213)).ToBoolean(self.p) , True )
         self.assertEqual(big(1212321384892342394723947).ToBoolean(self.p) , True )
 
-        self.assertEqual((big(0)).ToChar(self.p) , Char.MinValue)
-        self.assertEqual((big(65)).ToChar(self.p) , IConvertible.ToChar('A', self.p))
+        self.assertEqual(big(0).ToChar(self.p) , Char.MinValue)
+        self.assertEqual(big(65).ToChar(self.p) , IConvertible.ToChar('A', self.p))
         self.assertEqual(big(0xffff).ToChar(self.p) , Char.MaxValue)
         self.assertRaises(OverflowError, big(-1).ToChar, self.p)
 
@@ -62,7 +62,7 @@ class IronMathTest(IronPythonTestCase):
         self.assertTrue(big(100) != 100.32)
         self.assertEqual(big(100) , 100.0)
 
-        self.assertTrue( 100.32 != big(100))
+        self.assertTrue(100.32 != big(100))
         self.assertEqual(100.0 , big(100) )
 
     def test_big_to_conversion(self):
@@ -79,12 +79,12 @@ class IronMathTest(IronPythonTestCase):
                             (64, "ToUInt64", UInt64,0)
                         ]:
 
-            b = (-x ** a).ToBigInteger()
+            b = big(-x ** a)
             left = getattr(b, m)(self.p)
             right = t.MinValue
             self.assertEqual(left, right)
 
-            b = (2 ** a -1).ToBigInteger()
+            b = big(2 ** a -1)
             left = getattr(b, m)(self.p)
             right = t.MaxValue
             self.assertEqual(left, right)
@@ -94,8 +94,8 @@ class IronMathTest(IronPythonTestCase):
             right = t.MaxValue - t.MaxValue
             self.assertEqual(left, right)
 
-            self.assertRaises(OverflowError,getattr((2 ** a).ToBigInteger(), m),self.p)
-            self.assertRaises(OverflowError,getattr((-1 - x ** a).ToBigInteger(), m),self.p)
+            self.assertRaises(OverflowError,getattr(big(2 ** a), m),self.p)
+            self.assertRaises(OverflowError,getattr(big(-1 - x ** a), m),self.p)
 
 
     @unittest.skip("TODO: Duplicate of previous test; repurpose to test conversion on other integral types")
@@ -109,12 +109,12 @@ class IronMathTest(IronPythonTestCase):
                             (64, "ToUInt64",UInt64,0)
                         ]:
 
-            b = (-x ** a ).ToBigInteger()
+            b = big(-x ** a )
             left = getattr(b, m)()
             right = t.MinValue
             self.assertEqual(left, right)
 
-            b = (2 ** a -1).ToBigInteger()
+            b = big(2 ** a -1)
             left = getattr(b, m)()
             right = t.MaxValue
             self.assertEqual(left, right)
@@ -124,16 +124,16 @@ class IronMathTest(IronPythonTestCase):
             right = t.MaxValue - t.MaxValue
             self.assertEqual(left, right)
 
-            self.assertRaises(OverflowError,getattr((2 ** a ).ToBigInteger(), m))
-            self.assertRaises(OverflowError,getattr((-1 - x ** a ).ToBigInteger(), m))
+            self.assertRaises(OverflowError,getattr(big(2 ** a ), m))
+            self.assertRaises(OverflowError,getattr(big(-1 - x ** a ), m))
 
     def test_complex(self):
         from System.Numerics import BigInteger, Complex
         self.assertEqual(
             Complex.Add(
-                Complex((big(9999)), -1234),
+                Complex(big(9999), -1234),
                 Complex.Conjugate(Complex(9999, -1234)) ),
-            Complex.Multiply.Overloads[complex, complex]((big(9999)), 2) )
+            Complex.Multiply.Overloads[complex, complex](big(9999), 2) )
         self.assertEqual(
             Complex.Add(
                 Complex(99999.99e-200, 12345.88e+100),
@@ -175,25 +175,25 @@ class IronMathTest(IronPythonTestCase):
             self.assertSequenceEqual(bigint.ToByteArray(), bytes)
             self.assertEqual(BigInteger.Create(Array[Byte](bytes)), bigint)
 
-        CheckByteConversions((0x00).ToBigInteger(), [0x00])
+        CheckByteConversions(big(0x00), [0x00])
 
-        CheckByteConversions((-0x01).ToBigInteger(), [0xff])
-        CheckByteConversions((-0x81).ToBigInteger(), [0x7f, 0xff])
-        CheckByteConversions((-0x100).ToBigInteger(), [0x00, 0xff])
-        CheckByteConversions((-0x1000).ToBigInteger(), [0x00, 0xf0])
-        CheckByteConversions((-0x10000).ToBigInteger(), [0x00, 0x00, 0xff])
-        CheckByteConversions((-0x100000).ToBigInteger(), [0x00, 0x00, 0xf0])
-        CheckByteConversions((-0x10000000).ToBigInteger(), [0x00, 0x00, 0x00, 0xf0])
-        CheckByteConversions((-0x100000000).ToBigInteger(), [0x00, 0x00, 0x00, 0x00, 0xff])
+        CheckByteConversions(big(-0x01), [0xff])
+        CheckByteConversions(big(-0x81), [0x7f, 0xff])
+        CheckByteConversions(big(-0x100), [0x00, 0xff])
+        CheckByteConversions(big(-0x1000), [0x00, 0xf0])
+        CheckByteConversions(big(-0x10000), [0x00, 0x00, 0xff])
+        CheckByteConversions(big(-0x100000), [0x00, 0x00, 0xf0])
+        CheckByteConversions(big(-0x10000000), [0x00, 0x00, 0x00, 0xf0])
+        CheckByteConversions(big(-0x100000000), [0x00, 0x00, 0x00, 0x00, 0xff])
 
-        CheckByteConversions((0x7f).ToBigInteger(), [0x7f])
-        CheckByteConversions((0xff).ToBigInteger(), [0xff, 0x00])
-        CheckByteConversions((0x0201).ToBigInteger(), [0x01, 0x02])
-        CheckByteConversions((0xf2f1).ToBigInteger(), [0xf1, 0xf2, 0x00])
-        CheckByteConversions((0x03020100).ToBigInteger(), [0x00, 0x01, 0x02, 0x03])
-        CheckByteConversions((0x0403020100).ToBigInteger(), [0x00, 0x01, 0x02, 0x03, 0x04])
-        CheckByteConversions((0x0706050403020100).ToBigInteger(), [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07])
-        CheckByteConversions((0x080706050403020100).ToBigInteger(), [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
+        CheckByteConversions(big(0x7f), [0x7f])
+        CheckByteConversions(big(0xff), [0xff, 0x00])
+        CheckByteConversions(big(0x0201), [0x01, 0x02])
+        CheckByteConversions(big(0xf2f1), [0xf1, 0xf2, 0x00])
+        CheckByteConversions(big(0x03020100), [0x00, 0x01, 0x02, 0x03])
+        CheckByteConversions(big(0x0403020100), [0x00, 0x01, 0x02, 0x03, 0x04])
+        CheckByteConversions(big(0x0706050403020100), [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07])
+        CheckByteConversions(big(0x080706050403020100), [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
 
     def test_dword_conversions(self):
         from System import Array, UInt32
@@ -221,9 +221,9 @@ class IronMathTest(IronPythonTestCase):
 
         CheckDwordConversions(big(0), [0x00000000])
         CheckDwordConversions(big(1), [0x00000001])
-        CheckDwordConversions(((1<<31).ToBigInteger()), [0x80000000])
-        CheckDwordConversions((((1<<31).ToBigInteger() + 9)), [0x80000009])
-        CheckDwordConversions(((1<<32).ToBigInteger()), [0x00000000, 0x00000001])
+        CheckDwordConversions(big(1<<31), [0x80000000])
+        CheckDwordConversions(big(1<<31) + 9, [0x80000009])
+        CheckDwordConversions(big(1<<32), [0x00000000, 0x00000001])
 
     def test_misc(self):
         from System import ArgumentException, ArgumentNullException

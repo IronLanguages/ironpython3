@@ -33,9 +33,7 @@ class ClassTest(IronPythonTestCase):
             # Modifying __class__ causes a TypeError
             self.assertRaises(TypeError, i.__setattr__, "__class__")
 
-            if i != 0:
-                # skip test for Int32
-                self.assertEqual(type(i), i.__getattribute__("__class__"))
+            self.assertEqual(type(i), i.__getattribute__("__class__"))
             # Non-existent attribute
             self.assertRaises(AttributeError, i.__getattribute__, "foo")
 

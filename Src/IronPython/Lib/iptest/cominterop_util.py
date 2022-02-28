@@ -105,9 +105,9 @@ if is_cli:
 
 class Py_UShort(int): pass
 
-class Py_ULong(long): pass
+class Py_ULong(int): pass
 
-class Py_ULongLong(long): pass
+class Py_ULongLong(int): pass
 
 class Py_Short(int): pass
 
@@ -116,7 +116,7 @@ class Py_Long(int): pass
 if is_cli:
     class Py_System_Int32(System.Int32): pass
 
-class Py_LongLong(long): pass
+class Py_LongLong(int): pass
     
 #-------Helpers----------------
     
@@ -660,13 +660,13 @@ if sys.platform=="win32":
         class Int32(int):
             MinValue = -2147483648
             MaxValue =  2147483647
-        class UInt32(long):
+        class UInt32(int):
             MinValue = 0
             MaxValue = 4294967295
-        class Int64(long):
+        class Int64(int):
             MinValue = -9223372036854775808
             MaxValue =  9223372036854775807
-        class UInt64(long):
+        class UInt64(int):
             MinValue = 0 
             MaxValue = 18446744073709551615
         class Single(float):

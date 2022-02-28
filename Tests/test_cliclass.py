@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -94,8 +94,13 @@ class CliClassTestCase(IronPythonTestCase):
         self.assertEqual(GenericMethodTester.TestRefParamString(c, '10'), '1010')
         self.assertEqual(GenericMethodTester.TestRefParamInt(c, 10), 20)
 
-        x = System.Collections.Generic.List[int]((2, 3, 4))
+        x = System.Collections.Generic.List[System.Int32]((2, 3, 4))
         r = GenericMethodTester.GoWild(c, True, 'second', x)
+        self.assertEqual(r.Length, 2)
+        self.assertEqual(r[0], 1.5)
+
+        x = System.Collections.Generic.List[int]((2, 3, 4))
+        r = GenericMethodTester.GoWildBig(c, True, 'second', x)
         self.assertEqual(r.Length, 2)
         self.assertEqual(r[0], 1.5)
 
@@ -221,6 +226,10 @@ class CliClassTestCase(IronPythonTestCase):
         self.assertEqual(System.IComparable.CompareTo(1,2), -1)
         self.assertEqual(System.IComparable[int].CompareTo(1,1), 0)
         self.assertEqual(System.IComparable[int].CompareTo(1,2), -1)
+        self.assertEqual(System.IComparable[System.Int32].CompareTo(System.Int32(1),System.Int32(1)), 0)
+        self.assertEqual(System.IComparable[System.Int32].CompareTo(System.Int32(1),System.Int32(2)), -1)
+        self.assertEqual(System.IComparable[int].CompareTo(big(1),big(1)), 0)
+        self.assertEqual(System.IComparable[int].CompareTo(big(1),big(2)), -1)
         self.assertTrue(dir(System.IComparable).__contains__("CompareTo"))
         self.assertTrue(list(vars(System.IComparable).keys()).__contains__("CompareTo"))
 
@@ -922,7 +931,7 @@ End Class""")
         '''
 
         self.assertEqual(System.DateTime.__new__.__name__, '__new__')
-        self.assertTrue(System.DateTime.__new__.__doc__.find('__new__(cls: type, year: int, month: int, day: int)') != -1)
+        self.assertTrue(System.DateTime.__new__.__doc__.find('__new__(cls: type, year: Int32, month: Int32, day: Int32)') != -1)
 
         self.assertTrue(System.AssemblyLoadEventArgs.__new__.__doc__.find('__new__(cls: type, loadedAssembly: Assembly)') != -1)
 
@@ -1311,7 +1320,7 @@ End Class""")
         self.assertTrue(hasattr(a, '__len__'))
 
     def test_dict_copy(self):
-        self.assertTrue('MaxValue' in int.__dict__.copy())
+        self.assertTrue('MaxValue' in System.Int32.__dict__.copy())
 
     def test_decimal_bool(self):
         self.assertEqual(bool(System.Decimal(0)), False)
@@ -1876,6 +1885,7 @@ class TheTestCase(IronPythonTestCase):
         self.assertEqual([].GenericInterfaceAndMethod(), 23)
         self.assertEqual([].GenericMethod(), 23)
 
+        self.assertEqual(System.Array[System.Int32]([2,3,4]).Array(), 23)
         self.assertEqual(System.Array[int]([2,3,4]).Array(), 23)
         self.assertEqual(System.Array[int]([2,3,4]).ArrayAndGenericMethod(), 23)
         self.assertEqual(System.Array[int]([2,3,4]).GenericMethod(), 23)

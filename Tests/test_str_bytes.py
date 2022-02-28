@@ -14,12 +14,10 @@ import sys
 import unittest
 import itertools
 
-from iptest import run_test
+from iptest import big, run_test
 
 class ExtensibleStringClass(str):
     pass
-
-long = type(sys.maxsize + 1)
 
 class StrBytesTest(unittest.TestCase):
     def run_permutations(self, expr, inputs, str_eq, bytes_eq):
@@ -49,8 +47,8 @@ class StrBytesTest(unittest.TestCase):
         self.run_permutations(lambda abc, b: abc.find(b), ("abc", "b"), 1, 1)
         self.run_permutations(lambda abc, b: abc.find(b, 1), ("abc", "b"), 1, 1)
         self.run_permutations(lambda abc, b: abc.find(b, 1, 2), ("abc", "b"), 1, 1)
-        self.run_permutations(lambda abc, b: abc.find(b, long(1)), ("abc", "b"), 1, 1)
-        self.run_permutations(lambda abc, b: abc.find(b, long(1), long(2)), ("abc", "b"), 1, 1)
+        self.run_permutations(lambda abc, b: abc.find(b, big(1)), ("abc", "b"), 1, 1)
+        self.run_permutations(lambda abc, b: abc.find(b, big(1), big(2)), ("abc", "b"), 1, 1)
 
     def test_lstrip(self):
         self.run_permutations(lambda xa, x: xa.lstrip(x), ("xa", "x"), "a", b"a")
@@ -77,15 +75,15 @@ class StrBytesTest(unittest.TestCase):
         self.run_permutations(lambda abc, c: abc.rfind(c), ("abc", "c"), 2, 2)
         self.run_permutations(lambda abc, c: abc.rfind(c, 1), ("abc", "c"), 2, 2)
         self.run_permutations(lambda abc, c: abc.rfind(c, 1, 3), ("abc", "c"), 2, 2)
-        self.run_permutations(lambda abc, c: abc.rfind(c, long(1)), ("abc", "c"), 2, 2)
-        self.run_permutations(lambda abc, c: abc.rfind(c, long(1), long(3)), ("abc", "c"), 2, 2)
+        self.run_permutations(lambda abc, c: abc.rfind(c, big(1)), ("abc", "c"), 2, 2)
+        self.run_permutations(lambda abc, c: abc.rfind(c, big(1), big(3)), ("abc", "c"), 2, 2)
 
     def test_rindex(self):
         self.run_permutations(lambda abc, c: abc.rindex(c), ("abc", "c"), 2, 2)
         self.run_permutations(lambda abc, c: abc.rindex(c, 1), ("abc", "c"), 2, 2)
         self.run_permutations(lambda abc, c: abc.rindex(c, 1, 3), ("abc", "c"), 2, 2)
-        self.run_permutations(lambda abc, c: abc.rindex(c, long(1)), ("abc", "c"), 2, 2)
-        self.run_permutations(lambda abc, c: abc.rindex(c, long(1), long(3)), ("abc", "c"), 2, 2)
+        self.run_permutations(lambda abc, c: abc.rindex(c, big(1)), ("abc", "c"), 2, 2)
+        self.run_permutations(lambda abc, c: abc.rindex(c, big(1), big(3)), ("abc", "c"), 2, 2)
 
     def test_rpartition(self):
         self.run_permutations(lambda abc, b: abc.rpartition(b), ("abc", "b"), ("a", "b", "c"), (b"a", b"b", b"c"))

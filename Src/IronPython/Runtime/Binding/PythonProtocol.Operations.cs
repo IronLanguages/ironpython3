@@ -1728,7 +1728,7 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         public static DynamicMetaObject/*!*/ TypeError(DynamicMetaObjectBinder/*!*/ action, string message, params DynamicMetaObject[] types) {
             if (action is IPythonSite) {
-                message = string.Format(message, ArrayUtils.ConvertAll(types, x => MetaPythonObject.GetPythonType(x).Name));
+                message = string.Format(message, ArrayUtils.ConvertAll(types, x => MetaPythonObject.GetPythonTypeName(x)));
 
                 Expression error = action.Throw(
                     Ast.Call(

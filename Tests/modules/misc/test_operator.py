@@ -5,7 +5,7 @@
 import operator
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, big, run_test, skipUnlessIronPython
 
 class OperaterTest(IronPythonTestCase):
     def setUp(self):
@@ -204,7 +204,7 @@ class OperaterTest(IronPythonTestCase):
         fooInst = foo(3)
 
         self.assertEqual('aaa', 'a' * 3)
-        self.assertEqual('aaa', 'a' * long(3))
+        self.assertEqual('aaa', 'a' * big(3))
         self.assertEqual('aaa', 'a' * fooInst)
 
         self.assertEqual('', 'a' * False)
@@ -220,7 +220,7 @@ class OperaterTest(IronPythonTestCase):
 
         for base_type in [
                             dict, list, tuple,
-                            float, long, int, complex,
+                            float, int, complex,
                             bytes, str,
                             object,
                         ]:
@@ -240,11 +240,10 @@ class OperaterTest(IronPythonTestCase):
     def test_num_binary_ops(self):
         """Test binary operators for all numeric types and types inherited from them"""
         class myint(int): pass
-        class mylong(long): pass
         class myfloat(float): pass
         class mycomplex(complex): pass
 
-        l = [2, long(10), (1+2j), 3.4, myint(7), mylong(5), myfloat(2.32), mycomplex(3, 2), True]
+        l = [2, big(10), (1+2j), 3.4, myint(7), myfloat(2.32), mycomplex(3, 2), True]
 
         if is_cli:
             import System
@@ -279,8 +278,8 @@ class OperaterTest(IronPythonTestCase):
                             (exc_type, exc_value, exc_traceback) = sys.exc_info()
                             Fail("Binary operator failed: %s, %s: %s %s %s (Message=%s)" % (type(a).__name__, type(b).__name__, str(a), sym, str(b), str(exc_value)))
 
-        threes = [ 3, long(3), 3.0 ]
-        zeroes = [ 0, long(0), 0.0 ]
+        threes = [ 3, big(3), 3.0 ]
+        zeroes = [ 0, big(0), 0.0 ]
 
         if is_cli:
             threes.append(System.Int64.Parse("3"))
@@ -367,9 +366,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__abs__(0.0), 0.0)
         self.assertEqual(operator.__abs__(1.1), 1.1)
         self.assertEqual(operator.__abs__(-1.1), 1.1)
-        self.assertEqual(operator.__abs__(long(0)), long(0))
-        self.assertEqual(operator.__abs__(long(1)), long(1))
-        self.assertEqual(operator.__abs__(-long(1)), long(1))
+        self.assertEqual(operator.__abs__(big(0)), big(0))
+        self.assertEqual(operator.__abs__(big(1)), big(1))
+        self.assertEqual(operator.__abs__(-big(1)), big(1))
 
         #__neg__
         self.assertEqual(operator.__neg__(0), 0)
@@ -378,9 +377,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__neg__(0.0), 0.0)
         self.assertEqual(operator.__neg__(1.1), -1.1)
         self.assertEqual(operator.__neg__(-1.1), 1.1)
-        self.assertEqual(operator.__neg__(long(0)), long(0))
-        self.assertEqual(operator.__neg__(long(1)), -long(1))
-        self.assertEqual(operator.__neg__(-long(1)), long(1))
+        self.assertEqual(operator.__neg__(big(0)), big(0))
+        self.assertEqual(operator.__neg__(big(1)), -big(1))
+        self.assertEqual(operator.__neg__(-big(1)), big(1))
 
         #__pos__
         self.assertEqual(operator.__pos__(0), 0)
@@ -389,9 +388,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__pos__(0.0), 0.0)
         self.assertEqual(operator.__pos__(1.1), 1.1)
         self.assertEqual(operator.__pos__(-1.1), -1.1)
-        self.assertEqual(operator.__pos__(long(0)), long(0))
-        self.assertEqual(operator.__pos__(long(1)), long(1))
-        self.assertEqual(operator.__pos__(-long(1)), -long(1))
+        self.assertEqual(operator.__pos__(big(0)), big(0))
+        self.assertEqual(operator.__pos__(big(1)), big(1))
+        self.assertEqual(operator.__pos__(-big(1)), -big(1))
 
         #__add__
         self.assertEqual(operator.__add__(0, 0), 0)
@@ -400,9 +399,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__add__(0.0, 0.0), 0.0)
         self.assertEqual(operator.__add__(1.1, 2.1), 3.2)
         self.assertEqual(operator.__add__(-1.1, 2.1), 1.0)
-        self.assertEqual(operator.__add__(long(0), long(0)), long(0))
-        self.assertEqual(operator.__add__(long(1), long(2)), long(3))
-        self.assertEqual(operator.__add__(-long(1), long(2)), long(1))
+        self.assertEqual(operator.__add__(big(0), big(0)), big(0))
+        self.assertEqual(operator.__add__(big(1), big(2)), big(3))
+        self.assertEqual(operator.__add__(-big(1), big(2)), big(1))
 
         #__sub__
         self.assertEqual(operator.__sub__(0, 0), 0)
@@ -411,9 +410,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__sub__(0.0, 0.0), 0.0)
         self.assertEqual(operator.__sub__(1.1, 2.1), -1.0)
         self.assertEqual(operator.__sub__(-1.1, 2.1), -3.2)
-        self.assertEqual(operator.__sub__(long(0), long(0)), long(0))
-        self.assertEqual(operator.__sub__(long(1), long(2)), -long(1))
-        self.assertEqual(operator.__sub__(-long(1), long(2)), -long(3))
+        self.assertEqual(operator.__sub__(big(0), big(0)), big(0))
+        self.assertEqual(operator.__sub__(big(1), big(2)), -big(1))
+        self.assertEqual(operator.__sub__(-big(1), big(2)), -big(3))
 
         #__mul__
         self.assertEqual(operator.__mul__(0, 0), 0)
@@ -422,9 +421,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__mul__(0.0, 0.0), 0.0)
         self.assertEqual(operator.__mul__(2.0, 3.0), 6.0)
         self.assertEqual(operator.__mul__(-2.0, 3.0), -6.0)
-        self.assertEqual(operator.__mul__(long(0), long(0)), long(0))
-        self.assertEqual(operator.__mul__(long(1), long(2)), long(2))
-        self.assertEqual(operator.__mul__(-long(1), long(2)), -long(2))
+        self.assertEqual(operator.__mul__(big(0), big(0)), big(0))
+        self.assertEqual(operator.__mul__(big(1), big(2)), big(2))
+        self.assertEqual(operator.__mul__(-big(1), big(2)), -big(2))
 
         #__div__
         self.assertEqual(operator.__div__(0, 1), 0)
@@ -433,9 +432,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__div__(0.0, 1.0), 0.0)
         self.assertEqual(operator.__div__(4.0, 2.0), 2.0)
         self.assertEqual(operator.__div__(-4.0, 2.0), -2.0)
-        self.assertEqual(operator.__div__(long(0), long(1)), long(0))
-        self.assertEqual(operator.__div__(long(4), long(2)), long(2))
-        self.assertEqual(operator.__div__(-long(4), long(2)), -long(2))
+        self.assertEqual(operator.__div__(big(0), big(1)), big(0))
+        self.assertEqual(operator.__div__(big(4), big(2)), big(2))
+        self.assertEqual(operator.__div__(-big(4), big(2)), -big(2))
 
         #__floordiv__
         self.assertEqual(operator.__floordiv__(0, 1), 0)
@@ -444,9 +443,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__floordiv__(0.0, 1.0), 0.0)
         self.assertEqual(operator.__floordiv__(4.0, 2.0), 2.0)
         self.assertEqual(operator.__floordiv__(-4.0, 2.0), -2.0)
-        self.assertEqual(operator.__floordiv__(long(0), long(1)), long(0))
-        self.assertEqual(operator.__floordiv__(long(4), long(2)), long(2))
-        self.assertEqual(operator.__floordiv__(-long(4), long(2)), -long(2))
+        self.assertEqual(operator.__floordiv__(big(0), big(1)), big(0))
+        self.assertEqual(operator.__floordiv__(big(4), big(2)), big(2))
+        self.assertEqual(operator.__floordiv__(-big(4), big(2)), -big(2))
 
         #__truediv__
         self.assertEqual(operator.__truediv__(0, 1), 0)
@@ -455,9 +454,9 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__truediv__(0.0, 1.0), 0.0)
         self.assertEqual(operator.__truediv__(4.0, 2.0), 2.0)
         self.assertEqual(operator.__truediv__(-1.0, 2.0), -0.5)
-        self.assertEqual(operator.__truediv__(long(0), long(1)), long(0))
-        self.assertEqual(operator.__truediv__(long(4), long(2)), long(2))
-        self.assertEqual(operator.__truediv__(-long(4), long(2)), -long(2))
+        self.assertEqual(operator.__truediv__(big(0), big(1)), big(0))
+        self.assertEqual(operator.__truediv__(big(4), big(2)), big(2))
+        self.assertEqual(operator.__truediv__(-big(4), big(2)), -big(2))
 
         #__mod__
         self.assertEqual(operator.__mod__(0, 1), 0)
@@ -466,49 +465,49 @@ def test_bool_obj_id(self):
         self.assertEqual(operator.__mod__(0.0, 1.0), 0.0)
         self.assertEqual(operator.__mod__(4.0, 2.0), 0.0)
         self.assertEqual(operator.__mod__(-1.0, 2.0), 1.0)
-        self.assertEqual(operator.__mod__(long(0), long(1)), long(0))
-        self.assertEqual(operator.__mod__(long(4), long(2)), long(0))
-        self.assertEqual(operator.__mod__(-long(4), long(2)), long(0))
+        self.assertEqual(operator.__mod__(big(0), big(1)), big(0))
+        self.assertEqual(operator.__mod__(big(4), big(2)), big(0))
+        self.assertEqual(operator.__mod__(-big(4), big(2)), big(0))
 
         #__inv__
         self.assertEqual(operator.__inv__(0), -1)
         self.assertEqual(operator.__inv__(1), -2)
         self.assertEqual(operator.__inv__(-1), 0)
-        self.assertEqual(operator.__inv__(long(0)), -long(1))
-        self.assertEqual(operator.__inv__(long(1)), -long(2))
-        self.assertEqual(operator.__inv__(-long(1)), long(0))
+        self.assertEqual(operator.__inv__(big(0)), -big(1))
+        self.assertEqual(operator.__inv__(big(1)), -big(2))
+        self.assertEqual(operator.__inv__(-big(1)), big(0))
 
         #__invert__
         self.assertEqual(operator.__invert__(0), -1)
         self.assertEqual(operator.__invert__(1), -2)
         self.assertEqual(operator.__invert__(-1), 0)
-        self.assertEqual(operator.__invert__(long(0)), -long(1))
-        self.assertEqual(operator.__invert__(long(1)), -long(2))
-        self.assertEqual(operator.__invert__(-long(1)), long(0))
+        self.assertEqual(operator.__invert__(big(0)), -big(1))
+        self.assertEqual(operator.__invert__(big(1)), -big(2))
+        self.assertEqual(operator.__invert__(-big(1)), big(0))
 
         #__lshift__
         self.assertEqual(operator.__lshift__(0, 1), 0)
         self.assertEqual(operator.__lshift__(1, 1), 2)
         self.assertEqual(operator.__lshift__(-1, 1), -2)
-        self.assertEqual(operator.__lshift__(long(0), 1), long(0))
-        self.assertEqual(operator.__lshift__(long(1), 1), long(2))
-        self.assertEqual(operator.__lshift__(-long(1), 1), -long(2))
+        self.assertEqual(operator.__lshift__(big(0), 1), big(0))
+        self.assertEqual(operator.__lshift__(big(1), 1), big(2))
+        self.assertEqual(operator.__lshift__(-big(1), 1), -big(2))
 
         #__rshift__
         self.assertEqual(operator.__rshift__(1, 1), 0)
         self.assertEqual(operator.__rshift__(2, 1), 1)
         self.assertEqual(operator.__rshift__(-1, 1), -1)
-        self.assertEqual(operator.__rshift__(long(1), 1), long(0))
-        self.assertEqual(operator.__rshift__(long(2), 1), long(1))
-        self.assertEqual(operator.__rshift__(-long(1), 1), -long(1))
+        self.assertEqual(operator.__rshift__(big(1), 1), big(0))
+        self.assertEqual(operator.__rshift__(big(2), 1), big(1))
+        self.assertEqual(operator.__rshift__(-big(1), 1), -big(1))
 
         #__not__
         self.assertEqual(operator.__not__(0), 1)
         self.assertEqual(operator.__not__(1), 0)
         self.assertEqual(operator.__not__(-1), 0)
-        self.assertEqual(operator.__not__(long(0)), 1)
-        self.assertEqual(operator.__not__(long(1)), 0)
-        self.assertEqual(operator.__not__(-long(1)), 0)
+        self.assertEqual(operator.__not__(big(0)), 1)
+        self.assertEqual(operator.__not__(big(1)), 0)
+        self.assertEqual(operator.__not__(-big(1)), 0)
 
         #__and__
         self.assertEqual(operator.__and__(0, 0), 0)

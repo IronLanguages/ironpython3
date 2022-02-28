@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using IronPython.Runtime;
 using System.Collections;
+using System.Numerics;
 
 namespace IronPythonTest.ExtensionMethodTest {
     namespace LinqCollision {
@@ -37,6 +38,10 @@ namespace IronPythonTest.ExtensionMethodTest {
             }
 
             public static int Array(this int[] foo) {
+                return 23;
+            }
+
+            public static int Array(this BigInteger[] foo) {
                 return 23;
             }
 

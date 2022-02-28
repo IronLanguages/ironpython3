@@ -6,7 +6,7 @@ import unittest
 import datetime
 import time
 
-from iptest import long, run_test, skipUnlessIronPython
+from iptest import run_test, skipUnlessIronPython
 
 class TestDatetime(unittest.TestCase):
 
@@ -96,26 +96,26 @@ class TestDatetime(unittest.TestCase):
 
     def test_datime_replace(self):
         # cp35075
-        dt = datetime.datetime.now().replace(microsecond=long(1000))
+        dt = datetime.datetime.now().replace(microsecond=1000)
         self.assertEqual(dt.time().microsecond, 1000)
-        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=long(10000000))
-        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=long(1000000000000))
+        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=10000000)
+        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=1000000000000)
         self.assertRaises(TypeError, datetime.datetime.now().replace, microsecond=1000.1)
 
     def test_time_replace(self):
         # cp35075
-        t = datetime.time().replace(microsecond=long(1000))
+        t = datetime.time().replace(microsecond=1000)
         self.assertEqual(t.microsecond, 1000)
-        self.assertRaises(ValueError, datetime.time().replace, microsecond=long(10000000))
-        self.assertRaises(OverflowError, datetime.time().replace, microsecond=long(1000000000000))
+        self.assertRaises(ValueError, datetime.time().replace, microsecond=10000000)
+        self.assertRaises(OverflowError, datetime.time().replace, microsecond=1000000000000)
         self.assertRaises(TypeError, datetime.time().replace, microsecond=1000.1)
 
     def test_date_replace(self):
         # cp35075
-        d = datetime.date.today().replace(year=long(2000))
+        d = datetime.date.today().replace(year=2000)
         self.assertEqual(d.year, 2000)
-        self.assertRaises(ValueError, datetime.date.today().replace, year=long(10000000))
-        self.assertRaises(OverflowError, datetime.date.today().replace, year=long(1000000000000))
+        self.assertRaises(ValueError, datetime.date.today().replace, year=10000000)
+        self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000)
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)
 
     def test_fromtimestamp(self):

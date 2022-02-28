@@ -6,7 +6,7 @@ import math
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, big, run_test, skipUnlessIronPython
 
 class A:
     def __str__(self):
@@ -195,10 +195,10 @@ class FormattingTest(IronPythonTestCase):
             for res, v in test_res.items():
                 for flags in v:
                     self.assertEqual(("%" + flags + suffix + "d") % val, res, msg="{!r} % {}".format("%" + flags + suffix + "d", val))
-                    self.assertEqual(("%" + flags + suffix + "d") % long(val), res, msg="{!r} % long({})".format("%" + flags + suffix + "d", val))
+                    self.assertEqual(("%" + flags + suffix + "d") % big(val), res, msg="{!r} % big({})".format("%" + flags + suffix + "d", val))
                     # alternate form does nothing
                     self.assertEqual(("%#" + flags + suffix + "d") % val, res, msg="{!r} % {}".format("%#" + flags + suffix + "d", val))
-                    self.assertEqual(("%#" + flags + suffix + "d") % long(val), res, msg="{!r} % long({})".format("%#" + flags + suffix + "d", val))
+                    self.assertEqual(("%#" + flags + suffix + "d") % big(val), res, msg="{!r} % big({})".format("%#" + flags + suffix + "d", val))
 
     @skipUnlessIronPython()
     def test_single(self):

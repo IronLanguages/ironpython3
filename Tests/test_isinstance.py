@@ -6,7 +6,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, long, path_modifier, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, big, path_modifier, run_test, skipUnlessIronPython
 
 class IsInstanceTest(IronPythonTestCase):
     def test_file_io(self):
@@ -134,17 +134,20 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(bytes(), b"")
         self.assertEqual(str(), u"")
 
-        self.assertEqual(oct(long(0)), "0o0")
+        self.assertEqual(oct(big(0)), "0o0")
         self.assertEqual(hex(12297829382473034410), "0xaaaaaaaaaaaaaaaa") #10581
-        self.assertEqual(hex(-long(1)), "-0x1")
-        self.assertEqual(long("-01"), -1)
+        self.assertEqual(hex(-big(1)), "-0x1")
+        self.assertEqual(int("-01"), -1)
         self.assertEqual(int(" 1 "), 1)
         with self.assertRaises(ValueError):
             int(" -   1  ")
-        with self.assertRaises(ValueError):
-            long(" -   1  ")
 
-        for f in [ long, int ]:
+        int_types = [int]
+        if is_cli:
+            from System import Int32
+            int_types.append(Int32)
+
+        for f in int_types:
             self.assertRaises(ValueError, f, 'p')
             self.assertRaises(ValueError, f, 't')
             self.assertRaises(ValueError, f, 'a')
@@ -153,8 +156,8 @@ class IsInstanceTest(IronPythonTestCase):
             self.assertRaises(ValueError, f, '09', 8)
             self.assertRaises(ValueError, f, '0A')
             self.assertRaises(ValueError, f, '0x0G')
-
-        self.assertRaises(ValueError, int, '1l')
+            self.assertRaises(ValueError, f, '1l')
+            self.assertRaises(ValueError, f, '1L')
 
         self.assertEqual(int(1e100), 10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104)
         self.assertEqual(int(-1e100), -10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104)
@@ -328,7 +331,7 @@ class IsInstanceTest(IronPythonTestCase):
 
     def test_extensible_types_hashing(self):
         """extensible types should hash the same as non-extensibles, and unary operators should work too"""
-        for x, y in ( (int, 2), (str, 'abc'), (float, 2.0), (long, long(2)), (complex, 2+0j) ):
+        for x, y in ( (int, 2), (str, 'abc'), (float, 2.0), (complex, 2+0j) ):
             class foo(x): pass
 
             self.assertEqual(hash(foo(y)), hash(y))
@@ -352,13 +355,11 @@ class IsInstanceTest(IronPythonTestCase):
             # starting with 3.7 these are no longer valid keyword arguments
             with self.assertRaises(TypeError): int(x=1)
             with self.assertRaises(TypeError): float(x=2)
-            with self.assertRaises(TypeError): long(x=3)
             with self.assertRaises(TypeError): tuple(sequence=range(3))
             with self.assertRaises(TypeError): list(sequence=(0,1))
         else:
             self.assertEqual(int(x=1), 1)
             self.assertEqual(float(x=2), 2.0)
-            self.assertEqual(long(x=3), 3)
             self.assertEqual(tuple(sequence=range(3)), (0,1,2))
             self.assertEqual(list(sequence=(0,1)), [0,1])
 
@@ -726,8 +727,9 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(clr.GetClrType(str) != str, False)
 
         # as well as GetPythonType
+        clr.AddReference("System.Numerics")
         import System
-        self.assertEqual(clr.GetPythonType(System.Int32), int)
+        self.assertEqual(clr.GetPythonType(System.Numerics.BigInteger), int)
         self.assertEqual(clr.GetPythonType(clr.GetClrType(int)), int)
 
         # verify we can't create *Ops classes
@@ -758,14 +760,14 @@ class IsInstanceTest(IronPythonTestCase):
     def test_int_minvalue(self):
         # Test for type of System.Int32.MinValue
         self.assertEqual(type(-2147483648), int)
-        self.assertEqual(type(-(2147483648)), long)
-        self.assertEqual(type(-long(2147483648)), long)
+        self.assertEqual(type(-(2147483648)), int)
+        self.assertEqual(type(-int(2147483648)), int)
         self.assertEqual(type(-0x80000000), int)
 
         self.assertEqual(type(int('-2147483648')), int)
         self.assertEqual(type(int('-80000000', 16)), int)
-        self.assertEqual(type(int('-2147483649')), long)
-        self.assertEqual(type(int('-80000001', 16)), long)
+        self.assertEqual(type(int('-2147483649')), int)
+        self.assertEqual(type(int('-80000001', 16)), int)
 
 
         if is_cli:

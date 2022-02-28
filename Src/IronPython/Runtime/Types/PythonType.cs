@@ -2259,8 +2259,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (_underlyingSystemType.BaseType != null) {
                 Type baseType;
                 if (_underlyingSystemType == typeof(bool)) {
-                    // bool inherits from int in Python
-                    baseType = typeof(int);
+                    // bool inherits from int in Python, which is represented by BigInteger in .NET
+                    baseType = typeof(BigInteger);
                 } else if (_underlyingSystemType.BaseType == typeof(ValueType)) {
                     // hide ValueType, it doesn't exist in Python
                     baseType = typeof(object);
@@ -2276,7 +2276,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 if (_underlyingSystemType == typeof(bool)) {
                     // exclude ValueType from the mro
-                    Debug.Assert(baseType == typeof(int));
+                    Debug.Assert(baseType == typeof(BigInteger));
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(baseType));
                     baseType = typeof(object);
                 }

@@ -8,9 +8,7 @@ import sys
 import unittest
 import warnings
 
-from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
-
-long = type(sys.maxsize + 1)
+from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
 
 class Indexable:
     def __init__(self, value):
@@ -78,7 +76,7 @@ class StrTest(IronPythonTestCase):
         self.assertRaises(OverflowError, lambda: "a" * (sys.maxsize + 1))
         self.assertRaises(OverflowError, lambda: (sys.maxsize + 1) * "a")
 
-        class mylong(long): pass
+        class myint(int): pass
 
         if is_cli:
             from System.IO import Path
@@ -86,14 +84,14 @@ class StrTest(IronPythonTestCase):
             self.assertEqual(os.sep + os.sep, Path.DirectorySeparatorChar + os.sep)
 
         # multiply
-        self.assertEqual("aaaa", "a" * long(4))
-        self.assertEqual("aaaa", "a" * mylong(4))
+        self.assertEqual("aaaa", "a" * big(4))
+        self.assertEqual("aaaa", "a" * myint(4))
         self.assertEqual("aaa", "a" * 3)
         self.assertEqual("a", "a" * True)
         self.assertEqual("", "a" * False)
 
-        self.assertEqual("aaaa", long(4) * "a")
-        self.assertEqual("aaaa", mylong(4) * "a")
+        self.assertEqual("aaaa", big(4) * "a")
+        self.assertEqual("aaaa", myint(4) * "a")
         self.assertEqual("aaa", 3 * "a")
         self.assertEqual("a", True * "a")
         self.assertEqual("", False * "a" )
@@ -382,14 +380,11 @@ class StrTest(IronPythonTestCase):
     def test_str_to_numeric(self):
         class substring(str):
             def __int__(self): return 1
-            def __long__(self): return long(1)
             def __complex__(self): return 1j
             def __float__(self): return 1.0
 
         v = substring("123")
 
-
-        self.assertEqual(long(v), long(1))
         self.assertEqual(int(v), 1)
         self.assertEqual(complex(v), 123+0j)
         self.assertEqual(float(v), 1.0)
@@ -398,7 +393,6 @@ class StrTest(IronPythonTestCase):
 
         v = substring("123")
 
-        self.assertEqual(long(v), long(123))
         self.assertEqual(int(v), 123)
         self.assertEqual(complex(v), 123+0j)
         self.assertEqual(float(v), 123.0)
@@ -410,11 +404,11 @@ class StrTest(IronPythonTestCase):
             def __init__(self, *args): pass
 
         class myfloat(float): pass
-        class mylong(long): pass
+        class mycomplex(complex): pass
         class myint(int): pass
 
-        for x in [1, 1.0, long(1), 1j,
-                myfloat(1.0), mylong(1), myint(1),
+        for x in [1, 1.0, big(1), 1j,
+                myfloat(1.0), mycomplex(1), myint(1),
                 True, False, None, object(),
                 "", u""]:
             self.assertEqual(myunicode(x), str(x))

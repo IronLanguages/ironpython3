@@ -664,8 +664,7 @@ namespace IronPython.Runtime.Types {
 
                 new OneOffResolver("__complex__", ComplexResolver),
                 new OneOffResolver("__float__", FloatResolver),
-                new OneOffResolver("__int__", IntResolver),
-                new OneOffResolver("__long__", BigIntegerResolver),
+                new OneOffResolver("__int__", BigIntegerResolver),
 
                 // non standard PythonOperationKind which are Python specific
                 new OneOffResolver("__matmul__", new OneOffOperatorBinder("MatMult", "__matmul__", PythonOperationKind.MatMult).Resolver),
@@ -708,7 +707,7 @@ namespace IronPython.Runtime.Types {
 
         #region One-off resolvers
 
-        #region Resolving numerical conversions (__complex__, __float__, __int__, and __long__)
+        #region Resolving numerical conversions (__complex__, __float__, and __int__; __long__ is obsolete)
 
         /// <summary>
         /// Provides a resolution for __complex__
@@ -741,21 +740,6 @@ namespace IronPython.Runtime.Types {
 
         /// <summary>
         /// Provides a resolution for __int__
-        /// </summary>
-        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ IntResolver {
-            get {
-                if (_IntResolver != null) return _IntResolver;
-                _IntResolver = MakeConversionResolver(new List<Type> {
-                    typeof(int), typeof(Extensible<int>),
-                    typeof(BigInteger), typeof(Extensible<BigInteger>)
-                });
-                return _IntResolver;
-            }
-        }
-        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _IntResolver;
-
-        /// <summary>
-        /// Provides a resolution for __long__
         /// </summary>
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ BigIntegerResolver {
             get {

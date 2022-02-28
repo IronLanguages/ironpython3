@@ -1020,8 +1020,6 @@ elif not clr.IsMono:
 import System
 from System.Collections import ArrayList
 
-long = type(1<<64)
-
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
 if not clr.IsNetCoreApp and not clr.IsMono:
@@ -1079,7 +1077,6 @@ class ns(object):
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): return long(42)
     def __complex__(self): return 42j
     def __bool__(self): return False
 
@@ -1184,7 +1181,6 @@ class os:
     def __int__(self): return 42
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
-    def __long__(self): return long(42)
     def __bool__(self): return False
     def __complex__(self): return 42j
 
@@ -1381,6 +1377,7 @@ range = range
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
                 Assert.AreEqual(ssite.Target(ssite, inst), "Python");
 
+                // this call site works only if __int__ happens to return an Int32 instance
                 var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
                 Assert.AreEqual(isite.Target(isite, inst), 42);
 
@@ -1393,6 +1390,7 @@ range = range
                 var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
                 Assert.AreEqual(bsite.Target(bsite, inst), false);
 
+                // this call site works regardless whether __int__ returns a BigInteger or Int32 instance
                 var bisite = CallSite<Func<CallSite, object, BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
                 Assert.AreEqual(bisite.Target(bisite, inst), (BigInteger)42);
 
@@ -1562,8 +1560,15 @@ range = range
             }
 
             public override bool TryConvert(ConvertBinder binder, out object result) {
-                result = 1000;
-                return true;
+                int value = 1000;
+                if (binder.Type == typeof(int)) {
+                    result = value;
+                } else if (binder.Type == typeof(BigInteger)) {
+                    result = new BigInteger(value);
+                } else {
+                    result = null;
+                }
+                return result is not null;
             }
         }
 
@@ -1572,9 +1577,10 @@ range = range
             var scope = _pe.CreateScope();
             var dynObj = new MyDynamicObject();
             scope.SetVariable("x", dynObj);
-            _pe.Execute("import clr", scope);
+            _pe.Execute("import clr, System", scope);
             var tests = new[] {
-                new {TestCase = "clr.Convert(x, int)", Result=(object)1000},
+                new {TestCase = "clr.Convert(x, int)", Result=(object)(BigInteger)1000},
+                new {TestCase = "clr.Convert(x, System.Int32)", Result=(object)1000},
 
                 new {TestCase = "x(2,3,4)", Result=(object)new CallInfo(3)},
                 new {TestCase = "x(2,3,4, z = 4)", Result=(object)new CallInfo(4, "z")},

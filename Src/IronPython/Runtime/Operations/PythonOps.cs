@@ -206,9 +206,19 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string GetPythonTypeName(object? obj) {
+            // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
+            if (obj is int) return "int";
+
 #pragma warning disable IPY04 // Direct call to PythonTypeOps.GetName
             return PythonTypeOps.GetName(obj);
 #pragma warning restore IPY04
+        }
+
+        internal static string GetPythonTypeNameFromType(Type type) {
+            // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
+            if (type == typeof(int)) return "int";
+
+            return DynamicHelpers.GetPythonTypeFromType(type).Name;
         }
 
         public static string Ascii(CodeContext/*!*/ context, object? o) {
@@ -381,8 +391,9 @@ namespace IronPython.Runtime.Operations {
                 return true;
             }
 
+            // PEP 237: int/long unification
             // https://github.com/IronLanguages/ironpython3/issues/52
-            if (typeinfo == TypeCache.Int32 && o is BigInteger) {
+            if (typeinfo == TypeCache.BigInteger && o is int) {
                 return true;
             }
 
@@ -2781,6 +2792,15 @@ namespace IronPython.Runtime.Operations {
             throw new InvalidOperationException();
         }
 
+        public static object? ConvertIntToBigInt(object? value) {
+            return value switch {
+                null => null,
+                int i => new BigInteger(i),
+                BigInteger bi => bi,
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
         internal static bool CheckingConvertToInt(object value) {
             return value is int || value is BigInteger || value is Extensible<int> || value is Extensible<BigInteger>;
         }
@@ -2851,7 +2871,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object ThrowingConvertToLong(object value) {
-            if (!CheckingConvertToComplex(value)) throw TypeError(" __long__ returned non-long (type {0})", PythonOps.GetPythonTypeName(value));
+            if (!CheckingConvertToLong(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 

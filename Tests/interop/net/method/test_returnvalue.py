@@ -64,7 +64,7 @@ class ReturnValueTest(IronPythonTestCase):
         self.assertEqual(x.Flag, 200)
         
         x= self.c.ReturnNullableInt1()
-        self.assertEqual(x.GetType(), clr.GetClrType(int))
+        self.assertEqual(x.GetType(), clr.GetClrType(System.Int32))
         self.assertEqual(x, 300)
         
         x= self.c.ReturnNullableStruct1()

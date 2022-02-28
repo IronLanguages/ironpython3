@@ -6,7 +6,7 @@ import marshal
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_64, is_osx, long, run_test
+from iptest import IronPythonTestCase, is_cli, is_64, is_osx, big, run_test
 
 class MarshalTest(IronPythonTestCase):
     def setUp(self):
@@ -22,7 +22,7 @@ class MarshalTest(IronPythonTestCase):
                     65534, 65535, -65536,
                     3.1415926,
 
-                    long(0),
+                    big(0),
                     -1234567890123456789,
                     2**33,
                     [],
@@ -37,10 +37,10 @@ class MarshalTest(IronPythonTestCase):
                     0+1j, 2-3.23j,
                     set(),
                     set(['abc', -5]),
-                    set([1, (2.1, long(3)), frozenset([5]), 'x']),
+                    set([1, (2.1, big(3)), frozenset([5]), 'x']),
                     frozenset(),
                     frozenset(['abc', -5]),
-                    frozenset([1, (2.1, long(3)), frozenset([5]), 'x'])
+                    frozenset([1, (2.1, big(3)), frozenset([5]), 'x'])
                 ]
 
         if is_cli:

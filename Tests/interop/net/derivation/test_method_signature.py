@@ -19,9 +19,10 @@ class MethodSignatureTest(IronPythonTestCase):
     def setUp(self):
         super(MethodSignatureTest, self).setUp()
         from clr import StrongBox
+        from System import Int32
 
         self.add_clr_assemblies("baseclasscs", "typesamples")
-        self.box_int = StrongBox[int]
+        self.box_int = StrongBox[Int32]
 
     def test_one_ref(self):
         from Merlin.Testing.BaseClass import IInterface600
@@ -94,10 +95,10 @@ class MethodSignatureTest(IronPythonTestCase):
         self.assertEqual(a.Value, 14)
         
         self.assertRaisesMessage(TypeError, 
-            "expected StrongBox[int], got int", 
+            "expected StrongBox[Int32], got Int32", 
             f, x, 10)
         self.assertRaisesMessage(TypeError, 
-            "expected StrongBox[int], got NoneType", 
+            "expected StrongBox[Int32], got NoneType", 
             f, x, None)
         
         class C(IInterface600):
@@ -114,7 +115,7 @@ class MethodSignatureTest(IronPythonTestCase):
             "m_b() takes exactly 1 argument (2 given)", 
             f, x)                       # bug 370002
         self.assertRaisesMessage(TypeError, 
-            "expected StrongBox[int], got int", 
+            "expected StrongBox[Int32], got Int32", 
             f, x, 1)
         a = self.box_int(10)
         self.assertRaisesMessage(TypeError, 
@@ -136,7 +137,7 @@ class MethodSignatureTest(IronPythonTestCase):
                     arg[0] = 10
 
         x = C()
-        a = System.Array[int]([1,2])
+        a = System.Array[System.Int32]([1,2])
         expected = 3
         f(x, a)
         self.assertEqual(a[0], 10)
@@ -297,7 +298,7 @@ class MethodSignatureTest(IronPythonTestCase):
         a = self.box_int(10)
         b = self.box_int(20)
         c = 3
-        d = System.Array[int]([40, 50])
+        d = System.Array[System.Int32]([40, 50])
         self.assertEqual(f(x, a, b, c, d), 90)
         self.assertEqual(a.Value, 15)
         self.assertEqual(b.Value, 30)

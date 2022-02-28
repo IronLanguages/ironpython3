@@ -721,7 +721,7 @@ class FileTest(IronPythonTestCase):
         with self.assertRaises(ValueError): # can't have unbuffered text I/O
             open(file=fname, mode='w', buffering=0)
 
-        self.assertRaisesMessage(TypeError, "expected int, got float" if is_cli else "integer argument expected, got float",
+        self.assertRaisesMessage(TypeError, "expected Int32, got float" if is_cli else "integer argument expected, got float",
                                  open, fname, 'w', 3.14)
 
         #--Negative

@@ -13,7 +13,8 @@ def test_main(level='full'):
     import operator
 
     old_args = sys.argv
-    sys.argv = ['checkonly']
+    if sys.argv.count('update') == 0:
+        sys.argv = ['checkonly']
 
     # these generators will always be blocked
     generators_to_block = ['generate_exception_factory', 'generate_indicetest']

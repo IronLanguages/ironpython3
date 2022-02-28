@@ -12,7 +12,7 @@ import os
 import unittest
 import sys
 
-from iptest import IronPythonTestCase, is_cli, long, path_modifier, run_test, skipUnlessIronPython, source_root
+from iptest import IronPythonTestCase, is_cli, big, path_modifier, run_test, skipUnlessIronPython, source_root
 
 class DictTest(IronPythonTestCase):
     def test_sanity(self):
@@ -622,7 +622,7 @@ class DictTest(IronPythonTestCase):
     def test_same_but_different(self):
         """Test case checks that when two values who are logically different but share hash code & equality result in only a single entry"""
 
-        self.assertEqual({-10:0, long(-10):1}, {-10:1})
+        self.assertEqual({-10:0, big(-10):1}, {-10:1})
 
 
     def test_module_dict(self):
@@ -650,7 +650,7 @@ class DictTest(IronPythonTestCase):
         class d(object): pass
 
 
-        for key in ['abc', 1, c(), d(), 1.0, long(1)]:
+        for key in ['abc', 1, c(), d(), 1.0, big(1)]:
             try:
                 {}[key]
             except KeyError as e:
@@ -684,7 +684,6 @@ class DictTest(IronPythonTestCase):
 
     def test_stdtypes_dict(self):
         temp_types = [  int,
-                        long,
                         float,
                         complex,
                         bool,
@@ -947,7 +946,7 @@ class DictTest(IronPythonTestCase):
         x = {2:3}
         y = {2:4}
         for oper in ('__lt__', '__gt__', '__le__', '__ge__'):
-            for data in (y, None, 1, 1.0, long(1), (), [], 1j, "abc"):
+            for data in (y, None, 1, 1.0, big(1), (), [], 1j, "abc"):
                 self.assertEqual(getattr(x, oper)(data), NotImplemented)
 
     def test_cp16519(self):
@@ -1026,16 +1025,16 @@ class DictTest(IronPythonTestCase):
 
     @skipUnlessIronPython()
     def test_cp34770(self):
-        # Entries added with Int64/UInt64 should be findable with Python long
+        # Entries added with Int64/UInt64 should be findable with Python int
         from System import Int64, UInt64
         i64 = Int64(1110766100758387874)
         u64 = UInt64(9223372036854775808)
 
         m = {}
         m[i64] = 'a'
-        self.assertEqual(m[long(1110766100758387874)], 'a')
+        self.assertEqual(m[1110766100758387874], 'a')
 
         m[u64] = 'b'
-        self.assertEqual(m[long(9223372036854775808)], 'b')
+        self.assertEqual(m[9223372036854775808], 'b')
 
 run_test(__name__)

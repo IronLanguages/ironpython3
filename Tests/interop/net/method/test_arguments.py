@@ -17,8 +17,9 @@ class ArgumentsTest(IronPythonTestCase):
         self.add_clr_assemblies("methodargs", "typesamples")
 
         from clr import StrongBox
+        from System import Int32
         from Merlin.Testing.Call import VariousParameters
-        self.box_int = StrongBox[int]
+        self.box_int = StrongBox[Int32]
 
         self.o = VariousParameters()
 
@@ -482,7 +483,7 @@ class ArgumentsTest(IronPythonTestCase):
         self.assertEqual(f(1, 2), (30, 40))
         self.assertEqual(f(arg2 = 1, arg1 = 2), (30, 40)); Flag.Check(21)
 
-        self.assertRaisesMessage(TypeError, "expected int, got StrongBox[int]", lambda: f(self.box_int(3), 4))  # bug 311239
+        self.assertRaisesMessage(TypeError, "expected Int32, got StrongBox[Int32]", lambda: f(self.box_int(3), 4))  # bug 311239
         x = self.box_int(3)
         y = self.box_int(4)
         f(arg2 = y, *(x,)); Flag.Check(34) # bug 311169
@@ -513,7 +514,7 @@ class ArgumentsTest(IronPythonTestCase):
         f = obj.M205
         self.assertEqual(f(), (70, 80))
         self.assertRaisesMessage(TypeError, "M205() takes at most 2 arguments (1 given)", lambda: f(1)) # FIXME: msg
-        self.assertRaisesMessage(TypeError, "expected StrongBox[int], got int", lambda: f(1, 2))
+        self.assertRaisesMessage(TypeError, "expected StrongBox[Int32], got Int32", lambda: f(1, 2))
 
         self.assertRaisesMessage(TypeError, "M205() takes at most 2 arguments (1 given)", lambda: f(arg2 = self.box_int(2))) # FIXME: msg
         self.assertRaisesMessage(TypeError, "M205() takes at most 2 arguments (1 given)", lambda: f(arg1 = self.box_int(2))) # FIXME: msg
@@ -570,7 +571,7 @@ class ArgumentsTest(IronPythonTestCase):
         f = self.o.M200
 
         self.assertRaisesMessage(TypeError, "M200() argument after * must be a sequence, not NoneType", lambda: f(*None))
-        self.assertRaisesMessage(TypeError, "expected int, got str", lambda: f(*'x'))
+        self.assertRaisesMessage(TypeError, "expected Int32, got str", lambda: f(*'x'))
         self.assertRaisesMessage(TypeError, "M200() argument after * must be a sequence, not int", lambda: f(*1))
 
 run_test(__name__)

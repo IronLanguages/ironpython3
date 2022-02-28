@@ -656,7 +656,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return (BigInteger)res;
         }
 
-        public static PythonType @int => DynamicHelpers.GetPythonTypeFromType(typeof(int));
+        public static PythonType @int => DynamicHelpers.GetPythonTypeFromType(typeof(BigInteger));
 
         public static bool isinstance(object? o, [NotNull]PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);

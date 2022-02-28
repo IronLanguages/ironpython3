@@ -15,13 +15,11 @@ list_str        = ['hello', 'hello ', 'world', ' world', 'h', 'a', 'b', 'c', ' '
 
 class myint(int) : pass
 class myfloat(float): pass
-class mylong(long): pass
 class mystr(str): pass
 class mycomplex(complex): pass
 
-list_myint      = [myint(x)     for x in [-3, 2, 0, 400]]
+list_myint      = [myint(x)     for x in [-3, 2, 0, 400, 1 << 64]]
 list_myfloat    = [myfloat(x)   for x in [2.1, -10.5, -0.0, 50.001, 2]]
-list_mylong     = [mylong(x)    for x in [2, 5, -22, 0]]
 list_mystr      = [mystr(x)     for x in ["world", "b", "bc", '']]
 list_mycomplex  = [mycomplex(x) for x in [2, 0, 2+0j, 3-2j]] 
 

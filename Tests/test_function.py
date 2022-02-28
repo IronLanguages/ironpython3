@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
 from types import FunctionType, MethodType
 
 global init
@@ -550,7 +550,7 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc'), 'abc')
         self.assertEqual(foo(2), 2)
-        self.assertEqual(foo(long(2)), long(2))
+        self.assertEqual(foo(big(2)), 2)
         self.assertEqual(foo(2.0), 2.0)
         self.assertEqual(foo(True), True)
 
@@ -561,7 +561,7 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, long(2))
+        self.assertRaises(AssertionError, foo, big(2))
         self.assertRaises(AssertionError, foo, 2.0)
         self.assertRaises(AssertionError, foo, True)
 
@@ -571,7 +571,7 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc', True), ('abc', True))
         self.assertRaises(AssertionError, foo, ('abc',2))
-        self.assertRaises(AssertionError, foo, ('abc',long(2)))
+        self.assertRaises(AssertionError, foo, ('abc',big(2)))
         self.assertRaises(AssertionError, foo, ('abc',2.0))
 
 
@@ -584,7 +584,7 @@ class FunctionTest(IronPythonTestCase):
         a = bar()
         self.assertEqual(a.foo('xyz'), 'xyz')
         self.assertRaises(AssertionError, a.foo, 2)
-        self.assertRaises(AssertionError, a.foo, long(2))
+        self.assertRaises(AssertionError, a.foo, big(2))
         self.assertRaises(AssertionError, a.foo, 2.0)
         self.assertRaises(AssertionError, a.foo, True)
 
@@ -595,7 +595,7 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, long(2))
+        self.assertRaises(AssertionError, foo, big(2))
         self.assertRaises(AssertionError, foo, 2.0)
         self.assertRaises(AssertionError, foo, True)
 
@@ -608,7 +608,7 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(foo(True), 'True')
 
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, long(2))
+        self.assertRaises(AssertionError, foo, big(2))
         self.assertRaises(AssertionError, foo, False)
 
         @clr.returns(None)
@@ -753,48 +753,54 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(D.classmeth.__class__, MethodType)
 
     def test_cases(self):
-        def runTest(testCase):
+        from collections import deque
+
+        def runTest(test, testCase):
             class foo(testCase.subtype):
                 def __new__(cls, param):
                     ret = testCase.subtype.__new__(cls, param)
-                    self.assertTrue(ret == testCase.newEq)
-                    self.assertTrue((ret != testCase.newEq) != True)
+                    test.assertTrue(ret == testCase.newEq)
+                    test.assertTrue((ret != testCase.newEq) != True)
                     return ret
                 def __init__(self, param):
-                    testCase.subtype.__init__(self, param)
-                    self.assertTrue(self == testCase.initEq)
-                    self.assertTrue((self != testCase.initEq) != True)
+                    if (testCase.mutable):
+                        testCase.subtype.__init__(self, param)
+                    else:
+                        testCase.subtype.__init__(self)
+                    test.assertTrue(self == testCase.initEq)
+                    test.assertTrue((self != testCase.initEq) != True)
 
             a = foo(testCase.param)
             self.assertTrue((type(a) == foo) == testCase.match)
 
-            class TestCase(object):
-                __slots__ = ['subtype', 'newEq', 'initEq', 'match', 'param']
-                def __init__(self, subtype, newEq, initEq, match, param):
-                    self.match = match
-                    self.subtype = subtype
-                    self.newEq = newEq
-                    self.initEq = initEq
-                    self.param = param
+        class TestCase(object):
+            __slots__ = ['subtype', 'newEq', 'initEq', 'match', 'param', 'mutable']
+            def __init__(self, subtype, newEq, initEq, match, param, mutable):
+                self.subtype = subtype
+                self.newEq = newEq
+                self.initEq = initEq
+                self.match = match
+                self.param = param
+                self.mutable = mutable
 
 
-            cases = [TestCase(int, 2, 2, True, 2),
-                    TestCase(list, [], [2,3,4], True, (2,3,4)),
-                    TestCase(deque, deque(), deque((2,3,4)), True, (2,3,4)),
-                    TestCase(set, set(), set((2,3,4)), True, (2,3,4)),
-                    TestCase(frozenset, frozenset((2,3,4)), frozenset((2,3,4)), True, (2,3,4)),
-                    TestCase(tuple, (2,3,4), (2,3,4), True, (2,3,4)),
-                    TestCase(str, 'abc', 'abc', True, 'abc'),
-                    TestCase(float, 2.3, 2.3, True, 2.3),
-                    TestCase(type, type(object), type(object), False, object),
-                    TestCase(long, long(10000000000), long(10000000000), True, long(10000000000)),
-                    #TestCase(complex, complex(2.0, 0), complex(2.0, 0), True, 2.0),        # complex is currently a struct w/ no extensibel, we fail here
-                    # TestCase(file, 'abc', True),      # ???
-                    ]
+        cases = [TestCase(int, 2, 2, True, 2, False),
+                TestCase(list, [], [2,3,4], True, (2,3,4), True),
+                TestCase(deque, deque(), deque((2,3,4)), True, (2,3,4), True),
+                TestCase(set, set(), set((2,3,4)), True, (2,3,4), True),
+                TestCase(frozenset, frozenset((2,3,4)), frozenset((2,3,4)), True, (2,3,4), False),
+                TestCase(tuple, (2,3,4), (2,3,4), True, (2,3,4), False),
+                TestCase(str, 'abc', 'abc', True, 'abc', False),
+                TestCase(float, 2.3, 2.3, True, 2.3, False),
+                TestCase(type, type(object), type(object), False, object, True),
+                TestCase(int, 10000000000, 10000000000, True, 10000000000, False),
+                TestCase(complex, complex(2.0, 0), complex(2.0, 0), True, 2.0, False),
+                # TestCase(file, 'abc', True),      # ???
+                ]
 
 
-            for case in cases:
-                runTest(case)
+        for case in cases:
+            runTest(self, case)
 
     @unittest.skipIf(is_posix or is_netcoreapp, 'missing System.Windows.Forms support')
     @skipUnlessIronPython()

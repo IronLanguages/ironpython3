@@ -178,7 +178,11 @@ namespace IronPython.Runtime.Binding {
                                     (x) => Ast.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertFloatToComplex)), x))),
                                 (x) => x);
                         } else if (type == typeof(BigInteger)) {
-                            return MakeConvertRuleForCall(conversion, type, this, "__long__", "ConvertToLong");
+                            if (!typeof(Extensible<BigInteger>).IsAssignableFrom(LimitType)) {
+                                return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToLong",
+                                    () => FallbackConvert(conversion),
+                                    (x) => Ast.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertIntToBigInt)), x));  // GH #52
+                            }
                         } else if (type == typeof(IEnumerable)) {
                             return PythonConversionBinder.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
                         } else if (type == typeof(IEnumerator)){

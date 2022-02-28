@@ -4,10 +4,19 @@
 
 # types derived from built-in types
 
-long = type(1 << 63) # https://github.com/IronLanguages/ironpython3/issues/52
+from .test_env import is_cli
+
+if is_cli:
+    import System
+
+    def big(i):
+        """Convert to a BigInteger instance."""
+        return i.ToBigInteger()
+
+else:
+    def big(i): return i
 
 class myint(int): pass
-class mylong(long): pass
 class myfloat(float): pass
 class mycomplex(complex): pass
 
@@ -19,8 +28,6 @@ class mydict(dict): pass
 
 class myset(set): pass
 class myfrozenset(frozenset): pass
-
-from .test_env import is_cli
 
 def _func(): pass
 class _class:
@@ -34,7 +41,8 @@ class types:
 
 if is_cli:
     object_attrs_before_clr_import = dir(object())
-    import System
+    import System, clr
+    clr.AddReference("System.Numerics")
     object_attrs_after_clr_import = dir(object())
     clr_specific_attrs = [attr for attr in object_attrs_after_clr_import
                           if attr not in object_attrs_before_clr_import]
@@ -44,7 +52,8 @@ if is_cli:
     
     # CLR array shortcut
     array_cli       = System.Array
-    array_int       = System.Array[int]
+    array_int       = System.Array[System.Int32]
+    array_bigint    = System.Array[System.Numerics.BigInteger]
     array_object    = System.Array[object]
     array_byte      = System.Array[System.Byte]
     

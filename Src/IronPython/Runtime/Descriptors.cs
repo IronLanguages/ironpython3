@@ -96,7 +96,13 @@ namespace IronPython.Runtime {
         public object __get__(object instance, object owner = null) {
             if (owner == null) {
                 if (instance == null) throw PythonOps.TypeError("__get__(None, None) is invalid");
-                owner = DynamicHelpers.GetPythonType(instance);
+
+                if (instance is int) {
+                    // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
+                    owner = DynamicHelpers.GetPythonTypeFromType(typeof(System.Numerics.BigInteger));
+                } else {
+                    owner = DynamicHelpers.GetPythonType(instance);
+                }
             }
             return new Method(_func, owner);
         }

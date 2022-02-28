@@ -164,10 +164,12 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case TypeCode.Object:
                     // !!! Deferral?
+                    Type fromType = CompilerHelpers.GetType(self.Value);
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
                         res = MakeToArrayConversion(self, type);
+                    } else if (fromType == typeof(int) && !type.IsAssignableFrom(typeof(int)) && type.IsAssignableFrom(typeof(BigInteger))) { // GH #52
+                        res = ConvertIntToBigInteger(self.Restrict(self.GetLimitType()), type);
                     } else if (type == typeof(IBufferProtocol) && !type.IsAssignableFrom(self.GetLimitType())) {
-                        Type fromType = CompilerHelpers.GetType(self.Value);
                         if (fromType == typeof(Memory<byte>)) {
                             res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(Memory<byte>));
                         } else if (fromType == typeof(ReadOnlyMemory<byte>)) {
@@ -177,7 +179,7 @@ namespace IronPython.Runtime.Binding {
                         } else if (Converter.HasImplicitConversion(fromType, typeof(ReadOnlyMemory<byte>))) {
                             res = ConvertFromMemoryToBufferProtocol(self.Restrict(self.GetLimitType()), typeof(ReadOnlyMemory<byte>));
                         }
-                    } else if (type.IsGenericType && !type.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
+                    } else if (type.IsGenericType && !type.IsAssignableFrom(fromType)) {
                         Type genTo = type.GetGenericTypeDefinition();
 
                         // Interface conversion helpers...
@@ -757,6 +759,19 @@ namespace IronPython.Runtime.Binding {
         private static IList<byte> ConvertFromBufferProtocolToByteListHelper(IBufferProtocol bp) {
             using var buf = bp.GetBuffer(BufferFlags.Simple);
             return buf.AsReadOnlySpan().ToArray();
+        }
+
+        private DynamicMetaObject ConvertIntToBigInteger(DynamicMetaObject self, Type toType) {
+            return new DynamicMetaObject(
+                AstUtils.Convert(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertIntToBigInt)),
+                        AstUtils.Convert(self.Expression, typeof(object))
+                    ),
+                    toType
+                ),
+                self.Restrictions
+            );
         }
 
         internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {

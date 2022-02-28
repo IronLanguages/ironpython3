@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
 
 def get_builtins_dict():
     if type(__builtins__) is type(sys):
@@ -18,9 +18,9 @@ class complextest:
 
 class myfloat(float): pass
 
-class SillyLong(long):
+class SillyLong(int):
     def __rmul__(self, other):
-        return 42
+        return big(42)
 
 templates1 = [ "C(%s) %s C(%s)", "C2(%s) %s C2(%s)",
                "C(%s) %s D(%s)", "D(%s) %s C(%s)",
@@ -210,8 +210,8 @@ class NumberTest(IronPythonTestCase):
                 return 23
 
         class myFakeLong:
-            def __long__(self):
-                return long(23)
+            def __int__(self):
+                return big(23)
 
         class myFakeComplex:
             def __complex__(self):
@@ -226,7 +226,7 @@ class NumberTest(IronPythonTestCase):
                 return 23
 
         self.assertEqual(int(myFakeInt()), 23)
-        self.assertEqual(long(myFakeLong()), long(23))
+        self.assertEqual(int(myFakeLong()), 23)
         self.assertEqual(complex(myFakeComplex()), 0j + 23)
         self.assertEqual(get_builtins_dict()['float'](myFakeFloat()), 23.0)   # we redefined float above, go directly to the real float...
         self.assertEqual(+myNegative(), 23)
@@ -369,7 +369,7 @@ class NumberTest(IronPythonTestCase):
             self.assertTrue(a ^ b == c)
             self.assertTrue(b ^ a == c)
 
-        pats = [long(0), long(1), long(42), long(0x7fffffff), long(0x80000000), long(0xabcdef01), long(0xffffffff)]
+        pats = [big(0), big(1), big(42), big(0x7fffffff), big(0x80000000), big(0xabcdef01), big(0xffffffff)]
         nums = []
         for p0 in pats:
             for p1 in pats:
@@ -414,7 +414,7 @@ class NumberTest(IronPythonTestCase):
 
 
     def scenarios_helper(self, templates, cmps, gbls, lcls):
-        values = [3.5, 4.5, 4, 0, long(-200), 12345678901234567890]
+        values = [3.5, 4.5, 4, 0, big(-200), 12345678901234567890]
         for l in values:
             for r in values:
                 for t in templates:
@@ -1932,13 +1932,13 @@ class NumberTest(IronPythonTestCase):
             self.assertTrue(it.self.assertEqual(it.BooleanVal8,it.boolT(it.BooleanVal8)))
 
     def test_long(self):
-        class mylong(long):
-            def __str__(self): return 'mylong'
+        class myint(int):
+            def __str__(self): return 'myint'
 
-        self.assertEqual(repr(mylong(long(3))), '3')
+        self.assertEqual(repr(myint(int(3))), '3')
 
     def test_override_eq(self):
-        for base_type in [float, long, int]:
+        for base_type in [float, int]:
             class F(base_type):
                 def __eq__(self, other):
                     return other == 'abc'
@@ -1950,10 +1950,10 @@ class NumberTest(IronPythonTestCase):
             self.assertEqual(F() == 'qwe', False)
             self.assertEqual(F() != 'qwe', False)
 
-    def test_bad_float_to_long(self):
-        self.assertRaises(OverflowError, long, 1.0e340)           # Positive Infinity
-        self.assertRaises(OverflowError, long, -1.0e340)          # Negative Infinity
-        self.assertRaises(ValueError, long, 1.0e340-1.0e340)      # NAN
+    def test_bad_float_to_int(self):
+        self.assertRaises(OverflowError, int, 1.0e340)           # Positive Infinity
+        self.assertRaises(OverflowError, int, -1.0e340)          # Negative Infinity
+        self.assertRaises(ValueError, int, 1.0e340-1.0e340)      # NAN
 
     def test_int___int__(self):
         for x in [-(int(2**(32-1)-1)), -3, -2, -1, 0, 1, 2, 3, int(2**(32-1)-1)]:
@@ -1961,11 +1961,11 @@ class NumberTest(IronPythonTestCase):
 
     @skipUnlessIronPython()
     def test_long_conv(self):
-        class Foo(long):
-            def __long__(self):
-                return long(42)
+        class Foo(int):
+            def __int__(self):
+                return big(42)
 
-        self.assertEqual(long(Foo()), long(42))
+        self.assertEqual(int(Foo()), 42)
 
     def test_long_div(self):
         x = int('2'*400 + '9')
@@ -1990,24 +1990,32 @@ class NumberTest(IronPythonTestCase):
         self.assertEqual(x.__pow__(2, 3.0), NotImplemented)
 
     def test_int_from_long(self):
-        """int(longVal) should return an int if it's within range"""
-        class x(long): pass
+        """int(longVal) should return an Int32 if it's within range"""
+        class x(int): pass
+        if is_cli: import System
 
-        for base in (long, x):
+        for base in (int, x):
             for num, num_repr in [
-                                    (long(-2**31-2), '-2147483650'),
-                                    (long(-2**31-1), '-2147483649'),
-                                    (long(-2**31), '-2147483648'),
-                                    (long(-2**31+1), '-2147483647'),
-                                    (long(-2**31+2), '-2147483646'),
-                                    (long(0), '0'),
-                                    (long(1), '1'),
-                                    (long(2**31-2), '2147483646'),
-                                    (long(2**31-1), '2147483647'),
-                                    (long(2**31), '2147483648'),
-                                    (long(2**31+1), '2147483649'),
+                                    (big(-2**31-2), '-2147483650'),
+                                    (big(-2**31-1), '-2147483649'),
+                                    (big(-2**31), '-2147483648'),
+                                    (big(-2**31+1), '-2147483647'),
+                                    (big(-2**31+2), '-2147483646'),
+                                    (big(0), '0'),
+                                    (big(1), '1'),
+                                    (big(2**31-2), '2147483646'),
+                                    (big(2**31-1), '2147483647'),
+                                    (big(2**31), '2147483648'),
+                                    (big(2**31+1), '2147483649'),
                                     ]:
                 self.assertEqual(repr(int(base(num))), num_repr)
+                if is_cli:
+                    if num < 2**31 and num >= -2**31:
+                        self.assertTrue(hasattr(int(base(num)), "MaxValue"))
+                        self.assertTrue(hasattr(int(base(num)), "MinValue"))
+                    else:
+                        self.assertFalse(hasattr(int(base(num)), "MaxValue"))
+                        self.assertFalse(hasattr(int(base(num)), "MinValue"))
 
 
     def test_float_special_methods(self):
@@ -2053,11 +2061,11 @@ class NumberTest(IronPythonTestCase):
 
     def test_hex_and_octal(self):
         for num, num_repr in [
-                                (long(0x20), '32'),
-                                (long(0X20), '32'), #Capital X
+                                (big(0x20), '32'),
+                                (big(0X20), '32'), #Capital X
                                 (int(0x20), '32'),
                                 (float(-0x20), '-32.0'),
-                                (long(0o10), '8'),
+                                (big(0o10), '8'),
                                 (int(-0o10), '-8'),
                                 (float(0o0010), '8.0'),
                             ]:

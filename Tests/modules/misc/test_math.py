@@ -7,7 +7,7 @@ import itertools
 import math
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
 
 if is_cli:
     from System import Int64, Byte, Int16
@@ -35,9 +35,9 @@ class MathTest(IronPythonTestCase):
         self.assertEqual(pow(1j, 2), (-1.0+0j))
         self.assertEqual(1+0j, 1)
         self.assertEqual(1+0j, 1.0)
-        self.assertEqual(1+0j, long(1))
-        self.assertEqual((1+1j)/long(1), (1+1j))
-        self.assertEqual((1j) + long(1), (1+1j))
+        self.assertEqual(1+0j, big(1))
+        self.assertEqual((1+1j)/big(1), (1+1j))
+        self.assertEqual((1j) + big(1), (1+1j))
         self.assertEqual(0j ** 0, 1)
         self.assertEqual(0j ** 0j, 1)
         self.assertEqual(pow(0j, 0), 1)
@@ -60,15 +60,15 @@ class MathTest(IronPythonTestCase):
         self.assertRaises(TypeError, lambda: 25 % (5+3j))
 
     def test_more_complex(self):
-        self.assertEqual((12+3j)/long(3), (4+1j))
-        self.assertEqual(3j - long(5), -5+3j)
+        self.assertEqual((12+3j)/big(3), (4+1j))
+        self.assertEqual(3j - big(5), -5+3j)
         if is_cli: self.assertEqual(3j - Int64(), 3j)
         self.assertRaises(TypeError, (lambda:3j-[]))
         if is_cli: self.assertEqual(pow(5j, Int64()), (1+0j))
-        self.assertEqual(pow(5j, long(0)), (1+0j))
+        self.assertEqual(pow(5j, big(0)), (1+0j))
         self.assertRaises(TypeError, (lambda:pow(5j, [])))
         if is_cli: self.assertEqual(5j * Int64(), 0)
-        self.assertEqual(5j * long(3), 15j)
+        self.assertEqual(5j * big(3), 15j)
         self.assertRaises(TypeError, (lambda:(5j*[])))
 
     def test_erf(self):
@@ -242,24 +242,24 @@ class MathTest(IronPythonTestCase):
 
     def test_mod_pow(self):
         for i in range(-100, 100, 7):
-            l = long(i)
+            l = big(i)
             self.assertTrue(type(i) == int)
-            self.assertTrue(type(l) == long)
+            self.assertTrue(type(l) == int)
             for exp in [1, 17, 2863, 234857, 1435435, 234636554, 2147483647]:
-                lexp = long(exp)
+                lexp = big(exp)
                 self.assertTrue(type(exp) == int)
-                self.assertTrue(type(lexp) == long)
+                self.assertTrue(type(lexp) == int)
                 for mod in [-7, -5293, -2147483647, 7, 5293, 23745, 232474276, 534634665, 2147483647]:
-                    lmod = long(mod)
+                    lmod = big(mod)
                     self.assertTrue(type(mod) == int)
-                    self.assertTrue(type(lmod) == long)
+                    self.assertTrue(type(lmod) == int)
 
                     ir = pow(i, exp, mod)
                     lr = pow(l, lexp, lmod)
 
                     self.assertEqual(ir, lr)
 
-                    for zero in [0, long(0)]:
+                    for zero in [0, big(0)]:
                         ir = pow(i, zero, mod)
                         lr = pow(l, zero, lmod)
 
@@ -270,11 +270,11 @@ class MathTest(IronPythonTestCase):
                             self.assertEqual(ir, mod+1)
                             self.assertEqual(lr, mod+1)
                 self.assertRaises(ValueError, pow, i, exp, 0)
-                self.assertRaises(ValueError, pow, l, lexp, long(0))
+                self.assertRaises(ValueError, pow, l, lexp, big(0))
 
 
-            for exp in [0, long(0)]:
-                for mod in [-1,1,-long(1),long(1)]:
+            for exp in [0, big(0)]:
+                for mod in [-1,1,-big(1),big(1)]:
                     ir = pow(i, exp, mod)
                     lr = pow(l, exp, mod)
                     self.assertEqual(ir, 0)
@@ -412,12 +412,12 @@ class MathTest(IronPythonTestCase):
         self.assertEqualAndCheckType((-2.4).__round__(), -2, int)
         self.assertEqualAndCheckType((-2.5).__round__(), -2, int)
         self.assertEqualAndCheckType((-2.6).__round__(), -3, int)
-        self.assertEqualAndCheckType(sys.float_info.max.__round__(), long(sys.float_info.max), long)
-        self.assertEqualAndCheckType(-sys.float_info.max.__round__(), long(-sys.float_info.max), long)
+        self.assertEqualAndCheckType(sys.float_info.max.__round__(), int(sys.float_info.max), int)
+        self.assertEqualAndCheckType(-sys.float_info.max.__round__(), int(-sys.float_info.max), int)
         self.assertEqualAndCheckType(round(88.3), 88, int)
         self.assertEqualAndCheckType(round(-88.3), -88, int)
-        self.assertEqualAndCheckType(round(2.1123E25), 21122999999999999263899648, long)
-        self.assertEqualAndCheckType(round(-2.1123E25), -21122999999999999263899648, long)
+        self.assertEqualAndCheckType(round(2.1123E25), 21122999999999999263899648, int)
+        self.assertEqualAndCheckType(round(-2.1123E25), -21122999999999999263899648, int)
 
         self.assertEqualAndCheckType((2.54).__round__(1), 2.5, float)
         if is_cli: # https://github.com/IronLanguages/ironpython2/issues/517
@@ -433,9 +433,9 @@ class MathTest(IronPythonTestCase):
         self.assertEqualAndCheckType((1).__round__(1), 1, int)
         self.assertEqualAndCheckType((1).__round__(-1), 0, int)
 
-        self.assertEqualAndCheckType(long(1).__round__(), 1, long)
-        self.assertEqualAndCheckType(long(1).__round__(1), 1, long)
-        self.assertEqualAndCheckType(long(1).__round__(-1), 0, long)
+        self.assertEqualAndCheckType(big(1).__round__(), 1, int)
+        self.assertEqualAndCheckType(big(1).__round__(1), 1, int)
+        self.assertEqualAndCheckType(big(1).__round__(-1), 0, int)
 
     def test_other(self):
         x = ('a', 'b', 'c')
@@ -455,9 +455,9 @@ class MathTest(IronPythonTestCase):
             self.assertTrue(~i == -i - 1)
 
         self.assertTrue(7 ** 5 == 7*7*7*7*7)
-        self.assertTrue(long(7) ** long(5) == long(7)*long(7)*long(7)*long(7)*long(7))
-        self.assertTrue(7 ** long(5) == 7*7*7*7*7)
-        self.assertTrue(long(7) ** 5 == long(7)*long(7)*long(7)*long(7)*long(7))
+        self.assertTrue(big(7) ** big(5) == big(7)*big(7)*big(7)*big(7)*big(7))
+        self.assertTrue(7 ** big(5) == 7*7*7*7*7)
+        self.assertTrue(big(7) ** 5 == big(7)*big(7)*big(7)*big(7)*big(7))
         self.assertTrue(1 ** 735293857239475 == 1)
         self.assertTrue(0 ** 735293857239475 == 0)
 
@@ -515,9 +515,9 @@ class MathTest(IronPythonTestCase):
         self.assertTrue(not (2.5 == None))
         self.assertTrue(not (20 == (2,3)))
 
-        self.assertEqual(long(1234793454934), 1234793454934)
+        self.assertEqual(big(1234793454934), 1234793454934)
         self.assertEqual(4 ** -2, 0.0625)
-        self.assertEqual(long(4) ** -2, 0.0625)
+        self.assertEqual(big(4) ** -2, 0.0625)
 
     def test_zero_division(self):
         self.assertRaises(ZeroDivisionError, (lambda: (0 ** -1)))
@@ -525,7 +525,7 @@ class MathTest(IronPythonTestCase):
         self.assertRaises(ZeroDivisionError, (lambda: (0 ** -1.0)))
         self.assertRaises(ZeroDivisionError, (lambda: (0.0 ** -1.0)))
         self.assertRaises(ZeroDivisionError, (lambda: (False ** -1)))
-        self.assertRaises(ZeroDivisionError, (lambda: (long(0) ** -(2 ** 65))))
+        self.assertRaises(ZeroDivisionError, (lambda: (big(0) ** -(2 ** 65))))
         self.assertRaises(ZeroDivisionError, (lambda: (0j ** -1)))
         self.assertRaises(ZeroDivisionError, (lambda: (0j ** 1j)))
 
@@ -534,7 +534,7 @@ class MathTest(IronPythonTestCase):
         opSymbol  = ['+',       '-',       '**',      '*',       '/',       '//',           '/',           '%']
 
         types = []
-        for baseType in [(int, (100,2)), (long, (long(100), long(2))), (float, (100.0, 2.0))]:
+        for baseType in [(int, (100,2)), (int, (big(100), big(2))), (float, (100.0, 2.0))]:
         # (complex, (100+0j, 2+0j)) - cpython doesn't call reverse ops for complex ?
             class prototype(baseType[0]):
                 for op in operators:
@@ -615,35 +615,35 @@ def %s(self, other):
         # log in a new base
         self.assertEqual(round(math.log(2 ** 1000, 2), 5), 1000.0)
 
-        self.assertRaises(ValueError, math.log, long(0))
-        self.assertRaises(ValueError, math.log, long(-1))
-        self.assertEqual(math.log(long(2), 1e666), 0.0)
-        self.assertRaises(ValueError, math.log, long(2), -1e666)
-        self.assertRaises(ZeroDivisionError, math.log, long(2), 1.0)
+        self.assertRaises(ValueError, math.log, big(0))
+        self.assertRaises(ValueError, math.log, big(-1))
+        self.assertEqual(math.log(big(2), 1e666), 0.0)
+        self.assertRaises(ValueError, math.log, big(2), -1e666)
+        self.assertRaises(ZeroDivisionError, math.log, big(2), 1.0)
 
         #Make sure that an object is converted to float before being passed into log funcs
         class N(object):
             def __float__(self):
                 return 10.0
-            def __long__(self):
+            def __int__(self):
                 return 100
 
         self.assertEqual(round(math.log10(N()), 5),1.0)
         self.assertEqual(round(math.log(N()), 5),2.30259)
 
     def test_log_neg(self):
-        for x in [[2,0], [0,2.0], [0], [long(0)], [long(0), 3.14]]:
+        for x in [[2,0], [0,2.0], [0], [big(0)], [big(0), 3.14]]:
             self.assertRaisesMessage(ValueError, "math domain error",
                                 math.log, *x)
 
     def test_math_subclass(self):
-        """verify subtypes of float/long work w/ math functions"""
+        """verify subtypes of float/int work w/ math functions"""
         import math
         class myfloat(float): pass
-        class mylong(long): pass
+        class myint(int): pass
 
         mf = myfloat(1)
-        ml = mylong(1)
+        mi = myint(1)
 
         for x in math.log, math.log10, math.log1p, math.asinh, math.acosh, math.atanh, math.factorial, math.trunc, math.isinf:
             try:
@@ -651,7 +651,7 @@ def %s(self, other):
             except ValueError:
                 resf = None
             try:
-                resl = x(ml)
+                resl = x(mi)
             except ValueError:
                 resl = None
             self.assertEqual(resf, resl)

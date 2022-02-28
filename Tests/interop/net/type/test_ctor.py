@@ -29,8 +29,9 @@ class CtorTest(IronPythonTestCase):
 
     def test_ctor_1_arg(self):
         from clr import StrongBox
+        from System import Int32
         from Merlin.Testing.Call import Ctor101, Ctor103, Ctor105, Ctor110
-        box_int = StrongBox[int]
+        box_int = StrongBox[Int32]
         Ctor101()
 
         #public class Ctor103 {
@@ -66,12 +67,13 @@ class CtorTest(IronPythonTestCase):
         Ctor104(Array[object]([1,2]))
 
     def test_ctor_keyword(self):
+        from System import Int32
         from Merlin.Testing import Flag
         from Merlin.Testing.Call import Ctor610
         def check(o):
-            Flag[int, int, int].Check(1, 2, 3)
+            Flag[Int32, Int32, Int32].Check(1, 2, 3)
             self.assertEqual(o.Arg4, 4)
-            Flag[int, int, int].Reset()
+            Flag[Int32, Int32, Int32].Reset()
 
         x = 4
         o = Ctor610(1, arg2 = 2, Arg3 = 3, Arg4 = x); check(o)
@@ -80,10 +82,11 @@ class CtorTest(IronPythonTestCase):
 
     def test_ctor_keyword2(self):
         """parameter name is same as property"""
+        from System import Int32
         from Merlin.Testing import Flag
         from Merlin.Testing.Call import Ctor620
         Ctor620(arg1 = 1)
-        f = Flag[int, int, int, str]
+        f = Flag[Int32, Int32, Int32, str]
         o = Ctor620(arg1 = 1, arg2 = 2); f.Check(1, 2, 0, None); f.Reset()
         o = Ctor620(arg1 = 1, arg2 = "hello"); f.Check(1, 0, 0, "hello"); f.Reset()
         #Ctor620(arg1 = 1, arg2 = 2, **{ 'arg1' : 3})
@@ -97,7 +100,7 @@ class CtorTest(IronPythonTestCase):
         #self.assertRaisesMessage(AttributeError, "xxx", lambda: Ctor710(StaticField = 10))
         #self.assertRaisesMessage(AttributeError, "xxx", lambda: Ctor750(StaticProperty = 10))
         self.assertRaisesMessage(TypeError, "Ctor760() takes no arguments (1 given)", lambda: Ctor760(InstanceMethod = 1))
-        self.assertRaisesMessage(TypeError, "expected EventHandler, got int", lambda: Ctor760(MyEvent = 1))
+        self.assertRaisesMessage(TypeError, "expected EventHandler, got Int32", lambda: Ctor760(MyEvent = 1))
 
     def test_set_field_for_value_type_in_ctor(self):
         from Merlin.Testing.Call import Struct
@@ -122,7 +125,7 @@ class CtorTest(IronPythonTestCase):
         # set with value of "wrong" type
         # bug: 361389
         self.assertRaisesMessage(TypeError,
-            "expected str, got int",
+            "expected str, got Int32",
             lambda: Struct(StringField = 2))
 
     def test_cp14861(self):

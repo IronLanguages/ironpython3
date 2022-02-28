@@ -93,7 +93,11 @@ namespace IronPython.Runtime.Types {
 
         private object GetPythonType(CallSite site, CodeContext context, object type, object instance) {
             if (type == TypeCache.PythonType) {
-                return DynamicHelpers.GetPythonType(instance);
+                if (instance?.GetType() == typeof(Int32)) {
+                    return TypeCache.BigInteger;  // PEP 237: int/long unification (GH #52)
+                } else {
+                    return DynamicHelpers.GetPythonType(instance);
+                }
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object, object>>)site).Update(site, context, type, instance);

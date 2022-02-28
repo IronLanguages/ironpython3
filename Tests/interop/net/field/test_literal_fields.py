@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, long, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class LiteralFieldsTest(IronPythonTestCase):
@@ -189,7 +189,7 @@ class LiteralFieldsTest(IronPythonTestCase):
             GenericStructWithLiterals[int], 
             GenericStructWithLiterals[str], 
             ClassWithLiterals, 
-            GenericClassWithLiterals[long], 
+            GenericClassWithLiterals[int], 
             GenericClassWithLiterals[object],
             ]
         for i in range(len(types)):

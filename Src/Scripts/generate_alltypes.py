@@ -7,8 +7,6 @@ import operator
 import clr
 from System import *
 
-long = type(1 << 63) # https://github.com/IronLanguages/ironpython3/issues/52
-
 def get_min_max(type):
     if hasattr(type, 'MinValue'):
         return type.MinValue, type.MaxValue
@@ -67,7 +65,7 @@ class NumType:
 
     def get_overflow_type(self):
         if self.is_float or self == bigint: return self
-        if self.type == int: return bigint # special Python overflow rule (skips int64)
+        if self.type == Int32: return bigint # special Python overflow rule (skips Int64)
 
         for ty in types:
             if not ty.is_float and ty.is_signed == self.is_signed and ty.size == self.size**2:
@@ -95,7 +93,7 @@ class NumType:
                 else:
                     return self.size <= oty.size
 
-for type in SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64, Single, Double, complex, long:
+for type in SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64, Single, Double, complex, int:
     types.append(NumType(type))
 
 bigint = types[-1]

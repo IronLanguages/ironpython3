@@ -17,7 +17,7 @@ Ordering Comparisons
 
 Integers
 =====
-- [ ] [PEP 0237][]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type.
+- [x] [PEP 0237][]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type.
 - [x] [PEP 0238][]: An expression like `1/2` returns a `float`. Use `1//2` to get the truncating behavior. (The latter syntax has existed for years, at least since Python 2.2.)
 - [x] The `sys.maxint` constant was removed, since there is no longer a limit to the value of integers. However, `sys.maxsize` can be used as an integer larger than any practical list or string index. It conforms to the implementation's "natural" integer size and is typically the same as `sys.maxint` in previous releases on the same platform (assuming the same build options).
 - [x] The `repr()` of a `long` integer doesn't include the trailing `L` anymore, so code that unconditionally strips that character will chop off the last digit instead. (Use `str()` instead.)

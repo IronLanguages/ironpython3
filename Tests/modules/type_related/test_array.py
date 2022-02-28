@@ -10,7 +10,7 @@ import array
 import sys
 import unittest
 
-from iptest import is_cli, is_mono, long, run_test
+from iptest import is_cli, is_mono, big, run_test
 
 class ArrayTest(unittest.TestCase):
     def test_ArrayType(self):
@@ -168,7 +168,7 @@ class ArrayTest(unittest.TestCase):
         self.assertEqual(1732588562, a[0])
 
         #--B
-        a = array.array('B', [0]) * long(2)
+        a = array.array('B', [0]) * big(2)
         self.assertEqual(2, len(a))
         self.assertEqual("array('B', [0, 0])", str(a))
 
@@ -485,15 +485,15 @@ class ArrayTest(unittest.TestCase):
 
 
     def test_cp9350(self):
-        for i in [1, long(1)]:
+        for i in [1, big(1)]:
             a = array.array('B', [0]) * i
             self.assertEqual(a, array.array('B', [0]))
 
-        for i in [2, long(2)]:
+        for i in [2, big(2)]:
             a = array.array('B', [0]) * i
             self.assertEqual(a, array.array('B', [0, 0]))
 
-        for i in [2**8, long(2**8)]:
+        for i in [2**8, big(2**8)]:
             a = array.array('B', [1]) * i
             self.assertEqual(a, array.array('B', [1]*2**8))
 
@@ -520,19 +520,19 @@ class ArrayTest(unittest.TestCase):
         '''
         #--Postive
         a = array.array('b', b'a')
-        for i in [  long(0), long(1), long(2), long(3), long(32766), long(32767), long(32768), long(65534), long(65535), long(65536),
-                    long(456720545), #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
+        for i in [  big(0), big(1), big(2), big(3), big(32766), big(32767), big(32768), big(65534), big(65535), big(65536),
+                    big(456720545), #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
                     ]:
             self.assertEqual(i,
                     len(i*a))
             self.assertEqual(i, len(a*i))
 
         #--Negative
-        self.assertRaises(OverflowError, lambda: long(sys.maxsize+1)*a)
-        self.assertRaises(OverflowError, lambda: a*long(sys.maxsize+1))
+        self.assertRaises(OverflowError, lambda: big(sys.maxsize+1)*a)
+        self.assertRaises(OverflowError, lambda: a*big(sys.maxsize+1))
         if not is_mono: # these do not fail on Mono
-            self.assertRaises(MemoryError, lambda: long(sys.maxsize)*a)
-            self.assertRaises(MemoryError, lambda: a*long(sys.maxsize))
+            self.assertRaises(MemoryError, lambda: big(sys.maxsize)*a)
+            self.assertRaises(MemoryError, lambda: a*big(sys.maxsize))
 
         #--Positive
         a = array.array('b', b'abc')

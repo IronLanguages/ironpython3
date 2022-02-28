@@ -39,7 +39,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_builtin.BuiltinTest('test_filter'))
         suite.addTest(test.test_builtin.BuiltinTest('test_filter_pickle'))
         suite.addTest(test.test_builtin.BuiltinTest('test_format'))
-        suite.addTest(unittest.expectedFailure(test.test_builtin.BuiltinTest('test_general_eval')))
+        suite.addTest(test.test_builtin.BuiltinTest('test_general_eval'))
         suite.addTest(test.test_builtin.BuiltinTest('test_getattr'))
         suite.addTest(test.test_builtin.BuiltinTest('test_hasattr'))
         suite.addTest(test.test_builtin.BuiltinTest('test_hash'))

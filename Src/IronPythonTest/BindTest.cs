@@ -130,7 +130,9 @@ namespace IronPythonTest {
                 case "null": return null;
 #if FEATURE_COM
                 case "com":
+#pragma warning disable CA1416 // Validate platform compatibility
                     Type t = Type.GetTypeFromProgID("JScript");
+#pragma warning restore CA1416 // Validate platform compatibility
                     return Activator.CreateInstance(t);
 #endif
             }

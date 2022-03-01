@@ -3709,7 +3709,9 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 #endif
         public virtual void LockFile( sqlite3_file pFile, long offset, long length )
         {
+#pragma warning disable CA1416 // Validate platform compatibility
             pFile.fs.Lock( offset, length );
+#pragma warning restore CA1416 // Validate platform compatibility
         }
 
 #if FEATURE_OSPLATFORMATTRIBUTE
@@ -3734,7 +3736,9 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
       public virtual void UnlockFile( sqlite3_file pFile, long offset, long length )
       {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#pragma warning disable CA1416 // Validate platform compatibility
         pFile.fs.Unlock( offset, length );
+#pragma warning restore CA1416 // Validate platform compatibility
 #endif
       }
     }
@@ -3745,6 +3749,9 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
     /// </summary>
     private class MediumTrustLockingStrategy : LockingStrategy
     {
+#if FEATURE_OSPLATFORMATTRIBUTE
+      [SupportedOSPlatform("windows")]
+#endif
       public override int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)

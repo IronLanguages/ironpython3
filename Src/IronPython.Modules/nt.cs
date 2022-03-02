@@ -1677,7 +1677,7 @@ namespace IronPython.Modules {
         public static object urandom(int n) {
             if (n < 0) throw PythonOps.ValueError("negative argument not allowed");
 
-#if NET6_0
+#if NET6_0_OR_GREATER
             var data = RandomNumberGenerator.GetBytes(n);
 #else
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();

@@ -20,16 +20,8 @@ namespace IronPython.Runtime {
     public static class LiteralParser {
         internal delegate IReadOnlyList<char> ParseStringErrorHandler<T>(in ReadOnlySpan<T> data, int start, int end, string reason);
 
-        internal static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings)
-            => ParseString(text.AsSpan(start, length), isRaw, isUniEscape, normalizeLineEndings);
-
-        internal static string ParseString(in ReadOnlySpan<char> text, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
-            if (isRaw && !isUniEscape && !normalizeLineEndings) return text.ToString();
-            return DoParseString(text, isRaw, isUniEscape, normalizeLineEndings) ?? text.ToString();
-        }
-
-        internal static string ParseString(byte[] bytes, int start, int length, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
-            => ParseString(bytes.AsSpan(start, length), isRaw, errorHandler);
+        internal static string ParseString(in ReadOnlySpan<char> text, bool isRaw)
+            => DoParseString(text, isRaw, isUniEscape: !isRaw, normalizeLineEndings: true) ?? text.ToString();
 
         internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
             => DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler) ?? bytes.MakeString();

@@ -1913,13 +1913,13 @@ namespace IronPython.Compiler {
                     NextToken();
                     var start = GetStart();
                     object cv = t.Value;
-                    if (cv is string cvs) {
-                        cv = FinishStringPlus(cvs);
+                    if (cv is string) {
+                        ret = FinishJoinedString(t);
                     } else if (cv is Bytes bytes) {
-                        cv = FinishBytesPlus(bytes);
+                        ret = new ConstantExpression(FinishBytesPlus(bytes));
+                    } else {
+                        ret = new ConstantExpression(cv);
                     }
-
-                    ret = new ConstantExpression(cv);
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
                 default:
@@ -1932,41 +1932,102 @@ namespace IronPython.Compiler {
             }
         }
 
-        private string FinishStringPlus(string s) {
-            Token t = PeekToken();
-            while (true) {
-                if (t is ConstantValueToken) {
+#nullable enable
+
+        private string ParseFormattedString(FormattedStringToken t, string? s, List<Expression> expressions) {
+            if (!string.IsNullOrEmpty(s)) {
+                expressions.Add(new ConstantExpression(s));
+            }
+
+            // TODO
+            expressions.Add(new ConstantExpression(t.Value));
+
+            return string.Empty;
+        }
+
+        private Expression FinishJoinedString(Token t) {
+            string s;
+            List<Expression> expressions;
+
+            // process the last token
+            if (t is FormattedStringToken) {
+                expressions = new List<Expression>();
+                s = ParseFormattedString((FormattedStringToken)t, null, expressions);
+            }
+            else {
+                Debug.Assert(t is ConstantValueToken);
+                s = FinishStringPlus((string)t.Value);
+                if (PeekToken() is not FormattedStringToken) {
+                    return new ConstantExpression(s);
+                }
+                expressions = new List<Expression>();
+            }
+
+            // process the rest of the tokens
+            t = PeekToken();
+            while (t is FormattedStringToken fst) {
+                s = ParseFormattedString(fst, s, expressions);
+                NextToken();
+                t = PeekToken();
+            }
+
+            while (t is ConstantValueToken) {
+                while (t is ConstantValueToken) {
                     if (t.Value is string cvs) {
                         s += cvs;
                         NextToken();
                         t = PeekToken();
-                        continue;
                     } else {
                         ReportSyntaxError("invalid syntax");
+                        break;
                     }
                 }
-                break;
+
+                while (t is FormattedStringToken fst) {
+                    s = ParseFormattedString(fst, s, expressions);
+                    NextToken();
+                    t = PeekToken();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(s)) {
+                expressions.Add(new ConstantExpression(s));
+            }
+
+            return new JoinedStringExpression(expressions);
+        }
+
+        private string FinishStringPlus(string s) {
+            Token t = PeekToken();
+            while (t is ConstantValueToken) {
+                if (t.Value is string cvs) {
+                    s += cvs;
+                    NextToken();
+                    t = PeekToken();
+                } else {
+                    ReportSyntaxError("invalid syntax");
+                    break;
+                }
             }
             return s;
         }
 
         private Bytes FinishBytesPlus(Bytes s) {
             Token t = PeekToken();
-            while (true) {
-                if (t is ConstantValueToken) {
-                    if (t.Value is Bytes cvs) {
-                        s = s + cvs;
-                        NextToken();
-                        t = PeekToken();
-                        continue;
-                    } else {
-                        ReportSyntaxError("invalid syntax");
-                    }
+            while (t is ConstantValueToken) {
+                if (t.Value is Bytes cvs) {
+                    s += cvs;
+                    NextToken();
+                    t = PeekToken();
+                } else {
+                    ReportSyntaxError("invalid syntax");
+                    break;
                 }
-                break;
             }
             return s;
         }
+
+#nullable restore
 
         private Expression AddTrailers(Expression ret) {
             return AddTrailers(ret, true);

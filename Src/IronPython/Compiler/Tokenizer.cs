@@ -376,6 +376,11 @@ namespace IronPython.Compiler {
                         _state.LastNewLine = false;
                         return ReadNameOrBytes();
 
+                    case 'f':
+                    case 'F':
+                        _state.LastNewLine = false;
+                        return ReadNameOrFString();
+
                     case '_':
                         _state.LastNewLine = false;
                         return ReadName();
@@ -488,6 +493,17 @@ namespace IronPython.Compiler {
             return ReadName();
         }
 
+        private Token ReadNameOrFString() {
+            if (NextChar('\"')) return ReadString('\"', isFormatted: true);
+            if (NextChar('\'')) return ReadString('\'', isFormatted: true);
+            if (NextChar('r') || NextChar('R')) {
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isFormatted: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isFormatted: true);
+                BufferBack();
+            }
+            return ReadName();
+        }
+
         private Token ReadNameOrBytes() {
             if (NextChar('\"')) return ReadString('\"', isBytes: true);
             if (NextChar('\'')) return ReadString('\'', isBytes: true);
@@ -505,6 +521,10 @@ namespace IronPython.Compiler {
             if (NextChar('b') || NextChar('B')) {
                 if (NextChar('\"')) return ReadString('\"', isRaw: true, isBytes: true);
                 if (NextChar('\'')) return ReadString('\'', isRaw: true, isBytes: true);
+                BufferBack();
+            } else if (NextChar('f') || NextChar('F')) {
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isFormatted: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isFormatted: true);
                 BufferBack();
             }
             return ReadName();
@@ -674,7 +694,8 @@ namespace IronPython.Compiler {
                     List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, isAscii: true, normalizeLineEndings: true);
                     return new ConstantValueToken(data.Count == 0 ? Bytes.Empty : new Bytes(data));
                 } else if (isFormatted) {
-                    throw new NotImplementedException();
+                    var contents = LiteralParser.ParseString(_buffer.AsSpan(start, length), isRaw);
+                    return new FormattedStringToken(contents);
                 } else {
                     var contents = LiteralParser.ParseString(_buffer.AsSpan(start, length), isRaw);
                     return new ConstantValueToken(contents);

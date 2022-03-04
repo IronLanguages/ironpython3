@@ -302,6 +302,8 @@ namespace IronPython.Modules {
                     DictionaryComprehension x => new DictComp(x),
                     SetComprehension x => new SetComp(x),
                     StarredExpression x => new Starred(x, ctx),
+                    JoinedStringExpression x => new JoinedStr(x),
+                    FormattedValueExpression x => new FormattedValue(x),
                     _ => throw new ArgumentTypeException("Unexpected expression type: " + expr.GetType()),
                 };
                 ast.GetSourceLocation(expr);
@@ -1496,6 +1498,36 @@ namespace IronPython.Modules {
             public PythonList orelse { get; set; }
         }
 
+
+        [PythonType]
+        public class FormattedValue : expr {
+            private static readonly PythonTuple __fields = PythonTuple.MakeTuple(nameof(value), nameof(conversion), nameof(format_spec));
+            public FormattedValue() {
+                _fields = __fields;
+            }
+
+            public FormattedValue(expr value, int conversion, string format_spec, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.value = value;
+                this.conversion = conversion;
+                this.format_spec = format_spec;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal FormattedValue(FormattedValueExpression expr)
+                : this(Convert(expr.Value), expr.Conversion ?? -1, expr.FormatSpec) { }
+
+            internal override AstExpression Revert() {
+                char? conv = conversion == -1 ? null : checked((char)conversion);
+                return new FormattedValueExpression(Revert(value), conv, format_spec);
+            }
+
+            public expr value { get; set; }
+            public int conversion { get; set; }
+            public string format_spec { get; set; }
+        }
+
         [PythonType]
         public class FunctionDef : stmt {
             public FunctionDef() {
@@ -1953,6 +1985,39 @@ namespace IronPython.Modules {
         public class IsNot : cmpop {
             internal static readonly IsNot Instance = new IsNot();
             internal override PythonOperator Revert() => PythonOperator.IsNot;
+        }
+
+        [PythonType]
+        public class JoinedStr : expr {
+            private static readonly PythonTuple __fields = PythonTuple.MakeTuple(nameof(values));
+
+            public JoinedStr() {
+                _fields = __fields;
+            }
+
+            public JoinedStr(PythonList values, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.values = values;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal JoinedStr(JoinedStringExpression expr)
+                : this() {
+                values = new PythonList(expr.Values.Count);
+                foreach (var val in expr.Values)
+                    values.Add(Convert(val));
+            }
+
+            internal override AstExpression Revert() {
+                var e = new AstExpression[values.Count];
+                int i = 0;
+                foreach (expr el in values)
+                    e[i++] = Revert(el);
+                return new JoinedStringExpression(e);
+            }
+
+            public PythonList values { get; set; }
         }
 
         [PythonType]

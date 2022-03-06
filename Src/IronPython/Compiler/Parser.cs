@@ -142,6 +142,16 @@ namespace IronPython.Compiler {
             }
         }
 
+        internal Expression ParseFString(string expression) {
+            var sourceUnit = DefaultContext.DefaultPythonContext.CreateSnippet(expression, "<string>", SourceCodeKind.Expression);
+            var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
+            using var parser = CreateParser(context, new PythonOptions());
+            var ast = parser.ParseSingleStatement();
+            var body = ast.Body as ExpressionStatement;
+            if (parser.ErrorCode != 0) return null;
+            return body.Expression;
+        }
+
         //[stmt_list] Newline | compound_stmt Newline
         //stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
         //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
@@ -1945,8 +1955,7 @@ namespace IronPython.Compiler {
                 expressions.Add(new ConstantExpression(s));
             }
 
-            // TODO
-            expressions.Add(new ConstantExpression(t.Value));
+            expressions.AddRange(LiteralParser.DoParseFString(t.Image.AsSpan(), t.isRaw, !t.isRaw, normalizeLineEndings: true, isFormatted: true, this));
 
             return string.Empty;
         }
@@ -1959,8 +1968,7 @@ namespace IronPython.Compiler {
             if (t is FormattedStringToken) {
                 expressions = new List<Expression>();
                 s = ParseFormattedString((FormattedStringToken)t, null, expressions);
-            }
-            else {
+            } else {
                 Debug.Assert(t is ConstantValueToken);
                 s = FinishStringPlus((string)t.Value);
                 if (PeekToken() is not FormattedStringToken) {
@@ -2953,7 +2961,7 @@ namespace IronPython.Compiler {
             List<Keyword> kwargs = null;
 
             if (args is not null) {
-                SplitAndValidateArguments(args, out posargs, out kwargs); 
+                SplitAndValidateArguments(args, out posargs, out kwargs);
             }
 
             return new CallExpression(target, posargs, kwargs);

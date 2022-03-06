@@ -1920,6 +1920,12 @@ namespace IronPython.Compiler {
                     } else {
                         ret = new ConstantExpression(cv);
                     }
+                    if (ret is JoinedStringExpression jse) {
+                        // TODO: better locations
+                        foreach (var expr in jse.Values) {
+                            expr.SetLoc(_globalParent, start, GetEnd());
+                        }
+                    }
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
                 default:
@@ -1978,7 +1984,7 @@ namespace IronPython.Compiler {
                         NextToken();
                         t = PeekToken();
                     } else {
-                        ReportSyntaxError("invalid syntax");
+                        ReportSyntaxError("cannot mix bytes and nonbytes literals");
                         break;
                     }
                 }
@@ -2005,7 +2011,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     t = PeekToken();
                 } else {
-                    ReportSyntaxError("invalid syntax");
+                    ReportSyntaxError("cannot mix bytes and nonbytes literals");
                     break;
                 }
             }
@@ -2020,7 +2026,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     t = PeekToken();
                 } else {
-                    ReportSyntaxError("invalid syntax");
+                    ReportSyntaxError("cannot mix bytes and nonbytes literals");
                     break;
                 }
             }

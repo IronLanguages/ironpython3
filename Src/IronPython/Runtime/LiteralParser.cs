@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
@@ -25,6 +26,21 @@ namespace IronPython.Runtime {
 
         internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
             => DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler) ?? bytes.MakeString();
+
+#nullable enable
+
+        private static bool TryFetchUnicode(string name, [NotNullWhen(true)] out string? val) {
+            Modules.unicodedata.EnsureInitialized();
+            try {
+                val = Modules.unicodedata.lookup(name);
+                return true;
+            } catch (KeyNotFoundException) {
+                val = default;
+                return false;
+            }
+        }
+
+#nullable restore
 
         private static string DoParseString<T>(ReadOnlySpan<T> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default)
             where T : unmanaged, IConvertible {
@@ -89,7 +105,6 @@ namespace IronPython.Runtime {
                                 }
                                 continue;
                             case 'N': {
-                                    Modules.unicodedata.EnsureInitialized();
                                     StringBuilder namebuf = new StringBuilder();
                                     bool namestarted = false;
                                     bool namecomplete = false;
@@ -114,10 +129,9 @@ namespace IronPython.Runtime {
                                             buf.Append('}');
                                         }
                                     } else {
-                                        try {
-                                            string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
+                                        if (TryFetchUnicode(namebuf.ToString(), out string uval)) {
                                             buf.Append(uval);
-                                        } catch (KeyNotFoundException) {
+                                        } else {
                                             handleError(data, i - 4 - namebuf.Length, // 4 for \N{}
                                                         i,
                                                         "unknown Unicode character name");

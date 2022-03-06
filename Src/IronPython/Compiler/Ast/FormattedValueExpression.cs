@@ -23,11 +23,11 @@ namespace IronPython.Compiler.Ast {
             System.Linq.Expressions.Expression expr = Value;
 
             if (Conversion == 'a') {
-                expr = Expression.Call(AstMethods.Ascii, expr);
+                expr = Expression.Call(AstMethods.Ascii, Parent.LocalContext, expr);
             } else if (Conversion == 's') {
-                expr = Expression.Call(AstMethods.Str, expr);
+                expr = Expression.Call(AstMethods.Str, Parent.LocalContext, expr);
             } else if (Conversion == 'r') {
-                expr = Expression.Call(AstMethods.Repr, expr);
+                expr = Expression.Call(AstMethods.Repr, Parent.LocalContext, expr);
             } else {
                 Debug.Assert(Conversion is null);
             }
@@ -35,7 +35,7 @@ namespace IronPython.Compiler.Ast {
             return Expression.Call(
                     AstMethods.Format,
                     Parent.LocalContext,
-                    expr,
+                    Convert(expr, typeof(object)),
                     Expression.Constant(FormatSpec)
                 );
         }

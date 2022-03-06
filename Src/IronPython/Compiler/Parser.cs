@@ -1992,7 +1992,7 @@ namespace IronPython.Compiler {
                         NextToken();
                         t = PeekToken();
                     } else {
-                        ReportSyntaxError("cannot mix bytes and nonbytes literals");
+                        ReportSyntaxError(t.Value is Bytes ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
                         break;
                     }
                 }
@@ -2019,7 +2019,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     t = PeekToken();
                 } else {
-                    ReportSyntaxError("cannot mix bytes and nonbytes literals");
+                    ReportSyntaxError(t.Value is Bytes ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
                     break;
                 }
             }
@@ -2034,7 +2034,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     t = PeekToken();
                 } else {
-                    ReportSyntaxError("cannot mix bytes and nonbytes literals");
+                    ReportSyntaxError(t.Value is string ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
                     break;
                 }
             }

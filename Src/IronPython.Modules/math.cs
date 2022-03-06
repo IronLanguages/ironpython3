@@ -605,9 +605,6 @@ namespace IronPython.Modules {
                     case int i:
                         a = i;
                         break;
-                    case Extensible<int> ei: // deprecated
-                        a = ei.Value;
-                        break;
                     case BigInteger bi:
                         a = bi;
                         break;

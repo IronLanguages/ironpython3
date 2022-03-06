@@ -938,23 +938,16 @@ namespace IronPython.Modules {
             int proto = (int)ProtocolType.IP,
             int flags = (int)SocketFlags.None
         ) {
-            int numericPort;
-
-            if (port == null) {
-                numericPort = 0;
-            } else if (port is int) {
-                numericPort = (int)port;
-            } else if (port is Extensible<int>) {
-                numericPort = ((Extensible<int>)port).Value;
-            } else if (port is Bytes) {
-                numericPort = ParsePort(context, ((Bytes)port).MakeString());
-            } else if (port is string) {
-                numericPort = ParsePort(context, (string)port);
-            } else if (port is ExtensibleString) {
-                numericPort = ParsePort(context, ((ExtensibleString)port).Value);
-            } else {
-                throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
-            }
+            var numericPort = port switch {
+                null => 0,
+                int i => i,
+                BigInteger bi => (int)bi,
+                Extensible<BigInteger> bi => (int)bi.Value,
+                Bytes b => ParsePort(context, b.MakeString()),
+                string s => ParsePort(context, s),
+                ExtensibleString es => ParsePort(context, es.Value),
+                _ => throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed"),
+            };
 
             static int ParsePort(CodeContext context, string port) {
                 if (int.TryParse(port, out var numericPort)) return numericPort;

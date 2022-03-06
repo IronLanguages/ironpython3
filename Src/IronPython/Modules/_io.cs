@@ -3130,23 +3130,18 @@ namespace IronPython.Modules {
         }
 
         private static bool TryGetBigInt(object i, out BigInteger res) {
-            if (i is BigInteger) {
-                res = (BigInteger)i;
+            if (i is BigInteger bi) {
+                res = bi;
                 return true;
             }
 
-            if (i is int) {
-                res = (int)i;
+            if (i is int i32) {
+                res = i32;
                 return true;
             }
 
-            if (i is long) {
-                res = (long)i;
-                return true;
-            }
-
-            if (i is Extensible<int> ei) {
-                res = ei.Value;
+            if (i is long i64) {
+                res = i64;
                 return true;
             }
 
@@ -3194,16 +3189,11 @@ namespace IronPython.Modules {
             if (i == null) {
                 value = int.MinValue;
                 return false;
-            } else if (i is int) {
-                value = (int)i;
+            } else if (i is int i32) {
+                value = i32;
                 return true;
-            } else if (i is BigInteger) {
-                return ((BigInteger)i).AsInt32(out value);
-            }
-
-            if (i is Extensible<int> ei) {
-                value = ei.Value;
-                return true;
+            } else if (i is BigInteger bi) {
+                return bi.AsInt32(out value);
             }
 
             if (i is Extensible<BigInteger> ebi) {

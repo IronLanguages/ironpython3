@@ -441,10 +441,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return Int32Ops.__hash__(o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]Extensible<int> o) {
-            return PythonContext.Hash(o);
-        }
-
         public static int hash(CodeContext/*!*/ context, [NotNull]string o) {
             return o.GetHashCode();
         }
@@ -459,7 +455,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]Extensible<BigInteger> o) {
-            return hash(context, (object)o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, double o) {

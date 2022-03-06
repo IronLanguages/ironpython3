@@ -746,7 +746,7 @@ namespace IronPython.Runtime.Types {
                 if (_BigIntegerResolver != null) return _BigIntegerResolver;
                 _BigIntegerResolver = MakeConversionResolver(new List<Type> {
                     typeof(BigInteger), typeof(Extensible<BigInteger>),
-                    typeof(int), typeof(Extensible<int>)
+                    typeof(int)
                 });
                 return _BigIntegerResolver;
             }

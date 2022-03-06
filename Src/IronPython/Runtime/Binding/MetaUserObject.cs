@@ -192,10 +192,7 @@ namespace IronPython.Runtime.Binding {
                         }
                         break;
                     case TypeCode.Int32:
-                        if (!typeof(Extensible<int>).IsAssignableFrom(LimitType)) {
-                            return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToInt");
-                        }
-                        break;
+                        return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToInt");
                     case TypeCode.Double:
                         return MakeConvertRuleForCall(conversion, type, this, "__float__", "ConvertToFloat");
                     case TypeCode.Boolean:

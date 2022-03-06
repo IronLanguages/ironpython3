@@ -261,8 +261,6 @@ namespace IronPython.Modules {
                 switch (whence) {
                     case int v:
                         return seek(posInt, v);
-                    case Extensible<int> v:
-                        return seek(posInt, v);
                     case BigInteger v:
                         return seek(posInt, (int)v);
                     case Extensible<BigInteger> v:

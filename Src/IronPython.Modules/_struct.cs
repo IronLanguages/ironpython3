@@ -1097,23 +1097,20 @@ namespace IronPython.Modules {
 
         internal static uint GetULongValue(CodeContext/*!*/ context, int index, object[] args, string type) {
             object val = GetValue(context, index, args);
-            if (val is int) {
-                CheckRange(context, (int)val, type);
-                return (uint)(int)val;
-            } else if (val is BigInteger) {
-                CheckRange(context, (BigInteger)val, type);
-                return (uint)(BigInteger)val;
-            } else if (val is Extensible<int>) {
-                CheckRange(context, ((Extensible<int>)val).Value, type);
-                return (uint)((Extensible<int>)val).Value;
-            } else if (val is Extensible<BigInteger>) {
-                CheckRange(context, ((Extensible<BigInteger>)val).Value, type);
-                return (uint)((Extensible<BigInteger>)val).Value;
+            if (val is int i) {
+                CheckRange(context, i, type);
+                return (uint)i;
+            } else if (val is BigInteger bi) {
+                CheckRange(context, bi, type);
+                return (uint)bi;
+            } else if (val is Extensible<BigInteger> ebi) {
+                CheckRange(context, ebi.Value, type);
+                return (uint)ebi.Value;
             } else {
                 if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, val, "__int__", out object objres)) {
-                    if (objres is int) {
-                        CheckRange(context, (int)objres, type);
-                        return (uint)(int)objres;
+                    if (objres is int oi) {
+                        CheckRange(context, oi, type);
+                        return (uint)oi;
                     }
                 }
 

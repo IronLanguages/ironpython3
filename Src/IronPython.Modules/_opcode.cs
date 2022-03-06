@@ -156,27 +156,30 @@ namespace IronPython.Modules {
         private const int FVC_ASCII = 0x3;
         private const int FVS_MASK = 0x4;
         private const int FVS_HAVE_SPEC = 0x4;
-        
+
         public static int stack_effect(CodeContext context, int opcode, object oparg=null) {
+            int ioparg = 0;
+
             if (opcode >= HAVE_ARGUMENT) {
                 if (oparg == null) {
                     throw PythonOps.ValueError("stack_effect: opcode requires oparg but oparg was not specified");
                 }
 
-                if (!(oparg is int || oparg is BigInteger || oparg is Extensible<int>)) {
-                    throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
+                if (!Converter.TryConvertToIndex(oparg, out ioparg, throwOverflowError: true)) { // supported since CPython 3.8
+                    ioparg = Converter.ImplicitConvertToInt32(oparg) ?? // warning since CPython 3.8, unsupported in 3.10
+                        throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
                 }
             } else if (oparg != null) {
                 throw PythonOps.ValueError("stack_effect: opcode does not permit oparg but oparg was specified");
-            }            
-            
-            int effect = stack_effect(opcode, oparg != null ? (int)oparg : 0);
+            }
+
+            int effect = stack_effect(opcode, ioparg);
             if (effect == PY_INVALID_STACK_EFFECT) {
                 throw PythonOps.ValueError("invalid opcode or oparg");
             }
             return effect;
         }
-        
+
         private static int stack_effect(int opcode, int oparg, int jump = -1) {
             switch (opcode) {
                 case NOP:

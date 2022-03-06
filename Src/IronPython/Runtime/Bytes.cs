@@ -90,13 +90,22 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] Extensible<int> size) {
+        public static object __new__(CodeContext context, [NotNull] PythonType cls, int size) {
             if (cls == TypeCache.Bytes) {
-                if (TryInvokeBytesOperator(context, size, out Bytes? res)) {
-                    return res;
+                if (size < 0) throw PythonOps.ValueError("negative count");
+                return new Bytes(new byte[size]);
+            } else {
+                return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, size));
+            }
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, [NotNull] PythonType cls, BigInteger size) {
+            if (cls == TypeCache.Bytes) {
+                if (size.AsInt32(out int i32)) {
+                    return __new__(context, cls, i32);
                 } else {
-                    if (size < 0) throw PythonOps.ValueError("negative count");
-                    return new Bytes(new byte[size]);
+                    throw PythonOps.OverflowError("cannot fit 'int' into an index-sized integer");
                 }
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, size));
@@ -104,10 +113,15 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotNull] PythonType cls, int size) {
+        public static object __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] Extensible<BigInteger> size) {
             if (cls == TypeCache.Bytes) {
-                if (size < 0) throw PythonOps.ValueError("negative count");
-                return new Bytes(new byte[size]);
+                if (TryInvokeBytesOperator(context, size, out Bytes? res)) {
+                    return res;
+                } else if (size.Value.AsInt32(out int i32)) {
+                    return __new__(context, cls, i32);
+                } else {
+                    throw PythonOps.OverflowError("cannot fit '{0}' into an index-sized integer", PythonOps.GetPythonTypeName(size));
+                }
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.Bytes, size));
             }
@@ -852,8 +866,6 @@ namespace IronPython.Runtime {
 
         public bool __contains__(CodeContext context, object? value) {
             switch (value) {
-                case Extensible<int> ei:
-                    return IndexOf(ei.Value.ToByteChecked()) != -1;
                 case BigInteger bi:
                     return IndexOf(bi.ToByteChecked()) != -1;
                 case Extensible<BigInteger> ebi:

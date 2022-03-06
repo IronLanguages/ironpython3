@@ -61,8 +61,9 @@ class BytesTest(IronPythonTestCase):
 
             self.assertEqual(testType(IndexableOC(10)), b"\0" * 10)
             self.assertRaisesRegex(TypeError, "'IndexableOC' object", testType, IndexableOC(IndexableOC(10)))
-            self.assertRaises(OverflowError, testType, 2<<222)
-            self.assertRaises(OverflowError, testType, IndexableOC(2<<222))
+            self.assertRaisesMessage(OverflowError, "cannot fit 'int' into an index-sized integer", testType, 2<<222)
+            self.assertRaisesMessage(OverflowError, "cannot fit 'myint' into an index-sized integer", testType, myint(2<<222))
+            self.assertRaisesMessage(OverflowError, "cannot fit 'IndexableOC' into an index-sized integer", testType, IndexableOC(2<<222))
 
         def f():
             yield 42

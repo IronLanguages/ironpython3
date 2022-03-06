@@ -213,13 +213,13 @@ class StrFormatTest(IronPythonTestCase):
             def __format__(self, *args):
                 return 42
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return string, not NoneType" if is_cli else "__format__ method did not return string", '{0}'.format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string, not int" if is_cli else "__format__ method did not return string", '{0}'.format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ method did not return string", '{0}'.format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ method did not return string", '{0}'.format, bad2())
 
         self.assertRaisesMessage(ValueError, "Unknown conversion specifier x", '{0!x}'.format, 'abc')
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return string, not NoneType" if is_cli else "__format__ method did not return string", format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return string, not int" if is_cli else "__format__ method did not return string", format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ method did not return string", format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ method did not return string", format, bad2())
 
     def test_object__format__(self):
         self.assertEqual(object.__format__("aaa", ""), "aaa")

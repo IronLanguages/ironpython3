@@ -95,18 +95,20 @@ namespace IronPython.Modules {
             }
 
             private static int VerifyMaxLenValue(object value) {
-                if (value == null) {
+                if (value is null) {
                     return -1;
-                } else if (value is int || value is BigInteger || value is double) {
-                    int val = (int)value;
-                    if (val < 0) throw PythonOps.ValueError("maxlen must be non-negative");
-                    return val;
-                } else if (value is Extensible<int>) {
-                    int val = ((Extensible<int>)value).Value;
-                    if (val < 0) throw PythonOps.ValueError("maxlen must be non-negative");
-                    return val;
                 }
-                throw PythonOps.TypeError("deque(): keyword argument 'maxlen' requires integer");
+
+                int res = value switch {
+                    int i32 => i32,
+                    BigInteger bi => (int)bi,
+                    Extensible<BigInteger> ebi => (int)ebi.Value,
+                    _ => throw PythonOps.TypeError("an integer is required")
+                };
+                
+                if (res < 0) throw PythonOps.ValueError("maxlen must be non-negative");
+
+                return res;
             }
 
             #region core deque APIs

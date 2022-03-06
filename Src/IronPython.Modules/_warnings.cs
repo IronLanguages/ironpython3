@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -158,12 +159,12 @@ namespace IronPython.Modules {
                 PythonRegex.Pattern fMsg = (PythonRegex.Pattern)filter._data[1];
                 PythonType fCat = (PythonType)filter._data[2];
                 PythonRegex.Pattern fMod = (PythonRegex.Pattern)filter._data[3];
-                int fLno;
-                if (filter._data[4] is int) {
-                    fLno = (int)filter._data[4];
-                } else {
-                    fLno = (Extensible<int>)filter._data[4];
-                }
+                int fLno = filter._data[4] switch {
+                    int i => i,
+                    BigInteger bi => (int)bi,
+                    Extensible<BigInteger> ebi => (int)ebi.Value,
+                    _ => throw PythonOps.TypeError("an integer is required")
+                };
 
                 if ((fMsg == null || fMsg.match(text) != null) &&
                     category.IsSubclassOf(fCat) &&

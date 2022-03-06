@@ -334,9 +334,9 @@ namespace IronPython.Runtime {
         /// result in an OverflowError.
         /// </summary>
         internal static bool TryConvertToIndex(object value, out int index, bool throwOverflowError = true)
-            => TryGetInt(value, out index, throwOverflowError)
+            => TryGetInt(value, out index, throwOverflowError, value)
                 || PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object res)
-                    && TryGetInt(res, out index, throwOverflowError);
+                    && TryGetInt(res, out index, throwOverflowError, value);
 
         /// <summary>
         /// Attempts to convert value into an index usable for slicing and return the integer or BigInteger
@@ -354,12 +354,12 @@ namespace IronPython.Runtime {
         }
 
         public static int ConvertToIndex(object value, bool throwOverflowError = false) {
-            if (TryGetInt(value, out int res, throwOverflowError)) {
+            if (TryGetInt(value, out int res, throwOverflowError, value)) {
                 return res;
             }
 
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object index)) {
-                if (TryGetInt(index, out res, throwOverflowError)) {
+                if (TryGetInt(index, out res, throwOverflowError, value)) {
                     return res;
                 }
 
@@ -369,11 +369,9 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("expected integer value, got {0}", PythonOps.GetPythonTypeName(value));
         }
 
-        internal static bool TryGetInt(object o, out int value, bool throwOverflowError) {
+        private static bool TryGetInt(object o, out int value, bool throwOverflowError, object original) {
             if (o is int i) {
                 value = i;
-            } else if (o is Extensible<int> ei) {
-                value = ei.Value;
             } else {
                 BigInteger bi;
                 if (o is BigInteger) {
@@ -388,7 +386,7 @@ namespace IronPython.Runtime {
                 if (bi.AsInt32(out value)) return true;
 
                 if (throwOverflowError) {
-                    throw PythonOps.OverflowError("can't fit long into index");
+                    throw PythonOps.OverflowError("cannot fit '{0}' into an index-sized integer", PythonOps.GetPythonTypeName(original));
                 }
 
                 Debug.Assert(bi != 0);
@@ -399,12 +397,11 @@ namespace IronPython.Runtime {
 
         private static object ConvertToSliceIndexHelper(object value) {
             if (value is int) return value;
-            if (value is Extensible<int>) return ScriptingRuntimeHelpers.Int32ToObject(((Extensible<int>)value).Value);
 
             if (value is BigInteger) {
                 return value;
-            } else if (value is Extensible<BigInteger>) {
-                return ((Extensible<BigInteger>)value).Value;
+            } else if (value is Extensible<BigInteger> ebi) {
+                return ebi.Value;
             }
             return null;
         }
@@ -505,9 +502,6 @@ namespace IronPython.Runtime {
                 typeof(TypeGroup).IsAssignableFrom(fromType))) return true;
 
             // Support extensible types with simple implicit conversions to their base types
-            if (typeof(Extensible<int>).IsAssignableFrom(fromType) && CanConvertFrom(Int32Type, toType, allowNarrowing)) {
-                return true;
-            }
             if (typeof(Extensible<BigInteger>).IsAssignableFrom(fromType) && CanConvertFrom(BigIntegerType, toType, allowNarrowing)) {
                 return true;
             }
@@ -860,14 +854,12 @@ namespace IronPython.Runtime {
         /// Converts a value to int ignoring floats
         /// </summary>
         public static int? ImplicitConvertToInt32(object o) {
-            if (o is int) {
-                return (int)o;
-            } else if (o is BigInteger) {
-                if (((BigInteger)o).AsInt32(out int res)) {
+            if (o is int i32) {
+                return i32;
+            } else if (o is BigInteger bi) {
+                if (bi.AsInt32(out int res)) {
                     return res;
                 }
-            } else if (o is Extensible<int>) {
-                return Converter.ConvertToInt32(o);
             } else if (o is Extensible<BigInteger>) {
                 if (Converter.TryConvertToInt32(o, out int res)) {
                     return res;

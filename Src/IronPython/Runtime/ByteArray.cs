@@ -1047,12 +1047,10 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext context, object? value) {
-            if (value is Extensible<int>) {
-                return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
-            } else if (value is BigInteger) {
-                return IndexOf(((BigInteger)value).ToByteChecked()) != -1;
-            } else if (value is Extensible<BigInteger>) {
-                return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
+            if (value is BigInteger bi) {
+                return IndexOf(bi.ToByteChecked()) != -1;
+            } else if (value is Extensible<BigInteger> ebi) {
+                return IndexOf(ebi.Value.ToByteChecked()) != -1;
             }
 
             throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonOps.GetPythonTypeName(value));

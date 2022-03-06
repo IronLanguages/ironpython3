@@ -242,10 +242,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] Extensible<int> @object)
-            => __new__(context, cls, (object)@object);
-
-        [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, bool @object) {
             if (cls == TypeCache.String) {
                 return @object.ToString();

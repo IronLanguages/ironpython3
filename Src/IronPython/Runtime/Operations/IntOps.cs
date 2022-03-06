@@ -29,8 +29,6 @@ namespace IronPython.Runtime.Operations {
                     return BoolOps.__int__(b);
                 case int _:
                     return o;
-                case Extensible<int> ei:
-                    return TryInvokeInt(context, o, out var value) ? value : ei.Value;
                 case BigInteger val:
                     return val.IsInt32() ? (object)(int)val : o;
                 case Extensible<BigInteger> ebi:
@@ -65,8 +63,6 @@ namespace IronPython.Runtime.Operations {
                         return bi.IsInt32() ? (object)(int)bi : result;
                     case bool b:
                         return BoolOps.__int__(b); // Python 3.6: return the int value
-                    case Extensible<int> ei:
-                        return ei.Value; // Python 3.6: return the int value
                     case Extensible<BigInteger> ebi:
                         return ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
                     default: {
@@ -91,10 +87,6 @@ namespace IronPython.Runtime.Operations {
                         case bool b:
                             Warn(context, result);
                             result = BoolOps.__int__(b); // Python 3.6: return the int value
-                            return true;
-                        case Extensible<int> ei:
-                            Warn(context, result);
-                            result = ei.Value; // Python 3.6: return the int value
                             return true;
                         case Extensible<BigInteger> ebi:
                             Warn(context, result);

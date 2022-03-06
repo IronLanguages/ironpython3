@@ -796,7 +796,7 @@ namespace IronPython.Runtime.Operations {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__index__", out index)) {
                 if (index is int || index is BigInteger)
                     return true;
-                if (index is Extensible<int> || index is Extensible<BigInteger>) {
+                if (index is Extensible<BigInteger>) {
                     Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonOps.GetPythonTypeName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
                     return true;
                 }
@@ -811,9 +811,6 @@ namespace IronPython.Runtime.Operations {
             switch (o) {
                 case int i:
                     res = i;
-                    break;
-                case Extensible<int> ei: // deprecated
-                    res = ei;
                     break;
                 case BigInteger bi:
                     if (!bi.AsInt32(out res)) {
@@ -2699,7 +2696,7 @@ namespace IronPython.Runtime.Operations {
         /// deprecated form of slicing.
         /// </summary>
         public static bool IsNumericObject([NotNullWhen(true)]object? value) {
-            return value is int || value is Extensible<int> || value is BigInteger || value is Extensible<BigInteger> || value is bool;
+            return value is int || value is BigInteger || value is Extensible<BigInteger> || value is bool;
         }
 
         /// <summary>
@@ -2708,7 +2705,6 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         internal static bool IsNumericType(Type t) {
             return IsNonExtensibleNumericType(t) ||
-                t.IsSubclassOf(typeof(Extensible<int>)) ||
                 t.IsSubclassOf(typeof(Extensible<BigInteger>));
         }
 
@@ -2802,7 +2798,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool CheckingConvertToInt(object value) {
-            return value is int || value is BigInteger || value is Extensible<int> || value is Extensible<BigInteger>;
+            return value is int || value is BigInteger || value is Extensible<BigInteger>;
         }
 
         internal static bool CheckingConvertToLong(object value) {

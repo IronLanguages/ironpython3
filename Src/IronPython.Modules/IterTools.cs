@@ -379,16 +379,12 @@ namespace IronPython.Modules {
             }
 
             private bool StepIsOne() {
-                if (_step is int) {
-                    return (int)_step == 1;
-                }
-
-                Extensible<int> stepExt;
-                if ((stepExt = _step as Extensible<int>) != null) {
-                    return stepExt.Value == 1;
-                }
-
-                return false;
+                return _step switch {
+                    int i => i == 1,
+                    BigInteger bi => bi == BigInteger.One,
+                    Extensible<BigInteger> ebi => ebi.Value == BigInteger.One,
+                    _ => false
+                };
             }
 
             #region ICodeFormattable Members

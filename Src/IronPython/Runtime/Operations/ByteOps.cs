@@ -137,8 +137,6 @@ namespace IronPython.Runtime.Operations {
                     return ii.ToByteChecked();
                 case BigInteger bi:
                     return bi.ToByteChecked();
-                case Extensible<int> ei:
-                    return ei.Value.ToByteChecked();
                 case Extensible<BigInteger> ebi:
                     return ebi.Value.ToByteChecked();
                 case byte b:

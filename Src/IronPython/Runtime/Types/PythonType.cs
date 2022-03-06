@@ -1011,7 +1011,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (!_underlyingSystemType.IsEnum) {
                     switch (_underlyingSystemType.GetTypeCode()) {
                         case TypeCode.String: return typeof(ExtensibleString);
-                        case TypeCode.Int32: return typeof(Extensible<int>);
                         case TypeCode.Double: return typeof(Extensible<double>);
                         case TypeCode.Object:
                             if (_underlyingSystemType == typeof(BigInteger)) {

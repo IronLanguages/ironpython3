@@ -2495,7 +2495,7 @@ namespace IronPython.Runtime {
         public static String ConvertToString(object value) { return _stringSite.Invoke(DefaultContext.Default, value); }
         public static BigInteger ConvertToBigInteger(object value) { return _bigIntSite.Invoke(DefaultContext.Default, value); }
         public static Double ConvertToDouble(object value) { return _doubleSite.Invoke(DefaultContext.Default, value); }
-        public static Complex64 ConvertToComplex(object value) { return _complexSite.Invoke(DefaultContext.Default, value); }
+        public static Complex ConvertToComplex(object value) { return _complexSite.Invoke(DefaultContext.Default, value); }
         public static Boolean ConvertToBoolean(object value) { return _boolSite.Invoke(DefaultContext.Default, value); }
         public static Int64 ConvertToInt64(object value) { return _int64Site.Invoke(DefaultContext.Default, value); }
         */

@@ -949,10 +949,7 @@ class LongTest(unittest.TestCase):
             got = round(10**k + 324678, -3)
             expect = 10**k + 325000
             self.assertEqual(got, expect)
-            if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
-                self.assertTrue(isinstance(got, int))
-            else:
-                self.assertIs(type(got), int)
+            self.assertIs(type(got), int)
 
         # nonnegative second argument: round(x, n) should just return x
         for n in range(5):
@@ -960,10 +957,7 @@ class LongTest(unittest.TestCase):
                 x = random.randrange(-10000, 10000)
                 got = round(x, n)
                 self.assertEqual(got, x)
-                if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
-                    self.assertTrue(isinstance(got, int))
-                else:
-                    self.assertIs(type(got), int)
+                self.assertIs(type(got), int)
         for huge_n in 2**31-1, 2**31, 2**63-1, 2**63, 2**100, 10**100:
             self.assertEqual(round(8979323, huge_n), 8979323)
 
@@ -972,10 +966,7 @@ class LongTest(unittest.TestCase):
             x = random.randrange(-10000, 10000)
             got = round(x)
             self.assertEqual(got, x)
-            if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/issues/52
-                self.assertTrue(isinstance(got, int))
-            else:
-                self.assertIs(type(got), int)
+            self.assertIs(type(got), int)
 
         # bad second argument
         bad_exponents = ('brian', 2.0, 0j)

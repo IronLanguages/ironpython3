@@ -83,8 +83,7 @@ class NumType:
                 return True
             elif self.is_signed:
                 if oty.is_signed:
-                    if self.name == 'Double': return oty.name == 'Double' or oty.name == 'Complex64'
-                    else: return self.size <= oty.size
+                    return self.size <= oty.size
                 else:
                     return False
             else:
@@ -322,9 +321,10 @@ def write_rich_comp_general(func, cw, body, name, ty, **kws):
             func(cw, body, name, ty, **kws)
 
 def gen_binaryops(cw, ty):
-    cw.writeline()
-    cw.write("// Binary Operations - Arithmetic")
-    if ty.name != 'Complex64':
+    if ty.name not in ['Complex']:
+        cw.writeline()
+        cw.write("// Binary Operations - Arithmetic")
+
         for symbol, name in [('+', 'Add'), ('-', 'Subtract'), ('*', 'Multiply')]:
             if ty.is_float:
                 write_binop1(cw, simple_body, name, ty, symbol=symbol)
@@ -507,7 +507,7 @@ public static object __new__(PythonType cls, object value) {
 }"""
 
 def gen_header(cw, ty):
-    if ty.name not in ['Int32', 'Double', 'Single', 'BigInteger', 'Complex64']:
+    if ty.name not in ['Int32', 'Double', 'Single', 'BigInteger', 'Complex']:
         cw.write(type_header)
 
 def gen_type(cw, ty):

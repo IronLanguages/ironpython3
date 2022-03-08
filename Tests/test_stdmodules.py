@@ -10,7 +10,7 @@ Python-based modules.
 
 import os
 import sys
-import unittest
+import locale
 
 from iptest import IronPythonTestCase, is_cli, is_cpython, is_posix, run_test, skipUnlessIronPython
 
@@ -207,21 +207,6 @@ class StdModulesTest(IronPythonTestCase):
         self.assertTrue(os.path.isfile(sys.executable))
         self.assertTrue(not os.path.isfile('"' + sys.executable + '"'))
 
-    @skipUnlessIronPython()
-    def test_get_set_locale(self):
-        import locale
-        locale.setlocale(locale.LC_ALL, 'en-US')
-        loc = locale.getlocale(locale.LC_ALL)
-        self.assertEqual(loc, ('en_US','ISO8859-1'))
-
-        locale.setlocale(locale.LC_ALL, 'C')
-        loc = locale.getlocale(locale.LC_ALL)
-        self.assertEqual(loc, (None,None))
-
-        self.assertTrue(locale.setlocale(locale.LC_ALL, '') is not None)
-        if not is_posix: # TODO: figure this out
-            self.assertTrue(locale.getlocale() is not None)
-
     def test_cp17819(self):
         import xml.sax
         self.assertEqual(xml.sax._false, 0)
@@ -249,16 +234,42 @@ class StdModulesTest(IronPythonTestCase):
         self.assertRaises(WindowsError, os.listdir, "")
         os.chdir(save_dir)
 
-    def test_cp34188(self):
-        import locale
-        import functools
-        locale.setlocale(locale.LC_COLLATE,"de_CH")
-        self.assertTrue(sorted([u'a', u'z', u'�'], key=functools.cmp_to_key(locale.strcoll)) == sorted([u'a', u'z', u'�'], key=locale.strxfrm))
-
     def test_gh1144(self):
         from collections import deque
         a = deque(maxlen=0)
         a.append("a")
         self.assertEqual(len(a), 0)
+
+class StdModulesLocalizedTest(IronPythonTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.saved_lc = [(getattr(locale, lc), locale.getlocale(getattr(locale, lc)))
+                            for lc in dir(locale)
+                            if lc.startswith('LC_') and lc != 'LC_ALL']
+
+    def tearDown(self):
+        for lc, setting in self.saved_lc:
+            locale.setlocale(lc, setting)
+        super().tearDown()
+
+    @skipUnlessIronPython()
+    def test_get_set_locale(self):
+        locale.setlocale(locale.LC_ALL, 'en-US')
+        loc = locale.getlocale(locale.LC_ALL)
+        self.assertEqual(loc, ('en_US','ISO8859-1'))
+
+        locale.setlocale(locale.LC_ALL, 'C')
+        loc = locale.getlocale(locale.LC_ALL)
+        self.assertEqual(loc, (None,None))
+
+        self.assertTrue(locale.setlocale(locale.LC_ALL, '') is not None)
+        if not is_posix: # TODO: figure this out
+            self.assertTrue(locale.getlocale() is not None)
+
+    def test_cp34188(self):
+        import functools
+        locale.setlocale(locale.LC_COLLATE,"de_CH")
+        self.assertTrue(sorted([u'a', u'z', u'�'], key=functools.cmp_to_key(locale.strcoll)) == sorted([u'a', u'z', u'�'], key=locale.strxfrm))
 
 run_test(__name__)

@@ -10,6 +10,18 @@ from iptest import is_cli, is_netcoreapp, is_posix, run_test
 
 class _LocaleTest(unittest.TestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.saved_lc = [(lc, _locale.setlocale(lc, 'C')) for lc in
+                            (getattr(_locale, lc_name) for lc_name in
+                                dir(_locale) if lc_name.startswith('LC_') and lc_name != 'LC_ALL')
+                        ]
+
+    def tearDown(self):
+        for lc, setting in self.saved_lc:
+            _locale.setlocale(lc, setting)
+        super().tearDown()
+
     def test_getdefaultlocale(self):
         result1 = _locale._getdefaultlocale()
         result2 = _locale._getdefaultlocale()

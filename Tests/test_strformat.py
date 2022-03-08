@@ -4,7 +4,7 @@
 
 import _string
 import sys
-import unittest
+import _locale
 
 from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp21, big, run_test, skipUnlessIronPython
 
@@ -19,6 +19,18 @@ class bad_str(object):
         raise TestException('booh')
 
 class StrFormatTest(IronPythonTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.saved_lc = [(lc, _locale.setlocale(lc, 'C')) for lc in
+                            (getattr(_locale, lc_name) for lc_name in
+                                dir(_locale) if lc_name.startswith('LC_') and lc_name != 'LC_ALL')
+                        ]
+
+    def tearDown(self):
+        for lc, setting in self.saved_lc:
+            _locale.setlocale(lc, setting)
+        super().tearDown()
 
     def test_formatter_parser_errors(self):
         errors = [ ("{0!",             "unmatched '{' in format spec" if is_cli else "end of string while looking for conversion specifier"),
@@ -554,7 +566,6 @@ class StrFormatTest(IronPythonTestCase):
         if is_netcoreapp21: return # https://github.com/IronLanguages/ironpython3/issues/751
 
         # check locale specific formatting
-        import _locale
         try:
             if is_cli:
                 _locale.setlocale(_locale.LC_ALL, 'en_US')
@@ -872,7 +883,6 @@ class StrFormatTest(IronPythonTestCase):
             self.assertEqual(value.__format__(spec), result)
 
         # check locale specific formatting
-        import _locale
         try:
             if is_cli:
                 _locale.setlocale(_locale.LC_ALL, 'en_US')
@@ -1174,7 +1184,6 @@ class StrFormatTest(IronPythonTestCase):
             self.assertEqual(value.__format__(spec), result)
 
         # check locale specific formatting
-        import _locale
         try:
             if is_cli:
                 _locale.setlocale(_locale.LC_ALL, 'en_US')

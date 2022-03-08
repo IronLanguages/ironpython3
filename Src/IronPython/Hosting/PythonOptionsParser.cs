@@ -115,7 +115,7 @@ namespace IronPython.Hosting {
                 case 'W':
                     _warningFilters ??= new List<string>();
                     _warningFilters.Add(options.Length > 1 ? options.Slice(1).ToString() : PopNextArg());
-                    break;
+                    return default;
 
                 case 'q':
                     LanguageSetup.Options["Quiet"] = ScriptingRuntimeHelpers.True;

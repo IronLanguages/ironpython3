@@ -3944,8 +3944,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         // If hash is called on an instance of an unhashable type
-        public static Exception TypeErrorForUnhashableType(string typeName) {
-            return TypeError(typeName + " objects are unhashable");
+        internal static Exception TypeErrorForUnhashableType(string typeName) {
+            return TypeError("unhashable type: '{0}'", typeName);
         }
 
         public static Exception TypeErrorForUnhashableObject(object? obj) {

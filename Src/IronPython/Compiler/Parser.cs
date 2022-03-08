@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +14,6 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler.Ast;
-using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -147,9 +147,9 @@ namespace IronPython.Compiler {
             var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
             using var parser = CreateParser(context, new PythonOptions());
             var ast = parser.ParseSingleStatement();
-            var body = ast.Body as ExpressionStatement;
             if (parser.ErrorCode != 0) return null;
-            return body.Expression;
+            var body = ast.Body as ExpressionStatement;
+            return body?.Expression;
         }
 
         //[stmt_list] Newline | compound_stmt Newline
@@ -1986,6 +1986,7 @@ namespace IronPython.Compiler {
             }
 
             while (t is ConstantValueToken) {
+                bool stop = false;
                 while (t is ConstantValueToken) {
                     if (t.Value is string cvs) {
                         s += cvs;
@@ -1993,9 +1994,11 @@ namespace IronPython.Compiler {
                         t = PeekToken();
                     } else {
                         ReportSyntaxError(t.Value is Bytes ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
+                        stop = true;
                         break;
                     }
                 }
+                if (stop) break;
 
                 while (t is FormattedStringToken fst) {
                     s = ParseFormattedString(fst, s, expressions);
@@ -2037,6 +2040,9 @@ namespace IronPython.Compiler {
                     ReportSyntaxError(t.Value is string ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
                     break;
                 }
+            }
+            if (t is FormattedStringToken) {
+                ReportSyntaxError("cannot mix bytes and nonbytes literals");
             }
             return s;
         }

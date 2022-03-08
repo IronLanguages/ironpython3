@@ -360,9 +360,27 @@ non-important content
                              ])
 
     def test_mismatched_parens(self):
-        self.assertAllRaise(SyntaxError, 'f-string: mismatched',
+        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
+                            r"does not match opening parenthesis '\('",
                             ["f'{((}'",
                              ])
+        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\)' "
+                            r"does not match opening parenthesis '\['",
+                            ["f'{a[4)}'",
+                            ])
+        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\]' "
+                            r"does not match opening parenthesis '\('",
+                            ["f'{a(4]}'",
+                            ])
+        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
+                            r"does not match opening parenthesis '\['",
+                            ["f'{a[4}'",
+                            ])
+        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
+                            r"does not match opening parenthesis '\('",
+                            ["f'{a(4}'",
+                            ])
+        self.assertRaises(SyntaxError, eval, "f'{" + "("*500 + "}'")
 
     def test_double_braces(self):
         self.assertEqual(f'{{', '{')
@@ -440,9 +458,13 @@ non-important content
                             ["f'{1#}'",   # error because the expression becomes "(1#)"
                              "f'{3(#)}'",
                              "f'{#}'",
-                             "f'{)#}'",   # When wrapped in parens, this becomes
+                             ])
+
+        self.assertAllRaise(SyntaxError, r"f-string: unmatched '\)'",
+                            ["f'{)#}'",   # When wrapped in parens, this becomes
                                           #  '()#)'.  Make sure that doesn't compile.
                              ])
+
 
     def test_many_expressions(self):
         # Create a string with many expressions in it. Note that
@@ -569,7 +591,7 @@ non-important content
                              "f'{,}'",  # this is (,), which is an error
                              ])
 
-        self.assertAllRaise(SyntaxError, "f-string: expecting '}'",
+        self.assertAllRaise(SyntaxError, r"f-string: unmatched '\)'",
                             ["f'{3)+(4}'",
                              ])
 
@@ -618,9 +640,9 @@ non-important content
         self.assertEqual(f'2\x203', '2 3')
         self.assertEqual(f'\x203', ' 3')
 
-        with self.assertWarns(DeprecationWarning):  # invalid escape sequence
-            value = eval(r"f'\{6*7}'")
-        self.assertEqual(value, '\\42')
+#        with self.assertWarns(DeprecationWarning):  # invalid escape sequence
+#            value = eval(r"f'\{6*7}'")
+#        self.assertEqual(value, '\\42')
         self.assertEqual(f'\\{6*7}', '\\42')
         self.assertEqual(fr'\{6*7}', '\\42')
 
@@ -835,16 +857,16 @@ non-important content
                              "BF''",
                              ])
 
-#    def test_leading_trailing_spaces(self):
-#        self.assertEqual(f'{ 3}', '3')
-#        self.assertEqual(f'{  3}', '3')
-#        self.assertEqual(f'{3 }', '3')
-#        self.assertEqual(f'{3  }', '3')
-#
-#        self.assertEqual(f'expr={ {x: y for x, y in [(1, 2), ]}}',
-#                         'expr={1: 2}')
-#        self.assertEqual(f'expr={ {x: y for x, y in [(1, 2), ]} }',
-#                         'expr={1: 2}')
+    def test_leading_trailing_spaces(self):
+        self.assertEqual(f'{ 3}', '3')
+        self.assertEqual(f'{  3}', '3')
+        self.assertEqual(f'{3 }', '3')
+        self.assertEqual(f'{3  }', '3')
+
+        self.assertEqual(f'expr={ {x: y for x, y in [(1, 2), ]}}',
+                         'expr={1: 2}')
+        self.assertEqual(f'expr={ {x: y for x, y in [(1, 2), ]} }',
+                         'expr={1: 2}')
 
 #    def test_not_equal(self):
 #        # There's a special test for this because there's a special
@@ -995,12 +1017,6 @@ non-important content
         self.assertEqual(f'{d[a]}', 'integer')
         self.assertEqual('{d[a]}'.format(d=d), 'string')
         self.assertEqual('{d[0]}'.format(d=d), 'integer')
-
-    def test_invalid_expressions(self):
-        self.assertAllRaise(SyntaxError, 'invalid syntax',
-                            [r"f'{a[4)}'",
-                             r"f'{a(4]}'",
-                            ])
 
     def test_errors(self):
         # see issue 26287

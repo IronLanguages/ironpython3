@@ -84,24 +84,25 @@ namespace IronPython.Runtime {
                 buf.Append(ch);
             } else {
                 switch (ch) {
-                    case 'a': buf.Append('\a'); return;
-                    case 'b': buf.Append('\b'); return;
-                    case 'f': buf.Append('\f'); return;
-                    case 'n': buf.Append('\n'); return;
-                    case 'r': buf.Append('\r'); return;
-                    case 't': buf.Append('\t'); return;
-                    case 'v': buf.Append('\v'); return;
-                    case '\\': buf.Append('\\'); return;
-                    case '\'': buf.Append('\''); return;
-                    case '\"': buf.Append('\"'); return;
-                    case '\n': return;
+                    case 'a': buf.Append('\a'); break;
+                    case 'b': buf.Append('\b'); break;
+                    case 'f': buf.Append('\f'); break;
+                    case 'n': buf.Append('\n'); break;
+                    case 'r': buf.Append('\r'); break;
+                    case 't': buf.Append('\t'); break;
+                    case 'v': buf.Append('\v'); break;
+                    case '\\': buf.Append('\\'); break;
+                    case '\'': buf.Append('\''); break;
+                    case '\"': buf.Append('\"'); break;
+                    case '\n': break;
                     case '\r':
                         if (!normalizeLineEndings) {
-                            goto default;
+                            buf.Append('\\');
+                            buf.Append(ch);
                         } else if (i < length && data[i].ToChar(null) == '\n') {
                             i++;
                         }
-                        return;
+                        break;
                     case 'N': {
                             StringBuilder namebuf = new StringBuilder();
                             bool namestarted = false;
@@ -136,7 +137,7 @@ namespace IronPython.Runtime {
                                 }
                             }
                         }
-                        return;
+                        break;
                     case 'x': //hex
                         if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
                             handleError(data, i - 2, i + consumed, @"truncated \xXX escape");
@@ -144,7 +145,7 @@ namespace IronPython.Runtime {
                             buf.Append((char)val);
                         }
                         i += consumed;
-                        return;
+                        break;
                     case '0':
                     case '1':
                     case '2':
@@ -165,11 +166,12 @@ namespace IronPython.Runtime {
                         }
 
                         buf.Append((char)val);
-                        return;
+                        break;
                     default:
-                        buf.Append("\\");
+                        // PythonOps.Warn(DefaultContext.Default, PythonExceptions.DeprecationWarning, $"invalid escape sequence \\{ch}"); // TODO: enable in 3.6 - currently warning twice???
+                        buf.Append('\\');
                         buf.Append(ch);
-                        return;
+                        break;
                 }
             }
         }
@@ -259,11 +261,16 @@ namespace IronPython.Runtime {
                 } else if (ch == '}' || ch == ']' || ch == ')') {
                     if (parentheses.Length == 0) {
                         if (ch == '}') {
-                            res = data.Slice(0, i - 1).ToString();
+                            res = data.Slice(0, i - 1).Trim().ToString();
+                            if (string.IsNullOrEmpty(res)) {
+                                res = "f-string: empty expression not allowed";
+                                return false;
+                            }
+
                             consumed = i;
                             return true;
                         } else {
-                            res = $"unmatched '{ch}'";
+                            res = $"f-string: unmatched '{ch}'";
                             return false;
                         }
                     } else {
@@ -281,7 +288,11 @@ namespace IronPython.Runtime {
                     if (i == data.Length) {
                         break; // f-string: expecting '}'
                     }
-                    res = data.Slice(0, i - 1).ToString();
+                    res = data.Slice(0, i - 1).Trim().ToString();
+                    if (string.IsNullOrEmpty(res)) {
+                        res = "f-string: empty expression not allowed";
+                        return false;
+                    }
 
                     ch = data[i++];
                     if (ch == 's' || ch == 'r' || ch == 'a') {
@@ -308,7 +319,12 @@ namespace IronPython.Runtime {
                         return false;
                     }
                 } else if (ch == ':' && parentheses.Length == 0) {
-                    res = data.Slice(0, i - 1).ToString();
+                    res = data.Slice(0, i - 1).Trim().ToString();
+                    if (string.IsNullOrEmpty(res)) {
+                        res = "f-string: empty expression not allowed";
+                        return false;
+                    }
+
                     var end = data.Slice(i).IndexOf('}');
                     if (end != -1) {
                         formatSpec = data.Slice(i, end).ToString();
@@ -316,6 +332,9 @@ namespace IronPython.Runtime {
                         return true;
                     }
                     break; // f-string: expecting '}'
+                } else if (ch == '#') {
+                    res = "f-string expression part cannot include '#'";
+                    return false;
                 }
             }
 

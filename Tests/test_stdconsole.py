@@ -69,7 +69,7 @@ class StdConsoleTest(IronPythonTestCase):
     #       "regexp"    : valuestring is a regular expression compared against the entire output
     def TestCommandLine(self, args, expected_output, expected_exitcode = 0):
         if not is_cli:
-            # https://github.com/IronLanguages/ironpython2/issues/309
+            # https://github.com/IronLanguages/ironpython3/issues/648
             try:
                 idx = args.index("-c")
                 if idx + 1 < len(args):
@@ -282,6 +282,9 @@ class StdConsoleTest(IronPythonTestCase):
             self.TestCommandLine(("-W",), "Argument expected for the -W option.\n", 1)
         else:
             self.TestCommandLine(("-W",), ("firstline", "Argument expected for the -W option\n"), 2)
+
+        # https://github.com/IronLanguages/ironpython3/issues/1337
+        self.TestCommandLine(("-Wall", "-c", "import sys; print(sys.warnoptions)"), "['all']\n")
 
     @skipUnlessIronPython()
     def test_X_Interpret(self):

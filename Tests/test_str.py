@@ -5,7 +5,6 @@
 
 import os
 import sys
-import unittest
 import warnings
 
 from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
@@ -450,22 +449,24 @@ class StrTest(IronPythonTestCase):
         PERFECT_UNICODE_CASING = False
 
         import locale
-        lang,encoding = locale.getlocale()
+        lang, encoding = locale.getlocale(locale.LC_CTYPE)
 
-        if is_cli:
-            locale.setlocale(locale.LC_ALL, "tr_TR")
-        else:
-            locale.setlocale(locale.LC_ALL, "turkish")
+        try:
+            if is_cli or sys.version_info >= (3, 5):
+                locale.setlocale(locale.LC_CTYPE, "tr_TR")
+            else:
+                locale.setlocale(locale.LC_CTYPE, "turkish")
 
-        if PERFECT_UNICODE_CASING:
-            self.assertEqual(u"I".lower(),u"ı")
-            self.assertEqual(u"i".upper(),u"İ")
-        else:
-            # cpython compatibility
-            self.assertEqual(u"I".lower(),u"i")
-            self.assertEqual(u"i".upper(),u"I")
+            if PERFECT_UNICODE_CASING:
+                self.assertEqual(u"I".lower(),u"ı")
+                self.assertEqual(u"i".upper(),u"İ")
+            else:
+                # cpython compatibility
+                self.assertEqual(u"I".lower(),u"i")
+                self.assertEqual(u"i".upper(),u"I")
 
-        locale.setlocale(locale.LC_ALL, (lang,encoding))
+        finally:
+            locale.setlocale(locale.LC_CTYPE, (lang, encoding))
 
         # Note:
         # IronPython casing matches cpython implementation (linux and windows)

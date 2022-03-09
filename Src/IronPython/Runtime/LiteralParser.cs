@@ -226,7 +226,8 @@ namespace IronPython.Runtime {
             consumed = default;
             conversion = default;
 
-            int i = 0;
+            int start = data.Length - data.TrimStart(" \t\f\r\n".AsSpan()).Length; // skip whitespace;
+            int i = start;
             while (i < data.Length) {
                 char ch = data[i++];
                 if (ch == '\\') {
@@ -261,12 +262,11 @@ namespace IronPython.Runtime {
                 } else if (ch == '}' || ch == ']' || ch == ')') {
                     if (parentheses.Length == 0) {
                         if (ch == '}') {
-                            res = data.Slice(0, i - 1).Trim().ToString();
-                            if (string.IsNullOrEmpty(res)) {
+                            if (i - 1 == start) {
                                 res = "f-string: empty expression not allowed";
                                 return false;
                             }
-
+                            res = data.Slice(start, i - 1 - start).ToString();
                             consumed = i;
                             return true;
                         } else {
@@ -285,16 +285,18 @@ namespace IronPython.Runtime {
                 } else if (ch == '{' || ch == '[' || ch == '(') {
                     parentheses += ch;
                 } else if (ch == '!' && parentheses.Length == 0) {
-                    if (i == data.Length) {
-                        break; // f-string: expecting '}'
-                    }
-                    res = data.Slice(0, i - 1).Trim().ToString();
-                    if (string.IsNullOrEmpty(res)) {
+                    if (i - 1 == start) {
                         res = "f-string: empty expression not allowed";
                         return false;
                     }
 
+                    res = data.Slice(start, i - 1 - start).ToString();
+
+                    if (i == data.Length) {
+                        break; // f-string: expecting '}'
+                    }
                     ch = data[i++];
+
                     if (ch == 's' || ch == 'r' || ch == 'a') {
                         conversion = ch;
 
@@ -302,6 +304,7 @@ namespace IronPython.Runtime {
                             break; // f-string: expecting '}'
                         }
                         ch = data[i++];
+
                         if (ch == ':') {
                             var end = data.Slice(i).IndexOf('}');
                             if (end != -1) {
@@ -313,13 +316,15 @@ namespace IronPython.Runtime {
                         } else if (ch == '}') {
                             consumed = i;
                             return true;
+                        } else {
+                            break; // f-string: expecting '}'
                         }
                     } else {
                         res = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
                         return false;
                     }
                 } else if (ch == ':' && parentheses.Length == 0) {
-                    res = data.Slice(0, i - 1).Trim().ToString();
+                    res = data.Slice(start, i - 1 - start).ToString();
                     if (string.IsNullOrEmpty(res)) {
                         res = "f-string: empty expression not allowed";
                         return false;
@@ -374,7 +379,12 @@ namespace IronPython.Runtime {
                                     expressions.Add(new ConstantExpression(str));
                                     buf.Clear();
                                 }
-                                expressions.Add(new FormattedValueExpression(parser.ParseFString(res), conversion, formatSpec));
+                                var expression = parser.ParseFString(res);
+                                if(expression is null) {
+                                    handleSyntaxError("f-string: invalid syntax");
+                                    break;
+                                }
+                                expressions.Add(new FormattedValueExpression(expression, conversion, formatSpec));
                                 i += consumed;
                                 continue;
                             } else {

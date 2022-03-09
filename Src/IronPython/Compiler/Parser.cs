@@ -142,7 +142,9 @@ namespace IronPython.Compiler {
             }
         }
 
-        internal Expression ParseFString(string expression) {
+#nullable enable
+
+        internal Expression? ParseFString(string expression) {
             var sourceUnit = DefaultContext.DefaultPythonContext.CreateSnippet(expression, "<string>", SourceCodeKind.Expression);
             var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
             using var parser = CreateParser(context, new PythonOptions());
@@ -151,6 +153,8 @@ namespace IronPython.Compiler {
             var body = ast.Body as ExpressionStatement;
             return body?.Expression;
         }
+
+#nullable restore
 
         //[stmt_list] Newline | compound_stmt Newline
         //stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
@@ -351,10 +355,10 @@ namespace IronPython.Compiler {
             string msg;
             if ((errorCode & ~ErrorCodes.IncompleteMask) == ErrorCodes.IndentationError) {
                 msg = Resources.ExpectedIndentation;
-            } else if (t.Kind != TokenKind.EndOfFile) {
-                msg = "invalid syntax";
-            } else {
+            } else if (t.Kind == TokenKind.EndOfFile) {
                 msg = "unexpected EOF while parsing";
+            } else {
+                msg = "invalid syntax";
             }
 
             return msg;

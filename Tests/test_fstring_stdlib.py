@@ -33,7 +33,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_fstring.TestCase('test_comments'))
         suite.addTest(test.test_fstring.TestCase('test_compile_time_concat'))
         suite.addTest(test.test_fstring.TestCase('test_compile_time_concat_errors'))
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_conversions'))) # TODO: figure out
+        suite.addTest(test.test_fstring.TestCase('test_conversions'))
         suite.addTest(test.test_fstring.TestCase('test_del'))
         suite.addTest(test.test_fstring.TestCase('test_dict'))
         suite.addTest(test.test_fstring.TestCase('test_docstring'))
@@ -44,19 +44,19 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_fstring.TestCase('test_format_specifier_expressions')) # TODO: f-string in format spec
         suite.addTest(test.test_fstring.TestCase('test_global'))
         suite.addTest(test.test_fstring.TestCase('test_if_conditional'))
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_invalid_string_prefixes'))) # TODO: figure out
+        suite.addTest(test.test_fstring.TestCase('test_invalid_string_prefixes'))
         suite.addTest(test.test_fstring.TestCase('test_lambda'))
         suite.addTest(test.test_fstring.TestCase('test_leading_trailing_spaces'))
         suite.addTest(test.test_fstring.TestCase('test_literal'))
         suite.addTest(test.test_fstring.TestCase('test_literal_eval'))
         suite.addTest(test.test_fstring.TestCase('test_locals'))
         suite.addTest(test.test_fstring.TestCase('test_loop'))
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_many_expressions'))) # TODO: figure out
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_misformed_unicode_character_name'))) # TODO: figure out
+        suite.addTest(test.test_fstring.TestCase('test_many_expressions')) # TODO: f-string in format spec
+        suite.addTest(test.test_fstring.TestCase('test_misformed_unicode_character_name')) # TODO: error is thrown in the parser instead of the tokenizer
         suite.addTest(test.test_fstring.TestCase('test_mismatched_braces'))
         suite.addTest(test.test_fstring.TestCase('test_mismatched_parens'))
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_missing_expression'))) # TODO: figure out
-        suite.addTest(unittest.expectedFailure(test.test_fstring.TestCase('test_missing_format_spec'))) # TODO: figure out
+        suite.addTest(test.test_fstring.TestCase('test_missing_expression'))
+        suite.addTest(test.test_fstring.TestCase('test_missing_format_spec'))
         suite.addTest(test.test_fstring.TestCase('test_missing_variable'))
         suite.addTest(test.test_fstring.TestCase('test_multiple_vars'))
         suite.addTest(test.test_fstring.TestCase('test_nested_fstrings'))

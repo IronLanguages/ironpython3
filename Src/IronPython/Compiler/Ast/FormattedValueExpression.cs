@@ -20,7 +20,7 @@ namespace IronPython.Compiler.Ast {
         public string FormatSpec { get; }
 
         public override System.Linq.Expressions.Expression Reduce() {
-            System.Linq.Expressions.Expression expr = Value;
+            System.Linq.Expressions.Expression expr = Convert(Value, typeof(object));
 
             if (Conversion == 'a') {
                 expr = Expression.Call(AstMethods.Ascii, Parent.LocalContext, expr);
@@ -35,7 +35,7 @@ namespace IronPython.Compiler.Ast {
             return Expression.Call(
                     AstMethods.Format,
                     Parent.LocalContext,
-                    Convert(expr, typeof(object)),
+                    expr,
                     Expression.Constant(FormatSpec)
                 );
         }

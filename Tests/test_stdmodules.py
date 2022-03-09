@@ -272,4 +272,45 @@ class StdModulesLocalizedTest(IronPythonTestCase):
         locale.setlocale(locale.LC_COLLATE,"de_CH")
         self.assertTrue(sorted([u'a', u'z', u'�'], key=functools.cmp_to_key(locale.strcoll)) == sorted([u'a', u'z', u'�'], key=locale.strxfrm))
 
+    def test_time_strptime_am_pm(self):
+        import time
+        locale.setlocale(locale.LC_TIME, 'C')
+        self.assertEqual(time.strptime('12 AM', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 PM', "%I %p").tm_hour, 12)
+
+        self.assertEqual(time.strptime('12 am', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 pm', "%I %p").tm_hour, 12)
+
+        self.assertEqual(time.strptime('12 Am', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 Pm', "%I %p").tm_hour, 12)
+
+        locale.setlocale(locale.LC_TIME, 'en_US')
+        self.assertEqual(time.strptime('12 AM', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 PM', "%I %p").tm_hour, 12)
+
+        self.assertEqual(time.strptime('12 am', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 pm', "%I %p").tm_hour, 12)
+
+        self.assertEqual(time.strptime('12 Am', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 Pm', "%I %p").tm_hour, 12)
+
+        locale.setlocale(locale.LC_TIME, "hu_HU")
+        self.assertEqual(time.strptime('12 de.', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 du.', "%I %p").tm_hour, 12)
+
+        self.assertEqual(time.strptime('12 DE.', "%I %p").tm_hour, 0)
+        self.assertEqual(time.strptime('12 DU.', "%I %p").tm_hour, 12)
+
+    def test_time_strptime(self):
+        import time
+        locale.setlocale(locale.LC_TIME, 'C')
+        t = time.strptime('HOUR: 12, minute: 10', "Hour: %H, Minute: %M")
+        self.assertEqual(t.tm_hour, 12)
+        self.assertEqual(t.tm_min, 10)
+
+        locale.setlocale(locale.LC_TIME, 'en_CA')
+        t = time.strptime('HOUR: 12, minute: 10', "Hour: %H, Minute: %M")
+        self.assertEqual(t.tm_hour, 12)
+        self.assertEqual(t.tm_min, 10)
+
 run_test(__name__)

@@ -197,6 +197,7 @@ namespace IronPython.Modules {
             bool postProc;
             FoundDateComponents foundDateComp;
             List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, true, out postProc, out foundDateComp);
+            var lc_info = PythonLocale.GetLocaleInfo(context);
 
             DateTime res;
             if (postProc) {
@@ -221,7 +222,7 @@ namespace IronPython.Modules {
                 string[] formatParts = new string[formatInfo.Count];
                 for (int i = 0; i < formatInfo.Count; i++) {
                     switch (formatInfo[i].Type) {
-                        case FormatInfoType.UserText: formatParts[i] = "'" + formatInfo[i].Text + "'"; break;
+                        case FormatInfoType.UserText: formatParts[i] = "'" + formatInfo[i].Text.ToUpper(lc_info.Time) + "'"; break;
                         case FormatInfoType.SimpleFormat: formatParts[i] = formatInfo[i].Text; break;
                         case FormatInfoType.CustomFormat:
                             if (formatInfo[i].Text == "f") {
@@ -240,9 +241,9 @@ namespace IronPython.Modules {
                 var formats =
                     fIdx == -1 ? new [] { string.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
                 try {
-                    if (!DateTime.TryParseExact(@string,
+                    if (!DateTime.TryParseExact(@string.ToUpper(lc_info.Time),
                         formats,
-                        PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat,
+                        lc_info.Time.DateTimeFormat,
                         DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault,
                         out res)) {
                         throw PythonOps.ValueError("time data does not match format" + Environment.NewLine + 
@@ -281,14 +282,16 @@ namespace IronPython.Modules {
             bool postProc;
             List<FormatInfo> formatInfoList = PythonFormatToCLIFormat(format, false, out postProc, out _);
             StringBuilder res = new StringBuilder();
+            var lc_info = PythonLocale.GetLocaleInfo(context);
 
             foreach (FormatInfo formatInfo in formatInfoList) {
                 switch (formatInfo.Type) {
                     case FormatInfoType.UserText: res.Append(formatInfo.Text); break;
-                    case FormatInfoType.SimpleFormat: res.Append(dt.ToString(formatInfo.Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat)); break;
+                    case FormatInfoType.SimpleFormat: res.Append(dt.ToString(formatInfo.Text, lc_info.Time.DateTimeFormat)); break;
                     case FormatInfoType.CustomFormat:
                         // custom format strings need to be at least 2 characters long                        
-                        res.Append(dt.ToString("%" + formatInfo.Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat));
+                        string custom_field_format = formatInfo.Text.Length == 1 ? "%" + formatInfo.Text : formatInfo.Text;
+                        res.Append(dt.ToString(custom_field_format, lc_info.Time.DateTimeFormat));
                         break;
                 }
             }
@@ -450,8 +453,7 @@ namespace IronPython.Modules {
                             break;
                         case 'M': newFormat.Add(new FormatInfo(forParse ? "m" : "mm")); break;
                         case 'p':
-                            newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "t"));
-                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, "M"));
+                            newFormat.Add(new FormatInfo("tt"));
                             break;
                         case 'S': newFormat.Add(new FormatInfo("ss")); break;
                         case 'x':

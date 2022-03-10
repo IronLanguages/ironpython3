@@ -12,10 +12,11 @@ class _LocaleTest(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.saved_lc = [(lc, _locale.setlocale(lc, 'C')) for lc in
+        self.saved_lc = [(lc, _locale.setlocale(lc, None)) for lc in
                             (getattr(_locale, lc_name) for lc_name in
                                 dir(_locale) if lc_name.startswith('LC_') and lc_name != 'LC_ALL')
                         ]
+        _locale.setlocale(_locale.LC_ALL, 'C')
 
     def tearDown(self):
         for lc, setting in self.saved_lc:

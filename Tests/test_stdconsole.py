@@ -27,7 +27,7 @@ class IronPythonVariableContext(object):
 
     def __enter__(self):
         from System import Environment
-        if self._prepend:
+        if self._prepend and self._oldval is not None:
             Environment.SetEnvironmentVariable(self._variable, "%s%s%s" % (self._value, self._sep, self._oldval))
         else:
             Environment.SetEnvironmentVariable(self._variable, self._value)

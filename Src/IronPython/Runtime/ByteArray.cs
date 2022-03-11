@@ -1482,6 +1482,15 @@ namespace IronPython.Runtime {
             }
         }
 
+        public bool __eq__(CodeContext context, [NotNull]string value) {
+            if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {
+                PythonOps.Warn(context, PythonExceptions.BytesWarning, "Comparison between bytearray and string");
+            }
+            return false;
+        }
+
+        public bool __eq__(CodeContext context, [NotNull]Extensible<string> value) => __eq__(context, value.Value);
+
         [return: MaybeNotImplemented]
         public NotImplementedType __eq__(CodeContext context, object? value) => NotImplementedType.Value;
 
@@ -1490,6 +1499,10 @@ namespace IronPython.Runtime {
         public bool __ne__(CodeContext context, [NotNull]MemoryView value) => !__eq__(context, value);
 
         public bool __ne__(CodeContext context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext context, [NotNull]string value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext context, [NotNull]Extensible<string> value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
         public NotImplementedType __ne__(CodeContext context, object? value) => NotImplementedType.Value;

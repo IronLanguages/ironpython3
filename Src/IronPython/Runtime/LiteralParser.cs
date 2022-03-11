@@ -216,24 +216,46 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static bool TryFinishFString(ReadOnlySpan<char> data, out string res, out char? conversion, out string formatSpec, out int consumed) {
+#nullable enable
+
+        private static bool TryParse(Parser parser, ReadOnlySpan<char> data, [NotNullWhen(true)] out Expression? expression, [NotNullWhen(false)] out string? error) {
+            if (data.Length == 0) {
+                expression = null;
+                error = "f-string: empty expression not allowed";
+                return false;
+            }
+
+            expression = parser.ParseFString(data.ToString());
+
+            if (expression is null) {
+                error = "f-string: invalid syntax";
+                return false;
+            }
+
+            error = default;
+            return true;
+        }
+
+        private static bool TryReadFStringValue(Parser parser, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out Expression? value, [NotNullWhen(false)] out string? error) {
+            consumed = default;
+            value = default;
+            error = default;
+
             bool inString = false;
             bool isTriple = false;
             char quote = default;
             string parentheses = string.Empty;
-
-            formatSpec = string.Empty;
-            consumed = default;
-            conversion = default;
 
             int start = data.Length - data.TrimStart(" \t\f\r\n".AsSpan()).Length; // skip whitespace;
             int i = start;
             while (i < data.Length) {
                 char ch = data[i++];
                 if (ch == '\\') {
-                    res = "f-string expression part cannot include a backslash";
+                    error = "f-string expression part cannot include a backslash";
                     return false;
                 }
+
+                // read until to end of string
                 if (inString) {
                     if (ch == quote) {
                         if (isTriple) {
@@ -253,6 +275,7 @@ namespace IronPython.Runtime {
                 }
 
                 if (ch == '\'' || ch == '"') {
+                    // start of string
                     inString = true;
                     quote = ch;
                     if (i + 1 < data.Length && data[i] == ch && data[i + 1] == ch) {
@@ -260,161 +283,173 @@ namespace IronPython.Runtime {
                         isTriple = true;
                     }
                 } else if (ch == '}' || ch == ']' || ch == ')') {
+                    // closing parenthesis
                     if (parentheses.Length == 0) {
                         if (ch == '}') {
-                            if (i - 1 == start) {
-                                res = "f-string: empty expression not allowed";
-                                return false;
+                            // parse expression
+                            if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                                consumed = i - 1;
+                                return true;
                             }
-                            res = data.Slice(start, i - 1 - start).ToString();
-                            consumed = i;
-                            return true;
+                            return false;
                         } else {
-                            res = $"f-string: unmatched '{ch}'";
+                            error = $"f-string: unmatched '{ch}'";
                             return false;
                         }
                     } else {
                         char opening = parentheses[parentheses.Length - 1];
+                        // matching parentheses
                         if (opening == '{' && ch == '}' || opening == '[' && ch == ']' || opening == '(' && ch == ')') {
                             parentheses = parentheses.Substring(0, parentheses.Length - 1);
                         } else {
-                            res = $"f-string: closing parenthesis '{ch}' does not match opening parenthesis '{opening}'";
+                            error = $"f-string: closing parenthesis '{ch}' does not match opening parenthesis '{opening}'";
                             return false;
                         }
                     }
                 } else if (ch == '{' || ch == '[' || ch == '(') {
+                    // opening parenthesis
                     parentheses += ch;
                 } else if (ch == '!' && parentheses.Length == 0) {
-                    if (i - 1 == start) {
-                        res = "f-string: empty expression not allowed";
-                        return false;
+                    // special case for !=
+                    if (i < data.Length && data[i] == '=') {
+                        i++;
+                        continue;
                     }
 
-                    res = data.Slice(start, i - 1 - start).ToString();
-
-                    if (i == data.Length) {
-                        break; // f-string: expecting '}'
-                    }
-                    ch = data[i++];
-
-                    if (ch == 's' || ch == 'r' || ch == 'a') {
-                        conversion = ch;
-
-                        if (i == data.Length) {
-                            break; // f-string: expecting '}'
-                        }
-                        ch = data[i++];
-
-                        if (ch == ':') {
-                            var end = data.Slice(i).IndexOf('}');
-                            if (end != -1) {
-                                formatSpec = data.Slice(i, end).ToString();
-                                consumed = i + end + 1;
-                                return true;
-                            }
-                            break; // f-string: expecting '}'
-                        } else if (ch == '}') {
-                            consumed = i;
-                            return true;
-                        } else {
-                            break; // f-string: expecting '}'
-                        }
-                    } else {
-                        res = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
-                        return false;
-                    }
-                } else if (ch == ':' && parentheses.Length == 0) {
-                    res = data.Slice(start, i - 1 - start).ToString();
-                    if (string.IsNullOrEmpty(res)) {
-                        res = "f-string: empty expression not allowed";
-                        return false;
-                    }
-
-                    var end = data.Slice(i).IndexOf('}');
-                    if (end != -1) {
-                        formatSpec = data.Slice(i, end).ToString();
-                        consumed = i + end + 1;
+                    // parse expression
+                    if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                        consumed = i - 1;
                         return true;
                     }
-                    break; // f-string: expecting '}'
+                    return false;
+                } else if (ch == ':' && parentheses.Length == 0) {
+                    // parse expression
+                    if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                        consumed = i - 1;
+                        return true;
+                    }
+                    return false;
                 } else if (ch == '#') {
-                    res = "f-string expression part cannot include '#'";
+                    error = "f-string expression part cannot include '#'";
                     return false;
                 }
             }
 
             if (inString) {
-                res = "f-string: unterminated string";
+                error = "f-string: unterminated string";
             } else {
-                res = "f-string: expecting '}'";
+                error = "f-string: expecting '}'";
             }
             return false;
+
         }
 
-        internal static List<Expression> DoParseFString(ReadOnlySpan<char> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, bool isFormatted, Parser parser) {
-            int length = data.Length;
+        private static bool TryReadFStringConversion(ReadOnlySpan<char> data, out int consumed, out char conversion, [NotNullWhen(false)] out string? error) {
+            consumed = default;
+            conversion = default;
+            error = default;
+
+            // we must have at least a character and : or }
+            if (data.Length == 0) {
+                error = "f-string: expecting '}'";
+                return false;
+            }
+
+            var ch = data[0];
+            if (ch == 's' || ch == 'r' || ch == 'a') {
+                conversion = ch;
+
+                // no more data
+                if (data.Length == 1) {
+                    error = "f-string: expecting '}'";
+                    return false;
+                }
+
+                ch = data[1];
+                if (ch == ':' || ch == '}') {
+                    consumed = 1;
+                    return true;
+                } else { 
+                    error = "f-string: expecting '}'";
+                    return false;
+                }
+            } else {
+                error = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
+                return false;
+            }
+        }
+
+        private static bool TryParseFString(Parser parser, bool isRaw, bool inFormatSpec, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
             string str;
 
             var expressions = new List<Expression>();
-            StringBuilder buf = new StringBuilder(data.Length);
+            var buf = new StringBuilder(data.Length);
+
+            consumed = default;
+            joinedStringExpression = default;
+            error = default;
 
             int i = 0;
-            while (i < length) {
+            while (i < data.Length) {
                 char ch = data[i++];
-                if (isFormatted) {
-                    if (ch == '{') {
-                        if (i >= length) {
-                            handleSyntaxError("f-string: expecting '}'");
-                            break;
-                        }
-                        ch = data[i++];
-                        if (ch == '{') {
-                            buf!.Append(ch);
-                            continue;
-                        } else {
-                            i--;
-                            if (TryFinishFString(data.Slice(i), out string res, out char? conversion, out string formatSpec, out int consumed)) {
-                                str = buf.ToString();
-                                if (!string.IsNullOrEmpty(str)) {
-                                    expressions.Add(new ConstantExpression(str));
-                                    buf.Clear();
-                                }
-                                var expression = parser.ParseFString(res);
-                                if(expression is null) {
-                                    handleSyntaxError("f-string: invalid syntax");
-                                    break;
-                                }
-                                expressions.Add(new FormattedValueExpression(expression, conversion, formatSpec));
-                                i += consumed;
-                                continue;
-                            } else {
-                                handleSyntaxError(res);
-                                break;
-                            }
-                        }
-                    } else if (ch == '}') {
-                        if (i >= length) {
-                            handleSyntaxError("f-string: single '}' is not allowed");
-                            break;
-                        }
-                        ch = data[i++];
-                        if (ch == '}') {
-                            buf!.Append(ch);
-                            continue;
-                        } else {
-                            handleSyntaxError("f-string: single '}' is not allowed");
-                            break;
-                        }
+                if (ch == '{') {
+                    if (!inFormatSpec && i < data.Length && data[i] == '{') {
+                        i++;
+                        buf.Append(ch);
+                        continue;
                     }
-                }
-                if ((!isRaw || isUniEscape) && ch == '\\') {
-                    StringBuilderInit(ref buf, data, i - 1);
-                    HandleEscape(data, ref i, buf, isRaw, isUniEscape, isFormatted: isFormatted, normalizeLineEndings, handleUnicodeError);
-                } else if (ch == '\r' && normalizeLineEndings) {
-                    StringBuilderInit(ref buf, data, i - 1);
 
+                    str = buf.ToString();
+                    if (!string.IsNullOrEmpty(str)) {
+                        expressions.Add(new ConstantExpression(str));
+                        buf.Clear();
+                    }
+
+                    if (!TryReadFStringValue(parser, data.Slice(i), out consumed, out Expression? expression, out error)) return false;
+                    i += consumed;
+                    ch = data[i++];
+
+                    char conversion = default;
+                    if (ch == '!') {
+                        if (!TryReadFStringConversion(data.Slice(i), out consumed, out conversion, out error)) return false;
+                        i += consumed;
+                        ch = data[i++];
+                    }
+
+                    JoinedStringExpression? formatSpecExpression = default;
+                    if (ch == ':') {
+                        if (!TryParseFString(parser, isRaw, inFormatSpec: true, data.Slice(i), out consumed, out formatSpecExpression, out error)) return false;
+                        i += consumed - 1;
+                        ch = data[i++];
+                    }
+
+                    if (ch != '}') {
+                        error = "f-string: expecting '}'";
+                        return false;
+                    }
+
+                    expressions.Add(new FormattedValueExpression(expression, conversion == default ? null : conversion, formatSpecExpression));
+                    continue;
+                } else if (ch == '}') {
+                    if (inFormatSpec) {
+                        break;
+                    }
+                    if (i < data.Length && data[i] == '}') {
+                        i++;
+                        buf!.Append(ch);
+                        continue;
+                    }
+                    error = "f-string: single '}' is not allowed";
+                    return false;
+                } else if (ch == '\\') {
+                    if (isRaw) {
+                        buf.Append(ch);
+                    } else {
+                        HandleEscape(data, ref i, buf, isRaw, isUniEscape: !isRaw, isFormatted: true, normalizeLineEndings: true, handleUnicodeError);
+                    }
+                } else if (ch == '\r') {
                     // normalize line endings
-                    if (i < length && data[i] == '\n') {
+                    if (i < data.Length && data[i] == '\n') {
                         i++;
                     }
                     buf.Append('\n');
@@ -428,16 +463,29 @@ namespace IronPython.Runtime {
                 expressions.Add(new ConstantExpression(str));
             }
 
-            return expressions;
-
-            void handleSyntaxError(string reason) {
-                throw new SyntaxErrorException(reason);
-            }
+            consumed = i;
+            joinedStringExpression = new JoinedStringExpression(expressions);
+            return true;
 
             void handleUnicodeError(in ReadOnlySpan<char> data, int start, int end, string reason) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", null, start, end, reason);
             }
         }
+
+        internal static JoinedStringExpression DoParseFString(ReadOnlySpan<char> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, bool isFormatted, Parser parser, bool isFormatSpec = false) {
+            Debug.Assert(isRaw == !isUniEscape);
+            Debug.Assert(normalizeLineEndings == true);
+            Debug.Assert(isFormatted == true);
+
+            if (TryParseFString(parser, isRaw, inFormatSpec: false, data, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
+                Debug.Assert(consumed == data.Length);
+                return joinedStringExpression;
+            } else {
+                throw new SyntaxErrorException(error);
+            }
+        }
+
+#nullable restore
 
         private static void StringBuilderInit<T>(ref StringBuilder sb, in ReadOnlySpan<T> data, int toCopy) where T : unmanaged, IConvertible {
             Debug.Assert(toCopy <= data.Length);
@@ -740,7 +788,7 @@ namespace IronPython.Runtime {
                 if (start < end && text[start] == '0') {
                     // Hex, oct, or bin
                     if (++start < end) {
-                        switch(text[start]) {
+                        switch (text[start]) {
                             case 'x':
                             case 'X':
                                 start++;
@@ -871,7 +919,7 @@ namespace IronPython.Runtime {
                 res = ParseFloatNoCatch(text, replaceUnicode: replaceUnicode);
             } catch (OverflowException) {
                 res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
-            } catch(FormatException) {
+            } catch (FormatException) {
                 res = default;
                 return false;
             }

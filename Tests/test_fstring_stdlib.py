@@ -17,7 +17,7 @@ def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
         suite.addTest(test.test_fstring.TestCase('test__format__lookup'))
-        #suite.addTest(test.test_fstring.TestCase('test_arguments')) # TODO: f-string in format spec
+        suite.addTest(test.test_fstring.TestCase('test_arguments'))
         suite.addTest(test.test_fstring.TestCase('test_assignment'))
         suite.addTest(test.test_fstring.TestCase('test_ast'))
         suite.addTest(test.test_fstring.TestCase('test_ast_compile_time_concat'))
@@ -41,7 +41,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_fstring.TestCase('test_empty_format_specifier'))
         suite.addTest(test.test_fstring.TestCase('test_errors'))
         suite.addTest(test.test_fstring.TestCase('test_expressions_with_triple_quoted_strings'))
-        #suite.addTest(test.test_fstring.TestCase('test_format_specifier_expressions')) # TODO: f-string in format spec
+        suite.addTest(test.test_fstring.TestCase('test_format_specifier_expressions'))
         suite.addTest(test.test_fstring.TestCase('test_global'))
         suite.addTest(test.test_fstring.TestCase('test_if_conditional'))
         suite.addTest(test.test_fstring.TestCase('test_invalid_string_prefixes'))
@@ -51,8 +51,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_fstring.TestCase('test_literal_eval'))
         suite.addTest(test.test_fstring.TestCase('test_locals'))
         suite.addTest(test.test_fstring.TestCase('test_loop'))
-        suite.addTest(test.test_fstring.TestCase('test_many_expressions')) # TODO: f-string in format spec
-        suite.addTest(test.test_fstring.TestCase('test_misformed_unicode_character_name')) # TODO: error is thrown in the parser instead of the tokenizer
+        suite.addTest(test.test_fstring.TestCase('test_many_expressions'))
+        suite.addTest(test.test_fstring.TestCase('test_misformed_unicode_character_name'))
         suite.addTest(test.test_fstring.TestCase('test_mismatched_braces'))
         suite.addTest(test.test_fstring.TestCase('test_mismatched_parens'))
         suite.addTest(test.test_fstring.TestCase('test_missing_expression'))
@@ -60,10 +60,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_fstring.TestCase('test_missing_variable'))
         suite.addTest(test.test_fstring.TestCase('test_multiple_vars'))
         suite.addTest(test.test_fstring.TestCase('test_nested_fstrings'))
-        #suite.addTest(test.test_fstring.TestCase('test_newlines_in_expressions')) # TODO: newlines
+        suite.addTest(test.test_fstring.TestCase('test_newlines_in_expressions'))
         suite.addTest(test.test_fstring.TestCase('test_no_backslashes_in_expression_part'))
         suite.addTest(test.test_fstring.TestCase('test_no_escapes_for_braces'))
-        #suite.addTest(test.test_fstring.TestCase('test_not_equal')) # TODO: special case not equal
+        suite.addTest(test.test_fstring.TestCase('test_not_equal'))
         suite.addTest(test.test_fstring.TestCase('test_parens_in_expressions'))
         suite.addTest(test.test_fstring.TestCase('test_shadowed_global'))
         suite.addTest(test.test_fstring.TestCase('test_side_effect_order'))

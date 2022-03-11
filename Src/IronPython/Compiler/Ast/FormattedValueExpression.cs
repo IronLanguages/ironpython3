@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace IronPython.Compiler.Ast {
     public class FormattedValueExpression : Expression {
-        public FormattedValueExpression(Expression value, char? conversion, string formatSpec) {
+        public FormattedValueExpression(Expression value, char? conversion, JoinedStringExpression? formatSpec) {
             if (value is null) throw new ArgumentNullException(nameof(value));
 
             Value = value;
@@ -17,7 +17,7 @@ namespace IronPython.Compiler.Ast {
 
         public char? Conversion { get; }
 
-        public string FormatSpec { get; }
+        public JoinedStringExpression? FormatSpec { get; }
 
         public override System.Linq.Expressions.Expression Reduce() {
             System.Linq.Expressions.Expression expr = Convert(Value, typeof(object));
@@ -36,13 +36,14 @@ namespace IronPython.Compiler.Ast {
                     AstMethods.Format,
                     Parent.LocalContext,
                     expr,
-                    Expression.Constant(FormatSpec)
+                    Convert((System.Linq.Expressions.Expression?)FormatSpec ?? Expression.Constant(string.Empty), typeof(string))
                 );
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Value.Walk(walker);
+                FormatSpec?.Walk(walker);
             }
             walker.PostWalk(this);
         }

@@ -1506,7 +1506,7 @@ namespace IronPython.Modules {
                 _fields = __fields;
             }
 
-            public FormattedValue(expr value, int conversion, string format_spec, [Optional] int? lineno, [Optional] int? col_offset)
+            public FormattedValue(expr value, int conversion, expr format_spec, [Optional] int? lineno, [Optional] int? col_offset)
                 : this() {
                 this.value = value;
                 this.conversion = conversion;
@@ -1516,16 +1516,16 @@ namespace IronPython.Modules {
             }
 
             internal FormattedValue(FormattedValueExpression expr)
-                : this(Convert(expr.Value), expr.Conversion ?? -1, expr.FormatSpec) { }
+                : this(Convert(expr.Value), expr.Conversion ?? -1, expr.FormatSpec == null ? null : Convert(expr.FormatSpec)) { }
 
             internal override AstExpression Revert() {
                 char? conv = conversion == -1 ? null : checked((char)conversion);
-                return new FormattedValueExpression(Revert(value), conv, format_spec);
+                return new FormattedValueExpression(Revert(value), conv, format_spec == null ? null : (Revert(format_spec) as JoinedStringExpression));
             }
 
             public expr value { get; set; }
             public int conversion { get; set; }
-            public string format_spec { get; set; }
+            public expr format_spec { get; set; }
         }
 
         [PythonType]

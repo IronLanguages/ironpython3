@@ -1959,7 +1959,7 @@ namespace IronPython.Compiler {
                 expressions.Add(new ConstantExpression(s));
             }
 
-            expressions.AddRange(LiteralParser.DoParseFString(t.Image.AsSpan(), t.isRaw, !t.isRaw, normalizeLineEndings: true, isFormatted: true, this));
+            expressions.AddRange(LiteralParser.DoParseFString(t.Image.AsSpan(), t.isRaw, !t.isRaw, normalizeLineEndings: true, isFormatted: true, this).Values);
 
             return string.Empty;
         }

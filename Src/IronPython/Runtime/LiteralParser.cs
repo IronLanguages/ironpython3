@@ -225,15 +225,13 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-            expression = parser.ParseFString(data.ToString());
-
-            if (expression is null) {
-                error = "f-string: invalid syntax";
-                return false;
+            if (parser.TryParseExpression("(" + data.ToString() + ")", out expression)) {
+                error = default;
+                return true;
             }
 
-            error = default;
-            return true;
+            error = "f-string: invalid syntax";
+            return false;
         }
 
         private static bool TryReadFStringValue(Parser parser, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out Expression? value, [NotNullWhen(false)] out string? error) {
@@ -369,7 +367,7 @@ namespace IronPython.Runtime {
                 if (ch == ':' || ch == '}') {
                     consumed = 1;
                     return true;
-                } else { 
+                } else {
                     error = "f-string: expecting '}'";
                     return false;
                 }
@@ -379,7 +377,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static bool TryParseFString(Parser parser, bool isRaw, bool inFormatSpec, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
+        private static bool TryParseFString(Parser parser, bool isRaw, int depth, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
             string str;
 
             var expressions = new List<Expression>();
@@ -393,10 +391,14 @@ namespace IronPython.Runtime {
             while (i < data.Length) {
                 char ch = data[i++];
                 if (ch == '{') {
-                    if (!inFormatSpec && i < data.Length && data[i] == '{') {
+                    if (depth == 0 && i < data.Length && data[i] == '{') {
                         i++;
                         buf.Append(ch);
                         continue;
+                    }
+                    if (depth == 2) {
+                        error = "f-string: expressions nested too deeply";
+                        return false;
                     }
 
                     str = buf.ToString();
@@ -418,7 +420,7 @@ namespace IronPython.Runtime {
 
                     JoinedStringExpression? formatSpecExpression = default;
                     if (ch == ':') {
-                        if (!TryParseFString(parser, isRaw, inFormatSpec: true, data.Slice(i), out consumed, out formatSpecExpression, out error)) return false;
+                        if (!TryParseFString(parser, isRaw, depth: depth + 1, data.Slice(i), out consumed, out formatSpecExpression, out error)) return false;
                         i += consumed - 1;
                         ch = data[i++];
                     }
@@ -431,7 +433,7 @@ namespace IronPython.Runtime {
                     expressions.Add(new FormattedValueExpression(expression, conversion == default ? null : conversion, formatSpecExpression));
                     continue;
                 } else if (ch == '}') {
-                    if (inFormatSpec) {
+                    if (depth != 0) {
                         break;
                     }
                     if (i < data.Length && data[i] == '}') {
@@ -477,7 +479,7 @@ namespace IronPython.Runtime {
             Debug.Assert(normalizeLineEndings == true);
             Debug.Assert(isFormatted == true);
 
-            if (TryParseFString(parser, isRaw, inFormatSpec: false, data, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
+            if (TryParseFString(parser, isRaw, depth: 0, data, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
                 Debug.Assert(consumed == data.Length);
                 return joinedStringExpression;
             } else {

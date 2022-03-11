@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -144,14 +145,17 @@ namespace IronPython.Compiler {
 
 #nullable enable
 
-        internal Expression? ParseFString(string expression) {
-            var sourceUnit = DefaultContext.DefaultPythonContext.CreateSnippet(expression, "<string>", SourceCodeKind.Expression);
+        internal bool TryParseExpression(string code, [NotNullWhen(true)] out Expression? expression) {
+            var sourceUnit = DefaultContext.DefaultPythonContext.CreateSnippet("(" + code + ")", "<string>", SourceCodeKind.Expression);
             var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
             using var parser = CreateParser(context, new PythonOptions());
             var ast = parser.ParseSingleStatement();
-            if (parser.ErrorCode != 0) return null;
-            var body = ast.Body as ExpressionStatement;
-            return body?.Expression;
+            ExpressionStatement? statement = null;
+            if (parser.ErrorCode == 0) {
+                statement = ast.Body as ExpressionStatement;
+            }
+            expression = statement?.Expression;
+            return !(expression is null);
         }
 
 #nullable restore

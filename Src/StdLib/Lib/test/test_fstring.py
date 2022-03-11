@@ -500,13 +500,11 @@ non-important content
         self.assertEqual(f'result: {value:{width:0}.{precision:1}}', 'result:      12.35')
         self.assertEqual(f'result: {value:{1}{0:0}.{precision:1}}', 'result:      12.35')
         self.assertEqual(f'result: {value:{ 1}{ 0:0}.{ precision:1}}', 'result:      12.35')
-        # ironpython: TODO - bug in formatting!
-        #self.assertEqual(f'{10:#{1}0x}', '       0xa')
-        #self.assertEqual(f'{10:{"#"}1{0}{"x"}}', '       0xa')
+        self.assertEqual(f'{10:#{1}0x}', '       0xa')
+        self.assertEqual(f'{10:{"#"}1{0}{"x"}}', '       0xa')
         self.assertEqual(f'{-10:-{"#"}1{0}x}', '      -0xa')
         self.assertEqual(f'{-10:{"-"}#{1}0{"x"}}', '      -0xa')
-        # ironpython: TODO - bug in formatting!
-        #self.assertEqual(f'{10:#{3 != {4:5} and width}x}', '       0xa')
+        self.assertEqual(f'{10:#{3 != {4:5} and width}x}', '       0xa')
 
         self.assertAllRaise(SyntaxError, "f-string: expecting '}'",
                             ["""f'{"s"!r{":10"}}'""",
@@ -519,11 +517,10 @@ non-important content
                              "f'{4:{/5}}'",
                              ])
 
-# ironpython: TODO!
-#        self.assertAllRaise(SyntaxError, "f-string: expressions nested too deeply",
-#                            [# Can't nest format specifiers.
-#                             "f'result: {value:{width:{0}}.{precision:1}}'",
-#                             ])
+        self.assertAllRaise(SyntaxError, "f-string: expressions nested too deeply",
+                            [# Can't nest format specifiers.
+                             "f'result: {value:{width:{0}}.{precision:1}}'",
+                             ])
 
         self.assertAllRaise(SyntaxError, 'f-string: invalid conversion character',
                             [# No expansion inside conversion or for
@@ -700,9 +697,8 @@ non-important content
 
     def test_newlines_in_expressions(self):
         self.assertEqual(f'{0}', '0')
-# ironpython - TODO!
-#        self.assertEqual(rf'''{3+
-#4}''', '7')
+        self.assertEqual(rf'''{3+
+4}''', '7')
 
     def test_lambda(self):
         x = 5
@@ -712,7 +708,8 @@ non-important content
 
         # lambda doesn't work without parens, because the colon
         #  makes the parser think it's a format_spec
-        self.assertAllRaise(SyntaxError, 'unexpected EOF while parsing',
+        # ironpython: TODO - different error message
+        self.assertAllRaise(SyntaxError, 'invalid syntax', # 'unexpected EOF while parsing',
                             ["f'{lambda x:x}'",
                              ])
 

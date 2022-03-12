@@ -184,9 +184,7 @@ namespace IronPython.Runtime.Operations {
         private static object ReturnObject(CodeContext context, PythonType cls, object value)
             => cls == TypeCache.BigInteger ? value : cls.CreateInstance(context, value);
 
-        #endregion
-
-        internal static int FindStart(string s, int radix) {
+        private static int FindStart(string s, int radix) {
             int i = 0;
 
             // skip whitespace
@@ -216,6 +214,8 @@ namespace IronPython.Runtime.Operations {
 
         private static bool IsInt32(this BigInteger self)
             => int.MinValue <= self && self <= int.MaxValue;
+
+        #endregion
 
 
         #region Binary operators

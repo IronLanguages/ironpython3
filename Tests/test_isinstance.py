@@ -140,20 +140,20 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(int("-01"), -1)
         self.assertEqual(int(" 1 "), 1)
         with self.assertRaises(ValueError):
-            int(" -   1  ")
+            int('09', 8)
 
         int_types = [int]
         if is_cli:
-            from System import Int32
-            int_types.append(Int32)
+            from iptest import clr_int_types
+            int_types.extend(clr_int_types)
 
         for f in int_types:
+            self.assertRaises(ValueError, f, ' -   1  ')
             self.assertRaises(ValueError, f, 'p')
             self.assertRaises(ValueError, f, 't')
             self.assertRaises(ValueError, f, 'a')
             self.assertRaises(ValueError, f, '3.2')
             self.assertRaises(ValueError, f, '0x0R')
-            self.assertRaises(ValueError, f, '09', 8)
             self.assertRaises(ValueError, f, '0A')
             self.assertRaises(ValueError, f, '0x0G')
             self.assertRaises(ValueError, f, '1l')

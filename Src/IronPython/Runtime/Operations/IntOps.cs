@@ -20,189 +20,6 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime.Operations {
 
     public static partial class Int32Ops {
-        private static object FastNew(CodeContext/*!*/ context, object o, int @base = 10) {
-            object result;
-            switch (o) {
-                case double d:
-                    return DoubleOps.__int__(d);
-                case bool b:
-                    return BoolOps.__int__(b);
-                case int _:
-                    return o;
-                case BigInteger val:
-                    return val.IsInt32() ? (object)(int)val : o;
-                case Extensible<BigInteger> ebi:
-                    return TryInvokeInt(context, o, out result) ? result : ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value;
-                case float f:
-                    return DoubleOps.__int__(f);
-                case long val:
-                    return int.MinValue <= val && val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
-                case uint val:
-                    return val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
-                case ulong val:
-                    return val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
-                case decimal val:
-                    return int.MinValue <= val && val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
-                case Enum e:
-                    return ((IConvertible)e).ToInt32(null);
-                case string s:
-                    return LiteralParser.ParseIntegerSign(s, @base, FindStart(s, @base));
-                case Extensible<string> es:
-                    return TryInvokeInt(context, o, out result) ? result : LiteralParser.ParseIntegerSign(es.Value, @base, FindStart(es.Value, @base));
-                default:
-                    break;
-            }
-
-            if (TryInvokeInt(context, o, out result)) {
-                return result;
-            } else if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__trunc__", out result)) {
-                switch (result) {
-                    case int _:
-                        return result;
-                    case BigInteger bi:
-                        return bi.IsInt32() ? (object)(int)bi : result;
-                    case bool b:
-                        return BoolOps.__int__(b); // Python 3.6: return the int value
-                    case Extensible<BigInteger> ebi:
-                        return ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
-                    default: {
-                            if (TryInvokeInt(context, result, out var intResult)) {
-                                return intResult;
-                            }
-                            throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonOps.GetPythonTypeName(result));
-                        }
-                }
-            }
-
-            throw PythonOps.TypeError("int() argument must be a string, a bytes-like object or a number, not '{0}'", PythonOps.GetPythonTypeName(o));
-
-            static bool TryInvokeInt(CodeContext context, object o, out object result) {
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result)) {
-                    switch (result) {
-                        case int _:
-                            return true;
-                        case BigInteger bi:
-                            if (bi.IsInt32()) result = (int)bi;
-                            return true;
-                        case bool b:
-                            Warn(context, result);
-                            result = BoolOps.__int__(b); // Python 3.6: return the int value
-                            return true;
-                        case Extensible<BigInteger> ebi:
-                            Warn(context, result);
-                            result = ebi.Value.IsInt32() ? (object)(int)ebi.Value : ebi.Value; // Python 3.6: return the int value
-                            return true;
-                        default:
-                            throw PythonOps.TypeError("__int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(result));
-                    }
-
-                    static void Warn(CodeContext context, object result) {
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__int__ returned non-int (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
-                    }
-                }
-                return false;
-            }
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object x, object @base) {
-            ValidateType(cls);
-
-            var b = BaseFromObject(@base);
-
-            if (!(x is string || x is Extensible<string>))
-                throw PythonOps.TypeError("int() can't convert non-string with explicit base");
-
-            return ReturnObject(context, cls, FastNew(context, x, b));
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object x) {
-            ValidateType(cls);
-
-            return ReturnObject(context, cls, FastNew(context, x));
-        }
-
-        // "int()" calls ReflectedType.Call(), which calls "Activator.CreateInstance" and return directly.
-        // this is for derived int creation or direct calls to __new__...
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls)
-            => __new__(context, cls, ScriptingRuntimeHelpers.Int32ToObject(0));
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, int @base = 10) {
-            ValidateType(cls);
-
-            object value;
-            if (!(x is IPythonObject po) || !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
-                using IPythonBuffer buf = x.GetBufferNoThrow()
-                    ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
-
-                var text = buf.AsReadOnlySpan().MakeString();
-                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
-                    throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
-            }
-
-            return ReturnObject(context, cls, value);
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, object @base)
-            => __new__(context, cls, x, BaseFromObject(@base));
-
-        private static void ValidateType(PythonType cls) {
-            if (cls == TypeCache.Boolean)
-                throw PythonOps.TypeError("int.__new__(bool) is not safe, use bool.__new__()");
-        }
-
-        private static int BaseFromObject(object @base) {
-            switch (PythonOps.Index(@base)) {
-                case int i:
-                    return i;
-                case BigInteger bi:
-                    try {
-                        return (int)bi;
-                    } catch (OverflowException) {
-                        return int.MaxValue;
-                    }
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
-        private static object ReturnObject(CodeContext context, PythonType cls, object value)
-            => cls == TypeCache.Int32 ? value : cls.CreateInstance(context, value);
-
-        internal static int FindStart(string s, int radix) {
-            int i = 0;
-
-            // skip whitespace
-            while (i < s.Length && char.IsWhiteSpace(s, i)) i++;
-
-            // skip possible radix prefix
-            if (i + 1 < s.Length && s[i] == '0') {
-                switch (radix) {
-                    case 16:
-                        if (s[i + 1] == 'x' || s[i + 1] == 'X')
-                            i += 2;
-                        break;
-                    case 8:
-                        if (s[i + 1] == 'o' || s[i + 1] == 'O')
-                            i += 2;
-                        break;
-                    case 2:
-                        if (s[i + 1] == 'b' || s[i + 1] == 'B')
-                            i += 2;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return i;
-        }
-
-        private static bool IsInt32(this BigInteger self)
-            => int.MinValue <= self && self <= int.MaxValue;
 
         #region Binary Operators
 
@@ -329,9 +146,8 @@ namespace IronPython.Runtime.Operations {
             return NotImplementedType.Value;
         }
 
-
         public static object __getnewargs__(CodeContext context, int self) {
-            return PythonTuple.MakeTuple(Int32Ops.__new__(context, TypeCache.Int32, self));
+            return PythonTuple.MakeTuple(Int32Ops.__new__(TypeCache.Int32, self));
         }
 
         public static object __rdivmod__(int x, int y) {
@@ -506,29 +322,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ClassMethod, StaticExtensionMethod]
-        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false) {
+        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false)
             // TODO: signed should be a keyword only argument
-            // TODO: merge with BigIntegerOps.from_bytes
-
-            bool isLittle = byteorder == "little";
-            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
-
-            byte[] bytesArr = Bytes.FromObject(context, bytes).UnsafeByteArray;
-            if (bytesArr.Length == 0) return 0;
-
-#if NETCOREAPP
-            var val = new BigInteger(bytesArr.AsSpan(), isUnsigned: !signed, isBigEndian: !isLittle);
-#else
-            if (!isLittle) bytesArr = bytesArr.Reverse();
-            if (!signed && (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80) Array.Resize(ref bytesArr, bytesArr.Length + 1);
-            var val = new BigInteger(bytesArr);
-#endif
-
-            // prevents a TypeError: int.__new__(bool) is not safe
-            if (type == TypeCache.Boolean) return val == 0 ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
-
-            return __new__(context, type, val);
-        }
+            => BigIntegerOps.from_bytes(context, type, bytes, byteorder, signed);
 
         public static int __round__(int self) {
             return self;

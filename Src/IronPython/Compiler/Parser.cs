@@ -85,15 +85,6 @@ namespace IronPython.Compiler {
         }
 
         public static Parser CreateParser(CompilerContext context, PythonOptions options) {
-            return CreateParserWorker(context, options, false);
-        }
-
-        [Obsolete("pass verbatim via PythonCompilerOptions in PythonOptions")]
-        public static Parser CreateParser(CompilerContext context, PythonOptions options, bool verbatim) {
-            return CreateParserWorker(context, options, verbatim);
-        }
-
-        private static Parser CreateParserWorker(CompilerContext context, PythonOptions options, bool verbatim) {
             ContractUtils.RequiresNotNull(context, nameof(context));
             ContractUtils.RequiresNotNull(options, nameof(options));
 
@@ -115,7 +106,7 @@ namespace IronPython.Compiler {
                 throw;
             }
 
-            Tokenizer tokenizer = new Tokenizer(context.Errors, compilerOptions, verbatim);
+            Tokenizer tokenizer = new Tokenizer(context.Errors, compilerOptions);
 
             tokenizer.Initialize(null, reader, context.SourceUnit, SourceLocation.MinValue);
 
@@ -155,6 +146,7 @@ namespace IronPython.Compiler {
                 statement = ast.Body as ExpressionStatement;
             }
             expression = statement?.Expression;
+            if (expression is ParenthesisExpression paren) expression = paren.Expression;
             return !(expression is null);
         }
 
@@ -1933,17 +1925,17 @@ namespace IronPython.Compiler {
                     object cv = t.Value;
                     if (cv is string) {
                         ret = FinishJoinedString(t);
+                        if (ret is JoinedStringExpression jse) {
+                            foreach (var expr in jse.Values) {
+                                expr.SetLoc(_globalParent, start, GetEnd());
+                            }
+                        }
                     } else if (cv is Bytes bytes) {
                         ret = new ConstantExpression(FinishBytesPlus(bytes));
                     } else {
                         ret = new ConstantExpression(cv);
                     }
-                    if (ret is JoinedStringExpression jse) {
-                        // TODO: better locations
-                        foreach (var expr in jse.Values) {
-                            expr.SetLoc(_globalParent, start, GetEnd());
-                        }
-                    }
+
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
                 default:
@@ -1963,7 +1955,7 @@ namespace IronPython.Compiler {
                 expressions.Add(new ConstantExpression(s));
             }
 
-            expressions.AddRange(LiteralParser.DoParseFString(t.Image.AsSpan(), t.isRaw, !t.isRaw, normalizeLineEndings: true, isFormatted: true, this).Values);
+            expressions.AddRange(this.DoParseFString(t.Image.AsSpan(), t.isRaw).Values);
 
             return string.Empty;
         }

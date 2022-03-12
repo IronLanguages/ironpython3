@@ -218,8 +218,8 @@ namespace IronPython.Runtime {
 
 #nullable enable
 
-        private static bool TryParse(Parser parser, ReadOnlySpan<char> data, [NotNullWhen(true)] out Expression? expression, [NotNullWhen(false)] out string? error) {
-            if (data.Length == 0) {
+        private static bool TryParseExpression(Parser parser, ReadOnlySpan<char> data, [NotNullWhen(true)] out Expression? expression, [NotNullWhen(false)] out string? error) {
+            if (data.TrimStart(" \t\f\r\n".AsSpan()).Length == 0) {
                 expression = null;
                 error = "f-string: empty expression not allowed";
                 return false;
@@ -244,8 +244,7 @@ namespace IronPython.Runtime {
             char quote = default;
             string parentheses = string.Empty;
 
-            int start = data.Length - data.TrimStart(" \t\f\r\n".AsSpan()).Length; // skip whitespace;
-            int i = start;
+            int i = 0;
             while (i < data.Length) {
                 char ch = data[i++];
                 if (ch == '\\') {
@@ -285,7 +284,7 @@ namespace IronPython.Runtime {
                     if (parentheses.Length == 0) {
                         if (ch == '}') {
                             // parse expression
-                            if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                            if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
                                 consumed = i - 1;
                                 return true;
                             }
@@ -315,14 +314,14 @@ namespace IronPython.Runtime {
                     }
 
                     // parse expression
-                    if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                    if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
                         consumed = i - 1;
                         return true;
                     }
                     return false;
                 } else if (ch == ':' && parentheses.Length == 0) {
                     // parse expression
-                    if (TryParse(parser, data.Slice(start, i - 1 - start), out value, out error)) {
+                    if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
                         consumed = i - 1;
                         return true;
                     }
@@ -377,7 +376,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static bool TryParseFString(Parser parser, bool isRaw, int depth, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
+        private static bool TryParseFString(Parser parser, ReadOnlySpan<char> data, bool isRaw, int depth, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
             string str;
 
             var expressions = new List<Expression>();
@@ -420,7 +419,7 @@ namespace IronPython.Runtime {
 
                     JoinedStringExpression? formatSpecExpression = default;
                     if (ch == ':') {
-                        if (!TryParseFString(parser, isRaw, depth: depth + 1, data.Slice(i), out consumed, out formatSpecExpression, out error)) return false;
+                        if (!TryParseFString(parser, data.Slice(i), isRaw, depth: depth + 1, out consumed, out formatSpecExpression, out error)) return false;
                         i += consumed - 1;
                         ch = data[i++];
                     }
@@ -474,12 +473,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal static JoinedStringExpression DoParseFString(ReadOnlySpan<char> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, bool isFormatted, Parser parser, bool isFormatSpec = false) {
-            Debug.Assert(isRaw == !isUniEscape);
-            Debug.Assert(normalizeLineEndings == true);
-            Debug.Assert(isFormatted == true);
-
-            if (TryParseFString(parser, isRaw, depth: 0, data, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
+        internal static JoinedStringExpression DoParseFString(this Parser parser, ReadOnlySpan<char> data, bool isRaw) {
+            if (TryParseFString(parser, data, isRaw, depth: 0, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
                 Debug.Assert(consumed == data.Length);
                 return joinedStringExpression;
             } else {

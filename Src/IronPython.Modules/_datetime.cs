@@ -139,57 +139,67 @@ namespace IronPython.Modules {
             }
 
             // supported operations:
-            public static timedelta operator +(timedelta self, timedelta other) {
-                return new timedelta(self._days + other._days, self._seconds + other._seconds, self._microseconds + other._microseconds);
-            }
+            public static timedelta operator +(timedelta self, [NotNull] timedelta other)
+                => new timedelta(self._days + other._days, self._seconds + other._seconds, self._microseconds + other._microseconds);
 
-            public static timedelta operator -(timedelta self, timedelta other) {
-                return new timedelta(self._days - other._days, self._seconds - other._seconds, self._microseconds - other._microseconds);
-            }
+            public static timedelta operator -(timedelta self, [NotNull] timedelta other)
+                => new timedelta(self._days - other._days, self._seconds - other._seconds, self._microseconds - other._microseconds);
 
-            public static timedelta operator -(timedelta self) {
-                return new timedelta(-self._days, -self._seconds, -self._microseconds);
-            }
+            public static timedelta operator -(timedelta self)
+                => new timedelta(-self._days, -self._seconds, -self._microseconds);
 
-            public static timedelta operator +(timedelta self) {
-                return new timedelta(self._days, self._seconds, self._microseconds);
-            }
+            public static timedelta operator +(timedelta self)
+                => new timedelta(self._days, self._seconds, self._microseconds);
 
-            public static timedelta operator *(timedelta self, int other) {
+            public static timedelta operator *(timedelta self, int other)
+                => new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
+
+            public static timedelta operator *(int other, [NotNull] timedelta self) => self * other;
+
+            public static timedelta operator *(timedelta self, BigInteger other) => self * (int)other;
+
+            public static timedelta operator *(BigInteger other, [NotNull] timedelta self) => (int)other * self;
+
+            public static timedelta operator *(timedelta self, double other) {
+                DoubleOps.as_integer_ratio(other); // CPython calls this
                 return new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
             }
 
-            public static timedelta operator *(int other, timedelta self) {
-                return new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
-            }
+            public static timedelta operator *(double other, [NotNull] timedelta self) => self * other;
 
             public static timedelta operator /(timedelta self, int other) {
+                if (other == 0) throw PythonOps.ZeroDivisionError();
                 return new timedelta((double)self._days / other, (double)self._seconds / other, (double)self._microseconds / other);
             }
 
-            public static timedelta operator *(timedelta self, BigInteger other) {
-                return self * (int)other;
+            public static timedelta operator /(timedelta self, BigInteger other) => self / (int)other;
+
+            public static timedelta operator /(timedelta self, double other) {
+                if (other == 0) throw PythonOps.ZeroDivisionError();
+                DoubleOps.as_integer_ratio(other); // CPython calls this
+                return new timedelta(self._days / other, self._seconds / other, self._microseconds / other);
             }
 
-            public static timedelta operator *(BigInteger other, timedelta self) {
-                return (int)other * self;
-            }
-
-            public static timedelta operator /(timedelta self, BigInteger other) {
-                return self / (int)other;
-            }
+            public static double operator /(timedelta self, [NotNull] timedelta other)
+                => DoubleOps.TrueDivide(self.total_seconds(), other.total_seconds());
 
             public timedelta __pos__() { return +this; }
             public timedelta __neg__() { return -this; }
             public timedelta __abs__() { return (_days > 0) ? this : -this; }
-            [SpecialName]
-            public timedelta FloorDivide(int y) {
-                return this / y;
-            }
 
             [SpecialName]
-            public timedelta ReverseFloorDivide(int y) {
-                return this / y;
+            public timedelta FloorDivide(int y) => this / y;
+
+            [SpecialName]
+            public int FloorDivide(timedelta y) => (int)DoubleOps.FloorDivide(total_seconds(), y.total_seconds());
+
+            [SpecialName]
+            public timedelta Mod(timedelta y) => new timedelta(0, DoubleOps.Mod(total_seconds(), y.total_seconds()), 0);
+
+            [SpecialName]
+            public PythonTuple DivMod(timedelta y) {
+                var res = DoubleOps.DivMod(total_seconds(), y.total_seconds());
+                return PythonTuple.MakeTuple(res[0], new timedelta(0, (double)res[1], 0));
             }
 
             public double total_seconds() {

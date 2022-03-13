@@ -268,26 +268,26 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimeDelta('test_bool'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_carries'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_compare'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_computations'))) # TODO
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_computations'))) # rounding differences
         suite.addTest(test.datetimetester.TestTimeDelta('test_constructor'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_disallowed_computations')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_disallowed_special'))) # TODO
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_division'))) # TODO
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_divmod'))) # TODO
+        suite.addTest(test.datetimetester.TestTimeDelta('test_disallowed_computations'))
+        suite.addTest(test.datetimetester.TestTimeDelta('test_disallowed_special'))
+        suite.addTest(test.datetimetester.TestTimeDelta('test_division'))
+        suite.addTest(test.datetimetester.TestTimeDelta('test_divmod'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_harmful_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_harmless_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_hash_equality'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_massive_normalization'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_microsecond_rounding'))) # TODO
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_overflow'))) # TODO
+        suite.addTest(test.datetimetester.TestTimeDelta('test_microsecond_rounding'))
+        suite.addTest(test.datetimetester.TestTimeDelta('test_overflow'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_pickling'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_remainder'))) # TODO
+        suite.addTest(test.datetimetester.TestTimeDelta('test_remainder'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_repr'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_resolution_info'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_roundtrip'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_str'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_subclass_timedelta'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_total_seconds'))) # TODO
+        suite.addTest(test.datetimetester.TestTimeDelta('test_total_seconds'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_1653736'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_argument_passing'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_aware_compare'))

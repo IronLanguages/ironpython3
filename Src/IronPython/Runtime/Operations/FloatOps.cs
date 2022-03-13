@@ -353,7 +353,7 @@ namespace IronPython.Runtime.Operations {
         #region Binary operators
 
         [SpecialName]
-        public static object DivMod(double x, double y) {
+        public static PythonTuple DivMod(double x, double y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
 
             // .NET does not provide Math.DivRem() for floats. Implementation along the CPython code.

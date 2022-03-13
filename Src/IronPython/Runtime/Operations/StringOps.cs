@@ -2268,7 +2268,7 @@ namespace IronPython.Runtime.Operations {
                 => GetBytes(new string(chars), charIndex, charCount, bytes, byteIndex);
 
             public override string GetString(byte[] bytes, int index, int count)
-                => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler());
+                => LiteralParser.ParseString(bytes.AsSpan(index, count), _raw, GetErrorHandler());
 
 #if NETCOREAPP
             public new string GetString(ReadOnlySpan<byte> bytes)
@@ -2292,10 +2292,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             public override int GetCharCount(byte[] bytes, int index, int count)
-                => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler()).Length;
+                => LiteralParser.ParseString(bytes.AsSpan(index, count), _raw, GetErrorHandler()).Length;
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
-                string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw, GetErrorHandler());
+                string res = LiteralParser.ParseString(bytes.AsSpan(byteIndex, byteCount), _raw, GetErrorHandler());
                 res.AsSpan().CopyTo(chars.AsSpan(charIndex));
                 return res.Length;
             }

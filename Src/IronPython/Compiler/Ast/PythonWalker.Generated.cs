@@ -48,6 +48,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(ErrorExpression node) { return true; }
         public virtual void PostWalk(ErrorExpression node) { }
 
+        // FormattedValueExpression
+        public virtual bool Walk(FormattedValueExpression node) { return true; }
+        public virtual void PostWalk(FormattedValueExpression node) { }
+
         // GeneratorExpression
         public virtual bool Walk(GeneratorExpression node) { return true; }
         public virtual void PostWalk(GeneratorExpression node) { }
@@ -55,6 +59,10 @@ namespace IronPython.Compiler.Ast {
         // IndexExpression
         public virtual bool Walk(IndexExpression node) { return true; }
         public virtual void PostWalk(IndexExpression node) { }
+
+        // JoinedStringExpression
+        public virtual bool Walk(JoinedStringExpression node) { return true; }
+        public virtual void PostWalk(JoinedStringExpression node) { }
 
         // LambdaExpression
         public virtual bool Walk(LambdaExpression node) { return true; }
@@ -295,6 +303,10 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(ErrorExpression node) { return false; }
         public override void PostWalk(ErrorExpression node) { }
 
+        // FormattedValueExpression
+        public override bool Walk(FormattedValueExpression node) { return false; }
+        public override void PostWalk(FormattedValueExpression node) { }
+
         // GeneratorExpression
         public override bool Walk(GeneratorExpression node) { return false; }
         public override void PostWalk(GeneratorExpression node) { }
@@ -302,6 +314,10 @@ namespace IronPython.Compiler.Ast {
         // IndexExpression
         public override bool Walk(IndexExpression node) { return false; }
         public override void PostWalk(IndexExpression node) { }
+
+        // JoinedStringExpression
+        public override bool Walk(JoinedStringExpression node) { return false; }
+        public override void PostWalk(JoinedStringExpression node) { }
 
         // LambdaExpression
         public override bool Walk(LambdaExpression node) { return false; }

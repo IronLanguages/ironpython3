@@ -109,6 +109,22 @@ namespace IronPython.Compiler {
         }
     }
 
+    internal sealed class FormattedStringToken : Token {
+        private readonly string _value;
+
+        public FormattedStringToken(string value, bool isRaw)
+            : base(TokenKind.Constant) {
+            _value = value;
+            this.isRaw = isRaw;
+        }
+
+        public override string Image => _value;
+
+        public override object Value => _value;
+
+        public bool isRaw { get; }
+    }
+
     public sealed class CommentToken : Token {
         private readonly string _comment;
 

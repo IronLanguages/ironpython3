@@ -267,6 +267,23 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("__repr__ returned non-string (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(repr), PythonOps.GetPythonTypeName(o));
         }
 
+        public static string Format(CodeContext/*!*/ context, object? argValue, string formatSpec) {
+            object? res;
+            // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
+            PythonTypeOps.TryInvokeBinaryOperator(
+                context,
+                argValue,
+                formatSpec,
+                "__format__",
+                out res);
+
+            if (!(res is string strRes)) {
+                throw PythonOps.TypeError("{0}.__format__ must return a str, not {1}", PythonOps.GetPythonTypeName(argValue), PythonOps.GetPythonTypeName(res));
+            }
+
+            return strRes;
+        }
+
         public static List<object>? GetAndCheckInfinite(object o) {
             List<object> infinite = GetReprInfinite();
             foreach (object o2 in infinite) {
@@ -3927,8 +3944,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         // If hash is called on an instance of an unhashable type
-        public static Exception TypeErrorForUnhashableType(string typeName) {
-            return TypeError(typeName + " objects are unhashable");
+        internal static Exception TypeErrorForUnhashableType(string typeName) {
+            return TypeError("unhashable type: '{0}'", typeName);
         }
 
         public static Exception TypeErrorForUnhashableObject(object? obj) {

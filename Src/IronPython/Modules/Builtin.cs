@@ -389,22 +389,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType @float => DynamicHelpers.GetPythonTypeFromType(typeof(double));
 
-        public static string format(CodeContext/*!*/ context, object? argValue, [NotNull]string formatSpec = "") {
-            object? res;
-            // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
-            PythonTypeOps.TryInvokeBinaryOperator(
-                context,
-                argValue,
-                formatSpec,
-                "__format__",
-                out res);
-
-            if (!(res is string strRes)) {
-                throw PythonOps.TypeError("{0}.__format__ must return string, not {1}", PythonOps.GetPythonTypeName(argValue), PythonOps.GetPythonTypeName(res));
-            }
-
-            return strRes;
-        }
+        public static string format(CodeContext/*!*/ context, object? argValue, [NotNull]string formatSpec = "")
+            => PythonOps.Format(context, argValue, formatSpec);
 
         public static PythonType frozenset => DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
 

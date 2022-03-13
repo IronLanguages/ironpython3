@@ -81,6 +81,12 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
 
+        // builtins
+        public static readonly MethodInfo Format = GetMethod((Func<CodeContext, object, string, string>)PythonOps.Format);
+        public static readonly MethodInfo Ascii = GetMethod((Func<CodeContext, object, string>)PythonOps.Ascii);
+        public static readonly MethodInfo Repr = GetMethod((Func<CodeContext, object, string>)PythonOps.Repr);
+        public static readonly MethodInfo Str = GetMethod((Func<CodeContext, object, string>)PythonOps.ToString);
+
         // methods matching Python opcodes
         public static readonly MethodInfo DictMerge = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictMerge);
         public static readonly MethodInfo DictUpdate = GetMethod((Action<CodeContext, PythonDictionary, object>)PythonOps.DictUpdate);

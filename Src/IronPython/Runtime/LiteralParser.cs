@@ -5,14 +5,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 
+using IronPython.Compiler;
+using IronPython.Compiler.Ast;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -20,19 +24,157 @@ namespace IronPython.Runtime {
     public static class LiteralParser {
         internal delegate IReadOnlyList<char> ParseStringErrorHandler<T>(in ReadOnlySpan<T> data, int start, int end, string reason);
 
-        internal static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings)
-            => ParseString(text.AsSpan(start, length), isRaw, isUniEscape, normalizeLineEndings);
-
-        internal static string ParseString(in ReadOnlySpan<char> text, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
-            if (isRaw && !isUniEscape && !normalizeLineEndings) return text.ToString();
-            return DoParseString(text, isRaw, isUniEscape, normalizeLineEndings) ?? text.ToString();
-        }
-
-        internal static string ParseString(byte[] bytes, int start, int length, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
-            => ParseString(bytes.AsSpan(start, length), isRaw, errorHandler);
+        internal static string ParseString(in ReadOnlySpan<char> text, bool isRaw)
+            => DoParseString(text, isRaw, isUniEscape: !isRaw, normalizeLineEndings: true) ?? text.ToString();
 
         internal static string ParseString(in ReadOnlySpan<byte> bytes, bool isRaw, ParseStringErrorHandler<byte> errorHandler)
             => DoParseString(bytes, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler) ?? bytes.MakeString();
+
+#nullable enable
+
+        private static bool TryFetchUnicode(string name, [NotNullWhen(true)] out string? val) {
+            Modules.unicodedata.EnsureInitialized();
+            try {
+                val = Modules.unicodedata.lookup(name);
+                return true;
+            } catch (KeyNotFoundException) {
+                val = default;
+                return false;
+            }
+        }
+
+#nullable restore
+
+        private delegate void HandleUnicodeError<T>(in ReadOnlySpan<T> data, int start, int end, string reason);
+
+        private static void HandleEscape<T>(ReadOnlySpan<T> data, ref int i, StringBuilder buf, bool isRaw, bool isUniEscape, bool isFormatted, bool normalizeLineEndings, HandleUnicodeError<T> handleError) where T : unmanaged, IConvertible {
+            var length = data.Length;
+            int val;
+
+            if (i >= length) {
+                if (isRaw) {
+                    buf.Append('\\');
+                } else {
+                    handleError(data, i - 1, i, "\\ at end of string");
+                }
+                return;
+            }
+            char ch = data[i++].ToChar(null);
+
+            if (isUniEscape && (ch == 'u' || ch == 'U')) {
+                int len = (ch == 'u') ? 4 : 8;
+                int max = 16;
+                if (TryParseInt(data, i, len, max, out val, out int consumed)) {
+                    if (val < 0 || val > 0x10ffff) {
+                        handleError(data, i - 2, i + consumed, isRaw ? @"\Uxxxxxxxx out of range" : "illegal Unicode character");
+                    } else if (val < 0x010000) {
+                        buf.Append((char)val);
+                    } else {
+                        buf.Append(char.ConvertFromUtf32(val));
+                    }
+                } else {
+                    handleError(data, i - 2, i + consumed, ch == 'u' ? @"truncated \uXXXX escape" : @"truncated \UXXXXXXXX escape");
+                }
+                i += consumed;
+            } else if (isFormatted && (ch == '{' || ch == '}')) {
+                i--;
+                buf.Append('\\');
+            } else if (isRaw) {
+                buf.Append('\\');
+                buf.Append(ch);
+            } else {
+                switch (ch) {
+                    case 'a': buf.Append('\a'); break;
+                    case 'b': buf.Append('\b'); break;
+                    case 'f': buf.Append('\f'); break;
+                    case 'n': buf.Append('\n'); break;
+                    case 'r': buf.Append('\r'); break;
+                    case 't': buf.Append('\t'); break;
+                    case 'v': buf.Append('\v'); break;
+                    case '\\': buf.Append('\\'); break;
+                    case '\'': buf.Append('\''); break;
+                    case '\"': buf.Append('\"'); break;
+                    case '\n': break;
+                    case '\r':
+                        if (!normalizeLineEndings) {
+                            buf.Append('\\');
+                            buf.Append(ch);
+                        } else if (i < length && data[i].ToChar(null) == '\n') {
+                            i++;
+                        }
+                        break;
+                    case 'N': {
+                            StringBuilder namebuf = new StringBuilder();
+                            bool namestarted = false;
+                            bool namecomplete = false;
+                            if (i < length && data[i].ToChar(null) == '{') {
+                                namestarted = true;
+                                i++;
+                                while (i < length) {
+                                    char namech = data[i++].ToChar(null);
+                                    if (namech != '}') {
+                                        namebuf.Append(namech);
+                                    } else {
+                                        namecomplete = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!namecomplete || namebuf.Length == 0) {
+                                handleError(data, i - 2 - (namestarted ? 1 : 0) - namebuf.Length - (namecomplete ? 1 : 0), // 2 for \N  and 1 for { and 1 for }
+                                            i - (namecomplete ? 1 : 0), // 1 for }
+                                            @"malformed \N character escape");
+                                if (namecomplete) {
+                                    buf.Append('}');
+                                }
+                            } else {
+                                if (TryFetchUnicode(namebuf.ToString(), out string uval)) {
+                                    buf.Append(uval);
+                                } else {
+                                    handleError(data, i - 4 - namebuf.Length, // 4 for \N{}
+                                                i,
+                                                "unknown Unicode character name");
+                                }
+                            }
+                        }
+                        break;
+                    case 'x': //hex
+                        if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
+                            handleError(data, i - 2, i + consumed, @"truncated \xXX escape");
+                        } else {
+                            buf.Append((char)val);
+                        }
+                        i += consumed;
+                        break;
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7': {
+                            val = ch - '0';
+                            if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
+                                val = val * 8 + onechar;
+                                i++;
+                                if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
+                                    val = val * 8 + onechar;
+                                    i++;
+                                }
+                            }
+                        }
+
+                        buf.Append((char)val);
+                        break;
+                    default:
+                        // PythonOps.Warn(DefaultContext.Default, PythonExceptions.DeprecationWarning, $"invalid escape sequence \\{ch}"); // TODO: enable in 3.6 - currently warning twice???
+                        buf.Append('\\');
+                        buf.Append(ch);
+                        break;
+                }
+            }
+        }
 
         private static string DoParseString<T>(ReadOnlySpan<T> data, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default)
             where T : unmanaged, IConvertible {
@@ -40,134 +182,11 @@ namespace IronPython.Runtime {
             StringBuilder buf = null;
             int i = 0;
             int length = data.Length;
-            int val;
             while (i < length) {
                 char ch = data[i++].ToChar(null);
                 if ((!isRaw || isUniEscape) && ch == '\\') {
                     StringBuilderInit(ref buf, data, i - 1);
-
-                    if (i >= length) {
-                        if (isRaw) {
-                            buf.Append('\\');
-                        } else {
-                            handleError(data, i - 1, i, "\\ at end of string");
-                        }
-                        break;
-                    }
-                    ch = data[i++].ToChar(null);
-
-                    if ((ch == 'u' || ch == 'U') && isUniEscape) {
-                        int len = (ch == 'u') ? 4 : 8;
-                        int max = 16;
-                        if (TryParseInt(data, i, len, max, out val, out int consumed)) {
-                            if (val < 0 || val > 0x10ffff) {
-                                handleError(data, i - 2, i + consumed, isRaw ? @"\Uxxxxxxxx out of range" : "illegal Unicode character");
-                            } else if (val < 0x010000) {
-                                buf.Append((char)val);
-                            } else {
-                                buf.Append(char.ConvertFromUtf32(val));
-                            }
-                        } else {
-                            handleError(data, i - 2, i + consumed, ch == 'u' ? @"truncated \uXXXX escape" : @"truncated \UXXXXXXXX escape");
-                        }
-                        i += consumed;
-                    } else {
-                        if (isRaw) {
-                            buf.Append('\\');
-                            buf.Append(ch);
-                            continue;
-                        }
-                        switch (ch) {
-                            case 'a': buf.Append('\a'); continue;
-                            case 'b': buf.Append('\b'); continue;
-                            case 'f': buf.Append('\f'); continue;
-                            case 'n': buf.Append('\n'); continue;
-                            case 'r': buf.Append('\r'); continue;
-                            case 't': buf.Append('\t'); continue;
-                            case 'v': buf.Append('\v'); continue;
-                            case '\\': buf.Append('\\'); continue;
-                            case '\'': buf.Append('\''); continue;
-                            case '\"': buf.Append('\"'); continue;
-                            case '\n': continue;
-                            case '\r':
-                                if (!normalizeLineEndings) {
-                                    goto default;
-                                } else if (i < length && data[i].ToChar(null) == '\n') {
-                                    i++;
-                                }
-                                continue;
-                            case 'N': {
-                                    Modules.unicodedata.EnsureInitialized();
-                                    StringBuilder namebuf = new StringBuilder();
-                                    bool namestarted = false;
-                                    bool namecomplete = false;
-                                    if (i < length && data[i].ToChar(null) == '{') {
-                                        namestarted = true;
-                                        i++;
-                                        while (i < length) {
-                                            char namech = data[i++].ToChar(null);
-                                            if (namech != '}') {
-                                                namebuf.Append(namech);
-                                            } else {
-                                                namecomplete = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (!namecomplete || namebuf.Length == 0) {
-                                        handleError(data, i - 2 - (namestarted ? 1 : 0) - namebuf.Length - (namecomplete ? 1 : 0), // 2 for \N  and 1 for { and 1 for }
-                                                    i - (namecomplete ? 1 : 0), // 1 for }
-                                                    @"malformed \N character escape");
-                                        if (namecomplete) {
-                                            buf.Append('}');
-                                        }
-                                    } else {
-                                        try {
-                                            string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
-                                            buf.Append(uval);
-                                        } catch (KeyNotFoundException) {
-                                            handleError(data, i - 4 - namebuf.Length, // 4 for \N{}
-                                                        i,
-                                                        "unknown Unicode character name");
-                                        }
-                                    }
-                                }
-                                continue;
-                            case 'x': //hex
-                                if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
-                                    handleError(data, i - 2, i + consumed, @"truncated \xXX escape");
-                                } else {
-                                    buf.Append((char)val);
-                                }
-                                i += consumed;
-                                continue;
-                            case '0':
-                            case '1':
-                            case '2':
-                            case '3':
-                            case '4':
-                            case '5':
-                            case '6':
-                            case '7': {
-                                    val = ch - '0';
-                                    if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
-                                        val = val * 8 + onechar;
-                                        i++;
-                                        if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
-                                            val = val * 8 + onechar;
-                                            i++;
-                                        }
-                                    }
-                                }
-
-                                buf.Append((char)val);
-                                continue;
-                            default:
-                                buf.Append("\\");
-                                buf.Append(ch);
-                                continue;
-                        }
-                    }
+                    HandleEscape(data, ref i, buf, isRaw, isUniEscape, isFormatted: false, normalizeLineEndings, handleError);
                 } else if (ch == '\r' && normalizeLineEndings) {
                     StringBuilderInit(ref buf, data, i - 1);
 
@@ -196,6 +215,273 @@ namespace IronPython.Runtime {
                 }
             }
         }
+
+#nullable enable
+
+        private static bool TryParseExpression(Parser parser, ReadOnlySpan<char> data, [NotNullWhen(true)] out Expression? expression, [NotNullWhen(false)] out string? error) {
+            if (data.TrimStart(" \t\f\r\n".AsSpan()).Length == 0) {
+                expression = null;
+                error = "f-string: empty expression not allowed";
+                return false;
+            }
+
+            if (parser.TryParseExpression("(" + data.ToString() + ")", out expression)) {
+                error = default;
+                return true;
+            }
+
+            error = "f-string: invalid syntax";
+            return false;
+        }
+
+        private static bool TryReadFStringValue(Parser parser, ReadOnlySpan<char> data, out int consumed, [NotNullWhen(true)] out Expression? value, [NotNullWhen(false)] out string? error) {
+            consumed = default;
+            value = default;
+            error = default;
+
+            bool inString = false;
+            bool isTriple = false;
+            char quote = default;
+            string parentheses = string.Empty;
+
+            int i = 0;
+            while (i < data.Length) {
+                char ch = data[i++];
+                if (ch == '\\') {
+                    error = "f-string expression part cannot include a backslash";
+                    return false;
+                }
+
+                // read until to end of string
+                if (inString) {
+                    if (ch == quote) {
+                        if (isTriple) {
+                            if (i + 1 < data.Length && data[i] == ch && data[i + 1] == ch) {
+                                i += 2;
+                                inString = false;
+                                isTriple = false;
+                                quote = default;
+                            }
+                        } else {
+                            inString = false;
+                            isTriple = false;
+                            quote = default;
+                        }
+                    }
+                    continue;
+                }
+
+                if (ch == '\'' || ch == '"') {
+                    // start of string
+                    inString = true;
+                    quote = ch;
+                    if (i + 1 < data.Length && data[i] == ch && data[i + 1] == ch) {
+                        i += 2;
+                        isTriple = true;
+                    }
+                } else if (ch == '}' || ch == ']' || ch == ')') {
+                    // closing parenthesis
+                    if (parentheses.Length == 0) {
+                        if (ch == '}') {
+                            // parse expression
+                            if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
+                                consumed = i - 1;
+                                return true;
+                            }
+                            return false;
+                        } else {
+                            error = $"f-string: unmatched '{ch}'";
+                            return false;
+                        }
+                    } else {
+                        char opening = parentheses[parentheses.Length - 1];
+                        // matching parentheses
+                        if (opening == '{' && ch == '}' || opening == '[' && ch == ']' || opening == '(' && ch == ')') {
+                            parentheses = parentheses.Substring(0, parentheses.Length - 1);
+                        } else {
+                            error = $"f-string: closing parenthesis '{ch}' does not match opening parenthesis '{opening}'";
+                            return false;
+                        }
+                    }
+                } else if (ch == '{' || ch == '[' || ch == '(') {
+                    // opening parenthesis
+                    parentheses += ch;
+                } else if (ch == '!' && parentheses.Length == 0) {
+                    // special case for !=
+                    if (i < data.Length && data[i] == '=') {
+                        i++;
+                        continue;
+                    }
+
+                    // parse expression
+                    if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
+                        consumed = i - 1;
+                        return true;
+                    }
+                    return false;
+                } else if (ch == ':' && parentheses.Length == 0) {
+                    // parse expression
+                    if (TryParseExpression(parser, data.Slice(0, i - 1), out value, out error)) {
+                        consumed = i - 1;
+                        return true;
+                    }
+                    return false;
+                } else if (ch == '#') {
+                    error = "f-string expression part cannot include '#'";
+                    return false;
+                }
+            }
+
+            if (inString) {
+                error = "f-string: unterminated string";
+            } else {
+                error = "f-string: expecting '}'";
+            }
+            return false;
+        }
+
+        private static bool TryReadFStringConversion(ReadOnlySpan<char> data, out int consumed, out char conversion, [NotNullWhen(false)] out string? error) {
+            consumed = default;
+            conversion = default;
+            error = default;
+
+            // we must have at least a character and : or }
+            if (data.Length == 0) {
+                error = "f-string: expecting '}'";
+                return false;
+            }
+
+            var ch = data[0];
+            if (ch == 's' || ch == 'r' || ch == 'a') {
+                conversion = ch;
+
+                // no more data
+                if (data.Length == 1) {
+                    error = "f-string: expecting '}'";
+                    return false;
+                }
+
+                ch = data[1];
+                if (ch == ':' || ch == '}') {
+                    consumed = 1;
+                    return true;
+                } else {
+                    error = "f-string: expecting '}'";
+                    return false;
+                }
+            } else {
+                error = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
+                return false;
+            }
+        }
+
+        private static bool TryParseFString(Parser parser, ReadOnlySpan<char> data, bool isRaw, int depth, out int consumed, [NotNullWhen(true)] out JoinedStringExpression? joinedStringExpression, [NotNullWhen(false)] out string? error) {
+            string str;
+
+            var expressions = new List<Expression>();
+            var buf = new StringBuilder(data.Length);
+
+            consumed = default;
+            joinedStringExpression = default;
+            error = default;
+
+            int i = 0;
+            while (i < data.Length) {
+                char ch = data[i++];
+                if (ch == '{') {
+                    if (depth == 0 && i < data.Length && data[i] == '{') {
+                        i++;
+                        buf.Append(ch);
+                        continue;
+                    }
+                    if (depth == 2) {
+                        error = "f-string: expressions nested too deeply";
+                        return false;
+                    }
+
+                    str = buf.ToString();
+                    if (!string.IsNullOrEmpty(str)) {
+                        expressions.Add(new ConstantExpression(str));
+                        buf.Clear();
+                    }
+
+                    if (!TryReadFStringValue(parser, data.Slice(i), out consumed, out Expression? expression, out error)) return false;
+                    i += consumed;
+                    ch = data[i++];
+
+                    char conversion = default;
+                    if (ch == '!') {
+                        if (!TryReadFStringConversion(data.Slice(i), out consumed, out conversion, out error)) return false;
+                        i += consumed;
+                        ch = data[i++];
+                    }
+
+                    JoinedStringExpression? formatSpecExpression = default;
+                    if (ch == ':') {
+                        if (!TryParseFString(parser, data.Slice(i), isRaw, depth: depth + 1, out consumed, out formatSpecExpression, out error)) return false;
+                        i += consumed - 1;
+                        ch = data[i++];
+                    }
+
+                    if (ch != '}') {
+                        error = "f-string: expecting '}'";
+                        return false;
+                    }
+
+                    expressions.Add(new FormattedValueExpression(expression, conversion == default ? null : conversion, formatSpecExpression));
+                    continue;
+                } else if (ch == '}') {
+                    if (depth != 0) {
+                        break;
+                    }
+                    if (i < data.Length && data[i] == '}') {
+                        i++;
+                        buf!.Append(ch);
+                        continue;
+                    }
+                    error = "f-string: single '}' is not allowed";
+                    return false;
+                } else if (ch == '\\') {
+                    if (isRaw) {
+                        buf.Append(ch);
+                    } else {
+                        HandleEscape(data, ref i, buf, isRaw, isUniEscape: !isRaw, isFormatted: true, normalizeLineEndings: true, handleUnicodeError);
+                    }
+                } else if (ch == '\r') {
+                    // normalize line endings
+                    if (i < data.Length && data[i] == '\n') {
+                        i++;
+                    }
+                    buf.Append('\n');
+                } else {
+                    buf.Append(ch);
+                }
+            }
+
+            str = buf.ToString();
+            if (!string.IsNullOrEmpty(str)) {
+                expressions.Add(new ConstantExpression(str));
+            }
+
+            consumed = i;
+            joinedStringExpression = new JoinedStringExpression(expressions);
+            return true;
+
+            void handleUnicodeError(in ReadOnlySpan<char> data, int start, int end, string reason) {
+                throw new SyntaxErrorException($"(unicode error) {reason}");
+            }
+        }
+
+        internal static JoinedStringExpression DoParseFString(this Parser parser, ReadOnlySpan<char> data, bool isRaw) {
+            if (TryParseFString(parser, data, isRaw, depth: 0, out int consumed, out JoinedStringExpression? joinedStringExpression, out string? error)) {
+                Debug.Assert(consumed == data.Length);
+                return joinedStringExpression;
+            } else {
+                throw new SyntaxErrorException(error);
+            }
+        }
+
+#nullable restore
 
         private static void StringBuilderInit<T>(ref StringBuilder sb, in ReadOnlySpan<T> data, int toCopy) where T : unmanaged, IConvertible {
             Debug.Assert(toCopy <= data.Length);
@@ -498,7 +784,7 @@ namespace IronPython.Runtime {
                 if (start < end && text[start] == '0') {
                     // Hex, oct, or bin
                     if (++start < end) {
-                        switch(text[start]) {
+                        switch (text[start]) {
                             case 'x':
                             case 'X':
                                 start++;
@@ -629,7 +915,7 @@ namespace IronPython.Runtime {
                 res = ParseFloatNoCatch(text, replaceUnicode: replaceUnicode);
             } catch (OverflowException) {
                 res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
-            } catch(FormatException) {
+            } catch (FormatException) {
                 res = default;
                 return false;
             }

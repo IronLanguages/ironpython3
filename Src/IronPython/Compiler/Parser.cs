@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -13,7 +15,6 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler.Ast;
-using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -84,15 +85,6 @@ namespace IronPython.Compiler {
         }
 
         public static Parser CreateParser(CompilerContext context, PythonOptions options) {
-            return CreateParserWorker(context, options, false);
-        }
-
-        [Obsolete("pass verbatim via PythonCompilerOptions in PythonOptions")]
-        public static Parser CreateParser(CompilerContext context, PythonOptions options, bool verbatim) {
-            return CreateParserWorker(context, options, verbatim);
-        }
-
-        private static Parser CreateParserWorker(CompilerContext context, PythonOptions options, bool verbatim) {
             ContractUtils.RequiresNotNull(context, nameof(context));
             ContractUtils.RequiresNotNull(options, nameof(options));
 
@@ -114,7 +106,7 @@ namespace IronPython.Compiler {
                 throw;
             }
 
-            Tokenizer tokenizer = new Tokenizer(context.Errors, compilerOptions, verbatim);
+            Tokenizer tokenizer = new Tokenizer(context.Errors, compilerOptions);
 
             tokenizer.Initialize(null, reader, context.SourceUnit, SourceLocation.MinValue);
 
@@ -141,6 +133,24 @@ namespace IronPython.Compiler {
                 throw BadSourceError(dfe);
             }
         }
+
+#nullable enable
+
+        internal bool TryParseExpression(string code, [NotNullWhen(true)] out Expression? expression) {
+            var sourceUnit = DefaultContext.DefaultPythonContext.CreateSnippet("(" + code + ")", "<string>", SourceCodeKind.Expression);
+            var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
+            using var parser = CreateParser(context, new PythonOptions());
+            var ast = parser.ParseSingleStatement();
+            ExpressionStatement? statement = null;
+            if (parser.ErrorCode == 0) {
+                statement = ast.Body as ExpressionStatement;
+            }
+            expression = statement?.Expression;
+            if (expression is ParenthesisExpression paren) expression = paren.Expression;
+            return !(expression is null);
+        }
+
+#nullable restore
 
         //[stmt_list] Newline | compound_stmt Newline
         //stmt_list ::= simple_stmt (";" simple_stmt)* [";"]
@@ -341,10 +351,10 @@ namespace IronPython.Compiler {
             string msg;
             if ((errorCode & ~ErrorCodes.IncompleteMask) == ErrorCodes.IndentationError) {
                 msg = Resources.ExpectedIndentation;
-            } else if (t.Kind != TokenKind.EndOfFile) {
-                msg = "invalid syntax";
-            } else {
+            } else if (t.Kind == TokenKind.EndOfFile) {
                 msg = "unexpected EOF while parsing";
+            } else {
+                msg = "invalid syntax";
             }
 
             return msg;
@@ -1913,13 +1923,19 @@ namespace IronPython.Compiler {
                     NextToken();
                     var start = GetStart();
                     object cv = t.Value;
-                    if (cv is string cvs) {
-                        cv = FinishStringPlus(cvs);
+                    if (cv is string) {
+                        ret = FinishJoinedString(t);
+                        if (ret is JoinedStringExpression jse) {
+                            foreach (var expr in jse.Values) {
+                                expr.SetLoc(_globalParent, start, GetEnd());
+                            }
+                        }
                     } else if (cv is Bytes bytes) {
-                        cv = FinishBytesPlus(bytes);
+                        ret = new ConstantExpression(FinishBytesPlus(bytes));
+                    } else {
+                        ret = new ConstantExpression(cv);
                     }
 
-                    ret = new ConstantExpression(cv);
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
                 default:
@@ -1932,41 +1948,106 @@ namespace IronPython.Compiler {
             }
         }
 
-        private string FinishStringPlus(string s) {
-            Token t = PeekToken();
-            while (true) {
-                if (t is ConstantValueToken) {
+#nullable enable
+
+        private string ParseFormattedString(FormattedStringToken t, string? s, List<Expression> expressions) {
+            if (!string.IsNullOrEmpty(s)) {
+                expressions.Add(new ConstantExpression(s));
+            }
+
+            expressions.AddRange(this.DoParseFString(t.Image.AsSpan(), t.isRaw).Values);
+
+            return string.Empty;
+        }
+
+        private Expression FinishJoinedString(Token t) {
+            string s;
+            List<Expression> expressions;
+
+            // process the last token
+            if (t is FormattedStringToken) {
+                expressions = new List<Expression>();
+                s = ParseFormattedString((FormattedStringToken)t, null, expressions);
+            } else {
+                Debug.Assert(t is ConstantValueToken);
+                s = FinishStringPlus((string)t.Value);
+                if (PeekToken() is not FormattedStringToken) {
+                    return new ConstantExpression(s);
+                }
+                expressions = new List<Expression>();
+            }
+
+            // process the rest of the tokens
+            t = PeekToken();
+            while (t is FormattedStringToken fst) {
+                s = ParseFormattedString(fst, s, expressions);
+                NextToken();
+                t = PeekToken();
+            }
+
+            while (t is ConstantValueToken) {
+                bool stop = false;
+                while (t is ConstantValueToken) {
                     if (t.Value is string cvs) {
                         s += cvs;
                         NextToken();
                         t = PeekToken();
-                        continue;
                     } else {
-                        ReportSyntaxError("invalid syntax");
+                        ReportSyntaxError(t.Value is Bytes ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
+                        stop = true;
+                        break;
                     }
                 }
-                break;
+                if (stop) break;
+
+                while (t is FormattedStringToken fst) {
+                    s = ParseFormattedString(fst, s, expressions);
+                    NextToken();
+                    t = PeekToken();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(s)) {
+                expressions.Add(new ConstantExpression(s));
+            }
+
+            return new JoinedStringExpression(expressions);
+        }
+
+        private string FinishStringPlus(string s) {
+            Token t = PeekToken();
+            while (t is ConstantValueToken) {
+                if (t.Value is string cvs) {
+                    s += cvs;
+                    NextToken();
+                    t = PeekToken();
+                } else {
+                    ReportSyntaxError(t.Value is Bytes ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
+                    break;
+                }
             }
             return s;
         }
 
         private Bytes FinishBytesPlus(Bytes s) {
             Token t = PeekToken();
-            while (true) {
-                if (t is ConstantValueToken) {
-                    if (t.Value is Bytes cvs) {
-                        s = s + cvs;
-                        NextToken();
-                        t = PeekToken();
-                        continue;
-                    } else {
-                        ReportSyntaxError("invalid syntax");
-                    }
+            while (t is ConstantValueToken) {
+                if (t.Value is Bytes cvs) {
+                    s += cvs;
+                    NextToken();
+                    t = PeekToken();
+                } else {
+                    ReportSyntaxError(t.Value is string ? "cannot mix bytes and nonbytes literals" : "invalid syntax");
+                    break;
                 }
-                break;
+            }
+            if (t is FormattedStringToken) {
+                ReportSyntaxError("cannot mix bytes and nonbytes literals");
             }
             return s;
         }
+
+#nullable restore
 
         private Expression AddTrailers(Expression ret) {
             return AddTrailers(ret, true);
@@ -2886,7 +2967,7 @@ namespace IronPython.Compiler {
             List<Keyword> kwargs = null;
 
             if (args is not null) {
-                SplitAndValidateArguments(args, out posargs, out kwargs); 
+                SplitAndValidateArguments(args, out posargs, out kwargs);
             }
 
             return new CallExpression(target, posargs, kwargs);

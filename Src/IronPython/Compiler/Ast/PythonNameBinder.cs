@@ -388,6 +388,11 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // FormattedValueExpression
+        public override bool Walk(FormattedValueExpression node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // GeneratorExpression
         public override bool Walk(GeneratorExpression node) {
             node.Parent = _currentScope;
@@ -405,6 +410,11 @@ namespace IronPython.Compiler.Ast {
         }
         // IndexExpression
         public override bool Walk(IndexExpression node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
+        // JoinedStringExpression
+        public override bool Walk(JoinedStringExpression node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

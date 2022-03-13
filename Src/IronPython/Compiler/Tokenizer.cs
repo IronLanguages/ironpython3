@@ -90,12 +90,12 @@ namespace IronPython.Compiler {
         }
 
         public override SourceLocation CurrentPosition {
-            get { 
+            get {
                 return IndexToLocation(CurrentIndex);
             }
         }
 
-        public SourceLocation IndexToLocation(int index) {            
+        public SourceLocation IndexToLocation(int index) {
             int match = _newLineLocations.BinarySearch(index);
             if (match < 0) {
                 // If our index = -1, it means we're on the first line.
@@ -106,7 +106,7 @@ namespace IronPython.Compiler {
                 // matching line number less than this one
                 match = ~match - 1;
             }
-            
+
             return new SourceLocation(index + _initialLocation.Index, _sourceUnit.MapLine(match + 2) + _initialLocation.Line - 1, index - _newLineLocations[match] + _initialLocation.Column);
         }
 
@@ -167,11 +167,11 @@ namespace IronPython.Compiler {
             _sourceUnit = sourceUnit;
 
             _reader = reader;
-            
+
             if (_buffer == null || _buffer.Length < bufferCapacity) {
                 _buffer = new char[bufferCapacity];
             }
-            
+
             _newLineLocations = new List<int>();
             _tokenEnd = -1;
             _initialLocation = initialLocation;
@@ -311,7 +311,7 @@ namespace IronPython.Compiler {
             if (_state.IncompleteString != null && Peek() != EOF) {
                 IncompleteString prev = _state.IncompleteString;
                 _state.IncompleteString = null;
-                return ContinueString(prev.IsSingleTickQuote ? '\'' : '"', prev.IsRaw, prev.IsUnicode, false, prev.IsTripleQuoted, 0);
+                return ContinueString(prev.IsSingleTickQuote ? '\'' : '"', prev.IsRaw, prev.IsUnicode, isBytes: false, isFormatted: false, prev.IsTripleQuoted, 0);
             }
 
             DiscardToken();
@@ -359,7 +359,7 @@ namespace IronPython.Compiler {
                     case '\"':
                     case '\'':
                         _state.LastNewLine = false;
-                        return ReadString((char)ch, false, false, false);
+                        return ReadString((char)ch);
 
                     case 'u':
                     case 'U':
@@ -370,10 +370,16 @@ namespace IronPython.Compiler {
                     case 'R':
                         _state.LastNewLine = false;
                         return ReadNameOrRawStringOrBytes();
+
                     case 'b':
                     case 'B':
                         _state.LastNewLine = false;
                         return ReadNameOrBytes();
+
+                    case 'f':
+                    case 'F':
+                        _state.LastNewLine = false;
+                        return ReadNameOrFString();
 
                     case '_':
                         _state.LastNewLine = false;
@@ -482,28 +488,43 @@ namespace IronPython.Compiler {
         }
 
         private Token ReadNameOrString() {
-            if (NextChar('\"')) return ReadString('\"', false, true, false);
-            if (NextChar('\'')) return ReadString('\'', false, true, false);
+            if (NextChar('\"')) return ReadString('\"', isUni: true);
+            if (NextChar('\'')) return ReadString('\'', isUni: true);
+            return ReadName();
+        }
+
+        private Token ReadNameOrFString() {
+            if (NextChar('\"')) return ReadString('\"', isFormatted: true);
+            if (NextChar('\'')) return ReadString('\'', isFormatted: true);
+            if (NextChar('r') || NextChar('R')) {
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isFormatted: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isFormatted: true);
+                BufferBack();
+            }
             return ReadName();
         }
 
         private Token ReadNameOrBytes() {
-            if (NextChar('\"')) return ReadString('\"', false, false, true);
-            if (NextChar('\'')) return ReadString('\'', false, false, true);
+            if (NextChar('\"')) return ReadString('\"', isBytes: true);
+            if (NextChar('\'')) return ReadString('\'', isBytes: true);
             if (NextChar('r') || NextChar('R')) {
-                if (NextChar('\"')) return ReadString('\"', true, false, true);
-                if (NextChar('\'')) return ReadString('\'', true, false, true);
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isBytes: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isBytes: true);
                 BufferBack();
             }
             return ReadName();
         }
 
         private Token ReadNameOrRawStringOrBytes() {
-            if (NextChar('\"')) return ReadString('\"', true, false, false);
-            if (NextChar('\'')) return ReadString('\'', true, false, false);
+            if (NextChar('\"')) return ReadString('\"', isRaw: true);
+            if (NextChar('\'')) return ReadString('\'', isRaw: true);
             if (NextChar('b') || NextChar('B')) {
-                if (NextChar('\"')) return ReadString('\"', true, false, true);
-                if (NextChar('\'')) return ReadString('\'', true, false, true);
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isBytes: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isBytes: true);
+                BufferBack();
+            } else if (NextChar('f') || NextChar('F')) {
+                if (NextChar('\"')) return ReadString('\"', isRaw: true, isFormatted: true);
+                if (NextChar('\'')) return ReadString('\'', isRaw: true, isFormatted: true);
                 BufferBack();
             }
             return ReadName();
@@ -541,7 +562,7 @@ namespace IronPython.Compiler {
             return Char.IsLetterOrDigit(unchecked((char)ch)) || ch == '_';
         }
 
-        private Token ReadString(char quote, bool isRaw, bool isUni, bool isBytes) {
+        private Token ReadString(char quote, bool isRaw = false, bool isUni = false, bool isBytes = false, bool isFormatted = false) {
             int sadd = 0;
             bool isTriple = false;
 
@@ -559,16 +580,17 @@ namespace IronPython.Compiler {
             if (isRaw) sadd++;
             if (isUni) sadd++;
             if (isBytes) sadd++;
+            if (isFormatted) sadd++;
 
-            return ContinueString(quote, isRaw, isUni, isBytes, isTriple, sadd);
+            return ContinueString(quote, isRaw, isUni, isBytes, isFormatted, isTriple, sadd);
         }
 
-        private Token ContinueString(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int startAdd) {
+        private Token ContinueString(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isFormatted, bool isTriple, int startAdd) {
             // PERF: Might be nice to have this not need to get the whole token (which requires a buffer >= in size to the
             // length of the string) and instead build up the string via pieces.  Currently on files w/ large doc strings we
             // are forced to grow our buffer.
 
-            int end_add = 0;
+            int endAdd = 0;
             int eol_size = 0;
 
             for (; ; ) {
@@ -588,21 +610,21 @@ namespace IronPython.Compiler {
                     } else {
                         MarkTokenEnd();
                     }
-                    
+
                     UnexpectedEndOfString(isTriple, isTriple);
-                    string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add);
-                    
+                    string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - endAdd);
+
                     _state.IncompleteString = new IncompleteString(quote == '\'', isRaw, isUnicode, isTriple);
                     return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
                 } else if (ch == quote) {
 
                     if (isTriple) {
                         if (NextChar(quote) && NextChar(quote)) {
-                            end_add += 3;
+                            endAdd += 3;
                             break;
                         }
                     } else {
-                        end_add++;
+                        endAdd++;
                         break;
                     }
 
@@ -616,8 +638,8 @@ namespace IronPython.Compiler {
                         MarkTokenEnd();
                         UnexpectedEndOfString(isTriple, isTriple);
 
-                        string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add - 1);
-                        
+                        string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - endAdd - 1);
+
                         _state.IncompleteString = new IncompleteString(quote == '\'', isRaw, isUnicode, isTriple);
 
                         return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
@@ -633,7 +655,7 @@ namespace IronPython.Compiler {
 
                             // incomplete string in the form "abc\
 
-                            string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add - 1);                            
+                            string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - endAdd - 1);
 
                             UnexpectedEndOfString(isTriple, true);
                             return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
@@ -652,8 +674,8 @@ namespace IronPython.Compiler {
                         MarkTokenEnd();
                         UnexpectedEndOfString(isTriple, false);
 
-                        string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - end_add);
-                        
+                        string incompleteContents = GetTokenSubstring(startAdd, TokenLength - startAdd - endAdd);
+
                         return new IncompleteStringErrorToken((quote == '"') ? Resources.NewLineInDoubleQuotedString : Resources.NewLineInSingleQuotedString, incompleteContents);
                     }
                 }
@@ -661,16 +683,20 @@ namespace IronPython.Compiler {
 
             MarkTokenEnd();
 
-            return MakeStringToken(quote, isRaw, isUnicode, isBytes, isTriple, _start + startAdd, TokenLength - startAdd - end_add);
+            return MakeStringToken(quote, isRaw, isUnicode, isBytes, isFormatted, isTriple, _start, TokenLength, startAdd, endAdd);
         }
 
-        private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int start, int length) {
+        private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isFormatted, bool isTriple, int tokenStart, int tokenLength, int startAdd, int endAdd) {
             try {
-                if (isBytes) {
+                var start = tokenStart + startAdd;
+                var length = tokenLength - startAdd - endAdd;
+                if (isFormatted) {
+                    return new FormattedStringToken(_buffer.AsSpan(start, length).ToString(), isRaw);
+                } else if (isBytes) {
                     List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, isAscii: true, normalizeLineEndings: true);
                     return new ConstantValueToken(data.Count == 0 ? Bytes.Empty : new Bytes(data));
                 } else {
-                    var contents = LiteralParser.ParseString(_buffer, start, length, isRaw, isUniEscape: !isRaw, normalizeLineEndings: true);
+                    var contents = LiteralParser.ParseString(_buffer.AsSpan(start, length), isRaw);
                     return new ConstantValueToken(contents);
                 }
             } catch (DecoderFallbackException ex) {
@@ -966,7 +992,7 @@ namespace IronPython.Compiler {
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseImaginary(GetTokenString()));
 
-                    default:                        
+                    default:
                         BufferBack();
                         if (idx == CurrentIndex) {
                             return null;
@@ -1217,7 +1243,7 @@ namespace IronPython.Compiler {
                 string name = GetTokenString();
                 token = _names[name] = new NameToken(name);
             }
-            
+
             return token;
         }
 
@@ -1251,7 +1277,7 @@ namespace IronPython.Compiler {
                 int result = 5381;
                 if (obj == _currentName) {
                     char[] buffer = _tokenizer._buffer;
-                    int start = _tokenizer._start, end = _tokenizer._tokenEnd;                    
+                    int start = _tokenizer._start, end = _tokenizer._tokenEnd;
                     for (int i = start; i < end; i++) {
                         int c = buffer[i];
                         result = unchecked(((result << 5) + result) ^ c);
@@ -1559,7 +1585,7 @@ namespace IronPython.Compiler {
 
                 return IsRaw == other.IsRaw &&
                     IsUnicode == other.IsUnicode &&
-                    IsTripleQuoted== other.IsTripleQuoted &&
+                    IsTripleQuoted == other.IsTripleQuoted &&
                     IsSingleTickQuote == other.IsSingleTickQuote;
             }
 
@@ -1635,7 +1661,7 @@ namespace IronPython.Compiler {
         }
 
         #region Buffer Access
-        
+
         private string GetTokenSubstring(int offset) {
             return GetTokenSubstring(offset, _tokenEnd - _start - offset);
         }
@@ -1653,10 +1679,10 @@ namespace IronPython.Compiler {
             Debug.Assert(_buffer.Length >= 1);
 
             // _start == _end when discarding token and at beginning, when == 0
-            Debug.Assert(_start >= 0 && _start <= _end); 
+            Debug.Assert(_start >= 0 && _start <= _end);
 
             Debug.Assert(_end >= 0 && _end <= _buffer.Length);
-            
+
             // position beyond _end means we are reading EOFs:
             Debug.Assert(_position >= _start);
             Debug.Assert(_tokenEnd >= -1 && _tokenEnd <= _end);
@@ -1665,7 +1691,7 @@ namespace IronPython.Compiler {
         private int Peek() {
             if (_position >= _end) {
                 RefillBuffer();
-                
+
                 // eof:
                 if (_position >= _end) {
                     return EOF;
@@ -1673,7 +1699,7 @@ namespace IronPython.Compiler {
             }
 
             Debug.Assert(_position < _end);
-            
+
             return _buffer[_position];
         }
 
@@ -1738,7 +1764,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        private bool NextChar(int ch) { 
+        private bool NextChar(int ch) {
             CheckInvariants();
             if (Peek() == ch) {
                 _position++;

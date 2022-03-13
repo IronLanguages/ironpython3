@@ -50,7 +50,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDate('test_today'))
         suite.addTest(test.datetimetester.TestDate('test_weekday'))
         suite.addTest(test.datetimetester.TestDateOnly('test_delta_non_days_ignored'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_astimezone')))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_astimezone'))) # https://github.com/IronLanguages/ironpython3/issues/1136
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_backdoor_resistance')))
         suite.addTest(test.datetimetester.TestDateTime('test_bad_constructor_arguments'))
         suite.addTest(test.datetimetester.TestDateTime('test_basic_attributes'))
@@ -105,7 +105,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDateTime('test_utcnow'))
         suite.addTest(test.datetimetester.TestDateTime('test_weekday'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_argument_passing'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_astimezone'))) # TODO
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_astimezone'))) # https://github.com/IronLanguages/ironpython3/issues/1136
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_astimezone_default_eastern'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_astimezone_default_utc'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_aware_compare'))
@@ -177,12 +177,12 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_utc_offset_out_of_bounds'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_utcfromtimestamp'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_utcnow'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_utctimetuple'))) # nullref
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_utctimetuple'))) # SystemError: Object reference not set to an instance of an object.
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_weekday'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_zones'))
         suite.addTest(test.datetimetester.TestModule('test_constants'))
         suite.addTest(test.datetimetester.TestModule('test_divide_and_round'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_astimezone')))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_astimezone'))) # https://github.com/IronLanguages/ironpython3/issues/1136
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_backdoor_resistance')))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_bad_constructor_arguments'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_basic_attributes'))
@@ -320,21 +320,21 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimeTZ('test_tzinfo_classes'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_utc_offset_out_of_bounds'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_zones')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_aware_datetime'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_class_members'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_comparison')))
+        suite.addTest(test.datetimetester.TestTimeZone('test_aware_datetime'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_class_members'))
+        suite.addTest(  test.datetimetester.TestTimeZone('test_comparison'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_constructor')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_copy'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_deepcopy'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_dst')))
+        suite.addTest(test.datetimetester.TestTimeZone('test_copy'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_deepcopy'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_dst'))
         suite.addTest(test.datetimetester.TestTimeZone('test_fromutc'))
         suite.addTest(test.datetimetester.TestTimeZone('test_inheritance'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_pickle'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_repr'))) # AttributeError: 'type' object has no attribute 'min'
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_str')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_tzname')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeZone('test_utcoffset')))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimezoneConversions('test_bogus_dst'))) # nullref
+        suite.addTest(test.datetimetester.TestTimeZone('test_pickle'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_repr'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_str'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_tzname'))
+        suite.addTest(test.datetimetester.TestTimeZone('test_utcoffset'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimezoneConversions('test_bogus_dst'))) # SystemError: Object reference not set to an instance of an object.
         suite.addTest(test.datetimetester.TestTimezoneConversions('test_easy'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimezoneConversions('test_fromutc')))
         suite.addTest(test.datetimetester.TestTimezoneConversions('test_tricky'))

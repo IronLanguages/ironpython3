@@ -269,7 +269,7 @@ class TestTimeZone(unittest.TestCase):
         with self.assertRaises(TypeError): self.EST.dst(5)
 
     def test_tzname(self):
-        self.assertEqual('UTC+00:00', timezone(ZERO).tzname(None))
+        self.assertEqual('UTC', timezone(ZERO).tzname(None)) # ironpython: using value from 3.6
         self.assertEqual('UTC-05:00', timezone(-5 * HOUR).tzname(None))
         self.assertEqual('UTC+09:30', timezone(9.5 * HOUR).tzname(None))
         self.assertEqual('UTC-00:01', timezone(timedelta(minutes=-1)).tzname(None))

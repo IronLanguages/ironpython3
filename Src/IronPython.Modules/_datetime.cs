@@ -1570,7 +1570,7 @@ namespace IronPython.Modules {
 #nullable enable
 
         [PythonType]
-        public sealed class timezone : tzinfo, ICodeFormattable {
+        public sealed class timezone : tzinfo, ICodeFormattable, IEquatable<timezone> {
             private readonly timedelta _offset;
             private readonly string? _name;
 
@@ -1592,9 +1592,19 @@ namespace IronPython.Modules {
 
             public static timezone utc { get; } = new timezone(timedelta.Zero);
 
-            public override timedelta utcoffset(object? dt) => _offset;
+            public static timezone min { get; } = new timezone(new timedelta(-1, 60, 0));
 
-            public override timedelta? dst(object? dt) => null;
+            public static timezone max { get; } = new timezone(new timedelta(0, 86340, 0));
+
+            public override timedelta utcoffset(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("utcoffset(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                return _offset;
+            }
+
+            public override timedelta? dst(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("dst(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                return null;
+            }
 
             public override object fromutc([NotNull] datetime dt) {
                 if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError("fromutc: dt.tzinfo is not self");
@@ -1604,6 +1614,7 @@ namespace IronPython.Modules {
             private bool IsUtc => ReferenceEquals(this, utc);
 
             public override string tzname(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError($"tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
                 if (_name is not null) return _name;
 
                 if (IsUtc) return "UTC";
@@ -1614,6 +1625,8 @@ namespace IronPython.Modules {
                 if (time.EndsWith(":00", StringComparison.OrdinalIgnoreCase)) time = time.Substring(0, time.Length - 3); // remove trailing seconds
                 return $"UTC" + time;
             }
+
+            public string __str__() => tzname(null);
 
             #region ICodeFormattable Members
 
@@ -1631,6 +1644,17 @@ namespace IronPython.Modules {
                 if (_name is null) return PythonTuple.MakeTuple(_offset);
                 return PythonTuple.MakeTuple(_offset, _name);
             }
+
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+            public bool Equals([NotNull] timezone other)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+                => _offset.Equals(other!._offset);
+
+            public override bool Equals(object? obj)
+                => obj is timezone other && Equals(other);
+
+            public override int GetHashCode()
+                => _offset.GetHashCode();
         }
 
 #nullable restore

@@ -673,7 +673,7 @@ non-important content
         # These test are needed because unicode names are parsed
         # differently inside f-strings.
         # ironpython: TODO - different error message
-        self.assertAllRaise(SyntaxError, '.*', #r"\(unicode error\) 'unicodeescape' codec can't decode bytes in position .*: malformed \\N character escape",
+        self.assertAllRaise(SyntaxError, r"\(unicode error\) malformed \\N character escape", #r"\(unicode error\) 'unicodeescape' codec can't decode bytes in position .*: malformed \\N character escape",
                             [r"f'\N'",
                              r"f'\N{'",
                              r"f'\N{GREEK CAPITAL LETTER DELTA'",

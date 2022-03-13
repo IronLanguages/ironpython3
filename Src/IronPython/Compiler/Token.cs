@@ -109,7 +109,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    public sealed class FormattedStringToken : Token {
+    internal sealed class FormattedStringToken : Token {
         private readonly string _value;
 
         public FormattedStringToken(string value, bool isRaw)

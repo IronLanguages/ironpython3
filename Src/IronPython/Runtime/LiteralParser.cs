@@ -338,7 +338,6 @@ namespace IronPython.Runtime {
                 error = "f-string: expecting '}'";
             }
             return false;
-
         }
 
         private static bool TryReadFStringConversion(ReadOnlySpan<char> data, out int consumed, out char conversion, [NotNullWhen(false)] out string? error) {
@@ -469,7 +468,7 @@ namespace IronPython.Runtime {
             return true;
 
             void handleUnicodeError(in ReadOnlySpan<char> data, int start, int end, string reason) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", null, start, end, reason);
+                throw new SyntaxErrorException($"(unicode error) {reason}");
             }
         }
 

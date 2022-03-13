@@ -690,11 +690,11 @@ namespace IronPython.Compiler {
             try {
                 var start = tokenStart + startAdd;
                 var length = tokenLength - startAdd - endAdd;
-                if (isBytes) {
+                if (isFormatted) {
+                    return new FormattedStringToken(_buffer.AsSpan(start, length).ToString(), isRaw);
+                } else if (isBytes) {
                     List<byte> data = LiteralParser.ParseBytes<char>(_buffer.AsSpan(start, length), isRaw, isAscii: true, normalizeLineEndings: true);
                     return new ConstantValueToken(data.Count == 0 ? Bytes.Empty : new Bytes(data));
-                } else if (isFormatted) {
-                    return new FormattedStringToken(_buffer.AsSpan(start, length).ToString(), isRaw);
                 } else {
                     var contents = LiteralParser.ParseString(_buffer.AsSpan(start, length), isRaw);
                     return new ConstantValueToken(contents);

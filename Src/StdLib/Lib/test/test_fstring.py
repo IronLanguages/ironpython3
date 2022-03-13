@@ -94,7 +94,7 @@ f'{a * x()}'"""
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 3)
         #self.assertEqual(binop.left.lineno, 3)
         #self.assertEqual(binop.right.lineno, 3)
@@ -121,7 +121,7 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(type(t.body[1].value.values[1]), ast.FormattedValue)
         self.assertEqual(type(t.body[1].value.values[2]), ast.Str)
         self.assertEqual(type(t.body[1].value.values[3]), ast.FormattedValue)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(t.body[1].lineno, 3)
         #self.assertEqual(t.body[1].value.lineno, 3)
         #self.assertEqual(t.body[1].value.values[0].lineno, 3)
@@ -134,7 +134,7 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(type(binop1.left), ast.Name)
         self.assertEqual(type(binop1.op), ast.Mult)
         self.assertEqual(type(binop1.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop1.lineno, 3)
         #self.assertEqual(binop1.left.lineno, 3)
         #self.assertEqual(binop1.right.lineno, 3)
@@ -147,7 +147,7 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(type(binop2.left), ast.Name)
         self.assertEqual(type(binop2.op), ast.Add)
         self.assertEqual(type(binop2.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop2.lineno, 3)
         #self.assertEqual(binop2.left.lineno, 3)
         #self.assertEqual(binop2.right.lineno, 3)
@@ -179,7 +179,7 @@ f'{a * f"-{x()}-"}'"""
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.JoinedStr)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 3)
         #self.assertEqual(binop.left.lineno, 3)
         #self.assertEqual(binop.right.lineno, 3)
@@ -191,13 +191,13 @@ f'{a * f"-{x()}-"}'"""
         self.assertEqual(type(binop.right.values[0]), ast.Str)
         self.assertEqual(type(binop.right.values[1]), ast.FormattedValue)
         self.assertEqual(type(binop.right.values[2]), ast.Str)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.right.values[0].lineno, 3)
         #self.assertEqual(binop.right.values[1].lineno, 3)
         #self.assertEqual(binop.right.values[2].lineno, 3)
         call = binop.right.values[1].value
         self.assertEqual(type(call), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(call.lineno, 3)
         #self.assertEqual(call.col_offset, 11)
 
@@ -239,7 +239,7 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 3)
         #self.assertEqual(binop.left.lineno, 3)
         #self.assertEqual(binop.right.lineno, 3)
@@ -252,7 +252,7 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 3)
         #self.assertEqual(binop.left.lineno, 3)
         #self.assertEqual(binop.right.lineno, 3)
@@ -265,7 +265,7 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 3)
         #self.assertEqual(binop.left.lineno, 3)
         #self.assertEqual(binop.right.lineno, 3)
@@ -303,7 +303,7 @@ non-important content
         # NOTE: the following invalid behavior is described in bpo-16806.
         # - line number should be the *first* line (3), not the *last* (8)
         # - column offset should not be -1
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(t.body[1].lineno, 8)
         #self.assertEqual(t.body[1].value.lineno, 8)
         #self.assertEqual(t.body[1].value.values[0].lineno, 8)
@@ -321,7 +321,7 @@ non-important content
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: TODO - wrong locations
+        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
         #self.assertEqual(binop.lineno, 4)
         #self.assertEqual(binop.left.lineno, 4)
         #self.assertEqual(binop.right.lineno, 6)
@@ -586,7 +586,7 @@ non-important content
                              ])
 
         # Different error message is raised for other whitespace characters.
-        # ironpython: TODO - different error message
+        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
         self.assertAllRaise(SyntaxError, 'invalid syntax', #'invalid character in identifier',
                             ["f'''{\xa0}'''",
                              "\xa0",
@@ -654,7 +654,7 @@ non-important content
         self.assertEqual(f'2\x203', '2 3')
         self.assertEqual(f'\x203', ' 3')
 
-        # ironpython: TODO - DeprecationWarning in CPython 3.6
+        # ironpython: DeprecationWarning in CPython 3.6 (https://github.com/IronLanguages/ironpython3/issues/1343)
         #with self.assertWarns(DeprecationWarning):  # invalid escape sequence
         value = eval(r"f'\{6*7}'")
         self.assertEqual(value, '\\42')
@@ -672,7 +672,7 @@ non-important content
     def test_misformed_unicode_character_name(self):
         # These test are needed because unicode names are parsed
         # differently inside f-strings.
-        # ironpython: TODO - different error message
+        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1348)
         self.assertAllRaise(SyntaxError, r"\(unicode error\) malformed \\N character escape", #r"\(unicode error\) 'unicodeescape' codec can't decode bytes in position .*: malformed \\N character escape",
                             [r"f'\N'",
                              r"f'\N{'",
@@ -720,12 +720,12 @@ non-important content
 
         # lambda doesn't work without parens, because the colon
         #  makes the parser think it's a format_spec
-        # ironpython: TODO - different error message
+        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
         self.assertAllRaise(SyntaxError, 'invalid syntax', #'unexpected EOF while parsing',
                             ["f'{lambda x:x}'",
                              ])
 
-# ironpython - TODO?
+# ironpython: yield/yield from are not implemented (https://github.com/IronLanguages/ironpython3/issues/1344)
 #    def test_yield(self):
 #        # Not terribly useful, but make sure the yield turns
 #        #  a function into a generator
@@ -850,7 +850,7 @@ non-important content
         self.assertEqual(f'{f"{y}"*3}', '555')
 
     def test_invalid_string_prefixes(self):
-        # ironpython: TODO - different error message
+        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
         self.assertAllRaise(SyntaxError, 'invalid syntax', #'unexpected EOF while parsing',
                             ["fu''",
                              "uf''",
@@ -899,7 +899,7 @@ non-important content
 
     def test_conversions(self):
         self.assertEqual(f'{3.14:10.10}', '      3.14')
-        # ironpython: https://github.com/IronLanguages/ironpython2/issues/102
+        # ironpython: float repr differences (https://github.com/IronLanguages/ironpython2/issues/102)
         #self.assertEqual(f'{3.14!s:10.10}', '3.14      ')
         #self.assertEqual(f'{3.14!r:10.10}', '3.14      ')
         #self.assertEqual(f'{3.14!a:10.10}', '3.14      ')

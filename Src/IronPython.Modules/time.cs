@@ -538,7 +538,7 @@ namespace IronPython.Modules {
             int last = -1;
 
             if (tz != null) {
-                PythonDateTime.timedelta delta = tz.dst(dt);
+                PythonDateTime.timedelta delta = tz.dst(new PythonDateTime.datetime(dt));
                 PythonDateTime.ThrowIfInvalid(delta, "dst");
                 if (delta == null) {
                     last = -1;

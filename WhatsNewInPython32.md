@@ -49,8 +49,8 @@ New, Improved, and Deprecated Modules
     + [x] The `collections.deque` class grew two new methods `count()` and `reverse()` that make them more substitutable for `list` objects.
 - [ ] `threading`
 - [ ] `datetime` and `time`
-    + [ ] The `datetime` module has a new type `timezone` that implements the `tzinfo` interface by returning a fixed UTC offset and timezone name. This makes it easier to create timezone-aware `datetime` objects.
-    + [ ] Also, `timedelta` objects can now be multiplied by `float` and divided by `float` and `int` objects. And `timedelta` objects can now divide one another.
+    + [x] The `datetime` module has a new type `timezone` that implements the `tzinfo` interface by returning a fixed UTC offset and timezone name. This makes it easier to create timezone-aware `datetime` objects.
+    + [x] Also, `timedelta` objects can now be multiplied by `float` and divided by `float` and `int` objects. And `timedelta` objects can now divide one another.
     + [ ] The `datetime.date.strftime()` method is no longer restricted to years after 1900. The new supported year range is from 1000 to 9999 inclusive.
     + [ ] Whenever a two-digit year is used in a time tuple, the interpretation has been governed by `time.accept2dyear`. The default is `True` which means that for a two-digit year, the century is guessed according to the POSIX rules governing the `%y` `strptime` format. Starting with Py3.2, use of the century guessing heuristic will emit a `DeprecationWarning`. Instead, it is recommended that `time.accept2dyear` be set to `False` so that large date ranges can be used without guesswork. Several functions now have significantly expanded date ranges. When `time.accept2dyear` is false, the `time.asctime()` function will accept any year that fits in a C `int`, while the `time.mktime()` and `time.strftime()` functions will accept the full range supported by the corresponding operating system functions.
 - [x] math

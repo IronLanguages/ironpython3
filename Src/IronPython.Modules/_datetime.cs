@@ -139,57 +139,67 @@ namespace IronPython.Modules {
             }
 
             // supported operations:
-            public static timedelta operator +(timedelta self, timedelta other) {
-                return new timedelta(self._days + other._days, self._seconds + other._seconds, self._microseconds + other._microseconds);
-            }
+            public static timedelta operator +(timedelta self, [NotNull] timedelta other)
+                => new timedelta(self._days + other._days, self._seconds + other._seconds, self._microseconds + other._microseconds);
 
-            public static timedelta operator -(timedelta self, timedelta other) {
-                return new timedelta(self._days - other._days, self._seconds - other._seconds, self._microseconds - other._microseconds);
-            }
+            public static timedelta operator -(timedelta self, [NotNull] timedelta other)
+                => new timedelta(self._days - other._days, self._seconds - other._seconds, self._microseconds - other._microseconds);
 
-            public static timedelta operator -(timedelta self) {
-                return new timedelta(-self._days, -self._seconds, -self._microseconds);
-            }
+            public static timedelta operator -(timedelta self)
+                => new timedelta(-self._days, -self._seconds, -self._microseconds);
 
-            public static timedelta operator +(timedelta self) {
-                return new timedelta(self._days, self._seconds, self._microseconds);
-            }
+            public static timedelta operator +(timedelta self)
+                => new timedelta(self._days, self._seconds, self._microseconds);
 
-            public static timedelta operator *(timedelta self, int other) {
+            public static timedelta operator *(timedelta self, int other)
+                => new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
+
+            public static timedelta operator *(int other, [NotNull] timedelta self) => self * other;
+
+            public static timedelta operator *(timedelta self, BigInteger other) => self * (int)other;
+
+            public static timedelta operator *(BigInteger other, [NotNull] timedelta self) => (int)other * self;
+
+            public static timedelta operator *(timedelta self, double other) {
+                DoubleOps.as_integer_ratio(other); // CPython calls this
                 return new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
             }
 
-            public static timedelta operator *(int other, timedelta self) {
-                return new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
-            }
+            public static timedelta operator *(double other, [NotNull] timedelta self) => self * other;
 
             public static timedelta operator /(timedelta self, int other) {
+                if (other == 0) throw PythonOps.ZeroDivisionError();
                 return new timedelta((double)self._days / other, (double)self._seconds / other, (double)self._microseconds / other);
             }
 
-            public static timedelta operator *(timedelta self, BigInteger other) {
-                return self * (int)other;
+            public static timedelta operator /(timedelta self, BigInteger other) => self / (int)other;
+
+            public static timedelta operator /(timedelta self, double other) {
+                if (other == 0) throw PythonOps.ZeroDivisionError();
+                DoubleOps.as_integer_ratio(other); // CPython calls this
+                return new timedelta(self._days / other, self._seconds / other, self._microseconds / other);
             }
 
-            public static timedelta operator *(BigInteger other, timedelta self) {
-                return (int)other * self;
-            }
-
-            public static timedelta operator /(timedelta self, BigInteger other) {
-                return self / (int)other;
-            }
+            public static double operator /(timedelta self, [NotNull] timedelta other)
+                => DoubleOps.TrueDivide(self.total_seconds(), other.total_seconds());
 
             public timedelta __pos__() { return +this; }
             public timedelta __neg__() { return -this; }
             public timedelta __abs__() { return (_days > 0) ? this : -this; }
-            [SpecialName]
-            public timedelta FloorDivide(int y) {
-                return this / y;
-            }
 
             [SpecialName]
-            public timedelta ReverseFloorDivide(int y) {
-                return this / y;
+            public timedelta FloorDivide(int y) => this / y;
+
+            [SpecialName]
+            public int FloorDivide(timedelta y) => (int)DoubleOps.FloorDivide(total_seconds(), y.total_seconds());
+
+            [SpecialName]
+            public timedelta Mod(timedelta y) => new timedelta(0, DoubleOps.Mod(total_seconds(), y.total_seconds()), 0);
+
+            [SpecialName]
+            public PythonTuple DivMod(timedelta y) {
+                var res = DoubleOps.DivMod(total_seconds(), y.total_seconds());
+                return PythonTuple.MakeTuple(res[0], new timedelta(0, (double)res[1], 0));
             }
 
             public double total_seconds() {
@@ -1560,7 +1570,7 @@ namespace IronPython.Modules {
 #nullable enable
 
         [PythonType]
-        public sealed class timezone : tzinfo, ICodeFormattable {
+        public sealed class timezone : tzinfo, ICodeFormattable, IEquatable<timezone> {
             private readonly timedelta _offset;
             private readonly string? _name;
 
@@ -1582,9 +1592,19 @@ namespace IronPython.Modules {
 
             public static timezone utc { get; } = new timezone(timedelta.Zero);
 
-            public override timedelta utcoffset(object? dt) => _offset;
+            public static timezone min { get; } = new timezone(new timedelta(-1, 60, 0));
 
-            public override timedelta? dst(object? dt) => null;
+            public static timezone max { get; } = new timezone(new timedelta(0, 86340, 0));
+
+            public override timedelta utcoffset(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("utcoffset(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                return _offset;
+            }
+
+            public override timedelta? dst(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("dst(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                return null;
+            }
 
             public override object fromutc([NotNull] datetime dt) {
                 if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError("fromutc: dt.tzinfo is not self");
@@ -1594,6 +1614,7 @@ namespace IronPython.Modules {
             private bool IsUtc => ReferenceEquals(this, utc);
 
             public override string tzname(object? dt) {
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError($"tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
                 if (_name is not null) return _name;
 
                 if (IsUtc) return "UTC";
@@ -1604,6 +1625,8 @@ namespace IronPython.Modules {
                 if (time.EndsWith(":00", StringComparison.OrdinalIgnoreCase)) time = time.Substring(0, time.Length - 3); // remove trailing seconds
                 return $"UTC" + time;
             }
+
+            public string __str__() => tzname(null);
 
             #region ICodeFormattable Members
 
@@ -1621,6 +1644,17 @@ namespace IronPython.Modules {
                 if (_name is null) return PythonTuple.MakeTuple(_offset);
                 return PythonTuple.MakeTuple(_offset, _name);
             }
+
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+            public bool Equals([NotNull] timezone other)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+                => _offset.Equals(other!._offset);
+
+            public override bool Equals(object? obj)
+                => obj is timezone other && Equals(other);
+
+            public override int GetHashCode()
+                => _offset.GetHashCode();
         }
 
 #nullable restore

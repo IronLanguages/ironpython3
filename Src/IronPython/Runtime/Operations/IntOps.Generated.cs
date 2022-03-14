@@ -48,7 +48,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return SByte.Parse((String)value);
+                try {
+                    return SByte.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (SByte)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -56,7 +60,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (SByte)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for SByte.__new__");
+            throw PythonOps.TypeError("can't convert {0} to SByte", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -294,7 +298,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return Byte.Parse((String)value);
+                try {
+                    return Byte.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (Byte)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -302,7 +310,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (Byte)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for Byte.__new__");
+            throw PythonOps.TypeError("can't convert {0} to Byte", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -612,7 +620,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return Int16.Parse((String)value);
+                try {
+                    return Int16.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (Int16)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -620,7 +632,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (Int16)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for Int16.__new__");
+            throw PythonOps.TypeError("can't convert {0} to Int16", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -861,7 +873,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return UInt16.Parse((String)value);
+                try {
+                    return UInt16.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (UInt16)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -869,7 +885,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (UInt16)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for UInt16.__new__");
+            throw PythonOps.TypeError("can't convert {0} to UInt16", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -1159,6 +1175,46 @@ namespace IronPython.Runtime.Operations {
     }
 
     public static partial class Int32Ops {
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls) {
+            return __new__(cls, default(Int32));
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls, object value) {
+            if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(Int32))) {
+                throw PythonOps.TypeError("Int32.__new__: first argument must be Int32 type.");
+            }
+            IConvertible valueConvertible;
+            if ((valueConvertible = value as IConvertible) != null) {
+                switch (valueConvertible.GetTypeCode()) {
+                    case TypeCode.Byte: return (Int32)(Byte)value;
+                    case TypeCode.SByte: return (Int32)(SByte)value;
+                    case TypeCode.Int16: return (Int32)(Int16)value;
+                    case TypeCode.UInt16: return (Int32)(UInt16)value;
+                    case TypeCode.Int32: return (Int32)(Int32)value;
+                    case TypeCode.UInt32: return (Int32)(UInt32)value;
+                    case TypeCode.Int64: return (Int32)(Int64)value;
+                    case TypeCode.UInt64: return (Int32)(UInt64)value;
+                    case TypeCode.Single: return (Int32)(Single)value;
+                    case TypeCode.Double: return (Int32)(Double)value;
+                }
+            }
+            if (value is String) {
+                try {
+                    return Int32.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
+            } else if (value is BigInteger) {
+                return (Int32)(BigInteger)value;
+            } else if (value is Extensible<BigInteger>) {
+                return (Int32)((Extensible<BigInteger>)value).Value;
+            } else if (value is Extensible<double>) {
+                return (Int32)((Extensible<double>)value).Value;
+            }
+            throw PythonOps.TypeError("can't convert {0} to Int32", PythonOps.GetPythonTypeName(value));
+        }
         // Unary Operations
         [SpecialName]
         public static Int32 Plus(Int32 x) {
@@ -1376,7 +1432,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return UInt32.Parse((String)value);
+                try {
+                    return UInt32.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (UInt32)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -1384,7 +1444,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (UInt32)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for UInt32.__new__");
+            throw PythonOps.TypeError("can't convert {0} to UInt32", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -1698,7 +1758,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return Int64.Parse((String)value);
+                try {
+                    return Int64.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (Int64)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -1706,7 +1770,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (Int64)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for Int64.__new__");
+            throw PythonOps.TypeError("can't convert {0} to Int64", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]
@@ -1948,7 +2012,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             if (value is String) {
-                return UInt64.Parse((String)value);
+                try {
+                    return UInt64.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+                } catch (FormatException ex) {
+                    throw PythonOps.ValueError("{0}", ex.Message);
+                }
             } else if (value is BigInteger) {
                 return (UInt64)(BigInteger)value;
             } else if (value is Extensible<BigInteger>) {
@@ -1956,7 +2024,7 @@ namespace IronPython.Runtime.Operations {
             } else if (value is Extensible<double>) {
                 return (UInt64)((Extensible<double>)value).Value;
             }
-            throw PythonOps.ValueError("invalid value for UInt64.__new__");
+            throw PythonOps.TypeError("can't convert {0} to UInt64", PythonOps.GetPythonTypeName(value));
         }
         // Unary Operations
         [SpecialName]

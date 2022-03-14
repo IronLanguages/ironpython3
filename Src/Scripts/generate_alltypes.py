@@ -495,7 +495,11 @@ public static object __new__(PythonType cls, object value) {
         }
     }
     if (value is String) {
-        return %(type)s.Parse((String)value);
+        try {
+            return %(type)s.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+        } catch (FormatException ex) {
+            throw PythonOps.ValueError("{0}", ex.Message);
+        }
     } else if (value is BigInteger) {
         return (%(type)s)(BigInteger)value;
     } else if (value is Extensible<BigInteger>) {
@@ -503,11 +507,11 @@ public static object __new__(PythonType cls, object value) {
     } else if (value is Extensible<double>) {
         return (%(type)s)((Extensible<double>)value).Value;
     }
-    throw PythonOps.ValueError("invalid value for %(type)s.__new__");
+    throw PythonOps.TypeError("can't convert {0} to %(type)s", PythonOps.GetPythonTypeName(value));
 }"""
 
 def gen_header(cw, ty):
-    if ty.name not in ['Int32', 'Double', 'Single', 'BigInteger', 'Complex']:
+    if ty.name not in ['Double', 'Single', 'BigInteger', 'Complex']:
         cw.write(type_header)
 
 def gen_type(cw, ty):

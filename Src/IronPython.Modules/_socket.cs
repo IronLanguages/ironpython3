@@ -551,6 +551,8 @@ namespace IronPython.Modules {
             }
 
             private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
+                if (e is ObjectDisposedException) return MakeException(_context, e);
+
                 // on the socket recv throw a special socket error code when SendTimeout is zero
                 if (_socket.SendTimeout == 0) {
                     var s = new SocketException((int)errorCode);

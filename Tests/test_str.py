@@ -505,6 +505,7 @@ class StrTest(IronPythonTestCase):
 
 class CharTest(IronPythonTestCase):
 
+    @skipUnlessIronPython()
     def test_char_new(self):
         from System import Char, Int32, UInt16
 

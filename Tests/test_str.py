@@ -503,4 +503,40 @@ class StrTest(IronPythonTestCase):
 
             self.assertEqual(u"abcd".translate(ThrowingIndexable(UserError(err))), u"abcd")
 
+class CharTest(IronPythonTestCase):
+
+    def test_char_new(self):
+        from System import Char, Int32, UInt16
+
+        self.assertEqual(Char(), '\x00')
+        self.assertEqual(Char('a'), 'a')
+        self.assertEqual(Char(ord('A')), 'A')
+        self.assertEqual(Char(chr(65)), 'A')
+        self.assertEqual(Char(UInt16(65)), 'A')
+        self.assertEqual(Char(Int32(65)), 'A')
+        self.assertEqual(Char(big(65)), 'A')
+        self.assertEqual(Char('€'), '€')
+
+        self.assertIsInstance(Char(), Char)
+        self.assertIsInstance(Char('a'), Char)
+        self.assertIsInstance(Char(65), Char)
+
+        self.assertRaises(TypeError, Char, 'a', 'b')
+        self.assertRaises(TypeError, Char, 'ab',)
+        self.assertRaises(TypeError, Char, '🐍') # surrogate pair
+        self.assertRaises(TypeError, Char, '\U0001F40D') # surrogate pair
+        self.assertEqual(Char('🐍'[0]), '\uD83D') # high surrogate
+
+        self.assertRaises(TypeError, Char.__new__, str)
+        self.assertRaises(TypeError, Char.__new__, str, 'a')
+        self.assertRaises(TypeError, Char.__new__, str, 65)
+        self.assertRaises(TypeError, Char.__new__, int)
+        self.assertRaises(TypeError, Char.__new__, int, 'a')
+        self.assertRaises(TypeError, Char.__new__, int, 65)
+
+        # ValueError would be OK too
+        self.assertRaises(OverflowError, Char, -1)
+        self.assertRaises(OverflowError, Char, 0x110000)
+        self.assertRaises(OverflowError, Char, 0x10000)
+
 run_test(__name__)

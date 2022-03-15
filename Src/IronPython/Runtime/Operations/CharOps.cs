@@ -7,6 +7,8 @@
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
+using IronPython.Runtime.Types;
+
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -16,6 +18,21 @@ namespace IronPython.Runtime.Operations {
     /// </summary>
 
     public static class CharOps {
+
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls) => __new__(cls, default(char));
+
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls, ushort value) => __new__(cls, (char)value);
+
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls, char value) {
+            if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(char))) {
+                throw PythonOps.TypeError("Char.__new__: first argument must be Char type.");
+            }
+            return value;
+        }
+
         public static string __repr__(char self) => char.ToString(self);
 
         public static int __hash__(char self) => char.ToString(self).GetHashCode();

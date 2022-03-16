@@ -400,9 +400,15 @@ namespace IronPython.Runtime.Types {
                                         // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                         continue;
                                     }
-                                } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.TrueDivide) {
-                                    // we override this with our own division PythonOperationKind which is different from .NET Complex.
-                                    continue;
+                                } else if (curType == typeof(Complex)) {
+                                    if ((opInfo.Operator & PythonOperationKind.Comparison) != 0) {
+                                        // we override these with our own comparisons
+                                        continue;
+                                    }
+                                    else if (opInfo.Operator == PythonOperationKind.TrueDivide) {
+                                        // we override this with our own division PythonOperationKind which is different from .NET Complex.
+                                        continue;
+                                    }
                                 }
 
                                 Debug.Assert(opInfo.Name != "Equals");

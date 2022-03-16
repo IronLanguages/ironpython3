@@ -101,6 +101,18 @@ namespace IronPython.Runtime.Operations {
         #region Binary operators
 
         [SpecialName]
+        public static bool Equals(Complex x, int y) => x.Imaginary == 0 && DoubleOps.Equals(x.Real, y);
+
+        [SpecialName]
+        public static bool Equals(Complex x, BigInteger y) => x.Imaginary == 0 && DoubleOps.Equals(x.Real, y);
+
+        [SpecialName]
+        public static bool Equals(Complex x, double y) => x.Imaginary == 0 && DoubleOps.Equals(x.Real, y);
+
+        [SpecialName]
+        public static bool Equals(Complex x, Complex y) => x == y;
+
+        [SpecialName]
         public static Complex Add(Complex x, Complex y) {
             return x + y;
         }
@@ -164,19 +176,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static Complex FloorDivide(CodeContext context, Complex x, Complex y) {
-            throw PythonOps.TypeError("can't take floor of complex number");
-        }
+        public static Complex FloorDivide(CodeContext context, Complex self, object value)
+            => throw PythonOps.TypeError("can't take floor of complex number");
 
         [SpecialName]
-        public static Complex Mod(CodeContext context, Complex x, Complex y) {
-            throw PythonOps.TypeError("can't mod complex numbers");
-        }
+        public static Complex Mod(CodeContext context, Complex self, object value)
+            => throw PythonOps.TypeError("can't mod complex numbers");
 
         [SpecialName]
-        public static PythonTuple DivMod(CodeContext context, Complex x, Complex y) {
-            throw PythonOps.TypeError("can't take floor or mod of complex number");
-        }
+        public static PythonTuple DivMod(CodeContext context, Complex self, object value)
+            => throw PythonOps.TypeError("can't take floor or mod of complex number");
 
         #endregion
 
@@ -290,25 +299,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return res;
-        }
-
-        // Binary Operations - Comparisons (eq & ne defined on Complex type as operators)
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "y"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "x"), SpecialName]
-        public static bool LessThan(Complex x, Complex y) {
-            throw PythonOps.TypeError("complex is not an ordered type");
-        }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "y"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "x"), SpecialName]
-        public static bool LessThanOrEqual(Complex x, Complex y) {
-            throw PythonOps.TypeError("complex is not an ordered type");
-        }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "x"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "y"), SpecialName]
-        public static bool GreaterThan(Complex x, Complex y) {
-            throw PythonOps.TypeError("complex is not an ordered type");
-        }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "y"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "x"), SpecialName]
-        public static bool GreaterThanOrEqual(Complex x, Complex y) {
-            throw PythonOps.TypeError("complex is not an ordered type");
         }
     }
 }

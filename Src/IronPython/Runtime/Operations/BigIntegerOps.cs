@@ -653,6 +653,11 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
+        [PythonHidden]
+        public static TypeCode GetTypeCode(BigInteger self) {
+            return TypeCode.Object;
+        }
+
         #endregion
 
         public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotNull]string/*!*/ formatSpec) {

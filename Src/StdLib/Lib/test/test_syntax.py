@@ -582,7 +582,7 @@ class SyntaxTestCase(unittest.TestCase):
                           subclass=IndentationError)
 
     def test_kwargs_last(self):
-        self._check_error("int(base=10, '2')", "non-keyword arg")
+        self._check_error("int(base=10, '2')", "positional argument follows keyword argument")
 
 def test_main():
     support.run_unittest(SyntaxTestCase)

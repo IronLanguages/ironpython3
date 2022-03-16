@@ -551,6 +551,8 @@ namespace IronPython.Modules {
             }
 
             private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
+                if (e is ObjectDisposedException) return MakeException(_context, e);
+
                 // on the socket recv throw a special socket error code when SendTimeout is zero
                 if (_socket.SendTimeout == 0) {
                     var s = new SocketException((int)errorCode);
@@ -772,15 +774,16 @@ namespace IronPython.Modules {
                         return;
                     }
 
-                    if (Converter.TryConvertToString(value, out string? strValue)) {
-                        _socket.SetSocketOption(level, name, strValue.MakeByteArray());
+                    if (value is IBufferProtocol bp) {
+                        using IPythonBuffer buf = bp.GetBuffer();
+                        _socket.SetSocketOption(level, name, buf.AsReadOnlySpan().ToArray());
                         return;
                     }
+
+                    throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(value));
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
-
-                throw PythonOps.TypeError("setsockopt() argument 3 must be int or string");
             }
 
             [Documentation("shutdown() -> None\n\n"

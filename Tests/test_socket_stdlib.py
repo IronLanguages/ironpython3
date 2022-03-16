@@ -510,7 +510,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testClosedAttr'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testFullRead'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileAfterMakefileClose'))
-        suite.addTest(unittest.expectedFailure(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileClose'))) # SystemError: Cannot access a disposed object.
+        suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileClose'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testMakefileCloseSocketDestroy'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testReadAfterTimeout'))
         suite.addTest(test.test_socket.UnbufferedFileObjectClassTestCase('testReadline'))

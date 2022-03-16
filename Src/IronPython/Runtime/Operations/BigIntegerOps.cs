@@ -653,6 +653,87 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
+        #endregion
+
+        #region Mimic some IConvertible members
+
+        [PythonHidden]
+        public static bool ToBoolean(BigInteger self, IFormatProvider provider) {
+            return !self.IsZero;
+        }
+
+        [PythonHidden]
+        public static byte ToByte(BigInteger self, IFormatProvider provider) {
+            return (byte)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static sbyte ToSByte(BigInteger self, IFormatProvider provider) {
+            return (sbyte)self;
+        }
+
+        [PythonHidden]
+        public static char ToChar(BigInteger self, IFormatProvider provider) {
+            int res;
+            if (self.AsInt32(out res) && res <= Char.MaxValue && res >= Char.MinValue) {
+                return (char)res;
+            }
+            throw new OverflowException("big integer won't fit into char");
+        }
+
+        [PythonHidden]
+        public static decimal ToDecimal(BigInteger self, IFormatProvider provider) {
+            return (decimal)self;
+        }
+
+        [PythonHidden]
+        public static double ToDouble(BigInteger self, IFormatProvider provider) {
+            return ConvertToDouble(self);
+        }
+
+        [PythonHidden]
+        public static float ToSingle(BigInteger self, IFormatProvider provider) {
+            return checked((float)self.ToFloat64());
+        }
+
+        [PythonHidden]
+        public static short ToInt16(BigInteger self, IFormatProvider provider) {
+            return (short)self;
+        }
+
+        [PythonHidden]
+        public static int ToInt32(BigInteger self, IFormatProvider provider) {
+            return (int)self;
+        }
+
+        [PythonHidden]
+        public static long ToInt64(BigInteger self, IFormatProvider provider) {
+            return (long)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static ushort ToUInt16(BigInteger self, IFormatProvider provider) {
+            return (ushort)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static uint ToUInt32(BigInteger self, IFormatProvider provider) {
+            return (uint)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static ulong ToUInt64(BigInteger self, IFormatProvider provider) {
+            return (ulong)self;
+        }
+
+        [PythonHidden]
+        public static object ToType(BigInteger self, Type conversionType, IFormatProvider provider) {
+            if (conversionType == typeof(BigInteger)) {
+                return self;
+            }
+            throw new NotImplementedException();
+        }
+
         [PythonHidden]
         public static TypeCode GetTypeCode(BigInteger self) {
             return TypeCode.Object;

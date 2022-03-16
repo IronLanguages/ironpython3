@@ -97,35 +97,53 @@ class IronMathTest(IronPythonTestCase):
             self.assertRaises(OverflowError,getattr(big(2 ** a), m),self.p)
             self.assertRaises(OverflowError,getattr(big(-1 - x ** a), m),self.p)
 
-
-    @unittest.skip("TODO: Duplicate of previous test; repurpose to test conversion on other integral types")
     def test_nobig_to_conversion(self):
-        from System import Int32, UInt32, Int64, UInt64
-        from System.Numerics import BigInteger
-        for (a, m, t,x) in [
-                            (31, "ToInt32",Int32,2),
-                            (32, "ToUInt32",UInt32,0),
-                            (63, "ToInt64",Int64,2),
-                            (64, "ToUInt64",UInt64,0)
-                        ]:
+        from System import SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64
+        type_data = [
+                            (7,  SByte,  2),
+                            (8,  Byte,   0),
+                            (15, Int16,  2),
+                            (16, UInt16, 0),
+                            (31, Int32,  2),
+                            (32, UInt32, 0),
+                            (63, Int64,  2),
+                            (64, UInt64, 0)
+                    ]
 
-            b = big(-x ** a )
-            left = getattr(b, m)()
+        def test_extreme_values(a, t, x, wt):
+            b = t(-x ** a)
+            left = wt(b)
             right = t.MinValue
             self.assertEqual(left, right)
 
-            b = big(2 ** a -1)
-            left = getattr(b, m)()
+            b = t(2 ** a -1)
+            left = wt(b)
             right = t.MaxValue
             self.assertEqual(left, right)
 
-            b = (big(0))
-            left = getattr(b, m)()
+            b = t(0)
+            left = wt(b)
             right = t.MaxValue - t.MaxValue
             self.assertEqual(left, right)
 
-            self.assertRaises(OverflowError,getattr(big(2 ** a ), m))
-            self.assertRaises(OverflowError,getattr(big(-1 - x ** a ), m))
+        signed, unsigned = 0, 1
+        type_data_pairs = list(zip(type_data[signed::2], type_data[unsigned::2]))
+
+        for cur in range(len(type_data_pairs)):
+            # signed types fit in any other wider signed type
+            a, t, x = type_data_pairs[cur][signed]
+            for wider in range(cur, len(type_data_pairs)):
+                _, wt, _ = type_data_pairs[wider][signed]
+                test_extreme_values(a, t, x, wt)
+
+            # unsigned types fit in any other wider signed/unsigned type
+            a, t, x = type_data_pairs[cur][unsigned]
+            for wider in range(cur, len(type_data_pairs)):
+                _, wt, _ = type_data_pairs[wider][unsigned]
+                test_extreme_values(a, t, x, wt)
+                if wider > cur:
+                    _, wt, _ = type_data_pairs[wider][signed]
+                    test_extreme_values(a, t, x, wt)
 
     def test_complex(self):
         from System.Numerics import BigInteger, Complex

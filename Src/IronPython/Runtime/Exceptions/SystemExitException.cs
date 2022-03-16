@@ -53,7 +53,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Converter.ConvertToInt32(t[0]);
             } else if (Builtin.isinstance(t[0], TypeCache.BigInteger)) {
                 var b = Converter.ConvertToBigInteger(t[0]);
-                if(b > int.MaxValue) {
+                if (b > int.MaxValue || b < int.MinValue) {
                     return -1;
                 }
                 return (int)b;

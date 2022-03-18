@@ -752,6 +752,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(SByte)] = new Type[] { typeof(SByteOps) };
             res[typeof(Int16)] = new Type[] { typeof(Int16Ops) };
             res[typeof(UInt16)] = new Type[] { typeof(UInt16Ops) };
+            res[typeof(Int32)] = new Type[] { typeof(Int32Ops) };
             res[typeof(UInt32)] = new Type[] { typeof(UInt32Ops) };
             res[typeof(Int64)] = new Type[] { typeof(Int64Ops) };
             res[typeof(UInt64)] = new Type[] { typeof(UInt64Ops) };
@@ -772,7 +773,6 @@ namespace IronPython.Runtime.Binding {
             // Native CLR types
             res[typeof(object)] = new ExtensionTypeInfo(typeof(ObjectOps), "object");
             res[typeof(string)] = new ExtensionTypeInfo(typeof(StringOps), "str");
-            res[typeof(int)] = new ExtensionTypeInfo(typeof(Int32Ops), "Int32");              // PEP 237: int/long unification (GH #52)
             res[typeof(bool)] = new ExtensionTypeInfo(typeof(BoolOps), "bool");
             res[typeof(double)] = new ExtensionTypeInfo(typeof(DoubleOps), "float");
             res[typeof(ValueType)] = new ExtensionTypeInfo(typeof(ValueType), "ValueType");   // just hiding its methods in the inheritance hierarchy

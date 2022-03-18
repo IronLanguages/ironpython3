@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 
@@ -200,20 +201,40 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             return ObjectOps.__sizeof__(o);
         }
 
-        public static PythonTuple getwindowsversion() {
-            var osVer = Environment.OSVersion;
-            return new windows_version(
-                osVer.Version.Major,
-                osVer.Version.Minor,
-                osVer.Version.Build,
-                (int)osVer.Platform,
-                osVer.ServicePack
-                );
-        }
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple getwindowsversion()
+            => windows_version.GetWindowsVersion();
 
-        [PythonType("sys.getwindowsversion"), PythonHidden]
-        public class windows_version : PythonTuple {
-            internal windows_version(int major, int minor, int build, int platform, string service_pack)
+        [PythonType("sys.getwindowsversion"), SupportedOSPlatform("windows"), PythonHidden]
+        public sealed class windows_version : PythonTuple {
+            internal static windows_version GetWindowsVersion() {
+                unsafe {
+                    var version = new Interop.Kernel32.OSVERSIONINFOEX() { dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX) };
+
+                    if (!Interop.Kernel32.GetVersionExW(ref version)) {
+                        // TODO: can this fail? throw an OSError?
+                        throw new InvalidOperationException();
+                    }
+
+                    return new windows_version(version);
+                }
+            }
+
+            private unsafe windows_version(Interop.Kernel32.OSVERSIONINFOEX version)
+                : this(version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber, version.dwPlatformId, new string(version.szCSDVersion)) {
+                product_type = version.wProductType;
+                service_pack_major = version.wServicePackMajor;
+                service_pack_minor = version.wServicePackMinor;
+                suite_mask = version.wSuiteMask;
+
+                if (Interop.NtDll.RtlGetVersionEx(out var osVer) == 0) {
+                    platform_version = PythonTuple.MakeTuple((int)osVer.dwMajorVersion, (int)osVer.dwMinorVersion, (int)osVer.dwBuildNumber);
+                } else {
+                    platform_version = PythonTuple.MakeTuple(major, minor, build);
+                }
+            }
+
+            private windows_version(int major, int minor, int build, int platform, string service_pack)
                 : base(new object[] { major, minor, build, platform, service_pack }) {
 
                 this.major = major;
@@ -229,7 +250,13 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public readonly int platform;
             public readonly string service_pack;
 
-            public const int n_fields = 5;
+            public readonly int product_type;
+            public readonly int service_pack_major;
+            public readonly int service_pack_minor;
+            public readonly int suite_mask;
+            public readonly PythonTuple platform_version;
+
+            public const int n_fields = 10;
             public const int n_sequence_fields = 5;
             public const int n_unnamed_fields = 0;
 
@@ -298,6 +325,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly string winver = CurrentVersion.Series;
 
         #region Special types

@@ -124,6 +124,7 @@ print(final)"""
         regex = r'[\w.+]+\s*(?: DEBUG)?\s+\([^)]+\)\s+\[[^\]]+ \((?:32|64)-bit\)\]'
         self.assertTrue(re.match(regex, sys.version, re.IGNORECASE) is not None)
 
+    @unittest.skipUnless(sys.platform == "win32", "Windows specific")
     def test_winver(self):
         import re
         #E.g., "2.5"
@@ -229,9 +230,9 @@ f()
         self.assertNotEqual(0, count)
         self.assertTrue(w)
         self.assertTrue('dummy result' in str(w[0].message))
-    
+
     def test_builtin_module_names(self):
-        ''' Validate properly sorted module names for issue #875 
+        ''' Validate properly sorted module names for issue #875
             See issue https://github.com/IronLanguages/ironpython3/issues/875 for full details '''
         self.assertTrue(sys.builtin_module_names == tuple(sorted(sys.builtin_module_names)))
 

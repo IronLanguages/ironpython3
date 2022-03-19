@@ -1161,8 +1161,7 @@ import Namespace.")]
                 case TypeCode.UInt16:
                 case TypeCode.UInt32:
                 case TypeCode.UInt64:
-                    if (type.FullName != "System." + type.GetTypeCode()) // enum or non-primitive type
-                        goto default;
+                    if (!type.IsPrimitive) goto default;
 
                     data = self.ToString();
                     format = type.FullName;

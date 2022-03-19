@@ -1146,7 +1146,8 @@ import Namespace.")]
             }
 
             string data, format;
-            switch (CompilerHelpers.GetType(self).GetTypeCode()) {
+            Type type = CompilerHelpers.GetType(self);
+            switch (type.GetTypeCode()) {
                 // for the primitive non-python types just do a simple
                 // serialization
                 case TypeCode.Byte:
@@ -1160,8 +1161,10 @@ import Namespace.")]
                 case TypeCode.UInt16:
                 case TypeCode.UInt32:
                 case TypeCode.UInt64:
+                    if (!type.IsPrimitive) goto default;
+
                     data = self.ToString();
-                    format = CompilerHelpers.GetType(self).FullName;
+                    format = type.FullName;
                     break;
 
                 default:

@@ -1193,6 +1193,10 @@ End Class""")
                 System.StringSplitOptions.RemoveEmptyEntries,
                 ]
 
+        if is_netcoreapp and not is_netcoreapp21:
+            clr.AddReference("System.Text.Json")
+            data.append(System.Text.Json.JsonValueKind.Object)
+
         data.append(list(data))     # list of all the data..
         data.append(tuple(data))    # tuple of all the data...
 

@@ -322,6 +322,9 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // stdin, stdout, stderr, __stdin__, __stdout__, and __stderr__ added by PythonContext
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static readonly string abiflags = string.Empty;
+
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
@@ -332,7 +335,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
         public sealed class SysFlags : PythonTuple {
-            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_INSPECT = 1;
@@ -345,9 +348,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             private const int INDEX_VERBOSE = 8;
             private const int INDEX_BYTES_WARNING = 9;
             private const int INDEX_QUIET = 10;
+            private const int INDEX_HASH_RANDOMIZATION = 11;
+            private const int INDEX_ISOLATED = 12;
 
-            public const int n_fields = 11;
-            public const int n_sequence_fields = 11;
+            public const int n_fields = 13;
+            public const int n_sequence_fields = 13;
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
@@ -363,6 +368,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                     $"{nameof(verbose)}={verbose}",
                     $"{nameof(bytes_warning)}={bytes_warning}",
                     $"{nameof(quiet)}={quiet}",
+                    $"{nameof(hash_randomization)}={hash_randomization}",
+                    $"{nameof(isolated)}={isolated}",
                 };
                 return $"sys.flags({string.Join(", ", fields)})";
             }
@@ -422,6 +429,16 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public int quiet {
                 get => (int)_data[INDEX_QUIET];
                 internal set => _data[INDEX_QUIET] = value;
+            }
+
+            public int hash_randomization {
+                get => (int)_data[INDEX_HASH_RANDOMIZATION];
+                internal set => _data[INDEX_HASH_RANDOMIZATION] = value;
+            }
+
+            public int isolated {
+                get => (int)_data[INDEX_ISOLATED];
+                internal set => _data[INDEX_ISOLATED] = value;
             }
 
             #endregion

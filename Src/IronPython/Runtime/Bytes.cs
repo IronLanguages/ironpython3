@@ -1002,7 +1002,7 @@ namespace IronPython.Runtime {
                     return this[iVal];
                 }
 
-                throw PythonOps.IndexError("cannot fit long in index");
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
             }
         }
 
@@ -1015,7 +1015,11 @@ namespace IronPython.Runtime {
 
         public int this[object? index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (Converter.TryConvertToIndex(index, out int res, throwNonInt: true)) {
+                    return this[res];
+                }
+
+                throw PythonOps.TypeError("byte indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 

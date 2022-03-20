@@ -1108,8 +1108,21 @@ namespace IronPython.Runtime {
         }
 
         public virtual object? this[BigInteger index] {
-            get => this[(int)index];
-            set => this[(int)index] = value;
+            get {
+                if (index.AsInt32(out int iVal)) {
+                    return this[iVal];
+                }
+
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
+            }
+            set {
+                if (index.AsInt32(out int iVal)) {
+                    this[iVal] = value;
+                    return;
+                }
+
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
+            }
         }
 
         /// <summary>
@@ -1117,13 +1130,18 @@ namespace IronPython.Runtime {
         /// </summary>
         public virtual object? this[object? index] {
             get {
-                if (Converter.TryConvertToIndex(index, out int idx))
+                if (Converter.TryConvertToIndex(index, out int idx, throwNonInt: true))
                     return this[idx];
 
                 throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
             set {
-                this[Converter.ConvertToIndex(index)] = value;
+                if (Converter.TryConvertToIndex(index, out int idx, throwNonInt: true)) {
+                    this[idx] = value;
+                    return;
+                }
+
+                throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 

@@ -34,10 +34,8 @@ namespace IronPython.Runtime {
         }
 
         public Enumerate(CodeContext context, object iter, object start) {
-            object index;
-            if (!Converter.TryConvertToIndex(start, out index)) {
-                throw PythonOps.TypeErrorForUnIndexableObject(start);
-            }
+            object index = PythonOps.Index(start);
+            if (index is Extensible<BigInteger> ebi) index = ebi.Value;
 
             _iter = PythonOps.GetEnumerator(iter);
             _index = context.LanguageContext.Operation(Binding.PythonOperationKind.Subtract, index, ScriptingRuntimeHelpers.Int32ToObject(1));

@@ -131,37 +131,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static byte GetByte(object? o) {
-            // TODO: move fast paths to TryConvertToIndex?
-            switch (o) {
-                case int ii:
-                    return ii.ToByteChecked();
-                case BigInteger bi:
-                    return bi.ToByteChecked();
-                case Extensible<BigInteger> ebi:
-                    return ebi.Value.ToByteChecked();
-                case byte b:
-                    return b;
-                case sbyte sb:
-                    return ((int)sb).ToByteChecked();
-                case char c:
-                    return ((int)c).ToByteChecked();
-                case short s:
-                    return ((int)s).ToByteChecked();
-                case ushort us:
-                    return ((int)us).ToByteChecked();
-                case uint ui:
-                    return ((BigInteger)ui).ToByteChecked();
-            }
+            var index = PythonOps.Index(o);
 
-            if (Converter.TryConvertToIndex(o, out object index)) {
-                switch (index) {
-                    case int i: return i.ToByteChecked();
-                    case BigInteger bi: return bi.ToByteChecked();
-                    default: throw new InvalidOperationException(); // unreachable
-                }
-            }
-
-            throw PythonOps.TypeError($"'{PythonOps.GetPythonTypeName(o)}' object cannot be interpreted as an integer");
+            return index switch {
+                int i => i.ToByteChecked(),
+                BigInteger bi => bi.ToByteChecked(),
+                Extensible<BigInteger> ebi => ebi.Value.ToByteChecked(),
+                _ => throw new InvalidOperationException() // unreachable
+            };
         }
     }
 }

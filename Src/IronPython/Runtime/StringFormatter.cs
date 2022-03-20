@@ -411,19 +411,19 @@ namespace IronPython.Runtime {
                     val = (char)bytes[0];
                 } else if (_opts.Value is ByteArray byteArray && byteArray.Count == 1) {
                     val = (char)(int)byteArray[0];
-                } else if (Converter.TryConvertToIndex(_opts.Value, out object index)) {
+                } else {
                     try {
-                        val = index switch {
+                        val = PythonOps.Index(_opts.Value) switch {
                             int i => (char)checked((byte)i),
                             BigInteger bi => (char)checked((byte)bi),
+                            Extensible<BigInteger> ebi => (char)checked((byte)ebi.Value),
                             _ => throw new InvalidOperationException(), // unreachable
                         };
                     } catch (OverflowException) {
-                        throw PythonOps.ValueError("%c arg not in range(256)");
+                        throw PythonOps.OverflowError("%c arg not in range(256)");
+                    } catch (TypeErrorException) {
+                        throw PythonOps.TypeError("%c requires an integer in range(256) or a single byte");
                     }
-                }
-                else {
-                    throw PythonOps.TypeError("%c requires an integer in range(256) or a single byte");
                 }
             } else {
                 val = Converter.ExplicitConvertToChar(_opts.Value);

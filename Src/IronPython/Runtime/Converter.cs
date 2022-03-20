@@ -326,48 +326,43 @@ namespace IronPython.Runtime {
             return _ienumerableSite.Target(_ienumerableSite, o);
         }
 
+#nullable enable
+
         /// <summary>
         /// Attempts to convert value into a index usable for slicing and return the integer
         /// value.  If the conversion fails false is returned.
         /// 
         /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
         /// result in an OverflowError.
+        ///
+        /// When throwNonInt is true, a TypeError will be thrown if __index__ returned a non-int.
         /// </summary>
-        internal static bool TryConvertToIndex(object value, out int index, bool throwOverflowError = true)
-            => TryGetInt(value, out index, throwOverflowError, value)
-                || PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object res)
-                    && TryGetInt(res, out index, throwOverflowError, value);
+        internal static bool TryConvertToIndex(object? value, out int index, bool throwOverflowError = true, bool throwNonInt = false) {
+            if (TryGetInt(value, out index, throwOverflowError, value)) {
+                return true;
+            }
 
-        /// <summary>
-        /// Attempts to convert value into an index usable for slicing and return the integer or BigInteger
-        /// value.  If the conversion fails false is returned.
-        /// </summary>
-        internal static bool TryConvertToIndex(object value, out object index) {
-            index = ConvertToSliceIndexHelper(value);
-            if (index == null) {
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object res)) {
-                    index = ConvertToSliceIndexHelper(res);
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object indexObj)) {
+                if (TryGetInt(indexObj, out index, throwOverflowError, value)) {
+                    return true;
+                }
+
+                if (throwNonInt) {
+                    throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(indexObj));
                 }
             }
 
-            return index != null;
+            return false;
         }
 
-        public static int ConvertToIndex(object value, bool throwOverflowError = false) {
-            if (TryGetInt(value, out int res, throwOverflowError, value)) {
-                return res;
-            }
-
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object index)) {
-                if (TryGetInt(index, out res, throwOverflowError, value)) {
-                    return res;
-                }
-
-                throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(index));
-            }
+        public static int ConvertToIndex(object? value, bool throwOverflowError = false) {
+            if (TryConvertToIndex(value, out int index, throwOverflowError: throwOverflowError, throwNonInt: true))
+                return index;
 
             throw PythonOps.TypeError("expected integer value, got {0}", PythonOps.GetPythonTypeName(value));
         }
+
+#nullable restore
 
         private static bool TryGetInt(object o, out int value, bool throwOverflowError, object original) {
             if (o is int i) {
@@ -393,17 +388,6 @@ namespace IronPython.Runtime {
                 value = bi > 0 ? int.MaxValue : int.MinValue;
             }
             return true;
-        }
-
-        private static object ConvertToSliceIndexHelper(object value) {
-            if (value is int) return value;
-
-            if (value is BigInteger) {
-                return value;
-            } else if (value is Extensible<BigInteger> ebi) {
-                return ebi.Value;
-            }
-            return null;
         }
 
         internal static Exception CannotConvertOverflow(string name, object value) {

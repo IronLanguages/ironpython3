@@ -772,7 +772,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object Index(object? o) {
             if (TryToIndex(o, out object? index)) return index;
-            throw TypeError("'{0}' object cannot be interpreted as an integer", PythonOps.GetPythonTypeName(o));
+            throw TypeErrorForUnIndexableObject(o);
         }
 
         internal static bool TryToIndex(object? o, [NotNullWhen(true)] out object? index) {
@@ -814,6 +814,7 @@ namespace IronPython.Runtime.Operations {
                 if (index is int || index is BigInteger)
                     return true;
                 if (index is Extensible<BigInteger>) {
+                    // TODO: return int value in 3.10
                     Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonOps.GetPythonTypeName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
                     return true;
                 }

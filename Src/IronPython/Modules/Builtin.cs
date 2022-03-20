@@ -133,9 +133,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return Int32Ops.ToBinary((int)res);
             } else if (res is BigInteger) {
                 return BigIntegerOps.ToBinary((BigInteger)res);
+            } else if (res is Extensible<BigInteger> ebi) {
+                return BigIntegerOps.ToBinary(ebi.Value);
+            } else {
+                throw new InvalidOperationException();
             }
-
-            throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(res));
         }
 
         public static PythonType @bool => DynamicHelpers.GetPythonTypeFromType(typeof(bool));

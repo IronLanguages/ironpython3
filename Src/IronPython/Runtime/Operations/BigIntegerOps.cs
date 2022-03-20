@@ -55,7 +55,22 @@ namespace IronPython.Runtime.Operations {
                 case decimal val:
                     return int.MinValue <= val && val <= int.MaxValue ? (object)(int)val : (BigInteger)val;
                 case Enum e:
-                    return ((IConvertible)e).ToInt32(null);  // TODO: check long enums
+                    var ic = (IConvertible)e;
+                    switch (ic.GetTypeCode()) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                        case TypeCode.Int32:
+                            return ic.ToInt32(null);
+                        case TypeCode.Int64:
+                            return (BigInteger)ic.ToInt64(null);
+                        case TypeCode.UInt32:
+                        case TypeCode.UInt64:
+                            return (BigInteger)ic.ToUInt64(null);
+                        default:
+                            throw new InvalidOperationException(); // unreachable
+                    }
                 case string s:
                     return LiteralParser.ParseIntegerSign(s, @base, FindStart(s, @base));
                 case Extensible<string> es:

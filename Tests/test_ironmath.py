@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, big, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, big, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class IronMathTest(IronPythonTestCase):
@@ -304,6 +304,12 @@ class IronMathTest(IronPythonTestCase):
 
         self.assertEqual(big(1).CompareTo(None), 1)
         self.assertEqual(big(1).CompareTo(True), 0)
+
+        if is_netcoreapp:
+            import clr
+            clr.AddReference("System.Net.Sockets")
+        from System.Net.Sockets import IOControlCode
+        self.assertEqual(int(IOControlCode.TranslateHandle), 0xc800000D)
 
     def test_rightshiftby32_negative_bug(self):
         # test workaround for https://github.com/dotnet/runtime/issues/43396

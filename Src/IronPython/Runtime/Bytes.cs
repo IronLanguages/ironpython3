@@ -60,7 +60,7 @@ namespace IronPython.Runtime {
                     return source;
                 } else if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(source, out int size)) {
+                } else if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -78,7 +78,7 @@ namespace IronPython.Runtime {
                     return @object;
                 } else if (TryInvokeBytesOperator(context, @object, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(@object, out int size)) {
+                } else if (Converter.TryConvertToIndex(@object, out int size, throwNonInt: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -1015,7 +1015,7 @@ namespace IronPython.Runtime {
 
         public int this[object? index] {
             get {
-                if (Converter.TryConvertToIndex(index, out int res, throwNonInt: true)) {
+                if (Converter.TryConvertToIndex(index, out int res)) {
                     return this[res];
                 }
 

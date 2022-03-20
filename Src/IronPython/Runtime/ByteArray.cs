@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]IBufferProtocol source) {
-            if (Converter.TryConvertToIndex(source, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                 __init__(size);
             } else {
                 lock (this) {
@@ -86,7 +86,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object? source) {
-            if (Converter.TryConvertToIndex(source, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                 __init__(size);
             } else if (source is IEnumerable<byte> en) {
                 lock (this) {
@@ -1298,14 +1298,14 @@ namespace IronPython.Runtime {
         [System.Diagnostics.CodeAnalysis.NotNull]
         public object? this[object? index] {
             get {
-                if (Converter.TryConvertToIndex(index, out int res, throwNonInt: true)) {
+                if (Converter.TryConvertToIndex(index, out int res)) {
                     return this[res];
                 }
 
                 throw PythonOps.TypeError("bytearray indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
             set {
-                if (Converter.TryConvertToIndex(index, out int res, throwNonInt: true)) {
+                if (Converter.TryConvertToIndex(index, out int res)) {
                     this[res] = value;
                     return;
                 }

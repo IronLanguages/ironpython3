@@ -174,7 +174,7 @@ namespace IronPython.Runtime {
 
         public virtual object? this[object? index] {
             get {
-                if (Converter.TryConvertToIndex(index, out int res, throwNonInt: true)) {
+                if (Converter.TryConvertToIndex(index, out int res)) {
                     return this[res];
                 }
 

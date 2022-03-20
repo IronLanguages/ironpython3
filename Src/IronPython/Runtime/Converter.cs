@@ -337,7 +337,7 @@ namespace IronPython.Runtime {
         ///
         /// When throwNonInt is true, a TypeError will be thrown if __index__ returned a non-int.
         /// </summary>
-        internal static bool TryConvertToIndex(object? value, out int index, bool throwOverflowError = true, bool throwNonInt = false) {
+        internal static bool TryConvertToIndex(object? value, out int index, bool throwOverflowError = false, bool throwNonInt = true) {
             if (TryGetInt(value, out index, throwOverflowError, value)) {
                 return true;
             }

@@ -1130,13 +1130,13 @@ namespace IronPython.Runtime {
         /// </summary>
         public virtual object? this[object? index] {
             get {
-                if (Converter.TryConvertToIndex(index, out int idx, throwNonInt: true))
+                if (Converter.TryConvertToIndex(index, out int idx))
                     return this[idx];
 
                 throw PythonOps.TypeError("list indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
             set {
-                if (Converter.TryConvertToIndex(index, out int idx, throwNonInt: true)) {
+                if (Converter.TryConvertToIndex(index, out int idx)) {
                     this[idx] = value;
                     return;
                 }

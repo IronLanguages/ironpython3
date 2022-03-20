@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, big, is_mono, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class IronMathTest(IronPythonTestCase):
@@ -292,7 +292,8 @@ class IronMathTest(IronPythonTestCase):
             self.assertIsInstance(i.ToType(Object, self.p), Object)
             self.assertRaisesRegex(TypeError, r"Invalid cast from '\w+' to 'DateTime'", i.ToType, DateTime, self.p)
             self.assertRaisesRegex(TypeError, r"Invalid cast from '[\w.]+' to 'System.DateTimeKind'\.", i.ToType, DateTimeKind, self.p)
-            self.assertRaisesRegex(TypeError, r"Unable to cast object of type '[\w.]+' to type 'System.Enum'\.", i.ToType, Enum, self.p)
+            if not is_mono:
+                self.assertRaisesRegex(TypeError, r"Unable to cast object of type '[\w.]+' to type 'System.Enum'\.", i.ToType, Enum, self.p)
 
     def test_misc(self):
         from System import ArgumentException, ArgumentNullException

@@ -32,6 +32,8 @@
       Configuration=$(Configuration);
       BinDir=$(BinDir);
       StageDir=$(StageDir);
+      PackageDir=$(PackageDir);
+      PackageVersion=$(PackageVersion);
       BuildSysDir=$(BuildSysDir);
     </BuildProperties>
   </PropertyGroup>

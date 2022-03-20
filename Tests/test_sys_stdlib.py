@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_mono, run_test
 
 import test.test_sys
 
@@ -38,7 +38,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_sys.SysModuleTest('test_getframe'))
         suite.addTest(test.test_sys.SysModuleTest('test_getwindowsversion'))
         suite.addTest(test.test_sys.SysModuleTest('test_implementation'))
-        suite.addTest(test.test_sys.SysModuleTest('test_intern'))
+        if not is_mono:
+            suite.addTest(test.test_sys.SysModuleTest('test_intern'))
         #suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_ioencoding'))) # AssertionError: b'\x9b' != b'J\r%'
         #suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_ioencoding_nonascii'))) # AssertionError: b'\x91' != b'\xe6'
         suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_lost_displayhook'))) # TypeError: NoneType is not callable

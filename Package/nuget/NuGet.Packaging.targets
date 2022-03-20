@@ -3,11 +3,11 @@
   <ItemGroup>
     <Package Include="IronPython">
       <NuSpecDir>$(RootDir)Package\nuget</NuSpecDir>
-      <NuSpecArguments>-Symbols -SymbolPackageFormat snupkg</NuSpecArguments>
+      <NuspecProperties></NuspecProperties>
     </Package>
     <Package Include="IronPython.StdLib">
       <NuSpecDir>$(RootDir)Package\nuget</NuSpecDir>
-      <NuSpecArguments></NuSpecArguments>
+      <NuspecProperties>IncludeSymbols=false</NuspecProperties>
     </Package>
   </ItemGroup>
 
@@ -16,9 +16,7 @@
     <NuPkgOutputs>@(Package->'$(PackageDir)/%(Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
   </PropertyGroup>
 
-  <Target Name="NuGetPackage" DependsOnTargets="Stage" AfterTargets="Package"
-          Inputs="$(NuSpecInputs)"
-          Outputs="$(NuPkgOutputs)">
+  <Target Name="NuGetPackage" DependsOnTargets="Stage" AfterTargets="Package" Inputs="$(NuSpecInputs)" Outputs="$(NuPkgOutputs)">
     <ItemGroup>
       <DLLsFiles Include="**\DLLs\IronPython.*.dll" />
       <DLLsFiles Include="**\DLLs\IronPython.*.pdb" />
@@ -29,7 +27,8 @@
     <Copy SourceFiles="@(DLLsFiles)" CopiedFiles="@(CopiedFiles)" DestinationFolder="$([System.IO.Path]::GetFullPath('%(DLLsFiles.RecursiveDir)\..'))">
       <Output TaskParameter="CopiedFiles" ItemName="TempCopied" />
     </Copy>
-    <Exec Command="$(NuGet) pack &quot;%(NuSpecDir)/%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot; -Version $(PackageVersion) %(NuSpecArguments)" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Restore" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Pack" Properties="$(BuildProperties);%(NuspecProperties);NuspecFile=%(Package.Identity).nuspec" />
     <!-- Delete the copied files -->
     <Delete Files="@(TempCopied)" />
   </Target>

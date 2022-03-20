@@ -33,13 +33,11 @@
       BinDir=$(BinDir);
       StageDir=$(StageDir);
       BuildSysDir=$(BuildSysDir);
-      Mono=$(Mono);
     </BuildProperties>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
-    <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
   </PropertyGroup>
 
   <ItemGroup>
@@ -52,23 +50,23 @@
   </Target>
 
   <Target Name="Build" DependsOnTargets="RestoreReferences">
-    <MSBuild 
-      Projects="$(Solution)" 
+    <MSBuild
+      Projects="$(Solution)"
       Targets="Build"
       Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="Rebuild" DependsOnTargets="RestoreReferences">
-    <MSBuild 
-      Projects="$(Solution)" 
-      Targets="Rebuild" 
+    <MSBuild
+      Projects="$(Solution)"
+      Targets="Rebuild"
       Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="Clean">
-    <MSBuild 
-      Projects="$(Solution)" 
-      Targets="Clean" 
+    <MSBuild
+      Projects="$(Solution)"
+      Targets="Clean"
       Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
@@ -77,9 +75,9 @@
   </Target>
 
   <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
-    <MSBuild 
-      Projects="$(Solution)" 
-      Targets="Build" 
+    <MSBuild
+      Projects="$(Solution)"
+      Targets="Build"
       Properties="$(BuildProperties);Configuration=$(Configuration);Staging=true" />
   </Target>
 

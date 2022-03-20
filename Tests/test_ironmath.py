@@ -15,10 +15,13 @@ class IronMathTest(IronPythonTestCase):
     def setUp(self):
         super(IronMathTest, self).setUp()
 
-        import clr
+        import clr, System
         from System import IFormatProvider
         class myFormatProvider(IFormatProvider):
-            def ToString():pass
+            def ToString():
+                pass
+            def GetFormat(self, formatType):
+                return System.Globalization.NumberFormatInfo.InvariantInfo
 
         self.p = myFormatProvider()
 
@@ -246,6 +249,50 @@ class IronMathTest(IronPythonTestCase):
         CheckDwordConversions(big(1<<31), [0x80000000])
         CheckDwordConversions(big(1<<31) + 9, [0x80000009])
         CheckDwordConversions(big(1<<32), [0x00000000, 0x00000001])
+
+    def test_to_type_conversions(self):
+        from System import Decimal, Double, Single
+        from System import Int64, UInt64, Int32, UInt32, Int16, UInt16, Byte, SByte
+        from System import Boolean, Char, DateTime, Object, Enum, DateTimeKind
+
+        val = 1
+        for i in  [big(val), Int32(val)]:
+            self.assertEqual(i.ToDecimal(self.p), val)
+            self.assertIsInstance(i.ToDecimal(self.p), Decimal)
+            self.assertEqual(i.ToDouble(self.p), val)
+            self.assertIsInstance(i.ToDouble(self.p), Double)
+            self.assertEqual(i.ToSingle(self.p), val)
+            self.assertIsInstance(i.ToSingle(self.p), Single)
+            self.assertEqual(i.ToInt64(self.p), val)
+            self.assertIsInstance(i.ToInt64(self.p), Int64)
+            self.assertEqual(i.ToUInt64(self.p), val)
+            self.assertIsInstance(i.ToUInt64(self.p), UInt64)
+            self.assertEqual(i.ToInt32(self.p), val)
+            self.assertIsInstance(i.ToInt32(self.p), Int32)
+            self.assertEqual(i.ToUInt32(self.p), val)
+            self.assertIsInstance(i.ToUInt32(self.p), UInt32)
+            self.assertEqual(i.ToInt16(self.p), val)
+            self.assertIsInstance(i.ToInt16(self.p), Int16)
+            self.assertEqual(i.ToUInt16(self.p), val)
+            self.assertIsInstance(i.ToUInt16(self.p), UInt16)
+            self.assertEqual(i.ToByte(self.p), val)
+            self.assertIsInstance(i.ToByte(self.p), Byte)
+            self.assertEqual(i.ToSByte(self.p), val)
+            self.assertIsInstance(i.ToSByte(self.p), SByte)
+            self.assertEqual(i.ToBoolean(self.p), val)
+            self.assertIsInstance(i.ToBoolean(self.p), Boolean)
+            self.assertEqual(i.ToChar(self.p), Char(val))
+            self.assertEqual(i.ToString(self.p), str(val))
+            self.assertRaisesRegex(TypeError, r"Invalid cast from '\w+' to 'DateTime'", i.ToDateTime, self.p)
+
+            for t in [Decimal, Double, Single, Int64, UInt64, Int32, UInt32, Int16, UInt16, Byte, SByte, Boolean, Char, str]:
+                self.assertEqual(i.ToType(t, self.p), t(i))
+
+            self.assertEqual(i.ToType(Object, self.p), i)
+            self.assertIsInstance(i.ToType(Object, self.p), Object)
+            self.assertRaisesRegex(TypeError, r"Invalid cast from '\w+' to 'DateTime'", i.ToType, DateTime, self.p)
+            self.assertRaisesRegex(TypeError, r"Invalid cast from '[\w.]+' to 'System.DateTimeKind'\.", i.ToType, DateTimeKind, self.p)
+            self.assertRaisesRegex(TypeError, r"Unable to cast object of type '[\w.]+' to type 'System.Enum'\.", i.ToType, Enum, self.p)
 
     def test_misc(self):
         from System import ArgumentException, ArgumentNullException

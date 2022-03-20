@@ -446,13 +446,19 @@ class SysModuleTest(unittest.TestCase):
                 self.assertIn(sys.hash_info.algorithm, {"fnv", "siphash24"})
         else:
             # PY_HASH_EXTERNAL
-            self.assertEqual(algo, 0)
+            if sys.implementation.name == "ironpython":
+                self.assertEqual(algo, None)
+            else:
+                self.assertEqual(algo, 0)
         self.assertGreaterEqual(sys.hash_info.cutoff, 0)
         self.assertLess(sys.hash_info.cutoff, 8)
 
         self.assertIsInstance(sys.maxsize, int)
         self.assertIsInstance(sys.maxunicode, int)
-        self.assertEqual(sys.maxunicode, 0x10FFFF)
+        if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/pull/1196
+            self.assertEqual(sys.maxunicode, 0xFFFF)
+        else:
+            self.assertEqual(sys.maxunicode, 0x10FFFF)
         self.assertIsInstance(sys.platform, str)
         self.assertIsInstance(sys.prefix, str)
         self.assertIsInstance(sys.base_prefix, str)

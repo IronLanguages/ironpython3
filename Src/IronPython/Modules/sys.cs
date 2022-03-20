@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 
@@ -200,20 +201,40 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             return ObjectOps.__sizeof__(o);
         }
 
-        public static PythonTuple getwindowsversion() {
-            var osVer = Environment.OSVersion;
-            return new windows_version(
-                osVer.Version.Major,
-                osVer.Version.Minor,
-                osVer.Version.Build,
-                (int)osVer.Platform,
-                osVer.ServicePack
-                );
-        }
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple getwindowsversion()
+            => windows_version.GetWindowsVersion();
 
-        [PythonType("sys.getwindowsversion"), PythonHidden]
-        public class windows_version : PythonTuple {
-            internal windows_version(int major, int minor, int build, int platform, string service_pack)
+        [PythonType("sys.getwindowsversion"), SupportedOSPlatform("windows"), PythonHidden]
+        public sealed class windows_version : PythonTuple {
+            internal static windows_version GetWindowsVersion() {
+                unsafe {
+                    var version = new Interop.Kernel32.OSVERSIONINFOEX() { dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX) };
+
+                    if (!Interop.Kernel32.GetVersionExW(ref version)) {
+                        // TODO: can this fail? throw an OSError?
+                        throw new InvalidOperationException();
+                    }
+
+                    return new windows_version(version);
+                }
+            }
+
+            private unsafe windows_version(Interop.Kernel32.OSVERSIONINFOEX version)
+                : this(version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber, version.dwPlatformId, new string(version.szCSDVersion)) {
+                product_type = version.wProductType;
+                service_pack_major = version.wServicePackMajor;
+                service_pack_minor = version.wServicePackMinor;
+                suite_mask = version.wSuiteMask;
+
+                if (Interop.NtDll.RtlGetVersionEx(out var osVer) == 0) {
+                    platform_version = PythonTuple.MakeTuple((int)osVer.dwMajorVersion, (int)osVer.dwMinorVersion, (int)osVer.dwBuildNumber);
+                } else {
+                    platform_version = PythonTuple.MakeTuple(major, minor, build);
+                }
+            }
+
+            private windows_version(int major, int minor, int build, int platform, string service_pack)
                 : base(new object[] { major, minor, build, platform, service_pack }) {
 
                 this.major = major;
@@ -229,7 +250,13 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public readonly int platform;
             public readonly string service_pack;
 
-            public const int n_fields = 5;
+            public readonly int product_type;
+            public readonly int service_pack_major;
+            public readonly int service_pack_minor;
+            public readonly int suite_mask;
+            public readonly PythonTuple platform_version;
+
+            public const int n_fields = 10;
             public const int n_sequence_fields = 5;
             public const int n_unnamed_fields = 0;
 
@@ -295,16 +322,20 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // stdin, stdout, stderr, __stdin__, __stdout__, and __stderr__ added by PythonContext
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static readonly string abiflags = string.Empty;
+
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly string winver = CurrentVersion.Series;
 
         #region Special types
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
         public sealed class SysFlags : PythonTuple {
-            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_INSPECT = 1;
@@ -317,9 +348,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             private const int INDEX_VERBOSE = 8;
             private const int INDEX_BYTES_WARNING = 9;
             private const int INDEX_QUIET = 10;
+            private const int INDEX_HASH_RANDOMIZATION = 11;
+            private const int INDEX_ISOLATED = 12;
 
-            public const int n_fields = 11;
-            public const int n_sequence_fields = 11;
+            public const int n_fields = 13;
+            public const int n_sequence_fields = 13;
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
@@ -335,6 +368,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                     $"{nameof(verbose)}={verbose}",
                     $"{nameof(bytes_warning)}={bytes_warning}",
                     $"{nameof(quiet)}={quiet}",
+                    $"{nameof(hash_randomization)}={hash_randomization}",
+                    $"{nameof(isolated)}={isolated}",
                 };
                 return $"sys.flags({string.Join(", ", fields)})";
             }
@@ -394,6 +429,16 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public int quiet {
                 get => (int)_data[INDEX_QUIET];
                 internal set => _data[INDEX_QUIET] = value;
+            }
+
+            public int hash_randomization {
+                get => (int)_data[INDEX_HASH_RANDOMIZATION];
+                internal set => _data[INDEX_HASH_RANDOMIZATION] = value;
+            }
+
+            public int isolated {
+                get => (int)_data[INDEX_ISOLATED];
+                internal set => _data[INDEX_ISOLATED] = value;
             }
 
             #endregion

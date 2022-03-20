@@ -655,7 +655,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        #region Mimic some IConvertible members
+        #region Mimic IConvertible members
 
         [PythonHidden]
         public static bool ToBoolean(BigInteger self, IFormatProvider provider) {
@@ -727,11 +727,53 @@ namespace IronPython.Runtime.Operations {
         }
 
         [PythonHidden]
-        public static object ToType(BigInteger self, Type conversionType, IFormatProvider provider) {
-            if (conversionType == typeof(BigInteger)) {
+        public static DateTime ToDateTime(BigInteger self, IFormatProvider provider) {
+            throw new InvalidCastException("Invalid cast from 'BigInteger' to 'DateTime'");
+        }
+
+        [PythonHidden]
+        public static object ToType(BigInteger self, Type targetType, IFormatProvider provider) {
+
+            if (targetType is null) throw new ArgumentNullException(nameof(targetType));
+
+            if (targetType == typeof(BigInteger))
                 return self;
-            }
-            throw new NotImplementedException();
+            if (targetType == typeof(Boolean))
+                return ToBoolean(self, provider);
+            if (targetType == typeof(Char))
+                return ToChar(self, provider);
+            if (targetType == typeof(SByte))
+                return ToSByte(self, provider);
+            if (targetType == typeof(Byte))
+                return ToByte(self, provider);
+            if (targetType == typeof(Int16))
+                return ToInt16(self, provider);
+            if (targetType == typeof(UInt16))
+                return ToUInt16(self, provider);
+            if (targetType == typeof(Int32))
+                return ToInt32(self, provider);
+            if (targetType == typeof(UInt32))
+                return ToUInt32(self, provider);
+            if (targetType == typeof(Int64))
+                return ToInt64(self, provider);
+            if (targetType == typeof(UInt64))
+                return ToUInt64(self, provider);
+            if (targetType == typeof(Single))
+                return ToSingle(self, provider);
+            if (targetType == typeof(Double))
+                return ToDouble(self, provider);
+            if (targetType == typeof(Decimal))
+                return ToDecimal(self, provider);
+            if (targetType == typeof(DateTime))
+                return ToDateTime(self, provider);
+            if (targetType == typeof(String))
+                return self.ToString(provider);
+            if (targetType == typeof(Object))
+                return (object)self;
+            if (targetType.IsEnum)
+                throw new InvalidCastException($"Invalid cast from '{self.GetType().FullName}' to '{targetType.FullName}'.");
+
+            throw new InvalidCastException($"Unable to cast object of type '{self.GetType().FullName}' to type '{targetType.FullName}'.");
         }
 
         [PythonHidden]

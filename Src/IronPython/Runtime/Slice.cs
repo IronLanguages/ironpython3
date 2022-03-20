@@ -41,7 +41,7 @@ namespace IronPython.Runtime {
         }
 
         public void indices(object? length, out int ostart, out int ostop, out int ostep) {
-            indices(Converter.ConvertToIndex(length), out ostart, out ostop, out ostep);
+            indices(Converter.ConvertToIndex(length, throwOverflowError: true), out ostart, out ostop, out ostep); // TODO: should not throw but it's better than an incorrect result...
         }
 
         public PythonTuple __reduce__() {

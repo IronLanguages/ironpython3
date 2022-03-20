@@ -31,9 +31,10 @@ namespace IronPython.Runtime {
         }
 
         private void Initialize(object ostart, object ostop, object ostep) {
-            stop = Converter.ConvertToIndex(ostop);
-            start = Converter.ConvertToIndex(ostart);
-            step = Converter.ConvertToIndex(ostep);
+            // TODO: throwing is not correct, but better than working when it shouldn't
+            stop = Converter.ConvertToIndex(ostop, throwOverflowError: true);
+            start = Converter.ConvertToIndex(ostart, throwOverflowError: true);
+            step = Converter.ConvertToIndex(ostep, throwOverflowError: true);
             if (step == 0) {
                 throw PythonOps.ValueError("step must not be zero");
             }
@@ -211,7 +212,7 @@ namespace IronPython.Runtime {
 
         private int IndexOf(int intValue) {
             if (CountOf(intValue) == 0) {
-                throw PythonOps.ValueError("sequence.index(x): x not in sequence");
+                return -1;
             }
             return (intValue - start) / step;
         }
@@ -236,10 +237,12 @@ namespace IronPython.Runtime {
         }
 
         public object index(CodeContext context, object value) {
+            int idx;
             if (TryConvertToInt(value, out int intValue)) {
-                return IndexOf(intValue);
+                idx = IndexOf(intValue);
+            } else {
+                idx = IndexOf(context, value);
             }
-            var idx = IndexOf(context, value);
             if (idx == -1) {
                 throw PythonOps.ValueError("sequence.index(x): x not in sequence");
             }

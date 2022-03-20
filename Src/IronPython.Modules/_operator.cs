@@ -373,7 +373,7 @@ namespace IronPython.Modules {
         }
 
         public static object index(object? a) {
-            return Converter.ConvertToIndex(a);
+            return PythonOps.Index(a);
         }
 
         [Documentation(@"compare_digest(a, b)-> bool

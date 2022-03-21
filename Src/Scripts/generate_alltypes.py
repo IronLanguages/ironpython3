@@ -5,7 +5,9 @@
 from generate import generate
 import operator
 import clr
+clr.AddReference("System.Numerics")
 from System import *
+from System.Numerics import BigInteger
 
 def get_min_max(type):
     if hasattr(type, 'MinValue'):
@@ -13,7 +15,6 @@ def get_min_max(type):
 
     return Double.NegativeInfinity, Double.PositiveInfinity
 
-types = []
 class NumType:
     def __init__(self, type):
         self.name = clr.GetClrType(type).Name
@@ -50,7 +51,7 @@ class NumType:
     def get_unsigned(self):
         if not self.is_signed: return self
 
-        for ty in types:
+        for ty in int_types:
             if not ty.is_signed and ty.size == self.size: return ty
 
         raise ValueError
@@ -58,7 +59,7 @@ class NumType:
     def get_signed(self):
         if self.is_signed: return self
 
-        for ty in types:
+        for ty in int_types:
             if ty.is_signed and ty.size == self.size: return ty
 
         raise ValueError(ty.name)
@@ -67,8 +68,8 @@ class NumType:
         if self.is_float or self == bigint: return self
         if self.type == Int32: return bigint # special Python overflow rule (skips Int64)
 
-        for ty in types:
-            if not ty.is_float and ty.is_signed == self.is_signed and ty.size == self.size**2:
+        for ty in int_types:
+            if ty.is_signed == self.is_signed and ty.size == self.size**2:
                 return ty
         return bigint
 
@@ -92,10 +93,13 @@ class NumType:
                 else:
                     return self.size <= oty.size
 
-for type in SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64, Single, Double, complex, int:
-    types.append(NumType(type))
+clr_primitive_int_types   = [SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64]
+clr_primitive_float_types = [Single, Double]
 
-bigint = types[-1]
+int_types   = [NumType(t) for t in clr_primitive_int_types]
+float_types = [NumType(t) for t in clr_primitive_float_types]
+primitive_types = int_types + float_types
+bigint = NumType(BigInteger)
 
 simple_identity_method = """\
 public static %(type)s %(method_name)s(%(type)s x) {
@@ -164,7 +168,7 @@ def gen_unaryops(cw, ty):
         cw.write(identity_method, method_name="Abs")
         cw.write(unsigned_negate_or_invert, method_name="OnesComplement")
 
-    if (ty.type is not complex) and (ty.type is not bigint):
+    if ty.name not in ['BigInteger', 'Complex']:
         cw.enter_block('public static bool __bool__(%s x)' % (ty.name))
         cw.writeline('return (x != 0);')
         cw.exit_block()
@@ -419,7 +423,7 @@ def write_conversion(cw, ty, oty):
 def gen_conversions(cw, ty):
     cw.writeline()
     cw.write("// Conversion operators")
-    for oty in types[:-2]:
+    for oty in primitive_types:
         if oty == ty: continue
 
         write_conversion(cw, ty, oty)
@@ -526,14 +530,18 @@ def gen_type(cw, ty):
     cw.exit_block()
     cw.writeline()
 
-def gen_all(cw):
-    for ty in types[:-2]: #don't generate complex or BigInteger
+def gen_int(cw):
+    for ty in int_types:
         gen_type(cw, ty)
 
+def gen_float(cw):
+    for ty in float_types:
+        gen_type(cw, ty)
 
 def main():
     return generate(
-        ("IntOps", gen_all),
+        ("IntOps", gen_int),
+        ("FloatOps", gen_float),
     )
 
 if __name__ == "__main__":

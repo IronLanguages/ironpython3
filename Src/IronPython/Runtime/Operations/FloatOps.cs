@@ -225,7 +225,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // we have 52 bits to store the exponent.  In a normalized number the mantissa has an
-            // implied 1 bit, in denormalized mode it doesn't. 
+            // implied 1 bit, in denormalized mode it doesn't.
             int lostBits = highBit - 53;
             bool rounded = false;
             if (lostBits > 0) {
@@ -435,7 +435,7 @@ namespace IronPython.Runtime.Operations {
                     return y > 0 ? double.PositiveInfinity : 0.0;
                 }
             } else if (x < 0 && (Math.Floor(y) != y)) {
-                // the return value is complex when x is negative and y is fractional. 
+                // the return value is complex when x is negative and y is fractional.
                 return ComplexOps.Power(x, y);
             }
 
@@ -846,7 +846,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + "e+00", CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
@@ -908,7 +908,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             if (self < 1) {
                                 // no implicit 0
@@ -1012,7 +1012,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
-            
+
             if (double.IsInfinity(result)) {
                 throw PythonOps.OverflowError("rounded value too large to represent");
             }
@@ -1041,9 +1041,6 @@ namespace IronPython.Runtime.Operations {
 
                 case BigInteger bi:
                     return __round__(self, bi);
-
-                case Extensible<BigInteger> ebi:
-                    return __round__(self, ebi.Value);
             }
 
             throw PythonOps.RuntimeError(
@@ -1107,7 +1104,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object Power(float x, float y) {
-            // the return value is complex when x is negative and y is fractional. 
+            // the return value is complex when x is negative and y is fractional.
             return DoubleOps.Power(x, y);
         }
 

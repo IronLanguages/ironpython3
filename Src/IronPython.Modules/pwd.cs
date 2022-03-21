@@ -17,7 +17,7 @@ using System.Numerics;
 
 [assembly: PythonModule("pwd", typeof(IronPython.Modules.PythonPwd), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules {
-    
+
     public static class PythonPwd {
         public const string __doc__ = @"This module provides access to the Unix password database.
 It is available on all Unix versions.
@@ -128,21 +128,13 @@ or via the object attributes as named in the above tuple.")]
                 }
             }
 
-            if (uid is Extensible<BigInteger> ebi) {
-                try {
-                    uid = (int)ebi.Value;
-                } catch (OverflowException) {
-                    throw PythonOps.KeyError($"getpwuid(): uid not found");
-                }
-            }
-
             if (uid is int id) {
                 var pwd = _getpwuid(id);
-                if(pwd == IntPtr.Zero) {
+                if (pwd == IntPtr.Zero) {
                     throw PythonOps.KeyError($"getpwuid(): uid not found: {id}");
                 }
 
-                return Make(pwd);                
+                return Make(pwd);
             }
 
             throw PythonOps.TypeError($"integer argument expected, got {PythonOps.GetPythonTypeName(uid)}");
@@ -167,7 +159,7 @@ or via the object attributes as named in the above tuple.")]
                 res.Add(Make(val));
                 val = getpwent();
             }
-            
+
             return res;
         }
 

@@ -176,12 +176,6 @@ namespace IronPython.Runtime.Operations {
                     } catch (OverflowException) {
                         return int.MaxValue;
                     }
-                case Extensible<BigInteger> ebi:
-                    try {
-                        return (int)ebi.Value;
-                    } catch (OverflowException) {
-                        return int.MaxValue;
-                    }
                 default:
                     throw new InvalidOperationException();
             }
@@ -402,7 +396,7 @@ namespace IronPython.Runtime.Operations {
             // otherwise give the user the truncated result if the result fits in a float
             BigInteger rem;
             BigInteger res = BigInteger.DivRem(x, y, out rem);
-            if (res.TryToFloat64(out fRes)) {                
+            if (res.TryToFloat64(out fRes)) {
                 if(rem != BigInteger.Zero) {
                     // scale remainder so that the fraction could be integer
                     BigInteger fraction = BigInteger.DivRem(rem  << 56, y, out rem); // adding 7 tailing zero bytes, bigger than sys.float_info.mant_dig
@@ -423,7 +417,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 return fRes;
-            }            
+            }
 
             // otherwise report an error
             throw PythonOps.OverflowError("integer division result too large for a float");
@@ -759,7 +753,7 @@ namespace IronPython.Runtime.Operations {
                 val = -self;
             }
             string digits;
-            
+
             switch (spec.Type) {
                 case 'n':
                     CultureInfo culture = context.LanguageContext.NumericCulture;
@@ -954,9 +948,6 @@ namespace IronPython.Runtime.Operations {
 
                 case BigInteger bi:
                     return __round__(self, bi);
-
-                case Extensible<BigInteger> ebi:
-                    return __round__(self, ebi.Value);
             }
 
             throw PythonOps.RuntimeError(
@@ -972,7 +963,7 @@ namespace IronPython.Runtime.Operations {
             return ToDigits(val, 8, lowercase);
         }
 
-        internal static string ToBinary(BigInteger val) {            
+        internal static string ToBinary(BigInteger val) {
             string res = ToBinary(val.Abs(), true, true);
             if (val.IsNegative()) {
                 res = "-" + res;
@@ -984,7 +975,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(!val.IsNegative());
 
             string digits = ToDigits(val, 2, lowercase);
-            
+
             if (includeType) {
                 digits = (lowercase ? "0b" : "0B") + digits;
             }
@@ -1011,7 +1002,7 @@ namespace IronPython.Runtime.Operations {
             for (int i = str.Length - 1; i >= 0; i--) {
                 res.Append(str[i]);
             }
-            
+
             return res.ToString();
         }
     }

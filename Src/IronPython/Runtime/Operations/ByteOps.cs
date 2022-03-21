@@ -136,7 +136,6 @@ namespace IronPython.Runtime.Operations {
             return index switch {
                 int i => i.ToByteChecked(),
                 BigInteger bi => bi.ToByteChecked(),
-                Extensible<BigInteger> ebi => ebi.Value.ToByteChecked(),
                 _ => throw new InvalidOperationException() // unreachable
             };
         }

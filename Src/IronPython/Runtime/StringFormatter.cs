@@ -160,9 +160,9 @@ namespace IronPython.Runtime {
 
 
         /// <summary>
-        /// Read a possible mapping key for %(key)s. 
+        /// Read a possible mapping key for %(key)s.
         /// </summary>
-        /// <returns>The key name enclosed between the '%(key)s', 
+        /// <returns>The key name enclosed between the '%(key)s',
         /// or null if there are no paranthesis such as '%s'.</returns>
         private object? ReadMappingKey() {
             // Caller has set _curCh to the character past the %, and
@@ -177,7 +177,7 @@ namespace IronPython.Runtime {
             }
 
 
-            // CPython supports nested parenthesis (See "S3.6.2:String Formatting Operations"). 
+            // CPython supports nested parenthesis (See "S3.6.2:String Formatting Operations").
             // Keywords inbetween %(...)s can contain parenthesis.
             //
             // For example, here are the keys returned for various format strings:
@@ -192,7 +192,7 @@ namespace IronPython.Runtime {
             // %(((a)s))s     - return ((a)s)
 
 
-            // Use a counter rule. 
+            // Use a counter rule.
             int nested = 1; // already passed the 1st '('
             int start = _index; // character index after 1st opening '('
             int end = start;
@@ -416,7 +416,6 @@ namespace IronPython.Runtime {
                         val = PythonOps.Index(_opts.Value) switch {
                             int i => (char)checked((byte)i),
                             BigInteger bi => (char)checked((byte)bi),
-                            Extensible<BigInteger> ebi => (char)checked((byte)ebi.Value),
                             _ => throw new InvalidOperationException(), // unreachable
                         };
                     } catch (OverflowException) {
@@ -683,7 +682,7 @@ namespace IronPython.Runtime {
             }
 
             // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
-            // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a 
+            // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a
             // decorative ".0". ie. to display "123.0"
             if (_trailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
                 res += ".0";

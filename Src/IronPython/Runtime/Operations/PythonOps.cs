@@ -110,13 +110,13 @@ namespace IronPython.Runtime.Operations {
         public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)]object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
-            // in favor of dynamic sites. 
+            // in favor of dynamic sites.
             // This is difficult to infer because we'd need to simulate the entire callbinder, which can include
             // looking for [SpecialName] call methods and checking for a rule from IDynamicMetaObjectProvider. But even that wouldn't
-            // be complete since sites require the argument list of the call, and we only have the instance here. 
+            // be complete since sites require the argument list of the call, and we only have the instance here.
             // Thus check a dedicated IsCallable operator. This lets each object describe if it's callable.
 
-            // Invoke Operator.IsCallable on the object. 
+            // Invoke Operator.IsCallable on the object.
             return context.LanguageContext.IsCallable(o);
         }
 
@@ -524,7 +524,7 @@ namespace IronPython.Runtime.Operations {
             if (x == y)
                 return true;
 
-            // Special case "is True"/"is False" checks. They are somewhat common in 
+            // Special case "is True"/"is False" checks. They are somewhat common in
             // Python (particularly in tests), but non-Python code may not stick to the
             // convention of only using the two singleton instances at ScriptingRuntimeHelpers.
             // (https://github.com/IronLanguages/main/issues/1299)
@@ -546,7 +546,7 @@ namespace IronPython.Runtime.Operations {
         /// only multiplying by valid sequence types (ints, not floats), support coercion
         /// to integers if the type supports it, not multiplying by None, and getting the
         /// right semantics for multiplying by negative numbers and 1 (w/ and w/o subclasses).
-        /// 
+        ///
         /// This function assumes that it is only called for case where count is not implicitly
         /// coercible to int so that check is skipped.
         /// </summary>
@@ -755,7 +755,7 @@ namespace IronPython.Runtime.Operations {
         // For hash operators, it's essential that:
         //  Cmp(x,y)==0 implies hash(x) == hash(y)
         //
-        // Equality is a language semantic determined by the Python's numerical Compare() ops 
+        // Equality is a language semantic determined by the Python's numerical Compare() ops
         // in IronPython.Runtime.Operations namespaces.
         // For example, the CLR compares float(1.0) and int32(1) as different, but Python
         // compares them as equal. So Hash(1.0f) and Hash(1) must be equal.
@@ -765,7 +765,7 @@ namespace IronPython.Runtime.Operations {
         // and hash appropriately.
         //
         // Types which differ in hashing from .NET have __hash__ functions defined in their
-        // ops classes which do the appropriate hashing.        
+        // ops classes which do the appropriate hashing.
         public static int Hash(CodeContext/*!*/ context, object o) {
             return PythonContext.Hash(o);
         }
@@ -780,34 +780,13 @@ namespace IronPython.Runtime.Operations {
 
             switch (o) {
                 case int i:
-                    index = Int32Ops.__index__(i);
-                    return true;
-                case uint ui:
-                    index = UInt32Ops.__index__(ui);
-                    return true;
-                case ushort us:
-                    index = UInt16Ops.__index__(us);
-                    return true;
-                case short s:
-                    index = Int16Ops.__index__(s);
-                    return true;
-                case byte b:
-                    index = ByteOps.__index__(b);
-                    return true;
-                case sbyte sb:
-                    index = SByteOps.__index__(sb);
-                    return true;
-                case long l:
-                    index = Int64Ops.__index__(l);
-                    return true;
-                case ulong ul:
-                    index = UInt64Ops.__index__(ul);
+                    index = o;
                     return true;
                 case BigInteger bi:
-                    index = BigIntegerOps.__index__(bi);
+                    index = o;
                     return true;
-                case Extensible<BigInteger> ebi: // subclasses of int return the int itself...
-                    index = BigIntegerOps.__index__(ebi.Value);
+                case Extensible<BigInteger> ebi:
+                    index = ebi.Value;
                     return true;
                 default:
                     break;
@@ -816,9 +795,14 @@ namespace IronPython.Runtime.Operations {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__index__", out index)) {
                 if (index is int || index is BigInteger)
                     return true;
-                if (index is Extensible<BigInteger>) {
-                    // TODO: return int value in 3.10
+                if (index is Extensible<BigInteger> ebi) {
                     Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonOps.GetPythonTypeName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                    index = ebi.Value; // this is the behavior of 3.10
+                    return true;
+                }
+                if (index is bool b) {
+                    Warn(context, PythonExceptions.DeprecationWarning, $"__index__ returned non-int (type {PythonOps.GetPythonTypeName(index)}).  The ability to return an instance of a strict subclass of int is deprecated, and may be removed in a future version of Python.");
+                    index = ScriptingRuntimeHelpers.Int32ToObject(b ? 1 : 0); // this is the behavior of 3.10
                     return true;
                 }
                 throw TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(index));
@@ -836,12 +820,6 @@ namespace IronPython.Runtime.Operations {
                 case BigInteger bi:
                     if (!bi.AsInt32(out res)) {
                         longRes = bi;
-                        return false;
-                    }
-                    break;
-                case Extensible<BigInteger> ebi: // deprecated
-                    if (!ebi.Value.AsInt32(out res)) {
-                        longRes = ebi;
                         return false;
                     }
                     break;
@@ -904,7 +882,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Supports calling of functions that require an explicit 'this'
-        /// Currently, we check if the function object implements the interface 
+        /// Currently, we check if the function object implements the interface
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
@@ -1174,7 +1152,7 @@ namespace IronPython.Runtime.Operations {
             if ((o is IPythonObject) && PythonOps.TryGetBoundAttr(context, o, "__getitem__", out _)) {
                 if (!PythonOps.IsClsVisible(context)) {
                     // in standard Python methods aren't mapping types, therefore
-                    // if the user hasn't broken out of that box yet don't treat 
+                    // if the user hasn't broken out of that box yet don't treat
                     // them as mapping types.
                     if (o is BuiltinFunction) return false;
                 }
@@ -1530,7 +1508,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Python runtime helper to create an instance of Python List object.
-        /// 
+        ///
         /// List has the initial provided capacity.
         /// </summary>
         [NoSideEffects]
@@ -1649,9 +1627,9 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Python Runtime Helper for enumerator unpacking (tuple assignments, ...)
-        /// Creates enumerator from the input parameter e, and then extracts 
+        /// Creates enumerator from the input parameter e, and then extracts
         /// expected number of values, returning them as array
-        /// 
+        ///
         /// If the input is a Python tuple returns the tuples underlying data array.  Callers
         /// should not mutate the resulting tuple.
         /// </summary>
@@ -1895,7 +1873,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Called from generated code for:
-        /// 
+        ///
         /// import spam.eggs
         /// </summary>
         [ProfilerTreatsAsExternal, LightThrowing]
@@ -1905,7 +1883,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Python helper method called from generated code for:
-        /// 
+        ///
         /// import spam.eggs as ham
         /// </summary>
         [ProfilerTreatsAsExternal, LightThrowing]
@@ -1925,8 +1903,8 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Called from generated code for:
-        /// 
-        /// from spam import eggs1, eggs2 
+        ///
+        /// from spam import eggs1, eggs2
         /// </summary>
         [ProfilerTreatsAsExternal, LightThrowing]
         public static object ImportWithNames(CodeContext/*!*/ context, string fullName, string[] names, int level) {
@@ -1936,9 +1914,9 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Imports one element from the module in the context of:
-        /// 
+        ///
         /// from module import a, b, c, d
-        /// 
+        ///
         /// Called repeatedly for all elements being imported (a, b, c, d above)
         /// </summary>
         public static object ImportFrom(CodeContext/*!*/ context, object module, string name) {
@@ -1947,7 +1925,7 @@ namespace IronPython.Runtime.Operations {
 
         /// <summary>
         /// Called from generated code for:
-        /// 
+        ///
         /// from spam import *
         /// </summary>
         [ProfilerTreatsAsExternal]
@@ -1983,7 +1961,7 @@ namespace IronPython.Runtime.Operations {
                     continue;
                 }
 
-                // we special case several types to avoid one-off code gen of dynamic sites                
+                // we special case several types to avoid one-off code gen of dynamic sites
                 if (newmod is PythonModule scope) {
                     context.SetVariable(name, scope.__dict__[name]);
                 } else if (newmod is NamespaceTracker nt) {
@@ -2118,25 +2096,25 @@ namespace IronPython.Runtime.Operations {
         // 1. Each thread has a "current exception", which is returned as a tuple by sys.exc_info().
         // 2. The current exception is set on encountering an except block, even if the except block doesn't
         //    match the exception.
-        // 3. Each function on exit (either via exception, return, or yield) will restore the "current exception" 
-        //    to the value it had on function-entry. 
+        // 3. Each function on exit (either via exception, return, or yield) will restore the "current exception"
+        //    to the value it had on function-entry.
         //
         // So common codegen would be:
-        // 
+        //
         // function() {
         //   $save = SaveCurrentException();
-        //   try { 
+        //   try {
         //      def foo():
         //              try:
         //              except:
         //                  SetCurrentException($exception)
         //                  <except body>
-        //   
+        //
         //   finally {
         //      RestoreCurrentException($save)
         //   }
 
-        // Called at the start of the except handlers to set the current exception. 
+        // Called at the start of the except handlers to set the current exception.
         public static object SetCurrentException(CodeContext/*!*/ context, Exception/*!*/ clrException) {
             Assert.NotNull(clrException);
 
@@ -2148,7 +2126,7 @@ namespace IronPython.Runtime.Operations {
             // Check for thread abort exceptions.
             // This is necessary to be able to catch python's KeyboardInterrupt exceptions.
             // CLR restrictions require that this must be called from within a catch block.  This gets
-            // called even if we aren't going to handle the exception - we'll just reset the abort 
+            // called even if we aren't going to handle the exception - we'll just reset the abort
             if (clrException is ThreadAbortException tae && tae.ExceptionState is KeyboardInterruptException) {
 #pragma warning disable SYSLIB0006 // Thread.Abort is not supported and throws PlatformNotSupportedException on .NET Core.
                 Thread.ResetAbort();
@@ -4107,7 +4085,7 @@ namespace IronPython.Runtime.Operations {
         /// Gets a list of DynamicStackFrames for the given exception.  These stack frames
         /// can be programmatically inspected to understand the frames the exception crossed
         /// through including Python frames.
-        /// 
+        ///
         /// Dynamic stack frames are not preserved when an exception crosses an app domain
         /// boundary.
         /// </summary>

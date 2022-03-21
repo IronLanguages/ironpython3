@@ -123,17 +123,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.Ascii(context, @object);
         }
 
-        public static string bin(object? obj) {
-            if (obj is int) return Int32Ops.ToBinary((int)obj);
-            if (obj is BigInteger) return BigIntegerOps.ToBinary((BigInteger)obj);
-
-            object res = PythonOps.Index(obj);
-            if (res is int) {
-                return Int32Ops.ToBinary((int)res);
-            } else if (res is BigInteger) {
-                return BigIntegerOps.ToBinary((BigInteger)res);
-            } else if (res is Extensible<BigInteger> ebi) {
-                return BigIntegerOps.ToBinary(ebi.Value);
+        public static string bin(object? number) {
+            object index = PythonOps.Index(number);
+            if (index is int i) {
+                return Int32Ops.ToBinary(i);
+            } else if (index is BigInteger bi) {
+                return BigIntegerOps.ToBinary(bi);
             } else {
                 throw new InvalidOperationException();
             }
@@ -520,8 +515,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     else if (function != null) help(context, doced, doc, indent, function);
                 }
             } else if (obj is PythonType type) {
-                // find all the functions, and display their 
-                // documentation                
+                // find all the functions, and display their
+                // documentation
                 if (indent == 0) {
                     doc.AppendFormat("Help on {0} in module {1}\n\n", type.Name, PythonOps.GetBoundAttr(context, type, "__module__"));
                 }
@@ -605,25 +600,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             for (int i = 0; i < indent; i++) doc.Append("    ");
         }
 
-        public static string hex(object? o) {
-            object res = PythonOps.Index(o);
-            if (res is int x) {
+        public static string hex(object? number) {
+            object index = PythonOps.Index(number);
+            if (index is int x) {
                 if (x < 0) {
                     return "-0x" + Convert.ToString(-x, 16);
                 } else {
                     return "0x" + Convert.ToString(x, 16);
                 }
-            } else if (res is BigInteger bi) {
+            } else if (index is BigInteger bi) {
                 var b = bi;
-                if (b == 0) {
-                    return "0x0";
-                } else if (b < 0) {
-                    return "-0x" + ToHexString(-b);
-                } else {
-                    return "0x" + ToHexString(b);
-                }
-            } else if (res is Extensible<BigInteger> ebi) {
-                var b = ebi.Value;
                 if (b == 0) {
                     return "0x0";
                 } else if (b < 0) {
@@ -1094,24 +1080,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType @object => DynamicHelpers.GetPythonTypeFromType(typeof(object));
 
-        public static string oct(object? o) {
-            object res = PythonOps.Index(o);
-            if (res is int) {
-                int x = (int)res;
+        public static string oct(object? number) {
+            object index = PythonOps.Index(number);
+            if (index is int) {
+                int x = (int)index;
                 if (x < 0) {
                     return "-0o" + Convert.ToString(-x, 8);
                 } else {
                     return "0o" + Convert.ToString(x, 8);
                 }
-            } else if (res is BigInteger bi) {
+            } else if (index is BigInteger bi) {
                 var b = bi;
-                if (b < 0) {
-                    return "-0o" + (-b).ToString(8);
-                } else {
-                    return "0o" + b.ToString(8);
-                }
-            } else if (res is Extensible<BigInteger> ebi) {
-                var b = ebi.Value;
                 if (b < 0) {
                     return "-0o" + (-b).ToString(8);
                 } else {
@@ -1138,7 +1117,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         /// <summary>
         /// Creates a new Python file object from a .NET stream object.
-        /// 
+        ///
         /// stream -> the stream to wrap in a file object.
         /// </summary>
         public static PythonIOModule.FileIO open(CodeContext context, [NotNull]Stream stream) {

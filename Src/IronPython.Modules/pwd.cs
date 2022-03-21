@@ -128,6 +128,14 @@ or via the object attributes as named in the above tuple.")]
                 }
             }
 
+            if (uid is Extensible<BigInteger> ebi) {
+                try {
+                    uid = (int)ebi.Value;
+                } catch (OverflowException) {
+                    throw PythonOps.KeyError($"getpwuid(): uid not found");
+                }
+            }
+
             if (uid is int id) {
                 var pwd = _getpwuid(id);
                 if(pwd == IntPtr.Zero) {

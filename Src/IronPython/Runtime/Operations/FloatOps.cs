@@ -1041,6 +1041,9 @@ namespace IronPython.Runtime.Operations {
 
                 case BigInteger bi:
                     return __round__(self, bi);
+
+                case Extensible<BigInteger> ebi:
+                    return __round__(self, ebi.Value);
             }
 
             throw PythonOps.RuntimeError(

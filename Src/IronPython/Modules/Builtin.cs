@@ -607,7 +607,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static string hex(object? o) {
             object res = PythonOps.Index(o);
-            if (res is BigInteger b) {
+            if (res is int x) {
+                if (x < 0) {
+                    return "-0x" + Convert.ToString(-x, 16);
+                } else {
+                    return "0x" + Convert.ToString(x, 16);
+                }
+            } else if (res is BigInteger bi) {
+                var b = bi;
                 if (b == 0) {
                     return "0x0";
                 } else if (b < 0) {
@@ -615,13 +622,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 } else {
                     return "0x" + ToHexString(b);
                 }
-            }
-
-            int x = (int)res;
-            if (x < 0) {
-                return "-0x" + Convert.ToString(-x, 16);
+            } else if (res is Extensible<BigInteger> ebi) {
+                var b = ebi.Value;
+                if (b == 0) {
+                    return "0x0";
+                } else if (b < 0) {
+                    return "-0x" + ToHexString(-b);
+                } else {
+                    return "0x" + ToHexString(b);
+                }
             } else {
-                return "0x" + Convert.ToString(x, 16);
+                throw new InvalidOperationException();
             }
 
             static string ToHexString(BigInteger b) {
@@ -1085,20 +1096,29 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static string oct(object? o) {
             object res = PythonOps.Index(o);
-            if (res is BigInteger) {
-                BigInteger b = (BigInteger)res;
+            if (res is int) {
+                int x = (int)res;
+                if (x < 0) {
+                    return "-0o" + Convert.ToString(-x, 8);
+                } else {
+                    return "0o" + Convert.ToString(x, 8);
+                }
+            } else if (res is BigInteger bi) {
+                var b = bi;
                 if (b < 0) {
                     return "-0o" + (-b).ToString(8);
                 } else {
                     return "0o" + b.ToString(8);
                 }
-            }
-
-            int x = (int)res;
-            if (x < 0) {
-                return "-0o" + Convert.ToString(-x, 8);
+            } else if (res is Extensible<BigInteger> ebi) {
+                var b = ebi.Value;
+                if (b < 0) {
+                    return "-0o" + (-b).ToString(8);
+                } else {
+                    return "0o" + b.ToString(8);
+                }
             } else {
-                return "0o" + Convert.ToString(x, 8);
+                throw new InvalidOperationException();
             }
         }
 

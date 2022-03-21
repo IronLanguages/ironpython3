@@ -176,6 +176,12 @@ namespace IronPython.Runtime.Operations {
                     } catch (OverflowException) {
                         return int.MaxValue;
                     }
+                case Extensible<BigInteger> ebi:
+                    try {
+                        return (int)ebi.Value;
+                    } catch (OverflowException) {
+                        return int.MaxValue;
+                    }
                 default:
                     throw new InvalidOperationException();
             }
@@ -948,6 +954,9 @@ namespace IronPython.Runtime.Operations {
 
                 case BigInteger bi:
                     return __round__(self, bi);
+
+                case Extensible<BigInteger> ebi:
+                    return __round__(self, ebi.Value);
             }
 
             throw PythonOps.RuntimeError(

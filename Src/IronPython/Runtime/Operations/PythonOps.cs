@@ -806,6 +806,9 @@ namespace IronPython.Runtime.Operations {
                 case BigInteger bi:
                     index = BigIntegerOps.__index__(bi);
                     return true;
+                case Extensible<BigInteger> ebi: // subclasses of int return the int itself...
+                    index = BigIntegerOps.__index__(ebi.Value);
+                    return true;
                 default:
                     break;
             }

@@ -405,7 +405,7 @@ namespace IronPython.Runtime.Operations {
             if (self == Int32.MinValue) {
                 return "-0b10000000000000000000000000000000";
             }
-
+            
             string res = ToBinary(self, true);
             if (self < 0) {
                 res = "-" + res;
@@ -436,7 +436,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 digits = "10000000000000000000000000000000";
             }
-
+            
             if (includeType) {
                 digits = "0b" + digits;
             }

@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
@@ -17,14 +20,16 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
+
 namespace IronPython.Runtime.Operations {
 
     public static partial class BigIntegerOps {
 
         #region Constructors
 
-        private static object FastNew(CodeContext/*!*/ context, object o, int @base = 10) {
-            object result;
+        private static object FastNew(CodeContext/*!*/ context, object? o, int @base = 10) {
+            object? result;
             switch (o) {
                 case int _:
                     return o;
@@ -102,7 +107,7 @@ namespace IronPython.Runtime.Operations {
 
             throw PythonOps.TypeError("int() argument must be a string, a bytes-like object or a number, not '{0}'", PythonOps.GetPythonTypeName(o));
 
-            static bool TryInvokeInt(CodeContext context, object o, out object result) {
+            static bool TryInvokeInt(CodeContext context, object? o, [NotNullWhen(true)] out object? result) {
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result)) {
                     switch (result) {
                         case int _:
@@ -131,7 +136,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object x, object @base) {
+        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls, object? x, object? @base) {
             ValidateType(cls);
 
             var b = BaseFromObject(@base);
@@ -143,7 +148,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, object x) {
+        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls, object? x) {
             ValidateType(cls);
 
             return ReturnObject(context, cls, FastNew(context, x));
@@ -152,14 +157,14 @@ namespace IronPython.Runtime.Operations {
         // "int()" calls ReflectedType.Call(), which calls "Activator.CreateInstance" and return directly.
         // this is for derived int creation or direct calls to __new__...
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls)
+        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls)
             => __new__(context, cls, ScriptingRuntimeHelpers.Int32ToObject(0));
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, int @base = 10) {
+        public static object __new__(CodeContext/*!*/ context, [NotDynamicNull] PythonType cls, [NotDynamicNull] IBufferProtocol x, int @base = 10) {
             ValidateType(cls);
 
-            object value;
+            object? value;
             if (!(x is IPythonObject po) || !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
                 using IPythonBuffer buf = x.GetBufferNoThrow()
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
@@ -173,7 +178,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull] IBufferProtocol x, object @base)
+        public static object __new__(CodeContext/*!*/ context, [NotDynamicNull] PythonType cls, [NotDynamicNull] IBufferProtocol x, object? @base)
             => __new__(context, cls, x, BaseFromObject(@base));
 
         private static void ValidateType(PythonType cls) {
@@ -181,7 +186,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("int.__new__(bool) is not safe, use bool.__new__()");
         }
 
-        private static int BaseFromObject(object @base) {
+        private static int BaseFromObject(object? @base) {
             switch (PythonOps.Index(@base)) {
                 case int i:
                     return i;
@@ -235,19 +240,19 @@ namespace IronPython.Runtime.Operations {
         #region Binary operators
 
         [SpecialName]
-        public static object Power(BigInteger x, object y, object z) {
-            if (y is int) {
-                return Power(x, (int)y, z);
-            } else if (y is long) {
-                return Power(x, (BigInteger)(long)y, z);
-            } else if (y is BigInteger) {
-                return Power(x, (BigInteger)y, z);
+        public static object Power(BigInteger x, object? y, object? z) {
+            if (y is int iy) {
+                return Power(x, iy, z);
+            } else if (y is long ly) {
+                return Power(x, (BigInteger)ly, z);
+            } else if (y is BigInteger by) {
+                return Power(x, by, z);
             }
             return NotImplementedType.Value;
         }
 
         [SpecialName]
-        public static object Power(BigInteger x, int y, object z) {
+        public static object Power(BigInteger x, int y, object? z) {
             if (z is int) {
                 return Power(x, y, (int)z);
             }
@@ -260,7 +265,7 @@ namespace IronPython.Runtime.Operations {
                 return Power(x, y, (BigInteger)z);
             }
 
-            if (z == null) {
+            if (z is null) {
                 return Power(x, y);
             }
 
@@ -268,14 +273,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Power(BigInteger x, BigInteger y, object z) {
-            if (z is int) {
-                return Power(x, y, (BigInteger)(int)z);
-            } else if (z is long) {
-                return Power(x, y, (BigInteger)(long)z);
-            } else if (z is BigInteger) {
-                return Power(x, y, (BigInteger)z);
-            } else if (z == null) {
+        public static object Power(BigInteger x, BigInteger y, object? z) {
+            if (z is int iz) {
+                return Power(x, y, (BigInteger)iz);
+            } else if (z is long lz) {
+                return Power(x, y, (BigInteger)lz);
+            } else if (z is BigInteger bz) {
+                return Power(x, y, bz);
+            } else if (z is null) {
                 return Power(x, y);
             }
             return NotImplementedType.Value;
@@ -321,7 +326,7 @@ namespace IronPython.Runtime.Operations {
 
 
         [SpecialName]
-        public static object Power([NotNull]BigInteger x, int y) {
+        public static object Power(BigInteger x, int y) {
             if (y < 0) {
                 return DoubleOps.Power(x.ToFloat64(), y);
             }
@@ -329,7 +334,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Power([NotNull]BigInteger x, long y) {
+        public static object Power(BigInteger x, long y) {
             if(y < 0) {
                 return DoubleOps.Power(x.ToFloat64(), y);
             }
@@ -337,7 +342,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Power([NotNull]BigInteger x, [NotNull]BigInteger y) {
+        public static object Power(BigInteger x, BigInteger y) {
             int yl;
             long y2;
 
@@ -392,12 +397,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static BigInteger FloorDivide([NotNull]BigInteger x, [NotNull]BigInteger y) {
+        public static BigInteger FloorDivide(BigInteger x, BigInteger y) {
             return DivMod(x, y, out _);
         }
 
         [SpecialName]
-        public static double TrueDivide([NotNull]BigInteger x, [NotNull]BigInteger y) {
+        public static double TrueDivide(BigInteger x, BigInteger y) {
             if (y == BigInteger.Zero) {
                 throw new DivideByZeroException();
             }
@@ -657,7 +662,7 @@ namespace IronPython.Runtime.Operations {
             return unchecked((int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
         }
 
-        public static string __repr__([NotNull]BigInteger/*!*/ self) {
+        public static string __repr__(BigInteger/*!*/ self) {
             return self.ToString();
         }
 
@@ -673,22 +678,22 @@ namespace IronPython.Runtime.Operations {
         #region Mimic IConvertible members
 
         [PythonHidden]
-        public static bool ToBoolean(BigInteger self, IFormatProvider provider) {
+        public static bool ToBoolean(BigInteger self, IFormatProvider? provider) {
             return !self.IsZero;
         }
 
         [PythonHidden]
-        public static byte ToByte(BigInteger self, IFormatProvider provider) {
+        public static byte ToByte(BigInteger self, IFormatProvider? provider) {
             return (byte)self;
         }
 
         [CLSCompliant(false), PythonHidden]
-        public static sbyte ToSByte(BigInteger self, IFormatProvider provider) {
+        public static sbyte ToSByte(BigInteger self, IFormatProvider? provider) {
             return (sbyte)self;
         }
 
         [PythonHidden]
-        public static char ToChar(BigInteger self, IFormatProvider provider) {
+        public static char ToChar(BigInteger self, IFormatProvider? provider) {
             int res;
             if (self.AsInt32(out res) && res <= Char.MaxValue && res >= Char.MinValue) {
                 return (char)res;
@@ -697,57 +702,57 @@ namespace IronPython.Runtime.Operations {
         }
 
         [PythonHidden]
-        public static decimal ToDecimal(BigInteger self, IFormatProvider provider) {
+        public static decimal ToDecimal(BigInteger self, IFormatProvider? provider) {
             return (decimal)self;
         }
 
         [PythonHidden]
-        public static double ToDouble(BigInteger self, IFormatProvider provider) {
+        public static double ToDouble(BigInteger self, IFormatProvider? provider) {
             return ConvertToDouble(self);
         }
 
         [PythonHidden]
-        public static float ToSingle(BigInteger self, IFormatProvider provider) {
+        public static float ToSingle(BigInteger self, IFormatProvider? provider) {
             return checked((float)self.ToFloat64());
         }
 
         [PythonHidden]
-        public static short ToInt16(BigInteger self, IFormatProvider provider) {
+        public static short ToInt16(BigInteger self, IFormatProvider? provider) {
             return (short)self;
         }
 
         [PythonHidden]
-        public static int ToInt32(BigInteger self, IFormatProvider provider) {
+        public static int ToInt32(BigInteger self, IFormatProvider? provider) {
             return (int)self;
         }
 
         [PythonHidden]
-        public static long ToInt64(BigInteger self, IFormatProvider provider) {
+        public static long ToInt64(BigInteger self, IFormatProvider? provider) {
             return (long)self;
         }
 
         [CLSCompliant(false), PythonHidden]
-        public static ushort ToUInt16(BigInteger self, IFormatProvider provider) {
+        public static ushort ToUInt16(BigInteger self, IFormatProvider? provider) {
             return (ushort)self;
         }
 
         [CLSCompliant(false), PythonHidden]
-        public static uint ToUInt32(BigInteger self, IFormatProvider provider) {
+        public static uint ToUInt32(BigInteger self, IFormatProvider? provider) {
             return (uint)self;
         }
 
         [CLSCompliant(false), PythonHidden]
-        public static ulong ToUInt64(BigInteger self, IFormatProvider provider) {
+        public static ulong ToUInt64(BigInteger self, IFormatProvider? provider) {
             return (ulong)self;
         }
 
         [PythonHidden]
-        public static DateTime ToDateTime(BigInteger self, IFormatProvider provider) {
+        public static DateTime ToDateTime(BigInteger self, IFormatProvider? provider) {
             throw new InvalidCastException("Invalid cast from 'BigInteger' to 'DateTime'");
         }
 
         [PythonHidden]
-        public static object ToType(BigInteger self, Type targetType, IFormatProvider provider) {
+        public static object ToType(BigInteger self, Type targetType, IFormatProvider? provider) {
 
             if (targetType is null) throw new ArgumentNullException(nameof(targetType));
 
@@ -798,7 +803,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotNull]string/*!*/ formatSpec) {
+        public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotDynamicNull] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
             if (spec.Precision != null) {
@@ -921,7 +926,7 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
         }
 
-        public static Bytes to_bytes(BigInteger value, int length, string byteorder, bool signed = false) {
+        public static Bytes to_bytes(BigInteger value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
             // TODO: should probably be moved to IntOps.Generated and included in all types
 
@@ -944,7 +949,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ClassMethod, StaticExtensionMethod]
-        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false) {
+        public static object from_bytes(CodeContext context, PythonType type, object? bytes, [NotDynamicNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
 
             bool isLittle = byteorder == "little";
@@ -997,7 +1002,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static BigInteger __round__(BigInteger self, object ndigits) {
+        public static BigInteger __round__(BigInteger self, object? ndigits) {
             var index = PythonOps.Index(ndigits);
             switch (index) {
                 case int i:

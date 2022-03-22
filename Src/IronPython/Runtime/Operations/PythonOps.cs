@@ -716,15 +716,15 @@ namespace IronPython.Runtime.Operations {
             => RichCompareSequences(context, data0, data1, PythonOperationKind.LessThanOrEqual);
 
         public static object PowerMod(CodeContext/*!*/ context, object? x, object? y, object? z) {
-            object ret;
-            if (z == null) {
+            object? ret;
+            if (z is null) {
                 return context.LanguageContext.Operation(PythonOperationKind.Power, x, y);
             }
-            if (x is int && y is int && z is int) {
-                ret = Int32Ops.Power((int)x, (int)y, (int)z);
+            if (x is int ix && y is int iy && z is int iz) {
+                ret = Int32Ops.Power(ix, iy, iz);
                 if (ret != NotImplementedType.Value) return ret;
-            } else if (x is BigInteger) {
-                ret = BigIntegerOps.Power((BigInteger)x, y, z);
+            } else if (x is BigInteger bx) {
+                ret = BigIntegerOps.Power(bx, y, z);
                 if (ret != NotImplementedType.Value) return ret;
             }
 

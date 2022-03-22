@@ -31,7 +31,7 @@ namespace IronPython.Runtime {
         }
 
         private void Initialize(object ostart, object ostop, object ostep) {
-            // TODO: should not throw but it's better than an incorrect result...
+            // TODO: https://github.com/IronLanguages/ironpython3/issues/472 - should not throw but it's better than an incorrect result...
             stop = Converter.ConvertToIndex(ostop, throwOverflowError: true);
             start = Converter.ConvertToIndex(ostart, throwOverflowError: true);
             step = Converter.ConvertToIndex(ostep, throwOverflowError: true);

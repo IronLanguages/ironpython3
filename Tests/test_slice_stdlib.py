@@ -19,7 +19,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_slice.SliceTest('test_cmp'))
         suite.addTest(test.test_slice.SliceTest('test_constructor'))
         suite.addTest(test.test_slice.SliceTest('test_hash'))
-        suite.addTest(unittest.expectedFailure(test.test_slice.SliceTest('test_indices'))) # https://github.com/IronLanguages/ironpython3/issues/1369
+        suite.addTest(unittest.expectedFailure(test.test_slice.SliceTest('test_indices'))) # https://github.com/IronLanguages/ironpython3/issues/472
         suite.addTest(test.test_slice.SliceTest('test_members'))
         suite.addTest(test.test_slice.SliceTest('test_pickle'))
         suite.addTest(test.test_slice.SliceTest('test_repr'))

@@ -1263,7 +1263,7 @@ namespace IronPython.Runtime {
                 IList<byte> list = ByteOps.GetBytes(value, useHint: false);
 
                 lock (this) {
-                    slice.indices(_bytes.Count, out int start, out int stop, out int step);
+                    slice.Indices(_bytes.Count, out int start, out int stop, out int step);
 
                     // try to assign back to self: make a copy first
                     if (ReferenceEquals(this, list)) {

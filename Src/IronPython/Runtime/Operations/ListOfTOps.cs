@@ -63,9 +63,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("List<T> indices must be slices or integers");
             }
 
-            int start, stop, step;
-            // slice is sealed, indices can't be user code...
-            slice.indices(l.Count, out start, out stop, out step);
+            slice.Indices(l.Count, out int start, out int stop, out int step);
 
             if (step > 0 && (start >= stop)) return;
             if (step < 0 && (start <= stop)) return;

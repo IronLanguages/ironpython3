@@ -454,8 +454,7 @@ namespace IronPython.Runtime {
                     }
 
                 } else {
-                    int start, stop, step;
-                    slice.indices(_size, out start, out stop, out step);
+                    slice.Indices(_size, out int start, out int stop, out int step);
 
                     if (value is PythonList lstVal) {
                         SliceNoStep(start, stop, lstVal);
@@ -571,9 +570,7 @@ namespace IronPython.Runtime {
 
         public void __delitem__([NotNull]Slice slice) {
             lock (this) {
-                int start, stop, step;
-                // slice is sealed, indices can't be user code...
-                slice.indices(_size, out start, out stop, out step);
+                slice.Indices(_size, out int start, out int stop, out int step);
 
                 if (step > 0 && (start >= stop)) return;
                 if (step < 0 && (start <= stop)) return;

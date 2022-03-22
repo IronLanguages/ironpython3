@@ -4,15 +4,13 @@
 
 #nullable enable
 
-using System;
 using System.Collections;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
+using System.Numerics;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using IronPython.Runtime.Exceptions;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [PythonType("slice")]
@@ -35,13 +33,16 @@ namespace IronPython.Runtime {
 
         public object? step { get; }
 
-        public void indices(int length, out int ostart, out int ostop, out int ostep) {
+        public void indices(int length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep) {
             if (length < 0) throw PythonOps.ValueError("length should not be negative");
-            PythonOps.FixSlice(length, start, stop, step, out ostart, out ostop, out ostep);
+            PythonOps.FixSlice(this, length, out ostart, out ostop, out ostep);
         }
 
-        public void indices(object? length, out int ostart, out int ostop, out int ostep) {
-            indices(Converter.ConvertToIndex(length, throwOverflowError: true), out ostart, out ostop, out ostep); // TODO: https://github.com/IronLanguages/ironpython3/issues/1369 - should not throw but it's better than an incorrect result...
+        public void indices(object? length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep) {
+            var index = PythonOps.Index(length);
+            BigInteger len = index is int i ? i : (BigInteger)index;
+            if (len < 0) throw PythonOps.ValueError("length should not be negative");
+            PythonOps.FixSlice(this, len, out ostart, out ostop, out ostep);
         }
 
         public PythonTuple __reduce__() {
@@ -102,11 +103,16 @@ namespace IronPython.Runtime {
 
         #region Internal Implementation details
 
+        /// <summary>
+        /// Like indices but only works for values in the Int32 domain.
+        /// </summary>
+        internal void Indices(int length, out int ostart, out int ostop, out int ostep)
+            => PythonOps.FixSlice(this, length, out ostart, out ostop, out ostep);
+
         internal delegate void SliceAssign(int index, object? value);
 
         internal void DoSliceAssign(SliceAssign assign, int size, object? value) {
-            int ostart, ostop, ostep;
-            indices(size, out ostart, out ostop, out ostep);
+            Indices(size, out int ostart, out int ostop, out int ostep);
             DoSliceAssign(assign, ostart, ostop, ostep, value);
         }
 
@@ -141,7 +147,7 @@ namespace IronPython.Runtime {
         }
 
         internal void GetIndicesAndCount(int length, out int ostart, out int ostop, out int ostep, out int count) {
-            indices(length, out ostart, out ostop, out ostep);
+            Indices(length, out ostart, out ostop, out ostep);
             count = PythonOps.GetSliceCount(ostart, ostop, ostep);
         }
 

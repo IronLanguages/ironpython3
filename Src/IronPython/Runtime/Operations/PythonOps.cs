@@ -812,6 +812,20 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        internal static bool TryToIndex(object? o, out BigInteger index) {
+            if (TryToIndex(o, out object? obj)) {
+                if (obj is int i) {
+                    index = i;
+                } else {
+                    index = (BigInteger)obj;
+                }
+                return true;
+            }
+
+            index = default;
+            return false;
+        }
+
         private static bool IndexObjectToInt(object o, out int res, out BigInteger longRes) {
             switch (o) {
                 case int i:
@@ -1196,25 +1210,22 @@ namespace IronPython.Runtime.Operations {
                              : (stop >= start ? 0 : step <= (stop - start) ? 1 : checked(stop - start + step + 1) / step);
         }
 
-        internal static void FixSlice(
-            int length, object? start, object? stop, object? step,
-            out int ostart, out int ostop, out int ostep
-        ) {
+        internal static void FixSlice(Slice slice, int length, out int ostart, out int ostop, out int ostep) {
             Debug.Assert(length >= 0);
 
-            if (step == null) {
+            if (slice.step == null) {
                 ostep = 1;
             } else {
-                ostep = Converter.ConvertToIndex(step);
+                ostep = Converter.ConvertToIndex(slice.step);
                 if (ostep == 0) {
                     throw PythonOps.ValueError("step cannot be zero");
                 }
             }
 
-            if (start == null) {
+            if (slice.start == null) {
                 ostart = ostep > 0 ? 0 : length - 1;
             } else {
-                ostart = Converter.ConvertToIndex(start);
+                ostart = Converter.ConvertToIndex(slice.start);
                 if (ostart < 0) {
                     ostart += length;
                     if (ostart < 0) {
@@ -1225,10 +1236,10 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (stop == null) {
+            if (slice.stop == null) {
                 ostop = ostep > 0 ? length : -1;
             } else {
-                ostop = Converter.ConvertToIndex(stop);
+                ostop = Converter.ConvertToIndex(slice.stop);
                 if (ostop < 0) {
                     ostop += length;
                     if (ostop < 0) {
@@ -1283,6 +1294,50 @@ namespace IronPython.Runtime.Operations {
             }
 
             ocount = GetSliceCount(ostart, ostop, ostep);
+        }
+
+        internal static void FixSlice(Slice slice, BigInteger length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep) {
+            Debug.Assert(length >= 0);
+
+            if (slice.step == null) {
+                ostep = 1;
+            } else if (TryToIndex(slice.step, out ostep)) {
+                if (ostep == 0) {
+                    throw PythonOps.ValueError("step cannot be zero");
+                }
+            } else {
+                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
+            }
+
+            if (slice.start == null) {
+                ostart = ostep > 0 ? 0 : length - 1;
+            } else if (TryToIndex(slice.start, out ostart)) {
+                if (ostart < 0) {
+                    ostart += length;
+                    if (ostart < 0) {
+                        ostart = ostep > 0 ? 0 : -1;
+                    }
+                } else if (ostart >= length) {
+                    ostart = ostep > 0 ? length : length - 1;
+                }
+            } else {
+                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
+            }
+
+            if (slice.stop == null) {
+                ostop = ostep > 0 ? length : -1;
+            } else if (TryToIndex(slice.stop, out ostop)) {
+                if (ostop < 0) {
+                    ostop += length;
+                    if (ostop < 0) {
+                        ostop = ostep > 0 ? 0 : -1;
+                    }
+                } else if (ostop >= length) {
+                    ostop = ostep > 0 ? length : length - 1;
+                }
+            } else {
+                throw PythonOps.TypeError("slice indices must be integers or None or have an __index__ method");
+            }
         }
 
         /// <summary>

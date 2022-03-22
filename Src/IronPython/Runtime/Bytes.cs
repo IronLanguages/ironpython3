@@ -60,7 +60,7 @@ namespace IronPython.Runtime {
                     return source;
                 } else if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(source, out int size)) {
+                } else if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -78,7 +78,7 @@ namespace IronPython.Runtime {
                     return @object;
                 } else if (TryInvokeBytesOperator(context, @object, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(@object, out int size)) {
+                } else if (Converter.TryConvertToIndex(@object, out int size, throwNonInt: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -1002,7 +1002,7 @@ namespace IronPython.Runtime {
                     return this[iVal];
                 }
 
-                throw PythonOps.IndexError("cannot fit long in index");
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
             }
         }
 
@@ -1015,7 +1015,11 @@ namespace IronPython.Runtime {
 
         public int this[object? index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (Converter.TryConvertToIndex(index, out int res)) {
+                    return this[res];
+                }
+
+                throw PythonOps.TypeError("byte indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 

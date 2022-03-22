@@ -10,12 +10,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
@@ -32,9 +31,10 @@ namespace IronPython.Runtime {
         }
 
         private void Initialize(object ostart, object ostop, object ostep) {
-            stop = Converter.ConvertToIndex(ostop);
-            start = Converter.ConvertToIndex(ostart);
-            step = Converter.ConvertToIndex(ostep);
+            // TODO: https://github.com/IronLanguages/ironpython3/issues/472 - should not throw but it's better than an incorrect result...
+            stop = Converter.ConvertToIndex(ostop, throwOverflowError: true);
+            start = Converter.ConvertToIndex(ostart, throwOverflowError: true);
+            step = Converter.ConvertToIndex(ostep, throwOverflowError: true);
             if (step == 0) {
                 throw PythonOps.ValueError("step must not be zero");
             }
@@ -160,20 +160,19 @@ namespace IronPython.Runtime {
         public NotImplementedType __ge__(CodeContext context, object other) => NotImplementedType.Value;
 
         public bool __contains__(CodeContext context, object item) {
-            int intItem;
-            if (TryConvertToInt(item, out intItem)) {
-                return IndexOf(context, intItem) != -1;
+            if (TryConvertToInt(item, out int intItem)) {
+                return IndexOf(intItem) != -1;
             }
             return IndexOf(context, item) != -1;
         }
 
         private static bool TryConvertToInt(object value, out int converted) {
-            if (value is BigInteger) {
-                converted = (int)(BigInteger)value;
-                return true;
-            }
             if (value is int) {
                 converted = (int)value;
+                return true;
+            }
+            if (value is BigInteger) {
+                converted = (int)(BigInteger)value;
                 return true;
             }
             if (value is Int64) {
@@ -211,6 +210,13 @@ namespace IronPython.Runtime {
             return count;
         }
 
+        private int IndexOf(int intValue) {
+            if (CountOf(intValue) == 0) {
+                return -1;
+            }
+            return (intValue - start) / step;
+        }
+
         private int IndexOf(CodeContext context, object obj) {
             var idx = 0;
             var pythonContext = context.LanguageContext;
@@ -224,21 +230,21 @@ namespace IronPython.Runtime {
         }
 
         public object count(CodeContext context, object value) {
-            int intValue;
-            return Converter.TryConvertToIndex(value, out intValue) ? CountOf(intValue) : CountOf(context, value);
+            if (TryConvertToInt(value, out int i)) {
+                return CountOf(i);
+            }
+            return CountOf(context, value);
         }
 
         public object index(CodeContext context, object value) {
-            int intValue;
-            if (Converter.TryConvertToIndex(value, out intValue)) {
-                if (CountOf(intValue) == 0) {
-                    throw PythonOps.ValueError("{0} is not in range", intValue);
-                }
-                return (intValue - start) / step;
+            int idx;
+            if (TryConvertToInt(value, out int intValue)) {
+                idx = IndexOf(intValue);
+            } else {
+                idx = IndexOf(context, value);
             }
-            var idx = IndexOf(context, value);
             if (idx == -1) {
-                throw PythonOps.ValueError("{0} is not in range");
+                throw PythonOps.ValueError("sequence.index(x): x not in sequence");
             }
             return idx;
         }

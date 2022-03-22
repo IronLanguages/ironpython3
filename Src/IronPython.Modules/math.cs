@@ -608,9 +608,6 @@ namespace IronPython.Modules {
                     case BigInteger bi:
                         a = bi;
                         break;
-                    case Extensible<BigInteger> ebi: // deprecated
-                        a = ebi.Value;
-                        break;
                     default:
                         throw new InvalidOperationException();
                 }

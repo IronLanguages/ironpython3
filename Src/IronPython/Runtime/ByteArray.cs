@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]IBufferProtocol source) {
-            if (Converter.TryConvertToIndex(source, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                 __init__(size);
             } else {
                 lock (this) {
@@ -86,7 +86,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object? source) {
-            if (Converter.TryConvertToIndex(source, out int size)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
                 __init__(size);
             } else if (source is IEnumerable<byte> en) {
                 lock (this) {
@@ -1235,7 +1235,7 @@ namespace IronPython.Runtime {
                     return this[iVal];
                 }
 
-                throw PythonOps.IndexError("cannot fit long in index");
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
             }
             set {
                 if (index.AsInt32(out int iVal)) {
@@ -1243,7 +1243,7 @@ namespace IronPython.Runtime {
                     return;
                 }
 
-                throw PythonOps.IndexError("cannot fit long in index");
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
             }
         }
 
@@ -1298,10 +1298,19 @@ namespace IronPython.Runtime {
         [System.Diagnostics.CodeAnalysis.NotNull]
         public object? this[object? index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (Converter.TryConvertToIndex(index, out int res)) {
+                    return this[res];
+                }
+
+                throw PythonOps.TypeError("bytearray indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
             set {
-                this[Converter.ConvertToIndex(index)] = value;
+                if (Converter.TryConvertToIndex(index, out int res)) {
+                    this[res] = value;
+                    return;
+                }
+
+                throw PythonOps.TypeError("bytearray indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 

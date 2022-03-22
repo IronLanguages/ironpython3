@@ -16,9 +16,9 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
-    /* 
+    /*
      * Enumerators exposed to Python code directly
-     * 
+     *
      */
 
     [PythonType("enumerate")]
@@ -27,18 +27,14 @@ namespace IronPython.Runtime {
     public class Enumerate : IEnumerator, IEnumerator<object> {
         private readonly IEnumerator _iter;
         private object _index;
-        
+
         public Enumerate(object iter) {
             _iter = PythonOps.GetEnumerator(iter);
             _index = ScriptingRuntimeHelpers.Int32ToObject(-1);
         }
 
         public Enumerate(CodeContext context, object iter, object start) {
-            object index;
-            if (!Converter.TryConvertToIndex(start, out index)) {
-                throw PythonOps.TypeErrorForUnIndexableObject(start);
-            }
-
+            object index = PythonOps.Index(start);
             _iter = PythonOps.GetEnumerator(iter);
             _index = context.LanguageContext.Operation(Binding.PythonOperationKind.Subtract, index, ScriptingRuntimeHelpers.Int32ToObject(1));
         }
@@ -140,7 +136,7 @@ namespace IronPython.Runtime {
         object IEnumerator.Current {
             get {
                 return _current;
-            }   
+            }
         }
 
         object IEnumerator<object>.Current {
@@ -174,7 +170,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    /* 
+    /*
      * Enumerators exposed to .NET code
      */
 

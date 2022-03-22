@@ -174,13 +174,21 @@ namespace IronPython.Runtime {
 
         public virtual object? this[object? index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (Converter.TryConvertToIndex(index, out int res)) {
+                    return this[res];
+                }
+
+                throw PythonOps.TypeError("tuple indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 
         public virtual object? this[BigInteger index] {
             get {
-                return this[(int)index];
+                if (index.AsInt32(out int iVal)) {
+                    return this[iVal];
+                }
+
+                throw PythonOps.IndexError("cannot fit 'int' into an index-sized integer");
             }
         }
 

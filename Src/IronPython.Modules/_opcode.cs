@@ -165,7 +165,7 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("stack_effect: opcode requires oparg but oparg was not specified");
                 }
 
-                if (!Converter.TryConvertToIndex(oparg, out ioparg, throwOverflowError: true)) { // supported since CPython 3.8
+                if (!Converter.TryConvertToIndex(oparg, out ioparg)) { // supported since CPython 3.8
                     ioparg = Converter.ImplicitConvertToInt32(oparg) ?? // warning since CPython 3.8, unsupported in 3.10
                         throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
                 }

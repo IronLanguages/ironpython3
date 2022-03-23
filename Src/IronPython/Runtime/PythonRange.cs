@@ -104,7 +104,7 @@ namespace IronPython.Runtime {
 
         public object this[[AllowNull] object index] {
             get {
-                if (PythonOps.TryToIndex(this, out BigInteger bi)) {
+                if (PythonOps.TryToIndex(index, out BigInteger bi)) {
                     return this[bi];
                 }
 

@@ -321,9 +321,7 @@ namespace IronPython.Runtime {
         }
 
         public void RemoveSlice(Slice slice) {
-            int start, stop, step;
-            // slice is sealed, indices can't be user code...
-            slice.indices(_size, out start, out stop, out step);
+            slice.Indices(_size, out int start, out int stop, out int step);
 
             if (step > 0 && (start >= stop)) return;
             if (step < 0 && (start <= stop)) return;

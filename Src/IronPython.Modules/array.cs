@@ -496,8 +496,7 @@ namespace IronPython.Modules {
             [System.Diagnostics.CodeAnalysis.NotNull]
             public object? this[[NotNull]Slice index] {
                 get {
-                    int start, stop, step;
-                    index.indices(_data.Count, out start, out stop, out step);
+                    index.Indices(_data.Count, out int start, out int stop, out int step);
 
                     array pa = new array(ScriptingRuntimeHelpers.CharToString(_typeCode));
                     if (step < 0) {
@@ -519,8 +518,7 @@ namespace IronPython.Modules {
 
                         index.DoSliceAssign(SliceAssign, _data.Count, value);
                     } else {
-                        int start, stop, step;
-                        index.indices(_data.Count, out start, out stop, out step);
+                        index.Indices(_data.Count, out int start, out int stop, out int step);
                         if (stop < start) {
                             stop = start;
                         }

@@ -95,16 +95,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        private long Compute(long index) {
+        private BigInteger Compute(BigInteger index) {
             return index * step + start;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object this[[NotNull]Slice slice] {
             get {
-                int ostart, ostop, ostep;
-                slice.indices(_length, out ostart, out ostop, out ostep);
-                return new PythonRange(Compute(ostart), Compute(ostop), (long)step * ostep);
+                slice.indices(_length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep);
+                return new PythonRange(Compute(ostart), Compute(ostop), step * ostep);
             }
         }
 

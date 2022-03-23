@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import collections
 import functools
-from pathlib import Path  
+from pathlib import Path
 
 def test_main(level='full'):
     import sys
@@ -17,10 +17,10 @@ def test_main(level='full'):
         sys.argv = ['checkonly']
 
     # these generators will always be blocked
-    generators_to_block = ['generate_exception_factory', 'generate_indicetest']
-    # TODO: unblock 'generate_exception_factory' when we have 
+    generators_to_block = ['generate_exception_factory', 'generate_indicestest']
+    # TODO: unblock 'generate_exception_factory' when we have
     #       whole Core sources in Snap/test
-    
+
     # these generators will be blocked if not running ironpython
     generators_to_block_if_not_ipy = ['generate_alltypes',
                                       'generate_exceptions',
@@ -28,17 +28,17 @@ def test_main(level='full'):
                                       'generate_comdispatch']
 
 
-    # 'generate_exception_factory',  
+    # 'generate_exception_factory',
     # populate list of generate_*.py from folder of this script
     generators = get_generators_in_folder()
-    
+
     # filter list to remove blocked items, ie. they will not be run
     remove_blocked_generators(generators,generators_to_block)
 
     if sys.implementation.name != "ironpython":
         # filter list to remove blocked items if we are not ironpython
         remove_blocked_generators(generators,generators_to_block_if_not_ipy)
-        
+
     failures = 0
 
     for gen in generators:
@@ -72,21 +72,21 @@ def get_generators_in_folder():
 
     # iterate over items in this folder and add generators
     generators = []
-    
+
     for item in folder_of_test.iterdir():
-        
+
         if item.is_file():
             # if current item is a file, get filename by accessing last path element
             filename = str(item.parts[-1])
-            
+
             if filename.startswith("generate_") and filename.endswith(".py"):
                 # found a generator, add it to our list (removing extension)
                 generators.append(filename.replace(".py",""))
-    
+
     return generators
 
 def remove_blocked_generators(generators,blocklist):
-    
+
     for g in blocklist:
         if g in generators:
             generators.remove(g)

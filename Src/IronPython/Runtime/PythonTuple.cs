@@ -194,8 +194,7 @@ namespace IronPython.Runtime {
 
         public virtual object this[[NotNull]Slice slice] {
             get {
-                int start, stop, step;
-                slice.indices(_data.Length, out start, out stop, out step);
+                slice.Indices(_data.Length, out int start, out int stop, out int step);
 
                 if (start == 0 && stop == _data.Length && step == 1 &&
                     this.GetType() == typeof(PythonTuple)) {

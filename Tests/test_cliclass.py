@@ -1185,17 +1185,21 @@ End Class""")
         import pickle
 
         # test the primitive data types...
-        data = [1, 1.0, 2j, 2, System.Int64(1), System.UInt64(1),
-                System.UInt32(1), System.Int16(1), System.UInt16(1),
-                System.Byte(1), System.SByte(1), System.Decimal(1),
-                System.Char.MaxValue, System.DBNull.Value, System.Single(1.0),
+        data = [1, 1.0, 2j, big(3), True, "xyz",
+                System.Int64(1), System.UInt64(1),
+                System.Int32(1), System.UInt32(1),
+                System.Int16(1), System.UInt16(1),
+                System.Byte(1), System.SByte(1),
+                #System.IntPtr(-1), System.UIntPtr(2), # TODO: IntPtrOps.cs
+                System.Decimal(1), System.Single(1.0),
+                System.Char.MaxValue, System.DBNull.Value,
                 System.DateTime.Now, None, {}, (), [], {'a': 2}, (42, ), [42, ],
                 System.StringSplitOptions.RemoveEmptyEntries,
                 ]
 
         if is_netcoreapp and not is_netcoreapp21:
             clr.AddReference("System.Text.Json")
-            data.append(System.Text.Json.JsonValueKind.Object)
+            data.append(System.Text.Json.JsonValueKind.Object) # byte-based enum
 
         data.append(list(data))     # list of all the data..
         data.append(tuple(data))    # tuple of all the data...

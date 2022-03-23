@@ -1147,39 +1147,20 @@ import Namespace.")]
 
             string data, format;
             Type type = CompilerHelpers.GetType(self);
-            switch (type.GetTypeCode()) {
-                // For the primitive non-python types just do a simple serialization.
-                // Object of type Int32 normally do not go though this code path when pickled
-                // (that is, unless __reduce_ex__ is called directly), being handled as Python int
-                // through the pickle dispatch table. (GH #52)
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.DBNull:
-                case TypeCode.Decimal:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.SByte:
-                case TypeCode.Single:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                    if (!type.IsPrimitive) goto default;
-
-                    data = self.ToString();
-                    format = type.FullName;
-                    break;
-
-                default:
-                    // something more complex, let the binary formatter handle it                    
-                    BinaryFormatter bf = new BinaryFormatter();
-                    MemoryStream stream = new MemoryStream();
+            if ((type.IsPrimitive && type.GetTypeCode() != TypeCode.Object)
+                || type == typeof(decimal) || type == typeof(DBNull)) {
+                // For select primitive types just do a simple serialization.
+                data = self.ToString();
+                format = type.FullName;
+            } else {
+                // something more complex, let the binary formatter handle it                    
+                BinaryFormatter bf = new BinaryFormatter();
+                MemoryStream stream = new MemoryStream();
 #pragma warning disable SYSLIB0011 // BinaryFormatter serialization methods are obsolete in .NET 5.0
-                    bf.Serialize(stream, self);
+                bf.Serialize(stream, self);
 #pragma warning restore SYSLIB0011
-                    data = stream.ToArray().MakeString();
-                    format = null;
-                    break;
+                data = stream.ToArray().MakeString();
+                format = null;
             }
 
             return PythonTuple.MakeTuple(format, data);
@@ -1198,10 +1179,12 @@ import Namespace.")]
         public static object Deserialize(string serializationFormat, [NotNull]string/*!*/ data) {
             if (serializationFormat != null) {
                 switch (serializationFormat) {
+                    case "System.Boolean": return Boolean.Parse(data);
                     case "System.Byte": return Byte.Parse(data);
                     case "System.Char": return Char.Parse(data);
                     case "System.DBNull": return DBNull.Value;
                     case "System.Decimal": return Decimal.Parse(data);
+                    case "System.Double": return Double.Parse(data);
                     case "System.Int16": return Int16.Parse(data);
                     case "System.Int32": return Int32.Parse(data);
                     case "System.Int64": return Int64.Parse(data);

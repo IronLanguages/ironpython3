@@ -142,7 +142,8 @@ namespace IronPython.Runtime {
             return _step == other._step;
         }
 
-        public bool __ne__([NotNull] PythonRange other) => !__eq__(other);
+        [return: MaybeNotImplemented]
+        public object __eq__(object? other) => other is PythonRange range ? __eq__(range) : NotImplementedType.Value;
 
         public int __hash__() {
             if (_length == 0) {

@@ -26,7 +26,7 @@ using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 namespace IronPython.Runtime {
     [PythonType("range")]
     [DontMapIEnumerableToContains]
-    public sealed class PythonRange : ICodeFormattable, IReversible, IEnumerable<int>, IEnumerable<BigInteger> {
+    public sealed class PythonRange : IEnumerable<int>, ICodeFormattable, IReversible {
         internal readonly BigInteger _start;
         internal readonly BigInteger _stop;
         internal readonly BigInteger _step;
@@ -200,7 +200,7 @@ namespace IronPython.Runtime {
         private int CountOf(CodeContext context, object? obj) {
             var pythonContext = context.LanguageContext;
             var count = 0;
-            foreach (var i in (IEnumerable<BigInteger>)this) {
+            foreach (var i in (IEnumerable)this) {
                 if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
                     count++;
                 }
@@ -270,8 +270,6 @@ namespace IronPython.Runtime {
         IEnumerator IEnumerable.GetEnumerator() => __iter__();
 
         IEnumerator<int> IEnumerable<int>.GetEnumerator() => new PythonRangeIterator(this);
-
-        IEnumerator<BigInteger> IEnumerable<BigInteger>.GetEnumerator() => new PythonLongRangeIterator(this);
 
         #region ICodeFormattable Members
 

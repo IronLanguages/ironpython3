@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_posix, run_test
 
 import test.test_ssl
 
@@ -48,7 +48,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_get_ca_certs'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_cert_chain'))) # AssertionError: OSError not raised
         suite.addTest(test.test_ssl.ContextTests('test_load_default_certs'))
-        suite.addTest(test.test_ssl.ContextTests('test_load_default_certs_env'))
+        if is_posix:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_default_certs_env'))) # 'SSLContext' object has no attribute 'cert_store_stats'
+        else:
+            suite.addTest(test.test_ssl.ContextTests('test_load_default_certs_env'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_default_certs_env_windows'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_dh_params'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_cadata'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
@@ -73,7 +76,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_context_setget'))) # AttributeError: '_SSLSocket' object has no attribute 'context'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_ca_certs_capath'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # TypeError: Value cannot be null.
-        suite.addTest(test.test_ssl.NetworkedTests('test_makefile_close'))
+        if is_posix:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_makefile_close'))) # OSError: [Errno 9] Bad file descriptor
+        else:
+            suite.addTest(test.test_ssl.NetworkedTests('test_makefile_close'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_connect_ex'))) # OSError: [Errno -2146232800] The operation is not allowed on a non-blocking Socket.
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))) # TypeError: Value cannot be null.
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))

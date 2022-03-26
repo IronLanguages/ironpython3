@@ -109,17 +109,19 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class _SSLContext {
-            private readonly X509Certificate2Collection _cert_store = new X509Certificate2Collection();
-            private string _cafile;
+            internal readonly X509Certificate2Collection _cert_store = new X509Certificate2Collection();
+            internal string _cafile;
             private int _verify_mode = SSL_VERIFY_NONE;
 
-            public _SSLContext(CodeContext context, int protocol = PROTOCOL_SSLv23) {
+            public _SSLContext(CodeContext context, int protocol) {
                 if (protocol != PROTOCOL_SSLv2 && protocol != PROTOCOL_SSLv23 && protocol != PROTOCOL_SSLv3 &&
                     protocol != PROTOCOL_TLSv1 && protocol != PROTOCOL_TLSv1_1 && protocol != PROTOCOL_TLSv1_2) {
                     throw PythonOps.ValueError("invalid protocol version");
                 }
 
                 this.protocol = protocol;
+
+                options = OP_ALL;
                 if (protocol != PROTOCOL_SSLv2)
                     options |= OP_NO_SSLv2;
                 if (protocol != PROTOCOL_SSLv3)
@@ -175,14 +177,20 @@ namespace IronPython.Modules {
 
             }
 
-            public void load_verify_locations(CodeContext context, string cafile = null, string capath = null, object cadata = null) {
+            public void load_verify_locations(CodeContext context, object cafile = null, string capath = null, object cadata = null) {
                 if (cafile == null && capath == null && cadata == null) {
                     throw PythonOps.TypeError("cafile, capath and cadata cannot be all omitted");
                 }
 
-                if (cafile != null) {
-                    _cert_store.Add(ReadCertificate(context, cafile));
-                    _cafile = cafile;
+                if (cafile is not null) {
+                    if (cafile is string s) {
+                        _cafile = s;
+                    } else if (cafile is Bytes b) {
+                        _cafile = b.MakeString();
+                    } else {
+                        throw PythonOps.TypeError("cafile should be a valid filesystem path");
+                    }
+                    _cert_store.Add(ReadCertificate(context, _cafile));
                 }
 
                 if (capath != null) {
@@ -207,8 +215,8 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object _wrap_socket(CodeContext context, PythonSocket.socket sock, bool server_side, string server_hostname = null, object ssl_sock = null) {
-                return new _SSLSocket(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store) { _serverHostName = server_hostname };
+            public object _wrap_socket(CodeContext context, PythonSocket.socket sock, bool server_side, string server_hostname = null) {
+                return new _SSLSocket(context, this, sock, server_side, server_hostname);
             }
         }
 
@@ -225,34 +233,22 @@ namespace IronPython.Modules {
             private Exception _validationFailure;
             internal string _serverHostName;
 
-            public _SSLSocket(CodeContext context, PythonSocket.socket sock, string keyfile = null, string certfile = null, X509Certificate2Collection certs = null) {
-                _context = context;
-                _sslStream = new SslStream(new NetworkStream(sock._socket, false), true, CertValidationCallback);
-                _socket = sock;
-                _protocol = PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3;
-                _validate = false;
-                _certCollection = certs ?? new X509Certificate2Collection();
-            }
+            public _SSLContext context { get; }
 
-            internal _SSLSocket(CodeContext context,
-               PythonSocket.socket sock,
-               bool server_side,
-               string keyfile = null,
-               string certfile = null,
-               int certs_mode = PythonSsl.CERT_NONE,
-               int protocol = (PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
-               string cacertsfile = null,
-               X509Certificate2Collection certs = null) {
+            internal _SSLSocket(CodeContext context, _SSLContext sslcontext, PythonSocket.socket sock, bool server_side, string server_hostname) {
                 if (sock == null) {
                     throw PythonOps.TypeError("expected socket object, got None");
                 }
 
+                this.context = sslcontext;
                 _serverSide = server_side;
-                bool validate;
-                _certsMode = certs_mode;
+                _serverHostName = server_hostname;
 
+                _certsMode = sslcontext.verify_mode;
+
+                bool validate;
                 RemoteCertificateValidationCallback callback;
-                switch (certs_mode) {
+                switch (_certsMode) {
                     case PythonSsl.CERT_NONE:
                         validate = false;
                         callback = CertValidationCallback;
@@ -266,28 +262,24 @@ namespace IronPython.Modules {
                         callback = CertValidationCallbackRequired;
                         break;
                     default:
-                        throw new InvalidOperationException(String.Format("bad certs_mode: {0}", certs_mode));
+                        throw new InvalidOperationException(String.Format("bad certs_mode: {0}", _certsMode));
                 }
 
                 _callback = callback;
 
-                if (certs != null) {
-                    _certCollection = certs;
+                if (sslcontext._cert_store != null) {
+                    _certCollection = sslcontext._cert_store;
                 }
 
-                if (certfile != null) {
-                    _cert = PythonSsl.ReadCertificate(context, certfile);
-                }
-
-                if (cacertsfile != null) {
-                    _certCollection = new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) });
+                if (sslcontext._cafile != null) {
+                    _cert = PythonSsl.ReadCertificate(context, sslcontext._cafile);
                 }
 
                 _socket = sock;
 
                 EnsureSslStream(false);
 
-                _protocol = protocol;
+                _protocol = sslcontext.protocol;
                 _validate = validate;
                 _context = context;
             }
@@ -422,7 +414,7 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName, collection, enabledSslProtocols, false);
+                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName ?? string.Empty, collection, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();
@@ -521,7 +513,7 @@ namespace IronPython.Modules {
 
                 if (peerCert != null) {
                     if (binary_form) {
-                        return peerCert.GetRawCertData().MakeString();
+                        return Bytes.Make(peerCert.GetRawCertData());
                     } else if (_validate) {
                         return CertificateToPython(_context, peerCert);
                     }
@@ -548,24 +540,23 @@ namespace IronPython.Modules {
                 return String.Empty;
             }
 
-            [Documentation(@"read([len]) -> string
-
-Read up to len bytes from the SSL socket.")]
-            public object read(CodeContext/*!*/ context, int len, ByteArray buffer = null) {
+            [Documentation(@"read(size, [buffer])
+Read up to size bytes from the SSL socket.")]
+            public object read(CodeContext/*!*/ context, int size, ByteArray buffer = null) {
                 EnsureSslStream(true);
 
                 try {
                     byte[] buf = new byte[2048];
-                    MemoryStream result = new MemoryStream(len);
+                    MemoryStream result = new MemoryStream(size);
                     while (true) {
-                        int readLength = (len < buf.Length) ? len : buf.Length;
+                        int readLength = (size < buf.Length) ? size : buf.Length;
                         int bytes = _sslStream.Read(buf, 0, readLength);
                         if (bytes > 0) {
                             result.Write(buf, 0, bytes);
-                            len -= bytes;
+                            size -= bytes;
                         }
 
-                        if (bytes == 0 || len == 0 || bytes < readLength) {
+                        if (bytes == 0 || size == 0 || bytes < readLength) {
                             var res = result.ToArray();
                             if (buffer == null)
                                 return Bytes.Make(res);
@@ -593,10 +584,9 @@ Read up to len bytes from the SSL socket.")]
                 return String.Empty;
             }
 
-            [Documentation(@"write(s) -> len
+            [Documentation(@"Writes the bytes-like object b into the SSL object.
 
-Writes the string s into the SSL object.  Returns the number
-of bytes written.")]
+Returns the number of bytes written.")]
             public int write(CodeContext/*!*/ context, Bytes data) {
                 EnsureSslStream(true);
 
@@ -1046,8 +1036,10 @@ of bytes written.")]
         public const int PROTOCOL_TLSv1_1 = 4;
         public const int PROTOCOL_TLSv1_2 = 5;
 
-        public const uint OP_ALL = 0x80000BFF;
-        public const uint OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800;
+        public const int OP_ALL = unchecked((int)0x800003FF);
+        public const int OP_CIPHER_SERVER_PREFERENCE = 0x400000;
+        public const int OP_SINGLE_DH_USE = 0x100000;
+        public const int OP_SINGLE_ECDH_USE = 0x80000;
         public const int OP_NO_SSLv2 = 0x01000000;
         public const int OP_NO_SSLv3 = 0x02000000;
         public const int OP_NO_TLSv1 = 0x04000000;

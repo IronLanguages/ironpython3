@@ -9,6 +9,7 @@ Tests for the _ssl module.  See http://docs.python.org/library/ssl.html
 import _ssl
 import os
 import socket
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
@@ -27,13 +28,22 @@ class _SslTest(IronPythonTestCase):
         self.assertEqual(_ssl.CERT_NONE, 0)
         self.assertEqual(_ssl.CERT_OPTIONAL, 1)
         self.assertEqual(_ssl.CERT_REQUIRED, 2)
-        self.assertEqual(_ssl.PROTOCOL_SSLv2, 0)
+        if sys.version_info >= (3,5):
+            self.assertRaises(AttributeError, lambda: _ssl.PROTOCOL_SSLv2)
+        else:
+            self.assertEqual(_ssl.PROTOCOL_SSLv2, 0)
         self.assertEqual(_ssl.PROTOCOL_SSLv23, 2)
-        self.assertEqual(_ssl.PROTOCOL_SSLv3, 1)
+        if sys.version_info >= (3,7):
+            self.assertRaises(AttributeError, lambda: _ssl.PROTOCOL_SSLv3)
+        else:
+            self.assertEqual(_ssl.PROTOCOL_SSLv3, 1)
         self.assertEqual(_ssl.PROTOCOL_TLSv1, 3)
         self.assertEqual(_ssl.PROTOCOL_TLSv1_1, 4)
         self.assertEqual(_ssl.PROTOCOL_TLSv1_2, 5)
-        self.assertEqual(_ssl.OP_NO_SSLv2, 0x1000000)
+        if sys.version_info >= (3,7):
+            self.assertEqual(_ssl.OP_NO_SSLv2, 0)
+        else:
+            self.assertEqual(_ssl.OP_NO_SSLv2, 0x1000000)
         self.assertEqual(_ssl.OP_NO_SSLv3, 0x2000000)
         self.assertEqual(_ssl.OP_NO_TLSv1, 0x4000000)
         self.assertEqual(_ssl.OP_NO_TLSv1_1, 0x10000000)
@@ -106,7 +116,8 @@ for documentation."""
         context = _ssl._SSLContext(_ssl.PROTOCOL_SSLv23)
         ssl_s = context._wrap_socket(s, False)
 
-        ssl_s.shutdown()
+        if is_cli:
+            ssl_s.shutdown()
         s.close()
 
         #sock, keyfile, certfile
@@ -133,6 +144,7 @@ for documentation."""
         #Cleanup
         s.close()
 
+    @skipUnlessIronPython()
     def test_SSLType_issuer(self):
         #--Positive
         s = socket.socket(socket.AF_INET)
@@ -165,6 +177,7 @@ for documentation."""
         ssl_s.shutdown()
         s.close()
 
+    @skipUnlessIronPython()
     def test_SSLType_server(self):
         #--Positive
         s = socket.socket(socket.AF_INET)
@@ -206,8 +219,12 @@ for documentation."""
         ssl_s = context._wrap_socket(s, False)
         ssl_s.do_handshake()
 
-        self.assertIn("Writes the string s into the SSL object.", ssl_s.write.__doc__)
-        self.assertIn("Read up to len bytes from the SSL socket.", ssl_s.read.__doc__)
+        if is_cli or sys.version_info >= (3,5):
+            self.assertIn("Writes the bytes-like object b into the SSL object.", ssl_s.write.__doc__)
+            self.assertIn("Read up to size bytes from the SSL socket.", ssl_s.read.__doc__)
+        else:
+            self.assertIn("Writes the string s into the SSL object.", ssl_s.write.__doc__)
+            self.assertIn("Read up to len bytes from the SSL socket.", ssl_s.read.__doc__)
 
         #Write
         self.assertEqual(ssl_s.write(SSL_REQUEST),
@@ -225,7 +242,8 @@ for documentation."""
         self.assertIn(SSL_RESPONSE, response)
 
         #Cleanup
-        ssl_s.shutdown()
+        if is_cli:
+            ssl_s.shutdown()
         s.close()
 
     def test_parse_cert(self):

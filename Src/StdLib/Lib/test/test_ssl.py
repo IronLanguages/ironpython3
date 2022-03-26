@@ -76,6 +76,7 @@ def handle_error(prefix):
         sys.stdout.write(prefix + exc_format)
 
 def can_clear_options():
+    if sys.implementation.name == 'ironpython': return True
     # 0.9.8m or higher
     return ssl._OPENSSL_API_VERSION >= (0, 9, 8, 13, 15)
 
@@ -569,7 +570,10 @@ class BasicSocketTests(unittest.TestCase):
         self.assertTrue(ssl.enum_certificates("ROOT"))
 
         self.assertRaises(TypeError, ssl.enum_certificates)
-        self.assertRaises(WindowsError, ssl.enum_certificates, "")
+        if sys.implementation.name == "ironpython":
+            self.assertEqual(ssl.enum_certificates(""), [])
+        else:
+            self.assertRaises(WindowsError, ssl.enum_certificates, "")
 
         trust_oids = set()
         for storename in ("CA", "ROOT"):

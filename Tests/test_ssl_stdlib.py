@@ -18,9 +18,9 @@ def load_tests(loader, standard_tests, pattern):
         suite = unittest.TestSuite()
         suite.addTest(test.test_ssl.BasicSocketTests('test_DER_to_PEM'))
         suite.addTest(test.test_ssl.BasicSocketTests('test_asn1object'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.BasicSocketTests('test_constants'))) # AttributeError: 'module' object has no attribute 'OP_CIPHER_SERVER_PREFERENCE'
+        suite.addTest(test.test_ssl.BasicSocketTests('test_constants'))
         suite.addTest(test.test_ssl.BasicSocketTests('test_dealloc_warn'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.BasicSocketTests('test_enum_certificates'))) # AssertionError: OSError not raised by enum_certificates
+        suite.addTest(test.test_ssl.BasicSocketTests('test_enum_certificates'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.BasicSocketTests('test_enum_crls'))) # AssertionError: [] is not true
         suite.addTest(unittest.expectedFailure(test.test_ssl.BasicSocketTests('test_errors'))) # AssertionError: OSError not raised
         suite.addTest(unittest.expectedFailure(test.test_ssl.BasicSocketTests('test_get_default_verify_paths'))) # AttributeError: 'module' object has no attribute 'get_default_verify_paths'
@@ -55,8 +55,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_default_certs_env_windows'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_dh_params'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_cadata'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_locations'))) # TypeError: expected str, got bytes
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_options'))) # AssertionError: 2197818367 != 50331648
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_locations'))) # AssertionError: "PEM lib" does not match ...
+        suite.addTest(test.test_ssl.ContextTests('test_options'))
         suite.addTest(test.test_ssl.ContextTests('test_protocol'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_session_stats'))) # AttributeError: 'SSLContext' object has no attribute 'session_stats'
         suite.addTest(test.test_ssl.ContextTests('test_set_default_verify_paths'))
@@ -75,17 +75,17 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_with_context'))) # AssertionError: {} != None
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_context_setget'))) # AttributeError: '_SSLSocket' object has no attribute 'context'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_ca_certs_capath'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # TypeError: Value cannot be null.
+        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateNameMismatch, RemoteCertificateChainErrors
         if is_posix:
             suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_makefile_close'))) # OSError: [Errno 9] Bad file descriptor
         else:
             suite.addTest(test.test_ssl.NetworkedTests('test_makefile_close'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_connect_ex'))) # OSError: [Errno -2146232800] The operation is not allowed on a non-blocking Socket.
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))) # TypeError: Value cannot be null.
+        suite.addTest(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # TypeError: Value cannot be null.
+        #suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # blocking
         #suite.addTest(test.test_ssl.ThreadedTests('test_asyncore_server'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_check_hostname'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_compression'))

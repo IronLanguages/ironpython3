@@ -1674,6 +1674,17 @@ if not hasattr(A, 'Rank'):
         self.assertEqual(float(System.Int64(42)), 42.0)
         self.assertEqual(type(float(System.Int64(42))), float)
 
+    def test_int_constructor_overflow(self):
+        from iptest import clr_int_types, myint, myfloat
+
+        val = 1 << 64
+        for t in clr_int_types:
+            self.assertRaises(OverflowError, t, val)
+            self.assertRaises(OverflowError, t, str(val))
+            self.assertRaises(OverflowError, t, float(val))
+            self.assertRaises(OverflowError, t, myint(val))
+            self.assertRaises(OverflowError, t, myfloat(val))
+
     def test_cp24004(self):
         self.assertTrue("Find" in System.Array.__dict__)
 

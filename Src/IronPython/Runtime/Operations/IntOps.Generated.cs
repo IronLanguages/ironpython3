@@ -35,16 +35,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (SByte)(Byte)value;
-                    case TypeCode.SByte: return (SByte)(SByte)value;
-                    case TypeCode.Int16: return (SByte)(Int16)value;
-                    case TypeCode.UInt16: return (SByte)(UInt16)value;
-                    case TypeCode.Int32: return (SByte)(Int32)value;
-                    case TypeCode.UInt32: return (SByte)(UInt32)value;
-                    case TypeCode.Int64: return (SByte)(Int64)value;
-                    case TypeCode.UInt64: return (SByte)(UInt64)value;
-                    case TypeCode.Single: return (SByte)(Single)value;
-                    case TypeCode.Double: return (SByte)(Double)value;
+                    case TypeCode.Byte:   return checked((SByte)(Byte)value);
+                    case TypeCode.SByte:  return checked((SByte)(SByte)value);
+                    case TypeCode.Int16:  return checked((SByte)(Int16)value);
+                    case TypeCode.UInt16: return checked((SByte)(UInt16)value);
+                    case TypeCode.Int32:  return checked((SByte)(Int32)value);
+                    case TypeCode.UInt32: return checked((SByte)(UInt32)value);
+                    case TypeCode.Int64:  return checked((SByte)(Int64)value);
+                    case TypeCode.UInt64: return checked((SByte)(UInt64)value);
+                    case TypeCode.Single: return checked((SByte)(Single)value);
+                    case TypeCode.Double: return checked((SByte)(Double)value);
                 }
             }
             if (value is String s) {
@@ -54,11 +54,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (SByte)bi;
+                return checked((SByte)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (SByte)ebi.Value;
+                return checked((SByte)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (SByte)ed.Value;
+                return checked((SByte)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to SByte", PythonOps.GetPythonTypeName(value));
         }
@@ -305,16 +305,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Byte)(Byte)value;
-                    case TypeCode.SByte: return (Byte)(SByte)value;
-                    case TypeCode.Int16: return (Byte)(Int16)value;
-                    case TypeCode.UInt16: return (Byte)(UInt16)value;
-                    case TypeCode.Int32: return (Byte)(Int32)value;
-                    case TypeCode.UInt32: return (Byte)(UInt32)value;
-                    case TypeCode.Int64: return (Byte)(Int64)value;
-                    case TypeCode.UInt64: return (Byte)(UInt64)value;
-                    case TypeCode.Single: return (Byte)(Single)value;
-                    case TypeCode.Double: return (Byte)(Double)value;
+                    case TypeCode.Byte:   return checked((Byte)(Byte)value);
+                    case TypeCode.SByte:  return checked((Byte)(SByte)value);
+                    case TypeCode.Int16:  return checked((Byte)(Int16)value);
+                    case TypeCode.UInt16: return checked((Byte)(UInt16)value);
+                    case TypeCode.Int32:  return checked((Byte)(Int32)value);
+                    case TypeCode.UInt32: return checked((Byte)(UInt32)value);
+                    case TypeCode.Int64:  return checked((Byte)(Int64)value);
+                    case TypeCode.UInt64: return checked((Byte)(UInt64)value);
+                    case TypeCode.Single: return checked((Byte)(Single)value);
+                    case TypeCode.Double: return checked((Byte)(Double)value);
                 }
             }
             if (value is String s) {
@@ -324,11 +324,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (Byte)bi;
+                return checked((Byte)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (Byte)ebi.Value;
+                return checked((Byte)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (Byte)ed.Value;
+                return checked((Byte)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to Byte", PythonOps.GetPythonTypeName(value));
         }
@@ -657,16 +657,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Int16)(Byte)value;
-                    case TypeCode.SByte: return (Int16)(SByte)value;
-                    case TypeCode.Int16: return (Int16)(Int16)value;
-                    case TypeCode.UInt16: return (Int16)(UInt16)value;
-                    case TypeCode.Int32: return (Int16)(Int32)value;
-                    case TypeCode.UInt32: return (Int16)(UInt32)value;
-                    case TypeCode.Int64: return (Int16)(Int64)value;
-                    case TypeCode.UInt64: return (Int16)(UInt64)value;
-                    case TypeCode.Single: return (Int16)(Single)value;
-                    case TypeCode.Double: return (Int16)(Double)value;
+                    case TypeCode.Byte:   return checked((Int16)(Byte)value);
+                    case TypeCode.SByte:  return checked((Int16)(SByte)value);
+                    case TypeCode.Int16:  return checked((Int16)(Int16)value);
+                    case TypeCode.UInt16: return checked((Int16)(UInt16)value);
+                    case TypeCode.Int32:  return checked((Int16)(Int32)value);
+                    case TypeCode.UInt32: return checked((Int16)(UInt32)value);
+                    case TypeCode.Int64:  return checked((Int16)(Int64)value);
+                    case TypeCode.UInt64: return checked((Int16)(UInt64)value);
+                    case TypeCode.Single: return checked((Int16)(Single)value);
+                    case TypeCode.Double: return checked((Int16)(Double)value);
                 }
             }
             if (value is String s) {
@@ -676,11 +676,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (Int16)bi;
+                return checked((Int16)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (Int16)ebi.Value;
+                return checked((Int16)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (Int16)ed.Value;
+                return checked((Int16)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to Int16", PythonOps.GetPythonTypeName(value));
         }
@@ -932,16 +932,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (UInt16)(Byte)value;
-                    case TypeCode.SByte: return (UInt16)(SByte)value;
-                    case TypeCode.Int16: return (UInt16)(Int16)value;
-                    case TypeCode.UInt16: return (UInt16)(UInt16)value;
-                    case TypeCode.Int32: return (UInt16)(Int32)value;
-                    case TypeCode.UInt32: return (UInt16)(UInt32)value;
-                    case TypeCode.Int64: return (UInt16)(Int64)value;
-                    case TypeCode.UInt64: return (UInt16)(UInt64)value;
-                    case TypeCode.Single: return (UInt16)(Single)value;
-                    case TypeCode.Double: return (UInt16)(Double)value;
+                    case TypeCode.Byte:   return checked((UInt16)(Byte)value);
+                    case TypeCode.SByte:  return checked((UInt16)(SByte)value);
+                    case TypeCode.Int16:  return checked((UInt16)(Int16)value);
+                    case TypeCode.UInt16: return checked((UInt16)(UInt16)value);
+                    case TypeCode.Int32:  return checked((UInt16)(Int32)value);
+                    case TypeCode.UInt32: return checked((UInt16)(UInt32)value);
+                    case TypeCode.Int64:  return checked((UInt16)(Int64)value);
+                    case TypeCode.UInt64: return checked((UInt16)(UInt64)value);
+                    case TypeCode.Single: return checked((UInt16)(Single)value);
+                    case TypeCode.Double: return checked((UInt16)(Double)value);
                 }
             }
             if (value is String s) {
@@ -951,11 +951,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (UInt16)bi;
+                return checked((UInt16)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (UInt16)ebi.Value;
+                return checked((UInt16)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (UInt16)ed.Value;
+                return checked((UInt16)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to UInt16", PythonOps.GetPythonTypeName(value));
         }
@@ -1294,16 +1294,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Int32)(Byte)value;
-                    case TypeCode.SByte: return (Int32)(SByte)value;
-                    case TypeCode.Int16: return (Int32)(Int16)value;
-                    case TypeCode.UInt16: return (Int32)(UInt16)value;
-                    case TypeCode.Int32: return (Int32)(Int32)value;
-                    case TypeCode.UInt32: return (Int32)(UInt32)value;
-                    case TypeCode.Int64: return (Int32)(Int64)value;
-                    case TypeCode.UInt64: return (Int32)(UInt64)value;
-                    case TypeCode.Single: return (Int32)(Single)value;
-                    case TypeCode.Double: return (Int32)(Double)value;
+                    case TypeCode.Byte:   return checked((Int32)(Byte)value);
+                    case TypeCode.SByte:  return checked((Int32)(SByte)value);
+                    case TypeCode.Int16:  return checked((Int32)(Int16)value);
+                    case TypeCode.UInt16: return checked((Int32)(UInt16)value);
+                    case TypeCode.Int32:  return checked((Int32)(Int32)value);
+                    case TypeCode.UInt32: return checked((Int32)(UInt32)value);
+                    case TypeCode.Int64:  return checked((Int32)(Int64)value);
+                    case TypeCode.UInt64: return checked((Int32)(UInt64)value);
+                    case TypeCode.Single: return checked((Int32)(Single)value);
+                    case TypeCode.Double: return checked((Int32)(Double)value);
                 }
             }
             if (value is String s) {
@@ -1313,11 +1313,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (Int32)bi;
+                return checked((Int32)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (Int32)ebi.Value;
+                return checked((Int32)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (Int32)ed.Value;
+                return checked((Int32)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to Int32", PythonOps.GetPythonTypeName(value));
         }
@@ -1544,16 +1544,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (UInt32)(Byte)value;
-                    case TypeCode.SByte: return (UInt32)(SByte)value;
-                    case TypeCode.Int16: return (UInt32)(Int16)value;
-                    case TypeCode.UInt16: return (UInt32)(UInt16)value;
-                    case TypeCode.Int32: return (UInt32)(Int32)value;
-                    case TypeCode.UInt32: return (UInt32)(UInt32)value;
-                    case TypeCode.Int64: return (UInt32)(Int64)value;
-                    case TypeCode.UInt64: return (UInt32)(UInt64)value;
-                    case TypeCode.Single: return (UInt32)(Single)value;
-                    case TypeCode.Double: return (UInt32)(Double)value;
+                    case TypeCode.Byte:   return checked((UInt32)(Byte)value);
+                    case TypeCode.SByte:  return checked((UInt32)(SByte)value);
+                    case TypeCode.Int16:  return checked((UInt32)(Int16)value);
+                    case TypeCode.UInt16: return checked((UInt32)(UInt16)value);
+                    case TypeCode.Int32:  return checked((UInt32)(Int32)value);
+                    case TypeCode.UInt32: return checked((UInt32)(UInt32)value);
+                    case TypeCode.Int64:  return checked((UInt32)(Int64)value);
+                    case TypeCode.UInt64: return checked((UInt32)(UInt64)value);
+                    case TypeCode.Single: return checked((UInt32)(Single)value);
+                    case TypeCode.Double: return checked((UInt32)(Double)value);
                 }
             }
             if (value is String s) {
@@ -1563,11 +1563,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (UInt32)bi;
+                return checked((UInt32)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (UInt32)ebi.Value;
+                return checked((UInt32)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (UInt32)ed.Value;
+                return checked((UInt32)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to UInt32", PythonOps.GetPythonTypeName(value));
         }
@@ -1906,16 +1906,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Int64)(Byte)value;
-                    case TypeCode.SByte: return (Int64)(SByte)value;
-                    case TypeCode.Int16: return (Int64)(Int16)value;
-                    case TypeCode.UInt16: return (Int64)(UInt16)value;
-                    case TypeCode.Int32: return (Int64)(Int32)value;
-                    case TypeCode.UInt32: return (Int64)(UInt32)value;
-                    case TypeCode.Int64: return (Int64)(Int64)value;
-                    case TypeCode.UInt64: return (Int64)(UInt64)value;
-                    case TypeCode.Single: return (Int64)(Single)value;
-                    case TypeCode.Double: return (Int64)(Double)value;
+                    case TypeCode.Byte:   return checked((Int64)(Byte)value);
+                    case TypeCode.SByte:  return checked((Int64)(SByte)value);
+                    case TypeCode.Int16:  return checked((Int64)(Int16)value);
+                    case TypeCode.UInt16: return checked((Int64)(UInt16)value);
+                    case TypeCode.Int32:  return checked((Int64)(Int32)value);
+                    case TypeCode.UInt32: return checked((Int64)(UInt32)value);
+                    case TypeCode.Int64:  return checked((Int64)(Int64)value);
+                    case TypeCode.UInt64: return checked((Int64)(UInt64)value);
+                    case TypeCode.Single: return checked((Int64)(Single)value);
+                    case TypeCode.Double: return checked((Int64)(Double)value);
                 }
             }
             if (value is String s) {
@@ -1925,11 +1925,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (Int64)bi;
+                return checked((Int64)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (Int64)ebi.Value;
+                return checked((Int64)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (Int64)ed.Value;
+                return checked((Int64)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to Int64", PythonOps.GetPythonTypeName(value));
         }
@@ -2184,16 +2184,16 @@ namespace IronPython.Runtime.Operations {
             }
             if (value is IConvertible valueConvertible) {
                 switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (UInt64)(Byte)value;
-                    case TypeCode.SByte: return (UInt64)(SByte)value;
-                    case TypeCode.Int16: return (UInt64)(Int16)value;
-                    case TypeCode.UInt16: return (UInt64)(UInt16)value;
-                    case TypeCode.Int32: return (UInt64)(Int32)value;
-                    case TypeCode.UInt32: return (UInt64)(UInt32)value;
-                    case TypeCode.Int64: return (UInt64)(Int64)value;
-                    case TypeCode.UInt64: return (UInt64)(UInt64)value;
-                    case TypeCode.Single: return (UInt64)(Single)value;
-                    case TypeCode.Double: return (UInt64)(Double)value;
+                    case TypeCode.Byte:   return checked((UInt64)(Byte)value);
+                    case TypeCode.SByte:  return checked((UInt64)(SByte)value);
+                    case TypeCode.Int16:  return checked((UInt64)(Int16)value);
+                    case TypeCode.UInt16: return checked((UInt64)(UInt16)value);
+                    case TypeCode.Int32:  return checked((UInt64)(Int32)value);
+                    case TypeCode.UInt32: return checked((UInt64)(UInt32)value);
+                    case TypeCode.Int64:  return checked((UInt64)(Int64)value);
+                    case TypeCode.UInt64: return checked((UInt64)(UInt64)value);
+                    case TypeCode.Single: return checked((UInt64)(Single)value);
+                    case TypeCode.Double: return checked((UInt64)(Double)value);
                 }
             }
             if (value is String s) {
@@ -2203,11 +2203,11 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("{0}", ex.Message);
                 }
             } else if (value is BigInteger bi) {
-                return (UInt64)bi;
+                return checked((UInt64)bi);
             } else if (value is Extensible<BigInteger> ebi) {
-                return (UInt64)ebi.Value;
+                return checked((UInt64)ebi.Value);
             } else if (value is Extensible<double> ed) {
-                return (UInt64)ed.Value;
+                return checked((UInt64)ed.Value);
             }
             throw PythonOps.TypeError("can't convert {0} to UInt64", PythonOps.GetPythonTypeName(value));
         }

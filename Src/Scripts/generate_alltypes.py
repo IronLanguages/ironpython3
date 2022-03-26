@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 from generate import generate
-import operator
+
 import clr
 clr.AddReference("System.Numerics")
 from System import *
@@ -101,25 +101,19 @@ float_types = [NumType(t) for t in clr_primitive_float_types]
 primitive_types = int_types + float_types
 bigint = NumType(BigInteger)
 
-simple_identity_method = """\
-public static %(type)s %(method_name)s(%(type)s x) {
-    return x;
-}"""
+simple_identity_method = """
+public static %(type)s %(method_name)s(%(type)s x) => x;"""
 
-identity_method = """\
+identity_method = """
 [SpecialName]
-public static %(type)s %(method_name)s(%(type)s x) {
-    return x;
-}"""
+public static %(type)s %(method_name)s(%(type)s x) => x;"""
 
-simple_method = """\
+simple_method = """
 [SpecialName]
-public static %(type)s %(method_name)s(%(type)s x) {
-    return (%(type)s)(%(symbol)s(x));
-}"""
+public static %(type)s %(method_name)s(%(type)s x) => (%(type)s)(%(symbol)s(x));"""
 
 
-signed_abs = """\
+signed_abs = """
 [SpecialName]
 public static object Abs(%(type)s x) {
     if (x < 0) {
@@ -130,20 +124,18 @@ public static object Abs(%(type)s x) {
     }
 }"""
 
-signed_negate = """\
+signed_negate = """
 [SpecialName]
 public static object Negate(%(type)s x) {
     if (x == %(type)s.MinValue) return -(%(bigger_signed)s)%(type)s.MinValue;
     else return (%(type)s)(-x);
 }"""
 
-unsigned_negate_or_invert = """\
+unsigned_negate_or_invert = """
 [SpecialName]
-public static object %(method_name)s(%(type)s x) {
-    return %(bigger_signed)sOps.%(method_name)s((%(bigger_signed)s)x);
-}"""
+public static object %(method_name)s(%(type)s x) => %(bigger_signed)sOps.%(method_name)s((%(bigger_signed)s)x);"""
 
-float_trunc = """\
+float_trunc = """
 public static object __trunc__(%(type)s x) {
     if (x >= int.MaxValue || x <= int.MinValue) {
         return (BigInteger)x;
@@ -153,7 +145,8 @@ public static object __trunc__(%(type)s x) {
 }"""
 
 def gen_unaryops(cw, ty):
-    cw.write("// Unary Operations")
+    cw.writeline()
+    cw.writeline("#region Unary Operations")
     cw.write(identity_method, method_name="Plus")
 
     if ty.is_float:
@@ -168,22 +161,27 @@ def gen_unaryops(cw, ty):
         cw.write(identity_method, method_name="Abs")
         cw.write(unsigned_negate_or_invert, method_name="OnesComplement")
 
-    if ty.name not in ['BigInteger', 'Complex']:
-        cw.enter_block('public static bool __bool__(%s x)' % (ty.name))
-        cw.writeline('return (x != 0);')
-        cw.exit_block()
+    if ty.name not in ['BigInteger']:
         cw.writeline()
+        cw.write('public static bool __bool__(%s x) => (x != 0);' % (ty.name))
 
-    # this is handled in another Ops file
+    # for floats, this is handled in another Ops file
     if not ty.is_float:
-        cw.enter_block('public static string __repr__(%s x)' % (ty.name))
-        cw.writeline('return x.ToString(CultureInfo.InvariantCulture);')
-        cw.exit_block()
+        cw.writeline()
+        cw.write('public static string __repr__(%s x) => x.ToString(CultureInfo.InvariantCulture);' % (ty.name))
 
     if ty.is_float:
         cw.write(float_trunc, type=ty.name)
     else:
         cw.write(simple_identity_method, type=ty.name, method_name="__trunc__")
+
+        cw.writeline()
+        if ty.max > Int32.MaxValue:
+            cw.write('public static BigInteger __index__(%s x) => unchecked((BigInteger)x);' % (ty.name))
+        else:
+            cw.write('public static int __index__(%s x) => unchecked((int)x);' % (ty.name))
+
+        cw.writeline()
         cw.enter_block('public static int __hash__(%s x)' % (ty.name))
         if ty.max > Int32.MaxValue:
             if ty.is_signed:
@@ -206,16 +204,11 @@ def gen_unaryops(cw, ty):
             cw.writeline('return unchecked((int)x);')
         cw.exit_block()
 
-        if ty.max > Int32.MaxValue:
-            cw.enter_block('public static BigInteger __index__(%s x)' % (ty.name))
-            cw.writeline('return unchecked((BigInteger)x);')
-            cw.exit_block()
-        else:
-            cw.enter_block('public static int __index__(%s x)' % (ty.name))
-            cw.writeline('return unchecked((int)x);')
-            cw.exit_block()
+    cw.writeline()
+    cw.writeline("#endregion")
 
-binop_decl = """\
+
+binop_decl = """
 [SpecialName]
 public static %(return_type)s %(method_name)s(%(rtype)s x, %(ltype)s y)"""
 
@@ -277,7 +270,6 @@ helper_body = "return %(op_type)sOps.%(method_name)s((%(op_type)s)x, (%(rop_type
 def write_binop_raw(cw, body, name, ty, **kws):
     kws1 = dict(return_type=ty.name, method_name=name, rtype=ty.name, ltype=ty.name)
     kws1.update(kws)
-    #print kws1
     cw.enter_block(binop_decl, **kws1)
     cw.write(body, **kws1)
     cw.exit_block()
@@ -325,40 +317,42 @@ def write_rich_comp_general(func, cw, body, name, ty, **kws):
             func(cw, body, name, ty, **kws)
 
 def gen_binaryops(cw, ty):
-    if ty.name not in ['Complex']:
-        cw.writeline()
-        cw.write("// Binary Operations - Arithmetic")
+    cw.writeline()
+    cw.writeline("#region Binary Operations - Arithmetic")
 
-        for symbol, name in [('+', 'Add'), ('-', 'Subtract'), ('*', 'Multiply')]:
-            if ty.is_float:
-                write_binop1(cw, simple_body, name, ty, symbol=symbol)
-            else:
-                if ty.name == "Int32":
-                    body = overflow3_body
-                elif ty.get_overflow_type() == bigint:
-                    body = overflow2_body
-                else:
-                    body = overflow1_body
-                write_binop1(cw, body, name, ty, return_type='object', symbol=symbol)
-
+    for symbol, name in [('+', 'Add'), ('-', 'Subtract'), ('*', 'Multiply')]:
         if ty.is_float:
-             write_binop1(cw, float_true_divide_body, "TrueDivide", ty)
-             write_binop1(cw, float_floor_divide_body, "FloorDivide", ty)
+            write_binop1(cw, simple_body, name, ty, symbol=symbol)
         else:
-             write_binop1(cw, int_true_divide_body, "TrueDivide", ty, return_type='double')
+            if ty.name == "Int32":
+                body = overflow3_body
+            elif ty.get_overflow_type() == bigint:
+                body = overflow2_body
+            else:
+                body = overflow1_body
+            write_binop1(cw, body, name, ty, return_type='object', symbol=symbol)
 
-             if ty.name not in ['BigInteger', 'Int32']:
-                 if ty.is_signed:
-                     write_binop1(cw, div_body, 'FloorDivide', ty, return_type='object')
-                     write_binop1(cw, cast_helper_body, 'Mod', ty)
-                 else:
-                     write_binop1(cw, cast_simple_body, 'FloorDivide', ty, symbol='/')
-                     write_binop1(cw, cast_simple_body, 'Mod', ty, symbol='%')
-                 write_binop1(cw, helper_body, 'Power', ty, return_type='object')
+    if ty.is_float:
+        write_binop1(cw, float_true_divide_body, "TrueDivide", ty)
+        write_binop1(cw, float_floor_divide_body, "FloorDivide", ty)
+    else:
+        write_binop1(cw, int_true_divide_body, "TrueDivide", ty, return_type='double')
+
+        if ty.name not in ['BigInteger', 'Int32']:
+            if ty.is_signed:
+                write_binop1(cw, div_body, 'FloorDivide', ty, return_type='object')
+                write_binop1(cw, cast_helper_body, 'Mod', ty)
+            else:
+                write_binop1(cw, cast_simple_body, 'FloorDivide', ty, symbol='/')
+                write_binop1(cw, cast_simple_body, 'Mod', ty, symbol='%')
+            write_binop1(cw, helper_body, 'Power', ty, return_type='object')
+
+    cw.writeline()
+    cw.writeline("#endregion")
 
     if not ty.is_float:
         cw.writeline()
-        cw.write("// Binary Operations - Bitwise")
+        cw.writeline("#region Binary Operations - Bitwise")
 
         if ty.name not in ["BigInteger"]:
             ltypes = [('[NotNull]BigInteger', 'BigInteger')]
@@ -372,17 +366,21 @@ def gen_binaryops(cw, ty):
             write_binop1(cw, cast_simple_body, name, ty, symbol=symbol)
 
         cw.writeline()
-        cw.write("// Binary Operations - Comparisons")
+        cw.writeline("#endregion")
+
+        cw.writeline()
+        cw.writeline("#region Binary Operations - Comparisons")
+        cw.writeline()
         for symbol, name in [('<', 'LessThan'), ('<=', 'LessThanOrEqual'), ('>', 'GreaterThan'), ('>=', 'GreaterThanOrEqual'), ('==', 'Equals'), ('!=', 'NotEquals')]:
             write_rich_comp(cw, simple_body, name, ty, symbol=symbol, return_type='bool')
+        cw.writeline()
+        cw.writeline("#endregion")
 
-implicit_conv = """\
+implicit_conv = """
 [SpecialName, ImplicitConversionMethod]
-public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
-    return (%(otype)s)x;
-}"""
+public static %(otype)s ConvertTo%(otype)s(%(type)s x) => (%(otype)s)x;"""
 
-explicit_conv = """\
+explicit_conv = """
 [SpecialName, ExplicitConversionMethod]
 public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
     if (%(otype)s.MinValue <= x && x <= %(otype)s.MaxValue) {
@@ -391,7 +389,7 @@ public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
     throw Converter.CannotConvertOverflow("%(otype)s", x);
 }"""
 
-explicit_conv_to_unsigned_from_signed = """\
+explicit_conv_to_unsigned_from_signed = """
 [SpecialName, ExplicitConversionMethod]
 public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
     if (x >= 0) {
@@ -400,7 +398,7 @@ public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
     throw Converter.CannotConvertOverflow("%(otype)s", x);
 }"""
 
-explicit_conv_tosigned_from_unsigned = """\
+explicit_conv_tosigned_from_unsigned = """
 [SpecialName, ExplicitConversionMethod]
 public static %(otype)s ConvertTo%(otype)s(%(type)s x) {
     if (x <= (%(type)s)%(otype)s.MaxValue) {
@@ -422,23 +420,22 @@ def write_conversion(cw, ty, oty):
 
 def gen_conversions(cw, ty):
     cw.writeline()
-    cw.write("// Conversion operators")
+    cw.writeline("#region Conversion operators")
     for oty in primitive_types:
         if oty == ty: continue
 
         write_conversion(cw, ty, oty)
 
-identity_property_method = """\
-[PropertyMethod, SpecialName]
-public static %(type)s Get%(method_name)s(%(type)s x) {
-    return x;
-}"""
+    cw.writeline()
+    cw.writeline("#endregion")
 
-const_property_method = """\
+identity_property_method = """
 [PropertyMethod, SpecialName]
-public static %(type)s Get%(method_name)s(%(type)s x) {
-    return (%(type)s)%(const)s;
-}"""
+public static %(type)s Get%(method_name)s(%(type)s x) => x;"""
+
+const_property_method = """
+[PropertyMethod, SpecialName]
+public static %(type)s Get%(method_name)s(%(type)s x) => (%(type)s)%(const)s;"""
 
 # const=None indicates an identity property, i.e. a property that returns 'self'
 def write_property(cw, ty, name, const=None):
@@ -448,16 +445,15 @@ def write_property(cw, ty, name, const=None):
         cw.write(const_property_method, type=ty.name, method_name=name, const=const)
 
 def gen_api(cw, ty):
-    if ty.name in ["BigInteger", "Complex"]:
+    if ty.name in ["BigInteger"]:
         return
     cw.writeline()
-    cw.write("// Public API - Numerics")
+    cw.writeline("#region Public API - Numerics")
     write_property(cw, ty, "real")
     write_property(cw, ty, "imag", const="0")
     cw.write(simple_identity_method, type=ty.name, method_name="conjugate")
-    if ty.is_float:
-        pass
-    else:
+    if not ty.is_float:
+        cw.writeline()
         write_property(cw, ty, "numerator")
         write_property(cw, ty, "denominator", const="1")
 
@@ -468,11 +464,16 @@ def gen_api(cw, ty):
             cast = ""
             if not ty.is_signed:
                 counter += "Unsigned"
+
+        cw.writeline()
         cw.enter_block('public static int bit_length(%s value)' % ty.name)
         cw.write('return MathUtils.%s(%svalue);' % (counter, cast))
         cw.exit_block()
 
-type_header = """\
+    cw.writeline()
+    cw.writeline("#endregion")
+
+type_header = """
 [StaticExtensionMethod]
 public static object __new__(PythonType cls) {
     return __new__(cls, default(%(type)s));
@@ -483,8 +484,7 @@ public static object __new__(PythonType cls, object value) {
     if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(%(type)s))) {
         throw PythonOps.TypeError("%(type)s.__new__: first argument must be %(type)s type.");
     }
-    IConvertible valueConvertible;
-    if ((valueConvertible = value as IConvertible) != null) {
+    if (value is IConvertible valueConvertible) {
         switch (valueConvertible.GetTypeCode()) {
             case TypeCode.Byte: return (%(type)s)(Byte)value;
             case TypeCode.SByte: return (%(type)s)(SByte)value;
@@ -498,24 +498,24 @@ public static object __new__(PythonType cls, object value) {
             case TypeCode.Double: return (%(type)s)(Double)value;
         }
     }
-    if (value is String) {
+    if (value is String s) {
         try {
-            return %(type)s.Parse((String)value, System.Globalization.NumberFormatInfo.InvariantInfo);
+            return %(type)s.Parse(s, System.Globalization.NumberFormatInfo.InvariantInfo);
         } catch (FormatException ex) {
             throw PythonOps.ValueError("{0}", ex.Message);
         }
-    } else if (value is BigInteger) {
-        return (%(type)s)(BigInteger)value;
-    } else if (value is Extensible<BigInteger>) {
-        return (%(type)s)((Extensible<BigInteger>)value).Value;
-    } else if (value is Extensible<double>) {
-        return (%(type)s)((Extensible<double>)value).Value;
+    } else if (value is BigInteger bi) {
+        return (%(type)s)bi;
+    } else if (value is Extensible<BigInteger> ebi) {
+        return (%(type)s)ebi.Value;
+    } else if (value is Extensible<double> ed) {
+        return (%(type)s)ed.Value;
     }
     throw PythonOps.TypeError("can't convert {0} to %(type)s", PythonOps.GetPythonTypeName(value));
 }"""
 
 def gen_header(cw, ty):
-    if ty.name not in ['Double', 'Single', 'BigInteger', 'Complex']:
+    if ty.name not in ['Double', 'Single', 'BigInteger']:
         cw.write(type_header)
 
 def gen_type(cw, ty):

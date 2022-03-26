@@ -414,7 +414,7 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName ?? string.Empty, collection, enabledSslProtocols, false);
+                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName, collection, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();

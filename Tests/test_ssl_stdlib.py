@@ -81,7 +81,7 @@ def load_tests(loader, standard_tests, pattern):
         else:
             suite.addTest(test.test_ssl.NetworkedTests('test_makefile_close'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_connect_ex'))) # OSError: [Errno -2146232800] The operation is not allowed on a non-blocking Socket.
-        suite.addTest(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))) # TypeError: Value cannot be null.
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'

@@ -486,16 +486,16 @@ public static object __new__(PythonType cls, object value) {
     }
     if (value is IConvertible valueConvertible) {
         switch (valueConvertible.GetTypeCode()) {
-            case TypeCode.Byte: return (%(type)s)(Byte)value;
-            case TypeCode.SByte: return (%(type)s)(SByte)value;
-            case TypeCode.Int16: return (%(type)s)(Int16)value;
-            case TypeCode.UInt16: return (%(type)s)(UInt16)value;
-            case TypeCode.Int32: return (%(type)s)(Int32)value;
-            case TypeCode.UInt32: return (%(type)s)(UInt32)value;
-            case TypeCode.Int64: return (%(type)s)(Int64)value;
-            case TypeCode.UInt64: return (%(type)s)(UInt64)value;
-            case TypeCode.Single: return (%(type)s)(Single)value;
-            case TypeCode.Double: return (%(type)s)(Double)value;
+            case TypeCode.Byte:   return checked((%(type)s)(Byte)value);
+            case TypeCode.SByte:  return checked((%(type)s)(SByte)value);
+            case TypeCode.Int16:  return checked((%(type)s)(Int16)value);
+            case TypeCode.UInt16: return checked((%(type)s)(UInt16)value);
+            case TypeCode.Int32:  return checked((%(type)s)(Int32)value);
+            case TypeCode.UInt32: return checked((%(type)s)(UInt32)value);
+            case TypeCode.Int64:  return checked((%(type)s)(Int64)value);
+            case TypeCode.UInt64: return checked((%(type)s)(UInt64)value);
+            case TypeCode.Single: return checked((%(type)s)(Single)value);
+            case TypeCode.Double: return checked((%(type)s)(Double)value);
         }
     }
     if (value is String s) {
@@ -505,11 +505,11 @@ public static object __new__(PythonType cls, object value) {
             throw PythonOps.ValueError("{0}", ex.Message);
         }
     } else if (value is BigInteger bi) {
-        return (%(type)s)bi;
+        return checked((%(type)s)bi);
     } else if (value is Extensible<BigInteger> ebi) {
-        return (%(type)s)ebi.Value;
+        return checked((%(type)s)ebi.Value);
     } else if (value is Extensible<double> ed) {
-        return (%(type)s)ed.Value;
+        return checked((%(type)s)ed.Value);
     }
     throw PythonOps.TypeError("can't convert {0} to %(type)s", PythonOps.GetPythonTypeName(value));
 }"""

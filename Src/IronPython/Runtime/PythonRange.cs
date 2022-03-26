@@ -5,9 +5,13 @@
 // Copyright (c) Pawel Jasinski.
 //
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 using IronPython.Runtime.Binding;
@@ -15,54 +19,64 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("range")]
     [DontMapIEnumerableToContains]
-    public sealed class PythonRange : IEnumerable<int>, ICodeFormattable, IList, IReversible {
-        private int _length;
+    public sealed class PythonRange : IEnumerable<int>, ICodeFormattable, IReversible {
+        internal readonly BigInteger _start;
+        internal readonly BigInteger _stop;
+        internal readonly BigInteger _step;
+        internal readonly BigInteger _length;
 
-        public PythonRange(object stop) : this(0, stop, 1) { }
-        public PythonRange(object start, object stop) : this(start, stop, 1) { }
+        public PythonRange([AllowNull] object stop) : this(0, stop, 1) { }
+        public PythonRange([AllowNull] object start, [AllowNull] object stop) : this(start, stop, 1) { }
 
-        public PythonRange(object start, object stop, object step) {
-            Initialize(start, stop, step);
-        }
-
-        private void Initialize(object ostart, object ostop, object ostep) {
-            // TODO: https://github.com/IronLanguages/ironpython3/issues/472 - should not throw but it's better than an incorrect result...
-            stop = Converter.ConvertToIndex(ostop, throwOverflowError: true);
-            start = Converter.ConvertToIndex(ostart, throwOverflowError: true);
-            step = Converter.ConvertToIndex(ostep, throwOverflowError: true);
-            if (step == 0) {
+        public PythonRange([AllowNull] object start, [AllowNull] object stop, [AllowNull] object step) {
+            this.start = AsIndex(start, out _start);
+            this.stop = AsIndex(stop, out _stop);
+            this.step = AsIndex(step, out _step);
+            if (_step == 0) {
                 throw PythonOps.ValueError("step must not be zero");
             }
-            _length = GetLengthHelper();
+            _length = GetLengthHelper(_start, _stop, _step);
+
+            static BigInteger GetLengthHelper(BigInteger start, BigInteger stop, BigInteger step) {
+                BigInteger length = 0;
+                if (step > 0) {
+                    if (start < stop) {
+                        length = (stop - start + step - 1) / step;
+                    }
+                } else {
+                    if (start > stop) {
+                        length = (stop - start + step + 1) / step;
+                    }
+                }
+                return length;
+            }
         }
 
-        public int start { get; private set; }
 
-        public int stop { get; private set; }
-
-        public int step { get; private set; }
-
-        private int GetLengthHelper() {
-            long length = 0;
-            if (step > 0) {
-                if (start < stop) {
-                    length = (0L + stop - start + step - 1) / step;
-                }
+        private static object AsIndex(object? obj, out BigInteger big) {
+            var index = PythonOps.Index(obj);
+            if (index is int i) {
+                big = i;
+            } else if (index is BigInteger bi) {
+                big = bi;
             } else {
-                if (start > stop) {
-                    length = (0L + stop - start + step + 1) / step;
-                }
+                throw new InvalidOperationException();
             }
-            if (length > Int32.MaxValue) {
-                throw PythonOps.OverflowError("range() result has too many items");
-            }
-            return (int)length;
+            return index;
         }
+
+        public object? start { get; private set; }
+
+        public object? stop { get; private set; }
+
+        public object? step { get; private set; }
 
         public PythonTuple __reduce__() {
             return PythonTuple.MakeTuple(
@@ -71,49 +85,52 @@ namespace IronPython.Runtime {
             );
         }
 
-        #region ISequence Members
-
         public int __len__() {
-            return _length;
+            return (int)_length;
         }
 
-        public object this[int index] {
+        public object this[int index] => this[(BigInteger)index];
+
+        public object this[BigInteger index] {
             get {
                 if (index < 0) index += _length;
 
                 if (index >= _length || index < 0)
                     throw PythonOps.IndexError("range object index out of range");
 
-                int ind = index * step + start;
-                return ScriptingRuntimeHelpers.Int32ToObject(ind);
+                return index * _step + _start;
             }
         }
 
-        public object this[object index] {
+        public object this[[AllowNull] object index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                if (PythonOps.TryToIndex(index, out BigInteger bi)) {
+                    return this[bi];
+                }
+
+                throw PythonOps.TypeError("range indices must be integers or slices, not {0}", PythonOps.GetPythonTypeName(index));
             }
         }
 
-        private BigInteger Compute(BigInteger index) {
-            return index * step + start;
-        }
-
-        public object this[[NotNull]Slice slice] {
+        public object this[[NotNull] Slice slice] {
             get {
                 slice.indices(_length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep);
-                return new PythonRange(Compute(ostart), Compute(ostop), step * ostep);
+                return new PythonRange(Compute(ostart), Compute(ostop), _step * ostep);
+
+                BigInteger Compute(BigInteger index) {
+                    return index * _step + _start;
+                }
             }
         }
 
-        public bool __eq__([NotNull]PythonRange other) {
+        public bool __eq__([NotNull] PythonRange other) {
             if (_length != other._length) {
                 return false;
             }
             if (_length == 0) {
                 return true;
             }
-            if (start != other.start) {
+            if (_start != other._start) {
                 return false;
             }
             if (_length == 1) {
@@ -122,85 +139,68 @@ namespace IronPython.Runtime {
             if (Last() != other.Last()) {
                 return false;
             }
-            return step == other.step;
+            return _step == other._step;
         }
 
         [return: MaybeNotImplemented]
-        public NotImplementedType __eq__(CodeContext context, object other) => NotImplementedType.Value;
-
-        public bool __ne__([NotNull]PythonRange other) => !__eq__(other);
-
-        [return: MaybeNotImplemented]
-        public NotImplementedType __ne__(CodeContext context, object other) => NotImplementedType.Value;
+        public object __eq__(object? other) => other is PythonRange range ? __eq__(range) : NotImplementedType.Value;
 
         public int __hash__() {
             if (_length == 0) {
                 return 0;
             }
-            var hash = start.GetHashCode();
+            var hash = _start.GetHashCode();
             hash ^= _length.GetHashCode();
             if (_length > 1) {
-                hash ^= step.GetHashCode();
+                hash ^= _step.GetHashCode();
             }
             return hash;
         }
 
-        [return: MaybeNotImplemented]
-        public NotImplementedType __lt__(CodeContext context, object other) => NotImplementedType.Value;
-
-        [return: MaybeNotImplemented]
-        public NotImplementedType __le__(CodeContext context, object other) => NotImplementedType.Value;
-
-        [return: MaybeNotImplemented]
-        public NotImplementedType __gt__(CodeContext context, object other) => NotImplementedType.Value;
-
-        [return: MaybeNotImplemented]
-        public NotImplementedType __ge__(CodeContext context, object other) => NotImplementedType.Value;
-
-        public bool __contains__(CodeContext context, object item) {
-            if (TryConvertToInt(item, out int intItem)) {
+        public bool __contains__(CodeContext context, object? item) {
+            if (TryConvertToInt(item, out BigInteger intItem)) {
                 return IndexOf(intItem) != -1;
             }
             return IndexOf(context, item) != -1;
         }
 
-        private static bool TryConvertToInt(object value, out int converted) {
-            if (value is int) {
-                converted = (int)value;
+        private static bool TryConvertToInt(object? value, out BigInteger converted) {
+            if (value is int i) {
+                converted = i;
                 return true;
             }
-            if (value is BigInteger) {
-                converted = (int)(BigInteger)value;
+            if (value is BigInteger bi) {
+                converted = bi;
                 return true;
             }
-            if (value is Int64) {
-                converted =  (int)(Int64)value;
+            if (value is long l) {
+                converted = l;
                 return true;
             }
             converted = 0;
             return false;
         }
 
-        private int CountOf(int value) {
+        private int CountOf(BigInteger value) {
             if (_length == 0) {
                 return 0;
             }
-            if (start < stop) {
-                if (value < start || value >= stop) {
+            if (_start < _stop) {
+                if (value < _start || value >= _stop) {
                     return 0;
                 }
-            } else if (start > stop) {
-                if (value > start || value <= stop) {
+            } else if (_start > _stop) {
+                if (value > _start || value <= _stop) {
                     return 0;
                 }
             }
-            return (value - start) % step == 0 ? 1 : 0;
+            return (value - _start) % _step == 0 ? 1 : 0;
         }
 
-        private int CountOf(CodeContext context, object obj) {
+        private int CountOf(CodeContext context, object? obj) {
             var pythonContext = context.LanguageContext;
             var count = 0;
-            foreach (var i in this) {
+            foreach (var i in (IEnumerable)this) {
                 if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
                     count++;
                 }
@@ -208,17 +208,17 @@ namespace IronPython.Runtime {
             return count;
         }
 
-        private int IndexOf(int intValue) {
-            if (CountOf(intValue) == 0) {
+        private BigInteger IndexOf(BigInteger value) {
+            if (CountOf(value) == 0) {
                 return -1;
             }
-            return (intValue - start) / step;
+            return (value - _start) / _step;
         }
 
-        private int IndexOf(CodeContext context, object obj) {
+        private int IndexOf(CodeContext context, object? obj) {
             var idx = 0;
             var pythonContext = context.LanguageContext;
-            foreach (var i in this) {
+            foreach (var i in (IEnumerable)this) {
                 if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
                     return idx;
                 }
@@ -227,122 +227,56 @@ namespace IronPython.Runtime {
             return -1;
         }
 
-        public object count(CodeContext context, object value) {
-            if (TryConvertToInt(value, out int i)) {
+        public object count(CodeContext context, object? value) {
+            if (TryConvertToInt(value, out BigInteger i)) {
                 return CountOf(i);
             }
             return CountOf(context, value);
         }
 
-        public object index(CodeContext context, object value) {
-            int idx;
-            if (TryConvertToInt(value, out int intValue)) {
+        public BigInteger index(CodeContext context, object? value) {
+            BigInteger idx;
+            if (TryConvertToInt(value, out BigInteger intValue)) {
                 idx = IndexOf(intValue);
+                if (idx == -1) {
+                    throw PythonOps.ValueError("{0} is not in range", intValue);
+                }
             } else {
                 idx = IndexOf(context, value);
-            }
-            if (idx == -1) {
-                throw PythonOps.ValueError("sequence.index(x): x not in sequence");
+                if (idx == -1) {
+                    throw PythonOps.ValueError("sequence.index(x): x not in sequence");
+                }
             }
             return idx;
         }
 
-        #endregion
-
-        private int Last() {
-            return start + (_length - 1) * step;
+        private BigInteger Last() {
+            return _start + (_length - 1) * _step;
         }
 
-        public IEnumerator __reversed__() {
-            return new PythonRangeIterator(new PythonRange(Last(), start - step, -step));
+        public IEnumerator __iter__() {
+            if (IsInt(_start) && IsInt(_stop) && IsInt(_step) && IsInt(_length)) {
+                return new PythonRangeIterator(this);
+            } else {
+                return new PythonLongRangeIterator(this);
+            }
+
+            static bool IsInt(BigInteger val) => int.MinValue <= val && val <= int.MaxValue;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            return new PythonRangeIterator(this);
-        }
+        public IEnumerator __reversed__()
+            => new PythonRange(Last(), _start - _step, -_step).__iter__();
 
-        #region IEnumerable<int> Members
+        IEnumerator IEnumerable.GetEnumerator() => __iter__();
 
-        IEnumerator<int> IEnumerable<int>.GetEnumerator() {
-            return new PythonRangeIterator(this);
-        }
-
-        #endregion
+        IEnumerator<int> IEnumerable<int>.GetEnumerator() => new PythonRangeIterator(this);
 
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return step == 1 ?
+            return _step == 1 ?
                 string.Format("range({0}, {1})", start, stop) :
                 string.Format("range({0}, {1}, {2})", start, stop, step);
-        }
-
-        #endregion
-
-        #region ICollection Members
-
-        void ICollection.CopyTo(Array array, int index) {
-            foreach (object o in this) {
-                array.SetValue(o, index++);
-            }
-        }
-
-        int ICollection.Count => _length;
-
-        bool ICollection.IsSynchronized => false;
-
-        object ICollection.SyncRoot => null;
-
-        #endregion
-
-        #region IList Members
-
-        int IList.Add(object value) => throw new InvalidOperationException();
-
-        void IList.Clear() => throw new InvalidOperationException();
-
-        bool IList.Contains(object value) {
-            return ((IList)this).IndexOf(value) != -1;
-        }
-
-        int IList.IndexOf(object value) {
-            int index = 0;
-            foreach (object o in this) {
-                if (o == value) {
-                    return index;
-                }
-
-                index++;
-            }
-            return -1;
-        }
-
-        void IList.Insert(int index, object value) => throw new InvalidOperationException();
-
-        bool IList.IsFixedSize => true;
-
-        bool IList.IsReadOnly => true;
-
-        void IList.Remove(object value) => throw new InvalidOperationException();
-
-        void IList.RemoveAt(int index) => throw new InvalidOperationException();
-
-        object IList.this[int index] {
-            get {
-                int curIndex = 0;
-                foreach (object o in this) {
-                    if (curIndex == index) {
-                        return o;
-                    }
-
-                    curIndex++;
-                }
-
-                throw new IndexOutOfRangeException();
-            }
-            set {
-                throw new InvalidOperationException();
-            }
         }
 
         #endregion
@@ -355,37 +289,33 @@ namespace IronPython.Runtime {
         private int _position;
 
         internal PythonRangeIterator(PythonRange range) {
+            Debug.Assert(range._start.AsInt32(out _) && range._stop.AsInt32(out _) && range._step.AsInt32(out _) && range._length <= int.MaxValue);
             _range = range;
-            _value = range.start - range.step; // this could cause overflow, fine
+            _value = unchecked((int)range._start - (int)range._step); // this could overflow but we'll overflow back to the correct value on MoveNext
         }
 
         [PythonHidden]
-        public object Current {
-            get {
-                return ScriptingRuntimeHelpers.Int32ToObject(_value);
-            }
-        }
+        public object Current => ScriptingRuntimeHelpers.Int32ToObject(_value);
 
         [PythonHidden]
         public bool MoveNext() {
-            if (_position >= _range.__len__()) {
+            if (_position >= (int)_range._length) {
                 return false;
             }
 
             _position++;
-            _value = _value + _range.step;
+            _value = unchecked(_value + (int)_range._step);
             return true;
         }
 
         [PythonHidden]
         public void Reset() {
-            _value = _range.start - _range.step;
+            _value = unchecked((int)_range._start - (int)_range._step); // this could overflow but we'll overflow back to the correct value on MoveNext
             _position = 0;
         }
 
         public PythonTuple __reduce__(CodeContext/*!*/ context) {
-            object iter;
-            context.TryLookupBuiltin("iter", out iter);
+            context.TryLookupBuiltin("iter", out object? iter);
             return PythonTuple.MakeTuple(
                 iter,
                 PythonTuple.MakeTuple(_range),
@@ -395,16 +325,14 @@ namespace IronPython.Runtime {
 
         public void __setstate__(int position) {
             if (position < 0) position = 0;
-            else if (position > _range.__len__()) position = _range.__len__();
+            else if (position > (int)_range._length) position = (int)_range._length;
             _position = position;
-            _value = _range.start + (_position - 1) * _range.step;
+            _value = unchecked((int)_range._start + (_position - 1) * (int)_range._step); // this could overflow but we'll overflow back to the correct value on MoveNext
         }
 
         #region IEnumerator<int> Members
 
-        int IEnumerator<int>.Current {
-            get { return _value; }
-        }
+        int IEnumerator<int>.Current => _value;
 
         #endregion
 
@@ -418,14 +346,82 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return this;
-        }
+        public IEnumerator GetEnumerator() => this;
 
         #endregion
 
         public int __length_hint__() {
-            return _range.__len__() - _position;
+            return (int)(_range._length - _position);
         }
+    }
+
+    [PythonType("longrange_iterator")]
+    public sealed class PythonLongRangeIterator : IEnumerable, IEnumerator<BigInteger> {
+        private readonly PythonRange _range;
+        private BigInteger _value;
+        private BigInteger _position;
+
+        internal PythonLongRangeIterator(PythonRange range) {
+            _range = range;
+            _value = range._start - range._step;
+        }
+
+        [PythonHidden]
+        public object Current => _value;
+
+        [PythonHidden]
+        public bool MoveNext() {
+            if (_position >= _range._length) {
+                return false;
+            }
+
+            _position++;
+            _value = _value + _range._step;
+            return true;
+        }
+
+        [PythonHidden]
+        public void Reset() {
+            _value = _range._start - _range._step;
+            _position = 0;
+        }
+
+        public PythonTuple __reduce__(CodeContext context) {
+            context.TryLookupBuiltin("iter", out object? iter);
+            return PythonTuple.MakeTuple(
+                iter,
+                PythonTuple.MakeTuple(_range),
+                _position
+            );
+        }
+
+        public void __setstate__(BigInteger position) {
+            if (position < 0) position = 0;
+            else if (position > _range._length) position = _range._length;
+            _position = position;
+            _value = _range._start + (_position - 1) * _range._step;
+        }
+
+        #region IEnumerator<BigInteger> Members
+
+        BigInteger IEnumerator<BigInteger>.Current => _value;
+
+        #endregion
+
+        #region IDisposable Members
+
+        [PythonHidden]
+        public void Dispose() { }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        [PythonHidden]
+        public IEnumerator GetEnumerator() => this;
+
+        #endregion
+
+        public BigInteger __length_hint__() => _range._length - _position;
     }
 }

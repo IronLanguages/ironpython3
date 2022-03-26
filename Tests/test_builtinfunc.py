@@ -170,36 +170,20 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(list(map(lambda x:'a' + x + 'c', 'b')), ['abc'])
 
     def test_range(self):
-        if is_cli:
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, 2, 5.0)
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, 3, 10, 2.0)
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, 0, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, float(-2<<32), 100)
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, 0, 100, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "expected integer value, got float",
-                            range, float(-2<<32), float(-2<<32), float(-2<<32))
-        else:
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, 2, 5.0)
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, 3, 10, 2.0)
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, 0, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, float(-2<<32), 100)
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, 0, 100, float(-2<<32))
-            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
-                            range, float(-2<<32), float(-2<<32), float(-2<<32))
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, 2, 5.0)
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, 3, 10, 2.0)
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, float(-2<<32))
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, 0, float(-2<<32))
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, float(-2<<32), 100)
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, 0, 100, float(-2<<32))
+        self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                        range, float(-2<<32), float(-2<<32), float(-2<<32))
 
 
     def test_sorted(self):
@@ -746,7 +730,7 @@ class BuiltinsTest2(IronPythonTestCase):
 
         def __index__(self):
             return self.index
-    
+
     class LongIndex:
         def __init__(self, index):
             self.index = index
@@ -843,7 +827,7 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
         else:
             self.fail("Unreachable code reached")
-        
+
         self.assertEqualAndCheckType(round(3), 3, int)
         self.assertEqualAndCheckType(round(3, 0), 3, int)
         self.assertEqualAndCheckType(round(3, 1), 3, int)
@@ -859,8 +843,8 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqualAndCheckType(round(2147483647, -3), 2147484000, int)
 
         self.assertEqualAndCheckType(
-            round(111111111111111111111111111111, 111111111111111111111111111111), 
-            111111111111111111111111111111, 
+            round(111111111111111111111111111111, 111111111111111111111111111111),
+            111111111111111111111111111111,
             int)
 
         self.assertEqualAndCheckType(round(111111111111111111111111111111, 0), 111111111111111111111111111111, int)
@@ -943,7 +927,7 @@ class BuiltinsTest2(IronPythonTestCase):
 
         actual = round(float('nan'), -1)
         self.assertTrue(math.isnan(actual))
-        
+
         actual = round(float('inf'), 354250895282439122322875506826024599142533926918074193061745122574500)
         self.assertTrue(math.isinf(actual) and actual > 0)
 

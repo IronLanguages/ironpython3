@@ -39,8 +39,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_combinations_with_replacement_tuple_reuse'))
         suite.addTest(test.test_itertools.TestBasicOps('test_combinatorics'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_compress'))) # pickling
-        suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_count'))) # blocked by https://github.com/IronLanguages/ironpython3/issues/472
-        suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_count_with_stride'))) # blocked by https://github.com/IronLanguages/ironpython3/issues/472
+        suite.addTest(test.test_itertools.TestBasicOps('test_count'))
+        suite.addTest(test.test_itertools.TestBasicOps('test_count_with_stride'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_cycle'))) # pickling
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_dropwhile'))) # pickling
         suite.addTest(test.test_itertools.TestBasicOps('test_filter'))

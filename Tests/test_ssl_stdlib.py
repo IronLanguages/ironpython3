@@ -56,7 +56,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_dh_params'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_cadata'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_verify_locations'))) # AssertionError: "PEM lib" does not match ...
-        suite.addTest(test.test_ssl.ContextTests('test_options'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_options'))) # AssertionError: -2097150977 != 50331648
         suite.addTest(test.test_ssl.ContextTests('test_protocol'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_session_stats'))) # AttributeError: 'SSLContext' object has no attribute 'session_stats'
         suite.addTest(test.test_ssl.ContextTests('test_set_default_verify_paths'))

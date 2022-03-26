@@ -121,7 +121,6 @@ namespace IronPython.Modules {
 
                 this.protocol = protocol;
 
-                options = OP_ALL;
                 if (protocol != PROTOCOL_SSLv2)
                     options |= OP_NO_SSLv2;
                 if (protocol != PROTOCOL_SSLv3)
@@ -279,7 +278,7 @@ namespace IronPython.Modules {
 
                 EnsureSslStream(false);
 
-                _protocol = sslcontext.protocol;
+                _protocol = sslcontext.protocol | sslcontext.options;
                 _validate = validate;
                 _context = context;
             }

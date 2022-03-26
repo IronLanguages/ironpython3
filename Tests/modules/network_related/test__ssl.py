@@ -9,6 +9,7 @@ Tests for the _ssl module.  See http://docs.python.org/library/ssl.html
 import _ssl
 import os
 import socket
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
@@ -268,5 +269,70 @@ for documentation."""
             self.assertEqual(p['notBefore'], 'Oct  8 23:01:56 2010 GMT')
         finally:
             System.Threading.Thread.CurrentThread.CurrentCulture = culture
+
+import _ssl as ssl
+
+# These come from the 3.5 stdlib and can eventually be removed
+@unittest.skipUnless(is_cli or sys.version_info >= (3,5), "not in CPython 3.4")
+class MemoryBIOTests(unittest.TestCase):
+    def test_read_write(self):
+        bio = ssl.MemoryBIO()
+        bio.write(b'foo')
+        self.assertEqual(bio.read(), b'foo')
+        self.assertEqual(bio.read(), b'')
+        bio.write(b'foo')
+        bio.write(b'bar')
+        self.assertEqual(bio.read(), b'foobar')
+        self.assertEqual(bio.read(), b'')
+        bio.write(b'baz')
+        self.assertEqual(bio.read(2), b'ba')
+        self.assertEqual(bio.read(1), b'z')
+        self.assertEqual(bio.read(1), b'')
+
+    def test_eof(self):
+        bio = ssl.MemoryBIO()
+        self.assertFalse(bio.eof)
+        self.assertEqual(bio.read(), b'')
+        self.assertFalse(bio.eof)
+        bio.write(b'foo')
+        self.assertFalse(bio.eof)
+        bio.write_eof()
+        self.assertFalse(bio.eof)
+        self.assertEqual(bio.read(2), b'fo')
+        self.assertFalse(bio.eof)
+        self.assertEqual(bio.read(1), b'o')
+        self.assertTrue(bio.eof)
+        self.assertEqual(bio.read(), b'')
+        self.assertTrue(bio.eof)
+
+    def test_pending(self):
+        bio = ssl.MemoryBIO()
+        self.assertEqual(bio.pending, 0)
+        bio.write(b'foo')
+        self.assertEqual(bio.pending, 3)
+        for i in range(3):
+            bio.read(1)
+            self.assertEqual(bio.pending, 3-i-1)
+        for i in range(3):
+            bio.write(b'x')
+            self.assertEqual(bio.pending, i+1)
+        bio.read()
+        self.assertEqual(bio.pending, 0)
+
+    def test_buffer_types(self):
+        bio = ssl.MemoryBIO()
+        bio.write(b'foo')
+        self.assertEqual(bio.read(), b'foo')
+        bio.write(bytearray(b'bar'))
+        self.assertEqual(bio.read(), b'bar')
+        bio.write(memoryview(b'baz'))
+        self.assertEqual(bio.read(), b'baz')
+
+    def test_error_types(self):
+        bio = ssl.MemoryBIO()
+        self.assertRaises(TypeError, bio.write, 'foo')
+        self.assertRaises(TypeError, bio.write, None)
+        self.assertRaises(TypeError, bio.write, True)
+        self.assertRaises(TypeError, bio.write, 1)
 
 run_test(__name__)

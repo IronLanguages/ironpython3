@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -609,6 +610,83 @@ of bytes written.")]
                 }
             }
         }
+
+#nullable enable
+
+        [PythonType]
+        public class MemoryBIO {
+            private bool _write_eof;
+
+            public bool eof { get; private set; }
+            public int pending { get; private set; }
+
+            private Bytes? buf;
+            private Queue<Bytes> queue = new Queue<Bytes>();
+
+            public MemoryBIO() { }
+
+            public Bytes read(int size = -1) {
+                if (size == 0 || eof) {
+                    return Bytes.Empty;
+                }
+                if (size == -1 || size > pending) {
+                    size = pending;
+                }
+
+                byte[] res = new byte[size];
+                var resSpan = res.AsSpan();
+
+                if (buf is not null) {
+                    var span = buf.AsSpan();
+                    var length = resSpan.Length;
+                    if (length < span.Length) {
+                        buf = Bytes.Make(span.Slice(length).ToArray());
+                        span = span.Slice(0, length);
+                    }
+                    else {
+                        buf = null;
+                    }
+                    span.CopyTo(resSpan);
+                    resSpan = resSpan.Slice(span.Length);
+                }
+
+                while (resSpan.Length > 0) {
+                    Debug.Assert(buf is null && queue.Count > 0);
+                    var span = queue.Dequeue().AsSpan();
+                    var length = resSpan.Length;
+                    if (length < span.Length) {
+                        buf = Bytes.Make(span.Slice(length).ToArray());
+                        span = span.Slice(0, length);
+                    }
+                    span.CopyTo(resSpan);
+                    resSpan = resSpan.Slice(span.Length);
+                }
+
+                pending -= size;
+                if (_write_eof && pending == 0) eof = true;
+                return Bytes.Make(res);
+            }
+
+            public int write(CodeContext context, [NotNull] IBufferProtocol b) {
+                if (_write_eof) throw PythonExceptions.CreateThrowable(SSLError(context), "cannot write() after write_eof()");
+
+                if (b is not Bytes bytes) {
+                    using var buffer = b.GetBuffer();
+                    bytes = Bytes.Make(buffer.ToArray());
+                }
+                if (bytes.Count == 0) return 0;
+                queue.Enqueue(bytes);
+                pending += bytes.Count;
+                return bytes.Count;
+            }
+
+            public void write_eof() {
+                _write_eof = true;
+                if (pending == 0) eof = true;
+            }
+        }
+
+#nullable restore
 
         public static object txt2obj(CodeContext context, string txt, bool name = false) {
             Asn1Object obj = null;

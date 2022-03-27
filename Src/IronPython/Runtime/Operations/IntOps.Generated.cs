@@ -93,6 +93,8 @@ namespace IronPython.Runtime.Operations {
 
         public static SByte __trunc__(SByte x) => x;
 
+        public static int __int__(SByte x) => unchecked((int)x);
+
         public static int __index__(SByte x) => unchecked((int)x);
 
         public static int __hash__(SByte x) {
@@ -352,6 +354,8 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(Byte x) => x.ToString(CultureInfo.InvariantCulture);
 
         public static Byte __trunc__(Byte x) => x;
+
+        public static int __int__(Byte x) => unchecked((int)x);
 
         public static int __index__(Byte x) => unchecked((int)x);
 
@@ -715,6 +719,8 @@ namespace IronPython.Runtime.Operations {
 
         public static Int16 __trunc__(Int16 x) => x;
 
+        public static int __int__(Int16 x) => unchecked((int)x);
+
         public static int __index__(Int16 x) => unchecked((int)x);
 
         public static int __hash__(Int16 x) {
@@ -979,6 +985,8 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(UInt16 x) => x.ToString(CultureInfo.InvariantCulture);
 
         public static UInt16 __trunc__(UInt16 x) => x;
+
+        public static int __int__(UInt16 x) => unchecked((int)x);
 
         public static int __index__(UInt16 x) => unchecked((int)x);
 
@@ -1352,6 +1360,8 @@ namespace IronPython.Runtime.Operations {
 
         public static Int32 __trunc__(Int32 x) => x;
 
+        public static int __int__(Int32 x) => unchecked((int)x);
+
         public static int __index__(Int32 x) => unchecked((int)x);
 
         public static int __hash__(Int32 x) {
@@ -1591,6 +1601,8 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(UInt32 x) => x.ToString(CultureInfo.InvariantCulture);
 
         public static UInt32 __trunc__(UInt32 x) => x;
+
+        public static BigInteger __int__(UInt32 x) => unchecked((BigInteger)x);
 
         public static BigInteger __index__(UInt32 x) => unchecked((BigInteger)x);
 
@@ -1964,6 +1976,8 @@ namespace IronPython.Runtime.Operations {
 
         public static Int64 __trunc__(Int64 x) => x;
 
+        public static BigInteger __int__(Int64 x) => unchecked((BigInteger)x);
+
         public static BigInteger __index__(Int64 x) => unchecked((BigInteger)x);
 
         public static int __hash__(Int64 x) {
@@ -2231,6 +2245,8 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(UInt64 x) => x.ToString(CultureInfo.InvariantCulture);
 
         public static UInt64 __trunc__(UInt64 x) => x;
+
+        public static BigInteger __int__(UInt64 x) => unchecked((BigInteger)x);
 
         public static BigInteger __index__(UInt64 x) => unchecked((BigInteger)x);
 

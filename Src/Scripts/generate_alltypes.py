@@ -104,6 +104,9 @@ bigint = NumType(BigInteger)
 simple_identity_method = """
 public static %(type)s %(method_name)s(%(type)s x) => x;"""
 
+unchecked_cast_method = """
+public static %(cast_type)s %(method_name)s(%(type)s x) => unchecked((%(cast_type)s)x);"""
+
 identity_method = """
 [SpecialName]
 public static %(type)s %(method_name)s(%(type)s x) => x;"""
@@ -175,11 +178,12 @@ def gen_unaryops(cw, ty):
     else:
         cw.write(simple_identity_method, type=ty.name, method_name="__trunc__")
 
-        cw.writeline()
         if ty.max > Int32.MaxValue:
-            cw.write('public static BigInteger __index__(%s x) => unchecked((BigInteger)x);' % (ty.name))
+            cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type="BigInteger")
+            cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type="BigInteger")
         else:
-            cw.write('public static int __index__(%s x) => unchecked((int)x);' % (ty.name))
+            cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type="int")
+            cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type="int")
 
         cw.writeline()
         cw.enter_block('public static int __hash__(%s x)' % (ty.name))

@@ -154,10 +154,6 @@ namespace IronPython.Runtime.Operations {
             return __divmod__(y, x);
         }
 
-        public static int __int__(int self) {
-            return self;
-        }
-
         public static double __float__(int self) {
             return (double)self;
         }

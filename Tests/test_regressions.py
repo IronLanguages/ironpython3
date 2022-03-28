@@ -213,6 +213,7 @@ with open(r"%s", "w") as f:
 
 
     def test_struct_uint_bad_value_cp20039(self):
+        '''Also https://github.com/IronLanguages/ironpython3/issues/1381'''
         class x(object):
             def __init__(self, value):
                 self.value = value
@@ -227,19 +228,35 @@ with open(r"%s", "w") as f:
         global andCalled
         andCalled = False
 
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code" if is_cli else "argument out of range",
-                            _struct.Struct('L').pack, 4294967296)
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code" if is_cli else "argument out of range",
-                            _struct.Struct('L').pack, -1)
-        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('L').pack, x(0))
-        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('L').pack, x(-1))
+        for code in ['L', 'I']:
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, 0x100000000)
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -1)
 
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code" if is_cli else "argument out of range",
-                            _struct.Struct('I').pack, 4294967296)
-        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code" if is_cli else "argument out of range",
-                            _struct.Struct('I').pack, -1)
-        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('I').pack, x(0))
-        self.assertRaisesRegex(Exception, "foo" if is_cli else "required argument is not an integer", _struct.Struct('I').pack, x(-1))
+        for code in ['l', 'i', 'h', 'H', 'B', 'b']:
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack,  0x80000000)
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -0x80000001)
+
+        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('Q').pack, 0x10000000000000000)
+        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('Q').pack, -1)
+
+        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('q').pack,  0x8000000000000000)
+        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('q').pack, -0x8000000000000001)
+
+        self.assertRaisesRegex(_struct.error, r"ushort format requires 0 <= number .*", _struct.Struct('H').pack, 0x10000)
+        self.assertRaisesRegex(_struct.error, r"ushort format requires 0 <= number .*", _struct.Struct('H').pack, -1)
+
+        self.assertRaisesRegex(_struct.error, r"short format requires .* <= number .*", _struct.Struct('h').pack,  0x8000)
+        self.assertRaisesRegex(_struct.error, r"short format requires .* <= number .*", _struct.Struct('h').pack, -0x8001)
+
+        self.assertRaisesRegex(_struct.error, r"ubyte format requires 0 <= number .*", _struct.Struct('B').pack, 0x100)
+        self.assertRaisesRegex(_struct.error, r"ubyte format requires 0 <= number .*", _struct.Struct('B').pack, -1)
+
+        self.assertRaisesRegex(_struct.error, r"byte format requires .* <= number .*", _struct.Struct('b').pack, 0x80)
+        self.assertRaisesRegex(_struct.error, r"byte format requires .* <= number .*", _struct.Struct('b').pack, -0x81)
+
+        for code in ['b', 'B', 'h', 'H', 'i', 'I', 'l', 'L', 'q', 'Q', 'n', 'N', 'P']:
+            self.assertRaisesRegex(_struct.error, "required argument is not an integer", _struct.Struct(code).pack, x(0))
+            self.assertRaisesRegex(_struct.error, "required argument is not an integer", _struct.Struct(code).pack, x(-1))
 
         # __and__ was called in Python2.6 check that this is no longer True
         self.assertTrue(not andCalled)
@@ -1636,6 +1653,20 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
             self.fail()
 
         self.assertEqual(MyClass.x, 2)
+
+    def test_ipy3_gh1381(self):
+        class x:
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value
+
+        import _struct, sys
+
+        idx = 0 if sys.byteorder == 'little' else -1
+
+        for code in ['b', 'B', 'h', 'H', 'i', 'I', 'l', 'L', 'q', 'Q', 'n', 'N', 'P']:
+            self.assertEqual(_struct.Struct(code).pack(x(42))[idx], 42)
 
 
 run_test(__name__)

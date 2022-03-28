@@ -256,7 +256,11 @@ namespace IronPython.Runtime {
 
                     if (headerLen != 0) {
                         string ssign = sign.HasValue ? sign.Value.ToString() : "";
-                        text = ssign + new string(fill, headerLen) + type + text;
+                        if (fill == ' ') {
+                            text = ssign + new string(fill, headerLen) + type + text;
+                        } else {
+                            text = ssign + type + new string(fill, headerLen) + text;
+                        }
                     } else {
                         if (sign != null) {
                             text = sign.Value + text;

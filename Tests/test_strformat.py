@@ -573,7 +573,7 @@ class StrFormatTest(IronPythonTestCase):
             else:
                 _locale.setlocale(_locale.LC_ALL, 'English_United States.1252')
 
-            tests = [ 
+            tests = [
                         (1000.0,              'n',         '1,000'),
                         (1000.12345,          'n',         '1,000.12'),
                         (1000.5,              'n',         '1,000.5'),
@@ -583,17 +583,9 @@ class StrFormatTest(IronPythonTestCase):
                         (100000.5,            '.5n',       '1e+05'),
 
                         (100000.5,            '.7n',       '100,000.5'),
+                        (100000.5,            'n',         '100,000'),
+                        (100000.5,            '.6n',       '100,000'),
                     ]
-            if is_cpython: #http://ironpython.codeplex.com/workitem/28206
-                tests+= [
-                            (100000.5,            'n',         '100,000'),
-                            (100000.5,            '.6n',       '100,000'),
-                        ]
-            else:
-                tests+= [
-                            (100000.5,            'n',         '100,000'),
-                            (100000.5,            '.6n',       '100,000'),
-                        ]
 
             for value, spec, result in tests:
                 actual = value.__format__(spec)

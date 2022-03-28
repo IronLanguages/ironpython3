@@ -892,10 +892,7 @@ namespace IronPython.Runtime.Operations {
                             }
 
                             string fmt;
-                            if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
-                                // we've already figured out, we don't have any digits for decimal points, so just format as a number + exponent
-                                fmt = "0";
-                            } else if (spec.Precision > 1 || digitCnt > 6) {
+                            if (spec.Precision > 1 || digitCnt > 6) {
                                 // include the requested precision to the right of the decimal
                                 fmt = "0.#" + new string('#', precision);
                             } else {

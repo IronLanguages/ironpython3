@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_linux, is_netcoreapp21, run_test
 
 import test.test_types
 
@@ -56,7 +56,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_types.TypesTests('test_boolean_ops'))
         suite.addTest(test.test_types.TypesTests('test_comparisons'))
         suite.addTest(unittest.expectedFailure(test.test_types.TypesTests('test_float__format__'))) # AssertionError: '1.12339e+200' != '1.1234e+200'
-        suite.addTest(test.test_types.TypesTests('test_float__format__locale'))
+        if is_netcoreapp21 and is_linux:
+            suite.addTest(unittest.expectedFailure(test.test_types.TypesTests('test_float__format__locale'))) # https://github.com/IronLanguages/ironpython3/issues/751
+        else:
+            suite.addTest(test.test_types.TypesTests('test_float__format__locale'))
         suite.addTest(test.test_types.TypesTests('test_float_constructor'))
         suite.addTest(test.test_types.TypesTests('test_float_to_string'))
         suite.addTest(test.test_types.TypesTests('test_floats'))

@@ -141,12 +141,12 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.UnsignedInt:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values, "unsigned int"));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.UnsignedLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values, "unsigned long"));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.Pointer:
@@ -176,7 +176,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.LongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteLong(res, _isLittleEndian, GetLongValue(context, curObj++, values));
+                                WriteLong(res, _isLittleEndian, GetLongLongValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.UnsignedLongLong:
@@ -1066,110 +1066,77 @@ namespace IronPython.Modules {
         }
 
         internal static sbyte GetSByteValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToSByte(val, out sbyte res)) return res;
-            throw Error(context, "expected sbyte value got " + val.ToString());
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt32(out int res))
+                throw Error(context, "argument out of range");
+            CheckRange(context, res, sbyte.MinValue, sbyte.MaxValue, "byte");
+            return (sbyte)res;
         }
 
         internal static byte GetByteValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToByte(val, out byte res)) return res;
-            throw Error(context, "expected byte value got " + val.ToString());
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt32(out int res))
+                throw Error(context, "argument out of range");
+            CheckRange(context, res, byte.MinValue, byte.MaxValue, "ubyte");
+            return (byte)res;
         }
 
         internal static short GetShortValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToInt16(val, out short res)) return res;
-            throw Error(context, "expected short value");
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt32(out int res))
+                throw Error(context, "argument out of range");
+            CheckRange(context, res, short.MinValue, short.MaxValue, "short");
+            return (short)res;
         }
 
         internal static ushort GetUShortValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToUInt16(val, out ushort res)) return res;
-            throw Error(context, "expected ushort value");
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt32(out int res))
+                throw Error(context, "argument out of range");
+            CheckRange(context, res, ushort.MinValue, ushort.MaxValue, "ushort");
+            return (ushort)res;
         }
 
         internal static int GetIntValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToInt32(val, out int res)) return res;
-            throw Error(context, "expected int value");
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt32(out int res))
+                throw Error(context, "argument out of range");
+            return res;
         }
 
-        internal static uint GetULongValue(CodeContext/*!*/ context, int index, object[] args, string type) {
-            object val = GetValue(context, index, args);
-            if (val is int i) {
-                CheckRange(context, i, type);
-                return (uint)i;
-            } else if (val is BigInteger bi) {
-                CheckRange(context, bi, type);
-                return (uint)bi;
-            } else if (val is Extensible<BigInteger> ebi) {
-                CheckRange(context, ebi.Value, type);
-                return (uint)ebi.Value;
-            } else {
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, val, "__int__", out object objres)) {
-                    if (objres is int oi) {
-                        CheckRange(context, oi, type);
-                        return (uint)oi;
-                    }
-                }
-
-                if (Converter.TryConvertToUInt32(val, out uint res)) {
-                    return res;
-                }
-            }
-
-            throw Error(context, "cannot convert argument to integer");
-        }
-
-        private static void CheckRange(CodeContext context, int val, string type) {
-            if (val < 0) {
-                OutOfRange(context, type);
-            }
-        }
-
-        private static void CheckRange(CodeContext context, BigInteger bi, string type) {
-            if (bi < 0 || bi > 4294967295) {
-                OutOfRange(context, type);
-            }
-        }
-
-        private static void OutOfRange(CodeContext context, string type) {
-            throw Error(context, $"integer out of range for '{(type == "unsigned long" ? "L" : "I")}' format code");
+        internal static uint GetULongValue(CodeContext/*!*/ context, int index, object[] args) {
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsUInt32(out uint res))
+                throw Error(context, "argument out of range");
+            return res;
         }
 
         internal static int GetSignedSizeT(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToInt32(val, out int res)) return res;
-            throw Error(context, "expected signed size_t(aka ssize_t) value");
+            return GetIntValue(context, index, args);
         }
 
         internal static uint GetSizeT(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToUInt32(val, out uint res)) return res;
-            throw Error(context, "expected size_t value");
+            return GetULongValue(context, index, args);
         }
 
         internal static ulong GetPointer(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToBigInteger(val, out BigInteger bi)) {
-                if (UIntPtr.Size == 4) {
-                    if (bi < 0) {
-                        bi += new BigInteger(UInt32.MaxValue) + 1;
-                    }
-                    if (Converter.TryConvertToUInt32(bi, out uint res)) {
-                        return res;
-                    }
-                } else {
-                    if (bi < 0) {
-                        bi += new BigInteger(UInt64.MaxValue) + 1;
-                    }
-                    if (Converter.TryConvertToUInt64(bi, out ulong res)) {
-                        return res;
-                    }
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (UIntPtr.Size == 4) {
+                if (val < 0) {
+                    val += new BigInteger(UInt32.MaxValue) + 1;
+                }
+                if (Converter.TryConvertToUInt32(val, out uint res)) {
+                    return res;
+                }
+            } else {
+                if (val < 0) {
+                    val += new BigInteger(UInt64.MaxValue) + 1;
+                }
+                if (Converter.TryConvertToUInt64(val, out ulong res)) {
+                    return res;
                 }
             }
-            throw Error(context, "expected pointer value");
+            throw Error(context, "int too large to convert");
         }
 
         internal static IntPtr GetSignedNetPointer(CodeContext/*!*/ context, int index, object[] args) {
@@ -1192,16 +1159,18 @@ namespace IronPython.Modules {
             throw Error(context, "expected .NET pointer value");
         }
 
-        internal static long GetLongValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToInt64(val, out long res)) return res;
-            throw Error(context, "expected long value");
+        internal static long GetLongLongValue(CodeContext/*!*/ context, int index, object[] args) {
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsInt64(out long res))
+                throw Error(context, "argument out of range");
+            return res;
         }
 
         internal static ulong GetULongLongValue(CodeContext/*!*/ context, int index, object[] args) {
-            object val = GetValue(context, index, args);
-            if (Converter.TryConvertToUInt64(val, out ulong res)) return res;
-            throw Error(context, "expected ulong value");
+            BigInteger val = GetIntegerValue(context, index, args);
+            if (!val.AsUInt64(out ulong res))
+                throw Error(context, "argument out of range");
+            return res;
         }
 
         internal static double GetDoubleValue(CodeContext/*!*/ context, int index, object[] args) {
@@ -1220,6 +1189,19 @@ namespace IronPython.Modules {
             if (index >= args.Length) throw Error(context, "not enough arguments");
             return args[index];
         }
+
+        private static BigInteger GetIntegerValue(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+            if (PythonOps.TryToIndex(val, out BigInteger res)) return res;
+            throw Error(context, "required argument is not an integer");
+        }
+
+        private static void CheckRange(CodeContext context, int val, int min, int max, string format) {
+            if (val < min || val > max) {
+                throw Error(context, $"{format} format requires {min} <= number <= {max}");
+            }
+        }
+
         #endregion
 
         #region Data creater helpers

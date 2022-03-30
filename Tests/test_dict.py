@@ -201,10 +201,7 @@ class DictTest(IronPythonTestCase):
         x = str(d)
 
         self.assertTrue(x.find("'abc'") != -1)
-        if is_cli:
-            self.assertTrue(x.find("'abc': <mappingproxy") != -1)
-        else:
-            self.assertTrue(x.find("'abc': mappingproxy") != -1)
+        self.assertTrue(x.find("'abc': mappingproxy") != -1)
         del C.abc
 
         keys, values = d.keys(), d.values()

@@ -2,6 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
+#if NETCOREAPP3_1 // IDictionary<object?, object?> is incorrectly annotated with TKey : notnull
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,18 +19,18 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     [PythonType("mappingproxy")]
-    public sealed class MappingProxy : IDictionary<object, object>, IDictionary {
-        internal PythonDictionary GetDictionary(CodeContext context) => dictionary ?? type.GetMemberDictionary(context, false);
+    public sealed class MappingProxy : IDictionary<object?, object?>, IDictionary {
+        internal PythonDictionary GetDictionary(CodeContext context) => dictionary ?? type!.GetMemberDictionary(context, false);
 
-        private readonly PythonDictionary dictionary;
-        private readonly PythonType type;
+        private readonly PythonDictionary? dictionary;
+        private readonly PythonType? type;
 
         internal MappingProxy(CodeContext context, PythonType/*!*/ dt) {
             Debug.Assert(dt != null);
             type = dt;
         }
 
-        public MappingProxy([NotNull]PythonDictionary dict) {
+        public MappingProxy([NotNull] PythonDictionary dict) {
             dictionary = dict;
         }
 
@@ -32,17 +38,33 @@ namespace IronPython.Runtime.Types {
 
         public int __len__(CodeContext context) => GetDictionary(context).Count;
 
-        public bool __contains__(CodeContext/*!*/ context, object value) => GetDictionary(context).TryGetValue(value, out _);
+        public bool __contains__(CodeContext/*!*/ context, object? value) => GetDictionary(context).TryGetValue(value, out _);
 
         public string/*!*/ __str__(CodeContext/*!*/ context) => DictionaryOps.__repr__(context, this);
 
-        public object get(CodeContext/*!*/ context, [NotNull]object k, object d=null) {
-            object res;
-            if (!GetDictionary(context).TryGetValue(k, out res)) {
-                res = d;
+        public string __repr__(CodeContext/*!*/ context) {
+            var dict = GetDictionary(context);
+            List<object>? infinite = PythonOps.GetAndCheckInfinite(this);
+            if (infinite == null) {
+                return "mappingproxy({...})";
             }
 
-            return res;
+            int infiniteIndex = infinite.Count;
+            infinite.Add(this);
+            try {
+                return $"mappingproxy({PythonOps.Repr(context, dict)})";
+            } finally {
+                System.Diagnostics.Debug.Assert(infiniteIndex == infinite.Count - 1);
+                infinite.RemoveAt(infiniteIndex);
+            }
+        }
+
+        public object? get(CodeContext/*!*/ context, object? k, object? d = null) {
+            if (GetDictionary(context).TryGetValue(k, out object? res)) {
+                return res;
+            }
+
+            return d;
         }
 
         public object keys(CodeContext context) {
@@ -66,11 +88,11 @@ namespace IronPython.Runtime.Types {
             return items;
         }
 
-        public PythonDictionary copy(CodeContext/*!*/ context) => new PythonDictionary(context, this);
+        public PythonDictionary copy(CodeContext/*!*/ context) => GetDictionary(context).copy(context);
 
         public const object __hash__ = null;
 
-        public object __eq__(CodeContext/*!*/ context, object other) {
+        public object __eq__(CodeContext/*!*/ context, object? other) {
             if (other is MappingProxy proxy) {
                 if (type == null) {
                     return __eq__(context, proxy.GetDictionary(context));
@@ -90,7 +112,7 @@ namespace IronPython.Runtime.Types {
 
         #region IDictionary Members
 
-        public object this[object key] {
+        public object? this[object? key] {
             get => GetDictionary(DefaultContext.Default)[key];
             [PythonHidden]
             set => throw PythonOps.TypeError("'mappingproxy' object does not support item assignment");
@@ -109,7 +131,7 @@ namespace IronPython.Runtime.Types {
         #region IDictionary Members
 
         [PythonHidden]
-        public void Add(object key, object value) {
+        public void Add(object? key, object? value) {
             this[key] = value;
         }
 
@@ -149,11 +171,7 @@ namespace IronPython.Runtime.Types {
 
         #region ICollection Members
 
-        void ICollection.CopyTo(Array array, int index) {
-            foreach (DictionaryEntry de in (IDictionary)this) {
-                array.SetValue(de, index++);
-            }
-        }
+        void ICollection.CopyTo(Array array, int index) => throw new NotImplementedException("The method or operation is not implemented.");
 
         int ICollection.Count => __len__(DefaultContext.Default);
 
@@ -165,43 +183,43 @@ namespace IronPython.Runtime.Types {
 
         #region IDictionary<object,object> Members
 
-        bool IDictionary<object, object>.ContainsKey(object key) => __contains__(DefaultContext.Default, key);
+        bool IDictionary<object?, object?>.ContainsKey(object? key) => __contains__(DefaultContext.Default, key);
 
-        ICollection<object> IDictionary<object, object>.Keys => GetDictionary(DefaultContext.Default).Keys;
+        ICollection<object?> IDictionary<object?, object?>.Keys => GetDictionary(DefaultContext.Default).Keys;
 
-        bool IDictionary<object, object>.Remove(object key) => throw new InvalidOperationException("mappingproxy is read-only");
+        bool IDictionary<object?, object?>.Remove(object? key) => throw new InvalidOperationException("mappingproxy is read-only");
 
-        bool IDictionary<object, object>.TryGetValue(object key, out object value) => GetDictionary(DefaultContext.Default).TryGetValue(key, out value);
+        bool IDictionary<object?, object?>.TryGetValue(object? key, out object? value) => GetDictionary(DefaultContext.Default).TryGetValue(key, out value);
 
-        ICollection<object> IDictionary<object, object>.Values => GetDictionary(DefaultContext.Default).Values;
+        ICollection<object?> IDictionary<object?, object?>.Values => GetDictionary(DefaultContext.Default).Values;
 
         #endregion
 
         #region ICollection<KeyValuePair<object,object>> Members
 
-        void ICollection<KeyValuePair<object, object>>.Add(KeyValuePair<object, object> item) {
+        void ICollection<KeyValuePair<object?, object?>>.Add(KeyValuePair<object?, object?> item) {
             this[item.Key] = item.Value;
         }
 
-        bool ICollection<KeyValuePair<object, object>>.Contains(KeyValuePair<object, object> item) => __contains__(DefaultContext.Default, item.Key);
+        bool ICollection<KeyValuePair<object?, object?>>.Contains(KeyValuePair<object?, object?> item) => __contains__(DefaultContext.Default, item.Key);
 
-        void ICollection<KeyValuePair<object, object>>.CopyTo(KeyValuePair<object, object>[] array, int arrayIndex) {
-            foreach (KeyValuePair<object, object> de in (IEnumerable<KeyValuePair<object, object>>)this) {
+        void ICollection<KeyValuePair<object?, object?>>.CopyTo(KeyValuePair<object?, object?>[] array, int arrayIndex) {
+            foreach (KeyValuePair<object?, object?> de in (IEnumerable<KeyValuePair<object?, object?>>)this) {
                 array.SetValue(de, arrayIndex++);
             }
         }
 
-        int ICollection<KeyValuePair<object, object>>.Count => __len__(DefaultContext.Default);
+        int ICollection<KeyValuePair<object?, object?>>.Count => __len__(DefaultContext.Default);
 
-        bool ICollection<KeyValuePair<object, object>>.IsReadOnly => true;
+        bool ICollection<KeyValuePair<object?, object?>>.IsReadOnly => true;
 
-        bool ICollection<KeyValuePair<object, object>>.Remove(KeyValuePair<object, object> item) => ((IDictionary<object, object>)this).Remove(item.Key);
+        bool ICollection<KeyValuePair<object?, object?>>.Remove(KeyValuePair<object?, object?> item) => ((IDictionary<object?, object?>)this).Remove(item.Key);
 
         #endregion
 
         #region IEnumerable<KeyValuePair<object,object>> Members
 
-        IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() => GetDictionary(DefaultContext.Default).GetEnumerator();
+        IEnumerator<KeyValuePair<object?, object?>> IEnumerable<KeyValuePair<object?, object?>>.GetEnumerator() => GetDictionary(DefaultContext.Default).GetEnumerator();
 
         #endregion
     }

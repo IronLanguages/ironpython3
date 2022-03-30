@@ -886,6 +886,79 @@ namespace IronPython.Modules {
                 }
             }
 
+            public override object readline(CodeContext context, int limit) {
+                _checkClosed();
+
+                if (limit == 0) {
+                    return Bytes.Empty;
+                }
+
+                lock (this) {
+                    bool limited = limit > 0;
+
+                    List<Bytes> chunks = null;
+                    int cnt = 0;
+                    while (true) {
+                        var buf = _readBuf.AsSpan().Slice(_readBufPos);
+                        if (buf.Length > 0) {
+                            // we hit the limit so we're done
+                            bool done = false;
+                            if (limited && buf.Length > limit - cnt) {
+                                buf = buf.Slice(0, limit - cnt);
+                                done = true;
+                            }
+
+                            // we found the eol so we're done
+                            var idx = buf.IndexOf((byte)'\n');
+                            if (idx != -1) {
+                                buf = buf.Slice(0, idx + 1);
+                                done = true;
+                            }
+
+                            if (done) {
+                                _readBufPos += buf.Length;
+                                if (_readBufPos == _readBuf.Count) {
+                                    ResetReadBuf();
+                                }
+                                var bytes = Bytes.Make(buf.ToArray());
+                                if (chunks is null) {
+                                    return bytes;
+                                }
+                                chunks.Add(bytes);
+                                cnt += buf.Length;
+                                return Bytes.Concat(chunks, cnt);
+                            }
+
+                            (chunks ??= new List<Bytes>()).Add(ResetReadBuf());
+                            cnt += buf.Length;
+                        }
+
+                        // end of file
+                        if (!TryReadNextChunk(context)) {
+                            if (chunks is null) {
+                                return Bytes.Empty;
+                            }
+                            Debug.Assert(cnt > 0);
+                            return Bytes.Concat(chunks, cnt);
+                        }
+                    }
+                }
+
+                bool TryReadNextChunk(CodeContext context) {
+                    object chunkObj;
+                    if (_rawIO != null) {
+                        chunkObj = _rawIO.read(context, _bufSize);
+                    } else {
+                        chunkObj = PythonOps.Invoke(context, _raw, "read", _bufSize);
+                    }
+
+                    Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
+
+                    _readBuf = chunk;
+                    return chunk.Count != 0;
+                }
+            }
+
             public override BigInteger tell(CodeContext/*!*/ context) {
                 BigInteger res = _rawIO != null ?
                     _rawIO.tell(context) :

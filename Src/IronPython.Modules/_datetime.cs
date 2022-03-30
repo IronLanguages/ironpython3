@@ -670,12 +670,19 @@ namespace IronPython.Modules {
                 return string.Format("datetime.date({0}, {1}, {2})", _dateTime.Year, _dateTime.Month, _dateTime.Day);
             }
 
-            public virtual string __format__(CodeContext/*!*/ context, string dateFormat){
+            public virtual string __format__(CodeContext/*!*/ context, [NotNull] string dateFormat){
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 } else {
                     return strftime(context, dateFormat);
                 }
+            }
+
+            // overload to make test_datetime happy
+            public string __format__(CodeContext/*!*/ context, object spec) {
+                if (spec is string s) return __format__(context, s);
+                if (spec is Extensible<string> es) return __format__(context, es.Value);
+                throw PythonOps.TypeError("__format__() argument 1 must be str, not {0}", PythonOps.GetPythonTypeName(spec));
             }
 
             #endregion
@@ -1294,6 +1301,7 @@ namespace IronPython.Modules {
                 );
             }
 
+            // TODO: get rid of __bool__ in 3.5
             public bool __bool__() {
                 return this.UtcTime.TimeSpan.Ticks != 0 || this.UtcTime.LostMicroseconds != 0;
             }
@@ -1474,7 +1482,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public object __format__(CodeContext/*!*/ context, string dateFormat) {
+            public object __format__(CodeContext/*!*/ context, [NotNull] string dateFormat) {
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 }
@@ -1488,6 +1496,13 @@ namespace IronPython.Modules {
                         return PythonOps.Invoke(context, this, "strftime", dateFormat);
                     }
                 }
+            }
+
+            // overload to make test_datetime happy
+            public object __format__(CodeContext/*!*/ context, object spec) {
+                if (spec is string s) return __format__(context, s);
+                if (spec is Extensible<string> es) return __format__(context, es.Value);
+                throw PythonOps.TypeError("__format__() argument 1 must be str, not {0}", PythonOps.GetPythonTypeName(spec));
             }
 
             private class UnifiedTime {

@@ -39,7 +39,7 @@ def load_tests(loader, standard_tests, pattern):
             suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_overflow'))) # ValueError: complex() literal too large to convert
         suite.addTest(test.test_complex.ComplexTest('test_plus_minus_0j'))
         suite.addTest(test.test_complex.ComplexTest('test_pow'))
-        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_repr_roundtrip')))
+        suite.addTest(test.test_complex.ComplexTest('test_repr_roundtrip'))
         suite.addTest(test.test_complex.ComplexTest('test_repr_str'))
         suite.addTest(test.test_complex.ComplexTest('test_richcompare'))
         suite.addTest(test.test_complex.ComplexTest('test_richcompare_boundaries'))

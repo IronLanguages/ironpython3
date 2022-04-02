@@ -191,7 +191,11 @@ namespace IronPython.Modules {
                     } else {
                         throw PythonOps.TypeError("cafile should be a valid filesystem path");
                     }
+#if NET5_0_OR_GREATER
+                    _cert_store.ImportFromPemFile(_cafile);
+#else
                     _cert_store.Add(ReadCertificate(context, _cafile));
+#endif
                 }
 
                 if (capath != null) {
@@ -903,15 +907,13 @@ Returns the number of bytes written.")]
             return null;
         }
 
-#if NET5_0_OR_GREATER
         private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
+#if NET5_0_OR_GREATER
             if (readKey) {
                 return X509Certificate2.CreateFromPemFile(filename);
             }
-            return new X509Certificate2(filename);
-        }
-#else
-        private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
+#endif
+
             string[] lines;
             try {
                 lines = File.ReadAllLines(filename);
@@ -931,14 +933,17 @@ Returns the number of bytes written.")]
                         } catch (Exception e) {
                             throw ErrorDecoding(context, filename, e);
                         }
+                        if (!readKey) return cert;
                     } else if (lines[i] == "-----BEGIN RSA PRIVATE KEY-----") {
                         var keyStr = ReadToEnd(lines, ref i, "-----END RSA PRIVATE KEY-----");
 
-                        try {
-                            var keyBytes = Convert.FromBase64String(keyStr.ToString());
-                            key = ParsePkcs1DerEncodedPrivateKey(context, filename, keyBytes);
-                        } catch (Exception e) {
-                            throw ErrorDecoding(context, filename, e);
+                        if (readKey) {
+                            try {
+                                var keyBytes = Convert.FromBase64String(keyStr.ToString());
+                                key = ParsePkcs1DerEncodedPrivateKey(context, filename, keyBytes);
+                            } catch (Exception e) {
+                                throw ErrorDecoding(context, filename, e);
+                            }
                         }
                     }
                 }
@@ -1122,7 +1127,6 @@ Returns the number of bytes written.")]
         private static Exception ErrorDecoding(CodeContext context, params object[] args) {
             return PythonExceptions.CreateThrowable(SSLError(context), ArrayUtils.Insert("Error decoding PEM-encoded file ", args));
         }
-#endif
 
         #region Exported constants
 

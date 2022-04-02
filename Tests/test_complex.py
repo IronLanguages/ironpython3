@@ -52,10 +52,13 @@ class ComplexTest(IronPythonTestCase):
         self.assertEqual(complex(my_float_number(1.0)), 1+0j)
         self.assertEqual(complex(my_float_number(1.0), my_float_number(2.0)), 1+2j)
         self.assertEqual(complex(my_complex_number(1.0+0j), my_float_number(2.0)), 1+2j)
+
         if sys.version_info >= (3,8) or sys.implementation.name == 'ironpython':
             self.assertEqual(complex(my_complex_number(1.0+0j), my_index_number(2)), 1+2j)
-        else:
+        elif sys.version_info >= (3,5):
             self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_index_number'", complex, my_complex_number(1j), my_index_number(2))
+        else:
+            self.assertRaisesMessage(TypeError, "complex() argument must be a string or a number, not 'complex'", complex, my_complex_number(1j), my_index_number(2)) # bug
 
         def bad_return_msg(x):
             if sys.version_info >= (3,7) or sys.implementation.name == 'ironpython':
@@ -82,15 +85,25 @@ class ComplexTest(IronPythonTestCase):
         self.assertRaisesMessage(TypeError, "complex() second arg can't be a string", complex, my_float_number(1), 'abc')
         self.assertRaisesMessage(TypeError, "complex() second arg can't be a string", complex, None, 'abc')
 
-        self.assertRaisesMessage(TypeError, "complex() first argument must be a string or a number, not 'NoneType'", complex, None)
-        self.assertRaisesMessage(TypeError, "complex() first argument must be a string or a number, not 'NoneType'", complex, None, 2)
-        self.assertRaisesMessage(TypeError, "complex() first argument must be a string or a number, not 'NoneType'", complex, None, None)
-        self.assertRaisesMessage(TypeError, "complex() first argument must be a string or a number, not 'bytes'", complex, b"1", None)
+        if sys.version_info >= (3,5) or sys.implementation.name == 'ironpython':
+            msg = "complex() first argument must be a string or a number, not "
+        else:
+            msg = "complex() argument must be a string or a number, not "
+        self.assertRaisesMessage(TypeError, msg + "'NoneType'", complex, None)
+        self.assertRaisesMessage(TypeError, msg + "'NoneType'", complex, None, 2)
+        self.assertRaisesMessage(TypeError, msg + "'NoneType'", complex, None, None)
+        self.assertRaisesMessage(TypeError, msg + "'bytes'", complex, b"1", None)
 
         # the following results are surprising, bug in CPython?
-        self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2))
-        self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2.0))
-        self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2j))
+        if sys.version_info >= (3,5) or sys.implementation.name == 'ironpython':
+            self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2))
+            self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2.0))
+            self.assertRaisesMessage(TypeError, "complex() second argument must be a number, not 'my_complex_number'", complex, my_complex_number(1j), my_complex_number(2j))
+        else:
+            # bug: wrong message
+            self.assertRaisesMessage(TypeError, "complex() argument must be a string or a number, not 'complex'", complex, my_complex_number(1j), my_complex_number(2))
+            self.assertRaisesMessage(TypeError, "complex() argument must be a string or a number, not 'complex'", complex, my_complex_number(1j), my_complex_number(2.0))
+            self.assertRaisesMessage(TypeError, "complex() argument must be a string or a number, not 'complex'", complex, my_complex_number(1j), my_complex_number(2j))
 
         self.assertEqual(complex(my_complex_number(1j), 2j), -2+1j)
 

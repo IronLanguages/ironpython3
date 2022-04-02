@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -631,8 +632,7 @@ Returns the number of bytes written.")]
                     if (length < span.Length) {
                         buf = Bytes.Make(span.Slice(length).ToArray());
                         span = span.Slice(0, length);
-                    }
-                    else {
+                    } else {
                         buf = null;
                     }
                     span.CopyTo(resSpan);
@@ -903,7 +903,15 @@ Returns the number of bytes written.")]
             return null;
         }
 
-        private static X509Certificate2 ReadCertificate(CodeContext context, string filename) {
+#if NET5_0_OR_GREATER
+        private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
+            if (readKey) {
+                return X509Certificate2.CreateFromPemFile(filename);
+            }
+            return new X509Certificate2(filename);
+        }
+#else
+        private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
             string[] lines;
             try {
                 lines = File.ReadAllLines(filename);
@@ -941,9 +949,7 @@ Returns the number of bytes written.")]
             if (cert != null) {
                 if (key != null) {
                     try {
-#pragma warning disable SYSLIB0028 // Type or member is obsolete
-                        cert.PrivateKey = key;
-#pragma warning restore SYSLIB0028 // Type or member is obsolete
+                        cert = cert.CopyWithPrivateKey(key);
                     } catch (CryptographicException e) {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
@@ -953,6 +959,23 @@ Returns the number of bytes written.")]
             }
             throw ErrorDecoding(context, filename, "certificate not found");
         }
+
+#if !NETCOREAPP && !NET472_OR_GREATER
+#if NETSTANDARD
+        private static MethodInfo CopyWithPrivateKeyMethodInfo = typeof(RSACertificateExtensions).GetMethod("CopyWithPrivateKey", new Type[] { typeof(X509Certificate2), typeof(System.Security.Cryptography.RSA) });
+#endif
+
+        private static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, RSA privateKey) {
+#if NETSTANDARD
+            if (CopyWithPrivateKeyMethodInfo is not null) {
+                return (X509Certificate2)CopyWithPrivateKeyMethodInfo.Invoke(null, new object[] { certificate, privateKey });
+            }
+#endif
+            certificate.PrivateKey = privateKey;
+            return certificate;
+        }
+#endif
+
 
         #region Private Key Parsing
 
@@ -965,7 +988,7 @@ Returns the number of bytes written.")]
 
         private const int NumberMask = 0x1f;
 
-        private const int UnivesalSequence = 0x10;
+        private const int UniversalSequence = 0x10;
         private const int UniversalInteger = 0x02;
         private const int UniversalOctetString = 0x04;
 
@@ -987,7 +1010,7 @@ Returns the number of bytes written.")]
             // read header for sequence
             if ((x[0] & ClassMask) != ClassUniversal) {
                 throw ErrorDecoding(context, filename, "failed to find universal class");
-            } else if ((x[0] & NumberMask) != UnivesalSequence) {
+            } else if ((x[0] & NumberMask) != UniversalSequence) {
                 throw ErrorDecoding(context, filename, "failed to read sequence header");
             }
 
@@ -996,7 +1019,7 @@ Returns the number of bytes written.")]
             ReadLength(x, ref offset);
 
             // read version
-            int version = ReadUnivesalInt(x, ref offset);
+            int version = ReadUniversalInt(x, ref offset);
             if (version != 0) {
                 // unsupported version
                 throw new InvalidOperationException(String.Format("bad vesion: {0}", version));
@@ -1006,20 +1029,20 @@ Returns the number of bytes written.")]
             RSACryptoServiceProvider provider = new RSACryptoServiceProvider();
             RSAParameters parameters = new RSAParameters();
 
-            parameters.Modulus = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.Exponent = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.D = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.P = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.Q = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.DP = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.DQ = ReadUnivesalIntAsBytes(x, ref offset);
-            parameters.InverseQ = ReadUnivesalIntAsBytes(x, ref offset);
+            parameters.Modulus = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.Exponent = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.D = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.P = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.Q = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.DP = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.DQ = ReadUniversalIntAsBytes(x, ref offset);
+            parameters.InverseQ = ReadUniversalIntAsBytes(x, ref offset);
 
             provider.ImportParameters(parameters);
             return provider;
         }
 
-        private static byte[] ReadUnivesalIntAsBytes(byte[] x, ref int offset) {
+        private static byte[] ReadUniversalIntAsBytes(byte[] x, ref int offset) {
             ReadIntType(x, ref offset);
 
             int bytes = ReadLength(x, ref offset);
@@ -1046,7 +1069,7 @@ Returns the number of bytes written.")]
                 throw new InvalidOperationException(String.Format("expected version, fonud {0}", versionType));
             }
         }
-        private static int ReadUnivesalInt(byte[] x, ref int offset) {
+        private static int ReadUniversalInt(byte[] x, ref int offset) {
             ReadIntType(x, ref offset);
 
             return ReadInt(x, ref offset);
@@ -1099,6 +1122,7 @@ Returns the number of bytes written.")]
         private static Exception ErrorDecoding(CodeContext context, params object[] args) {
             return PythonExceptions.CreateThrowable(SSLError(context), ArrayUtils.Insert("Error decoding PEM-encoded file ", args));
         }
+#endif
 
         #region Exported constants
 

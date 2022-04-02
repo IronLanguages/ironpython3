@@ -72,17 +72,17 @@ namespace IronPython.Runtime.Operations {
             } else if (value is int i) {
                 result = i;
             } else if (value is BigInteger bi) {
-                result = BigIntegerOps.ConvertToDouble(bi);
+                result = BigIntegerOps.ToDouble(bi);
             } else if (TryInvokeFloat(context, value, out result)) {
                 // pass
             } else if (value is Extensible<double> ed) {
                 result = ed.Value;
             } else if (value is Extensible<BigInteger> ebi) {
-                result = BigIntegerOps.ConvertToDouble(ebi.Value);
+                result = BigIntegerOps.ToDouble(ebi.Value);
             } else if (PythonOps.TryToIndex(value, out object ireal)) { // Python 3.8: fall back on __index__
                 result = ireal switch {
                     int ii => ii,
-                    BigInteger bii => BigIntegerOps.ConvertToDouble(bii),
+                    BigInteger bii => BigIntegerOps.ToDouble(bii),
                     _ => throw new InvalidOperationException("Unreachable code")
                 };
             } else {

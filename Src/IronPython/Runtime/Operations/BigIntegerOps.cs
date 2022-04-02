@@ -328,15 +328,15 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, int y) {
             if (y < 0) {
-                return DoubleOps.Power(x.ToFloat64(), y);
+                return DoubleOps.Power(ToDouble(x), y);
             }
             return x.Power(y);
         }
 
         [SpecialName]
         public static object Power(BigInteger x, long y) {
-            if(y < 0) {
-                return DoubleOps.Power(x.ToFloat64(), y);
+            if (y < 0) {
+                return DoubleOps.Power(ToDouble(x), y);
             }
             return x.Power(y);
         }
@@ -512,17 +512,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __int__(BigInteger x) {
-            // The python spec says __int__  should return a long if needed, rather than overflow.
-            int i32;
-            if (x.AsInt32(out i32)) {
+            if (x.AsInt32(out int i32)) {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject(i32);
             }
-
             return x;
         }
 
         public static object __float__(BigInteger self) {
-            return self.ToFloat64();
+            return ToDouble(self);
         }
 
         public static object __getnewargs__(CodeContext context, BigInteger self) {
@@ -585,15 +582,10 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName, ExplicitConversionMethod]
         public static int ConvertToInt32(BigInteger self) {
-            int res;
-            if (self.AsInt32(out res)) return res;
-
+            if (self.AsInt32(out int res)) {
+                return res;
+            }
             throw Converter.CannotConvertOverflow("int", self);
-        }
-
-        [SpecialName, ExplicitConversionMethod]
-        public static Complex ConvertToComplex(BigInteger self) {
-            return MathUtils.MakeReal(ConvertToDouble(self));
         }
 
         [SpecialName, ImplicitConversionMethod]
@@ -713,7 +705,7 @@ namespace IronPython.Runtime.Operations {
 
         [PythonHidden]
         public static float ToSingle(BigInteger self, IFormatProvider? provider) {
-            return checked((float)self.ToFloat64());
+            return checked((float)ConvertToDouble(self));
         }
 
         [PythonHidden]
@@ -1031,6 +1023,14 @@ namespace IronPython.Runtime.Operations {
                 res = "-" + res;
             }
             return res;
+        }
+
+        internal static double ToDouble(BigInteger self) {
+            // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
+            if (MathUtils.TryToFloat64(self, out double res)) {
+                return res;
+            }
+            throw new OverflowException("int too large to convert to float");
         }
 
         private static string ToBinary(BigInteger val, bool includeType, bool lowercase) {

@@ -722,8 +722,7 @@ namespace IronPython.Runtime.Types {
             get {
                 if (_ComplexResolver != null) return _ComplexResolver;
                 _ComplexResolver = MakeConversionResolver(new List<Type> {
-                    typeof(Complex), typeof(ExtensibleComplex), typeof(Extensible<Complex>),
-                    typeof(double), typeof(Extensible<double>)
+                    typeof(Complex), typeof(ExtensibleComplex), typeof(Extensible<Complex>)
                 });
                 return _ComplexResolver;
             }
@@ -759,6 +758,8 @@ namespace IronPython.Runtime.Types {
         }
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _BigIntegerResolver;
 
+        #endregion
+
         /// <summary>
         /// Provides a resolution for __getitem__
         /// </summary>
@@ -784,8 +785,6 @@ namespace IronPython.Runtime.Types {
             }
         }
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _SetItemResolver;
-
-        #endregion
 
         /// <summary>
         /// Provides a resolution for __str__.

@@ -97,6 +97,10 @@ class ComplexTest(IronPythonTestCase):
         if sys.version_info >= (3, 8) or sys.implementation.name == 'ironpython':
             self.assertWarns(DeprecationWarning, complex, my_complex_number(mycomplex()))
 
+        self.assertRaisesMessage(OverflowError, "int too large to convert to float", complex, 1<<10000)
+        self.assertRaisesMessage(OverflowError, "int too large to convert to float", complex, 1<<10000, 1)
+        self.assertRaisesMessage(OverflowError, "int too large to convert to float", complex, 1, 1<<10000)
+
         class complex_with_complex(complex):
             def __complex__(self):
                 return 1j

@@ -491,19 +491,19 @@ namespace IronPython.Runtime.Binding {
         }
 
         public Complex BigIntegerToComplexConversion(CallSite site, BigInteger value) {
-            return BigIntegerOps.ConvertToComplex(value);
+            return BigIntegerOps.ConvertToDouble(value);
         }
 
         public Complex BigIntegerObjectToComplexConversion(CallSite site, object value) {
             if (value is BigInteger) {
-                return BigIntegerOps.ConvertToComplex((BigInteger)value);
+                return BigIntegerOps.ConvertToDouble((BigInteger)value);
             }
 
             return ((CallSite<Func<CallSite, object, Complex>>)site).Update(site, value);
         }
 
         public object BigIntegerToComplexObjectConversion(CallSite site, BigInteger value) {
-            return (object)BigIntegerOps.ConvertToComplex((BigInteger)value);
+            return (Complex)BigIntegerOps.ConvertToDouble(value);
         }
 
         private class IdentityConversion {

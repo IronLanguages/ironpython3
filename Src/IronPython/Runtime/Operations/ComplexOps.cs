@@ -111,24 +111,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, double real) {
-            if (cls == TypeCache.Complex) {
-                return new Complex(real, 0.0);
-            } else {
-                return cls.CreateInstance(context, real, 0.0);
-            }
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, double real, double imag) {
-            if (cls == TypeCache.Complex) {
-                return new Complex(real, imag);
-            } else {
-                return cls.CreateInstance(context, real, imag);
-            }
-        }
-
         [SpecialName, PropertyMethod]
         public static double Getreal(Complex self) {
             return self.Real;

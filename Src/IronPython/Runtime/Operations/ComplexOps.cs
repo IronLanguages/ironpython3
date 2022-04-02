@@ -44,6 +44,7 @@ namespace IronPython.Runtime.Operations {
             if (imag is string || imag is Extensible<string>) throw PythonOps.TypeError("complex() second arg can't be a string");
 
             Complex real2;
+            bool real_is_entirely_real = false;
             if (real is Complex z) {
                 real2 = z;
             } else if (!TryInvokeComplex(context, real, out real2)) {
@@ -51,29 +52,33 @@ namespace IronPython.Runtime.Operations {
                     real2 = ez.Value;
                 } else if (DoubleOps.TryToFloat(context, real, out double res)) {
                     real2 = res;
+                    real_is_entirely_real = true;  // to preserve zero-sign of imag
                 } else {
                     throw PythonOps.TypeErrorForBadInstance("complex() first argument must be a string or a number, not '{0}'", real);
                 }
             }
 
-            if (imag is Missing && cls == TypeCache.Complex) return real2;
-
-            Complex imag2;
+            double real3, imag3;
             if (imag is Missing) {
-                imag2 = Complex.Zero;
-            } else if (imag is Complex z2) {
-                imag2 = z2;
-            // surprisingly, no TryInvokeComplex here
-            } else if (imag is Extensible<Complex> ez2) {
-                imag2 = ez2.Value;
-            } else if (DoubleOps.TryToFloat(context, imag, out double res)) {
-                imag2 = res;
+                real3 = real2.Real;
+                imag3 = real2.Imaginary;
             } else {
-                throw PythonOps.TypeErrorForBadInstance("complex() second argument must be a number, not '{0}'", imag);
+                Complex imag2;
+                if (imag is Complex z2) {
+                    imag2 = z2;
+                    // surprisingly, no TryInvokeComplex here
+                } else if (imag is Extensible<Complex> ez2) {
+                    imag2 = ez2.Value;
+                } else if (DoubleOps.TryToFloat(context, imag, out double res)) {
+                    imag2 = res;
+                } else {
+                    throw PythonOps.TypeErrorForBadInstance("complex() second argument must be a number, not '{0}'", imag);
+                }
+
+                real3 = real2.Real - imag2.Imaginary;
+                imag3 = real_is_entirely_real ? imag2.Real : real2.Imaginary + imag2.Real;
             }
 
-            double real3 = real2.Real - imag2.Imaginary;
-            double imag3 = real2.Imaginary + imag2.Real;
             if (cls == TypeCache.Complex) {
                 return new Complex(real3, imag3);
             } else {

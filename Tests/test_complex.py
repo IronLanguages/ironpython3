@@ -156,6 +156,45 @@ class ComplexTest(IronPythonTestCase):
         self.assertEqual(complex(int_with_float(2)), 1+0j)
         self.assertEqual(complex(int_with_index(2)), 2+0j)
 
+    def test_negative_zero_repr_str(self):
+        # see also similar test in StdLib
+
+        def test(v, expected):
+            self.assertEqual(repr(v), expected)
+            self.assertEqual(str(v), expected)
+
+        # complex = real + imag * 1j
+        # in other words:
+        # complex = arg1 + arg2 * 1j
+        # complex = arg1.real + arg1.imag * 1j + arg2.real * 1j + arg2.imag * 1j * 1j
+        # complex = arg1.real - arg2.imag + (arg1.imag + arg2.real) * 1j
+
+        # only real input, so signs should be passed through unchanged
+        test(complex(+0., +0.),  "0j")
+        test(complex(+0., -0.),  "-0j")
+        test(complex(-0., +0.),  "(-0+0j)")
+        test(complex(-0., -0.),  "(-0-0j)")
+
+        # CPython (at least up to 3.10) does not always handle the zero-sign of a imaginary component as expected
+
+        # arg1 real, arg2 imaginary
+        test(complex(+0., +0j),  "0j")        # real = +0. - +0.; imag = +0. + +0.
+        test(complex(+0., -0j),  "-0j")       # real = +0. - -0.; imag = +0. + +0. => expected 0j
+        test(complex(-0., +0j),  "(-0+0j)")   # real = -0. - +0.; imag = +0. + +0.
+        test(complex(-0., -0j),  "-0j")       # real = -0. - -0.; imag = +0. + +0. => expected 0j
+
+        # arg1 imaginary, arg2 real
+        test(complex(+0j, +0.),  "0j")        # real = +0. - +0.; imag = +0. + +0.
+        test(complex(+0j, -0.),  "0j")        # real = +0. - +0.; imag = +0. + -0.
+        test(complex(-0j, +0.),  "(-0+0j)")   # real = +0. - +0.; imag = -0. + +0. => expected 0j
+        test(complex(-0j, -0.),  "(-0-0j)")   # real = +0. - +0.; imag = -0. + -0. => expected -0j
+
+        # both args imaginary
+        test(complex(+0j, +0j),  "0j")        # real = +0. - +0.; imag = +0. + +0.
+        test(complex(+0j, -0j),  "0j")        # real = +0. - -0.; imag = +0. + +0.
+        test(complex(-0j, +0j),  "(-0+0j)")   # real = +0. - +0.; imag = -0. + +0. => expected 0j
+        test(complex(-0j, -0j),  "-0j")       # real = +0. - -0.; imag = -0. + +0. => expected 0j
+
     def test_misc(self):
         self.assertEqual(mycomplex(), complex())
         a = mycomplex(1)

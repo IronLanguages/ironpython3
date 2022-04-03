@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Operations {
                 str = s;
             } else if (x is char c) {
                 str = ScriptingRuntimeHelpers.CharToString(c);
-            } else if (TryInvokeFloat(context, x, out var d)) {
+            } else if (TryToFloat(context, x, out var d)) {
                 return d;
             } else if (x is Extensible<string> es) {
                 str = es.Value;
@@ -53,26 +53,6 @@ namespace IronPython.Runtime.Operations {
                 return res;
 
             throw PythonOps.ValueError($"could not convert string to {type.Name}: {PythonOps.Repr(context, x)}");
-
-            static bool TryInvokeFloat(CodeContext context, object o, out object result) {
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__float__", out result)) {
-                    switch (result) {
-                        case double _:
-                            return true;
-                        case Extensible<double> ed:
-                            Warn(context, result);
-                            result = ed.Value; // Python 3.6: return the int value
-                            return true;
-                        default:
-                            throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonOps.GetPythonTypeName(result));
-                    }
-
-                    static void Warn(CodeContext context, object result) {
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
-                    }
-                }
-                return false;
-            }
         }
 
         [StaticExtensionMethod]
@@ -83,6 +63,53 @@ namespace IronPython.Runtime.Operations {
                 return value;
             } else {
                 return cls.CreateInstance(context, value);
+            }
+        }
+
+        internal static bool TryToFloat(CodeContext context, object/*?*/ value, out double result) {
+            if (value is double d) {
+                result = d;
+            } else if (value is int i) {
+                result = i;
+            } else if (value is BigInteger bi) {
+                result = BigIntegerOps.ToDouble(bi);
+            } else if (TryInvokeFloat(context, value, out result)) {
+                // pass
+            } else if (value is Extensible<double> ed) {
+                result = ed.Value;
+            } else if (value is Extensible<BigInteger> ebi) {
+                result = BigIntegerOps.ToDouble(ebi.Value);
+            } else if (PythonOps.TryToIndex(value, out object ireal)) { // Python 3.8: fall back on __index__
+                result = ireal switch {
+                    int ii => ii,
+                    BigInteger bii => BigIntegerOps.ToDouble(bii),
+                    _ => throw new InvalidOperationException("Unreachable code")
+                };
+            } else {
+                return false;
+            }
+            return true;
+
+            static bool TryInvokeFloat(CodeContext context, object/*?*/ o, out double result) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__float__", out object retobj)) {
+                    switch (retobj) {
+                        case double d:
+                            result = d;
+                            return true;
+                        case Extensible<double> ed:
+                            Warn(context, retobj);
+                            result = ed.Value; // Python 3.6: return the int value
+                            return true;
+                        default:
+                            throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonOps.GetPythonTypeName(retobj));
+                    }
+
+                    static void Warn(CodeContext context, object result) {
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__float__ returned non-float (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of float is deprecated, and may be removed in a future version of Python.");
+                    }
+                }
+                result = default;
+                return false;
             }
         }
 

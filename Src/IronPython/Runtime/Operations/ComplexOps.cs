@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using IronPython.Modules;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
@@ -32,59 +33,86 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, [Optional] object? real, [Optional] object? imag) {
-            if (real == null) throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonOps.GetPythonTypeName(real)}'");
-            if (imag == null) throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonOps.GetPythonTypeName(real)}'");
+        public static object __new__(CodeContext context, PythonType cls, object? real, [Optional] object? imag) {
 
-            Complex imag2;
-            if (imag is Missing) {
-                imag2 = Complex.Zero;
-            } else {
-                if (real is string) throw PythonOps.TypeError("complex() can't take second arg if first is a string");
-                if (imag is string) throw PythonOps.TypeError("complex() second arg can't be a string");
-                if (!Converter.TryConvertToComplex(imag, out imag2)) {
-                    throw PythonOps.TypeError($"complex() second argument must be a number, not '{PythonOps.GetPythonTypeName(real)}'");
+            // Fast-track for a single argument when type(arg) is complex and no subclasses are involved.
+            if (real is Complex && imag is Missing && cls == TypeCache.Complex) return real;
+
+            if (real is string s) return ParseComplex(s, imag);
+            if (real is Extensible<string> es) return ParseComplex(es.Value, imag);
+
+            if (imag is string || imag is Extensible<string>) throw PythonOps.TypeError("complex() second arg can't be a string");
+
+            Complex real2;
+            bool real_is_entirely_real = false;
+            if (real is Complex z) {
+                real2 = z;
+            } else if (!TryInvokeComplex(context, real, out real2)) {
+                if (real is Extensible<Complex> ez) {
+                    real2 = ez.Value;
+                } else if (DoubleOps.TryToFloat(context, real, out double res)) {
+                    real2 = res;
+                    real_is_entirely_real = true;  // to preserve zero-sign of imag
+                } else {
+                    throw PythonOps.TypeErrorForBadInstance("complex() first argument must be a string or a number, not '{0}'", real);
                 }
             }
 
-            Complex real2;
-            if (real is Missing) {
-                real2 = Complex.Zero;
-            } else if (real is string) {
-                real2 = LiteralParser.ParseComplex((string)real);
-            } else if (real is Extensible<string>) {
-                real2 = LiteralParser.ParseComplex(((Extensible<string>)real).Value);
-            } else if (real is Complex) {
-                if (imag is Missing && cls == TypeCache.Complex) return real;
-                else real2 = (Complex)real;
-            } else if (!Converter.TryConvertToComplex(real, out real2)) {
-                throw PythonOps.TypeError($"complex() first argument must be a string or a number, not '{PythonOps.GetPythonTypeName(real)}'");
+            double real3, imag3;
+            if (imag is Missing) {
+                real3 = real2.Real;
+                imag3 = real2.Imaginary;
+            } else {
+                Complex imag2;
+                if (imag is Complex z2) {
+                    imag2 = z2;
+                    // surprisingly, no TryInvokeComplex here
+                } else if (imag is Extensible<Complex> ez2) {
+                    imag2 = ez2.Value;
+                } else if (DoubleOps.TryToFloat(context, imag, out double res)) {
+                    imag2 = res;
+                } else {
+                    throw PythonOps.TypeErrorForBadInstance("complex() second argument must be a number, not '{0}'", imag);
+                }
+
+                real3 = real2.Real - imag2.Imaginary;
+                imag3 = real_is_entirely_real ? imag2.Real : real2.Imaginary + imag2.Real;
             }
 
-            double real3 = real2.Real - imag2.Imaginary;
-            double imag3 = real2.Imaginary + imag2.Real;
             if (cls == TypeCache.Complex) {
                 return new Complex(real3, imag3);
             } else {
                 return cls.CreateInstance(context, real3, imag3);
             }
-        }
 
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, double real) {
-            if (cls == TypeCache.Complex) {
-                return new Complex(real, 0.0);
-            } else {
-                return cls.CreateInstance(context, real, 0.0);
+            static Complex ParseComplex(string s, object? imag) {
+                if (imag is Missing) {
+                    return LiteralParser.ParseComplex(s);
+                } else {
+                    throw PythonOps.TypeError($"complex() can't take second arg if first is a string");
+                }
             }
-        }
 
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType cls, double real, double imag) {
-            if (cls == TypeCache.Complex) {
-                return new Complex(real, imag);
-            } else {
-                return cls.CreateInstance(context, real, imag);
+            static bool TryInvokeComplex(CodeContext context, object? o, out Complex complex) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__complex__", out object? result)) {
+                    switch (result) {
+                        case Complex z:
+                            complex = z;
+                            return true;
+                        case Extensible<Complex> ez:
+                            Warn(context, result);
+                            complex = ez.Value;
+                            return true;
+                        default:
+                            throw PythonOps.TypeErrorForBadInstance("__complex__ returned non-complex (type {0})", result);
+                    }
+
+                    static void Warn(CodeContext context, object result) {
+                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"__complex__ returned non-complex (type {PythonOps.GetPythonTypeName(result)}).  The ability to return an instance of a strict subclass of complex is deprecated, and may be removed in a future version of Python.");
+                    }
+                }
+                complex = default;
+                return false;
             }
         }
 
@@ -275,12 +303,13 @@ namespace IronPython.Runtime.Operations {
         }
 
         // report the same errors as CPython for these invalid conversions
+        // these operators disappear on complex in Python 3.10
         public static double __float__(Complex self) {
-            throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+            throw PythonOps.TypeError("can't convert complex to float");
         }
 
         public static int __int__(Complex self) {
-            throw PythonOps.TypeError("can't convert complex to int; use int(abs(z))");
+            throw PythonOps.TypeError("can't convert complex to int");
         }
 
         private static string FormatComplexValue(CodeContext/*!*/ context, double x)

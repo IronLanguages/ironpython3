@@ -45,7 +45,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_ciphers'))) # AssertionError: SSLError not raised
         suite.addTest(test.test_ssl.ContextTests('test_constructor'))
         suite.addTest(test.test_ssl.ContextTests('test_create_default_context'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_get_ca_certs'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_get_ca_certs'))) # AssertionError: Lists differ
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_load_cert_chain'))) # AssertionError: OSError not raised
         suite.addTest(test.test_ssl.ContextTests('test_load_default_certs'))
         if is_posix:
@@ -68,12 +68,12 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.NetworkedTests('test_algorithms'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_ciphers'))) # AssertionError: SSLError not raised
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect'))) # AssertionError: {} != None
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_cadata'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
+        suite.addTest(test.test_ssl.NetworkedTests('test_connect_cadata'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_capath'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_ex'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
+        suite.addTest(test.test_ssl.NetworkedTests('test_connect_ex'))
         #suite.addTest(test.test_ssl.NetworkedTests('test_connect_ex_error')) # slow
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_with_context'))) # AssertionError: {} != None
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_context_setget'))) # AttributeError: '_SSLSocket' object has no attribute 'context'
+        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_context_setget'))) # AttributeError: can't assign to read-only property context of type '_SSLSocket'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_ca_certs_capath'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateNameMismatch, RemoteCertificateChainErrors
         if is_posix:

@@ -41,7 +41,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.BasicSocketTests('test_wrapped_unconnected'))
         suite.addTest(test.test_ssl.ContextTests('test__create_stdlib_context'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_cert_store_stats'))) # AttributeError: 'SSLContext' object has no attribute 'cert_store_stats'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_check_hostname'))) # AssertionError: ValueError not raised
+        suite.addTest(test.test_ssl.ContextTests('test_check_hostname'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ContextTests('test_ciphers'))) # AssertionError: SSLError not raised
         suite.addTest(test.test_ssl.ContextTests('test_constructor'))
         suite.addTest(test.test_ssl.ContextTests('test_create_default_context'))

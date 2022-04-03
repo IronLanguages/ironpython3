@@ -59,7 +59,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_httplib.HTTPSTest('test_local_unknown_cert')) # StackOverflowException
         suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked'))) # AttributeError: 'SSLError' object has no attribute 'reason'
         suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_bad_cert'))) # AttributeError: 'SSLError' object has no attribute 'reason'
-        suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_good_cert'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
+        suite.addTest(test.test_httplib.HTTPSTest('test_networked_good_cert'))
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_noverification'))
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_trusted_by_default_cert'))
         suite.addTest(test.test_httplib.HeaderTests('test_auto_headers'))

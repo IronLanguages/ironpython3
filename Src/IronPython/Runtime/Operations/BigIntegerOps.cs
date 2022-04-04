@@ -251,11 +251,11 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object Abs(BigInteger x) {
-            return x.Abs();
+            return BigInteger.Abs(x);
         }
 
         public static bool __bool__(BigInteger x) {
-            return !x.IsZero();
+            return !x.IsZero;
         }
 
         public static BigInteger __trunc__(BigInteger self) {
@@ -502,7 +502,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ZeroDivisionError();
             }
 
-            BigInteger result = x.ModPow(y, z);
+            BigInteger result = BigInteger.ModPow(x, y, z);
 
             // fix the sign for negative moduli or negative mantissas
             if ((z < BigInteger.Zero && result > BigInteger.Zero)
@@ -521,7 +521,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ZeroDivisionError();
             }
 
-            BigInteger result = x.ModPow(y, z);
+            BigInteger result = BigInteger.ModPow(x, y, z);
 
             // fix the sign for negative moduli or negative mantissas
             if ((z < BigInteger.Zero && result > BigInteger.Zero)
@@ -848,7 +848,7 @@ namespace IronPython.Runtime.Operations {
 
             Debug.Assert(digits[0] != '-');
 
-            return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
+            return spec.AlignNumericText(digits, self.IsZero, self.IsPositive());
         }
 
         public static Bytes to_bytes(BigInteger value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
@@ -1046,7 +1046,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string ToBinary(BigInteger val) {            
-            string res = ToBinary(val.Abs(), true, true);
+            string res = ToBinary(BigInteger.Abs(val), true, true);
             if (val.IsNegative()) {
                 res = "-" + res;
             }
@@ -1065,7 +1065,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static string/*!*/ ToDigits(BigInteger/*!*/ val, int radix, bool lower) {
-            if (val.IsZero()) {
+            if (val.IsZero) {
                 return "0";
             }
 

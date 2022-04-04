@@ -237,7 +237,214 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        #region Binary operators
+        #region Unary Operations
+
+        [SpecialName]
+        public static object Plus(BigInteger x) {
+            return x;
+        }
+
+        [SpecialName]
+        public static object Negate(BigInteger x) {
+            return -x;
+        }
+
+        [SpecialName]
+        public static object Abs(BigInteger x) {
+            return x.Abs();
+        }
+
+        public static bool __bool__(BigInteger x) {
+            return !x.IsZero();
+        }
+
+        public static BigInteger __trunc__(BigInteger self) {
+            return self;
+        }
+
+        public static object __int__(BigInteger x) {
+            if (x.AsInt32(out int i32)) {
+                return ScriptingRuntimeHelpers.Int32ToObject(i32);
+            }
+            return x;
+        }
+
+        public static BigInteger __index__(BigInteger self) {
+            return self;
+        }
+
+        public static object __float__(BigInteger self) {
+            return ToDouble(self);
+        }
+
+        public static int __hash__(BigInteger self) {
+            // check if it's in the Int64 or UInt64 range, and use the built-in hashcode for that instead
+            // this ensures that objects added to dictionaries as (U)Int64 can be looked up with Python int
+            if (self.AsInt64(out long i64)) {
+                return Int64Ops.__hash__(i64);
+            } else if (self.AsUInt64(out ulong u64)) {
+                return UInt64Ops.__hash__(u64);
+            }
+
+            if (self.IsNegative()) {
+                self = -self;
+                var h = unchecked(-(int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
+                if (h == -1) return -2;
+                return h;
+            }
+            return unchecked((int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
+        }
+
+        public static string __repr__(BigInteger/*!*/ self) {
+            return self.ToString();
+        }
+
+        public static object __getnewargs__(CodeContext context, BigInteger self) {
+            return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
+        }
+
+        public static BigInteger __round__(BigInteger number) {
+            return number;
+        }
+
+        public static BigInteger __round__(BigInteger self, BigInteger ndigits) {
+            // as of Python 3 rounding is to the nearest even number, not away from zero
+            if (ndigits >= 0) {
+                return self;
+            }
+
+            if (!ndigits.AsInt32(out var intNDigits)) {
+                // probably the best course of action. anyone trying this is in for trouble anyway.
+                return BigInteger.Zero;
+            }
+
+            // see https://bugs.python.org/issue4707#msg78141
+            var i = BigInteger.Pow(10, -intNDigits);
+            var r = Mod(self, 2 * i);
+            var o = i / 2;
+            self -= r;
+
+            if (r <= o) {
+                return self;
+            } else if (r < 3 * o) {
+                return self + i;
+            } else {
+                return self + 2 * i;
+            }
+        }
+
+        public static BigInteger __round__(BigInteger self, object? ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index) {
+                case int i:
+                    return __round__(self, i);
+
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
+        }
+
+        #endregion
+
+        #region Binary and Ternary Operations - Arithmetic
+
+        [SpecialName]
+        public static double TrueDivide(BigInteger x, BigInteger y) {
+            if (y == BigInteger.Zero) {
+                throw new DivideByZeroException();
+            }
+
+            // first see if we can keep the two inputs as floats to give a precise result
+            double fRes, fDiv;
+            if (x.TryToFloat64(out fRes) && y.TryToFloat64(out fDiv)) {
+                return fRes / fDiv;
+            }
+
+            // otherwise give the user the truncated result if the result fits in a float
+            BigInteger rem;
+            BigInteger res = BigInteger.DivRem(x, y, out rem);
+            if (res.TryToFloat64(out fRes)) {
+                if (rem != BigInteger.Zero) {
+                    // scale remainder so that the fraction could be integer
+                    BigInteger fraction = BigInteger.DivRem(rem << 56, y, out rem); // adding 7 tailing zero bytes, bigger than sys.float_info.mant_dig
+                    // round to nearest FPU
+                    if (rem.IsPositive()) {
+                        if (rem >= y / 2) {
+                            fraction += 1;
+                        }
+                    } else {
+                        if (rem <= -y / 2) {
+                            fraction -= 1;
+                        }
+                    }
+
+                    if (fraction.TryToFloat64(out fDiv)) {
+                        fRes += fDiv / (1L << 56);
+                    }
+                }
+
+                return fRes;
+            }
+
+            // otherwise report an error
+            throw PythonOps.OverflowError("integer division result too large for a float");
+        }
+
+        [SpecialName]
+        public static BigInteger FloorDivide(BigInteger x, BigInteger y) {
+            return DivMod(x, y, out _);
+        }
+
+        [SpecialName]
+        public static BigInteger Mod(BigInteger x, BigInteger y) {
+            BigInteger r;
+            DivMod(x, y, out r);
+            return r;
+        }
+
+        [SpecialName]
+        public static PythonTuple DivMod(BigInteger x, BigInteger y) {
+            BigInteger mod;
+            BigInteger div = DivMod(x, y, out mod);
+            return PythonTuple.MakeTuple(div, mod);
+        }
+
+        private static BigInteger DivMod(BigInteger x, BigInteger y, out BigInteger r) {
+            BigInteger rr;
+            BigInteger qq = BigInteger.DivRem(x, y, out rr);
+
+            if (x >= BigInteger.Zero) {
+                if (y > BigInteger.Zero) {
+                    r = rr;
+                    return qq;
+                } else {
+                    if (rr == BigInteger.Zero) {
+                        r = rr;
+                        return qq;
+                    } else {
+                        r = rr + y;
+                        return qq - BigInteger.One;
+                    }
+                }
+            } else {
+                if (y > BigInteger.Zero) {
+                    if (rr == BigInteger.Zero) {
+                        r = rr;
+                        return qq;
+                    } else {
+                        r = rr + y;
+                        return qq - BigInteger.One;
+                    }
+                } else {
+                    r = rr;
+                    return qq;
+                }
+            }
+        }
 
         [SpecialName]
         public static object Power(BigInteger x, object? y, object? z) {
@@ -363,92 +570,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static BigInteger DivMod(BigInteger x, BigInteger y, out BigInteger r) {
-            BigInteger rr;
-            BigInteger qq = BigInteger.DivRem(x, y, out rr);
+        #endregion
 
-            if (x >= BigInteger.Zero) {
-                if (y > BigInteger.Zero) {
-                    r = rr;
-                    return qq;
-                } else {
-                    if (rr == BigInteger.Zero) {
-                        r = rr;
-                        return qq;
-                    } else {
-                        r = rr + y;
-                        return qq - BigInteger.One;
-                    }
-                }
-            } else {
-                if (y > BigInteger.Zero) {
-                    if (rr == BigInteger.Zero) {
-                        r = rr;
-                        return qq;
-                    } else {
-                        r = rr + y;
-                        return qq - BigInteger.One;
-                    }
-                } else {
-                    r = rr;
-                    return qq;
-                }
-            }
-        }
-
-        [SpecialName]
-        public static BigInteger FloorDivide(BigInteger x, BigInteger y) {
-            return DivMod(x, y, out _);
-        }
-
-        [SpecialName]
-        public static double TrueDivide(BigInteger x, BigInteger y) {
-            if (y == BigInteger.Zero) {
-                throw new DivideByZeroException();
-            }
-
-            // first see if we can keep the two inputs as floats to give a precise result
-            double fRes, fDiv;
-            if (x.TryToFloat64(out fRes) && y.TryToFloat64(out fDiv)) {
-                return fRes / fDiv;
-            }
-
-            // otherwise give the user the truncated result if the result fits in a float
-            BigInteger rem;
-            BigInteger res = BigInteger.DivRem(x, y, out rem);
-            if (res.TryToFloat64(out fRes)) {                
-                if(rem != BigInteger.Zero) {
-                    // scale remainder so that the fraction could be integer
-                    BigInteger fraction = BigInteger.DivRem(rem  << 56, y, out rem); // adding 7 tailing zero bytes, bigger than sys.float_info.mant_dig
-                    // round to nearest FPU
-                    if (rem.IsPositive()) {
-                        if (rem >= y / 2) {
-                            fraction += 1;
-                        }
-                    } else {
-                        if (rem <= -y / 2) {
-                            fraction -= 1;
-                        }
-                    }
-
-                    if (fraction.TryToFloat64(out fDiv)) {
-                        fRes += fDiv / (1L << 56);
-                    }
-                }
-
-                return fRes;
-            }            
-
-            // otherwise report an error
-            throw PythonOps.OverflowError("integer division result too large for a float");
-        }
-
-        [SpecialName]
-        public static BigInteger Mod(BigInteger x, BigInteger y) {
-            BigInteger r;
-            DivMod(x, y, out r);
-            return r;
-        }
+        #region Binary Operations - Bitwise
 
         [SpecialName]
         public static BigInteger LeftShift(BigInteger x, int y) {
@@ -485,50 +609,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        [SpecialName]
-        public static PythonTuple DivMod(BigInteger x, BigInteger y) {
-            BigInteger mod;
-            BigInteger div = DivMod(x, y, out mod);
-            return PythonTuple.MakeTuple(div, mod);
-        }
-
-        #region Unary operators
-
-        public static object __abs__(BigInteger x) {
-            return x.Abs();
-        }
-
-        public static bool __bool__(BigInteger x) {
-            return !x.IsZero();
-        }
-
-        [SpecialName]
-        public static object Negate(BigInteger x) {
-            return -x;
-        }
-
-        public static object __pos__(BigInteger x) {
-            return x;
-        }
-
-        public static object __int__(BigInteger x) {
-            if (x.AsInt32(out int i32)) {
-                return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject(i32);
-            }
-            return x;
-        }
-
-        public static object __float__(BigInteger self) {
-            return ToDouble(self);
-        }
-
-        public static object __getnewargs__(CodeContext context, BigInteger self) {
-            return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
-        }
-
-        #endregion
-
-        #region Code generation helpers
+        #region Code Generation Helpers
         // These functions make the code generation of other integer types more regular.
 
         internal static BigInteger Add(BigInteger x, BigInteger y) => x + y;
@@ -547,51 +628,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        [PropertyMethod, SpecialName]
-        public static BigInteger Getreal(BigInteger self) {
-            return self;
-        }
-        [PropertyMethod, SpecialName]
-        public static BigInteger Getimag(BigInteger self) {
-            return (BigInteger)0;
-        }
-        public static BigInteger conjugate(BigInteger self) {
-            return self;
-        }
-        [PropertyMethod, SpecialName]
-        public static BigInteger Getnumerator(BigInteger self) {
-            return self;
-        }
-        [PropertyMethod, SpecialName]
-        public static BigInteger Getdenominator(BigInteger self) {
-            return 1;
-        }
-
-        public static int bit_length(BigInteger self) {
-            return MathUtils.BitLength(self);
-        }
-
-        public static BigInteger __trunc__(BigInteger self) {
-            return self;
-        }
-
-        [SpecialName, ImplicitConversionMethod]
-        public static double ConvertToDouble(BigInteger self) {
-            return self.ToFloat64();
-        }
-
-        [SpecialName, ExplicitConversionMethod]
-        public static int ConvertToInt32(BigInteger self) {
-            if (self.AsInt32(out int res)) {
-                return res;
-            }
-            throw Converter.CannotConvertOverflow("int", self);
-        }
-
-        [SpecialName, ImplicitConversionMethod]
-        public static BigInteger ConvertToBigInteger(bool self) {
-            return self ? BigInteger.One : BigInteger.Zero;
-        }
+        #region Binary Operations - Comparisons
 
         [SpecialName]
         public static bool LessThan(BigInteger x, BigInteger y) => x < y;
@@ -632,33 +669,55 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static bool NotEquals(BigInteger x, uint y) => x != y;
 
-        public static BigInteger __index__(BigInteger self) {
+        #endregion
+
+        #region Conversion operators
+
+        [SpecialName, ImplicitConversionMethod]
+        public static double ConvertToDouble(BigInteger self) {
+            return self.ToFloat64();
+        }
+
+        [SpecialName, ExplicitConversionMethod]
+        public static int ConvertToInt32(BigInteger self) {
+            if (self.AsInt32(out int res)) {
+                return res;
+            }
+            throw Converter.CannotConvertOverflow("int", self);
+        }
+
+        [SpecialName, ImplicitConversionMethod]
+        public static BigInteger ConvertToBigInteger(bool self) {
+            return self ? BigInteger.One : BigInteger.Zero;
+        }
+
+        #endregion
+
+        #region Public API - Numerics
+
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getreal(BigInteger self) {
             return self;
         }
-
-        public static int __hash__(BigInteger self) {
-            // check if it's in the Int64 or UInt64 range, and use the built-in hashcode for that instead
-            // this ensures that objects added to dictionaries as (U)Int64 can be looked up with Python longs
-            if (self.AsInt64(out long i64)) {
-                return Int64Ops.__hash__(i64);
-            } else if (self.AsUInt64(out ulong u64)) {
-                return UInt64Ops.__hash__(u64);
-            }
-
-            if (self.IsNegative()) {
-                self = -self;
-                var h = unchecked(-(int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
-                if (h == -1) return -2;
-                return h;
-            }
-            return unchecked((int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getimag(BigInteger self) {
+            return (BigInteger)0;
+        }
+        public static BigInteger conjugate(BigInteger self) {
+            return self;
+        }
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getnumerator(BigInteger self) {
+            return self;
+        }
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getdenominator(BigInteger self) {
+            return 1;
         }
 
-        public static string __repr__(BigInteger/*!*/ self) {
-            return self.ToString();
+        public static int bit_length(BigInteger self) {
+            return MathUtils.BitLength(self);
         }
-
-        #region Direct Conversions
 
         [PythonHidden]
         public static BigInteger ToBigInteger(BigInteger self) {
@@ -667,133 +726,7 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        #region Mimic IConvertible members
-
-        [PythonHidden]
-        public static bool ToBoolean(BigInteger self, IFormatProvider? provider) {
-            return !self.IsZero;
-        }
-
-        [PythonHidden]
-        public static byte ToByte(BigInteger self, IFormatProvider? provider) {
-            return (byte)self;
-        }
-
-        [CLSCompliant(false), PythonHidden]
-        public static sbyte ToSByte(BigInteger self, IFormatProvider? provider) {
-            return (sbyte)self;
-        }
-
-        [PythonHidden]
-        public static char ToChar(BigInteger self, IFormatProvider? provider) {
-            int res;
-            if (self.AsInt32(out res) && res <= Char.MaxValue && res >= Char.MinValue) {
-                return (char)res;
-            }
-            throw new OverflowException("big integer won't fit into char");
-        }
-
-        [PythonHidden]
-        public static decimal ToDecimal(BigInteger self, IFormatProvider? provider) {
-            return (decimal)self;
-        }
-
-        [PythonHidden]
-        public static double ToDouble(BigInteger self, IFormatProvider? provider) {
-            return ConvertToDouble(self);
-        }
-
-        [PythonHidden]
-        public static float ToSingle(BigInteger self, IFormatProvider? provider) {
-            return checked((float)ConvertToDouble(self));
-        }
-
-        [PythonHidden]
-        public static short ToInt16(BigInteger self, IFormatProvider? provider) {
-            return (short)self;
-        }
-
-        [PythonHidden]
-        public static int ToInt32(BigInteger self, IFormatProvider? provider) {
-            return (int)self;
-        }
-
-        [PythonHidden]
-        public static long ToInt64(BigInteger self, IFormatProvider? provider) {
-            return (long)self;
-        }
-
-        [CLSCompliant(false), PythonHidden]
-        public static ushort ToUInt16(BigInteger self, IFormatProvider? provider) {
-            return (ushort)self;
-        }
-
-        [CLSCompliant(false), PythonHidden]
-        public static uint ToUInt32(BigInteger self, IFormatProvider? provider) {
-            return (uint)self;
-        }
-
-        [CLSCompliant(false), PythonHidden]
-        public static ulong ToUInt64(BigInteger self, IFormatProvider? provider) {
-            return (ulong)self;
-        }
-
-        [PythonHidden]
-        public static DateTime ToDateTime(BigInteger self, IFormatProvider? provider) {
-            throw new InvalidCastException("Invalid cast from 'BigInteger' to 'DateTime'");
-        }
-
-        [PythonHidden]
-        public static object ToType(BigInteger self, Type targetType, IFormatProvider? provider) {
-
-            if (targetType is null) throw new ArgumentNullException(nameof(targetType));
-
-            if (targetType == typeof(BigInteger))
-                return self;
-            if (targetType == typeof(Boolean))
-                return ToBoolean(self, provider);
-            if (targetType == typeof(Char))
-                return ToChar(self, provider);
-            if (targetType == typeof(SByte))
-                return ToSByte(self, provider);
-            if (targetType == typeof(Byte))
-                return ToByte(self, provider);
-            if (targetType == typeof(Int16))
-                return ToInt16(self, provider);
-            if (targetType == typeof(UInt16))
-                return ToUInt16(self, provider);
-            if (targetType == typeof(Int32))
-                return ToInt32(self, provider);
-            if (targetType == typeof(UInt32))
-                return ToUInt32(self, provider);
-            if (targetType == typeof(Int64))
-                return ToInt64(self, provider);
-            if (targetType == typeof(UInt64))
-                return ToUInt64(self, provider);
-            if (targetType == typeof(Single))
-                return ToSingle(self, provider);
-            if (targetType == typeof(Double))
-                return ToDouble(self, provider);
-            if (targetType == typeof(Decimal))
-                return ToDecimal(self, provider);
-            if (targetType == typeof(DateTime))
-                return ToDateTime(self, provider);
-            if (targetType == typeof(String))
-                return self.ToString(provider);
-            if (targetType == typeof(Object))
-                return (object)self;
-            if (targetType.IsEnum)
-                throw new InvalidCastException($"Invalid cast from '{self.GetType().FullName}' to '{targetType.FullName}'.");
-
-            throw new InvalidCastException($"Unable to cast object of type '{self.GetType().FullName}' to type '{targetType.FullName}'.");
-        }
-
-        [PythonHidden]
-        public static TypeCode GetTypeCode(BigInteger self) {
-            return TypeCode.Object;
-        }
-
-        #endregion
+        #region Public API - String/Bytes
 
         public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotDynamicNull] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
@@ -964,49 +897,144 @@ namespace IronPython.Runtime.Operations {
             return __new__(context, type, val);
         }
 
-        public static BigInteger __round__(BigInteger number) {
-            return number;
+        #endregion
+
+        #region Mimic IConvertible members
+
+        [PythonHidden]
+        public static bool ToBoolean(BigInteger self, IFormatProvider? provider) {
+            return !self.IsZero;
         }
 
-        public static BigInteger __round__(BigInteger self, BigInteger ndigits) {
-            // as of Python 3 rounding is to the nearest even number, not away from zero
-            if (ndigits >= 0) {
-                return self;
-            }
-
-            if (!ndigits.AsInt32(out var intNDigits)) {
-                // probably the best course of action. anyone trying this is in for trouble anyway.
-                return BigInteger.Zero;
-            }
-
-            // see https://bugs.python.org/issue4707#msg78141
-            var i = BigInteger.Pow(10, -intNDigits);
-            var r = Mod(self, 2 * i);
-            var o = i / 2;
-            self -= r;
-
-            if (r <= o) {
-                return self;
-            } else if (r < 3 * o) {
-                return self + i;
-            } else {
-                return self + 2 * i;
-            }
+        [PythonHidden]
+        public static byte ToByte(BigInteger self, IFormatProvider? provider) {
+            return (byte)self;
         }
 
-        public static BigInteger __round__(BigInteger self, object? ndigits) {
-            var index = PythonOps.Index(ndigits);
-            switch (index) {
-                case int i:
-                    return __round__(self, i);
+        [CLSCompliant(false), PythonHidden]
+        public static sbyte ToSByte(BigInteger self, IFormatProvider? provider) {
+            return (sbyte)self;
+        }
 
-                case BigInteger bi:
-                    return __round__(self, bi);
+        [PythonHidden]
+        public static char ToChar(BigInteger self, IFormatProvider? provider) {
+            int res;
+            if (self.AsInt32(out res) && res <= Char.MaxValue && res >= Char.MinValue) {
+                return (char)res;
             }
+            throw new OverflowException("big integer won't fit into char");
+        }
 
-            throw PythonOps.RuntimeError(
-                "Unreachable code was reached. "
-                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
+        [PythonHidden]
+        public static decimal ToDecimal(BigInteger self, IFormatProvider? provider) {
+            return (decimal)self;
+        }
+
+        [PythonHidden]
+        public static double ToDouble(BigInteger self, IFormatProvider? provider) {
+            return ConvertToDouble(self);
+        }
+
+        [PythonHidden]
+        public static float ToSingle(BigInteger self, IFormatProvider? provider) {
+            return checked((float)ConvertToDouble(self));
+        }
+
+        [PythonHidden]
+        public static short ToInt16(BigInteger self, IFormatProvider? provider) {
+            return (short)self;
+        }
+
+        [PythonHidden]
+        public static int ToInt32(BigInteger self, IFormatProvider? provider) {
+            return (int)self;
+        }
+
+        [PythonHidden]
+        public static long ToInt64(BigInteger self, IFormatProvider? provider) {
+            return (long)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static ushort ToUInt16(BigInteger self, IFormatProvider? provider) {
+            return (ushort)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static uint ToUInt32(BigInteger self, IFormatProvider? provider) {
+            return (uint)self;
+        }
+
+        [CLSCompliant(false), PythonHidden]
+        public static ulong ToUInt64(BigInteger self, IFormatProvider? provider) {
+            return (ulong)self;
+        }
+
+        [PythonHidden]
+        public static DateTime ToDateTime(BigInteger self, IFormatProvider? provider) {
+            throw new InvalidCastException("Invalid cast from 'BigInteger' to 'DateTime'");
+        }
+
+        [PythonHidden]
+        public static object ToType(BigInteger self, Type targetType, IFormatProvider? provider) {
+
+            if (targetType is null) throw new ArgumentNullException(nameof(targetType));
+
+            if (targetType == typeof(BigInteger))
+                return self;
+            if (targetType == typeof(Boolean))
+                return ToBoolean(self, provider);
+            if (targetType == typeof(Char))
+                return ToChar(self, provider);
+            if (targetType == typeof(SByte))
+                return ToSByte(self, provider);
+            if (targetType == typeof(Byte))
+                return ToByte(self, provider);
+            if (targetType == typeof(Int16))
+                return ToInt16(self, provider);
+            if (targetType == typeof(UInt16))
+                return ToUInt16(self, provider);
+            if (targetType == typeof(Int32))
+                return ToInt32(self, provider);
+            if (targetType == typeof(UInt32))
+                return ToUInt32(self, provider);
+            if (targetType == typeof(Int64))
+                return ToInt64(self, provider);
+            if (targetType == typeof(UInt64))
+                return ToUInt64(self, provider);
+            if (targetType == typeof(Single))
+                return ToSingle(self, provider);
+            if (targetType == typeof(Double))
+                return ToDouble(self, provider);
+            if (targetType == typeof(Decimal))
+                return ToDecimal(self, provider);
+            if (targetType == typeof(DateTime))
+                return ToDateTime(self, provider);
+            if (targetType == typeof(String))
+                return self.ToString(provider);
+            if (targetType == typeof(Object))
+                return (object)self;
+            if (targetType.IsEnum)
+                throw new InvalidCastException($"Invalid cast from '{self.GetType().FullName}' to '{targetType.FullName}'.");
+
+            throw new InvalidCastException($"Unable to cast object of type '{self.GetType().FullName}' to type '{targetType.FullName}'.");
+        }
+
+        [PythonHidden]
+        public static TypeCode GetTypeCode(BigInteger self) {
+            return TypeCode.Object;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        internal static double ToDouble(BigInteger self) {
+            // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
+            if (MathUtils.TryToFloat64(self, out double res)) {
+                return res;
+            }
+            throw new OverflowException("int too large to convert to float");
         }
 
         internal static string AbsToHex(BigInteger val, bool lowercase) {
@@ -1023,14 +1051,6 @@ namespace IronPython.Runtime.Operations {
                 res = "-" + res;
             }
             return res;
-        }
-
-        internal static double ToDouble(BigInteger self) {
-            // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
-            if (MathUtils.TryToFloat64(self, out double res)) {
-                return res;
-            }
-            throw new OverflowException("int too large to convert to float");
         }
 
         private static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
@@ -1067,5 +1087,7 @@ namespace IronPython.Runtime.Operations {
             
             return res.ToString();
         }
+
+        #endregion
     }
 }

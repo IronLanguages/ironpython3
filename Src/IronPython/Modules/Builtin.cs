@@ -87,20 +87,19 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("abs(number) -> number\n\nReturn the absolute value of the argument.")]
         public static object abs(CodeContext/*!*/ context, object? o) {
-            if (o is int) return Int32Ops.Abs((int)o);
-            if (o is long) return Int64Ops.Abs((long)o);
-            if (o is double) return DoubleOps.Abs((double)o);
-            if (o is bool) return (((bool)o) ? 1 : 0);
+            if (o is int i32) return Int32Ops.Abs(i32);
+            if (o is long i64) return Int64Ops.Abs(i64);
+            if (o is double d) return DoubleOps.Abs(d);
+            if (o is bool b) return (b ? 1 : 0);
 
-            if (o is BigInteger) return BigIntegerOps.__abs__((BigInteger)o);
-            if (o is Complex) return ComplexOps.Abs((Complex)o);
+            if (o is BigInteger bi) return BigIntegerOps.Abs(bi);
+            if (o is Complex z) return ComplexOps.Abs(z);
 
-            object value;
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__abs__", out value)) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__abs__", out object? value)) {
                 return value;
             }
 
-            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonOps.GetPythonTypeName(o));
+            throw PythonOps.TypeErrorForBadInstance("bad operand type for abs(): '{0}'", o);
         }
 
         public static bool all(CodeContext context, object? x) {

@@ -3,14 +3,35 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import unittest
 
-from iptest import is_cli, big, myint, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
 
-class IntTest(unittest.TestCase):
+class IntTest(IronPythonTestCase):
     def test_from_bytes(self):
         self.assertEqual(type(int.from_bytes(b"abc", "big")), int)
         self.assertEqual(type(myint.from_bytes(b"abc", "big")), myint) # https://github.com/IronLanguages/ironpython3/pull/973
+
+    def test_to_bytes_bigint(self):
+        self.assertEqual((0x01<<64).to_bytes(9, 'little', signed=False), b'\x00\x00\x00\x00\x00\x00\x00\x00\x01')
+        self.assertEqual((0xff<<64).to_bytes(9, 'little', signed=False), b'\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        self.assertEqual((0x01<<64).to_bytes(9, 'big', signed=False), b'\x01\x00\x00\x00\x00\x00\x00\x00\x00')
+        self.assertEqual((0xff<<64).to_bytes(9, 'big', signed=False), b'\xff\x00\x00\x00\x00\x00\x00\x00\x00')
+
+        self.assertEqual((-0x01<<64).to_bytes(9, 'little', signed=True), b'\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        self.assertEqual((-0x80<<64).to_bytes(9, 'little', signed=True), b'\x00\x00\x00\x00\x00\x00\x00\x00\x80')
+        self.assertEqual((-0x01<<64).to_bytes(9, 'big', signed=True), b'\xff\x00\x00\x00\x00\x00\x00\x00\x00')
+        self.assertEqual((-0x80<<64).to_bytes(9, 'big', signed=True), b'\x80\x00\x00\x00\x00\x00\x00\x00\x00')
+
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (0x01<<64).to_bytes, 8, 'little', signed=False)
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (0xFF<<64).to_bytes, 8, 'little', signed=False)
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (0x01<<63).to_bytes, 8, 'little', signed=True)
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (0xFF<<64).to_bytes, 9, 'little', signed=True)
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (-0x01<<64).to_bytes, 8, 'little', signed=True)
+        self.assertRaisesMessage(OverflowError, "int too big to convert", (-0x80<<64).to_bytes, 8, 'little', signed=True)
+
+        self.assertRaisesMessage(ValueError, "byteorder must be either 'little' or 'big'", (-1<<64).to_bytes, -1, 'medium')
+        self.assertRaisesMessage(ValueError, "length argument must be non-negative", (-1<<64).to_bytes, -1, 'little')
+        self.assertRaisesMessage(OverflowError, "can't convert negative int to unsigned", (-1<<64).to_bytes, 0, 'little')
 
     def test_int(self):
         class MyTrunc:
@@ -105,5 +126,4 @@ class IntTest(unittest.TestCase):
         self.assertSequenceEqual({i : 'i', j : 'j', k : 'k'}.keys(), {j})
         self.assertSequenceEqual({i : 'i', j : 'j', k : 'k'}.keys(), {k})
 
-if __name__ == "__main__":
-    unittest.main()
+run_test(__name__)

@@ -853,15 +853,14 @@ namespace IronPython.Runtime.Operations {
 
         public static Bytes to_bytes(BigInteger value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
-            // TODO: should probably be moved to IntOps.Generated and included in all types
+
+            bool isLittle = (byteorder == "little");
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
             if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
             if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
 
-            bool isLittle = byteorder == "little";
-            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
-
-            var reqLength = (bit_length(value) + (signed ? 1 : 0)) / 8;
+            var reqLength = (bit_length(value) + (signed ? 1 : 0) + 7) / 8;
             if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
 
             var bytes = value.ToByteArray();

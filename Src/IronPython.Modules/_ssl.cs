@@ -392,36 +392,23 @@ namespace IronPython.Modules {
             }
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
-                chain = new X509Chain();
-                X509Certificate2Collection certificates = new X509Certificate2Collection();
-                foreach (object cert in _certCollection) {
-                    if (cert is X509Certificate2) {
-                        certificates.Add((X509Certificate2)cert);
-                    } else if (cert is X509Certificate) {
-                        certificates.Add(new X509Certificate2((X509Certificate)cert));
-                    }
-                }
-                chain.ChainPolicy.ExtraStore.AddRange(certificates);
-                chain.Build(new X509Certificate2(certificate));
-
-                if (chain.ChainStatus.Length > 0) {
-                    foreach (var elem in chain.ChainStatus) {
-                        if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
-                            bool isOk = false;
-                            foreach (var cert in _certCollection) {
-                                if (certificate.Issuer == cert.Subject) {
-                                    isOk = true;
-                                }
-                            }
-
-                            if (isOk) {
-                                continue;
+                Debug.Assert(chain.ChainStatus.Length > 0);
+                foreach (var elem in chain.ChainStatus) {
+                    if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
+                        bool isOk = false;
+                        foreach (var cert in _certCollection) {
+                            if (certificate.Issuer == cert.Subject) {
+                                isOk = true;
                             }
                         }
 
-                        ValidationError(sslPolicyErrors);
-                        break;
+                        if (isOk) {
+                            continue;
+                        }
                     }
+
+                    ValidationError(sslPolicyErrors);
+                    break;
                 }
             }
 

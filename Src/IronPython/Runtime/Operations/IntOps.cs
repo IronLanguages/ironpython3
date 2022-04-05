@@ -338,26 +338,50 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self == 0, self > 0);
         }
 
-        public static Bytes to_bytes(Int32 value, int length, [NotDynamicNull] string byteorder, bool signed=false) {
+        public static Bytes to_bytes(Int32 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
-            // TODO: should probably be moved to IntOps.Generated and included in all types
+            bool isLittle = (byteorder == "little");
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
             if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
             if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
 
-            bool isLittle = byteorder == "little";
-            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
+            if (value == 0) return Bytes.Make(new byte[length]);
 
-            var reqLength = (bit_length(value) + (value > 0 && signed ? 1 : 0) + 7) / 8;
-            if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
+            var bytes = new byte[length];
+            int cur, end, step;
+            if (isLittle) {
+                cur = 0; end = length; step = 1;
+            } else {
+                cur = length - 1; end = -1; step = -1;
+            }
 
-            var bytes = new BigInteger(value).ToByteArray();
-            IEnumerable<byte> res = bytes;
-            if (length > bytes.Length) res = res.Concat(Enumerable.Repeat<byte>((value < 0) ? (byte)0xff : (byte)0, length - bytes.Length));
-            else if (length < bytes.Length) res = res.Take(length);
-            if (!isLittle) res = res.Reverse();
+            if (!signed || value >= 0) {
+                UInt32 uvalue = unchecked((UInt32)value);
+                do {
+                    if (cur == end) ThrowOverflow();
+                    bytes[cur] = (byte)(uvalue & 0xFF);
+                    uvalue >>= 8;
+                    cur += step;
+                } while (uvalue != 0);
+            } else {
+                byte curbyte;
+                do {
+                    if (cur == end) ThrowOverflow();
+                    bytes[cur] = curbyte = (byte)(value & 0xFF);
+                    value >>= 8;
+                    cur += step;
+                } while (value != -1 || (curbyte & 0x80) == 0);
 
-            return Bytes.Make(res.ToArray());
+                while (cur != end) {
+                    bytes[cur] = 0xFF;
+                    cur += step;
+                }
+            }
+
+            return Bytes.Make(bytes);
+
+            static void ThrowOverflow() => throw PythonOps.OverflowError("int too big to convert");
         }
 
         [ClassMethod, StaticExtensionMethod]

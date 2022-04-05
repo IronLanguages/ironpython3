@@ -860,16 +860,25 @@ namespace IronPython.Runtime.Operations {
             if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
             if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
 
-            var reqLength = (bit_length(value) + (signed ? 1 : 0) + 7) / 8;
-            if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
+            if (value.IsZero) return Bytes.Make(new byte[length]);
 
             var bytes = value.ToByteArray();
-            IEnumerable<byte> res = bytes;
-            if (length > bytes.Length) res = res.Concat(Enumerable.Repeat<byte>((value < 0) ? (byte)0xff : (byte)0, length - bytes.Length));
-            else if (length < bytes.Length) res = res.Take(length);
-            if (!isLittle) res = res.Reverse();
+            if (length > bytes.Length) {
+                int top = bytes.Length;
+                Array.Resize(ref bytes, length);
+                if (value.IsNegative()) {
+                    for (int i = top; i < length; i++) {
+                        bytes[i] = 0xFF;
+                    }
+                }
+            } else if (length == bytes.Length - 1 && !signed && bytes[length] == 0) {
+                Array.Resize(ref bytes, length);
+            } else if (length != bytes.Length) {
+                throw PythonOps.OverflowError("int too big to convert");
+            }
+            if (!isLittle) Array.Reverse(bytes);
 
-            return Bytes.Make(res.ToArray());
+            return Bytes.Make(bytes);
         }
 
         [ClassMethod, StaticExtensionMethod]

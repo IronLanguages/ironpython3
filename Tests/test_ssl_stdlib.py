@@ -85,43 +85,43 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'
-        #suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # blocking
-        #suite.addTest(test.test_ssl.ThreadedTests('test_asyncore_server'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # TypeError: Value cannot be null.
+        #suite.addTest(test.test_ssl.ThreadedTests('test_asyncore_server')) # blocking
         #suite.addTest(test.test_ssl.ThreadedTests('test_check_hostname'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_compression'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_compression_disabled'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_crl_check'))
+        suite.addTest(test.test_ssl.ThreadedTests('test_compression_disabled'))
+        suite.addTest(test.test_ssl.ThreadedTests('test_crl_check'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_default_ciphers'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_default_ecdh_curve'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_dh_params'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_do_handshake_enotconn'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_dh_params'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
+        suite.addTest(test.test_ssl.ThreadedTests('test_do_handshake_enotconn'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_echo'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_empty_cert'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert_enotconn'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_handshake_timeout'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_malformed_cert'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_malformed_key'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_nonexisting_cert'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_npn_protocols'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_empty_cert'))) # NotImplementedError: keyfile
+        #suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert')) # blocking
+        suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert_enotconn'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_handshake_timeout'))) # TypeError: Value cannot be null.
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_malformed_cert'))) # NotImplementedError: keyfile
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_malformed_key'))) # NotImplementedError: keyfile
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_nonexisting_cert'))) # NotImplementedError: keyfile
+        suite.addTest(test.test_ssl.ThreadedTests('test_npn_protocols'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_sslv2'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_sslv23'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_sslv3'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_tlsv1'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_tlsv1_1'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_tlsv1_2'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_read_write_after_close_raises_valuerror'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_recv_send'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_rude_shutdown'))
+        #suite.addTest(test.test_ssl.ThreadedTests('test_read_write_after_close_raises_valuerror')) # blocking
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_recv_send'))) # NotImplementedError: keyfile
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_rude_shutdown'))) # TypeError: Value cannot be null.
         #suite.addTest(test.test_ssl.ThreadedTests('test_selected_npn_protocol'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_server_accept'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_sni_callback'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_sni_callback_alert'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_sni_callback_raising'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_sni_callback_wrong_return_type'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_sni_callback'))) # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_sni_callback_alert'))) # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_sni_callback_raising'))) # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
+        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_sni_callback_wrong_return_type'))) # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
         #suite.addTest(test.test_ssl.ThreadedTests('test_socketserver'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_starttls'))
-        #suite.addTest(test.test_ssl.ThreadedTests('test_tls_unique_channel_binding'))
+        #suite.addTest(test.test_ssl.ThreadedTests('test_starttls')) # blocking
+        suite.addTest(test.test_ssl.ThreadedTests('test_tls_unique_channel_binding'))
         return suite
 
     else:

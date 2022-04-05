@@ -359,7 +359,7 @@ def gen_binaryops(cw, ty):
         cw.writeline("#region Binary Operations - Bitwise")
 
         if ty.name not in ["BigInteger"]:
-            ltypes = [('[NotNull]BigInteger', 'BigInteger')]
+            ltypes = [('BigInteger', 'BigInteger')]
             if ty.size < Int32.MaxValue:
                 ltypes.append( ('Int32', 'Int32') )
             for ltype, optype in ltypes:
@@ -478,6 +478,8 @@ def gen_api(cw, ty):
     cw.writeline("#endregion")
 
 type_header = """
+#region Constructors
+
 [StaticExtensionMethod]
 public static object __new__(PythonType cls) {
     return __new__(cls, default(%(type)s));
@@ -516,7 +518,9 @@ public static object __new__(PythonType cls, object value) {
         return checked((%(type)s)ed.Value);
     }
     throw PythonOps.TypeError("can't convert {0} to %(type)s", PythonOps.GetPythonTypeName(value));
-}"""
+}
+
+#endregion"""
 
 def gen_header(cw, ty):
     if ty.name not in ['Double', 'Single', 'BigInteger']:

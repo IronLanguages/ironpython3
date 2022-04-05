@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,16 +14,54 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
 
     public static partial class Int32Ops {
 
-        #region Binary Operators
+        #region Unary Operations
+
+        public static object __getnewargs__(CodeContext context, int self) {
+            return PythonTuple.MakeTuple(Int32Ops.__new__(TypeCache.Int32, self));
+        }
+
+        public static int __round__(int self) {
+            return self;
+        }
+
+        public static object __round__(int number, BigInteger ndigits) {
+            var result = BigIntegerOps.__round__(new BigInteger(number), ndigits);
+            if (result.AsInt32(out var ret)) {
+                return ret;
+            }
+
+            // this path can be hit when number is close to int.MaxValue and ndigits is negative,
+            // causing number to be rounded up and over int.MaxValue
+            return result;
+        }
+
+        public static object __round__(int self, object ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index) {
+                case int i:
+                    return __round__(self, i);
+
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
+        }
+
+        #endregion
+
+        #region Binary and Ternary Operations - Arithmetic
 
         [SpecialName]
         public static object FloorDivide(int x, int y) {
@@ -34,6 +74,19 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static int Mod(int x, int y) {
             return MathUtils.FloorRemainder(x, y);
+        }
+
+        public static PythonTuple __divmod__(int x, int y) {
+            return PythonTuple.MakeTuple(FloorDivide(x, y), Mod(x, y));
+        }
+
+        [return: MaybeNotImplemented]
+        public static object __divmod__(int x, object y) {
+            return NotImplementedType.Value;
+        }
+
+        public static object __rdivmod__(int x, int y) {
+            return __divmod__(y, x);
         }
 
         [SpecialName]
@@ -100,6 +153,10 @@ namespace IronPython.Runtime.Operations {
         }
 
 
+        #endregion
+
+        #region Binary Operations - Bitwise
+
         [SpecialName]
         public static object LeftShift(int x, int y) {
             if (y < 0) {
@@ -137,32 +194,18 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        public static PythonTuple __divmod__(int x, int y) {
-            return PythonTuple.MakeTuple(FloorDivide(x, y), Mod(x, y));
+        #region Public API - Numerics
+
+        [PythonHidden]
+        public static BigInteger ToBigInteger(this int self) {
+            return self;
         }
 
-        [return: MaybeNotImplemented]
-        public static object __divmod__(int x, object y) {
-            return NotImplementedType.Value;
-        }
+        #endregion
 
-        public static object __getnewargs__(CodeContext context, int self) {
-            return PythonTuple.MakeTuple(Int32Ops.__new__(TypeCache.Int32, self));
-        }
+        #region Public API - String/Bytes
 
-        public static object __rdivmod__(int x, int y) {
-            return __divmod__(y, x);
-        }
-
-        public static double __float__(int self) {
-            return (double)self;
-        }
-
-        public static int __abs__(int self) {
-            return Math.Abs(self);
-        }
-
-        public static string __format__(CodeContext/*!*/ context, int self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, int self, [NotDynamicNull] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
             if (spec.Precision != null) {
@@ -295,7 +338,7 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self == 0, self > 0);
         }
 
-        public static Bytes to_bytes(Int32 value, int length, string byteorder, bool signed=false) {
+        public static Bytes to_bytes(Int32 value, int length, [NotDynamicNull] string byteorder, bool signed=false) {
             // TODO: signed should be a keyword only argument
             // TODO: should probably be moved to IntOps.Generated and included in all types
 
@@ -318,44 +361,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ClassMethod, StaticExtensionMethod]
-        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNull] string byteorder, bool signed = false)
+        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotDynamicNull] string byteorder, bool signed = false)
             // TODO: signed should be a keyword only argument
             => BigIntegerOps.from_bytes(context, type, bytes, byteorder, signed);
 
-        public static int __round__(int self) {
-            return self;
-        }
 
-        public static object __round__(int number, BigInteger ndigits) {
-            var result = BigIntegerOps.__round__(new BigInteger(number), ndigits);
-            if (result.AsInt32(out var ret)) {
-                return ret;
-            }
+        #endregion
 
-            // this path can be hit when number is close to int.MaxValue and ndigits is negative,
-            // causing number to be rounded up and over int.MaxValue
-            return result;
-        }
-
-        public static object __round__(int self, object ndigits) {
-            var index = PythonOps.Index(ndigits);
-            switch (index) {
-                case int i:
-                    return __round__(self, i);
-
-                case BigInteger bi:
-                    return __round__(self, bi);
-            }
-
-            throw PythonOps.RuntimeError(
-                "Unreachable code was reached. "
-                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
-        }
-
-        [PythonHidden]
-        public static BigInteger ToBigInteger(this int self) {
-            return self;
-        }
+        #region Helpers
 
         private static string ToHex(int self, bool lowercase) {
             string digits;
@@ -438,5 +451,7 @@ namespace IronPython.Runtime.Operations {
             }
             return digits;
         }
+
+        #endregion
     }
 }

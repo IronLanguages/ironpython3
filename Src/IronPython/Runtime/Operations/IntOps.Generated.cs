@@ -23,6 +23,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class SByteOps {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(SByte));
@@ -62,6 +64,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to SByte", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -165,12 +169,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(SByte x, [NotNull]BigInteger y) {
+        public static object LeftShift(SByte x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static SByte RightShift(SByte x, [NotNull]BigInteger y) {
+        public static SByte RightShift(SByte x, BigInteger y) {
             return (SByte)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -295,6 +299,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class ByteOps {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(Byte));
@@ -334,6 +340,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to Byte", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -492,12 +500,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(Byte x, [NotNull]BigInteger y) {
+        public static object LeftShift(Byte x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static Byte RightShift(Byte x, [NotNull]BigInteger y) {
+        public static Byte RightShift(Byte x, BigInteger y) {
             return (Byte)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -649,6 +657,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class Int16Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(Int16));
@@ -688,6 +698,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to Int16", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -791,12 +803,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(Int16 x, [NotNull]BigInteger y) {
+        public static object LeftShift(Int16 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static Int16 RightShift(Int16 x, [NotNull]BigInteger y) {
+        public static Int16 RightShift(Int16 x, BigInteger y) {
             return (Int16)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -926,6 +938,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class UInt16Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(UInt16));
@@ -965,6 +979,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to UInt16", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -1123,12 +1139,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(UInt16 x, [NotNull]BigInteger y) {
+        public static object LeftShift(UInt16 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static UInt16 RightShift(UInt16 x, [NotNull]BigInteger y) {
+        public static UInt16 RightShift(UInt16 x, BigInteger y) {
             return (UInt16)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -1290,6 +1306,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class Int32Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(Int32));
@@ -1329,6 +1347,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to Int32", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -1412,12 +1432,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(Int32 x, [NotNull]BigInteger y) {
+        public static object LeftShift(Int32 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static Int32 RightShift(Int32 x, [NotNull]BigInteger y) {
+        public static Int32 RightShift(Int32 x, BigInteger y) {
             return (Int32)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -1542,6 +1562,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class UInt32Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(UInt32));
@@ -1581,6 +1603,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to UInt32", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -1739,12 +1763,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(UInt32 x, [NotNull]BigInteger y) {
+        public static object LeftShift(UInt32 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static UInt32 RightShift(UInt32 x, [NotNull]BigInteger y) {
+        public static UInt32 RightShift(UInt32 x, BigInteger y) {
             return (UInt32)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -1906,6 +1930,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class Int64Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(Int64));
@@ -1945,6 +1971,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to Int64", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -2051,12 +2079,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(Int64 x, [NotNull]BigInteger y) {
+        public static object LeftShift(Int64 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static Int64 RightShift(Int64 x, [NotNull]BigInteger y) {
+        public static Int64 RightShift(Int64 x, BigInteger y) {
             return (Int64)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 
@@ -2186,6 +2214,8 @@ namespace IronPython.Runtime.Operations {
 
     public static partial class UInt64Ops {
 
+        #region Constructors
+
         [StaticExtensionMethod]
         public static object __new__(PythonType cls) {
             return __new__(cls, default(UInt64));
@@ -2225,6 +2255,8 @@ namespace IronPython.Runtime.Operations {
             }
             throw PythonOps.TypeError("can't convert {0} to UInt64", PythonOps.GetPythonTypeName(value));
         }
+
+        #endregion
 
         #region Unary Operations
 
@@ -2380,12 +2412,12 @@ namespace IronPython.Runtime.Operations {
         #region Binary Operations - Bitwise
 
         [SpecialName]
-        public static object LeftShift(UInt64 x, [NotNull]BigInteger y) {
+        public static object LeftShift(UInt64 x, BigInteger y) {
             return BigIntegerOps.LeftShift((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static UInt64 RightShift(UInt64 x, [NotNull]BigInteger y) {
+        public static UInt64 RightShift(UInt64 x, BigInteger y) {
             return (UInt64)BigIntegerOps.RightShift((BigInteger)x, (BigInteger)y);
         }
 

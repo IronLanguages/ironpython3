@@ -956,7 +956,7 @@ class HTTPSTest(TestCase):
         import ssl
         support.requires('network')
         with support.transient_internet('self-signed.pythontest.net'):
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.verify_mode = ssl.CERT_REQUIRED
             context.load_verify_locations(CERT_selfsigned_pythontestdotnet)
             h = client.HTTPSConnection('self-signed.pythontest.net', 443, context=context)
@@ -971,7 +971,7 @@ class HTTPSTest(TestCase):
         import ssl
         support.requires('network')
         with support.transient_internet('self-signed.pythontest.net'):
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.verify_mode = ssl.CERT_REQUIRED
             context.load_verify_locations(CERT_localhost)
             h = client.HTTPSConnection('self-signed.pythontest.net', 443, context=context)

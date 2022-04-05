@@ -28,12 +28,12 @@ class _SslTest(IronPythonTestCase):
         self.assertEqual(_ssl.CERT_NONE, 0)
         self.assertEqual(_ssl.CERT_OPTIONAL, 1)
         self.assertEqual(_ssl.CERT_REQUIRED, 2)
-        if sys.version_info >= (3,5):
+        if is_cli or sys.version_info >= (3,5):
             self.assertRaises(AttributeError, lambda: _ssl.PROTOCOL_SSLv2)
         else:
             self.assertEqual(_ssl.PROTOCOL_SSLv2, 0)
         self.assertEqual(_ssl.PROTOCOL_SSLv23, 2)
-        if sys.version_info >= (3,7):
+        if is_cli or sys.version_info >= (3,7):
             self.assertRaises(AttributeError, lambda: _ssl.PROTOCOL_SSLv3)
         else:
             self.assertEqual(_ssl.PROTOCOL_SSLv3, 1)

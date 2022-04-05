@@ -1004,7 +1004,7 @@ namespace IronPython.Runtime {
                 int len = text.Length;
                 var idx = text.IndexOf('j');
                 if (idx == -1) {
-                    return MathUtils.MakeReal(ParseFloatNoCatch(text));
+                    return MathUtils.MakeReal(ParseFloat(text));
                 } else if (idx == len - 1) {
                     // last sign delimits real and imaginary...
                     int signPos = text.LastIndexOfAny(signs);
@@ -1019,7 +1019,7 @@ namespace IronPython.Runtime {
 
                     // no real component
                     if (signPos < 0) {
-                        return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloatNoCatch(text.Substring(0, len - 1)));
+                        return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloat(text.Substring(0, len - 1)));
                     }
 
                     string real = text.Substring(0, signPos);
@@ -1028,7 +1028,7 @@ namespace IronPython.Runtime {
                         imag += "1"; // convert +/- to +1/-1
                     }
 
-                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
+                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
                 } else {
                     throw ExnMalformed();
                 }

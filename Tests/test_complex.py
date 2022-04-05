@@ -2,8 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-from iptest.type_util import *
-from iptest import IronPythonTestCase, run_test
+from iptest import big, IronPythonTestCase, mycomplex, run_test
 
 class ComplexTest(IronPythonTestCase):
 
@@ -156,6 +155,15 @@ class ComplexTest(IronPythonTestCase):
         self.assertEqual(complex(int_with_float(2)), 1+0j)
         self.assertEqual(complex(int_with_index(2)), 2+0j)
 
+        # .NET allows trailing null characters in its double.Parse but Python doesn't
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "\x00")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1\x00")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1\x00j")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1e1\x00")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1e1\x00j")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1\x00+1j")
+        self.assertRaisesMessage(ValueError, "complex() arg is a malformed string", complex, "1+1\x00j")
+
     def test_negative_zero_repr_str(self):
         # see also similar test in StdLib
 
@@ -237,16 +245,12 @@ class ComplexTest(IronPythonTestCase):
         self.assertEqual(complex(2), complex(2, 0))
 
     def test_inherit(self):
-        class mycomplex(complex): pass
-
         a = mycomplex(2+1j)
         self.assertEqual(a.real, 2)
         self.assertEqual(a.imag, 1)
 
-
     def test_repr(self):
         self.assertEqual(repr(1-6j), '(1-6j)')
-
 
     def test_infinite(self):
         self.assertEqual(repr(1.0e340j),  'infj')

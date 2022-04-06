@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, big, myint, clr_int_types, skipUnlessIronPython, run_test
 
 class IntTest(IronPythonTestCase):
     def test_from_bytes(self):
@@ -32,6 +32,26 @@ class IntTest(IronPythonTestCase):
         self.assertRaisesMessage(ValueError, "byteorder must be either 'little' or 'big'", (-1<<64).to_bytes, -1, 'medium')
         self.assertRaisesMessage(ValueError, "length argument must be non-negative", (-1<<64).to_bytes, -1, 'little')
         self.assertRaisesMessage(OverflowError, "can't convert negative int to unsigned", (-1<<64).to_bytes, 0, 'little')
+
+    def test_to_bytes_int(self):
+        for t in clr_int_types:
+            for v in (0, 1, -1, 2, -2, 127, -128, 128, -129, 255, 256, -256, 257, -257,
+                        2**31-1, -2**31, 2**31, -2**31-1, 2**32-1, -2**32, 2**32, -2**32-1,
+                        2**63-1, -2**63, 2**63, -2**63-1, 2**64-1, -2**64, 2**64, -2**64-1):
+                for byteorder in ('little', 'big'):
+                    for signed in (True, False):
+                        if signed and v < 0:
+                            continue
+                        if v < t.MinValue or v > t.MaxValue:
+                            continue
+                        for length in range(0, 10):
+                            try:
+                                expeced = big(v).to_bytes(length, byteorder, signed)
+                            except OverflowError:
+                                continue # length too short
+
+                            actual = t(v).to_bytes(length, byteorder, signed)
+                            self.assertEqual(actual, expeced)
 
     def test_int(self):
         class MyTrunc:

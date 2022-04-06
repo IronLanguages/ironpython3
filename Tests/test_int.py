@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, big, myint, clr_int_types, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
 
 class IntTest(IronPythonTestCase):
     def test_from_bytes(self):
@@ -33,11 +33,15 @@ class IntTest(IronPythonTestCase):
         self.assertRaisesMessage(ValueError, "length argument must be non-negative", (-1<<64).to_bytes, -1, 'little')
         self.assertRaisesMessage(OverflowError, "can't convert negative int to unsigned", (-1<<64).to_bytes, 0, 'little')
 
-    def test_to_bytes_int(self):
+    @skipUnlessIronPython()
+    def test_to_bytes_clrint(self):
+        from iptest import clr_int_types
+
         for t in clr_int_types:
             for v in (0, 1, -1, 2, -2, 127, -128, 128, -129, 255, 256, -256, 257, -257,
+                        2**15-1, -2**15, 2**15, -2**15-1, 2**16-1, -2**16, 2**16, -2**16-1,
                         2**31-1, -2**31, 2**31, -2**31-1, 2**32-1, -2**32, 2**32, -2**32-1,
-                        2**63-1, -2**63, 2**63, -2**63-1, 2**64-1, -2**64, 2**64, -2**64-1):
+                        2**63-1, -2**63, 2**63, -2**63-1, 2**64-1):
                 for byteorder in ('little', 'big'):
                     for signed in (True, False):
                         if signed and v < 0:

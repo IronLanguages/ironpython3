@@ -1933,103 +1933,6 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class StringIO : TextIOWrapper, IDynamicMetaObjectProvider {
-            public StringIO(
-                CodeContext/*!*/ context,
-                string initial_value="",
-                string newline="\n"
-            ) : base(context) {
-            }
-
-            private string newline;
-
-            public void __init__(
-                CodeContext/*!*/ context,
-                string initial_value="",
-                string newline="\n"
-            ) {
-                var buf = new BytesIO(context);
-                buf.__init__(null);
-                base.__init__(context, buf, "utf-8", null, newline, false);
-
-                this.newline = newline;
-                if (newline == null) {
-                    _writeTranslate = false;
-                }
-                if (!string.IsNullOrEmpty(initial_value)) {
-                    write(context, initial_value);
-                    seek(context, 0, 0);
-                }
-            }
-
-            #region Public API
-
-            public override object detach(CodeContext/*!*/ context) {
-                // doesn't make sense on StringIO
-                throw UnsupportedOperation(context, "detach");
-            }
-
-            public string getvalue(CodeContext/*!*/ context) {
-                flush(context);
-                return ((BytesIO)(object)_bufferTyped).getvalue().decode(context, _encoding, _errors);
-            }
-
-            #endregion
-
-            #region Pickling
-
-            public PythonTuple __getstate__(CodeContext context) {
-                return PythonTuple.MakeTuple(getvalue(context), newline, tell(context), new PythonDictionary(__dict__));
-            }
-
-            public void __setstate__(CodeContext context, PythonTuple tuple) {
-                _checkClosed();
-
-                if (tuple.__len__() != 4) {
-                    throw PythonOps.TypeError("_io.StringIO.__setstate__ argument should be 4-tuple, got tuple");
-                }
-
-                var initial_value = tuple[0] as string;
-                if (!(tuple[0] is string || tuple[0] is null)) {
-                    throw PythonOps.TypeError($"initial_value must be str or None, not '{PythonOps.GetPythonTypeName(tuple[0])}'");
-                }
-
-                var newline = tuple[1] as string;
-                if (!(tuple[1] is string || tuple[1] is null)) {
-                    throw PythonOps.TypeError($"newline must be str or None, not '{PythonOps.GetPythonTypeName(tuple[0])}'");
-                }
-
-                if (!(tuple[2] is int i)) {
-                    throw PythonOps.TypeError($"third item of state must be an integer, not {PythonOps.GetPythonTypeName(tuple[1])}");
-                }
-                if (i < 0) {
-                    throw PythonOps.ValueError("position value cannot be negative");
-                }
-
-                var dict = tuple[3] as PythonDictionary;
-                if (!(tuple[3] is PythonDictionary || tuple[3] is null)) {
-                    throw PythonOps.TypeError($"fourth item of state should be a dict, got a {PythonOps.GetPythonTypeName(tuple[2])}");
-                }
-
-                __init__(context, initial_value: initial_value, newline: newline);
-                seek(context, i);
-
-                if (!(dict is null))
-                    __dict__.update(context, dict);
-            }
-
-            #endregion
-
-            #region IDynamicMetaObjectProvider Members
-
-            DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
-                return new MetaExpandable<StringIO>(parameter, this);
-            }
-
-            #endregion
-        }
-
-        [PythonType]
         public class TextIOWrapper : _TextIOBase, IEnumerator<object>, IEnumerable<object>, ICodeFormattable, IDynamicMetaObjectProvider {
             public int _CHUNK_SIZE = 128;
 
@@ -3007,7 +2910,7 @@ namespace IronPython.Modules {
         [PythonType]
         public class IncrementalNewlineDecoder {
             [Flags]
-            private enum LineEnding {
+            internal enum LineEnding {
                 None = 0,
                 CR = 1,
                 LF = 2,
@@ -3153,28 +3056,28 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object newlines {
-                get {
-                    switch (_seenNL) {
-                        case LineEnding.None:
-                            return null;
-                        case LineEnding.CR:
-                            return "\r";
-                        case LineEnding.LF:
-                            return "\n";
-                        case LineEnding.CRLF:
-                            return "\r\n";
-                        case LineEnding.CR | LineEnding.LF:
-                            return PythonTuple.MakeTuple("\r", "\n");
-                        case LineEnding.CR | LineEnding.CRLF:
-                            return PythonTuple.MakeTuple("\r", "\r\n");
-                        case LineEnding.LF | LineEnding.CRLF:
-                            return PythonTuple.MakeTuple("\n", "\r\n");
-                        default: // LineEnding.All
-                            return PythonTuple.MakeTuple("\r", "\n", "\r\n");
-                    }
+            internal static object GetNewLines(LineEnding _seenNL) {
+                switch (_seenNL) {
+                    case LineEnding.None:
+                        return null;
+                    case LineEnding.CR:
+                        return "\r";
+                    case LineEnding.LF:
+                        return "\n";
+                    case LineEnding.CRLF:
+                        return "\r\n";
+                    case LineEnding.CR | LineEnding.LF:
+                        return PythonTuple.MakeTuple("\r", "\n");
+                    case LineEnding.CR | LineEnding.CRLF:
+                        return PythonTuple.MakeTuple("\r", "\r\n");
+                    case LineEnding.LF | LineEnding.CRLF:
+                        return PythonTuple.MakeTuple("\n", "\r\n");
+                    default: // LineEnding.All
+                        return PythonTuple.MakeTuple("\r", "\n", "\r\n");
                 }
             }
+
+            public object newlines => GetNewLines(_seenNL);
         }
 
         public static PythonType BlockingIOError {

@@ -685,7 +685,8 @@ namespace IronPython.Runtime.Operations {
             PythonTypeSlot res;
 
             NameType nt = NameType.Field;
-            if (!PythonBinder.IsExtendedType(info.DeclaringType) && 
+            if (!PythonBinder.IsExtendedType(info.DeclaringType) &&
+                info.DeclaringType != typeof(int) && // GH #52
                 !PythonHiddenAttribute.IsHidden(info)) {
                 nt |= NameType.PythonField;
             }

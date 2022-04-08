@@ -715,8 +715,17 @@ namespace IronPython.Runtime.Operations {
             return 1;
         }
 
-        public static int bit_length(BigInteger self) {
+        public static object bit_length(BigInteger self) {
+#if NET
+            long length = self.Sign switch {
+                0 => 0,
+                > 0 => self.GetBitLength(),
+                < 0 => BigInteger.Abs(self).GetBitLength(),
+            };
+            return (length is >= int.MinValue and <= int.MaxValue) ? (int)length : (BigInteger)length;
+#else
             return MathUtils.BitLength(self);
+#endif
         }
 
         [PythonHidden]
@@ -858,10 +867,25 @@ namespace IronPython.Runtime.Operations {
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 
             if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
-            if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
+            if (!signed && value.Sign < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
 
             if (value.IsZero) return Bytes.Make(new byte[length]);
 
+#if NETCOREAPP
+            var bytes = new byte[length];
+            int start = isLittle? 0 : length - value.GetByteCount(isUnsigned: !signed);
+            if (start < 0) ThrowOverflow();
+            if (!value.TryWriteBytes(bytes.AsSpan(start), out int written, isUnsigned: !signed, isBigEndian: !isLittle)) {
+                ThrowOverflow();
+            }
+            if (written < length && value.Sign < 0) {
+                if (isLittle) {
+                    bytes.AsSpan(written).Fill(0xFF);
+                } else {
+                    bytes.AsSpan(0, length - written).Fill(0xFF);
+                }
+            }
+#else
             var bytes = value.ToByteArray();
             if (length > bytes.Length) {
                 int top = bytes.Length;
@@ -874,11 +898,14 @@ namespace IronPython.Runtime.Operations {
             } else if (length == bytes.Length - 1 && !signed && bytes[length] == 0) {
                 Array.Resize(ref bytes, length);
             } else if (length != bytes.Length) {
-                throw PythonOps.OverflowError("int too big to convert");
+                ThrowOverflow();
             }
             if (!isLittle) Array.Reverse(bytes);
+#endif
 
             return Bytes.Make(bytes);
+
+            static void ThrowOverflow() => throw PythonOps.OverflowError("int too big to convert");
         }
 
         [ClassMethod, StaticExtensionMethod]
@@ -905,9 +932,9 @@ namespace IronPython.Runtime.Operations {
             return __new__(context, type, val);
         }
 
-        #endregion
+#endregion
 
-        #region Mimic IConvertible members
+#region Mimic IConvertible members
 
         [PythonHidden]
         public static bool ToBoolean(BigInteger self, IFormatProvider? provider) {
@@ -1033,9 +1060,9 @@ namespace IronPython.Runtime.Operations {
             return TypeCode.Object;
         }
 
-        #endregion
+#endregion
 
-        #region Helpers
+#region Helpers
 
         internal static double ToDouble(BigInteger self) {
             // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
@@ -1096,6 +1123,6 @@ namespace IronPython.Runtime.Operations {
             return res.ToString();
         }
 
-        #endregion
+#endregion
     }
 }

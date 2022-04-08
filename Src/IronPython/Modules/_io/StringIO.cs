@@ -35,7 +35,7 @@ namespace IronPython.Modules {
             private string? _newline;
             private LineEnding _seenNL;
 
-            internal StringIO(CodeContext context)
+            private StringIO(CodeContext context)
                 : base(context) {
                 _data = new char[DEFAULT_BUF_SIZE];
             }
@@ -44,16 +44,7 @@ namespace IronPython.Modules {
                 : this(context) { }
 
             public void __init__(CodeContext context, string? initial_value = "", string? newline = "\n") {
-                switch (newline) {
-                    case null:
-                    case "":
-                    case "\n":
-                    case "\r":
-                    case "\r\n":
-                        break;
-                    default:
-                        throw PythonOps.ValueError("illegal newline value: {0}", PythonOps.Repr(context, newline));
-                }
+                CheckNewline(context, newline);
                 _newline = newline;
 
                 _pos = _length = 0;
@@ -163,7 +154,7 @@ namespace IronPython.Modules {
 
                 PythonList lines = new PythonList();
                 for (var line = readline(-1); line.Length > 0; line = readline(-1)) {
-                    lines.append(line);
+                    lines.AddNoLock(line);
                     if (size > 0) {
                         size -= line.Length;
                         if (size <= 0) {
@@ -180,9 +171,7 @@ namespace IronPython.Modules {
 
                 switch (whence) {
                     case 0:
-                        if (pos < 0) {
-                            throw PythonOps.ValueError("Negative seek position {0}", pos);
-                        }
+                        if (pos < 0) throw PythonOps.ValueError("Negative seek position {0}", pos);
                         _pos = pos;
                         return _pos;
                     case 1:
@@ -197,9 +186,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            [Documentation("")]
-            public BigInteger seek(double pos, [Optional] object? whence) => throw PythonOps.TypeError("integer argument expected, got float");
-
             [Documentation("Change stream position.\n\n"
                 + "Seek to character offset pos relative to position indicated by whence:\n"
                 + "     0  Start of stream (the default).  pos should be >= 0;\n"
@@ -208,8 +194,6 @@ namespace IronPython.Modules {
                 + "Returns the new absolute position."
                 )]
             public override BigInteger seek(CodeContext context, BigInteger pos, [Optional] object? whence) {
-                _checkClosed();
-
                 int posInt = (int)pos;
                 switch (whence) {
                     case int v:
@@ -218,9 +202,6 @@ namespace IronPython.Modules {
                         return seek(posInt, (int)v);
                     case Extensible<BigInteger> v:
                         return seek(posInt, (int)v.Value);
-                    case double _:
-                    case Extensible<double> _:
-                        throw PythonOps.TypeError("integer argument expected, got float");
                     default:
                         return seek(posInt, GetInt(whence));
                 }
@@ -268,8 +249,6 @@ namespace IronPython.Modules {
                     return truncate(sizeInt);
                 }
 
-                _checkClosed();
-
                 throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(size));
             }
 
@@ -312,7 +291,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override object newlines => GetNewLines(_seenNL);
+            public override object newlines => GetNewlines(_seenNL);
 
             #endregion
 
@@ -336,16 +315,7 @@ namespace IronPython.Modules {
                     Extensible<string> es => es.Value,
                     _ => throw PythonOps.TypeError($"newline must be str or None, not {0}", PythonOps.GetPythonTypeName(tuple[1])),
                 };
-                switch (newline) {
-                    case null:
-                    case "":
-                    case "\n":
-                    case "\r":
-                    case "\r\n":
-                        break;
-                    default:
-                        throw PythonOps.ValueError("illegal newline value: {0}", PythonOps.Repr(context, newline));
-                }
+                CheckNewline(context, newline);
 
                 var initial_value = tuple[0] switch {
                     null => string.Empty,
@@ -388,6 +358,19 @@ namespace IronPython.Modules {
             #endregion
 
             #region Private implementation details
+
+            private static void CheckNewline(CodeContext context, string? newline) {
+                switch (newline) {
+                    case null:
+                    case "":
+                    case "\n":
+                    case "\r":
+                    case "\r\n":
+                        break;
+                    default:
+                        throw PythonOps.ValueError("illegal newline value: {0}", PythonOps.Repr(context, newline));
+                };
+            }
 
             private int DoWrite(string str) {
                 if (str.Length == 0) {

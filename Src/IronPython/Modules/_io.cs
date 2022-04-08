@@ -3056,28 +3056,20 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static object GetNewLines(LineEnding _seenNL) {
-                switch (_seenNL) {
-                    case LineEnding.None:
-                        return null;
-                    case LineEnding.CR:
-                        return "\r";
-                    case LineEnding.LF:
-                        return "\n";
-                    case LineEnding.CRLF:
-                        return "\r\n";
-                    case LineEnding.CR | LineEnding.LF:
-                        return PythonTuple.MakeTuple("\r", "\n");
-                    case LineEnding.CR | LineEnding.CRLF:
-                        return PythonTuple.MakeTuple("\r", "\r\n");
-                    case LineEnding.LF | LineEnding.CRLF:
-                        return PythonTuple.MakeTuple("\n", "\r\n");
-                    default: // LineEnding.All
-                        return PythonTuple.MakeTuple("\r", "\n", "\r\n");
-                }
+            internal static object GetNewlines(LineEnding _seenNL) {
+                return _seenNL switch {
+                    LineEnding.None => null,
+                    LineEnding.CR => "\r",
+                    LineEnding.LF => "\n",
+                    LineEnding.CRLF => "\r\n",
+                    LineEnding.CR | LineEnding.LF => PythonTuple.MakeTuple("\r", "\n"),
+                    LineEnding.CR | LineEnding.CRLF => PythonTuple.MakeTuple("\r", "\r\n"),
+                    LineEnding.LF | LineEnding.CRLF => PythonTuple.MakeTuple("\n", "\r\n"),
+                    _ => PythonTuple.MakeTuple("\r", "\n", "\r\n"), // LineEnding.All
+                };
             }
 
-            public object newlines => GetNewLines(_seenNL);
+            public object newlines => GetNewlines(_seenNL);
         }
 
         public static PythonType BlockingIOError {

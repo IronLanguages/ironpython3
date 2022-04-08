@@ -74,11 +74,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            /// <summary>
-            /// getvalue() -> str.
-            /// 
-            /// Retrieve the entire contents of the object.
-            /// </summary>
             public string getvalue() {
                 _checkClosed();
 
@@ -89,12 +84,11 @@ namespace IronPython.Modules {
                 return _data.AsSpan().Slice(0, _length).ToString();
             }
 
-            [Documentation("read([size]) -> read at most size bytes, returned as a bytes object.\n\n"
-                + "If the size argument is negative, read until EOF is reached.\n"
-                + "Return an empty string at EOF."
+            [Documentation("Read at most size characters, returned as a string.\n\n"
+                + "If the argument is negative or omitted, read until EOF\n"
+                + "is reached. Return an empty string at EOF."
                 )]
-            public override object read(CodeContext/*!*/
-                context, object? size = null) {
+            public override object read(CodeContext context, object? size = null) {
                 _checkClosed();
                 int sz = GetInt(size, -1);
 
@@ -111,12 +105,12 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public override bool readable(CodeContext/*!*/ context) {
+            public override bool readable(CodeContext context) {
                 _checkClosed();
                 return true;
             }
 
-            public override object readline(CodeContext/*!*/ context, int limit = -1)
+            public override object readline(CodeContext context, int limit = -1)
                 => readline(limit);
 
             private string readline(int limit) {
@@ -158,10 +152,10 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            [Documentation("readlines([size]) -> list of bytes objects, each a line from the file.\n\n"
-                + "Call readline() repeatedly and return a list of the lines so read.\n"
-                + "The optional size argument, if given, is an approximate bound on the\n"
-                + "total number of bytes in the lines returned."
+            [Documentation("Return a list of lines from the stream.\n\n"
+                + "hint can be specified to control the number of lines read: no more\n"
+                + "lines will be read if the total size (in bytes/characters) of all\n"
+                + "lines so far exceeds hint."
                 )]
             public override PythonList readlines(object? hint = null) {
                 _checkClosed();
@@ -203,16 +197,17 @@ namespace IronPython.Modules {
                 }
             }
 
+            [Documentation("")]
             public BigInteger seek(double pos, [Optional] object? whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
-            [Documentation("seek(pos, whence=0) -> int.  Change stream position.\n\n"
-                + "Seek to byte offset pos relative to position indicated by whence:\n"
+            [Documentation("Change stream position.\n\n"
+                + "Seek to character offset pos relative to position indicated by whence:\n"
                 + "     0  Start of stream (the default).  pos should be >= 0;\n"
-                + "     1  Current position - pos may be negative;\n"
-                + "     2  End of stream - pos usually negative.\n"
+                + "     1  Current position - pos must be 0;\n"
+                + "     2  End of stream - pos must be 0.\n"
                 + "Returns the new absolute position."
                 )]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object? whence) {
+            public override BigInteger seek(CodeContext context, BigInteger pos, [Optional] object? whence) {
                 _checkClosed();
 
                 int posInt = (int)pos;
@@ -231,25 +226,27 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override bool seekable(CodeContext/*!*/ context) {
+            public override bool seekable(CodeContext context) {
                 _checkClosed();
                 return true;
             }
 
-            [Documentation("tell() -> current file position, an integer")]
-            public override BigInteger tell(CodeContext/*!*/ context) {
+            [Documentation("Tell the current file position.")]
+            public override BigInteger tell(CodeContext context) {
                 _checkClosed();
                 return _pos;
             }
 
-            [Documentation("truncate([size]) -> int.  Truncate the file to at most size bytes.\n\n"
-                + "Size defaults to the current file position, as returned by tell().\n"
-                + "Returns the new size.  Imply an absolute seek to the position size."
+            [Documentation("Truncate size to pos.\n\n"
+                + "The pos argument defaults to the current file position, as\n"
+                + "returned by tell().  The current file position is unchanged.\n"
+                + "Returns the new absolute position."
                 )]
             public BigInteger truncate() {
                 return truncate(_pos);
             }
 
+            [Documentation("")]
             public BigInteger truncate(int size) {
                 _checkClosed();
                 if (size < 0) {
@@ -260,7 +257,8 @@ namespace IronPython.Modules {
                 return (BigInteger)size;
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object? size = null) {
+            [Documentation("")]
+            public override BigInteger truncate(CodeContext context, object? size = null) {
                 if (size == null) {
                     return truncate();
                 }
@@ -275,15 +273,16 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(size));
             }
 
-            public override bool writable(CodeContext/*!*/ context) {
+            public override bool writable(CodeContext context) {
                 _checkClosed();
                 return true;
             }
 
-            [Documentation("write(bytes) -> int.  Write bytes to file.\n\n"
-                + "Return the number of bytes written."
+            [Documentation("Write string to file.\n\n"
+                + "Returns the number of characters written, which is always equal to\n"
+                + "the length of the string."
                 )]
-            public override BigInteger write(CodeContext/*!*/ context, object? str) {
+            public override BigInteger write(CodeContext context, object? str) {
                 if (str is string s) {
                     return write(context, s);
                 } else if (str is Extensible<string> es) {
@@ -294,17 +293,17 @@ namespace IronPython.Modules {
             }
 
             // TODO: get rid of virtual? see https://github.com/IronLanguages/ironpython3/issues/1070
-            public virtual BigInteger write(CodeContext/*!*/ context, [NotNull] string str) {
+            [Documentation("")]
+            public virtual BigInteger write(CodeContext context, [NotNull] string str) {
                 _checkClosed();
                 return DoWrite(str);
             }
 
-            [Documentation("writelines(sequence_of_strings) -> None.  Write strings to the file.\n\n"
-                + "Note that newlines are not added.  The sequence can be any iterable\n"
-                + "object producing strings. This is equivalent to calling write() for\n"
-                + "each string."
+            [Documentation("Write a list of lines to stream.\n\n"
+                + "Line separators are not added, so it is usual for each of the\n"
+                + "lines provided to have a line separator at the end."
                 )]
-            public void writelines(CodeContext/*!*/ context, [NotNull] IEnumerable lines) {
+            public void writelines(CodeContext context, [NotNull] IEnumerable lines) {
                 _checkClosed();
 
                 IEnumerator en = lines.GetEnumerator();
@@ -405,8 +404,8 @@ namespace IronPython.Modules {
 
                         EnsureSizeSetLength(_pos + idx + 1);
                         span.Slice(0, idx).CopyTo(_data.AsSpan(_pos, idx));
-                        _data[_pos + idx] = '\n';
-                        _pos += idx + 1;
+                        _pos += idx;
+                        _data[_pos++] = '\n';
                         if (span[idx++] == '\r') {
                             if (idx < span.Length && span[idx] == '\n') {
                                 idx++;

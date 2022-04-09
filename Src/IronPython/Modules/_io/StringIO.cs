@@ -72,7 +72,7 @@ namespace IronPython.Modules {
                     return string.Empty;
                 }
 
-                return _data.AsSpan().Slice(0, _length).ToString();
+                return _data.AsSpan(0, _length).ToString();
             }
 
             [Documentation("Read at most size characters, returned as a string.\n\n"
@@ -81,17 +81,13 @@ namespace IronPython.Modules {
                 )]
             public override object read(CodeContext context, object? size = null) {
                 _checkClosed();
-                int sz = GetInt(size, -1);
+                int limit = GetInt(size, -1);
 
-                int len = Math.Max(0, _length - _pos);
-                if (sz >= 0) {
-                    len = Math.Min(len, sz);
-                }
-                if (len == 0) {
-                    return string.Empty;
-                }
+                int len = _length - _pos;
+                if (limit >= 0) len = Math.Min(len, limit);
+                if (len <= 0) return string.Empty;
 
-                var res = _data.AsSpan().Slice(_pos, len).ToString();
+                var res = _data.AsSpan(_pos, len).ToString();
                 _pos += len;
                 return res;
             }
@@ -106,9 +102,10 @@ namespace IronPython.Modules {
 
             private string readline(int limit) {
                 _checkClosed();
+
                 var len = _length - _pos;
                 if (limit >= 0) len = Math.Min(len, limit);
-                if (len == 0) return string.Empty;
+                if (len <= 0) return string.Empty;
 
                 var span = _data.AsSpan(_pos, len);
                 if (_newline is null) {
@@ -119,16 +116,15 @@ namespace IronPython.Modules {
                 } else if (_newline == string.Empty) {
                     var idx = span.IndexOfAny("\r\n".AsSpan());
                     if (idx != -1) {
-                        if (span[idx++] == '\n') {
-                            span = span.Slice(0, idx);
-                        } else {
-                            Debug.Assert(span[idx - 1] == '\r');
+                        if (span[idx++] == '\r') {
                             // ensure we don't split \r\n
                             if (idx < span.Length && span[idx] == '\n') {
                                 span = span.Slice(0, idx + 1);
                             } else {
                                 span = span.Slice(0, idx);
                             }
+                        } else {
+                            span = span.Slice(0, idx);
                         }
                     }
                 } else {

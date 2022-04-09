@@ -660,7 +660,7 @@ namespace IronPython.Runtime.Operations {
                 // only show methods defined outside of int
                  foreach (MethodInfo mi in methods) {
                     Debug.Assert(!mi.DeclaringType.IsInterface || typeof(int).GetInterfaces().Contains(mi.DeclaringType));
-                    if (mi.DeclaringType == typeof(int) ||
+                    if (PythonBinder.IsPythonSupportingType(mi.DeclaringType) ||
                         mi.DeclaringType.IsInterface ||
                         PythonHiddenAttribute.IsHidden(mi)) {
                         alwaysVisible = false;

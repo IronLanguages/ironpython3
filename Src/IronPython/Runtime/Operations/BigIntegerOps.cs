@@ -722,7 +722,7 @@ namespace IronPython.Runtime.Operations {
                 > 0 => self.GetBitLength(),
                 < 0 => BigInteger.Abs(self).GetBitLength(),
             };
-            return (length is >= int.MinValue and <= int.MaxValue) ? (int)length : (BigInteger)length;
+            return length <= int.MaxValue ? (int)length : (BigInteger)length;
 #else
             return MathUtils.BitLength(self);
 #endif

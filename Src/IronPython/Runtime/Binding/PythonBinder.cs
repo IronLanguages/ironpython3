@@ -805,16 +805,38 @@ namespace IronPython.Runtime.Binding {
             return t.Name;
         }
 
+        /// <summary>
+        /// Tests if a given type is a Python type (<see cref="IsPythonType(Type)"/>)
+        /// that is also an extended type
+        /// (i.e. a type with extension members defined in an extension type, like one of the Ops clases).
+        /// </summary>
+        /// <remarks>
+        /// There exist Python types that are not extended types (e.g. <see cref="Bytes"/>),
+        /// and types that are extended types but not Python types (e.g. <see cref="Array"/>).
+        /// Perhaps a more accurate name for this method would be <c>IsExtendedPythonType</c>.
+        /// In some places an extended Python type is called a system type.
+        /// </remarks>
         public static bool IsExtendedType(Type/*!*/ t) {
             Debug.Assert(t != null);
 
             return _sysTypes.ContainsKey(t);
         }
 
+        /// <summary>
+        /// Tests if a given type is used to implement one of the types in the Python language.
+        /// </summary>
         public static bool IsPythonType(Type/*!*/ t) {
             Debug.Assert(t != null);
 
             return _sysTypes.ContainsKey(t) || t.IsDefined(typeof(PythonTypeAttribute), false);
+        }
+
+        /// <summary>
+        /// Tests if a given type is a non-Python type but which instances are used
+        /// to support one of the Python types.
+        /// </summary>
+        public static bool IsPythonSupportingType(Type t) {
+            return t == typeof(int); // GH #52: Int32 instances used to support Python's int (== BigInteger)
         }
 
         /// <summary>

@@ -749,7 +749,7 @@ namespace IronPython.Runtime.Operations {
                 val = -self;
             }
             string digits;
-            
+
             switch (spec.Type) {
                 case 'n':
                     CultureInfo culture = context.LanguageContext.NumericCulture;
@@ -932,9 +932,9 @@ namespace IronPython.Runtime.Operations {
             return __new__(context, type, val);
         }
 
-#endregion
+        #endregion
 
-#region Mimic IConvertible members
+        #region Mimic IConvertible members
 
         [PythonHidden]
         public static bool ToBoolean(BigInteger self, IFormatProvider? provider) {
@@ -1060,9 +1060,9 @@ namespace IronPython.Runtime.Operations {
             return TypeCode.Object;
         }
 
-#endregion
+        #endregion
 
-#region Helpers
+        #region Helpers
 
         internal static double ToDouble(BigInteger self) {
             // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
@@ -1080,7 +1080,7 @@ namespace IronPython.Runtime.Operations {
             return ToDigits(val, 8, lowercase);
         }
 
-        internal static string ToBinary(BigInteger val) {            
+        internal static string ToBinary(BigInteger val) {
             string res = ToBinary(BigInteger.Abs(val), true, true);
             if (val.IsNegative()) {
                 res = "-" + res;
@@ -1092,7 +1092,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(!val.IsNegative());
 
             string digits = ToDigits(val, 2, lowercase);
-            
+
             if (includeType) {
                 digits = (lowercase ? "0b" : "0B") + digits;
             }
@@ -1119,10 +1119,10 @@ namespace IronPython.Runtime.Operations {
             for (int i = str.Length - 1; i >= 0; i--) {
                 res.Append(str[i]);
             }
-            
+
             return res.ToString();
         }
 
-#endregion
+        #endregion
     }
 }

@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
+import unittest
 
 from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
 
@@ -14,7 +15,7 @@ class IntNoClrTest(IronPythonTestCase):
         j = big(1)
         self.assertSetEqual(set(dir(i)), set(dir(j)))
 
-class IntTest(unittest.TestCase):
+class IntTest(IronPythonTestCase):
     def test_instance_set(self):
         i = 1
         j = big(1)

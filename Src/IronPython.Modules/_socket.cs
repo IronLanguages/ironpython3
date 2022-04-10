@@ -498,7 +498,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-                +"Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
+                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
                 )]
             public PythonTuple recvfrom_into([NotNull] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
                 using var buf = buffer.GetBufferNoThrow(BufferFlags.Writable);
@@ -1480,18 +1480,23 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntop() supports IPv4 and IPv6."
             )]
-        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, [NotNull] Bytes packedIP) {
+        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, [NotNull] IBufferProtocol packedIP) {
+            using var buffer = packedIP.GetBuffer();
+            var span = buffer.AsReadOnlySpan();
             if (!(
-                (packedIP.Count == IPv4AddrBytes && addressFamily == (int)AddressFamily.InterNetwork)
-                || (packedIP.Count == IPv6AddrBytes && addressFamily == (int)AddressFamily.InterNetworkV6)
+                (span.Length == IPv4AddrBytes && addressFamily == (int)AddressFamily.InterNetwork)
+                || (span.Length == IPv6AddrBytes && addressFamily == (int)AddressFamily.InterNetworkV6)
             )) {
                 throw PythonOps.ValueError("invalid length of packed IP address string");
             }
-            byte[] ipBytes = packedIP.UnsafeByteArray;
             if (addressFamily == (int)AddressFamily.InterNetworkV6) {
-                return IPv6BytesToColonHex(ipBytes);
+                return IPv6BytesToColonHex(span);
             }
-            return (new IPAddress(ipBytes)).ToString();
+#if NETCOREAPP
+            return new IPAddress(span).ToString();
+#else
+            return new IPAddress(buffer.AsUnsafeArray() ?? buffer.ToArray()).ToString();
+#endif
         }
 
         [Documentation("inet_aton(ip_string) -> packed_ip\n"
@@ -1517,7 +1522,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntoa() supports only IPv4."
             )]
-        public static string inet_ntoa(CodeContext/*!*/ context, [NotNull] Bytes packedIP) {
+        public static string inet_ntoa(CodeContext/*!*/ context, [NotNull] IBufferProtocol packedIP) {
             return inet_ntop(context, (int)AddressFamily.InterNetwork, packedIP);
         }
 
@@ -1731,7 +1736,7 @@ namespace IronPython.Modules {
         /// which differs from the normal Python implementation (but is allowed by the IETF);
         /// this method returns the standard (no dotted-quad) colon-hex form.
         /// </summary>
-        private static string IPv6BytesToColonHex(byte[] ipBytes) {
+        private static string IPv6BytesToColonHex(ReadOnlySpan<byte> ipBytes) {
             Debug.Assert(ipBytes.Length == IPv6AddrBytes);
 
             const int bytesPerWord = 2; // in bytes

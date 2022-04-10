@@ -12,6 +12,8 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
 
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
+
 #pragma warning disable 675
 
 namespace IronPython.Runtime.Operations {
@@ -292,6 +294,11 @@ namespace IronPython.Runtime.Operations {
 
         public static int bit_length(SByte value) {
             return MathUtils.BitLength((int)value);
+        }
+
+        public static Bytes to_bytes(SByte value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return Int64Ops.to_bytes(value, length, byteorder, signed);
         }
 
         #endregion
@@ -652,6 +659,11 @@ namespace IronPython.Runtime.Operations {
             return MathUtils.BitLength((int)value);
         }
 
+        public static Bytes to_bytes(Byte value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return UInt64Ops.to_bytes(value, length, byteorder, signed);
+        }
+
         #endregion
     }
 
@@ -931,6 +943,11 @@ namespace IronPython.Runtime.Operations {
 
         public static int bit_length(Int16 value) {
             return MathUtils.BitLength((int)value);
+        }
+
+        public static Bytes to_bytes(Int16 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return Int64Ops.to_bytes(value, length, byteorder, signed);
         }
 
         #endregion
@@ -1301,6 +1318,11 @@ namespace IronPython.Runtime.Operations {
             return MathUtils.BitLength((int)value);
         }
 
+        public static Bytes to_bytes(UInt16 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return UInt64Ops.to_bytes(value, length, byteorder, signed);
+        }
+
         #endregion
     }
 
@@ -1555,6 +1577,11 @@ namespace IronPython.Runtime.Operations {
 
         public static int bit_length(Int32 value) {
             return MathUtils.BitLength(value);
+        }
+
+        public static Bytes to_bytes(Int32 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return Int64Ops.to_bytes(value, length, byteorder, signed);
         }
 
         #endregion
@@ -1923,6 +1950,11 @@ namespace IronPython.Runtime.Operations {
 
         public static int bit_length(UInt32 value) {
             return MathUtils.BitLengthUnsigned(value);
+        }
+
+        public static Bytes to_bytes(UInt32 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            return UInt64Ops.to_bytes(value, length, byteorder, signed);
         }
 
         #endregion

@@ -913,8 +913,6 @@ namespace IronPython.Runtime {
                     return false;
                 }
                 res = ParseFloatNoCatch(text, replaceUnicode: replaceUnicode);
-            } catch (OverflowException) {
-                res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
             } catch (FormatException) {
                 res = default;
                 return false;
@@ -923,19 +921,15 @@ namespace IronPython.Runtime {
         }
 
         public static double ParseFloat(string text) {
-            try {
-                //
-                // Strings that end with '\0' is the specific case that CLR libraries allow,
-                // however Python doesn't. Since we use CLR floating point number parser,
-                // we must check explicitly for the strings that end with '\0'
-                //
-                if (text != null && text.Length > 0 && text[text.Length - 1] == '\0') {
-                    throw PythonOps.ValueError("null byte in float literal");
-                }
-                return ParseFloatNoCatch(text);
-            } catch (OverflowException) {
-                return text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
+            //
+            // Strings that end with '\0' is the specific case that CLR libraries allow,
+            // however Python doesn't. Since we use CLR floating point number parser,
+            // we must check explicitly for the strings that end with '\0'
+            //
+            if (text != null && text.Length > 0 && text[text.Length - 1] == '\0') {
+                throw PythonOps.ValueError("null byte in float literal");
             }
+            return ParseFloatNoCatch(text);
         }
 
         private static double ParseFloatNoCatch(string text, bool replaceUnicode = true) {
@@ -955,7 +949,12 @@ namespace IronPython.Runtime {
                     return double.NegativeInfinity;
                 default:
                     // pass NumberStyles to disallow ,'s in float strings.
-                    double res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
+                    double res;
+                    try {
+                        res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
+                    } catch (OverflowException) {
+                        res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
+                    }
                     return (res == 0.0 && text.lstrip().StartsWith("-", StringComparison.Ordinal)) ? DoubleOps.NegativeZero : res;
             }
         }
@@ -1005,7 +1004,7 @@ namespace IronPython.Runtime {
                 int len = text.Length;
                 var idx = text.IndexOf('j');
                 if (idx == -1) {
-                    return MathUtils.MakeReal(ParseFloatNoCatch(text));
+                    return MathUtils.MakeReal(ParseFloat(text));
                 } else if (idx == len - 1) {
                     // last sign delimits real and imaginary...
                     int signPos = text.LastIndexOfAny(signs);
@@ -1020,7 +1019,7 @@ namespace IronPython.Runtime {
 
                     // no real component
                     if (signPos < 0) {
-                        return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloatNoCatch(text.Substring(0, len - 1)));
+                        return MathUtils.MakeImaginary((len == 1) ? 1 : ParseFloat(text.Substring(0, len - 1)));
                     }
 
                     string real = text.Substring(0, signPos);
@@ -1029,12 +1028,10 @@ namespace IronPython.Runtime {
                         imag += "1"; // convert +/- to +1/-1
                     }
 
-                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
+                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
                 } else {
                     throw ExnMalformed();
                 }
-            } catch (OverflowException) {
-                throw PythonOps.ValueError("complex() literal too large to convert");
             } catch {
                 throw ExnMalformed();
             }

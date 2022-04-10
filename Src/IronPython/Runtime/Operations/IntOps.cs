@@ -338,33 +338,10 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self == 0, self > 0);
         }
 
-        public static Bytes to_bytes(Int32 value, int length, [NotDynamicNull] string byteorder, bool signed=false) {
-            // TODO: signed should be a keyword only argument
-            // TODO: should probably be moved to IntOps.Generated and included in all types
-
-            if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
-            if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
-
-            bool isLittle = byteorder == "little";
-            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
-
-            var reqLength = (bit_length(value) + (value > 0 && signed ? 1 : 0) + 7) / 8;
-            if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
-
-            var bytes = new BigInteger(value).ToByteArray();
-            IEnumerable<byte> res = bytes;
-            if (length > bytes.Length) res = res.Concat(Enumerable.Repeat<byte>((value < 0) ? (byte)0xff : (byte)0, length - bytes.Length));
-            else if (length < bytes.Length) res = res.Take(length);
-            if (!isLittle) res = res.Reverse();
-
-            return Bytes.Make(res.ToArray());
-        }
-
         [ClassMethod, StaticExtensionMethod]
         public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotDynamicNull] string byteorder, bool signed = false)
             // TODO: signed should be a keyword only argument
             => BigIntegerOps.from_bytes(context, type, bytes, byteorder, signed);
-
 
         #endregion
 
@@ -450,6 +427,96 @@ namespace IronPython.Runtime.Operations {
                 digits = "0b" + digits;
             }
             return digits;
+        }
+
+        #endregion
+    }
+
+    public static partial class Int64Ops {
+
+        #region Public API - Bytes
+
+        public static Bytes to_bytes(Int64 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            bool isLittle = (byteorder == "little");
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
+
+            if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
+            if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
+
+            if (value == 0) return Bytes.Make(new byte[length]);
+
+            var bytes = new byte[length];
+            int cur, end, step;
+            if (isLittle) {
+                cur = 0; end = length; step = 1;
+            } else {
+                cur = length - 1; end = -1; step = -1;
+            }
+
+            if (!signed || value >= 0) {
+                ulong uvalue = unchecked((ulong)value);
+                do {
+                    if (cur == end) ThrowOverflow();
+                    bytes[cur] = (byte)(uvalue & 0xFF);
+                    uvalue >>= 8;
+                    cur += step;
+                } while (uvalue != 0);
+            } else {
+                byte curbyte;
+                do {
+                    if (cur == end) ThrowOverflow();
+                    bytes[cur] = curbyte = (byte)(value & 0xFF);
+                    value >>= 8;
+                    cur += step;
+                } while (value != -1 || (curbyte & 0x80) == 0);
+
+                while (cur != end) {
+                    bytes[cur] = 0xFF;
+                    cur += step;
+                }
+            }
+
+            return Bytes.Make(bytes);
+
+            static void ThrowOverflow() => throw PythonOps.OverflowError("int too big to convert");
+        }
+
+        #endregion
+    }
+
+    public static partial class UInt64Ops {
+
+        #region Public API - Bytes
+
+        public static Bytes to_bytes(UInt64 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+            bool isLittle = (byteorder == "little");
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
+
+            if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
+
+            if (value == 0) return Bytes.Make(new byte[length]);
+
+            var bytes = new byte[length];
+            int cur, end, step;
+            if (isLittle) {
+                cur = 0; end = length; step = 1;
+            } else {
+                cur = length - 1; end = -1; step = -1;
+            }
+
+            do {
+                if (cur == end) ThrowOverflow();
+                bytes[cur] = (byte)(value & 0xFF);
+                value >>= 8;
+                cur += step;
+            } while (value != 0);
+
+            if (signed && (bytes[end - step] & 0x80) == 0x80) ThrowOverflow();
+
+            return Bytes.Make(bytes);
+
+            static void ThrowOverflow() => throw PythonOps.OverflowError("int too big to convert");
         }
 
         #endregion

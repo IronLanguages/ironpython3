@@ -454,7 +454,7 @@ class CastTests(unittest.TestCase):
 
         self.assertEqual(mvc[1], b"a")
 
-    @unittest.skipUnless(is_64, "asssumes 64-bit pointers")
+    @unittest.skipUnless(is_64, "assumes 64-bit pointers")
     def test_cast_pointer(self):
         ba = bytearray(range(16))
         mv = memoryview(ba)
@@ -478,7 +478,7 @@ class CastTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             mvp[0] = -0x8000000000000001
 
-    @unittest.skipUnless(is_64 and is_cli, "CLI interop, asssumes 64-bit pointers")
+    @unittest.skipUnless(is_64 and is_cli, "CLI interop, assumes 64-bit pointers")
     def test_cast_netpointer(self):
         import System
         ba = bytearray(range(16))
@@ -563,6 +563,11 @@ class CastTests(unittest.TestCase):
 
         self.assertEqual(mv_2.tolist(), [[[0, 1], [2, 3]], [[8, 9], [10, 11]]])
         self.assertEqual(mv_2.tobytes(), b'\x00\x01\x02\x03\x08\x09\x0a\x0b')
+
+    def test_cast_empty(self):
+        memoryview(b'').cast('b')
+        memoryview(bytearray(b'')).cast('b')
+        self.assertRaises(TypeError, memoryview(b'').cast, 'b', object()) # fails with any 2nd argument
 
 
 run_test(__name__)

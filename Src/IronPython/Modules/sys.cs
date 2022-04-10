@@ -256,6 +256,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public readonly int suite_mask;
             public readonly PythonTuple platform_version;
 
+            public PythonTuple _platform_version => platform_version; // TODO: remove in 3.6 (for compat with 3.5)
+
             public const int n_fields = 10;
             public const int n_sequence_fields = 5;
             public const int n_unnamed_fields = 0;

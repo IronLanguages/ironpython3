@@ -813,10 +813,9 @@ namespace IronPython.Runtime.Binding {
         /// <remarks>
         /// There exist Python types that are not extended types (e.g. <see cref="Bytes"/>),
         /// and types that are extended types but not Python types (e.g. <see cref="Array"/>).
-        /// Perhaps a more accurate name for this method would be <c>IsExtendedPythonType</c>.
-        /// In some places an extended Python type is called a system type.
+        /// In some places in <see cref="PythonBinder"/> an extended Python type is called a system type.
         /// </remarks>
-        public static bool IsExtendedType(Type/*!*/ t) {
+        public static bool IsExtendedPythonType(Type/*!*/ t) {
             Debug.Assert(t != null);
 
             return _sysTypes.ContainsKey(t);

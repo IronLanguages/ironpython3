@@ -385,7 +385,7 @@ namespace IronPython.Runtime.Operations {
             ReflectedEvent res;
             lock (_eventCache) {
                 if (!_eventCache.TryGetValue(tracker, out res)) {
-                    if (PythonBinder.IsExtendedType(tracker.DeclaringType)) {
+                    if (PythonBinder.IsExtendedPythonType(tracker.DeclaringType)) {
                         _eventCache[tracker] = res = new ReflectedEvent(tracker, true);
                     } else {
                         _eventCache[tracker] = res = new ReflectedEvent(tracker, false);
@@ -640,8 +640,8 @@ namespace IronPython.Runtime.Operations {
             if (PythonBinder.IsPythonType(type)) {
                 // only show methods defined outside of the system types (object, string)
                 foreach (MethodInfo mi in methods) {
-                    if (PythonBinder.IsExtendedType(mi.DeclaringType) ||
-                        PythonBinder.IsExtendedType(mi.GetBaseDefinition().DeclaringType) ||
+                    if (PythonBinder.IsExtendedPythonType(mi.DeclaringType) ||
+                        PythonBinder.IsExtendedPythonType(mi.GetBaseDefinition().DeclaringType) ||
                         PythonHiddenAttribute.IsHidden(mi)) {
                         alwaysVisible = false;
                         break;
@@ -651,7 +651,7 @@ namespace IronPython.Runtime.Operations {
                 // check if this is a virtual override helper, if so we
                 // may need to filter it out.
                 foreach (MethodInfo mi in methods) {
-                    if (PythonBinder.IsExtendedType(mi.DeclaringType)) {
+                    if (PythonBinder.IsExtendedPythonType(mi.DeclaringType)) {
                         alwaysVisible = false;
                         break;
                     }
@@ -685,7 +685,7 @@ namespace IronPython.Runtime.Operations {
             PythonTypeSlot res;
 
             NameType nt = NameType.Field;
-            if (!PythonBinder.IsExtendedType(info.DeclaringType) &&
+            if (!PythonBinder.IsExtendedPythonType(info.DeclaringType) &&
                 !PythonBinder.IsPythonSupportingType(info.DeclaringType) &&
                 !PythonHiddenAttribute.IsHidden(info)) {
                 nt |= NameType.PythonField;
@@ -769,7 +769,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 if (pt is ReflectedPropertyTracker rpt) {
-                    if (PythonBinder.IsExtendedType(pt.DeclaringType) ||
+                    if (PythonBinder.IsExtendedPythonType(pt.DeclaringType) ||
                         PythonHiddenAttribute.IsHidden(rpt.Property, true)) {
                         nt = NameType.Property;
                     }

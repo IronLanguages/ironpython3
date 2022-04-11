@@ -1420,6 +1420,68 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' not in clr.Dir('abc'))
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
+    def test_int32_bigint_equivalence(self):
+        import math
+
+        # properties
+        for i in range(-10, 10):
+            bi = big(i)
+            self.assertEqual(i.IsEven, bi.IsEven)
+            self.assertEqual(i.IsOne, bi.IsOne)
+            self.assertEqual(i.IsPowerOfTwo, bi.IsPowerOfTwo)
+            self.assertEqual(i.IsZero, bi.IsZero)
+            self.assertEqual(i.Sign, bi.Sign)
+            # static properties
+            self.assertEqual(i.Zero, bi.Zero)
+            self.assertEqual(i.One, bi.One)
+            self.assertEqual(i.MinusOne, bi.MinusOne)
+
+        # methods
+        i = System.Int32(1234567890)
+        bi = big(i)
+        self.assertEqual(i.ToByteArray(), bi.ToByteArray())
+        if hasattr(int, 'GetByteCount'):
+            self.assertEqual(i.GetByteCount(), bi.GetByteCount())
+        if hasattr(int, 'GetBitLength'):
+            self.assertEqual(i.GetBitLength(), bi.GetBitLength())
+
+        # static methods
+        for i in [0, 1, 2, 7<<30, 1<<32, (1<<32)-1, (1<<32)+1]:
+            for i2 in [i, -i]:
+                ii = int(i2) # convert to Int32 if possible
+                bi = big(i2)
+                self.assertEqual((1).Negate(ii), int.Negate(bi))
+                self.assertEqual((1).Abs(ii), int.Abs(bi))
+                self.assertEqual((1).Pow(ii, 5), int.Pow(bi, 5))
+                self.assertEqual((1).ModPow(ii, 5, 3), int.ModPow(bi, 5, 3))
+                if ii >= 0:
+                    self.assertEqual((1).Log(ii), int.Log(bi))
+                    self.assertEqual((1).Log10(ii), int.Log10(bi))
+                    self.assertEqual((1).Log(ii, 7.2), int.Log(bi, 7.2))
+                else:
+                    self.assertTrue(math.isnan((1).Log(ii)))
+                    self.assertTrue(math.isnan(int.Log(bi)))
+                    self.assertTrue(math.isnan((1).Log10(ii)))
+                    self.assertTrue(math.isnan(int.Log10(bi)))
+                    self.assertTrue(math.isnan((1).Log(ii, 7.2)))
+                    self.assertTrue(math.isnan(int.Log(bi, 7.2)))
+
+                for j in [0, 1, 2, 7<<30, 1<<32, (1<<32)-1, (1<<32)+1]:
+                    for j2 in [j, -j]:
+                        jj = int(j2) # convert to Int32 if possible
+                        bj = big(j2)
+                        self.assertEqual((1).Compare(ii, jj), int.Compare(bi, bj))
+                        self.assertEqual((1).Min(ii, jj), int.Min(bi, bj))
+                        self.assertEqual((1).Max(ii, jj), int.Max(bi, bj))
+                        self.assertEqual((1).Add(ii, jj), int.Add(bi, bj))
+                        self.assertEqual((1).Subtract(ii, jj), int.Subtract(bi, bj))
+                        self.assertEqual((1).Multiply(ii, jj), int.Multiply(bi, bj))
+                        self.assertEqual((1).GreatestCommonDivisor(ii, jj), int.GreatestCommonDivisor(bi, bj))
+                        if jj != 0:
+                            self.assertEqual((1).Divide(ii, jj), int.Divide(bi, bj))
+                            self.assertEqual((1).DivRem(ii, jj), int.DivRem(bi, bj))
+                            self.assertEqual((1).Remainder(ii, jj), int.Remainder(bi, bj))
+
     def test_array_contains(self):
         if is_mono: # for whatever reason this is defined on Mono
             System.Array[str].__dict__['__contains__']

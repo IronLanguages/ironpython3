@@ -135,7 +135,15 @@ namespace IronPython.Modules {
             }
 
             public void set_ciphers(CodeContext context, string ciphers) {
+                // TODO
+            }
 
+            public void _set_alpn_protocols(CodeContext context, IBufferProtocol protos) {
+                // TODO
+            }
+
+            public void _set_npn_protocols(CodeContext context, IBufferProtocol protos) {
+                // TODO
             }
 
             public int options {
@@ -270,14 +278,19 @@ namespace IronPython.Modules {
             private SslStream _sslStream;
             private readonly PythonSocket.socket _socket;
             private readonly X509Certificate2Collection _certCollection;
-            private readonly int _protocol, _certsMode;
+            private readonly int _certsMode;
             private readonly bool _validate, _serverSide;
             private readonly CodeContext _context;
             private readonly RemoteCertificateValidationCallback _callback;
             private Exception _validationFailure;
-            internal string _serverHostName;
 
             public _SSLContext context { get; }
+
+            public object owner { get; set; } // TODO
+
+            public string server_hostname { get; }
+
+            public string version() => ProtocolToPython();
 
             internal _SSLSocket(CodeContext context, _SSLContext sslcontext, PythonSocket.socket sock, bool server_side, string server_hostname) {
                 if (sock == null) {
@@ -286,7 +299,7 @@ namespace IronPython.Modules {
 
                 this.context = sslcontext;
                 _serverSide = server_side;
-                _serverHostName = server_hostname;
+                this.server_hostname = server_hostname;
 
                 _certsMode = sslcontext.verify_mode;
 
@@ -319,7 +332,6 @@ namespace IronPython.Modules {
 
                 EnsureSslStream(false);
 
-                _protocol = sslcontext.protocol | sslcontext.options;
                 _validate = validate;
                 _context = context;
             }
@@ -429,7 +441,7 @@ namespace IronPython.Modules {
 
                 EnsureSslStream(true);
 
-                var enabledSslProtocols = GetProtocolType(_protocol);
+                var enabledSslProtocols = GetProtocolType(context.protocol, context.options);
 
                 try {
                     if (_serverSide) {
@@ -439,7 +451,7 @@ namespace IronPython.Modules {
                         }
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, enabledSslProtocols, false);
                     } else {
-                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName, context._cert_store, enabledSslProtocols, false);
+                        _sslStream.AuthenticateAsClient(server_hostname ?? _socket._hostName, context._cert_store, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();
@@ -467,10 +479,10 @@ namespace IronPython.Modules {
                        TLSv1.2    no    no    yes    no      no     yes
              */
 
-            private static SslProtocols GetProtocolType(int type) {
+            private static SslProtocols GetProtocolType(int protocol, int options) {
                 SslProtocols result = SslProtocols.None;
 
-                switch (type & ~PythonSsl.OP_NO_ALL) {
+                switch (protocol) {
 #pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
                     case PythonSsl.PROTOCOL_SSLv2:
@@ -494,17 +506,17 @@ namespace IronPython.Modules {
                         result = SslProtocols.Tls12;
                         break;
                     default:
-                        throw new InvalidOperationException("bad ssl protocol type: " + type);
+                        throw new InvalidOperationException("bad ssl protocol type: " + protocol);
                 }
                 // Filter out requested protocol exclusions:
 #pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
-                result &= (type & PythonSsl.OP_NO_SSLv3) != 0 ? ~SslProtocols.Ssl3 : ~SslProtocols.None;
-                result &= (type & PythonSsl.OP_NO_SSLv2) != 0 ? ~SslProtocols.Ssl2 : ~SslProtocols.None;
+                result &= (options & PythonSsl.OP_NO_SSLv3) != 0 ? ~SslProtocols.Ssl3 : ~SslProtocols.None;
+                result &= (options & PythonSsl.OP_NO_SSLv2) != 0 ? ~SslProtocols.Ssl2 : ~SslProtocols.None;
 #pragma warning restore CS0618 // Type or member is obsolete
-                result &= (type & PythonSsl.OP_NO_TLSv1) != 0 ? ~SslProtocols.Tls : ~SslProtocols.None;
-                result &= (type & PythonSsl.OP_NO_TLSv1_1) != 0 ? ~SslProtocols.Tls11 : ~SslProtocols.None;
-                result &= (type & PythonSsl.OP_NO_TLSv1_2) != 0 ? ~SslProtocols.Tls12 : ~SslProtocols.None;
+                result &= (options & PythonSsl.OP_NO_TLSv1) != 0 ? ~SslProtocols.Tls : ~SslProtocols.None;
+                result &= (options & PythonSsl.OP_NO_TLSv1_1) != 0 ? ~SslProtocols.Tls11 : ~SslProtocols.None;
+                result &= (options & PythonSsl.OP_NO_TLSv1_2) != 0 ? ~SslProtocols.Tls12 : ~SslProtocols.None;
 #pragma warning restore CA5397 // Do not use deprecated SslProtocols values
                 return result;
             }
@@ -1179,6 +1191,7 @@ Returns the number of bytes written.")]
         private const int PROTOCOL_SSLv2 = 0;
         private const int PROTOCOL_SSLv3 = 1;
         public const int PROTOCOL_SSLv23 = 2;
+        public const int PROTOCOL_TLS = 2;
         public const int PROTOCOL_TLSv1 = 3;
         public const int PROTOCOL_TLSv1_1 = 4;
         public const int PROTOCOL_TLSv1_2 = 5;

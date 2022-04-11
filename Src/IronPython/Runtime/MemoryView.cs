@@ -455,7 +455,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: casts are restricted to C-contiguous views");
             }
 
-            if (_shape.Contains(0) || _strides.Contains(0)) {
+            if ((shape != null || _numDims != 1) && (_shape.Contains(0) || _strides.Contains(0))) {
                 throw PythonOps.TypeError("memoryview: cannot cast view with zeros in shape or strides");
             }
 

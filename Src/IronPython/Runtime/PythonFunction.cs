@@ -123,7 +123,7 @@ namespace IronPython.Runtime {
                 return _annotations;
             }
             set {
-                _annotations = value ?? throw PythonOps.TypeError("__annotations__ must be set to a dict object");
+                _annotations = value ?? new PythonDictionary();
             }
         }
 

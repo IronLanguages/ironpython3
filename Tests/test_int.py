@@ -50,12 +50,12 @@ class IntTest(IronPythonTestCase):
                             continue
                         for length in range(0, 10):
                             try:
-                                expeced = big(v).to_bytes(length, byteorder, signed)
+                                expected = big(v).to_bytes(length, byteorder, signed)
                             except OverflowError:
-                                continue # length too short
-
-                            actual = t(v).to_bytes(length, byteorder, signed)
-                            self.assertEqual(actual, expeced)
+                                pass # length too short
+                            else:
+                                actual = t(v).to_bytes(length, byteorder, signed)
+                                self.assertEqual(actual, expected)
 
     def test_int(self):
         class MyTrunc:

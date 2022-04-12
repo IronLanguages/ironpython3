@@ -1474,13 +1474,22 @@ class ClassTest(IronPythonTestCase):
         # report the proper name in __str__
         self.assertTrue(repr(BaseException.__str__).find('__str__') != -1)
 
-    #TODO: @skip("multiple_execute")
     def test_no_clr_attributes_sanity(self):
-        self.assertEqual(hasattr(int, 'MaxValue'), False)
-        self.assertEqual(hasattr(int, 'MinValue'), False)
-        self.assertEqual(hasattr(int, 'Abs'), False)
-        self.assertEqual(hasattr(int, 'BitwiseOr'), False)
-        self.assertEqual(hasattr(int, 'Equals'), False)
+        for o in [int, 1, big(1)]:
+            with self.subTest(object=o):
+                self.assertFalse(hasattr(o, 'MaxValue'))
+                self.assertFalse(hasattr(o, 'MinValue'))
+                self.assertFalse(hasattr(o, 'Abs'))
+                self.assertFalse(hasattr(o, 'BitwiseOr'))
+                self.assertFalse(hasattr(o, 'Log10'))
+                self.assertFalse(hasattr(o, 'ToByteArray'))
+                self.assertFalse(hasattr(o, 'IsEven'))
+                self.assertFalse(hasattr(o, 'Zero'))
+                self.assertFalse(hasattr(o, 'Equals'))
+                self.assertFalse(hasattr(o, 'CompareTo'))
+                self.assertFalse(hasattr(o, 'GetTypeCode'))
+                self.assertFalse(hasattr(o, 'ToString'))
+                self.assertFalse(hasattr(o, 'TryFormat'))
 
         self.assertEqual(hasattr(str, 'Empty'), False)
         self.assertEqual(hasattr(str, 'Compare'), False)

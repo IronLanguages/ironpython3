@@ -579,13 +579,13 @@ namespace IronPython.Runtime.Binding {
             bool isNoThrow = ((options & GetMemberOptions.IsNoThrow) != 0) ? true : false;
             Type limitType = self.GetLimitType();
 
-            if (limitType == typeof(DynamicNull) || PythonBinder.IsPythonType(limitType)) {
+            if (limitType == typeof(DynamicNull) || PythonBinder.IsPythonType(limitType) || PythonBinder.IsPythonSupportingType(limitType)) {
                 // look up in the PythonType so that we can 
-                // get our custom method names (e.g. string.startswith)            
+                // get our custom method names (e.g. string.startswith)
                 PythonType argType = DynamicHelpers.GetPythonTypeFromType(limitType);
 
                 // if the name is defined in the CLS context but not the normal context then
-                // we will hide it.                
+                // we will hide it.
                 if (argType.IsHiddenMember(name)) {
                     DynamicMetaObject baseRes = PythonContext.GetPythonContext(action).Binder.GetMember(
                         name,
@@ -599,7 +599,7 @@ namespace IronPython.Runtime.Binding {
                     return BindingHelpers.FilterShowCls(codeContext, action, baseRes, failure);
                 }
             }
-            
+
             var res = context.Binder.GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
             if (res is ErrorMetaObject) {
                 // see if we can bind to any extension methods...

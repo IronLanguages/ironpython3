@@ -3,10 +3,36 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
+import unittest
 
 from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
 
+class IntNoClrTest(IronPythonTestCase):
+    """Must be run before IntTest because it depends on CLR API not being visible."""
+
+    def test_instance_set(self):
+        i = 1
+        j = big(1)
+        self.assertSetEqual(set(dir(i)), set(dir(j)))
+
 class IntTest(IronPythonTestCase):
+    def test_instance_set(self):
+        i = 1
+        j = big(1)
+        from System import Int32
+
+        self.assertSetEqual(set(dir(i)) - set(dir(j)), {'MaxValue', 'MinValue'})
+        self.assertSetEqual(set(dir(Int32)) - set(dir(int)), {'MaxValue', 'MinValue'})
+
+    @unittest.expectedFailure
+    def test_instance_set_todo(self):
+        i = 1
+        j = big(1)
+        from System import Int32
+
+        self.assertSetEqual(set(dir(j)) - set(dir(i)), set())
+        self.assertSetEqual(set(dir(int)) - set(dir(Int32)), set())
+
     def test_from_bytes(self):
         self.assertEqual(type(int.from_bytes(b"abc", "big")), int)
         self.assertEqual(type(myint.from_bytes(b"abc", "big")), myint) # https://github.com/IronLanguages/ironpython3/pull/973

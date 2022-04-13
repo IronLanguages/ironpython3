@@ -2457,20 +2457,9 @@ namespace IronPython.Runtime.Operations {
                 return PythonTuple.MakeTuple(null, null, null);
             }
 
-            PythonContext pc = context.LanguageContext;
-
-            object pyExcep = PythonExceptions.ToPython(ex);
-            TraceBack? tb = CreateTraceBack(pc, ex);
-
-            object excType;
-            if (pyExcep is IPythonObject pyObj) {
-                // class is always the Python type for new-style types (this is also the common case)
-                excType = pyObj.PythonType;
-            } else {
-                excType = PythonOps.GetBoundAttr(context, pyExcep, "__class__");
-            }
-
-            return PythonTuple.MakeTuple(excType, pyExcep, tb);
+            var pyExcep = PythonExceptions.ToPython(ex);
+            TraceBack? tb = CreateTraceBack(context.LanguageContext, ex);
+            return PythonTuple.MakeTuple(((IPythonObject)pyExcep).PythonType, pyExcep, tb);
         }
 
         /// <summary>

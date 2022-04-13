@@ -719,7 +719,7 @@ for k, v in toError.items():
         /// <summary>
         /// Given a CLR exception returns the Python exception which most closely maps to the CLR exception.
         /// </summary>
-        public static object ToPython(System.Exception/*!*/ clrException) {
+        public static BaseException ToPython(System.Exception/*!*/ clrException) {
             var res = clrException.GetPythonException();
             if (res is null) {
                 // explicit extra conversions that need a special transformation

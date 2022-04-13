@@ -3,7 +3,6 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import unittest
 
 from iptest import IronPythonTestCase, is_cli, big, myint, skipUnlessIronPython, run_test
 
@@ -23,12 +22,6 @@ class IntTest(IronPythonTestCase):
 
         self.assertSetEqual(set(dir(i)) - set(dir(j)), {'MaxValue', 'MinValue'})
         self.assertSetEqual(set(dir(Int32)) - set(dir(int)), {'MaxValue', 'MinValue'})
-
-    @unittest.expectedFailure
-    def test_instance_set_todo(self):
-        i = 1
-        j = big(1)
-        from System import Int32
 
         self.assertSetEqual(set(dir(j)) - set(dir(i)), set())
         self.assertSetEqual(set(dir(int)) - set(dir(Int32)), set())

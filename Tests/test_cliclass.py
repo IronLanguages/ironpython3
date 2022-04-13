@@ -1436,17 +1436,20 @@ if not hasattr(A, 'Rank'):
             self.assertEqual(i.One, bi.One)
             self.assertEqual(i.MinusOne, bi.MinusOne)
 
+        test_values = [0, 1, 2, 4, 8, 10, 255, 256, 7<<30, 1<<31, (1<<31)-1, (1<<31)+1, 1<<32, (1<<32)-1, (1<<32)+1]
         # methods
-        i = System.Int32(1234567890)
-        bi = big(i)
-        self.assertEqual(i.ToByteArray(), bi.ToByteArray())
-        if hasattr(int, 'GetByteCount'):
-            self.assertEqual(i.GetByteCount(), bi.GetByteCount())
-        if hasattr(int, 'GetBitLength'):
-            self.assertEqual(i.GetBitLength(), bi.GetBitLength())
+        for i in test_values:
+            for i2 in [i, -i]:
+                ii = int(i2) # convert to Int32 if possible
+                bi = big(i2)
+                self.assertEqual(ii.ToByteArray(), bi.ToByteArray())
+                if hasattr(int, 'GetByteCount'):
+                    self.assertEqual(ii.GetByteCount(), bi.GetByteCount())
+                if hasattr(int, 'GetBitLength'):
+                    self.assertEqual(ii.GetBitLength(), bi.GetBitLength())
 
         # static methods
-        for i in [0, 1, 2, 7<<30, 1<<32, (1<<32)-1, (1<<32)+1]:
+        for i in test_values:
             for i2 in [i, -i]:
                 ii = int(i2) # convert to Int32 if possible
                 bi = big(i2)
@@ -1466,7 +1469,7 @@ if not hasattr(A, 'Rank'):
                     self.assertTrue(math.isnan((1).Log(ii, 7.2)))
                     self.assertTrue(math.isnan(int.Log(bi, 7.2)))
 
-                for j in [0, 1, 2, 7<<30, 1<<32, (1<<32)-1, (1<<32)+1]:
+                for j in test_values:
                     for j2 in [j, -j]:
                         jj = int(j2) # convert to Int32 if possible
                         bj = big(j2)

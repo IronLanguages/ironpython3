@@ -466,16 +466,48 @@ namespace IronPython.Runtime.Operations {
 
 #if NETCOREAPP
         [PythonHidden]
+        public static byte[] ToByteArray(int self, bool isUnsigned = false, bool isBigEndian = false) => new BigInteger(self).ToByteArray(isUnsigned, isBigEndian);
+
+        [PythonHidden]
         public static int GetByteCount(int self, bool isUnsigned = false) => new BigInteger(self).GetByteCount(isUnsigned);
 
         [PythonHidden]
         public static bool TryWriteBytes(int self, Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
             => new BigInteger(self).TryWriteBytes(destination, out bytesWritten, isUnsigned, isBigEndian);
+
+#elif NETSTANDARD
+        [PythonHidden]
+        public static byte[] ToByteArray(int self, bool isUnsigned = false, bool isBigEndian = false) {
+            if (self < 0 && isUnsigned) throw new OverflowException("Negative values do not have an unsigned representation.");
+            byte[] bytes = ToByteArray(self);
+            int count = bytes.Length;
+            if (isUnsigned && count > 1 && bytes[count - 1] == 0) Array.Resize(ref bytes, count - 1);
+            if (isBigEndian) Array.Reverse(bytes);
+            return bytes;
+        }
+
+        [PythonHidden]
+        public static int GetByteCount(int self, bool isUnsigned = false) => ToByteArray(self, isUnsigned).Length;
+
+        [PythonHidden]
+        public static bool TryWriteBytes(int self, Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) {
+            bytesWritten = 0;
+            byte[] bytes = ToByteArray(self, isUnsigned, isBigEndian);
+            if (bytes.Length > destination.Length) return false;
+
+            bytes.AsSpan().CopyTo(destination);
+            bytesWritten = bytes.Length;
+            return true;
+        }
 #endif
 
-#if NET
+#if NET || NETSTANDARD
         [PythonHidden]
-        public static long GetBitLength(int self) => new BigInteger(self).GetBitLength();
+        public static long GetBitLength(int self) {
+            int length = MathUtils.BitLength(self);
+            if (self < 0 && (self == int.MinValue || GetIsPowerOfTwo(-self))) length--;
+            return length;
+        }
 #endif
 
         #endregion

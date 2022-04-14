@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, big, myint, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_mono, big, myint, skipUnlessIronPython, run_test
 
 class IntNoClrTest(IronPythonTestCase):
     """Must be run before IntTest because it depends on CLR API not being visible."""
@@ -20,8 +20,12 @@ class IntTest(IronPythonTestCase):
         j = big(1)
         from System import Int32
 
-        self.assertSetEqual(set(dir(j)) - set(dir(i)), set())
-        self.assertSetEqual(set(dir(int)) - set(dir(Int32)), set())
+        if not is_mono:
+            self.assertSetEqual(set(dir(j)) - set(dir(i)), set())
+            self.assertSetEqual(set(dir(int)) - set(dir(Int32)), set())
+        else:
+            self.assertSetEqual(set(dir(j)) - set(dir(i)), {'GetByteCount', 'TryWriteBytes'})
+            self.assertSetEqual(set(dir(int)) - set(dir(Int32)), {'GetByteCount', 'TryWriteBytes'})
 
         # these two assertions fail on IronPython compiled for .NET Standard
         # if not iptest.is_netstandard: # no such check possible

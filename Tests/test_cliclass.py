@@ -1443,9 +1443,9 @@ if not hasattr(A, 'Rank'):
                 ii = int(i2) # convert to Int32 if possible
                 bi = big(i2)
                 self.assertEqual(ii.ToByteArray(), bi.ToByteArray())
-                if hasattr(int, 'GetByteCount') and not is_mono:
+                if hasattr(ii, 'GetByteCount') and hasattr(bi, 'GetByteCount'):
                     self.assertEqual(ii.GetByteCount(), bi.GetByteCount())
-                if hasattr(int, 'GetBitLength') and not is_mono:
+                if hasattr(ii, 'GetBitLength') and hasattr(bi, 'GetBitLength'):
                     self.assertEqual(ii.GetBitLength(), bi.GetBitLength())
 
         # static methods

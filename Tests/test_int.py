@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_mono, big, myint, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, big, myint, skipUnlessIronPython, run_test
 
 class IntNoClrTest(IronPythonTestCase):
     """Must be run before IntTest because it depends on CLR API not being visible."""
@@ -28,10 +28,9 @@ class IntTest(IronPythonTestCase):
             self.assertSetEqual(set(dir(int)) - set(dir(Int32)), {'GetByteCount', 'TryWriteBytes'})
 
         # these two assertions fail on IronPython compiled for .NET Standard
-        # if not iptest.is_netstandard: # no such check possible
-        if not is_netcoreapp21: # assuming that .NET Standard build is tested by .NET Core 2.1 runtime
-             self.assertSetEqual(set(dir(i)) - set(dir(j)), {'MaxValue', 'MinValue'})
-             self.assertSetEqual(set(dir(Int32)) - set(dir(int)), {'MaxValue', 'MinValue'})
+        if not is_netstandard:
+            self.assertSetEqual(set(dir(i)) - set(dir(j)), {'MaxValue', 'MinValue'})
+            self.assertSetEqual(set(dir(Int32)) - set(dir(int)), {'MaxValue', 'MinValue'})
 
         # weaker assertions that should always hold
         self.assertTrue((set(dir(i)) - set(dir(j))).issubset({'MaxValue', 'MinValue', 'GetByteCount', 'TryWriteBytes', 'GetBitLength'}))

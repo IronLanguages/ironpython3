@@ -22,6 +22,7 @@ is_netcoreapp31 = False
 is_net50 = False
 is_net60 = False
 is_mono = False
+is_netstandard = False
 if is_ironpython:
     import clr
     is_netcoreapp = clr.IsNetCoreApp
@@ -30,10 +31,11 @@ if is_ironpython:
     is_net50 = clr.FrameworkDescription.startswith(".NET 5.0")
     is_net60 = clr.FrameworkDescription.startswith(".NET 6.0")
     is_mono = clr.IsMono
+    is_netstandard = clr.TargetFramework.startswith(".NETStandard")
 
 #--The bittedness of the Python implementation
 is_cli32, is_cli64 = False, False
-if is_ironpython: 
+if is_ironpython:
     import System
     is_cli32, is_cli64 = (System.IntPtr.Size == 4), (System.IntPtr.Size == 8)
 

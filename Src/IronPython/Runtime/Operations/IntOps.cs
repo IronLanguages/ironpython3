@@ -231,8 +231,7 @@ namespace IronPython.Runtime.Operations {
                     // So use FormattingHelper.ToCultureString for that support.
                     if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
                         digits = FormattingHelper.ToCultureString(self, culture.NumberFormat, spec);
-                    }
-                    else {
+                    } else {
                         digits = self.ToString("N0", culture);
                     }
                     break;
@@ -246,8 +245,7 @@ namespace IronPython.Runtime.Operations {
                         // so use FormattingHelper.ToCultureString for that support.
                         if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
                             digits = FormattingHelper.ToCultureString(self, FormattingHelper.InvariantCommaNumberInfo, spec);
-                        }
-                        else {
+                        } else {
                             digits = self.ToString("#,0", CultureInfo.InvariantCulture);
                         }
                     } else {
@@ -299,8 +297,7 @@ namespace IronPython.Runtime.Operations {
                     } else if (spec.ThousandsComma) {
                         // Handle the common case in 'd'.
                         goto case 'd';
-                    }
-                    else {
+                    } else {
                         digits = self.ToString(CultureInfo.InvariantCulture);
                     }
                     break;
@@ -391,7 +388,7 @@ namespace IronPython.Runtime.Operations {
             if (self == Int32.MinValue) {
                 return "-0b10000000000000000000000000000000";
             }
-            
+
             string res = ToBinary(self, true);
             if (self < 0) {
                 res = "-" + res;
@@ -422,12 +419,153 @@ namespace IronPython.Runtime.Operations {
             } else {
                 digits = "10000000000000000000000000000000";
             }
-            
+
             if (includeType) {
                 digits = "0b" + digits;
             }
             return digits;
         }
+
+        #endregion
+
+        #region Mimic BigInteger members
+        // Ideally only on instances
+
+        #region Properties
+
+        [SpecialName, PropertyMethod, PythonHidden]
+        public static bool GetIsEven(int self) => (self & 1) == 0;
+
+        [SpecialName, PropertyMethod, PythonHidden]
+        public static bool GetIsOne(int self) => self == 1;
+
+        [SpecialName, PropertyMethod, PythonHidden]
+        public static bool GetIsPowerOfTwo(int self) => self > 0 && (self & (self - 1)) == 0;
+
+        [SpecialName, PropertyMethod, PythonHidden]
+        public static bool GetIsZero(int self) => self == 0;
+
+        [SpecialName, PropertyMethod, PythonHidden]
+        public static int GetSign(int self) => self == 0 ? 0 : self > 0 ? 1 : -1;
+
+        [PythonHidden]
+        public static object Zero => ScriptingRuntimeHelpers.Int32ToObject(0);
+
+        [PythonHidden]
+        public static object One => ScriptingRuntimeHelpers.Int32ToObject(1);
+
+        [PythonHidden]
+        public static object MinusOne => ScriptingRuntimeHelpers.Int32ToObject(-1);
+
+        #endregion
+
+        #region Methods
+
+        [PythonHidden]
+        public static byte[] ToByteArray(int self) => new BigInteger(self).ToByteArray();
+
+#if NETCOREAPP
+        [PythonHidden]
+        public static byte[] ToByteArray(int self, bool isUnsigned = false, bool isBigEndian = false) => new BigInteger(self).ToByteArray(isUnsigned, isBigEndian);
+
+        [PythonHidden]
+        public static int GetByteCount(int self, bool isUnsigned = false) => new BigInteger(self).GetByteCount(isUnsigned);
+
+        [PythonHidden]
+        public static bool TryWriteBytes(int self, Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
+            => new BigInteger(self).TryWriteBytes(destination, out bytesWritten, isUnsigned, isBigEndian);
+
+#elif NETSTANDARD
+        [PythonHidden]
+        public static byte[] ToByteArray(int self, bool isUnsigned = false, bool isBigEndian = false) {
+            if (self < 0 && isUnsigned) throw new OverflowException("Negative values do not have an unsigned representation.");
+            byte[] bytes = ToByteArray(self);
+            int count = bytes.Length;
+            if (isUnsigned && count > 1 && bytes[count - 1] == 0) Array.Resize(ref bytes, count - 1);
+            if (isBigEndian) Array.Reverse(bytes);
+            return bytes;
+        }
+
+        [PythonHidden]
+        public static int GetByteCount(int self, bool isUnsigned = false) => ToByteArray(self, isUnsigned).Length;
+
+        [PythonHidden]
+        public static bool TryWriteBytes(int self, Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) {
+            bytesWritten = 0;
+            byte[] bytes = ToByteArray(self, isUnsigned, isBigEndian);
+            if (bytes.Length > destination.Length) return false;
+
+            bytes.AsSpan().CopyTo(destination);
+            bytesWritten = bytes.Length;
+            return true;
+        }
+#endif
+
+#if NET || NETSTANDARD
+        [PythonHidden]
+        public static long GetBitLength(int self) {
+            int length = MathUtils.BitLength(self);
+            if (self < 0 && (self == int.MinValue || GetIsPowerOfTwo(-self))) length--;
+            return length;
+        }
+#endif
+
+        #endregion
+
+        #region Static Extension Methods
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Compare(BigInteger left, BigInteger right) => BigInteger.Compare(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Min(BigInteger left, BigInteger right) => BigInteger.Min(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Max(BigInteger left, BigInteger right) => BigInteger.Max(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static double Log(BigInteger value) => BigInteger.Log(value);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static double Log(BigInteger value, double baseValue) => BigInteger.Log(value, baseValue);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static double Log10(BigInteger value) => BigInteger.Log10(value);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static object Pow(BigInteger value, int exponent) => BigInteger.Pow(value, exponent);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static object ModPow(BigInteger value, BigInteger exponent, BigInteger modulus) => BigInteger.ModPow(value, exponent, modulus);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Negate(BigInteger value) => BigInteger.Negate(value);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Abs(BigInteger value) => BigInteger.Abs(value);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Add(BigInteger left, BigInteger right) => BigInteger.Add(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Subtract(BigInteger left, BigInteger right) => BigInteger.Subtract(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Multiply(BigInteger left, BigInteger right) => BigInteger.Multiply(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Divide(BigInteger left, BigInteger right) => BigInteger.Divide(left, right);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger Remainder(BigInteger dividend, BigInteger divisor) => BigInteger.Remainder(dividend, divisor);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger DivRem(BigInteger dividend, BigInteger divisor, out BigInteger remainder) => BigInteger.DivRem(dividend, divisor, out remainder);
+
+        [StaticExtensionMethod, PythonHidden]
+        public static BigInteger GreatestCommonDivisor(BigInteger left, BigInteger right) => BigInteger.GreatestCommonDivisor(left, right);
+
+        #endregion
 
         #endregion
     }

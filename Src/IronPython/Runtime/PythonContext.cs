@@ -1192,7 +1192,7 @@ namespace IronPython.Runtime {
         }
 
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-            if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
+            if (args.RequestingAssembly != null && !(args.RequestingAssembly == typeof(PythonContext).Assembly || _loadedAssemblies.Contains(args.RequestingAssembly))) {
                 return null;
             }
 

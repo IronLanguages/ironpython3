@@ -9,7 +9,6 @@ x = dir(dict.fromkeys)
 
 import collections
 import os
-import unittest
 import sys
 
 from iptest import IronPythonTestCase, is_cli, big, path_modifier, run_test, skipUnlessIronPython, source_root

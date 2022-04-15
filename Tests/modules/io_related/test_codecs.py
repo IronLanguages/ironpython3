@@ -2050,11 +2050,11 @@ class CodecTest(IronPythonTestCase):
             return ("", ex.end + 1)
 
         codecs.register_error("test_unicode_error1", handler1)
-        if is_cpython:
-            res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
-            self.assertEqual(res, b"+++\xac--")
-        else:
+        if is_cli:
             with self.assertRaises(NotImplementedError):
                 res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
+        else:
+            res = "+++\xac\u1234\u20ac\u8000---".encode("ptcp154", "test_unicode_error1")
+            self.assertEqual(res, b"+++\xac--")
 
 run_test(__name__)

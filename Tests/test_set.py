@@ -6,9 +6,7 @@
 ## Test built-in types: set/frozenset
 ##
 
-import unittest
-
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, run_test
 from iptest.type_util import myset, myfrozenset
 
 #--GLOBALS---------------------------------------------------------------------
@@ -149,10 +147,7 @@ class SetTest(IronPythonTestCase):
         self.assertEqual(a, b)
 
     def test_deque(self):
-        if is_cli:
-            from _collections import deque
-        else:
-            from collections import deque
+        from _collections import deque
         x = deque([2,3,4,5,6])
         x.remove(2)
         self.assertEqual(x, deque([3,4,5,6]))

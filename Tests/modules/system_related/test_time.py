@@ -3,11 +3,10 @@
 # See the LICENSE file in the project root for more information.
 
 import time
-import unittest
 
-from iptest import is_cli, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test
 
-class TimeTest(unittest.TestCase):
+class TimeTest(IronPythonTestCase):
     def test_strftime(self):
         t = time.localtime()
         x = time.strftime('%x %X', t)

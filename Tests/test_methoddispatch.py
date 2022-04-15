@@ -3,9 +3,8 @@
 # See the LICENSE file in the project root for more information.
 
 import os
-import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class MethodDispatchTest(IronPythonTestCase):
@@ -52,7 +51,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
         verify_complex(i, ii)
         verify_complex(j, jj)
-        
+
         verify_complex(i + j, ii + jj)
         verify_complex(i - j, ii - jj)
         verify_complex(i * j, ii * jj)
@@ -62,12 +61,12 @@ class MethodDispatchTest(IronPythonTestCase):
         verify_complex(i - 2.5, ii - 2.5)
         verify_complex(i * 2.5, ii * 2.5)
         verify_complex(i / 2.5, ii / 2.5)
-        
+
         verify_complex(2.5 + j, 2.5 + jj)
         verify_complex(2.5 - j, 2.5 - jj)
         verify_complex(2.5 * j, 2.5 * jj)
         verify_complex(2.5 / j, 2.5 / jj)
-        
+
         verify_complex(i + 2, ii + 2)
         verify_complex(i - 2, ii - 2)
         verify_complex(i * 2, ii * 2)
@@ -77,7 +76,7 @@ class MethodDispatchTest(IronPythonTestCase):
         verify_complex(2 - j, 2 - jj)
         verify_complex(2 * j, 2 * jj)
         verify_complex(2 / j, 2 / jj)
-        
+
         verify_complex(-i, -ii)
         verify_complex(-j, -jj)
 
@@ -104,7 +103,7 @@ class MethodDispatchTest(IronPythonTestCase):
         i += 2
         ii += 2
         verify_complex(i, ii)
-        
+
         i *= 2
         ii *= 2
         verify_complex(i, ii)
@@ -142,19 +141,19 @@ class MethodDispatchTest(IronPythonTestCase):
         from System.Drawing import Rectangle
         r = Rectangle(0, 0, 3, 7)
         s = Rectangle(3, 0, 8, 14)
-        
+
         # calling the static method
         i = Rectangle.Intersect(r, s)
         self.assertEqual(i, Rectangle(3, 0, 0, 7))
         self.assertEqual(r, Rectangle(0, 0, 3, 7))
         self.assertEqual(s, Rectangle(3, 0, 8, 14))
-        
+
         # calling the instance
         i = r.Intersect(s)
         self.assertEqual(i, None)
         self.assertEqual(r, Rectangle(3, 0, 0, 7))
         self.assertEqual(s, Rectangle(3, 0, 8, 14))
-        
+
         # calling instance w/ StrongBox
         r = Rectangle(0, 0, 3, 7)
         box = clr.StrongBox[Rectangle](r)
@@ -162,10 +161,10 @@ class MethodDispatchTest(IronPythonTestCase):
         self.assertEqual(i, None)
         self.assertEqual(box.Value, Rectangle(3, 0, 0, 7))
         self.assertEqual(s, Rectangle(3, 0, 8, 14))
-        
+
         # should be able to access properties through the box
         self.assertEqual(box.X, 3)
-        
+
         # multiple sites should produce the same function
         i = box.Intersect
         j = box.Intersect
@@ -203,7 +202,7 @@ class MethodDispatchTest(IronPythonTestCase):
         UIntType    = (System.UInt32,  BindTest.UIntValue,    BindResult.UInt)
         ULongType   = (System.UInt64,  BindTest.ULongValue,   BindResult.ULong)
         UShortType  = (System.UInt16,  BindTest.UShortValue,  BindResult.UShort)
-        
+
         saveType = type
 
         for binding in [BoolType, ByteType, CharType, DecimalType, DoubleType,
@@ -217,7 +216,7 @@ class MethodDispatchTest(IronPythonTestCase):
             select = BindTest.Bind.Overloads[type]
             result = select(value)
             self.assertEqual(expect, result)
-        
+
             # Select using ReflectedType object
             select = BindTest.Bind.Overloads[type]
             result = select(value)
@@ -231,7 +230,7 @@ class MethodDispatchTest(IronPythonTestCase):
             result, output = BindTest.BindRef(value)
             if not binding is CharType:
                 self.assertEqual(expect | BindResult.Ref, result)
-        
+
             # Select using Array type
             arrtype = System.Type.MakeArrayType(type)
             select = BindTest.Bind.Overloads[arrtype]
@@ -279,7 +278,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
             def TestDaysUShort(self):
                 return DaysUShort.Weekdays
-        
+
             def TestDaysUInt(self):
                 return DaysUInt.Weekdays
 
@@ -644,14 +643,14 @@ class MethodDispatchTest(IronPythonTestCase):
 
         def keys_helper(o):
             if hasattr(o, 'keys'): return list(o.keys())
-            
+
             return o.Keys
-            
+
         def CheckDict(res, orig):
             if hasattr(res, "__len__"):
                 self.assertEqual(len(res), len(orig))
             i = 0
-            
+
             for a in keys_helper(res):
                 self.assertEqual(res[a], orig[a])
                 i = i+1
@@ -793,7 +792,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
         class C:
             mymax = max
-            
+
         a = C()
         self.assertEqual(a.mymax(0,0), 0)
 
@@ -826,7 +825,7 @@ class MethodDispatchTest(IronPythonTestCase):
         self.assertEqual(tst.Test_ByRef_Object(r, s, t), "Hi; Hello; Ciao")
         self.assertEqual(tst.Test_ByRef_Object("Hi", "Hello", "Ciao"), ("Hi; Hello; Ciao"))
         self.assertRaises(TypeError, tst.Test_ByRef_Object, "Hi")
-        
+
         self.assertEqual(tst.Test_Default_Cast(), "1")
         self.assertEqual(tst.Test_Default_Cast("Hello"), ("Hello", "Hello"))
         self.assertEqual(tst.Test_Default_Cast(None), ("(null)", None))
@@ -930,16 +929,16 @@ class MethodDispatchTest(IronPythonTestCase):
                     line += 'try: c.IM%d(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
                 line += 'try: o.IM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
                 line += 'try: c.IM%d(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
-                    
+
                 line += 'assertEqual(o.SM%d(%s), "SM%d")\n' % (i, args, i)
                 line += 'assertEqual(c.SM%d(%s), "SM%d")\n' % (i, args, i)
-                
+
                 if i > 0:
                     line += 'try: o.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
                     line += 'try: c.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
                 line += 'try: o.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
                 line += 'try: c.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
-            
+
             #print line
             exec(line, globals(), locals())
 
@@ -954,10 +953,10 @@ class MethodDispatchTest(IronPythonTestCase):
                 else:
                     line += 'try: o.IDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
                     line += 'try: c.IDM0(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
-                
+
             #print line
             exec(line, globals(), locals())
-        
+
             line = ""
             for i in range(7):
                 args = ",".join(['1'] * i)
@@ -967,7 +966,7 @@ class MethodDispatchTest(IronPythonTestCase):
                 else:
                     line += 'try: o.SDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
                     line += 'try: c.SDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
-                
+
             #print line
             exec(line, globals(), locals())
 
@@ -985,10 +984,10 @@ class MethodDispatchTest(IronPythonTestCase):
                     line += 'assertEqual(c.IDM1(o,%s), "IDM1-x")\n' % (args)
                     line += 'assertEqual(o.SDM1(%s), "SDM1-x")\n' % (args)
                     line += 'assertEqual(c.SDM1(%s), "SDM1-x")\n' % (args)
-                    
+
             #print line
             exec(line, globals(), locals())
-        
+
             line = ""
             for i in range(7):
                 args = ",".join(['1'] * i)
@@ -1002,7 +1001,7 @@ class MethodDispatchTest(IronPythonTestCase):
                     line += 'assertEqual(c.IDM4(o,%s), "IDM4-x")\n' % (args)
                     line += 'assertEqual(o.SDM4(%s), "SDM4-x")\n' % (args)
                     line += 'assertEqual(c.SDM4(%s), "SDM4-x")\n' % (args)
-                
+
             #print line
             exec(line, globals(), locals())
 
@@ -1018,7 +1017,7 @@ class MethodDispatchTest(IronPythonTestCase):
                     line += 'try: c.IDM2(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
             #print line
             exec(line, globals(), locals())
-        
+
             line = ""
             for i in range(7):
                 args = ",".join(['1'] * i)
@@ -1031,7 +1030,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
             #print line
             exec(line, globals(), locals())
-        
+
             ## 4
             line = ""
             for i in range(7):
@@ -1069,10 +1068,10 @@ class MethodDispatchTest(IronPythonTestCase):
                 else:
                     line += 'self.assertEqual(o.IDM3(%s), "IDM3-x")\n' % (args)
                     line += 'self.assertEqual(c.IDM3(o,%s), "IDM3-x")\n' % (args)
-                
+
             #print line
             exec(line, globals(), locals())
-        
+
             line = ""
             for i in range(7):
                 args = ",".join(['1'] * i)
@@ -1082,7 +1081,7 @@ class MethodDispatchTest(IronPythonTestCase):
                 else:
                     line += 'assertEqual(o.SDM3(%s), "SDM3-x")\n' % (args)
                     line += 'assertEqual(c.SDM3(%s), "SDM3-x")\n' % (args)
-                
+
             #print line
             exec(line, globals(), locals())
 
@@ -1094,7 +1093,7 @@ class MethodDispatchTest(IronPythonTestCase):
                 line +=  'assertEqual(o.SPM0(%s), "SPM0-%d")\n' % (args, i)
                 line +=  'assertEqual(c.IPM0(o,%s), "IPM0-%d")\n' % (args, i)
                 line +=  'assertEqual(c.SPM0(%s), "SPM0-%d")\n' % (args, i)
-                
+
                 line +=  'assertEqual(o.SPM1(0,%s), "SPM1-%d")\n' % (args, i)
                 line +=  'assertEqual(o.IPM1(0,%s), "IPM1-%d")\n' % (args, i)
                 line +=  'assertEqual(c.IPM1(o, 0,%s), "IPM1-%d")\n' % (args, i)
@@ -1102,12 +1101,12 @@ class MethodDispatchTest(IronPythonTestCase):
 
             #print line
             exec(line, globals(), locals())
-            
+
         class DispatchAgain2(DispatchAgain): pass
-        
+
         testfunctionhelper(DispatchAgain, DispatchAgain())
         testfunctionhelper(DispatchAgain2, DispatchAgain2())
-        
+
         self.assertEqual(type(BindTest.ReturnTest('char')), System.Char)
         self.assertEqual(type(BindTest.ReturnTest('null')), type(None))
         self.assertEqual(type(BindTest.ReturnTest('object')), object)
@@ -1153,7 +1152,7 @@ class MethodDispatchTest(IronPythonTestCase):
                                     ("10",),
                                     (System.Byte.Parse("2"),),
                     ])
-        
+
         #############################################################################################
         #        public int M1(int arg) { return 1; }
         #        public int M1(long arg) { return 2; }
@@ -1186,13 +1185,13 @@ class MethodDispatchTest(IronPythonTestCase):
         #        public int M2(int arg1, long arg2) { return 3; }
         #        public int M2(long arg1, long arg2) { return 4; }
         #        public int M2(object arg1, object arg2) { return 5; }
-        
+
         func = c.M2
         AllEqual(1, func, [
             (0, 0), (1, maxint), (maxint, 1), (maxint, maxint),
             (int(10), 0),
             ])
-        
+
         AllEqual(2, func, [
             (System.Int64(maxint+1), 0),
             (System.Int64(maxint+10), 10),
@@ -1205,11 +1204,11 @@ class MethodDispatchTest(IronPythonTestCase):
             (0, maxlong1),
             (10, maxlong1),
             ])
-        
+
         AllEqual(4, func, [
             (maxlong1, maxlong1),
             ])
-        
+
         AllEqual(5, func, [
             (big(10), 0),
             (maxint+1, 0),
@@ -1226,25 +1225,25 @@ class MethodDispatchTest(IronPythonTestCase):
             (1, "100L"),
             (10.2, 1),
             ])
-        
+
         #############################################################################################
         #        public int M4(int arg1, int arg2, int arg3, int arg4) { return 1; }
         #        public int M4(object arg1, object arg2, object arg3, object arg4) { return 2; }
-        
+
         one = [t.Parse("5") for t in [System.Byte, System.SByte, System.UInt16, System.Int16, System.UInt32, System.Int32,
                 System.UInt32, System.Int32, System.UInt64, System.Int64,
                 System.Char, System.Decimal, System.Single, System.Double] ]
-        
+
         one.extend([True, False, big(5), DispatchHelpers.Color.Red ])
-        
+
         two = [t.Parse("5.5") for t in [ System.Decimal, System.Single, System.Double] ]
-        
+
         two.extend([None, "5", "5.5", maxint * 2, ])
-        
+
         together = []
         together.extend(one)
         together.extend(two)
-        
+
         ignore = '''
         for a1 in together:
             for a2 in together:
@@ -1263,25 +1262,25 @@ class MethodDispatchTest(IronPythonTestCase):
         #        public int M5(object arg1, object args) { return 3; }
         b = DispatchHelpers.B()
         d = DispatchHelpers.D()
-        
+
         func = c.M5
-        
+
         AllEqual(1, func, [(b, b), (b, d)])
         AllEqual(2, func, [(d, b), (d, d)])
         AllEqual(3, func, [(1, 2)])
-        
+
         #############################################################################################
         #        public int M6(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 1; }
         #        public int M6(DispatchHelpers.B arg1, DispatchHelpers.D args) { return 2; }
         #        public int M6(object arg1, DispatchHelpers.D args) { return 3; }
-        
+
         func = c.M6
 
         AllEqual(1, func, [(b, b), (d, b)])
         AllEqual(2, func, [(b, d), (d, d)])
         AllEqual(3, func, [(1, d), (big(6), d)])
         AllAssert(TypeError, func, [(1,1), (None, None), (None, d), (3, b)])
-        
+
         #############################################################################################
         #        public int M7(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 1; }
         #        public int M7(DispatchHelpers.B arg1, DispatchHelpers.D args) { return 2; }
@@ -1299,7 +1298,7 @@ class MethodDispatchTest(IronPythonTestCase):
         #        public int M8(int arg1, int arg2) { return 1;}
         #        public int M8(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 2; }
         #        public int M8(object arg1, object arg2) { return 3; }
-        
+
         func = c.M8
         AllEqual(1, func, [(1, 2), ]) #(maxint, 2L)])
         AllEqual(2, func, [(b, b), (b, d), (d, b), (d, d)])
@@ -1352,7 +1351,7 @@ class MethodDispatchTest(IronPythonTestCase):
         self.assertEqual(x[1], a)
         # doc for this method should have the out & ref params as return values
         self.assertEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (Int32, Dispatch)%s' % os.linesep)
-        
+
         # call type.InvokeMember on String.ToString - all methods have more arguments than max args.
         res = clr.GetClrType(str).InvokeMember('ToString',
                                                 System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.InvokeMethod,
@@ -1379,9 +1378,9 @@ class MethodDispatchTest(IronPythonTestCase):
             pass
         else:
             self.fail("Expected AttributeError, got none")
-            
+
         self.assertEqual(x.B(), "ExplicitTest.B")
-        
+
         self.assertTrue(not hasattr(x, "C"))
         try:
             x.C()
@@ -1389,16 +1388,16 @@ class MethodDispatchTest(IronPythonTestCase):
             pass
         else:
             self.fail("Expected AttributeError, got none")
-        
+
         self.assertEqual(x.D(), "ExplicitTest.D")
-        
+
         self.assertEqual(IExplicitTest1.A(x), "ExplicitTest.IExplicitTest1.A")
         self.assertEqual(IExplicitTest1.B(x), "ExplicitTest.IExplicitTest1.B")
         self.assertEqual(IExplicitTest1.C(x), "ExplicitTest.IExplicitTest1.C")
         self.assertEqual(IExplicitTest1.D(x), "ExplicitTest.D")
         self.assertEqual(IExplicitTest2.A(x), "ExplicitTest.IExplicitTest2.A")
         self.assertEqual(IExplicitTest2.B(x), "ExplicitTest.B")
-        
+
         x = ExplicitTestArg()
         try:
             x.M()
@@ -1427,7 +1426,7 @@ class MethodDispatchTest(IronPythonTestCase):
     def test_array_error_message(self):
         import System
         from IronPythonTest import BinderTest
-        
+
         x = BinderTest.CNoOverloads()
         self.assertRaisesMessage(TypeError, 'expected Array[Int32], got Array[Byte]', x.M500, System.Array[System.Byte]([1,2,3]))
 

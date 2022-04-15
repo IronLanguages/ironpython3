@@ -356,7 +356,7 @@ class NtTest(IronPythonTestCase):
         self.assertRaises(TypeError, nt.putenv, 1, "xyz")
         self.assertRaises(TypeError, nt.putenv, "ABC", 1)
 
-    @unittest.skipUnless(is_cli, "CPython has no nt.unsetenv function")
+    @unittest.skipUnless(is_cli or sys.version_info >= (3,9), "CPython has no nt.unsetenv function")
     def test_unsetenv(self):
         #simple sanity check
         nt.putenv("ipy_test_env_var", "xyz")
@@ -470,7 +470,7 @@ class NtTest(IronPythonTestCase):
         ping_cmd = os.path.join(os.environ["windir"], "system32", "ping")
         nt.spawnv(nt.P_WAIT, ping_cmd , ["ping"])
         nt.spawnv(nt.P_WAIT, ping_cmd , ["ping","127.0.0.1","-n","1"])
- 
+
     @unittest.skipUnless(sys.platform == "win32", 'windir is Windows specific')
     def test_spawnve(self):
         ping_cmd = os.path.join(os.environ["windir"], "system32", "ping")
@@ -946,7 +946,7 @@ class NtTest(IronPythonTestCase):
         p = subprocess.Popen("whoami", env=os.environ)
         self.assertTrue(p!=None)
         p.wait()
- 
+
     def test_fsync(self):
         fsync_file_name = 'text_fsync.txt'
         fd = nt.open(fsync_file_name, nt.O_WRONLY | nt.O_CREAT)

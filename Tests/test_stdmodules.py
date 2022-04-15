@@ -12,7 +12,7 @@ import os
 import sys
 import locale
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_posix, run_test, skipUnlessIronPython
 
 class StdModulesTest(IronPythonTestCase):
 
@@ -105,7 +105,7 @@ class StdModulesTest(IronPythonTestCase):
                             "exec", ["1\n"]),
                     ]
 
-        if is_cpython: # https://github.com/IronLanguages/ironpython3/issues/1047
+        if not is_cli: # https://github.com/IronLanguages/ironpython3/issues/1047
             test_list.append(("if 1:\n    print(1)", "exec", ["1\n"]))
 
         for test_case, kind, expected in test_list:
@@ -135,7 +135,7 @@ class StdModulesTest(IronPythonTestCase):
                         ("def f(n):\n    return n*n\n\nf(3)\n", "single"),
                         ("if 1:\n    print(1)",                  "single"),
                     ]
-        if not is_cpython: # https://github.com/IronLanguages/ironpython3/issues/1047
+        if is_cli: # https://github.com/IronLanguages/ironpython3/issues/1047
             bad_test_list.append(("if 1:\n    print(1)",                  "exec"))
 
         for test_case, kind in bad_test_list:

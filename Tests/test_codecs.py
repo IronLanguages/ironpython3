@@ -6,10 +6,9 @@
 ## Test codecs, in addition to test_codecs from StdLib and from modules/io_related
 ##
 
-import unittest
 import codecs
 
-from iptest import run_test, is_cli
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -17,9 +16,9 @@ if is_cli:
     import System.Text
     clr.AddReference("System.Memory")
 
-class CodecsTest(unittest.TestCase):
+class CodecsTest(IronPythonTestCase):
 
-    @unittest.skipUnless(is_cli, "Interop with CLI")
+    @skipUnlessIronPython()
     def test_interop_ascii(self):
         self.assertEqual("abc".encode(System.Text.Encoding.ASCII), b"abc")
         self.assertEqual(b"abc".decode(System.Text.Encoding.ASCII), "abc")
@@ -108,7 +107,7 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual("abć".encode('utf_32_be'), b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07")
         self.assertEqual(b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07".decode('utf_32_be'), "abć")
 
-    @unittest.skipUnless(is_cli, "Interop with CLI")
+    @skipUnlessIronPython()
     def test_interop_array(self):
         arr = System.Array[System.Byte](b"abc")
         ars = System.ArraySegment[System.Byte](arr)

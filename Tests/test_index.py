@@ -2,9 +2,6 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import sys
-import unittest
-
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 class IndexTest(IronPythonTestCase):
@@ -29,7 +26,7 @@ class IndexTest(IronPythonTestCase):
     def test_hashtable(self):
         import clr
         import System
-        hashtables = [System.Collections.Generic.Dictionary[object, object]()]    
+        hashtables = [System.Collections.Generic.Dictionary[object, object]()]
         hashtables.append(System.Collections.Hashtable())
 
         for x in hashtables:
@@ -38,20 +35,20 @@ class IndexTest(IronPythonTestCase):
             x[10,] = "Tuple Int"
             x["String",] = "Tuple String"
             x[2.4,] = "Tuple Double"
-            
+
             self.assertTrue(x["Hi"] == "Hello")
             self.assertTrue(x[1] == "Python")
             self.assertTrue(x[(10,)] == "Tuple Int")
             self.assertTrue(x[("String",)] == "Tuple String")
             self.assertTrue(x[(2.4,)] == "Tuple Double")
-            
+
             success=False
             try:
                 x[1,2] = 10
             except TypeError as e:
                 success=True
             self.assertTrue(success)
-            
+
             x[(1,2)] = "Tuple key in hashtable"
             self.assertTrue(x[1,2,] == "Tuple key in hashtable")
 
@@ -61,12 +58,12 @@ class IndexTest(IronPythonTestCase):
         import System
 
         md = System.Array.CreateInstance(System.Int32, 2, 2, 2)
-        
+
         for i in range(2):
             for j in range(2):
                 for k in range(2):
                     md[i,j,k] = i+j+k
-        
+
         for i in range(2):
             for j in range(2):
                 for k in range(2):
@@ -80,7 +77,7 @@ class IndexTest(IronPythonTestCase):
         # verify that slicing an array returns an array of the proper type
         from System import Array
         data = Array[int]( (2,3,4,5,6) )
-        
+
         self.assertEqual(type(data[:0]), Array[int])
         self.assertEqual(type(data[0:3:2]), Array[int])
 
@@ -90,7 +87,7 @@ class IndexTest(IronPythonTestCase):
         self.assertTrue(d[1,2,3,4,5] == d[(1,2,3,4,5)])
         self.assertTrue(d[1,2,3,4,5] == 12345)
         self.assertTrue(d[(1,2,3,4,5)] == 12345)
-        
+
         d = {None:23}
         del d[None]
         self.assertEqual(d, {})
@@ -99,15 +96,15 @@ class IndexTest(IronPythonTestCase):
     def test_custom_indexable(self):
         from IronPythonTest import Indexable
         i = Indexable()
-        
+
         i[10] = "Hello Integer"
         i["String"] = "Hello String"
         i[2.4] = "Hello Double"
-        
+
         self.assertTrue(i[10] == "Hello Integer")
         self.assertTrue(i["String"] == "Hello String")
         self.assertTrue(i[2.4] == "Hello Double")
-        
+
         indexes = (10, "String", 2.4)
         for a in indexes:
             for b in indexes:
@@ -132,7 +129,7 @@ class IndexTest(IronPythonTestCase):
     def test_multiple_indexes(self):
         from IronPythonTest import MultipleIndexes
         x = MultipleIndexes()
-        
+
         def get_value(*i):
             value = ""
             append = False
@@ -142,13 +139,13 @@ class IndexTest(IronPythonTestCase):
                 value = value + str(v)
                 append = True
             return value
-        
+
         def get_tuple_value(*i):
             return get_value("Indexing as tuple", *i)
-        
+
         def get_none(*i):
             return None
-        
+
         def verify_values(mi, gv, gtv):
             for i in i_idx:
                 self.assertTrue(x[i] == gv(i))
@@ -165,13 +162,13 @@ class IndexTest(IronPythonTestCase):
                             for m in m_idx:
                                 self.assertTrue(x[i,j,k,l,m] == gv(i,j,k,l,m))
                                 self.assertTrue(x[i,j,k,l,m,] == gtv(i,j,k,l,m))
-        
+
         i_idx = ("Hi", 2.5, 34)
         j_idx = (0, "*", "@")
         k_idx = list(range(3))
         l_idx = ("Sun", "Moon", "Star")
         m_idx = ((9,8,7), (6,5,4,3,2), (4,))
-        
+
         for i in i_idx:
             x[i] = get_value(i)
             for j in j_idx:
@@ -182,9 +179,9 @@ class IndexTest(IronPythonTestCase):
                         x[i,j,k,l] = get_value(i,j,k,l)
                         for m in m_idx:
                             x[i,j,k,l,m] = get_value(i,j,k,l,m)
-        
+
         verify_values(x, get_value, get_none)
-        
+
         for i in i_idx:
             x[i,] = get_tuple_value(i)
             for j in j_idx:
@@ -195,7 +192,7 @@ class IndexTest(IronPythonTestCase):
                         x[i,j,k,l,] = get_tuple_value(i,j,k,l)
                         for m in m_idx:
                             x[i,j,k,l,m,] = get_tuple_value(i,j,k,l,m)
-        
+
         verify_values(x, get_value, get_tuple_value)
 
     @skipUnlessIronPython()
@@ -204,7 +201,7 @@ class IndexTest(IronPythonTestCase):
         a = IndexableList()
         for i in range(5):
             result = a.Add(i)
-        
+
         for i in range(5):
             self.assertEqual(a[str(i)], i)
 
@@ -226,7 +223,7 @@ class IndexTest(IronPythonTestCase):
                     return index
                 def __setitem__(self, index, value):
                     self.res = (index, value)
-        
+
             a = foo()
             self.assertEqual(a[1], 1)
             self.assertEqual(a[1,2], (1,2))
@@ -252,12 +249,12 @@ class IndexTest(IronPythonTestCase):
             (dict,{0:2, 3:4, 5:6, 7:8}, 2),
             (str,'abcde', 'a'),
             (tuple, (1,2,3,4,5), 1),]
-            
+
         for testInfo in tests:
             base = testInfo[0]
             arg  = testInfo[1]
             zero = testInfo[2]
-                    
+
             class foo(base):
                 def __getitem__(self, index):
                     if isinstance(index, tuple):
@@ -281,7 +278,7 @@ class IndexTest(IronPythonTestCase):
             self.assertEqual(a[(0,1)], zero)
             a = foo(arg)
             self.assertEqual(a[(0,1,2)], zero)
-            
+
             if hasattr(base, '__setitem__'):
                 a[0] = 'x'
                 self.assertEqual(a[0], 'x')
@@ -296,19 +293,19 @@ class IndexTest(IronPythonTestCase):
                 a[(0,1,2)] = 'z'
                 self.assertEqual(a[(0,1,2)], 'z')
 
-            
+
     def test_getorsetitem_slice(self):
         tests = [  # base type, constructor arg, result of index 0
         (list,(1,2,3,4,5), 1, lambda x: [x]),
             (str,'abcde', 'a', lambda x: x),
             (tuple, (1,2,3,4,5), 1, lambda x: (x,)),]
-        
+
         for testInfo in tests:
             base = testInfo[0]
             arg  = testInfo[1]
             zero = testInfo[2]
             resL = testInfo[3]
-                    
+
             class foo(base):
                 def __getitem__(self, index):
                     if isinstance(index, tuple):
@@ -332,7 +329,7 @@ class IndexTest(IronPythonTestCase):
             self.assertEqual(a[(slice(0,1),slice(1,2))], resL(zero))
             a = foo(arg)
             self.assertEqual(a[(slice(0,1),slice(1,2),slice(2,3))], resL(zero))
-            
+
             if hasattr(base, '__setitem__'):
                 a[0:1] = 'x'
                 self.assertEqual(a[0:1], ['x'])
@@ -394,13 +391,13 @@ class IndexTest(IronPythonTestCase):
                 self.index = index
             def __index__(self):
                 return self.index
-        
+
         for sliceable in [x(list(range(5))) for x in (list, tuple)]:
             self.assertEqual(sliceable[cust_index(0)], 0)
             self.assertEqual(sliceable[cust_index(0)], 0)
             self.assertEqual(list(sliceable[cust_index(0) : cust_index(3)]), [0, 1, 2])
             self.assertEqual(list(sliceable[cust_index(0) : cust_index(3)]), [0, 1, 2])
-        
+
         # dictionary indexing shouldn't be affected
         x = cust_index(42)
         d = {x:3}
@@ -415,7 +412,7 @@ class IndexTest(IronPythonTestCase):
             self.assertEqual(cli_list[cust_index(0)], 0)
             self.assertEqual(list(cli_list[cust_index(0) : cust_index(3)]), list(range(3)))
             self.assertEqual(type(cli_list[cust_index(0) : cust_index(3)]), List[int])
-        
+
     @skipUnlessIronPython()
     def test_csharp_enumeration(self):
         from IronPythonTest import CSharpEnumerable
@@ -431,20 +428,20 @@ class IndexTest(IronPythonTestCase):
         l = []
         self.assertRaisesPartialMessage(TypeError, "'builtin_function_or_method' object is not subscriptable", lambda: l.append[float](1.0))
         self.assertRaisesPartialMessage(TypeError, "'int' object is not subscriptable", lambda: 1[2])
-        
+
     def test_cp19350_index_restrictions(self):
         global keyValue
         class X(object):
             def __setitem__(self, key, value):
                 global keyValue
                 keyValue = key
-        
+
         def f(a, b):
             X()[a, b] = object()
-        
+
         f(1, 2)
         self.assertEqual(keyValue, (1, 2))
-        f('one', 'two') 
+        f('one', 'two')
         self.assertEqual(keyValue, ('one', 'two'))
 
 run_test(__name__)

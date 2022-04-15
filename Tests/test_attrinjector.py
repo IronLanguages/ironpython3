@@ -2,12 +2,9 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import sys
-import unittest
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-from iptest import IronPythonTestCase, is_cli, run_test
-
-@unittest.skipUnless(is_cli, 'IronPython specific test')
+@skipUnlessIronPython()
 class AttrInjectorTestCase(IronPythonTestCase):
     def setUp(self):
         super(AttrInjectorTestCase, self).setUp()
@@ -31,10 +28,10 @@ class AttrInjectorTestCase(IronPythonTestCase):
 
     def operator_test(self, a):
         self.assertEqual(a.doesnotexist, 42)
-        
+
         # GetBoundMember shouldn't be called for pre-existing attributes, and we verify the name we got before.
         self.assertEqual(a.Name, 'doesnotexist')
-        
+
         # SetMember should be called for sets
         a.somethingelse = 123
         self.assertEqual(a.Name, 'somethingelse')

@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from iptest import is_cli, big, run_test, skipUnlessIronPython
+from iptest import big, run_test, skipUnlessIronPython
 
 class OutputCatcher(object):
     def __enter__(self):

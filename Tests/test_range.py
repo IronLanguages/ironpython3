@@ -9,14 +9,13 @@
 ##
 
 import sys
-import unittest
 
-from iptest import is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 if is_cli:
     from System import Int64
 
-class RangeTest(unittest.TestCase):
+class RangeTest(IronPythonTestCase):
 
     def test_range(self):
         self.assertTrue(list(range(10)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -55,16 +54,15 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(len(x), 2)
 
         if is_cli:
-            # TODO: https://github.com/IronLanguages/ironpython3/issues/472
-            with self.assertRaises(OverflowError):
-                x = range(0, Int64.MaxValue, Int64.MaxValue-1)
-                self.assertEqual(x[0], 0)
-                self.assertEqual(x[1], Int64.MaxValue-1)
+            x = range(0, Int64.MaxValue, Int64.MaxValue-1)
+            self.assertEqual(x[0], 0)
+            self.assertEqual(x[1], Int64.MaxValue-1)
 
-                self.assertEqual(len(range(0, Int64.MaxValue, Int64.MaxValue-1)), 2)
+            self.assertEqual(len(range(0, Int64.MaxValue, Int64.MaxValue-1)), 2)
 
-                r = range(-Int64.MaxValue, Int64.MaxValue, 2)
-                self.assertEqual(len(r), Int64.MaxValue)
+            r = range(-Int64.MaxValue, Int64.MaxValue, 2)
+            with self.assertRaises(OverflowError): # len protocol expects an Int32
+                len(r)
 
     def test_range_coverage(self):
         ## ToString

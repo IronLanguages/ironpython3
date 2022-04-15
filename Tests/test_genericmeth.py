@@ -3,9 +3,8 @@
 # See the LICENSE file in the project root for more information.
 
 import os
-import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class GenericMethTest(IronPythonTestCase):
@@ -43,22 +42,22 @@ class GenericMethTest(IronPythonTestCase):
             'InstMeth(self: GenMeth) -> str',
             'InstMeth(self: GenMeth, arg1: Int32) -> str',
             'InstMeth(self: GenMeth, arg1: str) -> str']) + os.linesep
-            
+
         self.assertDocEqual(gm.InstMeth.__doc__, expected)
 
         # And the same for the static methods.
         expected_static_methods = os.linesep.join([
-                'StaticMeth[T]() -> str' , 
-                'StaticMeth[(T, U)]() -> str' , 
-                'StaticMeth[T](arg1: Int32) -> str' , 
-                'StaticMeth[T](arg1: str) -> str' , 
-                'StaticMeth[(T, U)](arg1: Int32) -> str' , 
-                'StaticMeth[T](arg1: T) -> str' , 
-                'StaticMeth[(T, U)](arg1: T, arg2: U) -> str' , 
-                'StaticMeth() -> str' , 
-                'StaticMeth(arg1: Int32) -> str' , 
+                'StaticMeth[T]() -> str' ,
+                'StaticMeth[(T, U)]() -> str' ,
+                'StaticMeth[T](arg1: Int32) -> str' ,
+                'StaticMeth[T](arg1: str) -> str' ,
+                'StaticMeth[(T, U)](arg1: Int32) -> str' ,
+                'StaticMeth[T](arg1: T) -> str' ,
+                'StaticMeth[(T, U)](arg1: T, arg2: U) -> str' ,
+                'StaticMeth() -> str' ,
+                'StaticMeth(arg1: Int32) -> str' ,
                 'StaticMeth(arg1: str) -> str']) + os.linesep
-        
+
         self.assertDocEqual(GenMeth.StaticMeth.__doc__, expected_static_methods)
 
         # Check that we bind to the correct method based on type and call arguments for each of our instance methods. We can validate this

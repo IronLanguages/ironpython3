@@ -186,28 +186,38 @@ class SocketTest(IronPythonTestCase):
         '''Tests _socket.getprotobyname'''
         #IP and CPython
         proto_map = {
-                    "icmp": _socket.IPPROTO_ICMP,
-                    "ip": _socket.IPPROTO_IP,
-                    "tcp": _socket.IPPROTO_TCP,
-                    "udp": _socket.IPPROTO_UDP,
+            "icmp": _socket.IPPROTO_ICMP,
+            "ip": _socket.IPPROTO_IP,
+            "tcp": _socket.IPPROTO_TCP,
+            "udp": _socket.IPPROTO_UDP,
         }
 
-        #supported only by IP
-        if is_cli:
-            proto_map.update(
-                {"dstopts": _socket.IPPROTO_DSTOPTS,
+        if is_cli or sys.version_info >= (3,8):
+            proto_map.update({
+                "ipv6": _socket.IPPROTO_IPV6,
+                "esp": _socket.IPPROTO_ESP,
+                "pup": _socket.IPPROTO_PUP, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21918
+                "ggp": _socket.IPPROTO_GGP, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21918
+            })
+
+            proto_map_cli_only = {
+                "dstopts": _socket.IPPROTO_DSTOPTS,
                 "none": _socket.IPPROTO_NONE,
                 "raw": _socket.IPPROTO_RAW,
                 "ipv4": _socket.IPPROTO_IPV4,
-                "ipv6": _socket.IPPROTO_IPV6,
-                "esp": _socket.IPPROTO_ESP,
                 "fragment": _socket.IPPROTO_FRAGMENT,
                 "nd": _socket.IPPROTO_ND,
                 "icmpv6": _socket.IPPROTO_ICMPV6,
                 "routing": _socket.IPPROTO_ROUTING,
-                "pup": _socket.IPPROTO_PUP, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21918
-                "ggp": _socket.IPPROTO_GGP, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21918
-                })
+            }
+
+            for proto_name, good_val in proto_map_cli_only.items():
+                if is_cli:
+                    temp_val = _socket.getprotobyname(proto_name)
+                    self.assertEqual(temp_val, good_val)
+                else:
+                    with self.assertRaises(OSError):
+                        _socket.getprotobyname(proto_name)
 
         for proto_name, good_val in proto_map.items():
             temp_val = _socket.getprotobyname(proto_name)

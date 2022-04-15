@@ -2,11 +2,10 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import unittest
-from iptest import skipUnlessIronPython, is_netcoreapp, is_cli, run_test
+from iptest import IronPythonTestCase, is_netcoreapp, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
-class ClrExceptionTest(unittest.TestCase):
+class ClrExceptionTest(IronPythonTestCase):
 
     def clr_to_py_positive(self, clrExcep, pyExcep, excepMsg = None, msg = "CLR exception not mapped to specified Python exception"):
         try:

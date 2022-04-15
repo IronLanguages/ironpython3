@@ -6,7 +6,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, is_mono, is_osx, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_netcoreapp21, is_mono, is_osx, is_posix, run_test, skipUnlessIronPython
 from shutil import copyfile
 
 @skipUnlessIronPython()
@@ -25,11 +25,11 @@ class ClrLoadTest(IronPythonTestCase):
 
     def test_negative_assembly_names(self):
         import clr
-        self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
-        self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
-        self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
-        self.assertRaises(IOError, clr.AddReferenceByName, 'bad assembly name', 'WellFormed.But.Nonexistent, Version=9.9.9.9, Culture=neutral, PublicKeyToken=deadbeefdeadbeef, processorArchitecture=6502')
-        self.assertRaises(FileNotFoundError if is_netcoreapp21 else IOError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
+        self.assertRaises(OSError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
+        self.assertRaises(OSError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
+        self.assertRaises(OSError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
+        self.assertRaises(FileNotFoundError, clr.AddReferenceByName, 'bad assembly name', 'WellFormed.But.Nonexistent, Version=9.9.9.9, Culture=neutral, PublicKeyToken=deadbeefdeadbeef, processorArchitecture=6502')
+        self.assertRaises(FileNotFoundError if is_netcoreapp21 else OSError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
 
         self.assertRaises(TypeError, clr.AddReference, 35)
 
@@ -225,8 +225,6 @@ class ClrLoadTest(IronPythonTestCase):
         copyfile(test1_dll, test1_dll_along_with_ipy)
 
     #TODO: @skip("multiple_execute")
-    @unittest.skipIf(is_mono, "mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595")
-    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_assembly_resolve_isolation(self):
         import clr, os
         clr.AddReference("IronPython")
@@ -389,7 +387,6 @@ result = Test()
         self.assertRaises(AttributeError, f)
 
     #TODO:@skip("multiple_execute")
-    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_namespaceimport(self):
         import clr
         tmp = self.temporary_dir
@@ -443,7 +440,7 @@ result = Test()
         start = 0; end = 1
         while before[start] == after[start]: start += 1
         while before[-end] == after[-end]: end += 1
-        end -= 1;
+        end -= 1
 
         # what remains is an int - number of assemblies loaded.
         # The integer must have increased value by 1

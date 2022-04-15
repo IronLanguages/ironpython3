@@ -4,7 +4,6 @@
 
 import _struct
 import sys
-import unittest
 
 from iptest import IronPythonTestCase, is_64, is_cli, is_cpython, run_test
 

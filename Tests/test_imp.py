@@ -3,12 +3,11 @@
 # See the LICENSE file in the project root for more information.
 
 import imp
-import operator
 import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_posix, path_modifier, run_test
+from iptest import IronPythonTestCase, is_cli, is_posix, path_modifier, run_test, skipUnlessIronPython
 import collections
 
 def get_builtins_dict():
@@ -1077,7 +1076,7 @@ class Test(object):
         for x in dir(type(sys)):
             self.assertEqual(mymod.__getattribute__(x), getattr(mymod, x))
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_import_lookup_after(self):
         import os
         try:
@@ -1097,7 +1096,7 @@ sys.modules['y'] = newmod
             os.unlink(_x_mod)
             os.unlink(_y_mod)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_imp_load_source(self):
         import os
         try:
@@ -1116,13 +1115,13 @@ X = 3.14
         finally:
             os.unlink(_x_mod)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_imp_load_compiled(self):
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17459
         with self.assertRaises(FileNotFoundError):
             imp.load_compiled("", "")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_imp_load_dynamic(self):
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17459
         self.assertEqual(imp.load_dynamic, None)
@@ -1240,7 +1239,7 @@ X = 3.14
     def test_import_string_from_list_cp26098(self):
         self.assertEqual(__import__('email.mime.application', globals(), locals(), 'MIMEApplication').__name__, 'email.mime.application')
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_new_builtin_modules(self):
         import clr
         clr.AddReference('IronPythonTest')

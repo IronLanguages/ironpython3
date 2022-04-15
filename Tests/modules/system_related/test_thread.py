@@ -7,7 +7,7 @@ import _thread as thread
 import time
 import unittest
 
-from iptest import is_cli, run_test, skipUnlessIronPython, is_netcoreapp
+from iptest import is_netcoreapp, run_test, skipUnlessIronPython
 
 if is_netcoreapp:
     import clr
@@ -71,28 +71,24 @@ class ThreadTest(unittest.TestCase):
         sys.stderr = se
 
     def test_stack_size(self):
-        import sys
-        if is_cli or (sys.version_info[0] == 2 and sys.version_info[1] > 4) or sys.version_info[0] > 2:
-            import _thread as thread
+        import _thread as thread
 
-            size = thread.stack_size()
-            self.assertTrue(size==0 or size>=32768)
+        size = thread.stack_size()
+        self.assertTrue(size==0 or size>=32768)
 
-            bad_size_list = [ 1, -1, -32768, -32769, -32767, -40000, 32767, 32766]
-            for bad_size in bad_size_list:
-                self.assertRaises(ValueError, thread.stack_size, bad_size)
+        bad_size_list = [ 1, -1, -32768, -32769, -32767, -40000, 32767, 32766]
+        for bad_size in bad_size_list:
+            self.assertRaises(ValueError, thread.stack_size, bad_size)
 
-            good_size_list = [4096*10, 4096*100, 4096*1000, 4096*10000]
-            for good_size in good_size_list:
-                #CodePlex Work Item 7827
-                if is_cli and good_size<=50000: print("Ignoring", good_size, "for CLI"); continue
-                temp = thread.stack_size(good_size)
-                self.assertTrue(temp>=32768 or temp==0)
-
-            def temp(): pass
-            thread.start_new_thread(temp, ())
-            temp = thread.stack_size(1024*1024)
+        good_size_list = [4096*10, 4096*100, 4096*1000, 4096*10000]
+        for good_size in good_size_list:
+            temp = thread.stack_size(good_size)
             self.assertTrue(temp>=32768 or temp==0)
+
+        def temp(): pass
+        thread.start_new_thread(temp, ())
+        temp = thread.stack_size(1024*1024)
+        self.assertTrue(temp>=32768 or temp==0)
 
     @skipUnlessIronPython()
     def test_new_thread_is_background(self):

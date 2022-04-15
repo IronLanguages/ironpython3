@@ -4,8 +4,6 @@
 
 "module doc"
 
-import unittest
-
 from iptest import IronPythonTestCase, is_cli, path_modifier, retryOnFailure, run_test, skipUnlessIronPython
 
 class DocTest(IronPythonTestCase):

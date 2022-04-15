@@ -2,7 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-from iptest import big, myint, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, big, myint, run_test, skipUnlessIronPython
 
 class BoolTest(IronPythonTestCase):
     def test_types(self):

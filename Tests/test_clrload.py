@@ -225,6 +225,7 @@ class ClrLoadTest(IronPythonTestCase):
         copyfile(test1_dll, test1_dll_along_with_ipy)
 
     #TODO: @skip("multiple_execute")
+    @unittest.skipIf(is_mono, "mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595")
     def test_assembly_resolve_isolation(self):
         import clr, os
         clr.AddReference("IronPython")

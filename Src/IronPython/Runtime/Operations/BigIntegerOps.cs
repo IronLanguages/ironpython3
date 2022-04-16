@@ -728,11 +728,6 @@ namespace IronPython.Runtime.Operations {
 #endif
         }
 
-        [PythonHidden]
-        public static BigInteger ToBigInteger(BigInteger self) {
-            return self;
-        }
-
         #endregion
 
         #region Public API - String/Bytes

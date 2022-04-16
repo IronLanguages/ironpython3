@@ -6,15 +6,10 @@
 
 from .test_env import is_cli
 
-if is_cli:
-    import System
-
-    def big(i):
-        """Convert to a BigInteger instance."""
-        return i.ToBigInteger()
-
-else:
-    def big(i): return i
+def big(i):
+    """Convert an arbirtary int instance to a BigInteger instance."""
+    assert isinstance(i, int)
+    return int.__pos__(i)
 
 class myint(int): pass
 class myfloat(float): pass

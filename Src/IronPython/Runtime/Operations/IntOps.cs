@@ -194,15 +194,6 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        #region Public API - Numerics
-
-        [PythonHidden]
-        public static BigInteger ToBigInteger(this int self) {
-            return self;
-        }
-
-        #endregion
-
         #region Public API - String/Bytes
 
         public static string __format__(CodeContext/*!*/ context, int self, [NotDynamicNull] string/*!*/ formatSpec) {

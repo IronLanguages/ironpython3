@@ -3,7 +3,6 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test
 

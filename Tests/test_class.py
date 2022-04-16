@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, myint, big, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, myint, big, run_test, skipUnlessIronPython
 
 GETATTRIBUTE_CALLED = False
 
@@ -37,7 +37,7 @@ class ClassTest(IronPythonTestCase):
             # Non-existent attribute
             self.assertRaises(AttributeError, i.__getattribute__, "foo")
 
-            if is_cli and not i: # !!! Need to expose __reduce__ on all types
+            if not i: # !!! Need to expose __reduce__ on all types
                 self.assertRaises(TypeError, i.__reduce__)
                 self.assertRaises(TypeError, i.__reduce_ex__)
 
@@ -45,8 +45,6 @@ class ClassTest(IronPythonTestCase):
             self.assertEqual(hash(i), i.__hash__())
 
         for i in builtin_types:
-            if is_cli and i == type(None):
-                continue
             # __init__ and __new__ are implemented by IronPython.Runtime.Operations.InstanceOps
             # We do repr to ensure that we can map back the functions properly
             repr(getattr(i, "__init__"))
@@ -1202,7 +1200,7 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(hasattr(B, 'c'), True)
 
         # slots & metaclass
-        if is_cli:          # INCOMPATBILE: __slots__ not supported for subtype of type
+        if is_cli:          # INCOMPATIBLE: __slots__ not supported for subtype of type
             class foo(type):
                 __slots__ = ['abc']
 
@@ -1265,8 +1263,8 @@ class ClassTest(IronPythonTestCase):
         # weird case, including __weakref__ and __dict__ and we allow
         # a subtype to inherit from both
 
-        if is_cli: types = [object, dict, tuple]    # INCOMPATBILE: __slots__ not supported for tuple
-        else: types = [object,dict]
+        if is_cli: types = [object, dict, tuple]    # INCOMPATIBLE: __slots__ not supported for tuple
+        else: types = [object, dict]
 
         for x in types:
             class A(x):
@@ -1703,7 +1701,7 @@ class ClassTest(IronPythonTestCase):
             with self.assertRaises(AttributeError):
                 prop.__doc__ = 'abc'
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_override_mro(self):
         with self.assertRaises(NotImplementedError):
             class C(object):

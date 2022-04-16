@@ -2,9 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import collections
 import sys
-import unittest
 
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 

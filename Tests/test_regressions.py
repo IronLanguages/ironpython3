@@ -1195,7 +1195,6 @@ class C:
         y = next(x)
         self.assertTrue(y[0] == 'end' and y[1].tag == 'root')
 
-    @unittest.skipIf(is_cli, "TODO")
     def test_gh463(self):
         """https://github.com/IronLanguages/ironpython2/issues/463"""
         import plistlib

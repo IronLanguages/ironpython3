@@ -6,8 +6,6 @@
 # PART 2. how IronPython choose the overload methods
 #
 
-import unittest
-
 from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
 if is_cli:
     from iptest.type_util import array_int, array_byte, array_object, myint, mystr, types
@@ -103,7 +101,7 @@ class MethodBinder2Test(IronPythonTestCase):
         if verbose: print(arg, end=' ')
         for funcname in dir(target):
             if not _self_defined_method(funcname) : continue
-            
+
             if verbose: print(funcname, end=' ')
             func = getattr(target, funcname)
 
@@ -127,38 +125,38 @@ class MethodBinder2Test(IronPythonTestCase):
             else:
                 if not funcname in mapping.keys(): # Expecting exception
                     self.fail("expect %s, but got no exception (flag %s) when func %s with arg %s (%s)\n%s" % (expectError, Flag.Value, funcname, arg, type(arg), func.__doc__))
-                
+
                 left, right = Flag.Value, mapping[funcname]
                 if left != right:
                     self.fail("left %s != right %s when func %s on arg %s (%s)\n%s" % (left, right, funcname, arg, type(arg), func.__doc__))
                 Flag.Value = -99           # reset
         if verbose: print()
-    
+
     def test_other_concerns(self):
         from IronPythonTest.BinderTest import C1, C3, COtherOverloadConcern, Flag
         target = COtherOverloadConcern()
-        
+
         # the one asking for Int32 is private
         target.M100(100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
-        
+
         # static / instance
         target.M110(target, 100)
         self.assertEqual(Flag.Value, 110); Flag.Value = 99
         COtherOverloadConcern.M110(100)
         self.assertEqual(Flag.Value, 210); Flag.Value = 99
-        
+
         self.assertRaises(TypeError, COtherOverloadConcern.M110, target, 100)
-        
+
         # static / instance 2
         target.M111(100)
         self.assertEqual(Flag.Value, 111); Flag.Value = 99
         COtherOverloadConcern.M111(target, 100)
         self.assertEqual(Flag.Value, 211); Flag.Value = 99
-            
+
         self.assertRaises(TypeError, target.M111, target, 100)
         self.assertRaises(TypeError, COtherOverloadConcern.M111, 100)
-        
+
         # statics
         target.M120(target, 100)
         self.assertEqual(Flag.Value, 120); Flag.Value = 99
@@ -169,7 +167,7 @@ class MethodBinder2Test(IronPythonTestCase):
         self.assertEqual(Flag.Value, 120); Flag.Value = 99
         COtherOverloadConcern.M120(100)
         self.assertEqual(Flag.Value, 220); Flag.Value = 99
-        
+
         # generic
         target.M130(100)
         self.assertEqual(Flag.Value, 130); Flag.Value = 99
@@ -194,7 +192,7 @@ class MethodBinder2Test(IronPythonTestCase):
 
         class PT_C3_int(C3):
             def __int__(self): return 1
-        
+
         # narrowing levels and __int__ conversion
         target.M140(PT_C3_int(), PT_C3_int())
         self.assertEqual(Flag.Value, 140); Flag.Value = 99

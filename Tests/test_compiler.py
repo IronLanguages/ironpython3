@@ -4,12 +4,12 @@
 
 import os
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, run_test, skipUnlessIronPython
 
 @unittest.skipIf(is_netcoreapp, 'no clr.CompileModules')
 @skipUnlessIronPython()
 class CompilerTest(IronPythonTestCase):
-    
+
     def compileCode(self, name, *codeArr):
         import clr
         inputFiles = []
@@ -38,51 +38,51 @@ class CompilerTest(IronPythonTestCase):
         clr.CompileModules(dllFile, mainModule=fileList[0], *fileList)
         self.delete_files(*fileList)
         clr.AddReferenceToFileAndPath(dllFile)
-        
+
 ############################ Tests ###################################################
 
     def test_simple(self):
         self.compileCode("simpleTest", "def f(): return 42")
-                
+
         import simpleTest
-        self.assertEqual(simpleTest.f(), 42)    
+        self.assertEqual(simpleTest.f(), 42)
 
     def test_simple_dynsite(self):
         #containing a dynamic site.
         self.compileCode("simpleDynSiteTest", "def f(a , b): return a + b")
-        
+
         import simpleDynSiteTest
         self.assertEqual(simpleDynSiteTest.f(2,3), 5)
-    
+
     def test_syntax_error(self):
         self.assertRaises(SyntaxError, self.compileCode, "syntaxerrTest", "def f() pass")
-        
+
     def test_runtime_error(self):
         self.compileCode("runtimeError", "def f(): print(a)")
-        
+
         from runtimeError import f
         self.assertRaises(NameError, f)
-    
+
     def test_multiple_files(self):
         self.compileCode("multiFiles", "def f(): return 42", "def g(): return 33")
-        
+
         import multiFiles, multiFiles1
         self.assertEqual(multiFiles.f(), 42)
         self.assertEqual(multiFiles1.g(), 33)
 
     def test_multifile_import(self):
         self.compileCode("multiFileImport", "import multiFileImport1\ndef f(): return multiFileImport1.f()", "def f(): return 42")
-        
+
         import multiFileImport
         self.assertEqual(multiFileImport.f(), 42)
 
     def test_multifile_import_external(self):
-        self.compileCode("multiFileImportExternal", "import external\ndef f(): return external.f()")    
+        self.compileCode("multiFileImportExternal", "import external\ndef f(): return external.f()")
         self.write_to_file(os.path.join(self.temporary_dir, "external.py"), "def f(): return 'hello'")
-        
+
         import multiFileImportExternal
         self.assertEqual(multiFileImportExternal.f(), 'hello')
-    
+
     def test_load_order_builtins(self):
         self.compileCode("sys", "def f(): return 'hello'")
         import sys
@@ -98,7 +98,7 @@ class CompilerTest(IronPythonTestCase):
         clr.AddReferenceToFileAndPath(dllName)
         import loadOrderMod
         self.assertEqual(loadOrderMod.f(), 'hello')
-    
+
     def test_exceptions(self):
         self.compileCode("exceptionsTest", "def f(): raise SystemError")
 
@@ -107,7 +107,7 @@ class CompilerTest(IronPythonTestCase):
 
     def test_package_init(self):
         self.compilePackage("initPackage", { "__init__.py" : "def f(): return 42" });
-        
+
         import initPackage
         self.assertEqual(initPackage.f(), 42)
 
@@ -115,12 +115,12 @@ class CompilerTest(IronPythonTestCase):
         self.compilePackage("simplePackage", { "__init__.py" : "from . import a\nfrom . import b\ndef f(): return a.f() + b.f()",
                                         "a.py" : "def f() : return 10",
                                         "b.py" : "def f() : return 20"})
-                                        
+
         import simplePackage
-        self.assertEqual(simplePackage.f(), 30)       
+        self.assertEqual(simplePackage.f(), 30)
         self.assertEqual(simplePackage.a.f(), 10)
         self.assertEqual(simplePackage.b.f(), 20)
-    
+
     def test_package_subpackage(self):
         self.compilePackage("subPackage", { "__init__.py" : "from . import a\nfrom .b import c\ndef f(): return a.f() + c.f()",
                                     "a.py" : "def f(): return 10",
@@ -129,7 +129,7 @@ class CompilerTest(IronPythonTestCase):
 
         import subPackage
         self.assertEqual(subPackage.f(), 30)
-        self.assertEqual(subPackage.b.f(), 'kthxbye')    
+        self.assertEqual(subPackage.b.f(), 'kthxbye')
         self.assertEqual(subPackage.b.c.f(), 20)
 
     def test_package_subpackage_relative_imports(self):
@@ -146,11 +146,11 @@ class CompilerTest(IronPythonTestCase):
         #this probably won't work. Need to verify once bug is fixed.
         import mainTest
         self.assertEqual(mainTest.f(), "mainTest")
-    
+
     def test_empty_file(self):
         self.compileCode("emptyFile", "")
         import emptyFile
-    
+
     def test_negative(self):
         import clr
         self.assertRaises(TypeError, clr.CompileModules, None, None)
@@ -164,18 +164,18 @@ class CompilerTest(IronPythonTestCase):
         self.write_to_file(os.path.join(self.temporary_dir, "overwrite1.py"), "def foo(): return 'boo'")
         clr.CompileModules(dllFile, os.path.join(self.temporary_dir, "overwrite1.py"))
         clr.AddReferenceToFileAndPath(dllFile)
-        
+
         import overwrite1
         self.assertEqual(overwrite1.foo(), 'boo')
 
 
     def test_cyclic_modules(self):
         self.compileCode("cyclic_modules", "import cyclic_modules1\nA = 0", "import cyclic_modules\nA=1")
-        
+
         import cyclic_modules
         self.assertEqual(cyclic_modules.A, 0)
         self.assertEqual(cyclic_modules.cyclic_modules1.A, 1)
-        
+
         import cyclic_modules1
         self.assertEqual(cyclic_modules1.A, 1)
         self.assertEqual(cyclic_modules1.cyclic_modules.A, 0)
@@ -184,11 +184,11 @@ class CompilerTest(IronPythonTestCase):
         self.compilePackage("cyclic_package", { "__init__.py" : "from . import cyclic_submodules0\nfrom . import cyclic_submodules1",
                                         "cyclic_submodules0.py" : "import cyclic_package.cyclic_submodules1\nA = 2",
                                         "cyclic_submodules1.py" : "import cyclic_package.cyclic_submodules0\nA = 3"})
-                                        
+
         import cyclic_package
         self.assertEqual(cyclic_package.cyclic_submodules0.A, 2)
         self.assertEqual(cyclic_package.cyclic_submodules0.cyclic_package.cyclic_submodules1.A, 3)
-        
+
         self.assertEqual(cyclic_package.cyclic_submodules1.A, 3)
         self.assertEqual(cyclic_package.cyclic_submodules1.cyclic_package.cyclic_submodules0.A, 2)
 

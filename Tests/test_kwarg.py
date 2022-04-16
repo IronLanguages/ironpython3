@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 #############################################################
 # Helper functions for verifying the calls.  On each call
@@ -46,13 +46,13 @@ def testFunc_kw_2(a, b, **kw):
 class ObjectSubClass(object):
     def testFunc_pw_kw(a, *param, **kw):
         SetArgDict(a, None, param, kw)
-    
+
     def testFunc_kw(a, **kw):
         SetArgDict(a, None, None, kw)
-    
+
     def testFunc_pw_kw_2(a, b, *param, **kw):
         SetArgDict(a, b, param, kw)
-    
+
     def testFunc_kw_2(a, b, **kw):
         SetArgDict(a, b, None, kw)
 
@@ -79,7 +79,7 @@ class NewKwAndExtraParamAndParams(object):
         return object.__new__(cls)
 
 #### kw args on new w/ a corresponding init
-    
+
 class NewInitAll(object):
     def __new__(cls, *param, **kw):
         SetArgDict(cls, None, param, kw)
@@ -108,7 +108,7 @@ class NewInitKwAndExtraParamAndParams(object):
     def __init__(cls, a, *param, **kw):
         SetArgDictInit(cls, a, param, kw)
 
-class KwargTest(unittest.TestCase):
+class KwargTest(IronPythonTestCase):
     def CheckArgDict(self, a, b, param, kw):
         self.assertTrue(argDict['a'] == a, 'a is wrong got ' + repr(argDict['a']) + ' expected ' + repr(a))
         self.assertTrue(argDict['b'] == b, 'b is wrong got ' + repr(argDict['b']) + ' expected ' + repr(b))
@@ -246,23 +246,23 @@ class KwargTest(unittest.TestCase):
         v = NewAll()
         self.CheckArgDict(NewAll, None, (), {})
         self.assertEqual(type(v), NewAll)
-        
+
         v = NewAll(a='abc')
         self.CheckArgDict(NewAll, None, (), {'a': 'abc'})
         self.assertEqual(type(v), NewAll)
-        
+
         v = NewAll('abc')
         self.CheckArgDict(NewAll, None, ('abc',), {})
         self.assertEqual(type(v), NewAll)
-        
+
         v = NewAll('abc', 'def')
         self.CheckArgDict(NewAll, None, ('abc','def'), {})
         self.assertEqual(type(v), NewAll)
-        
+
         v = NewAll('abc', d='def')
         self.CheckArgDict(NewAll, None, ('abc',), {'d': 'def'})
         self.assertEqual(type(v), NewAll)
-        
+
         v = NewAll('abc', 'efg', d='def')
         self.CheckArgDict(NewAll, None, ('abc','efg'), {'d': 'def'})
         self.assertEqual(type(v), NewAll)
@@ -271,15 +271,15 @@ class KwargTest(unittest.TestCase):
         v = NewKw()
         self.CheckArgDict(NewKw, None, None, {})
         self.assertEqual(type(v), NewKw)
-        
+
         v = NewKw(a='abc')
         self.CheckArgDict(NewKw, None, None, {'a': 'abc'})
         self.assertEqual(type(v), NewKw)
-        
+
         v = NewKw(a='abc', b='cde')
         self.CheckArgDict(NewKw, None, None, {'a': 'abc', 'b':'cde'})
         self.assertEqual(type(v), NewKw)
-        
+
         v = NewKw(b='cde', a='abc')
         self.CheckArgDict(NewKw, None, None, {'a': 'abc', 'b':'cde'})
         self.assertEqual(type(v), NewKw)
@@ -288,15 +288,15 @@ class KwargTest(unittest.TestCase):
         v = NewKwAndExtraParam('abc')
         self.CheckArgDict(NewKwAndExtraParam, 'abc', None, {})
         self.assertEqual(type(v), NewKwAndExtraParam)
-        
+
         v = NewKwAndExtraParam(a='abc')
         self.CheckArgDict(NewKwAndExtraParam, 'abc', None, {})
         self.assertEqual(type(v), NewKwAndExtraParam)
-        
+
         v = NewKwAndExtraParam(a='abc', b='cde', e='def')
         self.CheckArgDict(NewKwAndExtraParam, 'abc', None, {'b':'cde', 'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParam)
-        
+
         v = NewKwAndExtraParam(b='cde', e='def', a='abc')
         self.CheckArgDict(NewKwAndExtraParam, 'abc', None, {'b':'cde', 'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParam)
@@ -305,31 +305,31 @@ class KwargTest(unittest.TestCase):
         v = NewKwAndExtraParamAndParams('abc')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams(a='abc')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams(a='abc', b='cde', e='def')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {'b':'cde', 'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams(b='cde', e='def', a='abc')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {'b':'cde', 'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc','cde')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde',), {})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc','cde','def')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde','def'), {})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc', 'cde', e='def')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde',), {'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc', 'cde', e='def', f='ghi')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde',), {'e':'def', 'f':'ghi'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
@@ -338,23 +338,23 @@ class KwargTest(unittest.TestCase):
         v = NewInitAll()
         self.CheckArgDictInit(v, None, (), {})
         self.assertEqual(type(v), NewInitAll)
-        
+
         v = NewInitAll('abc')
         self.CheckArgDictInit(v, None, ('abc', ), {})
         self.assertEqual(type(v), NewInitAll)
-        
+
         v = NewInitAll('abc', 'cde')
         self.CheckArgDictInit(v, None, ('abc', 'cde'), {})
         self.assertEqual(type(v), NewInitAll)
-        
+
         v = NewInitAll('abc', d='def')
         self.CheckArgDictInit(v, None, ('abc', ), {'d':'def'})
         self.assertEqual(type(v), NewInitAll)
-        
+
         v = NewInitAll('abc', d='def', e='fgi')
         self.CheckArgDictInit(v, None, ('abc', ), {'d':'def', 'e':'fgi'})
         self.assertEqual(type(v), NewInitAll)
-        
+
         v = NewInitAll('abc', 'hgi', d='def', e='fgi')
         self.CheckArgDictInit(v, None, ('abc', 'hgi'), {'d':'def', 'e':'fgi'})
         self.assertEqual(type(v), NewInitAll)
@@ -363,15 +363,15 @@ class KwargTest(unittest.TestCase):
         v = NewInitKw()
         self.CheckArgDictInit(v, None, None, {})
         self.assertEqual(type(v), NewInitKw)
-        
+
         v = NewInitKw(d='def')
         self.CheckArgDictInit(v, None, None, {'d':'def'})
         self.assertEqual(type(v), NewInitKw)
-        
+
         v = NewInitKw(d='def', e='fgi')
         self.CheckArgDictInit(v, None, None, {'d':'def', 'e':'fgi'})
         self.assertEqual(type(v), NewInitKw)
-        
+
         v = NewInitKw(d='def', e='fgi', f='ijk')
         self.CheckArgDictInit(v, None, None, {'d':'def', 'e':'fgi', 'f':'ijk'})
         self.assertEqual(type(v), NewInitKw)
@@ -380,31 +380,31 @@ class KwargTest(unittest.TestCase):
         v = NewInitKwAndExtraParam('abc')
         self.CheckArgDictInit(v, 'abc', None, {})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam('abc',d='def')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam('abc',d='def', e='fgi')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def', 'e':'fgi'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam('abc', d='def', e='fgi', f='ijk')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def', 'e':'fgi', 'f':'ijk'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam(a='abc')
         self.CheckArgDictInit(v, 'abc', None, {})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam(a='abc',d='def')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam(a='abc',d='def', e='fgi')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def', 'e':'fgi'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
-        
+
         v = NewInitKwAndExtraParam(a='abc', d='def', e='fgi', f='ijk')
         self.CheckArgDictInit(v, 'abc', None, {'d':'def', 'e':'fgi', 'f':'ijk'})
         self.assertEqual(type(v), NewInitKwAndExtraParam)
@@ -413,23 +413,23 @@ class KwargTest(unittest.TestCase):
         v = NewInitKwAndExtraParamAndParams('abc')
         self.CheckArgDict(NewInitKwAndExtraParamAndParams, 'abc', (), {})
         self.assertEqual(type(v), NewInitKwAndExtraParamAndParams)
-        
+
         v = NewInitKwAndExtraParamAndParams('abc', 'cde')
         self.CheckArgDict(NewInitKwAndExtraParamAndParams, 'abc', ('cde',), {})
         self.assertEqual(type(v), NewInitKwAndExtraParamAndParams)
-        
+
         v = NewInitKwAndExtraParamAndParams('abc', 'cde', 'def')
         self.CheckArgDict(NewInitKwAndExtraParamAndParams, 'abc', ('cde','def'), {})
         self.assertEqual(type(v), NewInitKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams(a='abc', b='cde', e='def')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {'b':'cde', 'e':'def'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc', 'cde', e='def', d='ghi')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', ('cde',), {'e':'def', 'd':'ghi'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
-        
+
         v = NewKwAndExtraParamAndParams('abc', e='def', f='ghi')
         self.CheckArgDict(NewKwAndExtraParamAndParams, 'abc', (), {'e':'def', 'f':'ghi'})
         self.assertEqual(type(v), NewKwAndExtraParamAndParams)
@@ -439,7 +439,7 @@ class KwargTest(unittest.TestCase):
         class ListSubcls(list):
             def __new__(cls, **kw):
                 pass
-                
+
         a = ListSubcls(a='abc')
 
     def test_negTestFunc_testFunc_pw_kw_dupArg(self):
@@ -568,9 +568,9 @@ class KwargTest(unittest.TestCase):
         class DoReturn(Exception):
             def __init__(self, *params):
                 pass
-                
+
         a = DoReturn('abc','cde','efg')
-      
+
     def test_object_subclass(self):
         subcls = ObjectSubClass()
 
@@ -646,36 +646,36 @@ class KwargTest(unittest.TestCase):
 
     def test_kw_splat(self):
         def foo(**kw): pass
-        
+
         # should raise because only strings are allowed
         try:
             foo(**{2:3})
             self.fail("Unreachable code reached")
         except TypeError:
             pass
-            
+
         def foo(a, b, **kw): return a, b, kw
-        
+
         self.assertEqual(foo(1,2,**{'abc':3}), (1, 2, {'abc': 3}))
         self.assertEqual(foo(1,b=2,**{'abc':3}), (1, 2, {'abc': 3}))
         self.assertEqual(foo(1,**{'abc':3, 'b':7}), (1, 7, {'abc': 3}))
         self.assertEqual(foo(a=11,**{'abc':3, 'b':7}), (11, 7, {'abc': 3}))
-        
+
         def f(a, b): return a, b
 
         self.assertEqual(f(*(1,), **{'b':7}), (1,7))
         self.assertEqual(f(*(1,2), **{}), (1,2))
         self.assertEqual(f(*(), **{'a':2, 'b':7}), (2,7))
-        
+
         try:
             f(**{'a':2, 'b':3, 'c':4})
             self.fail("Unreachable code reached")
         except TypeError:
             pass
-    
+
     def test_sequence_as_stararg(self):
         def f(x, *args): return x, args
-        
+
         with self.assertRaises(TypeError):
             f(1, x=2) # TypeError: f() got multiple values for keyword argument 'x'
 
@@ -690,7 +690,7 @@ class KwargTest(unittest.TestCase):
         self.assertEqual(f(1, *[2,3]), (1, (2,3)))
         self.assertEqual(f(1, *(2,3)), (1, (2,3)))
         self.assertEqual(f(1, *("23")), (1, ("2","3")))
-        
+
         def f(*arg, **kw): return arg, kw
         self.assertEqual(f(1, x=2, *[3,4]), ((1,3,4), {'x':2}))
         self.assertEqual(f(1, x=2, *(3,4)), ((1,3,4), {'x':2}))

@@ -6,16 +6,14 @@
 ## Test array support by IronPython (System.Array)
 ##
 
-import unittest
-
-from iptest import IronPythonTestCase, is_cli, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
     import System
 
+@skipUnlessIronPython()
 class ArrayTest(IronPythonTestCase):
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_sanity(self):
         # 1-dimension array
         array1 = System.Array.CreateInstance(int, 2)
@@ -77,7 +75,6 @@ class ArrayTest(IronPythonTestCase):
             self.assertEqual([x for x in f(array1, 0)], [])
             self.assertEqual([x for x in f(array1, -10)], [])
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_invalid_index(self):
         ## types and messages follow memoryview behaviour
         rank3array = System.Array.CreateInstance(object, 2, 2, 2)
@@ -133,7 +130,6 @@ class ArrayTest(IronPythonTestCase):
         def f4(): rank3array[0, 0, -3] = 0
         self.assertRaisesMessage(IndexError, "index out of range: -3", f4)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_slice(self):
         array1 = System.Array.CreateInstance(int, 20)
         for i in range(20): array1[i] = i * i
@@ -150,7 +146,6 @@ class ArrayTest(IronPythonTestCase):
         def f(): array1[::2] = [x * 2 for x in range(11)]
         self.assertRaises(ValueError, f)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_creation(self):
         t = System.Array
         ti = type(System.Array.CreateInstance(int, 1))
@@ -161,7 +156,6 @@ class ArrayTest(IronPythonTestCase):
             t.Reverse(x)
             self.assertEqual([i for i in x], [2, 1])
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_constructor(self):
         array1 = System.Array[int](10)
         array2 = System.Array.CreateInstance(System.Int32, 10)
@@ -177,7 +171,6 @@ class ArrayTest(IronPythonTestCase):
             for y in range(array3.GetLength(1)):
                 self.assertEquals(array3[x, y], 0)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))
         for i in range(5): a[i] = i
@@ -225,7 +218,6 @@ class ArrayTest(IronPythonTestCase):
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, -200, 1)
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, 1, 1)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_array_type(self):
 
         def type_helper(array_type, instance):
@@ -282,7 +274,6 @@ class ArrayTest(IronPythonTestCase):
         type_helper(str, " ")
         type_helper(str, "abc")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_tuple_indexer(self):
         array1 = System.Array.CreateInstance(int, 20, 20)
         array1[0,0] = 5

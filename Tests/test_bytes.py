@@ -9,7 +9,7 @@ import sys
 import unittest
 import warnings
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, myint, myfloat, mycomplex, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cpython, myint, myfloat, mycomplex, run_test, skipUnlessIronPython
 
 types = [bytearray, bytes]
 
@@ -140,7 +140,7 @@ class BytesTest(IronPythonTestCase):
 
         del test_hint_called
 
-    @unittest.skipUnless(is_cli, "Interop with CLI")
+    @skipUnlessIronPython()
     def test_init_interop(self):
         import clr
         clr.AddReference("System.Memory")
@@ -547,7 +547,7 @@ class BytesTest(IronPythonTestCase):
                 [-1, -1, -1, -1, 1, 1, -1, 1, 1, 1, 1, 1], # start = 1
                 [-1, -1, -1, -1, -1, 2, -1, -1, 2, 2, 2, 2], # start = 2
                 [-1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3], # start = 3
-                [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # start = 4                
+                [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # start = 4
             ]
             seq = testType(b"abc")
             for start in range(-5, 5):

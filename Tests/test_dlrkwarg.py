@@ -2,16 +2,13 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import unittest
-
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
     import System
     from iptest.ipunittest import load_ironpython_test
     load_ironpython_test()
     from IronPythonTest import DefaultParams, Variadics
-
 
 @skipUnlessIronPython()
 class DlrKwargTest(IronPythonTestCase):

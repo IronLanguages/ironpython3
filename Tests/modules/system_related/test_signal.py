@@ -9,7 +9,7 @@ TODO: until we can send signals to other processes consistently (e.g., os.kill),
 '''
 
 import signal
-import unittest
+import sys
 
 from iptest import IronPythonTestCase, is_cli, run_test
 
@@ -53,27 +53,29 @@ class SignalTest(IronPythonTestCase):
         self.assertEqual(signal.SIG_IGN, 1)
 
     def test_doc(self):
-        self.assertTrue("get the signal action for a given signal" in signal.__doc__)
+        if sys.version_info >= (3,5):
+            self.assertIsNone(signal.__doc__)
+        else:
+            self.assertTrue("get the signal action for a given signal" in signal.__doc__)
         self.assertTrue("The default handler for SIGINT installed by Python" in signal.default_int_handler.__doc__)
         self.assertTrue("Return the current action for the given signal" in signal.getsignal.__doc__)
         self.assertTrue("Set the action for the given signal" in signal.signal.__doc__)
 
-    @unittest.skipUnless(is_cli, 'http://bugs.python.org/issue9324')
     def test_signal_signal_neg(self):
         def a(b, c):
             pass
 
-        WEIRD_WORKING_CASES = [6]
+        WEIRD_WORKING_CASES = [6] if is_cli else []
         NO_SUCH_DIR = [21]
 
         for x in range(1, 23):
             if x in SUPPORTED_SIGNALS: continue
             if x in WEIRD_WORKING_CASES: continue
-            self.assertRaises(RuntimeError,
+            self.assertRaises(RuntimeError if is_cli else ValueError,
                         signal.signal, x, a)
 
         for x in [-2, -1, 0, 23, 24, 25]:
-            self.assertRaisesMessage(ValueError, "signal number out of range",
+            self.assertRaisesMessage(ValueError, "signal number out of range" if is_cli else "invalid signal value",
                                 signal.signal, x, a)
 
         def bad_sig0(): pass
@@ -86,9 +88,10 @@ class SignalTest(IronPythonTestCase):
                 self.assertRaisesMessage(TypeError, "signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object",
                                     signal.signal, y, x)
 
-    @unittest.skipUnless(is_cli, 'http://bugs.python.org/issue9324')
     def test_signal_signal(self):
-        WORKING_CASES = SUPPORTED_SIGNALS + [6]
+        WORKING_CASES = SUPPORTED_SIGNALS
+        if is_cli:
+            WORKING_CASES += [6]
         WEIRD_CASES = {
                     6: None,
                     2: signal.default_int_handler}

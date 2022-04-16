@@ -147,6 +147,8 @@ self.assertEqual(x, 7)
         #   please upload a patch to the tracker!
         # http://mail.python.org/pipermail/python-dev/2009-May/089793.html
         self.assertRaises(SyntaxError, compile, "def f(a):\n\treturn a\n\t", "", "single")
+    else:
+        compile("def f(a):\n\treturn a\n\t", "", "single")
 
     self.assertRaises(SyntaxError, compile, "def f(a):\n\treturn a\n\t", "", "single", 0x200)
     # should work

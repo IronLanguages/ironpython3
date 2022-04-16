@@ -2,11 +2,9 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import unittest
+from iptest import IronPythonTestCase, big, myint, run_test, skipUnlessIronPython
 
-from iptest import is_cli, big, myint, run_test
-
-class BoolTest(unittest.TestCase):
+class BoolTest(IronPythonTestCase):
     def test_types(self):
         for x in [str, int, float, bool]:
             if not x:
@@ -48,11 +46,11 @@ class BoolTest(unittest.TestCase):
         self.assertRaises(ZeroDivisionError, divmod, True,  False)
         self.assertRaises(ZeroDivisionError, divmod, False, False)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_decimal(self):
         import System
         if not System.Decimal:
-            Fail("should be true: %r", System.Decimal)
+            self.fail("should be true: %r", System.Decimal)
 
         self.assertEqual(bool(System.Decimal(0)), False)
         self.assertEqual(bool(System.Decimal(1)), True)

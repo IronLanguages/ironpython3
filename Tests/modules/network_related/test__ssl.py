@@ -94,11 +94,6 @@ class _SslTest(IronPythonTestCase):
 for documentation."""
         self.assertEqual(_ssl.__doc__, expected_doc)
 
-    def test__test_decode_cert(self):
-        if is_cli and hasattr(_ssl, "decode_cert"):
-            self.fail("Please add a test for _ssl.decode_cert")
-        print('TODO: no implementation to test yet.')
-
     def test_SSLType_ssl(self):
         '''
         Should be essentially the same as _ssl.sslwrap.  It's not though and will

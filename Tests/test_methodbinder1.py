@@ -6,7 +6,6 @@
 # PART 1. how IronPython choose the CLI method, treat parameters WHEN NO OVERLOADS PRESENT
 #
 
-from ast import arguments
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
@@ -85,7 +84,7 @@ class MethodBinder1Test(IronPythonTestCase):
             else:
                 self.assertEqual(Flag.Value, flagValue)
                 Flag.Value = -188
-        
+
         for arg in negativeArgs:
             try:
                 _my_call(func, arg)
@@ -94,7 +93,7 @@ class MethodBinder1Test(IronPythonTestCase):
                     self.fail("expected '%s', but got '%s' when calling %s with %s\n%s" % (exceptType, e, func, arg, func.__doc__))
             else:
                 self.fail("expected exception (but didn't get one) when calling func %s on args %s\n%s" % (func, arg, func.__doc__))
-    
+
     def test_this_matrix(self):
         '''This will test the full matrix.'''
         from IronPythonTest.BinderTest import Flag
@@ -175,14 +174,14 @@ class MethodBinder1Test(IronPythonTestCase):
     (        mycomplex1, TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  )
         )
 
-        
+
         InvariantCulture = System.Globalization.CultureInfo.InvariantCulture
         matrix = list(matrix)
         ##################################################  pass in char    #########################################################
         ####                                     M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
         ####                                     int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
         matrix.append((System.Char.Parse('A'),   TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  True, True,  ))
-        
+
         ##################################################  pass in float   #########################################################
         ####    single/double becomes Int32/BigInteger, but this does not apply to other primitive types
         ####                                                          M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
@@ -192,7 +191,7 @@ class MethodBinder1Test(IronPythonTestCase):
         matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
         matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
         matrix = tuple(matrix)
-        
+
         for scenario in matrix:
             if isinstance(scenario[0], str):
                 value = clr_numbers[scenario[0]]
@@ -200,11 +199,11 @@ class MethodBinder1Test(IronPythonTestCase):
             else:
                 value = scenario[0]
                 if print_the_matrix: print('(%18s,' % value, end=' ')
-            
+
             for i in range(len(funcnames)):
                 funcname = funcnames[i]
                 func = getattr(self.target, funcname)
-                
+
                 if print_the_matrix:
                     try:
                         func(value)
@@ -258,7 +257,7 @@ class MethodBinder1Test(IronPythonTestCase):
         self._helper(self.target.M320, ['a', System.Char.MaxValue, System.Char.MinValue, 'abc'[2]], 320, ['abc', ('a  b')], TypeError)
         # string asked
         self._helper(self.target.M205, ['a', System.Char.MaxValue, System.Char.MinValue, 'abc'[2], 'abc', 'a b' ], 205, [('a', 'b'), 23, ], TypeError)
-    
+
     def test_pass_extensible_types(self):
         # number covered by that matrix
         # string or char
@@ -276,7 +275,7 @@ class MethodBinder1Test(IronPythonTestCase):
             self.target.M204(arg)
             self.assertTrue(Flag.BValue, "argument is %s" % arg)
             Flag.BValue = False
-            
+
         for arg in [0, System.Byte.Parse('0'), System.UInt64.Parse('0'), 0.0, 0, False, None, tuple(), list()]:
             self.target.M204(arg)
             self.assertTrue(not Flag.BValue, "argument is %s" % (arg,))
@@ -285,10 +284,10 @@ class MethodBinder1Test(IronPythonTestCase):
     def test_user_defined_conversion(self):
         class CP1:
             def __int__(self): return 100
-        
+
         class CP2(object):
             def __int__(self): return 99
-        
+
         class CP3: pass
         cp1, cp2, cp3 = CP1(), CP2(), CP3()
 
@@ -298,7 +297,7 @@ class MethodBinder1Test(IronPythonTestCase):
         works = 'M201 M203       M600 M620   M601               M680  M681        M700     M705            M710    M715'
         for fn in works.split():
             self._helper(getattr(self.target, fn), [cp1, cp2, ], int(fn[1:]), [cp3, ], TypeError)
-        
+
         for fn in dir(self.target):
         ###                                                     bool  obj
             if _self_defined_method(fn) and fn not in (works + 'M204  M400 '):
@@ -316,22 +315,22 @@ class MethodBinder1Test(IronPythonTestCase):
         self._helper(self.target.M401, [C1(), C2(), S1(), cp1, cp2, cp3, cp4,], 401,[C3(), object()], TypeError)
         # C2 asked
         self._helper(self.target.M403, [C2(), cp3, ], 403, [C3(), object(), C1(), cp1, cp2, cp4, ], TypeError)
-        
+
         class CP1(A): pass
         class CP2(C6): pass
         cp1, cp2 = CP1(), CP2()
-        
+
         # A asked
         self._helper(self.target.M410, [C6(), cp1, cp2, cp4,], 410, [C3(), object(), C1(), cp3, ], TypeError)
         # C6 asked
         self._helper(self.target.M411, [C6(), cp2, cp4, ], 411, [C3(), object(), C1(), cp1, cp3,], TypeError)
-        
+
     def test_nullable_int(self):
         self._helper(self.target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, myint2, ], 680, [(), 3+1j], TypeError)
-        
+
     def test_out_int(self):
         self._helper(self.target.M701, [], 701, [1, 10, None, System.Byte.Parse('3')], TypeError)    # not allow to pass in anything
-        
+
     def test_collections(self):
         import System
         from IronPythonTest.BinderTest import I, C1, C2
@@ -342,31 +341,31 @@ class MethodBinder1Test(IronPythonTestCase):
         tupleLong1, tupleLong2  = ((10, 20), ), ((System.Int64.MaxValue, System.Int32.MaxValue * 2),)
         arrayByte = array_byte((10, 20))
         arrayObj = array_object(['str', 10])
-        
+
         # IList<int>
         self._helper(self.target.M650, [arrayInt, tupleInt, listInt, arrayObj, tupleLong1, tupleLong2, ], 650, [arrayByte, ], TypeError)
         # arrayObj, tupleLong1, tupleLong2 : conversion happens late
 
         # Array
         self._helper(self.target.M651, [arrayInt, arrayObj, arrayByte, ], 651, [listInt, tupleInt, tupleLong1, tupleLong2, ], TypeError)
-        
+
         # IEnumerable<int>
         self._helper(self.target.M652, [arrayInt, arrayObj, arrayByte, listInt, tupleInt, tupleLong1, tupleLong2, ], 652, [], TypeError)
-        
+
         # IEnumerator<int>
         self._helper(self.target.M653, [], 653, [arrayInt, arrayObj, arrayByte, listInt, tupleInt, tupleLong1, tupleLong2, ], TypeError)
-        
+
         # Int32[]
         self._helper(self.target.M500, [arrayInt, tupleInt, tupleLong1, tupleBool, ], 500, [listInt, arrayByte, arrayObj, ], TypeError)
         self._helper(self.target.M500, [], 500, [tupleLong2, ], OverflowError)
         # params Int32[]
         self._helper(self.target.M600, [arrayInt, tupleInt, tupleLong1, tupleBool, ], 600, [listInt, arrayByte, arrayObj, ], TypeError)
         self._helper(self.target.M600, [], 600, [tupleLong2, ], OverflowError)
-        
+
         # Int32, params Int32[]
         self._helper(self.target.M620, [(10, 10), (10, 10), (10, 10), (10, 10), (10, arrayInt), (10, (10, 20)), ], 620, [(10, [10, 20]), ], TypeError)
         self._helper(self.target.M620, [], 620, [(10, 123456789101234), ], OverflowError)
-        
+
         arrayI1 = System.Array[I]( (C1(), C2()) )
         arrayI2 = System.Array[I]( () )
         arrayObj3 = System.Array[object]( (C1(), C2()) )
@@ -393,14 +392,14 @@ class MethodBinder1Test(IronPythonTestCase):
 
         for fn in passSet:
             if fn in skipSet: continue
-            
+
             arg = getArg()
             getattr(self.target, fn)(arg)
             left = Flag.Value
             right = int(fn[1:])
             if left != right:
                 self.fail("left %s != right %s when func %s on arg %s" % (left, right, fn, arg))
-        
+
         for fn in dir(self.target):
             if _self_defined_method(fn) and (fn not in passSet) and (fn not in skipSet):
                 arg = getArg()
@@ -428,26 +427,26 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         from IronPythonTest.BinderTest import Flag
         passSet = _get_funcs('NoArg ParamArrInt32 ParamArrBigInt ParamArrS ParamArrI OutInt32 OutBigInt DefValInt32')
         skipSet = [ ]  # be empty before release
-        
+
         for fn in passSet:
             if fn in skipSet: continue
-            
+
             getattr(self.target, fn)()
             left = Flag.Value
             right = int(fn[1:])
             if left != right:
                 self.fail("left %s != right %s when func %s on arg Nothing" % (left, right, fn))
-        
+
         for fn in dir(self.target):
             if _self_defined_method(fn) and (fn not in passSet) and (fn not in skipSet):
                 try:   getattr(self.target, fn)()
                 except TypeError : pass
                 else:  self.fail("expect TypeError, but got none when func %s on arg Nothing" % fn)
-    
+
     def test_other_concern(self):
         from IronPythonTest.BinderTest import C1, C2, COtherConcern, Flag, GOtherConcern, S1
         self.target = COtherConcern()
-        
+
         # static void M100()
         self.target.M100()
         self.assertEqual(Flag.Value, 100); Flag.Value = 99
@@ -455,7 +454,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(Flag.Value, 100); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M100, self.target)
         self.assertRaises(TypeError, COtherConcern.M100, self.target)
-        
+
         # static void M101(COtherConcern arg)
         self.target.M101(self.target)
         self.assertEqual(Flag.Value, 101); Flag.Value = 99
@@ -463,7 +462,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(Flag.Value, 101); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M101)
         self.assertRaises(TypeError, COtherConcern.M101)
-        
+
         # void M102(COtherConcern arg)
         self.target.M102(self.target)
         self.assertEqual(Flag.Value, 102); Flag.Value = 99
@@ -471,7 +470,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(Flag.Value, 102); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M102)
         self.assertRaises(TypeError, COtherConcern.M102, self.target)
-        
+
         # generic method
         self.target.M200[System.Int32](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
@@ -480,7 +479,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(Flag.Value, 99)
         self.target.M200[System.Int32](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
-        
+
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
         with self.assertRaises(TypeError):
@@ -488,51 +487,51 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(Flag.Value, 99)
         self.target.M200[int](100)
         self.assertEqual(Flag.Value, 200); Flag.Value = 99
-        
+
         self.assertRaises(OverflowError, self.target.M200[System.Byte], 300)
         self.assertRaises(OverflowError, self.target.M200[System.Int32], 12345678901234)
-        
+
         # We should ignore Out attribute on non-byref.
-        # It's used in native interop scenarios to designate a buffer (StringBUilder, arrays, etc.) 
+        # It's used in native interop scenarios to designate a buffer (StringBUilder, arrays, etc.)
         # the caller allocates, passes to the method and expects the callee to populate it with data.
         self.assertRaises(TypeError, self.target.M222)
         self.assertEqual(self.target.M222(0), None)
         self.assertEqual(Flag.Value, 222)
-        
+
         # what does means when passing in None
         self.target.M300(None)
         self.assertEqual(Flag.Value, 300); Flag.Value = 99
         self.assertEqual(Flag.BValue, True)
         self.target.M300(C1())
         self.assertEqual(Flag.BValue, False)
-        
+
         # void M400(ref Int32 arg1, out Int32 arg2, Int32 arg3) etc...
         self.assertEqual(self.target.M400(1, 100), (100, 100))
         self.assertEqual(self.target.M401(1, 100), (100, 100))
         self.assertEqual(self.target.M402(100, 1), (100, 100))
-        
+
         # default Value
         self.target.M450()
         self.assertEqual(Flag.Value, 80); Flag.Value = 99
-        
+
         # 8 args
         self.target.M500(1,2,3,4,5,6,7,8)
         self.assertEqual(Flag.Value, 500)
         self.assertRaises(TypeError, self.target.M500)
         self.assertRaises(TypeError, self.target.M500, 1)
         self.assertRaises(TypeError, self.target.M500, 1,2,3,4,5,6,7,8,9)
-        
+
         # IDictionary
         for x in [ {1:1}, {"str": 3} ]:
             self.target.M550(x)
             self.assertEqual(Flag.Value, 550); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M550, [1, 2])
-        
+
         # not supported
         for fn in (self.target.M600, self.target.M601, self.target.M602):
             for l in ( {1:'a'}, [1,2], (1,2) ):
                 self.assertRaises(TypeError, fn, l)
-                
+
         # delegate
         def f(x): return x * x
         self.assertRaises(TypeError, self.target.M700, f)
@@ -541,20 +540,20 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         for x in (lambda x: x, lambda x: x*2, f):
             self.target.M700(IntIntDelegate(x))
             self.assertEqual(Flag.Value, x(10)); Flag.Value = 99
-        
+
         self.target.M701(lambda x: x*2)
         self.assertEqual(Flag.Value, 20); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M701, lambda : 10)
-        
+
         # keywords
         x = self.target.M800(arg1 = 100, arg2 = 200, arg3 = 'this'); self.assertEqual(x, 'THIS')
         x = self.target.M800(arg3 = 'Python', arg1 = 100, arg2 = 200); self.assertEqual(x, 'PYTHON')
         x = self.target.M800(100, arg3 = 'iron', arg2 = C1()); self.assertEqual(x, 'IRON')
-        
+
         try: self.target.M800(100, 'Yes', arg2 = C1())
         except TypeError: pass
         else: self.fail("expect: got multiple values for keyword argument arg2")
-        
+
         # more ref/out sanity check
         import clr
         def f1(): return clr.Reference[object](None)
@@ -570,7 +569,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         ]:
             expect = (f in 'M850 M852') and S1 or C1
             func = getattr(self.target, f)
-            
+
             for i in range(4):
                 ref = (f1, f2, f3, f4)[i]()
                 if (a,b,c,d)[i]:
@@ -581,15 +580,15 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         # call 854
         self.assertRaises(TypeError, self.target.M854, clr.Reference[object](None))
         self.assertRaises(TypeError, self.target.M854, clr.Reference[int](10))
-        
+
         # call 855
         self.assertRaises(TypeError, self.target.M855, clr.Reference[object](None))
         self.assertRaises(TypeError, self.target.M855, clr.Reference[int](10))
-        
+
         # call 854 and 855 with Reference[bool]
         self.target.M854(clr.Reference[bool](True)); self.assertEqual(Flag.Value, 854)
         self.target.M855(clr.Reference[bool](True)); self.assertEqual(Flag.Value, 855)
-        
+
         # practical
         ref = clr.Reference[System.Int32](0)
         ref2 = clr.Reference[System.Int32](0)
@@ -600,35 +599,35 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(x, None)
         self.assertEqual(ref.Value, 100)
         self.assertEqual(ref2.Value, 500)
-        
+
         # pass one clr.Reference(), and leave the other one open
         ref.Value = 300
         self.assertRaises(TypeError, self.target.M860, ref, 200)
-        
+
         # the other way
         x = self.target.M860(300, 200)
         self.assertEqual(x, (100, 500))
-        
+
         # GOtherConcern<T>
         self.target = GOtherConcern[int]()
         for x in [100, 200, myint1]:
             self.target.M100(x)
             self.assertEqual(Flag.Value, 100); Flag.Value = 99
-        
+
         GOtherConcern[int].M100(self.target, 200)
         self.assertEqual(Flag.Value, 100); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M100, 'abc')
-    
+
         self.target = GOtherConcern[System.Int32]()
         for x in [100, 200, myint1]:
             self.target.M100(x)
             self.assertEqual(Flag.Value, 100); Flag.Value = 99
-        
+
         GOtherConcern[System.Int32].M100(self.target, 200)
         self.assertEqual(Flag.Value, 100); Flag.Value = 99
         self.assertRaises(TypeError, self.target.M100, 'abc')
         self.assertRaises(OverflowError, self.target.M100, 12345678901234)
-    
+
     def test_iterator_sequence(self):
         from IronPythonTest.BinderTest import COtherConcern, Flag
         class C:
@@ -643,21 +642,21 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
                     self.x = 0
                     raise StopIteration
             def __len__(self): return 10
-            
+
         # different size
         c = C()
         list1 = [1, 2, 3]
         tuple1 = [4, 5, 6, 7]
         str1 = "890123"
         all = (list1, tuple1, str1, c)
-        
+
         self.target = COtherConcern()
-        
+
         for x in all:
             # IEnumerable / IEnumerator
             self.target.M620(x)
             self.assertEqual(Flag.Value, len(x)); Flag.Value = 0
-            
+
             # built in types are not IEnumerator, they are enumerable
             if not isinstance(x, C):
                 self.assertRaises(TypeError, self.target.M621, x)
@@ -696,7 +695,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             self.assertRaises(TypeError, self.target.M622, x)
             self.assertRaises(TypeError, self.target.M632, x)
             self.assertRaises(TypeError, self.target.M642, x)
-       
+
     def test_explicit_inheritance(self):
         from IronPythonTest.BinderTest import CInheritMany1, CInheritMany2, CInheritMany3, CInheritMany4, CInheritMany5, CInheritMany6, CInheritMany7, CInheritMany8, Flag, I1, I2, I3, I4
         self.target = CInheritMany1()
@@ -704,11 +703,11 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.target.M()
         self.assertEqual(Flag.Value, 100)
         I1.M(self.target); self.assertEqual(Flag.Value, 100); Flag.Value = 0
-        
+
         self.target = CInheritMany2()
         self.target.M(); self.assertEqual(Flag.Value, 201)
         I1.M(self.target); self.assertEqual(Flag.Value, 200)
-        
+
         self.target = CInheritMany3()
         self.assertTrue(not hasattr(self.target, "M"))
         try: self.target.M()
@@ -716,18 +715,18 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         else: self.fail("Expected AttributeError, got none")
         I1.M(self.target); self.assertEqual(Flag.Value, 300)
         I2.M(self.target); self.assertEqual(Flag.Value, 301)
-        
+
         self.target = CInheritMany4()
         self.target.M(); self.assertEqual(Flag.Value, 401)
         I3[object].M(self.target); self.assertEqual(Flag.Value, 400)
         self.assertRaises(TypeError, I3[int].M, self.target)
-        
+
         self.target = CInheritMany5()
         I1.M(self.target); self.assertEqual(Flag.Value, 500)
         I2.M(self.target); self.assertEqual(Flag.Value, 501)
         I3[object].M(self.target); self.assertEqual(Flag.Value, 502)
         self.target.M(); self.assertEqual(Flag.Value, 503)
-        
+
         self.target = CInheritMany6[int]()
         self.target.M(); self.assertEqual(Flag.Value, 601)
         I3[int].M(self.target); self.assertEqual(Flag.Value, 600)
@@ -737,7 +736,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertTrue(hasattr(self.target, "M"))
         self.target.M(); self.assertEqual(Flag.Value, 700)
         I3[int].M(self.target); self.assertEqual(Flag.Value, 700)
-        
+
         self.target = CInheritMany8()
         self.assertTrue(not hasattr(self.target, "M"))
         try: self.target.M()
@@ -746,7 +745,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         I1.M(self.target); self.assertEqual(Flag.Value, 800); Flag.Value = 0
         I4.M(self.target, 100); self.assertEqual(Flag.Value, 801)
         # target.M(100) ????
-        
+
         # original repro
         from System.Collections.Generic import Dictionary
         d = Dictionary[object,object]()
@@ -761,7 +760,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(nt.DProperty, 2.0)
         nt.DProperty = None
         self.assertEqual(nt.DProperty, None)
-    
+
     #@disabled("Merlin 309716")
     def test_nullable_property_long(self):
         from IronPythonTest import NullableTest
@@ -784,7 +783,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(nt.BProperty, True)
         nt.BProperty = None
         self.assertEqual(nt.BProperty, None)
-    
+
     def test_nullable_property_enum(self):
         from IronPythonTest import NullableTest
         nt = NullableTest()
@@ -816,14 +815,14 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         clr.AddReference("System.Configuration");
         from System.Configuration import ConfigurationManager
         c = ConfigurationManager.ConnectionStrings
-        
+
         #Invoke tests multiple times to make sure DynamicSites are utilized
         for i in range(3):
             if is_mono: # Posix has two default connection strings
                 self.assertEqual(2, c.Count)
             else:
                 self.assertEqual(1, c.Count)
-            
+
         for i in range(3):
             count = c.Count
             if is_mono:
@@ -831,11 +830,11 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             else:
                 self.assertEqual(1, count)
             self.assertEqual(c.Count, count)
-                
+
         for i in range(3):
             #just ensure it doesn't throw
             c[0].Name
-            
+
         #Just to be sure this doesn't throw...
         c.Count
         c.Count
@@ -844,7 +843,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
     def test_interface_only_access(self):
         from IronPythonTest.BinderTest import InterfaceOnlyTest
         pc = InterfaceOnlyTest.PrivateClass
-        
+
         # property set
         pc.Hello = InterfaceOnlyTest.PrivateClass
         # property get
@@ -853,7 +852,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         pc.Foo(pc)
         # method call w/ interface ret val
         self.assertEqual(pc.RetInterface(), pc)
-        
+
         # events
         global fired
         fired = False
@@ -873,25 +872,25 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         from IronPythonTest.BinderTest import COtherConcern, Flag
         import clr
         self.target = COtherConcern()
-        
+
         arr = System.Array[System.Byte]((2,3,4))
-        
+
         res = self.target.M702(arr)
         self.assertEqual(Flag.Value, 702)
         self.assertEqual(type(res), System.Array[System.Byte])
         self.assertEqual(len(res), 0)
-        
+
         i, res = self.target.M703(arr)
         self.assertEqual(Flag.Value, 703)
         self.assertEqual(i, 42)
         self.assertEqual(type(res), System.Array[System.Byte])
         self.assertEqual(len(res), 0)
-        
+
         i, res = self.target.M704(arr, arr)
         self.assertEqual(Flag.Value, 704)
         self.assertEqual(i, 42)
         self.assertEqual(arr, res)
-        
+
         sarr = clr.StrongBox[System.Array[System.Byte]](arr)
         res = self.target.M702(sarr)
         self.assertEqual(Flag.Value, 702)
@@ -899,13 +898,13 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         res = sarr.Value
         self.assertEqual(type(res), System.Array[System.Byte])
         self.assertEqual(len(res), 0)
-        
+
         sarr.Value = arr
         i = self.target.M703(sarr)
         self.assertEqual(Flag.Value, 703)
         self.assertEqual(i, 42)
         self.assertEqual(len(sarr.Value), 0)
-        
+
         i = self.target.M704(arr, sarr)
         self.assertEqual(Flag.Value, 704)
         self.assertEqual(i, 42)
@@ -916,7 +915,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         a = SOtherConcern()
         a.P100 = 42
         self.assertEqual(a.P100, 42)
-    
+
     def test_generic_type_inference(self):
         from IronPythonTest import GenericTypeInference, GenericTypeInferenceInstance, SelfEnumerable
         from System import Array, Exception, ArgumentException
@@ -929,16 +928,16 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
         self.assertEqual(UserGenericType().MInst(42), Int32)
 
         class UserObject(object): pass
-            
+
         userInst = UserObject()
         userInt, userFloat, userComplex, userStr = myint(), myfloat(), mycomplex(), mystr()
         userTuple, userList, userDict = mytuple(), mylist(), mydict()
         objArray = System.Array[object]( (1,2,3) )
         doubleArray = System.Array[float]( (1.0,2.0,3.0) )
-        
 
-        for target in [GenericTypeInference, GenericTypeInferenceInstance(), UserGenericType()]:    
-            tests = [     
+
+        for target in [GenericTypeInference, GenericTypeInferenceInstance(), UserGenericType()]:
+            tests = [
             # simple single type tests, no constraints
             # public static PythonType M0<T>(T x) -> pytypeof(T)
             # target method,   args,                           Result,     KeywordCall,      Exception
@@ -955,7 +954,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M0,        ((), ),                         tuple,      True,             None),
             (target.M0,        ([], ),                         list,       True,             None),
             (target.M0,        ({}, ),                         dict,       True,             None),
-            
+
             # multiple arguments
             # public static PythonType M1<T>(T x, T y) -> pytypeof(T)
             # public static PythonType M2<T>(T x, T y, T z) -> pytypeof(T)
@@ -969,7 +968,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M1,        (1, 'abc'),                     None,       True,             TypeError),
             (target.M1,        (object(), userInst),           object,     True,             None),
             (target.M1,        ([], userList),                 list,       True,             None),
-        
+
             # params arguments
             # public static PythonType M3<T>(params T[] args) -> pytypeof(T)
             (target.M3,        (),                             None,       False,            TypeError),
@@ -983,7 +982,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M3,        (1, 'abc'),                     object,     False,            TypeError),
             (target.M3,        (object(), userInst),           object,     False,            None),
             (target.M3,        ([], userList),                 list,       False,            None),
-            
+
             # public static PythonType M4<T>(T x, params T[] args) -> pytypeof(T)
             (target.M4,        (1, 2),                         Int32,      False,            None),
             (target.M4,        tbig(1, 2),                     int,        False,            None),
@@ -991,7 +990,7 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M4,        (1, 'abc'),                     object,     False,            TypeError),
             (target.M4,        (object(), userInst),           object,     False,            None),
             (target.M4,        ([], userList),                 list,       False,            None),
-            
+
             # simple constraints
             # public static PythonType M5<T>(T x) where T : class -> pytype(T)
             # public static PythonType M6<T>(T x) where T : struct -> pytype(T)
@@ -1008,9 +1007,9 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M6,        tbig(1, ),                      int,        False,            None),
             (target.M7,        ([], ),                         list,       False,            None),
             (target.M7,        (objArray, ),                   type(objArray), False,        None),
-        
+
             # simple dependent constraints
-            # public static PythonTuple M8<T0, T1>(T0 x, T1 y) where T0 : T1 -> (pytype(T0), pytype(T1))     
+            # public static PythonTuple M8<T0, T1>(T0 x, T1 y) where T0 : T1 -> (pytype(T0), pytype(T1))
             (target.M8,        (1, 2),                         (Int32, Int32), False,        None),
             (target.M8,        tbig(1, 2),                     (int, int),   False,          None),
             (target.M8,        (big(1), 2),                    None,         False,          TypeError),
@@ -1020,32 +1019,32 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M8,        (1, object()),                  (Int32, object),False,        None),
             (target.M8,        (big(1), object()),             (int, object),False,          None),
             (target.M8,        (object(), 1),                  None,         False,          TypeError),
-        
+
             # no types can be inferred, error
             # public static PythonTuple M9<T0, T1>(object x, T1 y) where T0 : T1
             # public static PythonTuple M9b<T0, T1>(T0 x, object y) where T0 : T1
             # public static PythonType M11<T>(object x)
-            # public static PythonType M12<T0, T1>(T0 x, object y)     
+            # public static PythonType M12<T0, T1>(T0 x, object y)
             (target.M9,        (1, 2),                         None,         False,          TypeError),
             (target.M9b,       (1, 2),                         None,         False,          TypeError),
             (target.M9,        (object(), object()),           None,         True,           TypeError),
             (target.M9b,       (object(), object()),           None,         True,           TypeError),
             (target.M11,       (1, ),                          None,         False,          TypeError),
             (target.M12,       (1, 2),                         None,         False,          TypeError),
-            
+
             # multiple dependent constraints
             # public static PythonTuple M10<T0, T1, T2>(T0 x, T1 y, T2 z) where T0 : T1 where T1 : T2 -> (pytype(T0), pytype(T1), pytype(T2))
             (target.M10,        (ArgumentException(), Exception(), object()), (ArgumentException, Exception, object),False,           None),
             (target.M10,        (Exception(), ArgumentException(), object()), None,False,    TypeError),
             (target.M10,        (ArgumentException(), object(), Exception()), None,False,    TypeError),
             (target.M10,        (object(), ArgumentException(), Exception()), None,False,    TypeError),
-            (target.M10,        (object(), Exception(), ArgumentException()), None,False,    TypeError),     
-            
+            (target.M10,        (object(), Exception(), ArgumentException()), None,False,    TypeError),
+
             # public static PythonType M11<T>(object x) -> pytypeof(T)
             # public static PythonType M12<T0, T1>(T0 x, object y) -> pytypeof(T0)
             (target.M11,       (object(), ),                   None,       True,             TypeError),
-            (target.M12,       (3, object()),                  None,       True,             TypeError),     
-            
+            (target.M12,       (3, object()),                  None,       True,             TypeError),
+
             # public static PythonType M13<T>(T x, Func<T> y) -> pytype(T), func()
             # public static PythonType M14<T>(T x, Action<T> y) -> pytype(T)
             # public static PythonTuple M15<T>(T x, IList<T> y) -> pytype, list...
@@ -1057,44 +1056,44 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M15,       (1, objArray),                 (object, 1,2,3), True,         None),
             (target.M15,       (1, doubleArray),              None,            True,         TypeError),
             (target.M16,       (1, {1: [1,2]}),               None,            False,        TypeError),
-        
+
             # public static PythonType M17<T>(T x, IEnumerable<T> y) -> pytype(T)
             (target.M17,       (SelfEnumerable(), SelfEnumerable()), SelfEnumerable, True,   None),
             (target.M17,       (1, [1,2,3]),                  object,          True,         None),
             (target.M17,       (1.0, [1,2,3]),                object,          True,         None),
             (target.M17,       (object(), [1,2,3]),           object,          True,         None),
-            
+
             # public static PythonType M18<T>(T x) where T : IEnumerable<T> -> pytype(T)
             (target.M18,       (SelfEnumerable(), ),          SelfEnumerable,  True,         None),
-            
+
             # public static PythonType M19<T0, T1>(T0 x, T1 y) where T0 : IList<T1> -> pytype(T0), pytype(T1)
             (target.M19,       ([], 1),                       None,            True,         TypeError),
             (target.M19,       (List[Int32](), 1),            (List[Int32], Int32), True,    None),
             (target.M19,       (List[int](), big(1)),         (List[int], int), True,        None),
-            
+
             # public static PythonType M20<T0, T1>(T0 x, T1 y) -> pytype(T0), pytype(T1)
             (target.M20,       ([], 1),                       (list, Int32),   True,         None),
             (target.M20,       ([], big(1)),                  (list, int),     True,         None),
             (target.M20,       (List[int](), 1),              (List[int], Int32), True,      None),
-            
+
             # constructed types
             # public static PythonType M21<T>(IEnumerable<T> enumerable)
             (target.M21,       ([1,2,3], ),                   object,          False,        None),
-            
+
             # overloaded by function
             # public static PythonTuple M22<T>(IEnumerable<T> enumerable, Func<T, bool> predicate) -> pytype(T), True
             # public static PythonTuple M22<T>(IEnumerable<T> enumerable, Func<T, int, bool> predicate) -> pytype(T), False
             (target.M22,       ([1,2,3], lambda x:True),     (object, True),   True,         None),
             (target.M22,       ([1,2,3], lambda x,y:True),   (object, False),  True,         None),
-            
+
             # public static PythonType M23<T>(List<T> x) -> pytype(T)
             # public static PythonType M24<T>(List<List<T>> x) -> pytype(T)
             # public static PythonType M25<T>(Dictionary<T, T> x) -> pytype(T)
             (target.M23,       (List[int](), ),               int,             True,         None),
-            (target.M24,       (List[List[int]](), ),         int,             True,         None),     
+            (target.M24,       (List[List[int]](), ),         int,             True,         None),
             (target.M25,       (Dict[int, int](), ),          int,             True,         None),
             (target.M25,       (Dict[int, str](), ),          None,            True,         TypeError),
-            
+
             # constructed types and constraints
             # public static PythonType M26<T>(List<T> x) where T : class -> pytype(T)
             # public static PythonType M27<T>(List<T> x) where T : struct -> pytype(T)
@@ -1105,10 +1104,10 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M26,       (List[str](), ),                str,            False,        None),
             (target.M27,       (List[int](), ),                int,            False,        None),
             (target.M28,       (List[List[str]](), ),          List[str],      False,        None),
-            
+
             # public static PythonType M29<T>(Dictionary<Dictionary<T, T>, Dictionary<T, T>> x)
             (target.M29,       (Dict[Dict[int, int], Dict[int, int]](), ),  int,  True,      None),
-            
+
             # constraints and constructed types
             # public static PythonType M30<T>(Func<T, bool> y) where T : struct -> pytype(T)
             # public static PythonType M31<T>(Func<T, bool> y) where T : IList -> pytype(T)
@@ -1118,18 +1117,18 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
             (target.M31,       (lambda x: False, ),            int,            True,         TypeError),
             (target.M32,       (List[str](), ),                int,            True,         TypeError),
             (target.M33,       (List[int](), ),                int,            True,         TypeError),
-            
+
             # public static PythonType M34<T>(IList<T> x, IList<T> y) -> pytype(T)
             (target.M34,       ((), [], ),                     object,         True,         None),
-            
+
             # T[] and IList<T> overloads:
             (target.M35,       (objArray, ),                   System.Array[object], False,  None),
             ]
-            
+
             # TODO: more by-ref and arrays tests:
             x = Array.Resize(Array.CreateInstance(int, 10), 20)
             self.assertEqual(x.Length, 20)
-            
+
             for method, args, res, kwArgs, excep in tests:
                 self.generic_method_tester(method, args, res, kwArgs, excep)
 
@@ -1162,10 +1161,10 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
                     self.assertEqual(method(**{'x' : args[0], 'y' : args[1], 'z' : args[2]}), res)
             else:
                 raise Exception("need to add new case for len %d " % len(args))
-                
+
             self.assertEqual(method(*args), res)
             self.assertEqual(method(args[0], *args[1:]), res)
-        else:            
+        else:
             # test error method w/ multiple calling conventions
             if len(args) == 0:
                 f = lambda : method()
@@ -1184,18 +1183,18 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt NullableBigInt
                 fkw2 = lambda : method(**{'x' : args[0], 'y' : args[1], 'z' : args[2]})
             else:
                 raise Exception("need to add new case for len %d " % len(args))
-        
+
             if not kwArgs:
                 fkw = None
                 fkw2 = None
-            
+
             # test w/o splatting
-            self.assertRaises(excep, f)    
+            self.assertRaises(excep, f)
             if fkw: self.assertRaises(excep, fkw)
             if fkw2: self.assertRaises(excep, fkw2)
             # test with splatting
-            self.assertRaises(excep, method, *args)    
-    
+            self.assertRaises(excep, method, *args)
+
 
 run_test(__name__)
 

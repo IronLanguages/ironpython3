@@ -858,7 +858,7 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, int)
         self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, int)
 
-        if is_cli:
+        if is_cli: # blocking with CPython
             self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, int)
             self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, int)
 
@@ -946,9 +946,9 @@ class BuiltinsTest2(IronPythonTestCase):
         actual = round(float('nan'), -354250895282439122322875506826024599142533926918074193061745122574500)
         self.assertTrue(math.isnan(actual))
 
-        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6 if is_cli else 3.5)
+        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6 if is_cli else 3.5) # https://github.com/IronLanguages/ironpython2/issues/517
         self.assertEqual(round(35, self.IntIndex(-1)), 40)
-        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56 if is_cli else 35.55)
+        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56 if is_cli else 35.55) # https://github.com/IronLanguages/ironpython2/issues/517
         self.assertEqual(round(355, self.LongIndex(-2)), 400)
 
         try:

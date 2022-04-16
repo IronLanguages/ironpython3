@@ -22,14 +22,14 @@ class CopyRegTest(unittest.TestCase):
     def test_constructor_neg(self):
         'https://github.com/IronLanguages/main/issues/443'
         class KOld: pass
-        
+
         self.assertRaises(TypeError, copyreg.constructor, KOld)
 
- 
+
     def test_constructor(self):
         #the argument can be callable
         copyreg.constructor(testclass)
-        
+
         #the argument can not be callable
         self.assertRaises(TypeError,copyreg.constructor,0)
         self.assertRaises(TypeError,copyreg.constructor,"Hello")
@@ -37,20 +37,20 @@ class CopyRegTest(unittest.TestCase):
 
 
     def test__newobj__(self):
-        
+
         #the second argument is omitted
         result = None
         result = copyreg.__newobj__(object)
         self.assertTrue(result != None,
             "The method __newobj__ did not return an object")
-                        
+
         #the second argument is an int object
         result = None
         a = 1
         result = copyreg.__newobj__(int,a)
         self.assertTrue(result != None,
             "The method __newobj__ did not return an object")
-            
+
         #the method accept multiple arguments
         reseult = None
         class customtype(object):
@@ -121,27 +121,27 @@ class CopyRegTest(unittest.TestCase):
         code = result[key]
         self.assertTrue(code == 123,
                 "The _extension_registry attribute did not return the correct value")
-                
+
         copyreg.add_extension('1','2',999)
         result = copyreg._extension_registry
         code = result[('1','2')]
         self.assertTrue(code == 999,
                 "The _extension_registry attribute did not return the correct value")
-        
+
         #general test, try to set the attribute then to get it
         myvalue = 3885
         copyreg._extension_registry["key"] = myvalue
         result = copyreg._extension_registry["key"]
         self.assertTrue(result == myvalue,
             "The set or the get of the attribute failed")
-    
+
     def test_inverted_registry(self):
         copyreg.add_extension('obj1','obj2',64)
         #get
         result = copyreg._inverted_registry[64]
         self.assertTrue(result == ('obj1','obj2'),
                 "The _inverted_registry attribute did not return the correct value")
-        
+
         #set
         value = ('newmodule','newobj')
         copyreg._inverted_registry[10001] = value
@@ -158,7 +158,7 @@ class CopyRegTest(unittest.TestCase):
         result = copyreg._extension_cache['cache1']
         self.assertTrue(result == value,
             "The get and set of the attribute failed")
-        
+
         value = rand.getrandbits(16)
         copyreg._extension_cache['cache2'] = value
         result = copyreg._extension_cache['cache2']
@@ -171,10 +171,10 @@ class CopyRegTest(unittest.TestCase):
         result = copyreg._extension_cache['cache1']
         self.assertTrue(result == value2,
             "The get and set of the attribute failed")
-        
+
         if 'cache1' not in copyreg._extension_cache or 'cache2' not in copyreg._extension_cache:
             Fail("Set of the attribute failed")
-            
+
         copyreg.clear_extension_cache()
         if 'cache1' in copyreg._extension_cache or 'cache2' in copyreg._extension_cache:
             Fail("The method clear_extension_cache did not work correctly ")
@@ -182,7 +182,7 @@ class CopyRegTest(unittest.TestCase):
     def test_reconstructor(self):
         reconstructor_copy = copyreg._reconstructor
         try:
-            obj = copyreg._reconstructor(object, object, None)   
+            obj = copyreg._reconstructor(object, object, None)
             self.assertTrue(type(obj) is object)
 
             #set,get, the value is a random int
@@ -192,35 +192,35 @@ class CopyRegTest(unittest.TestCase):
             result = copyreg._reconstructor
             self.assertTrue(result == value,
                 "set or get of the attribute failed!")
-        
+
             #the value is a string
             value2 = "value2"
             copyreg._reconstructor = value2
             result = copyreg._reconstructor
             self.assertTrue(result == value2,
                 "set or get of the attribute failed!")
-        
+
             #the value is a custom type object
             value3 = testclass()
             copyreg._reconstructor = value3
             result = copyreg._reconstructor
             self.assertTrue(result == value3,
                 "set or get of the attribute failed!")
-        finally:               
+        finally:
             copyreg._reconstructor = reconstructor_copy
-   
+
 
     def test_pickle(self):
         def testfun():
             return testclass()
-            
+
         # type is a custom type
         copyreg.pickle(type(testclass), testfun)
-        
+
         #type is a system type
         systype = type(random.Random())
         copyreg.pickle(systype,random.Random.random)
-        
+
         #function is not callable
         func = "hello"
         self.assertRaises(TypeError,copyreg.pickle,testclass,func)
@@ -228,12 +228,12 @@ class CopyRegTest(unittest.TestCase):
         self.assertRaises(TypeError,copyreg.pickle,testclass,func)
         func = random.Random()
         self.assertRaises(TypeError,copyreg.pickle,testclass,func)
-    
+
     def test_dispatch_table(self):
         result = copyreg.dispatch_table
         #CodePlex Work Item 8522
         #self.assertEqual(5,len(result))
-        
+
         temp = {
                 "abc":"abc123",
                 "def":"def123",
@@ -241,7 +241,7 @@ class CopyRegTest(unittest.TestCase):
             }
         copyreg.dispatch_table = temp
         self.assertEqual(temp,copyreg.dispatch_table)
-        
+
         temp = {
                 1:"abc123",
                 2:"def123",
@@ -249,7 +249,7 @@ class CopyRegTest(unittest.TestCase):
             }
         copyreg.dispatch_table = temp
         self.assertEqual(temp,copyreg.dispatch_table)
-        
+
         temp = {
                 1:123,
                 8:789,
@@ -257,7 +257,7 @@ class CopyRegTest(unittest.TestCase):
             }
         copyreg.dispatch_table = temp
         self.assertEqual(temp,copyreg.dispatch_table)
-        
+
         #set dispathc_table as empty
         temp ={}
         copyreg.dispatch_table = temp
@@ -265,9 +265,8 @@ class CopyRegTest(unittest.TestCase):
 
     def test_pickle_complex(self):
         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21908
-        #if not is_cli:
         self.assertEqual(copyreg.pickle_complex(1), (complex, (1, 0)))
-        
+
         #negative tests
         self.assertRaises(AttributeError,copyreg.pickle_complex,"myargu")
         obj2 = myCustom2()

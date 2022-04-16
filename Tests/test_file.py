@@ -9,7 +9,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 class FileTest(IronPythonTestCase):
 
@@ -133,7 +133,7 @@ class FileTest(IronPythonTestCase):
 
         self.assertEqual(data, 'a2\xa33\\u0163\x0f\x0fF\t\\\x0fF\x0fE\x00\x01\x7F\x7E\x80')
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_cp27179(self):
         # write() accepting Array[Byte]
         from System import Array, Byte
@@ -464,7 +464,7 @@ class FileTest(IronPythonTestCase):
             else:
                 f.write('\u6211')
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_net_stream(self):
         import System
         fs = System.IO.FileStream(self.temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite)

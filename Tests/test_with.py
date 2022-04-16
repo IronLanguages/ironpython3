@@ -3,9 +3,8 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import unittest
 
-from iptest import is_cpython, run_test
+from iptest import IronPythonTestCase, run_test
 
 class MissingEnter:
     def __exit__(self,a,b,c): pass
@@ -18,7 +17,7 @@ class H:
 
 class Myerr1(Exception):pass
 
-class WithTest(unittest.TestCase):
+class WithTest(IronPythonTestCase):
 
     def test_raise(self):
         events = []

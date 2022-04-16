@@ -8,11 +8,10 @@ Tests for CPython's array module.
 
 import array
 import sys
-import unittest
 
-from iptest import is_cli, is_mono, big, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, big, run_test
 
-class ArrayTest(unittest.TestCase):
+class ArrayTest(IronPythonTestCase):
     def test_ArrayType(self):
         self.assertEqual(array.ArrayType,
                 array.array)
@@ -458,12 +457,12 @@ class ArrayTest(unittest.TestCase):
                         ('l', b"\x12\x34\x45\x67") : "array('l', [1732588562])",
                         ('L', b"\x12\x34\x45\x67") : "array('L', [1732588562])",
                     }
-        if not is_cli: #https://github.com/IronLanguages/main/issues/861
-            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
-            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
-        else:
+        if is_cli: # https://github.com/IronLanguages/ironpython2/issues/102
             test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
             test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
+        else:
+            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
+            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
 
         for key in test_cases.keys():
             type_code, param = key

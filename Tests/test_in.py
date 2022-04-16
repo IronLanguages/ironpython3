@@ -2,9 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import unittest
-
-from iptest import is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 if is_cli:
     import clr
@@ -12,15 +10,15 @@ if is_cli:
 class C:
     x = "Hello"
     def __contains__(self, y):
-        return self.x == y;
+        return self.x == y
 
 
 class D:
     x = (1,2,3,4,5,6,7,8,9,10)
     def __getitem__(self, y):
-        return self.x[y];
+        return self.x[y]
 
-class InTest(unittest.TestCase):
+class InTest(IronPythonTestCase):
     def test_basic(self):
         self.assertTrue('abc' in 'abcd')
 

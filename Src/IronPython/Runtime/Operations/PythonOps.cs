@@ -2855,8 +2855,8 @@ namespace IronPython.Runtime.Operations {
             return value is int || value is BigInteger || value is Extensible<BigInteger>;
         }
 
-        internal static bool CheckingConvertToLong(object value) {
-            return CheckingConvertToInt(value);
+        internal static bool CheckingConvertToBigInt(object value) {
+            return value is int || value is BigInteger || value is Extensible<BigInteger>;
         }
 
         internal static bool CheckingConvertToFloat(object value) {
@@ -2880,8 +2880,8 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object? NonThrowingConvertToLong(object value) {
-            if (!CheckingConvertToInt(value)) return null;
+        public static object? NonThrowingConvertToBigInt(object value) {
+            if (!CheckingConvertToBigInt(value)) return null;
             return value;
         }
 
@@ -2910,6 +2910,11 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
+        public static object ThrowingConvertToBigInt(object value) {
+            if (!CheckingConvertToBigInt(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
+            return value;
+        }
+
         public static object ThrowingConvertToFloat(object value) {
             if (!CheckingConvertToFloat(value)) throw TypeError(" __float__ returned non-float (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
@@ -2917,11 +2922,6 @@ namespace IronPython.Runtime.Operations {
 
         public static object ThrowingConvertToComplex(object value) {
             if (!CheckingConvertToComplex(value)) throw TypeError(" __complex__ returned non-complex (type {0})", PythonOps.GetPythonTypeName(value));
-            return value;
-        }
-
-        public static object ThrowingConvertToLong(object value) {
-            if (!CheckingConvertToLong(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 

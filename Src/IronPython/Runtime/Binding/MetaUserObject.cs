@@ -179,7 +179,7 @@ namespace IronPython.Runtime.Binding {
                                 (x) => x);
                         } else if (type == typeof(BigInteger)) {
                             if (!typeof(Extensible<BigInteger>).IsAssignableFrom(LimitType)) {
-                                return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToLong",
+                                return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToBigInt",
                                     () => FallbackConvert(conversion),
                                     (x) => Ast.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertIntToBigInt)), x));  // GH #52
                             }

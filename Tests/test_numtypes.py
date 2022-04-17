@@ -99,12 +99,12 @@ def get_values(values, itypes, ftypes):
         sv  = str(v)
         py  = int(v)
         clr = get_clr_values(sv, itypes)
-        clr.append(long(py))
+        clr.append(int(py))
         clr.append(myint(py))
         clr.append(mylong(py))
         all.append( (py, clr) )
 
-        py  = long(v)
+        py  = int(v)
         clr = get_clr_values(sv, itypes)
         clr.append(py)
         clr.append(myint(py))
@@ -175,19 +175,19 @@ def get_messageun(a, op, x_s, x_v, g_s, g_v):
 def calc_1(op, arg1):
     try:
         return True, op(arg1)
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def calc_2(op, arg1, arg2):
     try:
         return True, op(arg1, arg2)
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def calc_0(op):
     try:
         return True, op()
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def extensible(l, r):
@@ -288,7 +288,7 @@ class NumTypesTest(unittest.TestCase):
                             self.verify_implemented_b(implemented, name, l, r)
 
                             if total - last > 10000:
-                                print "." ,
+                                print(".", end=' ')
                                 last = total
 
         return total
@@ -337,50 +337,50 @@ class NumTypesTest(unittest.TestCase):
 
     def test_validate_biops_bool_simple(self):
         total = self.validate_binary_ops(all, biops_bool_simple)
-        print total, "tests ran."
+        print(total, "tests ran.")
 
     def test_validate_biops_bool_shift(self):
         total = self.validate_binary_ops(all, biops_bool_shift)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_add(self):
         total = self.validate_binary_ops(all, biops_math_add)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_sub(self):
         total = self.validate_binary_ops(all, biops_math_sub)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_mul(self):
         total = self.validate_binary_ops(all, biops_math_mul)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_div(self):
         total = self.validate_binary_ops(all, biops_math_div)
-        print total, "tests ran."
+        print(total, "tests ran.")
 
     def test_validate_biops_math_floordiv(self):
         total = self.validate_binary_ops(all, biops_math_floordiv)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_truediv(self):
         total = self.validate_binary_ops(all, biops_math_truediv)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_mod(self):
         total = self.validate_binary_ops(all, biops_math_mod)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_biops_math_pow(self):
         total = self.validate_binary_ops(all, biops_math_pow)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
     def test_validate_unary_ops(self):
         total = self.validate_unary_ops(all)
-        print total, "tests ran."
+        print(total, "tests ran.")
   
     def test_validate_constructors(self):
         total = self.validate_constructors(values)
-        print total, "tests ran."
+        print(total, "tests ran.")
 
 run_test(__name__)

@@ -2833,13 +2833,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object? ConvertFloatToComplex(object value) {
-            if (value == null) {
-                return null;
-            }
-
-            if (value is double d) return new Complex(d, 0.0);
-            if (value is Extensible<double> ed) return new Complex(ed.Value, 0.0);
-            throw new InvalidOperationException();
+            return value switch {
+                null => null,
+                double d => new Complex(d, 0.0),
+                Extensible<double> ed => new Complex(ed.Value, 0.0),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public static object? ConvertIntToBigInt(object? value) {
@@ -2847,6 +2846,7 @@ namespace IronPython.Runtime.Operations {
                 null => null,
                 int i => new BigInteger(i),
                 BigInteger bi => bi,
+                Extensible<BigInteger> ebi => ebi.Value,
                 _ => throw new InvalidOperationException(),
             };
         }
@@ -2856,6 +2856,7 @@ namespace IronPython.Runtime.Operations {
                 null => null,
                 int i => i,
                 BigInteger bi => (int)bi,
+                Extensible<BigInteger> ebi => (int)ebi.Value,
                 _ => throw new InvalidOperationException(),
             };
         }
@@ -2865,11 +2866,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool CheckingConvertToFloat(object value) {
-            return value is double || (value != null && value is Extensible<double>);
+            return value is double || value is Extensible<double>;
         }
 
         internal static bool CheckingConvertToComplex(object value) {
-            return value is Complex || value is Extensible<Complex> || CheckingConvertToInt(value) || CheckingConvertToFloat(value);
+            return value is Complex || value is Extensible<Complex>;
         }
 
         internal static bool CheckingConvertToString(object value) {

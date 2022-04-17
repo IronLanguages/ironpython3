@@ -10,9 +10,9 @@ results produced by the operators implemented on the .NET types.
 """
 
 import unittest
-from operator import add, sub, mul, div, mod, and_, or_, xor, floordiv, truediv, lshift, rshift, neg, pos, abs, invert
+from operator import add, sub, mul, mod, and_, or_, xor, floordiv, truediv, lshift, rshift, neg, pos, abs, invert
 
-from iptest import is_cli, run_test, skipUnlessIronPython
+from iptest import is_cli, big, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 if is_cli:
@@ -26,13 +26,9 @@ biops_math_add = [
 biops_math_sub = [
     ("sub", sub),
     ]
-    
+
 biops_math_mul = [
     ("mul", mul),
-    ]
-    
-biops_math_div = [
-    ("div", div),
     ]
 
 biops_math_floordiv = [
@@ -42,11 +38,11 @@ biops_math_floordiv = [
 biops_math_truediv = [
     ("truediv", truediv),
     ]
-    
+
 biops_math_mod = [
     ("mod", mod),
     ]
-    
+
 biops_math_pow = [
     ("pow", pow),
     #("divmod", divmod) #, !!! not supporting divmod on non-standard types
@@ -62,8 +58,8 @@ biops_bool_shift = [
     ("lshift", lshift),
     ("rshift", rshift),
     ]
-    
-    
+
+
 unops = [
     ("neg", neg),
     ("pos", pos),
@@ -82,6 +78,7 @@ def get_clr_values(string, types):
     return clr_values
 
 
+# TODO: check if still true
 # Some values are not generated (myint, mylong, myfloat) because of the semantic difference
 # between calling (2L).__div__(single) and (mylong(2L)).__div__(single)
 
@@ -92,23 +89,17 @@ def get_values(values, itypes, ftypes):
     ( python_value, [ all_values ] ),
     ... ]
 
-    all_values: Byte, UInt16, UInt32, UInt64, SByte, Int16, Int32, Int64, Single, Double, myint, mylong, myfloat
+    all_values: Byte, UInt16, UInt32, UInt64, SByte, Int16, Int32, Int64, myint, Single, Double, myfloat, Complex, mycomplex
     """
     all = []
     for v in values:
         sv  = str(v)
-        py  = int(v)
-        clr = get_clr_values(sv, itypes)
-        clr.append(int(py))
-        clr.append(myint(py))
-        clr.append(mylong(py))
-        all.append( (py, clr) )
 
         py  = int(v)
         clr = get_clr_values(sv, itypes)
-        clr.append(py)
+        clr.append(int(py))
+        clr.append(big(int(py)))
         clr.append(myint(py))
-        clr.append(mylong(py))
         all.append( (py, clr) )
 
         py  = float(v)
@@ -134,9 +125,7 @@ def mystr(x):
     elif isinstance(x, Double):
         return str(round(x, 3))
     else:
-        s = str(x)
-        if s.endswith("L"): return s[:-1]
-        else: return s
+        return str(x)
 
 def get_message(a, b, op, x_s, x_v, g_s, g_v):
     return """
@@ -192,7 +181,7 @@ def calc_0(op):
 
 def extensible(l, r):
     ii = isinstance
-    return ii(l, myint) or ii(l, mylong) or ii(l, myfloat) or ii(l, mycomplex) or ii(r, myint) or ii(r, mylong) or ii(r, myfloat) or ii(r, mycomplex)
+    return ii(l, myint) or ii(l, myfloat) or ii(l, mycomplex) or ii(r, myint) or ii(r, myfloat) or ii(r, mycomplex)
 
 if is_cli:
     values = [-2, -3, -5, 2, 3, 5, 0]
@@ -275,7 +264,7 @@ class NumTypesTest(unittest.TestCase):
                                     implemented = True
                                     self.verify_b(l, r, l_name, x_s, x_v, g_s, g_v)
                                     total += 1
-                                    
+
                             # r.__rxxx__(l)
                             m = getattr(r, r_name, None)
                             if m is not None:
@@ -320,7 +309,7 @@ class NumTypesTest(unittest.TestCase):
                             implemented = True
                             self.verify_u(l, m_name, x_s, x_v, g_s, g_v)
                             total += 1
-                                
+
                     self.verify_implemented_u(implemented, name, l)
         return total
 
@@ -342,43 +331,39 @@ class NumTypesTest(unittest.TestCase):
     def test_validate_biops_bool_shift(self):
         total = self.validate_binary_ops(all, biops_bool_shift)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_add(self):
         total = self.validate_binary_ops(all, biops_math_add)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_sub(self):
         total = self.validate_binary_ops(all, biops_math_sub)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_mul(self):
         total = self.validate_binary_ops(all, biops_math_mul)
-        print(total, "tests ran.")
-        
-    def test_validate_biops_math_div(self):
-        total = self.validate_binary_ops(all, biops_math_div)
         print(total, "tests ran.")
 
     def test_validate_biops_math_floordiv(self):
         total = self.validate_binary_ops(all, biops_math_floordiv)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_truediv(self):
         total = self.validate_binary_ops(all, biops_math_truediv)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_mod(self):
         total = self.validate_binary_ops(all, biops_math_mod)
         print(total, "tests ran.")
-        
+
     def test_validate_biops_math_pow(self):
         total = self.validate_binary_ops(all, biops_math_pow)
         print(total, "tests ran.")
-        
+
     def test_validate_unary_ops(self):
         total = self.validate_unary_ops(all)
         print(total, "tests ran.")
-  
+
     def test_validate_constructors(self):
         total = self.validate_constructors(values)
         print(total, "tests ran.")

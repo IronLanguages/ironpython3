@@ -109,35 +109,16 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Array from_buffer_copy(CodeContext/*!*/ context, ArrayModule.array array, [DefaultParameterValue(0)] int offset) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+            public _Array from_buffer_copy(CodeContext/*!*/ context, IBufferProtocol data, int offset = 0) {
+                using var buffer = data.GetBuffer();
+                var span = buffer.AsReadOnlySpan();
+                var size = ((INativeType)this).Size;
+                ValidateArraySizes(span.Length, offset, size);
+                span = span.Slice(offset, size);
 
                 _Array res = (_Array)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
-                res.MemHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
-                GC.KeepAlive(array);
-                return res;
-            }
-
-            public _Array from_buffer_copy(CodeContext/*!*/ context, Bytes array, [DefaultParameterValue(0)] int offset) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
-                _Array res = (_Array)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
-                for (int i = 0; i < ((INativeType)this).Size; i++) {
-                    res.MemHolder.WriteByte(i, ((IList<byte>)array)[i]);
-                }
-                return res;
-            }
-
-            public _Array from_buffer_copy(CodeContext/*!*/ context, string data, int offset = 0) {
-                ValidateArraySizes(data, offset, ((INativeType)this).Size);
-
-                _Array res = (_Array)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
-                for (int i = 0; i < ((INativeType)this).Size; i++) {
-                    res.MemHolder.WriteByte(i, (byte)data[i]);
-                }
+                res.MemHolder = new MemoryHolder(size);
+                res.MemHolder.WriteSpan(0, span);
                 return res;
             }
 

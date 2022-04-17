@@ -2816,18 +2816,15 @@ namespace IronPython.Runtime.Operations {
             return value switch
             {
                 float f => (double)f,
-                double d => d,
                 sbyte sb => (int)sb,
                 byte b => (int)b,
                 char c => (int)c,
                 short s => (int)s,
                 ushort us => (int)us,
-                int i => i,
                 uint ui => (BigInteger)ui,
                 long l => (BigInteger)l,
                 ulong ul => (BigInteger)ul,
-                BigInteger bi => bi,
-                bool b => b,
+                // no conversion needed for: double, int, BigInteger, bool
                 _ => value,
             };
         }
@@ -2845,7 +2842,7 @@ namespace IronPython.Runtime.Operations {
             return value switch {
                 null => null,
                 int i => new BigInteger(i),
-                BigInteger bi => bi,
+                BigInteger => value,
                 Extensible<BigInteger> ebi => ebi.Value,
                 _ => throw new InvalidOperationException(),
             };
@@ -2854,7 +2851,7 @@ namespace IronPython.Runtime.Operations {
         public static object? ConvertIntToInt32(object? value) {
             return value switch {
                 null => null,
-                int i => i,
+                int => value,
                 BigInteger bi => (int)bi,
                 Extensible<BigInteger> ebi => (int)ebi.Value,
                 _ => throw new InvalidOperationException(),

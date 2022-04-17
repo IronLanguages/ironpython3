@@ -314,12 +314,15 @@ class NumTypesTest(unittest.TestCase):
         return total
 
     def validate_constructors(self, values):
-        types = [Byte, UInt16, UInt32, UInt64, SByte, Int16, Int32, Int64]
         total = 0
         for value in values:
-            for first in types:
+            for first in clr_int_types:
+                if first in clr_unsigned_types and value < 0:
+                    continue
                 v1 = first(value)
-                for second in types:
+                for second in clr_int_types:
+                    if second in clr_unsigned_types and value < 0:
+                        continue
                     v2 = first(second((value)))
                 total += 1
         return total

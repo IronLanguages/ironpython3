@@ -192,7 +192,9 @@ namespace IronPython.Runtime.Binding {
                         }
                         break;
                     case TypeCode.Int32:
-                        return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToInt");
+                        return MakeConvertRuleForCall(conversion, type, this, "__int__", "ConvertToBigInt",
+                            () => FallbackConvert(conversion),
+                            (x) => Ast.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertIntToInt32)), x));  // GH #52
                     case TypeCode.Double:
                         return MakeConvertRuleForCall(conversion, type, this, "__float__", "ConvertToFloat");
                     case TypeCode.Boolean:

@@ -2851,8 +2851,13 @@ namespace IronPython.Runtime.Operations {
             };
         }
 
-        internal static bool CheckingConvertToInt(object value) {
-            return value is int || value is BigInteger || value is Extensible<BigInteger>;
+        public static object? ConvertIntToInt32(object? value) {
+            return value switch {
+                null => null,
+                int i => i,
+                BigInteger bi => (int)bi,
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         internal static bool CheckingConvertToBigInt(object value) {
@@ -2864,7 +2869,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool CheckingConvertToComplex(object value) {
-            return value is Complex || value is Extensible<Complex> || CheckingConvertToInt(value) || CheckingConvertToFloat(value);
+            return value is Complex || value is Extensible<Complex> || CheckingConvertToBigInt(value) || CheckingConvertToFloat(value);
         }
 
         internal static bool CheckingConvertToString(object value) {
@@ -2873,11 +2878,6 @@ namespace IronPython.Runtime.Operations {
 
         public static bool CheckingConvertToBool(object value) {
             return value is bool;
-        }
-
-        public static object? NonThrowingConvertToInt(object value) {
-            if (!CheckingConvertToInt(value)) return null;
-            return value;
         }
 
         public static object? NonThrowingConvertToBigInt(object value) {
@@ -2902,11 +2902,6 @@ namespace IronPython.Runtime.Operations {
 
         public static object? NonThrowingConvertToBool(object value) {
             if (!CheckingConvertToBool(value)) return null;
-            return value;
-        }
-
-        public static object ThrowingConvertToInt(object value) {
-            if (!CheckingConvertToInt(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 

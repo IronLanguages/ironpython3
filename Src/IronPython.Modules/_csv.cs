@@ -910,7 +910,6 @@ elements will be converted to string.")]
                     object field = e.Current;
                     var quoted = _dialect.quoting switch {
                         QUOTE_NONNUMERIC => !(PythonOps.CheckingConvertToFloat(field) ||
-                                                PythonOps.CheckingConvertToInt(field) ||
                                                 PythonOps.CheckingConvertToBigInt(field)),
                         QUOTE_ALL => true,
                         _ => false,

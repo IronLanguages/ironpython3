@@ -1088,6 +1088,9 @@ class ns(object):
 
     SomeDelegate = somecallable
 
+class ns_bigint(ns):
+    def __int__(self): return (42).ToBigInteger()
+
 class ns_getattr(object):
     ClassVal = 'ClassVal'
 
@@ -1192,10 +1195,14 @@ class os:
 
     SomeDelegate = somecallable
 
+class os_bigint(os):
+    def __int__(self): return (42).ToBigInteger()
+
 class plain_os:
     pass
 
-class plain_ns(object): pass
+class plain_ns(object):
+    pass
 
 class os_getattr:
     ClassVal = 'ClassVal'
@@ -1242,12 +1249,14 @@ TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 if not clr.IsNetCoreApp and not clr.IsMono:
     controlinst = control()
 nsinst = ns()
+nsinstbig = ns_bigint()
 iterable = IterableObject()
 iterableos = IterableObjectOs()
 plainnsinst = plain_ns()
 nsmethod = nsinst.NsMethod
 alinst = MyArrayList()
 osinst = os()
+osinstbig = os_bigint()
 plainosinst = plain_os()
 os_getattrinst = os_getattr()
 ns_getattrinst = ns_getattr()
@@ -1269,7 +1278,7 @@ range = range
             var indexableObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst") };
             var unindexableObjects = new object[] { scope.GetVariable("TestFunc"), scope.GetVariable("ns_getattrinst"), scope.GetVariable("somecallable") }; // scope.GetVariable("plainosinst"),
             var invokableObjects = new object[] { scope.GetVariable("Invokable"), scope.GetVariable("nsinst"), scope.GetVariable("osinst"), scope.GetVariable("nsmethod"), };
-            var convertableObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst") };
+            var convertableObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst"), scope.GetVariable("nsinstbig"), scope.GetVariable("osinstbig") };
             var unconvertableObjects = new object[] { scope.GetVariable("plainnsinst"), scope.GetVariable("plainosinst") };
             var iterableObjects = new object[] { scope.GetVariable("iterable"), scope.GetVariable("iterableos") };
 
@@ -1377,7 +1386,7 @@ range = range
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
                 Assert.AreEqual(ssite.Target(ssite, inst), "Python");
 
-                // this call site works only if __int__ happens to return an Int32 instance
+                // this call site works only if __int__ happens to return an Int32 instance or a BigInteger instance that fits in 32 bits
                 var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
                 Assert.AreEqual(isite.Target(isite, inst), 42);
 

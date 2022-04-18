@@ -866,7 +866,7 @@ namespace IronPython.Runtime {
                         key = arg.Value;
                         break;
                     case "reverse":
-                        if (!PythonOps.CheckingConvertToBool(arg.Value) && !PythonOps.CheckingConvertToInt(arg.Value)) {
+                        if (!PythonOps.CheckingConvertToBool(arg.Value) && !PythonOps.CheckingConvertToInt(arg.Value)) { // Python 3.8: PythonOps.TryToIndex
                             throw PythonOps.TypeErrorForTypeMismatch("integer", arg.Value);
                         }
                         reverse = Convert.ToBoolean(arg.Value);

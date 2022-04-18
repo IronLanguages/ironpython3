@@ -2816,37 +2816,44 @@ namespace IronPython.Runtime.Operations {
             return value switch
             {
                 float f => (double)f,
-                double d => d,
                 sbyte sb => (int)sb,
                 byte b => (int)b,
                 char c => (int)c,
                 short s => (int)s,
                 ushort us => (int)us,
-                int i => i,
                 uint ui => (BigInteger)ui,
                 long l => (BigInteger)l,
                 ulong ul => (BigInteger)ul,
-                BigInteger bi => bi,
-                bool b => b,
+                // no conversion needed for: double, int, BigInteger, bool
                 _ => value,
             };
         }
 
         public static object? ConvertFloatToComplex(object value) {
-            if (value == null) {
-                return null;
-            }
-
-            if (value is double d) return new Complex(d, 0.0);
-            if (value is Extensible<double> ed) return new Complex(ed.Value, 0.0);
-            throw new InvalidOperationException();
+            return value switch {
+                null => null,
+                double d => new Complex(d, 0.0),
+                Extensible<double> ed => new Complex(ed.Value, 0.0),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public static object? ConvertIntToBigInt(object? value) {
             return value switch {
                 null => null,
                 int i => new BigInteger(i),
-                BigInteger bi => bi,
+                BigInteger => value,
+                Extensible<BigInteger> ebi => ebi.Value,
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
+        public static object? ConvertIntToInt32(object? value) {
+            return value switch {
+                null => null,
+                int => value,
+                BigInteger bi => (int)bi,
+                Extensible<BigInteger> ebi => (int)ebi.Value,
                 _ => throw new InvalidOperationException(),
             };
         }
@@ -2855,16 +2862,12 @@ namespace IronPython.Runtime.Operations {
             return value is int || value is BigInteger || value is Extensible<BigInteger>;
         }
 
-        internal static bool CheckingConvertToLong(object value) {
-            return CheckingConvertToInt(value);
-        }
-
         internal static bool CheckingConvertToFloat(object value) {
-            return value is double || (value != null && value is Extensible<double>);
+            return value is double || value is Extensible<double>;
         }
 
         internal static bool CheckingConvertToComplex(object value) {
-            return value is Complex || value is Extensible<Complex> || CheckingConvertToInt(value) || CheckingConvertToFloat(value);
+            return value is Complex || value is Extensible<Complex>;
         }
 
         internal static bool CheckingConvertToString(object value) {
@@ -2876,11 +2879,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object? NonThrowingConvertToInt(object value) {
-            if (!CheckingConvertToInt(value)) return null;
-            return value;
-        }
-
-        public static object? NonThrowingConvertToLong(object value) {
             if (!CheckingConvertToInt(value)) return null;
             return value;
         }
@@ -2917,11 +2915,6 @@ namespace IronPython.Runtime.Operations {
 
         public static object ThrowingConvertToComplex(object value) {
             if (!CheckingConvertToComplex(value)) throw TypeError(" __complex__ returned non-complex (type {0})", PythonOps.GetPythonTypeName(value));
-            return value;
-        }
-
-        public static object ThrowingConvertToLong(object value) {
-            if (!CheckingConvertToLong(value)) throw TypeError(" __int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(value));
             return value;
         }
 

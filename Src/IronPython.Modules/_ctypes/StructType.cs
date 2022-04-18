@@ -168,11 +168,11 @@ namespace IronPython.Modules {
                 try {
                     return SetValueInternal(address, offset, value);
                 } catch (ArgumentTypeException e) {
-                    throw PythonOps.RuntimeError("({0}) <type 'exceptions.TypeError'>: {1}",
+                    throw PythonOps.RuntimeError("({0}) <class 'TypeError'>: {1}",
                         Name,
                         e.Message);
                 } catch (ArgumentException e) {
-                    throw PythonOps.RuntimeError("({0}) <type 'exceptions.ValueError'>: {1}",
+                    throw PythonOps.RuntimeError("({0}) <class 'ValueError'>: {1}",
                         Name,
                         e.Message);
                 }

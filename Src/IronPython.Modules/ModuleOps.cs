@@ -55,15 +55,15 @@ namespace IronPython.Modules {
             Debug.Assert(holder is MemoryHolder);
 
             CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.SharedContext);
-            data._memHolder = (MemoryHolder)holder;
+            data.MemHolder = (MemoryHolder)holder;
             return data;
         }
 
         public static object CreateCData(IntPtr dataAddress, PythonType type) {
             CTypes.INativeType nativeType = (CTypes.INativeType)type;
             CTypes.CData data = (CTypes.CData)type.CreateInstance(type.Context.SharedContext);
-            data._memHolder = new MemoryHolder(nativeType.Size);
-            data._memHolder.CopyFrom(dataAddress, new IntPtr(nativeType.Size));
+            data.MemHolder = new MemoryHolder(nativeType.Size);
+            data.MemHolder.CopyFrom(dataAddress, new IntPtr(nativeType.Size));
             return data;
         }
 
@@ -325,7 +325,7 @@ namespace IronPython.Modules {
                     simpType._type == CTypes.SimpleTypeKind.CharPointer) {
                     return sd.UnsafeAddress;
                 } else if (simpType._type == CTypes.SimpleTypeKind.Pointer) {
-                    return sd._memHolder.ReadIntPtr(0);
+                    return sd.MemHolder.ReadIntPtr(0);
                 }
             }
 

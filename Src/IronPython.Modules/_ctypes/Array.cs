@@ -28,7 +28,7 @@ namespace IronPython.Modules {
             public void __init__(params object[] args) {
                 INativeType nativeType = NativeType;
 
-                _memHolder = new MemoryHolder(nativeType.Size);
+                MemHolder = new MemoryHolder(nativeType.Size);
 
                 if (args.Length > ((ArrayType)nativeType).Length) {
                     throw PythonOps.IndexError("too many arguments");
@@ -36,7 +36,7 @@ namespace IronPython.Modules {
 
                 INativeType elementType = ElementType;
                 for (var i = 0; i < args.Length; i++) {
-                    elementType.SetValue(_memHolder, checked(i * elementType.Size), args[i]);
+                    elementType.SetValue(MemHolder, checked(i * elementType.Size), args[i]);
                 }
             }
 
@@ -45,7 +45,7 @@ namespace IronPython.Modules {
                     index = PythonOps.FixIndex(index, ((ArrayType)NativeType).Length);
                     INativeType elementType = ElementType;
                     return elementType.GetValue(
-                        _memHolder,
+                        MemHolder,
                         this,
                         checked(index * elementType.Size),
                         false
@@ -56,13 +56,13 @@ namespace IronPython.Modules {
                     INativeType elementType = ElementType;
 
                     object keepAlive = elementType.SetValue(
-                        _memHolder,
+                        MemHolder,
                         checked(index * elementType.Size),
                         value
                     );
 
                     if (keepAlive != null) {
-                        _memHolder.AddObject(index.ToString(), keepAlive);
+                        MemHolder.AddObject(index.ToString(), keepAlive);
                     }
                 }
             }
@@ -86,11 +86,11 @@ namespace IronPython.Modules {
                         if (elemType._type == SimpleTypeKind.Char) {
                             Debug.Assert(((INativeType)elemType).Size == 1);
                             if (step == 1) {
-                                return _memHolder.ReadBytes(start, count);
+                                return MemHolder.ReadBytes(start, count);
                             } else {
                                 var buffer = new byte[count];
                                 for (int i = 0, index = start; i < count; i++, index += step) {
-                                    buffer[i] = _memHolder.ReadByte(index);
+                                    buffer[i] = MemHolder.ReadByte(index);
                                 }
                                 return Bytes.Make(buffer);
                             }
@@ -98,11 +98,11 @@ namespace IronPython.Modules {
                         if (elemType._type == SimpleTypeKind.WChar) {
                             int elmSize = ((INativeType)elemType).Size;
                             if (step == 1) {
-                                return _memHolder.ReadUnicodeString(checked(start * elmSize), count);
+                                return MemHolder.ReadUnicodeString(checked(start * elmSize), count);
                             } else {
                                 var res = new StringBuilder(count);
                                 for (int i = 0, index = start; i < count; i++, index += step) {
-                                    res.Append((char)_memHolder.ReadInt16(checked(index * elmSize)));
+                                    res.Append((char)MemHolder.ReadInt16(checked(index * elmSize)));
                                 }
                                 return res.ToString();
                             }

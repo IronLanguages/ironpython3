@@ -94,8 +94,8 @@ namespace IronPython.Modules {
 
                 _Structure res = (_Structure)CreateInstance(context);
                 IntPtr addr = array.GetArrayAddress();
-                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res._memHolder.AddObject("ffffffff", array);
+                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res.MemHolder.AddObject("ffffffff", array);
                 return res;
             }
 
@@ -103,8 +103,8 @@ namespace IronPython.Modules {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 _Structure res = (_Structure)CreateInstance(Context.SharedContext);
-                res._memHolder = new MemoryHolder(((INativeType)this).Size);
-                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
+                res.MemHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
                 GC.KeepAlive(array);
                 return res;
             }
@@ -160,7 +160,7 @@ namespace IronPython.Modules {
 
             object INativeType.GetValue(MemoryHolder/*!*/ owner, object readingFrom, int offset, bool raw) {
                 _Structure res = (_Structure)CreateInstance(this.Context.SharedContext);
-                res._memHolder = owner.GetSubBlock(offset);
+                res.MemHolder = owner.GetSubBlock(offset);
                 return res;
             }
 
@@ -191,8 +191,8 @@ namespace IronPython.Modules {
                 } else {
                     CData data = value as CData;
                     if (data != null) {
-                        data._memHolder.CopyTo(address, offset, data.Size);
-                        return data._memHolder.EnsureObjects();
+                        data.MemHolder.CopyTo(address, offset, data.Size);
+                        return data.MemHolder.EnsureObjects();
                     } else {
                         throw new NotImplementedException("set value");
                     }

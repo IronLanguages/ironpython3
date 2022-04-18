@@ -25,16 +25,16 @@ namespace IronPython.Modules {
 #pragma warning restore 414
 
             public Pointer() {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
             }
 
             public Pointer(CData value) {
                 _object = value; // Keep alive the object, more to do here.
-                _memHolder = new MemoryHolder(IntPtr.Size);
-                _memHolder.WriteIntPtr(0, value._memHolder);
-                _memHolder.AddObject("1", value);
+                MemHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder.WriteIntPtr(0, value.MemHolder);
+                MemHolder.AddObject("1", value);
                 if (value._objects != null) {
-                    _memHolder.AddObject("0", value._objects);
+                    MemHolder.AddObject("0", value._objects);
                 }
             }
 
@@ -43,8 +43,8 @@ namespace IronPython.Modules {
                     PythonType elementType = (PythonType)((PointerType)NativeType)._type;
 
                     CData res = (CData)elementType.CreateInstance(elementType.Context.SharedContext);
-                    res._memHolder = _memHolder.ReadMemoryHolder(0);
-                    if(res._memHolder.UnsafeAddress == IntPtr.Zero) {
+                    res.MemHolder = MemHolder.ReadMemoryHolder(0);
+                    if(res.MemHolder.UnsafeAddress == IntPtr.Zero) {
                         throw PythonOps.ValueError("NULL value access");
                     }
                     return res;
@@ -56,23 +56,23 @@ namespace IronPython.Modules {
             public object this[int index] {
                 get {
                     INativeType type = ((PointerType)NativeType)._type;
-                    MemoryHolder address = _memHolder.ReadMemoryHolder(0);
+                    MemoryHolder address = MemHolder.ReadMemoryHolder(0);
 
                     return type.GetValue(address, this, checked(type.Size * index), false);
                 }
                 set {
-                    MemoryHolder address = _memHolder.ReadMemoryHolder(0);
+                    MemoryHolder address = MemHolder.ReadMemoryHolder(0);
 
                     INativeType type = ((PointerType)NativeType)._type;
                     object keepAlive = type.SetValue(address, checked(type.Size * index), value);
                     if (keepAlive != null) {
-                        _memHolder.AddObject(index.ToString(), keepAlive);
+                        MemHolder.AddObject(index.ToString(), keepAlive);
                     }
                 }
             }
 
             public bool __bool__() {
-                return _memHolder.ReadIntPtr(0) != IntPtr.Zero;
+                return MemHolder.ReadIntPtr(0) != IntPtr.Zero;
             }
 
             public object this[Slice index] {
@@ -103,7 +103,7 @@ namespace IronPython.Modules {
                         return new PythonList();
                     }
 
-                    MemoryHolder address = _memHolder.ReadMemoryHolder(0);
+                    MemoryHolder address = MemHolder.ReadMemoryHolder(0);
                     if (elemType != null) {
                         if (elemType._type == SimpleTypeKind.Char) {
                             Debug.Assert(((INativeType)elemType).Size == 1);

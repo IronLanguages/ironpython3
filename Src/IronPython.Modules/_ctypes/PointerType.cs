@@ -64,7 +64,7 @@ namespace IronPython.Modules {
                 }
 
                 Pointer res = (Pointer)PythonCalls.Call(this);
-                res._memHolder.WriteIntPtr(0, obj._memHolder.ReadMemoryHolder(0));
+                res.MemHolder.WriteIntPtr(0, obj.MemHolder.ReadMemoryHolder(0));
                 return res;
             }
 
@@ -112,8 +112,8 @@ namespace IronPython.Modules {
             object INativeType.GetValue(MemoryHolder owner, object readingFrom, int offset, bool raw) {
                 if (!raw) {
                     Pointer res = (Pointer)PythonCalls.Call(Context.SharedContext, this);
-                    res._memHolder.WriteIntPtr(0, owner.ReadIntPtr(offset));
-                    res._memHolder.AddObject(offset, readingFrom);
+                    res.MemHolder.WriteIntPtr(0, owner.ReadIntPtr(offset));
+                    res.MemHolder.AddObject(offset, readingFrom);
                     return res;
                 }
                 return owner.ReadIntPtr(offset).ToPython();
@@ -129,10 +129,10 @@ namespace IronPython.Modules {
                 } else if (value is BigInteger) {
                     address.WriteIntPtr(offset, new IntPtr((long)(BigInteger)value));
                 } else if ((ptr = value as Pointer) != null) {
-                    address.WriteIntPtr(offset, ptr._memHolder.ReadMemoryHolder(0));
+                    address.WriteIntPtr(offset, ptr.MemHolder.ReadMemoryHolder(0));
                     return PythonOps.MakeDictFromItems(ptr, "0", ptr._objects, "1");
                 } else if ((array = value as _Array) != null) {
-                    address.WriteIntPtr(offset, array._memHolder);
+                    address.WriteIntPtr(offset, array.MemHolder);
                     return array;
                 } else {
                     throw PythonOps.TypeErrorForTypeMismatch(Name, value);

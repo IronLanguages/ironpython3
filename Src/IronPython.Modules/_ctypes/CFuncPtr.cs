@@ -85,18 +85,18 @@ namespace IronPython.Modules {
                     }
                 }
 
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 addr = tmpAddr;
                 _id = Interlocked.Increment(ref _curId);
             }
 
             public _CFuncPtr() {
                 _id = Interlocked.Increment(ref _curId);
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
             }
 
             public _CFuncPtr(CodeContext context, object function) {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 if (function != null) {
                     if (!PythonOps.IsCallable(context, function)) {
                         throw PythonOps.TypeError("argument must be called or address of function");
@@ -120,7 +120,7 @@ namespace IronPython.Modules {
             /// Creates a new CFuncPtr which calls a COM method.
             /// </summary>
             public _CFuncPtr(int index, string name) {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 _comInterfaceIndex = index;
                 _id = Interlocked.Increment(ref _curId);
             }
@@ -130,7 +130,7 @@ namespace IronPython.Modules {
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
             public _CFuncPtr(int handle) {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 addr = new IntPtr(handle);
                 _id = Interlocked.Increment(ref _curId);
             }
@@ -139,13 +139,13 @@ namespace IronPython.Modules {
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
             public _CFuncPtr([NotNull] BigInteger handle) {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 addr = new IntPtr((long)handle);
                 _id = Interlocked.Increment(ref _curId);
             }
 
             public _CFuncPtr(IntPtr handle) {
-                _memHolder = new MemoryHolder(IntPtr.Size);
+                MemHolder = new MemoryHolder(IntPtr.Size);
                 addr = handle;
                 _id = Interlocked.Increment(ref _curId);
             }
@@ -251,11 +251,11 @@ namespace IronPython.Modules {
             public IntPtr addr {
                 [PythonHidden]
                 get {
-                    return _memHolder.ReadIntPtr(0);
+                    return MemHolder.ReadIntPtr(0);
                 }
                 [PythonHidden]
                 set {
-                    _memHolder.WriteIntPtr(0, value);
+                    MemHolder.WriteIntPtr(0, value);
                 }
             }
 

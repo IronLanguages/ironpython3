@@ -32,7 +32,7 @@ namespace IronPython.Modules {
             }
 
             public void __init__() {
-                _memHolder = new MemoryHolder(Size);
+                MemHolder = new MemoryHolder(Size);
             }
 
             public void __init__(CodeContext/*!*/ context, object value) {
@@ -105,25 +105,25 @@ namespace IronPython.Modules {
                         break;
                 }
 
-                _memHolder = new MemoryHolder(Size);
-                NativeType.SetValue(_memHolder, 0, value);
+                MemHolder = new MemoryHolder(Size);
+                NativeType.SetValue(MemHolder, 0, value);
                 if (IsString) {
-                    _memHolder.AddObject("str", value);
+                    MemHolder.AddObject("str", value);
                 }
             }
 
             // implemented as PropertyMethod's so that we can have delete
             [PropertyMethod, SpecialName]
             public void Setvalue(object value) {
-                NativeType.SetValue(_memHolder, 0, value);
+                NativeType.SetValue(MemHolder, 0, value);
                 if (IsString) {
-                    _memHolder.AddObject("str", value);
+                    MemHolder.AddObject("str", value);
                 }
             }
 
             [PropertyMethod, SpecialName]
             public object Getvalue() {
-                return NativeType.GetValue(_memHolder, this, 0, true);
+                return NativeType.GetValue(MemHolder, this, 0, true);
             }
 
             [PropertyMethod, SpecialName]
@@ -134,13 +134,13 @@ namespace IronPython.Modules {
             public override object _objects {
                 get {
                     if (IsString) {
-                        PythonDictionary objs = _memHolder.Objects;
+                        PythonDictionary objs = MemHolder.Objects;
                         if (objs != null) {
                             return objs["str"];
                         }
                     }
 
-                    return _memHolder.Objects;
+                    return MemHolder.Objects;
                 }
             }
 
@@ -163,7 +163,7 @@ namespace IronPython.Modules {
             }
 
             private string GetDataRepr(CodeContext/*!*/ context) {
-                return PythonOps.Repr(context, NativeType.GetValue(_memHolder, this, 0, false));
+                return PythonOps.Repr(context, NativeType.GetValue(MemHolder, this, 0, false));
             }
 
             #endregion

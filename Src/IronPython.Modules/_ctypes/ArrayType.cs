@@ -104,8 +104,8 @@ namespace IronPython.Modules {
 
                 _Array res = (_Array)CreateInstance(context);
                 IntPtr addr = array.GetArrayAddress();
-                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res._memHolder.AddObject("ffffffff", array);
+                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res.MemHolder.AddObject("ffffffff", array);
                 return res;
             }
 
@@ -113,8 +113,8 @@ namespace IronPython.Modules {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 _Array res = (_Array)CreateInstance(context);
-                res._memHolder = new MemoryHolder(((INativeType)this).Size);
-                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
+                res.MemHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
                 GC.KeepAlive(array);
                 return res;
             }
@@ -123,9 +123,9 @@ namespace IronPython.Modules {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 _Array res = (_Array)CreateInstance(context);
-                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
                 for (int i = 0; i < ((INativeType)this).Size; i++) {
-                    res._memHolder.WriteByte(i, ((IList<byte>)array)[i]);
+                    res.MemHolder.WriteByte(i, ((IList<byte>)array)[i]);
                 }
                 return res;
             }
@@ -134,9 +134,9 @@ namespace IronPython.Modules {
                 ValidateArraySizes(data, offset, ((INativeType)this).Size);
 
                 _Array res = (_Array)CreateInstance(context);
-                res._memHolder = new MemoryHolder(((INativeType)this).Size);
+                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
                 for (int i = 0; i < ((INativeType)this).Size; i++) {
-                    res._memHolder.WriteByte(i, (byte)data[i]);
+                    res.MemHolder.WriteByte(i, (byte)data[i]);
                 }
                 return res;
             }
@@ -208,7 +208,7 @@ namespace IronPython.Modules {
                 }
 
                 _Array arr = (_Array)CreateInstance(Context.SharedContext);
-                arr._memHolder = new MemoryHolder(owner.UnsafeAddress.Add(offset), ((INativeType)this).Size, owner);
+                arr.MemHolder = new MemoryHolder(owner.UnsafeAddress.Add(offset), ((INativeType)this).Size, owner);
                 return arr;
             }
 
@@ -276,8 +276,8 @@ namespace IronPython.Modules {
                     }
                 } else {
                     if (value is _Array arr && arr.NativeType == this) {
-                        arr._memHolder.CopyTo(address, offset, ((INativeType)this).Size);
-                        return arr._memHolder.EnsureObjects();
+                        arr.MemHolder.CopyTo(address, offset, ((INativeType)this).Size);
+                        return arr.MemHolder.EnsureObjects();
                     }
 
                     throw PythonOps.TypeError("unexpected {0} instance, got {1}", Name, PythonOps.GetPythonTypeName(value));

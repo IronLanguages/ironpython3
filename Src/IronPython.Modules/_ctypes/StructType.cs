@@ -50,10 +50,15 @@ namespace IronPython.Modules {
                 }
 
                 if (members.TryGetValue("_pack_", out object pack)) {
-                    if (!(pack is int) || ((int)pack < 0)) {
+                    object index = PythonOps.Index(pack); // since 3.8
+                    _pack = index switch {
+                        int i => i,
+                        BigInteger bi => (int)bi, // CPython throws the ValueError below on overflow
+                        _ => throw new InvalidOperationException(),
+                    };
+                    if (_pack < 0) {
                         throw PythonOps.ValueError("pack must be a non-negative integer");
                     }
-                    _pack = (int)pack;
                 }
 
                 if (members.TryGetValue("_fields_", out object fields)) {

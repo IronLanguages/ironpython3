@@ -10,7 +10,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 using IronPython.Runtime;
@@ -282,10 +281,13 @@ namespace IronPython.Modules {
                 WriteInt16(checked(offset + i * 2), (short)value[i]);
             }
         }
+
         internal void WriteSpan(int offset, ReadOnlySpan<byte> value) {
-            for (int i = 0; i < value.Length; i++) {
-                WriteByte(checked(offset + i), value[i]);
+            unsafe {
+                var dest = new Span<byte>((void*)_data, _size).Slice(offset);
+                value.CopyTo(dest);
             }
+            GC.KeepAlive(this);
         }
 
         public MemoryHolder GetSubBlock(int offset) {

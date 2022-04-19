@@ -141,7 +141,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public SimpleCData from_buffer_copy(CodeContext/*!*/ context, IBufferProtocol data, int offset = 0) {
+            public SimpleCData from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
                 using var buffer = data.GetBuffer();
                 var span = buffer.AsReadOnlySpan();
                 var size = ((INativeType)this).Size;

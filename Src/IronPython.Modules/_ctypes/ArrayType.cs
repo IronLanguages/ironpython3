@@ -15,6 +15,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules {
@@ -109,7 +110,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Array from_buffer_copy(CodeContext/*!*/ context, IBufferProtocol data, int offset = 0) {
+            public _Array from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
                 using var buffer = data.GetBuffer();
                 var span = buffer.AsReadOnlySpan();
                 var size = ((INativeType)this).Size;

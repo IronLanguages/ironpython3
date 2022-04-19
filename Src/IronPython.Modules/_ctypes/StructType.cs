@@ -99,14 +99,14 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Structure from_buffer_copy(CodeContext/*!*/ context, IBufferProtocol data, int offset = 0) {
+            public _Structure from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
                 using var buffer = data.GetBuffer();
                 var span = buffer.AsReadOnlySpan();
                 var size = ((INativeType)this).Size;
                 ValidateArraySizes(span.Length, offset, size);
                 span = span.Slice(offset, size);
 
-                _Structure res = (_Structure)CreateInstance(Context.SharedContext);
+                _Structure res = (_Structure)CreateInstance(context);
                 res.MemHolder = new MemoryHolder(size);
                 res.MemHolder.WriteSpan(0, span);
                 return res;

@@ -7,6 +7,7 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -55,7 +56,7 @@ namespace IronPython.Modules {
 
             internal INativeType NativeType => (INativeType)DynamicHelpers.GetPythonType(this);
 
-            public virtual object _objects => MemHolder.Objects;
+            public virtual object? _objects => MemHolder.Objects;
 
             internal void SetAddress(IntPtr address) {
                 Debug.Assert(_memHolder == null);
@@ -70,7 +71,7 @@ namespace IronPython.Modules {
 
             IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
 
-            void IDisposable.Dispose() { }
+            void IDisposable.Dispose() { } // TODO
 
             object IPythonBuffer.Object => this;
 
@@ -79,6 +80,9 @@ namespace IronPython.Modules {
 
             unsafe Span<byte> IPythonBuffer.AsSpan()
                 => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
+
+            unsafe MemoryHandle IPythonBuffer.Pin()
+                => new MemoryHandle(MemHolder.UnsafeAddress.ToPointer());
 
             int IPythonBuffer.Offset => 0;
 

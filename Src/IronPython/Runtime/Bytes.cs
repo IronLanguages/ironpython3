@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1245,6 +1246,8 @@ namespace IronPython.Runtime {
 
             public Span<byte> AsSpan()
                 => throw new InvalidOperationException("bytes object is not writable");
+
+            public MemoryHandle Pin() => _exporter._bytes.AsMemory().Pin();
 
             public int Offset => 0;
 

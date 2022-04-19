@@ -105,22 +105,22 @@ namespace IronPython.Modules {
 
                 CData res = (CData)pt.CreateInstance(pt.Context.SharedContext);
                 if (IsPointer(pt)) {
-                    res._memHolder = new MemoryHolder(IntPtr.Size);
+                    res.MemHolder = new MemoryHolder(IntPtr.Size);
                     if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
-                        res._memHolder.WriteIntPtr(0, cdata._memHolder.ReadIntPtr(0));
+                        res.MemHolder.WriteIntPtr(0, cdata.MemHolder.ReadIntPtr(0));
                     } else {
-                        res._memHolder.WriteIntPtr(0, data);
+                        res.MemHolder.WriteIntPtr(0, data);
                     }
 
                     if (cdata != null) {
-                        res._memHolder.Objects = cdata._memHolder.Objects;
-                        res._memHolder.AddObject(IdDispenser.GetId(cdata), cdata);
+                        res.MemHolder.Objects = cdata.MemHolder.Objects;
+                        res.MemHolder.AddObject(IdDispenser.GetId(cdata), cdata);
                     }
                 } else {
                     if (cdata != null) {
-                        res._memHolder = new MemoryHolder(data, ((INativeType)pt).Size, cdata._memHolder);
+                        res.MemHolder = new MemoryHolder(data, ((INativeType)pt).Size, cdata.MemHolder);
                     } else {
-                        res._memHolder = new MemoryHolder(data, ((INativeType)pt).Size);
+                        res.MemHolder = new MemoryHolder(data, ((INativeType)pt).Size);
                     }
                 }
 
@@ -331,7 +331,7 @@ namespace IronPython.Modules {
         /// stay alive if memory in the resulting address is to be used later.
         /// </summary>
         public static object addressof(CData data) {
-            return data._memHolder.UnsafeAddress.ToPython();
+            return data.MemHolder.UnsafeAddress.ToPython();
         }
 
         /// <summary>
@@ -438,8 +438,8 @@ namespace IronPython.Modules {
             }
 
             MemoryHolder newMem = new MemoryHolder(newSize);
-            obj._memHolder.CopyTo(newMem, 0, Math.Min(obj._memHolder.Size, newSize));
-            obj._memHolder = newMem;
+            obj.MemHolder.CopyTo(newMem, 0, Math.Min(obj.MemHolder.Size, newSize));
+            obj.MemHolder = newMem;
         }
 
         public static PythonTuple/*!*/ set_conversion_mode(CodeContext/*!*/ context, string encoding, string errors) {
@@ -472,8 +472,8 @@ namespace IronPython.Modules {
         }
 
         public static int @sizeof(object/*!*/ instance) {
-            if (instance is CData cdata && cdata._memHolder != null) {
-                return cdata._memHolder.Size;
+            if (instance is CData cdata && cdata.MemHolder != null) {
+                return cdata.MemHolder.Size;
             }
             return @sizeof(DynamicHelpers.GetPythonType(instance));
         }
@@ -710,12 +710,12 @@ namespace IronPython.Modules {
         // TODO: Move these to an Ops class
         [PythonHidden]
         public static object GetCharArrayValue(_Array arr) {
-            return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
+            return arr.NativeType.GetValue(arr.MemHolder, arr, 0, false);
         }
 
         [PythonHidden]
         public static void SetCharArrayValue(_Array arr, object value) {
-            arr.NativeType.SetValue(arr._memHolder, 0, value);
+            arr.NativeType.SetValue(arr.MemHolder, 0, value);
         }
 
         [PythonHidden]
@@ -725,12 +725,12 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public static object GetCharArrayRaw(_Array arr) {
-            return ((ArrayType)arr.NativeType).GetRawValue(arr._memHolder, 0);
+            return ((ArrayType)arr.NativeType).GetRawValue(arr.MemHolder, 0);
         }
 
         [PythonHidden]
         public static void SetCharArrayRaw(_Array arr, object value) {
-            ((ArrayType)arr.NativeType).SetRawValue(arr._memHolder, 0, value);
+            ((ArrayType)arr.NativeType).SetRawValue(arr.MemHolder, 0, value);
         }
 
         [PythonHidden]
@@ -740,12 +740,12 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public static object GetWCharArrayValue(_Array arr) {
-            return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
+            return arr.NativeType.GetValue(arr.MemHolder, arr, 0, false);
         }
 
         [PythonHidden]
         public static void SetWCharArrayValue(_Array arr, object value) {
-            arr.NativeType.SetValue(arr._memHolder, 0, value);
+            arr.NativeType.SetValue(arr.MemHolder, 0, value);
         }
 
         [PythonHidden]

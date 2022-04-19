@@ -15,7 +15,7 @@ namespace IronPython.Modules {
         [PythonType("Union")]
         public abstract class _Union : CData {
             public void __init__(CodeContext/*!*/ context) {
-                _memHolder = new MemoryHolder(Size);
+                MemHolder = new MemoryHolder(Size);
             }
         }
     }

@@ -36,12 +36,14 @@ namespace IronPython.Modules {
         /// </summary>
         [PythonType("_CData"), PythonHidden]
         public abstract class CData : IBufferProtocol, IPythonBuffer {
-            internal MemoryHolder _memHolder;
+            internal MemoryHolder MemHolder {
+                get => _memHolder ?? throw new InvalidOperationException($"{nameof(CData)} object not fully initialized.");
+                set => _memHolder = value;
+            }
+            private MemoryHolder? _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
-            protected CData() {
-                _memHolder = null!;
-            }
+            protected CData() { }
 
             // TODO: What if a user directly subclasses CData?
             [PythonHidden]
@@ -49,15 +51,15 @@ namespace IronPython.Modules {
 
             // TODO: Accesses via Ops class
             [PythonHidden]
-            public IntPtr UnsafeAddress => _memHolder.UnsafeAddress;
+            public IntPtr UnsafeAddress => MemHolder.UnsafeAddress;
 
             internal INativeType NativeType => (INativeType)DynamicHelpers.GetPythonType(this);
 
-            public virtual object _objects => _memHolder.Objects;
+            public virtual object _objects => MemHolder.Objects;
 
             internal void SetAddress(IntPtr address) {
                 Debug.Assert(_memHolder == null);
-                _memHolder = new MemoryHolder(address, NativeType.Size);
+                MemHolder = new MemoryHolder(address, NativeType.Size);
             }
 
             internal virtual PythonTuple GetBufferInfo()
@@ -73,10 +75,10 @@ namespace IronPython.Modules {
             object IPythonBuffer.Object => this;
 
             unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+                => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
 
             unsafe Span<byte> IPythonBuffer.AsSpan()
-                => new Span<byte>(_memHolder.UnsafeAddress.ToPointer(), _memHolder.Size);
+                => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
 
             int IPythonBuffer.Offset => 0;
 

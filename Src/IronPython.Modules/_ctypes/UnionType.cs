@@ -80,8 +80,8 @@ namespace IronPython.Modules {
 
                 _Union res = (_Union)CreateInstance(context);
                 IntPtr addr = array.GetArrayAddress();
-                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res._memHolder.AddObject("ffffffff", array);
+                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res.MemHolder.AddObject("ffffffff", array);
                 return res;
             }
 
@@ -101,7 +101,7 @@ namespace IronPython.Modules {
 
             object INativeType.GetValue(MemoryHolder owner, object readingFrom, int offset, bool raw) {
                 _Union res = (_Union)CreateInstance(this.Context.SharedContext);
-                res._memHolder = owner.GetSubBlock(offset);
+                res.MemHolder = owner.GetSubBlock(offset);
                 return res;
             }
 
@@ -118,8 +118,8 @@ namespace IronPython.Modules {
                 } else {
                     CData data = value as CData;
                     if (data != null) {
-                        data._memHolder.CopyTo(address, offset, data.Size);
-                        return data._memHolder.EnsureObjects();
+                        data.MemHolder.CopyTo(address, offset, data.Size);
+                        return data.MemHolder.EnsureObjects();
                     } else {
                         throw new NotImplementedException("Union set value");
                     }

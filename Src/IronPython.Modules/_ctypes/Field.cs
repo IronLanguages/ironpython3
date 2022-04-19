@@ -68,7 +68,7 @@ namespace IronPython.Modules {
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
                     CData inst = (CData)instance;
-                    value = _fieldType.GetValue(inst._memHolder, inst, _offset, false);
+                    value = _fieldType.GetValue(inst.MemHolder, inst, _offset, false);
                     if (_bits == -1) {
                         return true;
                     }
@@ -90,7 +90,7 @@ namespace IronPython.Modules {
 
             internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
                 if (instance != null) {
-                    SetValue(((CData)instance)._memHolder, 0, value);
+                    SetValue(((CData)instance).MemHolder, 0, value);
                     return true;
 
                 }

@@ -136,8 +136,8 @@ namespace IronPython.Modules {
 
                 SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
                 IntPtr addr = array.GetArrayAddress();
-                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res._memHolder.AddObject("ffffffff", array);
+                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res.MemHolder.AddObject("ffffffff", array);
                 return res;
             }
 
@@ -145,8 +145,8 @@ namespace IronPython.Modules {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
-                res._memHolder = new MemoryHolder(((INativeType)this).Size);
-                res._memHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
+                res.MemHolder = new MemoryHolder(((INativeType)this).Size);
+                res.MemHolder.CopyFrom(array.GetArrayAddress().Add(offset), new IntPtr(((INativeType)this).Size));
                 GC.KeepAlive(array);
                 return res;
             }
@@ -251,7 +251,7 @@ namespace IronPython.Modules {
 
             object INativeType.SetValue(MemoryHolder/*!*/ owner, int offset, object value) {
                 if (value is SimpleCData data && data.NativeType == this) {
-                    data._memHolder.CopyTo(owner, offset, ((INativeType)this).Size);
+                    data.MemHolder.CopyTo(owner, offset, ((INativeType)this).Size);
                     return null;
                 }
 

@@ -18,6 +18,8 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
+
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
@@ -100,13 +102,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Array from_buffer(CodeContext/*!*/ context, ArrayModule.array array, [DefaultParameterValue(0)] int offset) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
+            public _Array from_buffer(CodeContext/*!*/ context, [NotDynamicNull] IBufferProtocol data, int offset = 0) {
                 _Array res = (_Array)CreateInstance(context);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

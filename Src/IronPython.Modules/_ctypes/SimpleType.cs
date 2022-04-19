@@ -13,10 +13,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
+
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -131,13 +134,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public SimpleCData from_buffer(ArrayModule.array array, int offset = 0) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
-                SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+            public SimpleCData from_buffer(CodeContext/*!*/ context, [NotDynamicNull] IBufferProtocol data, int offset = 0) {
+                SimpleCData res = (SimpleCData)CreateInstance(context);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -18,7 +19,8 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Text;
+
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -94,13 +96,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Structure from_buffer(CodeContext/*!*/ context, ArrayModule.array array, int offset = 0) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
+            public _Structure from_buffer(CodeContext/*!*/ context, [NotDynamicNull] IBufferProtocol data, int offset = 0) {
                 _Structure res = (_Structure)CreateInstance(context);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

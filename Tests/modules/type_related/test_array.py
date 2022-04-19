@@ -341,7 +341,7 @@ class ArrayTest(IronPythonTestCase):
         a.frombytes(memoryview(b"foof"))
         self.assertEqual(a, array.array('H', [28518, 26223, 28518, 26223]))
 
-        with self.assertRaisesRegex(BufferError, "^memoryview: underlying buffer is not C-contiguous$"):
+        with self.assertRaisesRegex(BufferError, "^memoryview: underlying buffer is not C[- ]contiguous$"):
             a.frombytes(memoryview(b"f.o.")[::2])
 
     def test_array_fromlist(self):

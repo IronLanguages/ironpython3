@@ -20,7 +20,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(ctypes.test.test_frombuffer.Test('test_from_buffer')))
         suite.addTest(ctypes.test.test_frombuffer.Test('test_from_buffer_copy'))
         suite.addTest(ctypes.test.test_frombuffer.Test('test_from_buffer_copy_with_offset'))
-        suite.addTest(unittest.expectedFailure(ctypes.test.test_frombuffer.Test('test_from_buffer_memoryview')))
+        suite.addTest(ctypes.test.test_frombuffer.Test('test_from_buffer_memoryview'))
         suite.addTest(ctypes.test.test_frombuffer.Test('test_from_buffer_with_offset'))
         return suite
 

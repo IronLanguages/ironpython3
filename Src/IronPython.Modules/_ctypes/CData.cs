@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Modules {
@@ -61,6 +63,23 @@ namespace IronPython.Modules {
             internal void SetAddress(IntPtr address) {
                 Debug.Assert(_memHolder == null);
                 MemHolder = new MemoryHolder(address, NativeType.Size);
+            }
+
+            internal void InitializeFromBuffer(IBufferProtocol data, int offset, int size) {
+                IPythonBuffer buffer;
+                try {
+                    buffer = data.GetBuffer(BufferFlags.Writable);
+                } catch (BufferException ex) {
+                    throw PythonOps.TypeError("{0}", ex.Message);
+                }
+                try {
+                    ValidateArraySizes(buffer.NumBytes(), offset, size);
+                } catch {
+                    buffer.Dispose();
+                    throw;
+                }
+                MemHolder = new MemoryHolder(buffer, offset, size);
+                MemHolder.AddObject("ffffffff", buffer.Object);
             }
 
             internal virtual PythonTuple GetBufferInfo()

@@ -16,8 +16,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
@@ -77,9 +75,15 @@ namespace IronPython.Modules {
                 return MakeArrayType(type, count);
             }
 
-            public _Union from_buffer(CodeContext/*!*/ context, [NotDynamicNull] IBufferProtocol data, int offset = 0) {
+            public _Union from_buffer(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 _Union res = (_Union)CreateInstance(context);
                 res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
+                return res;
+            }
+
+            public _Union from_buffer_copy(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
+                _Union res = (_Union)CreateInstance(context);
+                res.InitializeFromBufferCopy(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

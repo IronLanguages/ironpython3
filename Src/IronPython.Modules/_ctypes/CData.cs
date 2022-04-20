@@ -41,7 +41,10 @@ namespace IronPython.Modules {
         public abstract class CData : IBufferProtocol, IPythonBuffer {
             internal MemoryHolder MemHolder {
                 get => _memHolder ?? throw new InvalidOperationException($"{nameof(CData)} object not fully initialized.");
-                set => _memHolder = value;
+                set {
+                    _memHolder?.Dispose();
+                    _memHolder = value;
+                }
             }
             private MemoryHolder? _memHolder;
 
@@ -61,25 +64,50 @@ namespace IronPython.Modules {
             public virtual object? _objects => MemHolder.Objects;
 
             internal void SetAddress(IntPtr address) {
-                Debug.Assert(_memHolder == null);
+                // TODO: Debug.Assert(_memHolder == null); // fails for structures
                 MemHolder = new MemoryHolder(address, NativeType.Size);
             }
 
-            internal void InitializeFromBuffer(IBufferProtocol data, int offset, int size) {
+            internal void InitializeFromBuffer(object? data, int offset, int size) {
+                var bp = data as IBufferProtocol
+                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
+                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+
                 IPythonBuffer buffer;
                 try {
-                    buffer = data.GetBuffer(BufferFlags.Writable);
+                    buffer = bp.GetBuffer(BufferFlags.Writable);
                 } catch (BufferException ex) {
                     throw PythonOps.TypeError("{0}", ex.Message);
                 }
                 try {
                     ValidateArraySizes(buffer.NumBytes(), offset, size);
+                    MemHolder = new MemoryHolder(buffer, offset, size);
                 } catch {
                     buffer.Dispose();
                     throw;
                 }
-                MemHolder = new MemoryHolder(buffer, offset, size);
                 MemHolder.AddObject("ffffffff", buffer.Object);
+            }
+
+            internal void InitializeFromBufferCopy(object? data, int offset, int size) {
+                var bp = data as IBufferProtocol
+                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
+                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+
+                IPythonBuffer buffer;
+                try {
+                    buffer = bp.GetBuffer(BufferFlags.Simple);
+                } catch (BufferException ex) {
+                    throw PythonOps.TypeError("{0}", ex.Message);
+                }
+                try {
+                    var span = buffer.AsReadOnlySpan();
+                    ValidateArraySizes(span.Length, offset, size);
+                    MemHolder = new MemoryHolder(size);
+                    MemHolder.WriteSpan(0, span.Slice(offset, size));
+                } finally {
+                    buffer.Dispose();
+                }
             }
 
             internal virtual PythonTuple GetBufferInfo()

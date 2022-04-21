@@ -14,7 +14,7 @@ from iptest import IronPythonTestCase, is_cli, is_mono, big, run_test
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"
-    readonly_error_msg = "Object is not writable." if is_cli else "underlying buffer is not writable"
+    readonly_error_msg = "underlying buffer is not writable"
 
     def test_from_array(self):
         arr = array('i', range(16))

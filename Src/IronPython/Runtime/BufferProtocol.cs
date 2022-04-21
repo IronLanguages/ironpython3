@@ -267,6 +267,15 @@ namespace IronPython.Runtime {
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
             => new BufferBytesEnumerator(buffer);
 
+        /// <summary>
+        /// Checks if the data in buffer uses a contiguous memory block. If the buffer uses more than one dimension,
+        /// the data is organized according to the C multi-dimensional array layout.
+        /// </summary>
+        /// <remarks>
+        /// This does not directly correspond to the <see cref="BufferFlags.CContiguous"/> flag.
+        /// Buffers requested with purely such flag are only guaranteed to have contiguous data in the lowest dimension.
+        /// Flag <see cref="BufferFlags.Contig"/>, on the other hand, does guarante a fully C-contiguous data block.
+        /// </remarks>
         public static bool IsCContiguous(this IPythonBuffer buffer) {
             Debug.Assert(buffer.Strides != null || buffer.Offset == 0);
             return buffer.Strides == null;

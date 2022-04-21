@@ -931,7 +931,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.BufferError("memoryview: underlying buffer is not writable");
 
             if (flags.HasFlag(BufferFlags.CContiguous) && !_isCContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not C contiguous");
+                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
 
             if (flags.HasFlag(BufferFlags.FContiguous) && !_isFContig)
                 throw PythonOps.BufferError("memoryview: underlying buffer is not Fortran contiguous");
@@ -944,7 +944,7 @@ namespace IronPython.Runtime {
             //    throw PythonOps.BufferError("memoryview: underlying buffer requires suboffsets");
 
             if (!flags.HasFlag(BufferFlags.Strides) && !_isCContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not C contiguous");
+                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
 
             if (!flags.HasFlag(BufferFlags.ND) && flags.HasFlag(BufferFlags.Format))
                 throw PythonOps.BufferError("memoryview: cannot cast to unsigned bytes if the format flag is present");

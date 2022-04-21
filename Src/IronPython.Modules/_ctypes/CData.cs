@@ -73,12 +73,16 @@ namespace IronPython.Modules {
                     ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
                     // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
 
-                IPythonBuffer buffer;
-                try {
-                    buffer = bp.GetBuffer(BufferFlags.Writable);
-                } catch (BufferException ex) {
-                    throw PythonOps.TypeError("{0}", ex.Message);
+                IPythonBuffer buffer = bp.GetBuffer(BufferFlags.FullRO);
+                if (buffer.IsReadOnly) {
+                    buffer.Dispose();
+                    throw PythonOps.TypeError("underlying buffer is not writable");
                 }
+                if (!buffer.IsCContiguous()) {
+                    buffer.Dispose();
+                    throw PythonOps.TypeError("underlying buffer is not C contiguous");
+                }
+
                 try {
                     ValidateArraySizes(buffer.NumBytes(), offset, size);
                     MemHolder = new MemoryHolder(buffer, offset, size);
@@ -94,20 +98,11 @@ namespace IronPython.Modules {
                     ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
                     // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
 
-                IPythonBuffer buffer;
-                try {
-                    buffer = bp.GetBuffer(BufferFlags.Simple);
-                } catch (BufferException ex) {
-                    throw PythonOps.TypeError("{0}", ex.Message);
-                }
-                try {
-                    var span = buffer.AsReadOnlySpan();
-                    ValidateArraySizes(span.Length, offset, size);
-                    MemHolder = new MemoryHolder(size);
-                    MemHolder.WriteSpan(0, span.Slice(offset, size));
-                } finally {
-                    buffer.Dispose();
-                }
+                using IPythonBuffer buffer = bp.GetBuffer();
+                var span = buffer.AsReadOnlySpan();
+                ValidateArraySizes(span.Length, offset, size);
+                MemHolder = new MemoryHolder(size);
+                MemHolder.WriteSpan(0, span.Slice(offset, size));
             }
 
             internal virtual PythonTuple GetBufferInfo()

@@ -7,10 +7,13 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Modules {
@@ -38,7 +41,10 @@ namespace IronPython.Modules {
         public abstract class CData : IBufferProtocol, IPythonBuffer {
             internal MemoryHolder MemHolder {
                 get => _memHolder ?? throw new InvalidOperationException($"{nameof(CData)} object not fully initialized.");
-                set => _memHolder = value;
+                set {
+                    _memHolder?.Dispose();
+                    _memHolder = value;
+                }
             }
             private MemoryHolder? _memHolder;
 
@@ -55,11 +61,48 @@ namespace IronPython.Modules {
 
             internal INativeType NativeType => (INativeType)DynamicHelpers.GetPythonType(this);
 
-            public virtual object _objects => MemHolder.Objects;
+            public virtual object? _objects => MemHolder.Objects;
 
             internal void SetAddress(IntPtr address) {
-                Debug.Assert(_memHolder == null);
+                // TODO: Debug.Assert(_memHolder == null); // fails for structures
                 MemHolder = new MemoryHolder(address, NativeType.Size);
+            }
+
+            internal void InitializeFromBuffer(object? data, int offset, int size) {
+                var bp = data as IBufferProtocol
+                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
+                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+
+                IPythonBuffer buffer = bp.GetBuffer(BufferFlags.FullRO);
+                if (buffer.IsReadOnly) {
+                    buffer.Dispose();
+                    throw PythonOps.TypeError("underlying buffer is not writable");
+                }
+                if (!buffer.IsCContiguous()) {
+                    buffer.Dispose();
+                    throw PythonOps.TypeError("underlying buffer is not C contiguous");
+                }
+
+                try {
+                    ValidateArraySizes(buffer.NumBytes(), offset, size);
+                    MemHolder = new MemoryHolder(buffer, offset, size);
+                } catch {
+                    buffer.Dispose();
+                    throw;
+                }
+                MemHolder.AddObject("ffffffff", buffer.Object);
+            }
+
+            internal void InitializeFromBufferCopy(object? data, int offset, int size) {
+                var bp = data as IBufferProtocol
+                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
+                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+
+                using IPythonBuffer buffer = bp.GetBuffer();
+                var span = buffer.AsReadOnlySpan();
+                ValidateArraySizes(span.Length, offset, size);
+                MemHolder = new MemoryHolder(size);
+                MemHolder.WriteSpan(0, span.Slice(offset, size));
             }
 
             internal virtual PythonTuple GetBufferInfo()
@@ -70,7 +113,7 @@ namespace IronPython.Modules {
 
             IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
 
-            void IDisposable.Dispose() { }
+            void IDisposable.Dispose() { } // TODO
 
             object IPythonBuffer.Object => this;
 
@@ -79,6 +122,9 @@ namespace IronPython.Modules {
 
             unsafe Span<byte> IPythonBuffer.AsSpan()
                 => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
+
+            unsafe MemoryHandle IPythonBuffer.Pin()
+                => new MemoryHandle(MemHolder.UnsafeAddress.ToPointer());
 
             int IPythonBuffer.Offset => 0;
 

@@ -100,26 +100,15 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Array from_buffer(CodeContext/*!*/ context, ArrayModule.array array, [DefaultParameterValue(0)] int offset) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
+            public _Array from_buffer(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 _Array res = (_Array)CreateInstance(context);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 
-            public _Array from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
-                using var buffer = data.GetBuffer();
-                var span = buffer.AsReadOnlySpan();
-                var size = ((INativeType)this).Size;
-                ValidateArraySizes(span.Length, offset, size);
-                span = span.Slice(offset, size);
-
+            public _Array from_buffer_copy(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 _Array res = (_Array)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(size);
-                res.MemHolder.WriteSpan(0, span);
+                res.InitializeFromBufferCopy(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

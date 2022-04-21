@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -988,6 +989,9 @@ namespace IronPython.Runtime {
             }
         }
 
+        MemoryHandle IPythonBuffer.Pin()
+            => _buffer?.Pin() ?? throw new ObjectDisposedException(nameof(MemoryView));
+
         int IPythonBuffer.Offset
             => _isCContig ? 0 : _offset;
 
@@ -1010,7 +1014,7 @@ namespace IronPython.Runtime {
             => !_isCContig ? _strides : null;
 
         IReadOnlyList<int>? IPythonBuffer.SubOffsets
-            => null; // not supported yet
+            => null; // TODO: suboffsets not supported yet
 
         #endregion
     }

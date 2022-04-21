@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
@@ -378,6 +379,8 @@ namespace IronPython.Runtime {
         public ReadOnlySpan<byte> AsReadOnlySpan() => _rom.Span;
 
         public Span<byte> AsSpan() => _memory.HasValue ? _memory.Value.Span : throw new InvalidOperationException("ReadOnlyMemory is not writable");
+
+        public MemoryHandle Pin() => _rom.Pin();
 
         public int Offset => 0;
 

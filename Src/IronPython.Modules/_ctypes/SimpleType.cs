@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -131,26 +132,15 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public SimpleCData from_buffer(ArrayModule.array array, int offset = 0) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
-                SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+            public SimpleCData from_buffer(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
+                SimpleCData res = (SimpleCData)CreateInstance(context);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 
-            public SimpleCData from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
-                using var buffer = data.GetBuffer();
-                var span = buffer.AsReadOnlySpan();
-                var size = ((INativeType)this).Size;
-                ValidateArraySizes(span.Length, offset, size);
-                span = span.Slice(offset, size);
-
+            public SimpleCData from_buffer_copy(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 SimpleCData res = (SimpleCData)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(size);
-                res.MemHolder.WriteSpan(0, span);
+                res.InitializeFromBufferCopy(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

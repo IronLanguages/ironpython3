@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -18,7 +19,6 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Text;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -94,26 +94,15 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public _Structure from_buffer(CodeContext/*!*/ context, ArrayModule.array array, int offset = 0) {
-                ValidateArraySizes(array, offset, ((INativeType)this).Size);
-
+            public _Structure from_buffer(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 _Structure res = (_Structure)CreateInstance(context);
-                IntPtr addr = array.GetArrayAddress();
-                res.MemHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
-                res.MemHolder.AddObject("ffffffff", array);
+                res.InitializeFromBuffer(data, offset, ((INativeType)this).Size);
                 return res;
             }
 
-            public _Structure from_buffer_copy(CodeContext/*!*/ context, [NotNull] IBufferProtocol data, int offset = 0) {
-                using var buffer = data.GetBuffer();
-                var span = buffer.AsReadOnlySpan();
-                var size = ((INativeType)this).Size;
-                ValidateArraySizes(span.Length, offset, size);
-                span = span.Slice(offset, size);
-
+            public _Structure from_buffer_copy(CodeContext/*!*/ context, object/*?*/ data, int offset = 0) {
                 _Structure res = (_Structure)CreateInstance(context);
-                res.MemHolder = new MemoryHolder(size);
-                res.MemHolder.WriteSpan(0, span);
+                res.InitializeFromBufferCopy(data, offset, ((INativeType)this).Size);
                 return res;
             }
 

@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -427,6 +428,8 @@ namespace IronPython.Runtime {
             public ReadOnlySpan<byte> AsReadOnlySpan() => _arrayData.AsByteSpan();
 
             public Span<byte> AsSpan() => _arrayData.AsByteSpan();
+
+            public MemoryHandle Pin() => _arrayData._items.AsMemory().Pin();
 
             public int Offset => 0;
 

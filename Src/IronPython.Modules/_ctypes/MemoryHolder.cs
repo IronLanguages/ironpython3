@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_CTYPES
 #pragma warning disable SYSLIB0004 // The Constrained Execution Region (CER) feature is not supported in .NET 5.0.
 
 using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -19,17 +23,22 @@ namespace IronPython.Modules {
     /// A wrapper around allocated memory to ensure it gets released and isn't accessed
     /// when it could be finalized.
     /// </summary>
-    internal sealed class MemoryHolder : CriticalFinalizerObject {
+    internal sealed class MemoryHolder : CriticalFinalizerObject, IDisposable {
         private readonly IntPtr _data;
         private readonly bool _ownsData;
         private readonly int _size;
-        private PythonDictionary _objects;
-#pragma warning disable 414 // TODO: unused field?
-        private readonly MemoryHolder _parent;
-#pragma warning restore 414
+        private readonly IPythonBuffer? _buffer;
+        private readonly MemoryHandle _handle;
+        private bool _disposed;
+        private PythonDictionary? _objects;
+#pragma warning disable IDE0052 // Remove unread private members
+        // Field not accessed but keeps a reference to the parent holder preventing it from being garbage-collected.
+        private readonly MemoryHolder? _parent;
+#pragma warning restore IDE0052 // Remove unread private members
 
         /// <summary>
         /// Creates a new MemoryHolder and allocates a buffer of the specified size.
+        /// The buffer will be released on a call to <see cref="Dispose"/> or by the finalizer.
         /// </summary>
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public MemoryHolder(int size) {
@@ -49,6 +58,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Creates a new MemoryHolder at the specified address which is not tracked
         /// by us and we will never free.
+        /// Therefore no need to call <see cref="Dispose"/>.
         /// </summary>
         public MemoryHolder(IntPtr data, int size) {
             GC.SuppressFinalize(this);
@@ -59,6 +69,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Creates a new MemoryHolder at the specified address which will keep alive the 
         /// parent memory holder.
+        /// TODO: Dispose() usage? Reference-count the parent?
         /// </summary>
         public MemoryHolder(IntPtr data, int size, MemoryHolder parent) {
             GC.SuppressFinalize(this);
@@ -69,39 +80,43 @@ namespace IronPython.Modules {
         }
 
         /// <summary>
-        /// Gets the address of the held memory.  The caller should ensure the MemoryHolder
-        /// is always alive as long as the address will continue to be accessed.
+        /// Creates a new MemoryHolder from a Python buffer
+        /// that will be disposed on a call to <see cref="Dispose"/> or by the finalizer.
         /// </summary>
-        public IntPtr UnsafeAddress {
-            get {
-                return _data;
-            }
+        public MemoryHolder(IPythonBuffer buffer, int offset, int size) {
+            if (buffer.IsReadOnly) throw new ArgumentException("Buffer must be writable.");
+            if (!buffer.IsCContiguous()) throw new ArgumentException("Buffer must be c-contiguous.");
+            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size), size, $"Non-negative number required.");
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Non-negative number required.");
+            if (size > buffer.NumBytes() - offset) throw new ArgumentException($"Requested memory block exceeds buffer boundaries.");
+
+            _buffer = buffer;
+            _handle = buffer.Pin();
+            unsafe { _data = (IntPtr)_handle.Pointer + offset; }
+            _size = size;
         }
 
-        public int Size {
-            get {
-                return _size;
-            }
-        }
+        /// <summary>
+        /// Gets the address of the held memory.  The caller should ensure the MemoryHolder
+        /// is always alive and not disposed as long as the address will continue to be accessed.
+        /// </summary>
+        public IntPtr UnsafeAddress => !_disposed ? _data : IntPtr.Zero;
+
+        public int Size => _size;
 
         /// <summary>
         /// Gets a list of objects which need to be kept alive for this MemoryHolder to be 
         /// remain valid.
         /// </summary>
-        public PythonDictionary Objects {
-            get {
-                return _objects;
-            }
-            set {
-                _objects = value;
-            }
+        public PythonDictionary? Objects {
+            get => _objects;
+            set => _objects = value;
         }
 
         internal PythonDictionary EnsureObjects() {
-            if (_objects == null) {
+            if (_objects is null) {
                 Interlocked.CompareExchange(ref _objects, new PythonDictionary(), null);
             }
-
             return _objects;
         }
 
@@ -178,7 +193,7 @@ namespace IronPython.Modules {
             return new MemoryHolder(res, IntPtr.Size, this);
         }
 
-        internal Bytes ReadBytes(int offset) {
+        internal Bytes? ReadBytes(int offset) {
             try {
                 return ReadBytes(_data, offset);
             } finally {
@@ -186,7 +201,7 @@ namespace IronPython.Modules {
             }
         }
 
-        internal string ReadUnicodeString(int offset) {
+        internal string? ReadUnicodeString(int offset) {
             try {
                 return Marshal.PtrToStringUni(_data.Add(offset));
             } finally {
@@ -214,8 +229,8 @@ namespace IronPython.Modules {
             return Bytes.Make(buffer);
         }
 
-        internal static Bytes ReadBytes(IntPtr addr, int offset) {
-            if (addr == IntPtr.Zero && offset == 0) return null;
+        internal static Bytes? ReadBytes(IntPtr addr, int offset) {
+            if (addr == IntPtr.Zero) return null;
 
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
@@ -305,10 +320,30 @@ namespace IronPython.Modules {
             GC.KeepAlive(this);
         }
 
+        public void Dispose() {
+            if (!_disposed) {
+                _disposed = true;
+
+                if (_ownsData) {
+                    Marshal.FreeHGlobal(_data);
+                }
+                _handle.Dispose();
+                _buffer?.Dispose();
+
+                GC.SuppressFinalize(this);
+            }
+        }
+
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         ~MemoryHolder() {
-            if (_ownsData) {
-                Marshal.FreeHGlobal(_data);
+            if (!_disposed) {
+                _disposed = true;
+
+                if (_ownsData) {
+                    Marshal.FreeHGlobal(_data);
+                }
+                try { _handle.Dispose(); } catch { /*ignore*/ }
+                try { _buffer?.Dispose(); } catch { /*ignore*/ }
             }
         }
     }

@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -69,14 +70,14 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// An N-dimensional array that has a complex structure, where higher dimensions
-        /// may contains pointers to memory blocks holding lower dimenstions.
+        /// may contains pointers to memory blocks holding lower dimensions.
         /// </summary>
         Indirect      = 0x0100 | Strides,
 
         #region Flag combinations for common requests
 
         /// <summary>
-        /// Unformmatted (i.e. byte-oriented) read-only blob with no structure.
+        /// Unformatted (i.e. byte-oriented) read-only blob with no structure.
         /// </summary>
         Simple    = 0,
 
@@ -132,17 +133,27 @@ namespace IronPython.Runtime {
     /// Provides low-level read-write access to byte data of the underlying object.
     /// </summary>
     /// <remarks>
-    /// 1. The buffer should be disposed after usage. Failing to dispose a buffer
+    /// <list type="number">
+    /// <item>
+    /// The buffer should be disposed after usage. Failing to dispose a buffer
     /// instance will render the underlying object permanently locked in an export state.
-    ///
-    /// 2. <see cref="IDisposable.Dispose()"/> can be called multiple times (subsequent cals being no-op).
-    /// In multi-thread use scanarios, the client has to ensure that the call to Dispose()
+    /// </item>
+    /// <item>
+    /// <see cref="IDisposable.Dispose()"/> can be called multiple times (subsequent calls being no-op).
+    /// In multi-thread use scenarios, the client has to ensure that the call to Dispose()
     /// happens only after all calls to other methods are terminated.
-    ///
-    /// 3. The buffer provides low-level byte acces to the exported data
-    /// that may not be synchronized for multiper read-write threads,
+    /// </item>
+    /// <item>
+    /// The buffer provides low-level byte access to the exported data
+    /// that may not be synchronized for multiple read-write threads
     /// even if the exporter itself is a synchronized object.
     /// The client can ensure proper synchronization by locking on <see cref="IPythonBuffer.Object"/>.
+    /// </item>
+    /// <item>
+    /// The buffer can be pinned (fixed) by obtaining a memory handle by calling method <see cref="Pin"/>.
+    /// The client should make sure that all obtained memory handles are disposed before the buffer itself is disposed.
+    /// </item>
+    /// </list>
     /// </remarks>
     public interface IPythonBuffer : IDisposable {
         /// <summary>
@@ -170,6 +181,17 @@ namespace IronPython.Runtime {
         /// Thrown if accessed on a read-only buffer (<see cref="IsReadOnly"/> is true).
         /// </exception>
         Span<byte> AsSpan();
+
+        /// <summary>
+        /// Creates a handle for the buffer memory exposed through <see cref="AsReadOnlySpan"/>.
+        /// If the buffer is backed by managed memory, the garbage collector will not move the memory
+        /// until the returned handle is disposed. This enables you to retrieve and use the buffers's address.
+        /// </summary>
+        /// <returns>A handle for the <see cref="IPythonBuffer"/> object.</returns>
+        /// <exception cref="BufferException">
+        /// Buffers backed by memory on the stack cannot be pinned.
+        /// </exception>
+        MemoryHandle Pin();
 
         /// <summary>
         /// Offset (in bytes) of the first logical element in the buffer with respect to the beginning of
@@ -245,6 +267,15 @@ namespace IronPython.Runtime {
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
             => new BufferBytesEnumerator(buffer);
 
+        /// <summary>
+        /// Checks if the data in buffer uses a contiguous memory block. If the buffer uses more than one dimension,
+        /// the data is organized according to the C multi-dimensional array layout.
+        /// </summary>
+        /// <remarks>
+        /// This does not directly correspond to the <see cref="BufferFlags.CContiguous"/> flag.
+        /// Buffers requested with purely such flag are only guaranteed to have contiguous data in the lowest dimension.
+        /// Flag <see cref="BufferFlags.Contig"/>, on the other hand, does guarante a fully C-contiguous data block.
+        /// </remarks>
         public static bool IsCContiguous(this IPythonBuffer buffer) {
             Debug.Assert(buffer.Strides != null || buffer.Offset == 0);
             return buffer.Strides == null;

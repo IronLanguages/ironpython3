@@ -24,12 +24,12 @@ namespace IronPython.Runtime.Operations {
     /// InstanceOps contains methods that get added to CLS types depending on what
     /// methods and constructors they define. These have not been added directly to
     /// PythonType since they need to be added conditionally.
-    /// 
+    ///
     /// Possibilities include:
-    /// 
+    ///
     ///     __new__, one of 3 __new__ sets can be added:
     ///         DefaultNew - This is the __new__ used for a PythonType (list, dict, object, etc...) that
-    ///             has only 1 default public constructor that takes no parameters.  These types are 
+    ///             has only 1 default public constructor that takes no parameters.  These types are
     ///             mutable types, and __new__ returns a new instance of the type, and __init__ can be used
     ///             to re-initialize the types.  This __new__ allows an unlimited number of arguments to
     ///             be passed if a non-default __init__ is also defined.
@@ -37,22 +37,22 @@ namespace IronPython.Runtime.Operations {
     ///         NonDefaultNew - This is used when a type has more than one constructor, or only has one
     ///             that takes more than zero parameters.  This __new__ does not allow an arbitrary # of
     ///             extra arguments.
-    /// 
+    ///
     ///         DefaultNewCls - This is the default new used for CLS types that have only a single ctor
-    ///             w/ an arbitray number of arguments.  This constructor allows setting of properties
+    ///             w/ an arbitrary number of arguments.  This constructor allows setting of properties
     ///             based upon an extra set of kw-args, e.g.: System.Windows.Forms.Button(Text='abc').  It
     ///             is only used on non-Python types.
-    /// 
+    ///
     ///     __init__:
     ///         For types that do not define __init__ we have an __init__ function that takes an
     ///         unlimited number of arguments and does nothing.  All types share the same reference
     ///         to 1 instance of this.
-    /// 
+    ///
     ///     next: Defined when a type is an enumerator to expose the Python iter protocol.
-    /// 
-    /// 
+    ///
+    ///
     ///     repr: Added for types that override ToString
-    /// 
+    ///
     ///     get: added for types that implement IDescriptor
     /// </summary>
     public static class InstanceOps {
@@ -75,7 +75,7 @@ namespace IronPython.Runtime.Operations {
                 return _Init;
             }
         }
-        
+
 
         internal static BuiltinFunction New {
             get {
@@ -129,7 +129,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object OverloadedNewKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
-            
+
             return overloads\u00F8.Call(context, null, null, ArrayUtils.EmptyObjects, kwargs\u00F8);
         }
 
@@ -213,7 +213,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static PythonList DynamicDir(CodeContext/*!*/ context, IDynamicMetaObjectProvider self) {
             PythonList res = new PythonList(self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
-            
+
             // add in the non-dynamic members from the dynamic objects base class.
             Type t = self.GetType();
             while (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t)) {
@@ -553,7 +553,7 @@ namespace IronPython.Runtime.Operations {
             where T : IComparable {
             return x.CompareTo(y) <= 0;
         }
-        
+
         [return: MaybeNotImplemented]
         public static object ComparableEquality<T>([NotNull]T x, object y)
             where T : IComparable {
@@ -653,7 +653,7 @@ namespace IronPython.Runtime.Operations {
             // operator direction is reversed
             return ScriptingRuntimeHelpers.BooleanToObject(x.CompareTo(y) >= 0);
         }
-        
+
         #endregion
 
         /// <summary>
@@ -672,7 +672,7 @@ namespace IronPython.Runtime.Operations {
 
         [PropertyMethod, StaticExtensionMethod]
         public static PythonList/*!*/ Get__all__<T>(CodeContext/*!*/ context) {
-            Debug.Assert(typeof(T).IsSealed && typeof(T).IsAbstract, "__all__ should only be produced for static members"); 
+            Debug.Assert(typeof(T).IsSealed && typeof(T).IsAbstract, "__all__ should only be produced for static members");
 
             PythonType pt = DynamicHelpers.GetPythonTypeFromType(typeof(T));
 
@@ -801,7 +801,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(res);
 
             return PythonTuple.MakeTuple(
-                deserializeNew,                 // function to call, clr.DeserializeNew 
+                deserializeNew,                 // function to call, clr.DeserializeNew
                 data,                           // data to pass to it - our type & the raw data from the .NET serializer
                 null                            // state, unused
             );

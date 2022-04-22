@@ -28,11 +28,15 @@ class FileTest(IronPythonTestCase):
         # universal newline mode.
         self.write_modes = (("binary", "wb"), ("text", "w"))
 
+    def tearDown(self):
+        self.delete_files(self.temp_file)
+        return super().tearDown()
+
     # This module tests operations on the builtin file object. It is not yet complete, the tests cover read(),
     # read(size), readline() and write() for binary, text and universal newline modes.
     def test_sanity(self):
-        onlyread_tmp = "onlyread_%d.tmp" % os.getpid()
-        onlywrite_tmp = "onlywrite_%d.tmp" % os.getpid()
+        onlyread_tmp = os.path.join(self.temporary_dir, "onlyread_%d.tmp" % os.getpid())
+        onlywrite_tmp = os.path.join(self.temporary_dir, "onlywrite_%d.tmp" % os.getpid())
         for i in range(5):
             ### general file robustness tests
             f = open(onlyread_tmp, "w")
@@ -499,7 +503,7 @@ class FileTest(IronPythonTestCase):
 
     def test_sharing(self):
         modes = ['w', 'w+', 'a+', 'r', 'w']
-        fname = 'tempfile_%d.txt' % os.getpid()
+        fname = self.temp_file
         for xx in modes:
             for yy in modes:
                 x = open(fname, xx)
@@ -511,7 +515,7 @@ class FileTest(IronPythonTestCase):
         os.unlink(fname)
 
     def test_overwrite_readonly(self):
-        filename = "tmp_%d.txt" % os.getpid()
+        filename = self.temp_file
         f = open(filename, "w+")
         f.write("I am read-only")
         f.close()
@@ -531,7 +535,7 @@ class FileTest(IronPythonTestCase):
     # file newline handling test
     @unittest.skipIf(is_posix, "this test doesn't really make sense for posix since b doesn't change the behavior")
     def test_newline(self):
-        fname = "testfile_%d.tmp" % os.getpid()
+        fname = self.temp_file
 
         def test_newline(norm, mode):
             f = open(fname, mode)
@@ -560,7 +564,7 @@ class FileTest(IronPythonTestCase):
 
     def test_truncate(self):
         # truncate()
-        fname = 'abc.txt'
+        fname = self.temp_file
         with open(fname, 'w') as a:
             a.write('hello world\n')
             a.truncate()
@@ -596,29 +600,26 @@ class FileTest(IronPythonTestCase):
 
     def test_modes(self):
         """test various strange mode combinations and error reporting"""
-        fname = 'test_file'
-        try:
-            with open(fname, 'w') as x:
-                self.assertEqual(x.mode, 'w')
-            # don't allow empty modes
-            self.assertRaisesMessage(ValueError, "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
+        fname = self.temp_file
+        with open(fname, 'w') as x:
+            self.assertEqual(x.mode, 'w')
+        # don't allow empty modes
+        self.assertRaisesMessage(ValueError, "Must have exactly one of create/read/write/append mode and at most one plus", open, 'abc', '')
 
-            # mode must start with valid value
-            self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
+        # mode must start with valid value
+        self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
 
-            # allow anything w/ U but r and w
-            err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if is_cli or sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
-            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw')
-            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua')
-            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw+')
-            self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua+')
+        # allow anything w/ U but r and w
+        err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if is_cli or sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
+        self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw')
+        self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua')
+        self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw+')
+        self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua+')
 
-            # check invalid modes
-            self.assertRaises(ValueError, open, fname, 'pU')
-            self.assertRaises(ValueError, open, fname, 'pU+')
-            self.assertRaises(ValueError, open, fname, 'rFOOBAR')
-        finally:
-            os.unlink(fname)
+        # check invalid modes
+        self.assertRaises(ValueError, open, fname, 'pU')
+        self.assertRaises(ValueError, open, fname, 'pU+')
+        self.assertRaises(ValueError, open, fname, 'rFOOBAR')
 
     def test_cp16623(self):
         '''
@@ -632,7 +633,7 @@ class FileTest(IronPythonTestCase):
 
         expected_lines = ["a", "bbb" * 100, "cc"]
         total_threads = 50
-        file_name = os.path.join(self.temporary_dir, "cp16623.txt")
+        file_name = self.temp_file
         with open(file_name, "w") as f:
 
             def write_stuff():
@@ -666,22 +667,18 @@ class FileTest(IronPythonTestCase):
         #    self.assertTrue(line in expected_lines, line)
 
     def test_write_memoryview(self):
-        try:
-            with open('foo', 'wb+') as foo:
-                b = memoryview(b'hello world')[6:]
-                foo.write(b)
-            with open('foo', 'r') as foo:
-                self.assertEqual(foo.readlines(), ['world'])
+        with open(self.temp_file, 'wb+') as foo:
+            b = memoryview(b'hello world')[6:]
+            foo.write(b)
+        with open(self.temp_file, 'r') as foo:
+            self.assertEqual(foo.readlines(), ['world'])
 
-            with open('foo', 'w+b') as foo:
-                b = memoryview(b'hello world')[6:]
-                foo.write(b)
+        with open(self.temp_file, 'w+b') as foo:
+            b = memoryview(b'hello world')[6:]
+            foo.write(b)
 
-            with open('foo', 'r') as foo:
-                self.assertEqual(foo.readlines(), ['world'])
-
-        finally:
-            self.delete_files("foo")
+        with open(self.temp_file, 'r') as foo:
+            self.assertEqual(foo.readlines(), ['world'])
 
     def test_errors(self):
         with self.assertRaises(OSError) as cm:
@@ -693,7 +690,7 @@ class FileTest(IronPythonTestCase):
         self.assertEqual(cm.exception.errno, (36 if is_posix else 22) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else 2)
 
     def test_write_bytes(self):
-        fname = "temp_ip_%d" % os.getpid()
+        fname = self.temp_file
         f = open(fname, "wb+")
         try:
             f.write(b"Hello\n")
@@ -706,13 +703,11 @@ class FileTest(IronPythonTestCase):
             os.unlink(fname)
 
     def test_kw_args(self):
-        fname = 'some_test_file_%d.txt' % os.getpid()
-        open(file=fname, mode ='w').close()
-        os.unlink(fname)
+        open(file=self.temp_file, mode ='w').close()
 
     def test_buffering_kwparam(self):
         #--Positive
-        fname = 'some_test_file_%d.txt' % os.getpid()
+        fname = self.temp_file
         for x in [-2147483648, -1, 1, 2, 1024, 2147483646, 2147483647]:
             f = open(file=fname, mode='w', buffering=x)
             f.close()

@@ -109,11 +109,23 @@ namespace IronPython.Modules {
                 => PythonTuple.MakeTuple(NativeType.TypeFormat, 0, PythonTuple.EMPTY);
 
 
-            #region IBufferProtocol Members
+            #region IBufferProtocol
 
-            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) => this;
+            private int _numExports; // negative value means object disposed
 
-            void IDisposable.Dispose() { } // TODO
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+                if (_numExports < 0) throw new ObjectDisposedException(GetType().Name);
+                _numExports++;
+                return this;
+            }
+
+            void IDisposable.Dispose() {
+                if (_numExports == 0) {
+                    _memHolder?.Dispose();
+                    _memHolder = null;
+                }
+               _numExports--;
+            }
 
             object IPythonBuffer.Object => this;
 

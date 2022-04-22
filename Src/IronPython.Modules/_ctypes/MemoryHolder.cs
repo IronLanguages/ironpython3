@@ -29,7 +29,9 @@ namespace IronPython.Modules {
         private readonly int _size;
         private readonly IPythonBuffer? _buffer;
         private readonly MemoryHandle _handle;
+        private bool _disposeRequested;
         private bool _disposed;
+        private int _numChildren;
         private PythonDictionary? _objects;
 #pragma warning disable IDE0052 // Remove unread private members
         // Field not accessed but keeps a reference to the parent holder preventing it from being garbage-collected.
@@ -69,12 +71,12 @@ namespace IronPython.Modules {
         /// <summary>
         /// Creates a new MemoryHolder at the specified address which will keep alive the 
         /// parent memory holder.
-        /// TODO: Dispose() usage? Reference-count the parent?
         /// </summary>
         public MemoryHolder(IntPtr data, int size, MemoryHolder parent) {
             GC.SuppressFinalize(this);
             _data = data;
             _parent = parent;
+            parent._numChildren++;
             _objects = parent._objects;
             _size = size;
         }
@@ -320,8 +322,15 @@ namespace IronPython.Modules {
             GC.KeepAlive(this);
         }
 
+        private void ReleaseChild() {
+            Debug.Assert(_numChildren >= 0);
+            _numChildren--;
+            if (_disposeRequested) Dispose();
+        }
+
         public void Dispose() {
-            if (!_disposed) {
+            _disposeRequested = true;
+            if (!_disposed && _numChildren == 0) {
                 _disposed = true;
 
                 if (_ownsData) {
@@ -329,6 +338,7 @@ namespace IronPython.Modules {
                 }
                 _handle.Dispose();
                 _buffer?.Dispose();
+                _parent?.ReleaseChild();
 
                 GC.SuppressFinalize(this);
             }
@@ -344,6 +354,7 @@ namespace IronPython.Modules {
                 }
                 try { _handle.Dispose(); } catch { /*ignore*/ }
                 try { _buffer?.Dispose(); } catch { /*ignore*/ }
+                try { _parent?.ReleaseChild(); } catch { /*ignore*/ }
             }
         }
     }

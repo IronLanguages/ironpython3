@@ -29,14 +29,11 @@ namespace IronPython.Modules {
         private readonly int _size;
         private readonly IPythonBuffer? _buffer;
         private readonly MemoryHandle _handle;
+        private readonly MemoryHolder? _parent;
         private bool _disposeRequested;
         private bool _disposed;
         private int _numChildren;
         private PythonDictionary? _objects;
-#pragma warning disable IDE0052 // Remove unread private members
-        // Field not accessed but keeps a reference to the parent holder preventing it from being garbage-collected.
-        private readonly MemoryHolder? _parent;
-#pragma warning restore IDE0052 // Remove unread private members
 
         /// <summary>
         /// Creates a new MemoryHolder and allocates a buffer of the specified size.
@@ -88,9 +85,14 @@ namespace IronPython.Modules {
         public MemoryHolder(IPythonBuffer buffer, int offset, int size) {
             if (buffer.IsReadOnly) throw new ArgumentException("Buffer must be writable.");
             if (!buffer.IsCContiguous()) throw new ArgumentException("Buffer must be c-contiguous.");
-            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size), size, $"Non-negative number required.");
-            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Non-negative number required.");
-            if (size > buffer.NumBytes() - offset) throw new ArgumentException($"Requested memory block exceeds buffer boundaries.");
+            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size), size, "Non-negative number required.");
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), offset, "Non-negative number required.");
+
+            int bufSize = buffer.NumBytes();
+            ReadOnlySpan<byte> memblock = buffer.AsSpan();
+            if (memblock.Length != bufSize) new ArgumentException("Invalid buffer.");
+            if (size > bufSize - offset) throw new ArgumentException("Requested memory block exceeds buffer boundaries.");
+
 
             _buffer = buffer;
             _handle = buffer.Pin();

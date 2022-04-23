@@ -10,6 +10,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -38,7 +39,7 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData : IBufferProtocol, IPythonBuffer {
+        public abstract class CData : IBufferProtocol, IDisposable {
             internal MemoryHolder MemHolder {
                 get => _memHolder ?? throw new InvalidOperationException($"{nameof(CData)} object not fully initialized.");
                 set {
@@ -47,6 +48,7 @@ namespace IronPython.Modules {
                 }
             }
             private MemoryHolder? _memHolder;
+            private bool _disposed;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
             protected CData() { }
@@ -108,37 +110,37 @@ namespace IronPython.Modules {
             internal virtual PythonTuple GetBufferInfo()
                 => PythonTuple.MakeTuple(NativeType.TypeFormat, 0, PythonTuple.EMPTY);
 
+            [PythonHidden]
+            public void Dispose() {
+                if (!_disposed) {
+                    _disposed = true;
+                    if (_numExports == 0) {
+                        MemoryHolder? holder = Interlocked.Exchange(ref _memHolder, null);
+                        holder?.Dispose();
+                    }
+                }
+            }
 
             #region IBufferProtocol
 
-            private int _numExports; // negative value means object disposed
+            private int _numExports;
 
             IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
-                if (_numExports < 0) throw new ObjectDisposedException(GetType().Name);
-                _numExports++;
-                return this;
+                if (_disposed) throw new ObjectDisposedException(GetType().Name);
+                _ = MemHolder; // check if fully initialized
+                Interlocked.Increment(ref _numExports);
+                return new CDataView(this);
             }
 
-            void IDisposable.Dispose() {
-                if (_numExports == 0) {
-                    _memHolder?.Dispose();
-                    _memHolder = null;
+            // May be executed concurremtly with Dispose(), GetBuffer(), or another ReleaseBuffer()
+            private void ReleaseBuffer() {
+                Debug.Assert(_numExports > 0);
+                int cnt = Interlocked.Decrement(ref _numExports);
+                if (cnt == 0 && _disposed) {
+                    MemoryHolder? holder = Interlocked.Exchange(ref _memHolder, null);
+                    holder?.Dispose();
                 }
-               _numExports--;
             }
-
-            object IPythonBuffer.Object => this;
-
-            unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
-                => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
-
-            unsafe Span<byte> IPythonBuffer.AsSpan()
-                => new Span<byte>(MemHolder.UnsafeAddress.ToPointer(), MemHolder.Size);
-
-            unsafe MemoryHandle IPythonBuffer.Pin()
-                => new MemoryHandle(MemHolder.UnsafeAddress.ToPointer());
-
-            int IPythonBuffer.Offset => 0;
 
             [PythonHidden]
             public virtual int ItemCount {
@@ -153,21 +155,53 @@ namespace IronPython.Modules {
                 }
             }
 
-            string IPythonBuffer.Format => NativeType.TypeFormat;
-
             [PythonHidden]
             public virtual int ItemSize => NativeType.Size;
-
-            int IPythonBuffer.NumOfDims => Shape?.Count ?? (ItemCount > 1 ? 1 : 0);
-
-            bool IPythonBuffer.IsReadOnly => false;
 
             [PythonHidden]
             public virtual IReadOnlyList<int>? Shape => null;
 
-            IReadOnlyList<int>? IPythonBuffer.Strides => null;
 
-            IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
+            private sealed class CDataView : IPythonBuffer {
+                private CData? _cdata;
+                private CData CData => _cdata ?? throw new ObjectDisposedException(nameof(CDataView));
+
+                internal CDataView(CData cdata) => _cdata = cdata;
+
+                public void Dispose() {
+                    CData? cdata = Interlocked.Exchange(ref _cdata, null);
+                    cdata?.ReleaseBuffer();
+                }
+
+                public object Object => CData;
+
+                unsafe ReadOnlySpan<byte> IPythonBuffer.AsReadOnlySpan()
+                    => new Span<byte>(CData.MemHolder.UnsafeAddress.ToPointer(), CData.MemHolder.Size);
+
+                unsafe Span<byte> IPythonBuffer.AsSpan()
+                    => new Span<byte>(CData.MemHolder.UnsafeAddress.ToPointer(), CData.MemHolder.Size);
+
+                unsafe MemoryHandle IPythonBuffer.Pin()
+                    => new MemoryHandle(CData.MemHolder.UnsafeAddress.ToPointer());
+
+                public int Offset => 0;
+
+                public int ItemCount => CData.ItemCount;
+
+                public string Format => CData.NativeType.TypeFormat;
+
+                public int ItemSize => CData.ItemSize;
+
+                public int NumOfDims => Shape?.Count ?? (ItemCount > 1 ? 1 : 0);
+
+                public bool IsReadOnly => false;
+
+                public IReadOnlyList<int>? Shape => CData.Shape;
+
+                IReadOnlyList<int>? IPythonBuffer.Strides => null;
+
+                IReadOnlyList<int>? IPythonBuffer.SubOffsets => null;
+            }
 
             #endregion
         }

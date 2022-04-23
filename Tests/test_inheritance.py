@@ -1391,4 +1391,18 @@ class InheritanceTest(IronPythonTestCase):
             self.assertEqual(a.GetFoo(), 42)
             self.assertEqual(a.GetBar(), 23)
 
+    @skipUnlessIronPython()
+    def test_partial_property_override(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1375
+        from IronPythonTest import PartialPropertyOverrideClass
+        c = PartialPropertyOverrideClass()
+
+        # only the setter is overridden on Height
+        c.Height = 4
+        self.assertEqual(c.Height, 8)
+
+        # only the getter is overridden on Width
+        c.Width = 4
+        self.assertEqual(c.Width, 8)
+
 run_test(__name__)

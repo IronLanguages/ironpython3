@@ -19,8 +19,6 @@ using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("unicodedata", typeof(IronPython.Modules.unicodedata))]
 namespace IronPython.Modules {
     public static class unicodedata {

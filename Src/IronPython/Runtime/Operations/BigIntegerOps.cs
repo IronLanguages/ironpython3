@@ -20,8 +20,6 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime.Operations {
 
     public static partial class BigIntegerOps {

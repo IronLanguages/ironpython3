@@ -25,8 +25,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("builtins", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
     [Documentation("")]  // Documentation suppresses XML Doc on startup.

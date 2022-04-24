@@ -21,8 +21,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [PythonType("range")]
     [DontMapIEnumerableToContains]

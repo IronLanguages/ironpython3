@@ -17,8 +17,6 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
     public sealed class MemoryView : ICodeFormattable, IWeakReferenceable, IBufferProtocol, IPythonBuffer {

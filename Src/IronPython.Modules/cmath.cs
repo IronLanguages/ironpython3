@@ -12,8 +12,6 @@ using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("cmath", typeof(IronPython.Modules.ComplexMath))]
 namespace IronPython.Modules {
     public class ComplexMath {

@@ -25,7 +25,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
-using NotNull = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {

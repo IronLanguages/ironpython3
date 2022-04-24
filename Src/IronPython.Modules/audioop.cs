@@ -10,8 +10,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("audioop", typeof(IronPython.Modules.PythonAudioOp))]
 namespace IronPython.Modules {
     public static class PythonAudioOp {

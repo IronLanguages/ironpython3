@@ -28,7 +28,6 @@ using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>

@@ -14,8 +14,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [PythonHidden, PythonType("types.SimpleNamespace")]
     public class SimpleNamespace {

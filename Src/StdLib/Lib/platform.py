@@ -1126,18 +1126,10 @@ _sys_version_parser = re.compile(
     r'\[([^\]]+)\]?', re.ASCII)  # "[compiler]"
 
 _ironpython_sys_version_parser = re.compile(
-    r'IronPython\s*'
-    r'([\d\.]+)'
-    r'(?: \(([\d\.]+)\))?'
-    r' on (.NET [\d\.]+)', re.ASCII)
-
-# IronPython covering 2.6 and 2.7
-_ironpython26_sys_version_parser = re.compile(
-    r'([\d.]+)\s*'
-    r'\(IronPython\s*'
-    r'[\d.]+\s*'
-    r'\(([\d.]+)\) on ([\w.]+ [\d.]+(?: \(\d+-bit\))?)\)'
-)
+    r'([\w.+]+)\s*'  # "version<space>"
+    r'(?: DEBUG)?\s*' # DEBUG - IronPython DEBUG builds only
+    r'\(([^,]+)\)\s*'  # "(fileversion)<space>"
+    r'\[([^\]]+)\]?')  # "[compiler]"
 
 _pypy_sys_version_parser = re.compile(
     r'([\w.+]+)\s*'
@@ -1176,22 +1168,19 @@ def _sys_version(sys_version=None):
         return result
 
     # Parse it
-    if 'IronPython' in sys_version:
+    if sys.implementation.name == "ironpython":
         # IronPython
         name = 'IronPython'
-        if sys_version.startswith('IronPython'):
-            match = _ironpython_sys_version_parser.match(sys_version)
-        else:
-            match = _ironpython26_sys_version_parser.match(sys_version)
-
+        match = _ironpython_sys_version_parser.match(sys_version)
         if match is None:
             raise ValueError(
                 'failed to parse IronPython sys.version: %s' %
                 repr(sys_version))
 
-        version, alt_version, compiler = match.groups()
+        version, _, _ = match.groups()
         buildno = ''
         builddate = ''
+        compiler = ''
 
     elif sys.platform.startswith('java'):
         # Jython

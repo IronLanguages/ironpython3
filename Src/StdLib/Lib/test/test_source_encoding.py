@@ -31,7 +31,10 @@ class MiscSourceEncodingTest(unittest.TestCase):
         try:
             compile(b"# coding: cp932\nprint '\x94\x4e'", "dummy", "exec")
         except SyntaxError as v:
-            self.assertEqual(v.text, "print '\u5e74'\n")
+            # IronPython: assert made implementation-independent
+            self.assertEqual(v.text.rstrip('\n'), "print '\u5e74'")
+            # originally was:
+            # self.assertEqual(v.text, "print '\u5e74'\n")
         else:
             self.fail()
 
@@ -137,8 +140,12 @@ class MiscSourceEncodingTest(unittest.TestCase):
         input = "# coding: ascii\n\N{SNOWMAN}".encode('utf-8')
         with self.assertRaises(SyntaxError) as c:
             compile(input, "<string>", "exec")
-        expected = "'ascii' codec can't decode byte 0xe2 in position 16: " \
-                   "ordinal not in range(128)"
+        if sys.implementation.name == 'ironpython':
+            expected = "'ascii' codec can't decode byte 0xe2 in position 16: " \
+                       "Unable to translate bytes"
+        else:
+            expected = "'ascii' codec can't decode byte 0xe2 in position 16: " \
+                       "ordinal not in range(128)"
         self.assertTrue(c.exception.args[0].startswith(expected),
                         msg=c.exception.args[0])
 

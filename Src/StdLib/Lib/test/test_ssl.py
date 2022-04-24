@@ -99,6 +99,7 @@ def handle_error(prefix):
         sys.stdout.write(prefix + exc_format)
 
 def can_clear_options():
+    if sys.implementation.name == 'ironpython': return True
     # 0.9.8m or higher
     return ssl._OPENSSL_API_VERSION >= (0, 9, 8, 13, 15)
 
@@ -253,7 +254,7 @@ class BasicSocketTests(unittest.TestCase):
         ssl.RAND_add(b"this is a random bytes object", 75.0)
         ssl.RAND_add(bytearray(b"this is a random bytearray object"), 75.0)
 
-    @unittest.skipUnless(os.name == 'posix', 'requires posix')
+    @unittest.skipUnless(hasattr(os, 'fork'), 'need os.fork')
     def test_random_fork(self):
         status = ssl.RAND_status()
         if not status:
@@ -745,7 +746,10 @@ class BasicSocketTests(unittest.TestCase):
         self.assertTrue(ssl.enum_certificates("ROOT"))
 
         self.assertRaises(TypeError, ssl.enum_certificates)
-        self.assertRaises(WindowsError, ssl.enum_certificates, "")
+        if sys.implementation.name == "ironpython":
+            self.assertEqual(ssl.enum_certificates(""), [])
+        else:
+            self.assertRaises(WindowsError, ssl.enum_certificates, "")
 
         trust_oids = set()
         for storename in ("CA", "ROOT"):

@@ -166,6 +166,7 @@ class HashBuiltinsTestCase(unittest.TestCase):
         for obj in self.hashes_to_check:
             self.assertEqual(hash(obj), _default_hash(obj))
 
+@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
 class HashRandomizationTests:
 
     # Each subclass should define a field "repr_", containing the repr() of

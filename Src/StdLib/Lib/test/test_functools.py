@@ -2,6 +2,7 @@ import abc
 import builtins
 import collections
 import copy
+import gc
 from itertools import permutations
 import pickle
 from random import choice
@@ -159,6 +160,7 @@ class TestPartial:
         p = proxy(f)
         self.assertEqual(f.func, p.func)
         f = None
+        gc.collect() # required by IronPython
         self.assertRaises(ReferenceError, getattr, p, 'func')
 
     def test_with_bound_and_unbound_methods(self):

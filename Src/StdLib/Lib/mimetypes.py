@@ -254,19 +254,21 @@ class MimeTypes:
 
         with _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT, '') as hkcr:
             for subkeyname in enum_types(hkcr):
-                try:
-                    with _winreg.OpenKey(hkcr, subkeyname) as subkey:
-                        # Only check file extensions
-                        if not subkeyname.startswith("."):
-                            continue
+                # ironpython: code modified to avoid StackOverflowException - https://github.com/IronLanguages/ironpython3/issues/1182
+                with _winreg.OpenKey(hkcr, subkeyname) as subkey:
+                    # Only check file extensions
+                    if not subkeyname.startswith("."):
+                        continue
+                    try:
                         # raises EnvironmentError if no 'Content Type' value
                         mimetype, datatype = _winreg.QueryValueEx(
                             subkey, 'Content Type')
+                    except EnvironmentError:
+                        pass
+                    else:
                         if datatype != _winreg.REG_SZ:
                             continue
                         self.add_type(mimetype, subkeyname, strict)
-                except EnvironmentError:
-                    continue
 
 def guess_type(url, strict=True):
     """Guess the type of a file based on its URL.

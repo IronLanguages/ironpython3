@@ -1,20 +1,3 @@
-##  Module statistics.py
-##
-##  Copyright (c) 2013 Steven D'Aprano <steve+python@pearwood.info>.
-##
-##  Licensed under the Apache License, Version 2.0 (the "License");
-##  you may not use this file except in compliance with the License.
-##  You may obtain a copy of the License at
-##
-##  http://www.apache.org/licenses/LICENSE-2.0
-##
-##  Unless required by applicable law or agreed to in writing, software
-##  distributed under the License is distributed on an "AS IS" BASIS,
-##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-##  See the License for the specific language governing permissions and
-##  limitations under the License.
-
-
 """
 Basic statistics module.
 
@@ -28,6 +11,7 @@ Calculating averages
 Function            Description
 ==================  =============================================
 mean                Arithmetic mean (average) of data.
+harmonic_mean       Harmonic mean of data.
 median              Median (middle value) of data.
 median_low          Low median of data.
 median_high         High median of data.
@@ -95,16 +79,18 @@ A single exception is defined: StatisticsError is a subclass of ValueError.
 __all__ = [ 'StatisticsError',
             'pstdev', 'pvariance', 'stdev', 'variance',
             'median',  'median_low', 'median_high', 'median_grouped',
-            'mean', 'mode',
+            'mean', 'mode', 'harmonic_mean',
           ]
 
-
 import collections
+import decimal
 import math
+import numbers
 
 from fractions import Fraction
 from decimal import Decimal
-from itertools import groupby
+from itertools import groupby, chain
+from bisect import bisect_left, bisect_right
 
 
 
@@ -134,7 +120,8 @@ def _sum(data, start=0):
 
     Some sources of round-off error will be avoided:
 
-    >>> _sum([1e50, 1, -1e50] * 1000)  # Built-in sum returns zero.
+    # Built-in sum returns zero.
+    >>> _sum([1e50, 1, -1e50] * 1000)
     (<class 'float'>, Fraction(1000, 1), 3000)
 
     Fractions and Decimals are also supported:
@@ -223,54 +210,24 @@ def _exact_ratio(x):
         # Optimise the common case of floats. We expect that the most often
         # used numeric type will be builtin floats, so try to make this as
         # fast as possible.
-        if type(x) is float:
+        if type(x) is float or type(x) is Decimal:
             return x.as_integer_ratio()
         try:
             # x may be an int, Fraction, or Integral ABC.
             return (x.numerator, x.denominator)
         except AttributeError:
             try:
-                # x may be a float subclass.
+                # x may be a float or Decimal subclass.
                 return x.as_integer_ratio()
             except AttributeError:
-                try:
-                    # x may be a Decimal.
-                    return _decimal_to_ratio(x)
-                except AttributeError:
-                    # Just give up?
-                    pass
+                # Just give up?
+                pass
     except (OverflowError, ValueError):
         # float NAN or INF.
-        assert not math.isfinite(x)
+        assert not _isfinite(x)
         return (x, None)
     msg = "can't convert type '{}' to numerator/denominator"
     raise TypeError(msg.format(type(x).__name__))
-
-
-# FIXME This is faster than Fraction.from_decimal, but still too slow.
-def _decimal_to_ratio(d):
-    """Convert Decimal d to exact integer ratio (numerator, denominator).
-
-    >>> from decimal import Decimal
-    >>> _decimal_to_ratio(Decimal("2.6"))
-    (26, 10)
-
-    """
-    sign, digits, exp = d.as_tuple()
-    if exp in ('F', 'n', 'N'):  # INF, NAN, sNAN
-        assert not d.is_finite()
-        return (d, None)
-    num = 0
-    for digit in digits:
-        num = num*10 + digit
-    if exp < 0:
-        den = 10**-exp
-    else:
-        num *= 10**exp
-        den = 1
-    if sign:
-        num = -num
-    return (num, den)
 
 
 def _convert(value, T):
@@ -305,6 +262,30 @@ def _counts(data):
     return table
 
 
+def _find_lteq(a, x):
+    'Locate the leftmost value exactly equal to x'
+    i = bisect_left(a, x)
+    if i != len(a) and a[i] == x:
+        return i
+    raise ValueError
+
+
+def _find_rteq(a, l, x):
+    'Locate the rightmost value exactly equal to x'
+    i = bisect_right(a, x, lo=l)
+    if i != (len(a)+1) and a[i-1] == x:
+        return i-1
+    raise ValueError
+
+
+def _fail_neg(values, errmsg='negative value'):
+    """Iterate over values, failing if any are less than zero."""
+    for x in values:
+        if x < 0:
+            raise StatisticsError(errmsg)
+        yield x
+
+
 # === Measures of central tendency (averages) ===
 
 def mean(data):
@@ -331,6 +312,52 @@ def mean(data):
     T, total, count = _sum(data)
     assert count == n
     return _convert(total/n, T)
+
+
+def harmonic_mean(data):
+    """Return the harmonic mean of data.
+
+    The harmonic mean, sometimes called the subcontrary mean, is the
+    reciprocal of the arithmetic mean of the reciprocals of the data,
+    and is often appropriate when averaging quantities which are rates
+    or ratios, for example speeds. Example:
+
+    Suppose an investor purchases an equal value of shares in each of
+    three companies, with P/E (price/earning) ratios of 2.5, 3 and 10.
+    What is the average P/E ratio for the investor's portfolio?
+
+    >>> harmonic_mean([2.5, 3, 10])  # For an equal investment portfolio.
+    3.6
+
+    Using the arithmetic mean would give an average of about 5.167, which
+    is too high.
+
+    If ``data`` is empty, or any element is less than zero,
+    ``harmonic_mean`` will raise ``StatisticsError``.
+    """
+    # For a justification for using harmonic mean for P/E ratios, see
+    # http://fixthepitch.pellucid.com/comps-analysis-the-missing-harmony-of-summary-statistics/
+    # http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2621087
+    if iter(data) is data:
+        data = list(data)
+    errmsg = 'harmonic mean does not support negative values'
+    n = len(data)
+    if n < 1:
+        raise StatisticsError('harmonic_mean requires at least one data point')
+    elif n == 1:
+        x = data[0]
+        if isinstance(x, (numbers.Real, Decimal)):
+            if x < 0:
+                raise StatisticsError(errmsg)
+            return x
+        else:
+            raise TypeError('unsupported type')
+    try:
+        T, total, count = _sum(1/x for x in _fail_neg(data, errmsg))
+    except ZeroDivisionError:
+        return 0
+    assert count == n
+    return _convert(n/total, T)
 
 
 # FIXME: investigate ways to calculate medians without sorting? Quickselect?
@@ -442,9 +469,15 @@ def median_grouped(data, interval=1):
     except TypeError:
         # Mixed type. For now we just coerce to float.
         L = float(x) - float(interval)/2
-    cf = data.index(x)  # Number of values below the median interval.
-    # FIXME The following line could be more efficient for big lists.
-    f = data.count(x)  # Number of data points in the median interval.
+
+    # Uses bisection search to search for x in data with log(n) time complexity
+    # Find the position of leftmost occurrence of x in data
+    l1 = _find_lteq(data, x)
+    # Find the position of rightmost occurrence of x in data[l1...len(data)]
+    # Assuming always l1 <= l2
+    l2 = _find_rteq(data, l1, x)
+    cf = l1
+    f = l2 - l1 + 1
     return L + interval*(n/2 - cf)/f
 
 
@@ -601,7 +634,6 @@ def pvariance(data, mu=None):
     n = len(data)
     if n < 1:
         raise StatisticsError('pvariance requires at least one data point')
-    ss = _ss(data, mu)
     T, ss = _ss(data, mu)
     return _convert(ss/n, T)
 

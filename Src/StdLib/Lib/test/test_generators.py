@@ -3,9 +3,47 @@ import gc
 import pickle
 import sys
 import unittest
+import warnings
 import weakref
+import inspect
+import types
 
 from test import support
+
+try:
+    import _testcapi
+except ImportError:
+    _testcapi = None
+
+
+# This tests to make sure that if a SIGINT arrives just before we send into a
+# yield from chain, the KeyboardInterrupt is raised in the innermost
+# generator (see bpo-30039).
+@unittest.skipUnless(_testcapi is not None and
+                     hasattr(_testcapi, "raise_SIGINT_then_send_None"),
+                     "needs _testcapi.raise_SIGINT_then_send_None")
+class SignalAndYieldFromTest(unittest.TestCase):
+
+    def generator1(self):
+        return (yield from self.generator2())
+
+    def generator2(self):
+        try:
+            yield
+        except KeyboardInterrupt:
+            return "PASSED"
+        else:
+            return "FAILED"
+
+    def test_raise_and_yield_from(self):
+        gen = self.generator1()
+        gen.send(None)
+        try:
+            _testcapi.raise_SIGINT_then_send_None(gen)
+        except BaseException as _exc:
+            exc = _exc
+        self.assertIs(type(exc), StopIteration)
+        self.assertEqual(exc.value, "PASSED")
 
 
 class FinalizationTest(unittest.TestCase):
@@ -73,6 +111,42 @@ class FinalizationTest(unittest.TestCase):
 
 
 class GeneratorTest(unittest.TestCase):
+
+    def test_name(self):
+        def func():
+            yield 1
+
+        # check generator names
+        gen = func()
+        self.assertEqual(gen.__name__, "func")
+        self.assertEqual(gen.__qualname__,
+                         "GeneratorTest.test_name.<locals>.func")
+
+        # modify generator names
+        gen.__name__ = "name"
+        gen.__qualname__ = "qualname"
+        self.assertEqual(gen.__name__, "name")
+        self.assertEqual(gen.__qualname__, "qualname")
+
+        # generator names must be a string and cannot be deleted
+        self.assertRaises(TypeError, setattr, gen, '__name__', 123)
+        self.assertRaises(TypeError, setattr, gen, '__qualname__', 123)
+        self.assertRaises(TypeError, delattr, gen, '__name__')
+        self.assertRaises(TypeError, delattr, gen, '__qualname__')
+
+        # modify names of the function creating the generator
+        func.__qualname__ = "func_qualname"
+        func.__name__ = "func_name"
+        gen = func()
+        self.assertEqual(gen.__name__, "func_name")
+        self.assertEqual(gen.__qualname__, "func_qualname")
+
+        # unnamed generator
+        gen = (x for x in range(10))
+        self.assertEqual(gen.__name__,
+                         "<genexpr>")
+        self.assertEqual(gen.__qualname__,
+                         "GeneratorTest.test_name.<locals>.<genexpr>")
 
     def test_copy(self):
         def f():
@@ -198,6 +272,100 @@ class ExceptionTest(unittest.TestCase):
         self.assertEqual(next(g), "done")
         self.assertEqual(sys.exc_info(), (None, None, None))
 
+    def test_stopiteration_warning(self):
+        # See also PEP 479.
+
+        def gen():
+            raise StopIteration
+            yield
+
+        with self.assertRaises(StopIteration), \
+             self.assertWarnsRegex(DeprecationWarning, "StopIteration"):
+
+            next(gen())
+
+        with self.assertRaisesRegex(DeprecationWarning,
+                                    "generator .* raised StopIteration"), \
+             warnings.catch_warnings():
+
+            warnings.simplefilter('error')
+            next(gen())
+
+
+    def test_tutorial_stopiteration(self):
+        # Raise StopIteration" stops the generator too:
+
+        def f():
+            yield 1
+            raise StopIteration
+            yield 2 # never reached
+
+        g = f()
+        self.assertEqual(next(g), 1)
+
+        with self.assertWarnsRegex(DeprecationWarning, "StopIteration"):
+            with self.assertRaises(StopIteration):
+                next(g)
+
+        with self.assertRaises(StopIteration):
+            # This time StopIteration isn't raised from the generator's body,
+            # hence no warning.
+            next(g)
+
+    def test_return_tuple(self):
+        def g():
+            return (yield 1)
+
+        gen = g()
+        self.assertEqual(next(gen), 1)
+        with self.assertRaises(StopIteration) as cm:
+            gen.send((2,))
+        self.assertEqual(cm.exception.value, (2,))
+
+    def test_return_stopiteration(self):
+        def g():
+            return (yield 1)
+
+        gen = g()
+        self.assertEqual(next(gen), 1)
+        with self.assertRaises(StopIteration) as cm:
+            gen.send(StopIteration(2))
+        self.assertIsInstance(cm.exception.value, StopIteration)
+        self.assertEqual(cm.exception.value.value, 2)
+
+
+class YieldFromTests(unittest.TestCase):
+    def test_generator_gi_yieldfrom(self):
+        def a():
+            self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_RUNNING)
+            self.assertIsNone(gen_b.gi_yieldfrom)
+            yield
+            self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_RUNNING)
+            self.assertIsNone(gen_b.gi_yieldfrom)
+
+        def b():
+            self.assertIsNone(gen_b.gi_yieldfrom)
+            yield from a()
+            self.assertIsNone(gen_b.gi_yieldfrom)
+            yield
+            self.assertIsNone(gen_b.gi_yieldfrom)
+
+        gen_b = b()
+        self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_CREATED)
+        self.assertIsNone(gen_b.gi_yieldfrom)
+
+        gen_b.send(None)
+        self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_SUSPENDED)
+        self.assertEqual(gen_b.gi_yieldfrom.gi_code.co_name, 'a')
+
+        gen_b.send(None)
+        self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_SUSPENDED)
+        self.assertIsNone(gen_b.gi_yieldfrom)
+
+        [] = gen_b  # Exhaust generator
+        self.assertEqual(inspect.getgeneratorstate(gen_b), inspect.GEN_CLOSED)
+        self.assertIsNone(gen_b.gi_yieldfrom)
+
 
 tutorial_tests = """
 Let's try a simple generator:
@@ -244,26 +412,7 @@ Let's try a simple generator:
       File "<stdin>", line 1, in ?
     StopIteration
 
-"raise StopIteration" stops the generator too:
-
-    >>> def f():
-    ...     yield 1
-    ...     raise StopIteration
-    ...     yield 2 # never reached
-    ...
-    >>> g = f()
-    >>> next(g)
-    1
-    >>> next(g)
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in ?
-    StopIteration
-    >>> next(g)
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in ?
-    StopIteration
-
-However, they are not exactly equivalent:
+However, "return" and StopIteration are not exactly equivalent:
 
     >>> def g1():
     ...     try:
@@ -583,7 +732,7 @@ From the Iterators list, about the types of these things.
 >>> type(i)
 <class 'generator'>
 >>> [s for s in dir(i) if not s.startswith('_')]
-['close', 'gi_code', 'gi_frame', 'gi_running', 'send', 'throw']
+['close', 'gi_code', 'gi_frame', 'gi_running', 'gi_yieldfrom', 'send', 'throw']
 >>> from test.support import HAVE_DOCSTRINGS
 >>> print(i.__next__.__doc__ if HAVE_DOCSTRINGS else 'Implement next(self).')
 Implement next(self).
@@ -1258,7 +1407,7 @@ class Queens:
 
         # For each square, compute a bit vector of the columns and
         # diagonals it covers, and for each row compute a function that
-        # generates the possiblities for the columns in that row.
+        # generates the possibilities for the columns in that row.
         self.rowgenerators = []
         for i in rangen:
             rowuses = [(1 << j) |                  # column ordinal
@@ -1316,7 +1465,7 @@ class Knights:
             # If we create a square with one exit, we must visit it next;
             # else somebody else will have to visit it, and since there's
             # only one adjacent, there won't be a way to leave it again.
-            # Finelly, if we create more than one free square with a
+            # Finally, if we create more than one free square with a
             # single exit, we can only move to one of them next, leaving
             # the other one a dead end.
             ne0 = ne1 = 0
@@ -1374,7 +1523,7 @@ class Knights:
                 succs[final].remove(corner)
                 add_to_successors(this)
 
-        # Generate moves 3 thru m*n-1.
+        # Generate moves 3 through m*n-1.
         def advance(len=len):
             # If some successor has only one exit, must take it.
             # Else favor successors with fewer exits.
@@ -1396,7 +1545,7 @@ class Knights:
                         yield i
                     add_to_successors(i)
 
-        # Generate moves 3 thru m*n-1.  Alternative version using a
+        # Generate moves 3 through m*n-1.  Alternative version using a
         # stronger (but more expensive) heuristic to order successors.
         # Since the # of backtracking levels is m*n, a poor move early on
         # can take eons to undo.  Smallest square board for which this

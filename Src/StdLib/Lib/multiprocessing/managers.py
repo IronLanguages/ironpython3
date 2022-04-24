@@ -18,15 +18,14 @@ import sys
 import threading
 import array
 import queue
+import time
 
-from time import time as _time
 from traceback import format_exc
 
 from . import connection
-from . import context
+from .context import reduction, get_spawning_popen
 from . import pool
 from . import process
-from . import reduction
 from . import util
 from . import get_context
 
@@ -65,8 +64,8 @@ class Token(object):
         (self.typeid, self.address, self.id) = state
 
     def __repr__(self):
-        return 'Token(typeid=%r, address=%r, id=%r)' % \
-               (self.typeid, self.address, self.id)
+        return '%s(typeid=%r, address=%r, id=%r)' % \
+               (self.__class__.__name__, self.typeid, self.address, self.id)
 
 #
 # Function for communication with a manager's server process
@@ -142,7 +141,8 @@ class Server(object):
 
         self.id_to_obj = {'0': (None, ())}
         self.id_to_refcount = {}
-        self.mutex = threading.RLock()
+        self.id_to_local_proxy_obj = {}
+        self.mutex = threading.Lock()
 
     def serve_forever(self):
         '''
@@ -227,7 +227,14 @@ class Server(object):
                 methodname = obj = None
                 request = recv()
                 ident, methodname, args, kwds = request
-                obj, exposed, gettypeid = id_to_obj[ident]
+                try:
+                    obj, exposed, gettypeid = id_to_obj[ident]
+                except KeyError as ke:
+                    try:
+                        obj, exposed, gettypeid = \
+                            self.id_to_local_proxy_obj[ident]
+                    except KeyError as second_ke:
+                        raise ke
 
                 if methodname not in exposed:
                     raise AttributeError(
@@ -275,7 +282,7 @@ class Server(object):
                 try:
                     send(msg)
                 except Exception as e:
-                    send(('#UNSERIALIZABLE', repr(msg)))
+                    send(('#UNSERIALIZABLE', format_exc()))
             except Exception as e:
                 util.info('exception in thread serving %r',
                         threading.current_thread().name)
@@ -306,10 +313,9 @@ class Server(object):
         '''
         Return some info --- useful to spot problems with refcounting
         '''
-        self.mutex.acquire()
-        try:
+        with self.mutex:
             result = []
-            keys = list(self.id_to_obj.keys())
+            keys = list(self.id_to_refcount.keys())
             keys.sort()
             for ident in keys:
                 if ident != '0':
@@ -317,14 +323,13 @@ class Server(object):
                                   (ident, self.id_to_refcount[ident],
                                    str(self.id_to_obj[ident][0])[:75]))
             return '\n'.join(result)
-        finally:
-            self.mutex.release()
 
     def number_of_objects(self, c):
         '''
         Number of shared objects
         '''
-        return len(self.id_to_obj) - 1      # don't count ident='0'
+        # Doesn't use (len(self.id_to_obj) - 1) as we shouldn't count ident='0'
+        return len(self.id_to_refcount)
 
     def shutdown(self, c):
         '''
@@ -343,8 +348,7 @@ class Server(object):
         '''
         Create a new shared object and return its id
         '''
-        self.mutex.acquire()
-        try:
+        with self.mutex:
             callable, exposed, method_to_typeid, proxytype = \
                       self.registry[typeid]
 
@@ -367,15 +371,9 @@ class Server(object):
             self.id_to_obj[ident] = (obj, set(exposed), method_to_typeid)
             if ident not in self.id_to_refcount:
                 self.id_to_refcount[ident] = 0
-            # increment the reference count immediately, to avoid
-            # this object being garbage collected before a Proxy
-            # object for it can be created.  The caller of create()
-            # is responsible for doing a decref once the Proxy object
-            # has been created.
-            self.incref(c, ident)
-            return ident, tuple(exposed)
-        finally:
-            self.mutex.release()
+
+        self.incref(c, ident)
+        return ident, tuple(exposed)
 
     def get_methods(self, c, token):
         '''
@@ -392,22 +390,46 @@ class Server(object):
         self.serve_client(c)
 
     def incref(self, c, ident):
-        self.mutex.acquire()
-        try:
-            self.id_to_refcount[ident] += 1
-        finally:
-            self.mutex.release()
+        with self.mutex:
+            try:
+                self.id_to_refcount[ident] += 1
+            except KeyError as ke:
+                # If no external references exist but an internal (to the
+                # manager) still does and a new external reference is created
+                # from it, restore the manager's tracking of it from the
+                # previously stashed internal ref.
+                if ident in self.id_to_local_proxy_obj:
+                    self.id_to_refcount[ident] = 1
+                    self.id_to_obj[ident] = \
+                        self.id_to_local_proxy_obj[ident]
+                    obj, exposed, gettypeid = self.id_to_obj[ident]
+                    util.debug('Server re-enabled tracking & INCREF %r', ident)
+                else:
+                    raise ke
 
     def decref(self, c, ident):
-        self.mutex.acquire()
-        try:
+        if ident not in self.id_to_refcount and \
+            ident in self.id_to_local_proxy_obj:
+            util.debug('Server DECREF skipping %r', ident)
+            return
+
+        with self.mutex:
             assert self.id_to_refcount[ident] >= 1
             self.id_to_refcount[ident] -= 1
             if self.id_to_refcount[ident] == 0:
-                del self.id_to_obj[ident], self.id_to_refcount[ident]
-                util.debug('disposing of obj with id %r', ident)
-        finally:
-            self.mutex.release()
+                del self.id_to_refcount[ident]
+
+        if ident not in self.id_to_refcount:
+            # Two-step process in case the object turns out to contain other
+            # proxy objects (e.g. a managed list of managed lists).
+            # Otherwise, deleting self.id_to_obj[ident] would trigger the
+            # deleting of the stored value (another managed object) which would
+            # in turn attempt to acquire the mutex that is already held here.
+            self.id_to_obj[ident] = (None, (), None)  # thread-safe
+            util.debug('disposing of obj with id %r', ident)
+            with self.mutex:
+                del self.id_to_obj[ident]
+
 
 #
 # Class to represent state of a manager
@@ -670,15 +692,12 @@ class BaseProxy(object):
     _mutex = util.ForkAwareThreadLock()
 
     def __init__(self, token, serializer, manager=None,
-                 authkey=None, exposed=None, incref=True):
-        BaseProxy._mutex.acquire()
-        try:
+                 authkey=None, exposed=None, incref=True, manager_owned=False):
+        with BaseProxy._mutex:
             tls_idset = BaseProxy._address_to_local.get(token.address, None)
             if tls_idset is None:
                 tls_idset = util.ForkAwareLocal(), ProcessLocalSet()
                 BaseProxy._address_to_local[token.address] = tls_idset
-        finally:
-            BaseProxy._mutex.release()
 
         # self._tls is used to record the connection used by this
         # thread to communicate with the manager at token.address
@@ -694,6 +713,12 @@ class BaseProxy(object):
         self._manager = manager
         self._serializer = serializer
         self._Client = listener_client[serializer][1]
+
+        # Should be set to True only when a proxy object is being created
+        # on the manager server; primary use case: nested proxy objects.
+        # RebuildProxy detects when a proxy is being created on the manager
+        # and sets this value appropriately.
+        self._owned_by_manager = manager_owned
 
         if authkey is not None:
             self._authkey = process.AuthenticationString(authkey)
@@ -753,6 +778,10 @@ class BaseProxy(object):
         return self._callmethod('#GETVALUE')
 
     def _incref(self):
+        if self._owned_by_manager:
+            util.debug('owned_by_manager skipped INCREF of %r', self._token.id)
+            return
+
         conn = self._Client(self._token.address, authkey=self._authkey)
         dispatch(conn, None, 'incref', (self._id,))
         util.debug('INCREF %r', self._token.id)
@@ -803,7 +832,7 @@ class BaseProxy(object):
 
     def __reduce__(self):
         kwds = {}
-        if context.get_spawning_popen() is not None:
+        if get_spawning_popen() is not None:
             kwds['authkey'] = self._authkey
 
         if getattr(self, '_isauto', False):
@@ -818,8 +847,8 @@ class BaseProxy(object):
         return self._getvalue()
 
     def __repr__(self):
-        return '<%s object, typeid %r at %s>' % \
-               (type(self).__name__, self._token.typeid, '0x%x' % id(self))
+        return '<%s object, typeid %r at %#x>' % \
+               (type(self).__name__, self._token.typeid, id(self))
 
     def __str__(self):
         '''
@@ -837,19 +866,19 @@ class BaseProxy(object):
 def RebuildProxy(func, token, serializer, kwds):
     '''
     Function used for unpickling proxy objects.
-
-    If possible the shared object is returned, or otherwise a proxy for it.
     '''
     server = getattr(process.current_process(), '_manager_server', None)
-
     if server and server.address == token.address:
-        return server.id_to_obj[token.id][0]
-    else:
-        incref = (
-            kwds.pop('incref', True) and
-            not getattr(process.current_process(), '_inheriting', False)
-            )
-        return func(token, serializer, incref=incref, **kwds)
+        util.debug('Rebuild a proxy owned by manager, token=%r', token)
+        kwds['manager_owned'] = True
+        if token.id not in server.id_to_local_proxy_obj:
+            server.id_to_local_proxy_obj[token.id] = \
+                server.id_to_obj[token.id]
+    incref = (
+        kwds.pop('incref', True) and
+        not getattr(process.current_process(), '_inheriting', False)
+        )
+    return func(token, serializer, incref=incref, **kwds)
 
 #
 # Functions to create proxies and proxy types
@@ -857,7 +886,7 @@ def RebuildProxy(func, token, serializer, kwds):
 
 def MakeProxyType(name, exposed, _cache={}):
     '''
-    Return an proxy type whose methods are given by `exposed`
+    Return a proxy type whose methods are given by `exposed`
     '''
     exposed = tuple(exposed)
     try:
@@ -916,7 +945,7 @@ class Namespace(object):
             if not name.startswith('_'):
                 temp.append('%s=%r' % (name, value))
         temp.sort()
-        return 'Namespace(%s)' % str.join(', ', temp)
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(temp))
 
 class Value(object):
     def __init__(self, typecode, value, lock=True):
@@ -977,13 +1006,13 @@ class ConditionProxy(AcquirerProxy):
         if result:
             return result
         if timeout is not None:
-            endtime = _time() + timeout
+            endtime = time.monotonic() + timeout
         else:
             endtime = None
             waittime = None
         while not result:
             if endtime is not None:
-                waittime = endtime - _time()
+                waittime = endtime - time.monotonic()
                 if waittime <= 0:
                     break
             self.wait(waittime)
@@ -1066,10 +1095,13 @@ class ListProxy(BaseListProxy):
 
 
 DictProxy = MakeProxyType('DictProxy', (
-    '__contains__', '__delitem__', '__getitem__', '__len__',
+    '__contains__', '__delitem__', '__getitem__', '__iter__', '__len__',
     '__setitem__', 'clear', 'copy', 'get', 'has_key', 'items',
     'keys', 'pop', 'popitem', 'setdefault', 'update', 'values'
     ))
+DictProxy._method_to_typeid_ = {
+    '__iter__': 'Iterator',
+    }
 
 
 ArrayProxy = MakeProxyType('ArrayProxy', (

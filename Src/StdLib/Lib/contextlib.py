@@ -1,11 +1,33 @@
 """Utilities for with-statement contexts.  See PEP 343."""
-
+import abc
 import sys
+import _collections_abc
 from collections import deque
 from functools import wraps
 
-__all__ = ["contextmanager", "closing", "ContextDecorator", "ExitStack",
-           "redirect_stdout", "suppress"]
+__all__ = ["contextmanager", "closing", "AbstractContextManager",
+           "ContextDecorator", "ExitStack", "redirect_stdout",
+           "redirect_stderr", "suppress"]
+
+
+class AbstractContextManager(abc.ABC):
+
+    """An abstract base class for context managers."""
+
+    def __enter__(self):
+        """Return `self` upon entering the runtime context."""
+        return self
+
+    @abc.abstractmethod
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Raise any exception triggered within the runtime context."""
+        return None
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is AbstractContextManager:
+            return _collections_abc._check_methods(C, "__enter__", "__exit__")
+        return NotImplemented
 
 
 class ContextDecorator(object):
@@ -31,7 +53,7 @@ class ContextDecorator(object):
         return inner
 
 
-class _GeneratorContextManager(ContextDecorator):
+class _GeneratorContextManager(ContextDecorator, AbstractContextManager):
     """Helper for @contextmanager decorator."""
 
     def __init__(self, func, args, kwds):
@@ -65,7 +87,7 @@ class _GeneratorContextManager(ContextDecorator):
             try:
                 next(self.gen)
             except StopIteration:
-                return
+                return False
             else:
                 raise RuntimeError("generator didn't stop")
         else:
@@ -75,12 +97,21 @@ class _GeneratorContextManager(ContextDecorator):
                 value = type()
             try:
                 self.gen.throw(type, value, traceback)
-                raise RuntimeError("generator didn't stop after throw()")
             except StopIteration as exc:
-                # Suppress the exception *unless* it's the same exception that
+                # Suppress StopIteration *unless* it's the same exception that
                 # was passed to throw().  This prevents a StopIteration
-                # raised inside the "with" statement from being suppressed
+                # raised inside the "with" statement from being suppressed.
                 return exc is not value
+            except RuntimeError as exc:
+                # Don't re-raise the passed in exception. (issue27122)
+                if exc is value:
+                    return False
+                # Likewise, avoid suppressing if a StopIteration exception
+                # was passed to throw() and later wrapped into a RuntimeError
+                # (see PEP 479).
+                if type is StopIteration and exc.__cause__ is value:
+                    return False
+                raise
             except:
                 # only re-raise if it's *not* the exception that was
                 # passed to throw(), because __exit__() must not raise
@@ -89,8 +120,10 @@ class _GeneratorContextManager(ContextDecorator):
                 # fixes the impedance mismatch between the throw() protocol
                 # and the __exit__() protocol.
                 #
-                if sys.exc_info()[1] is not value:
-                    raise
+                if sys.exc_info()[1] is value:
+                    return False
+                raise
+            raise RuntimeError("generator didn't stop after throw()")
 
 
 def contextmanager(func):
@@ -127,7 +160,7 @@ def contextmanager(func):
     return helper
 
 
-class closing(object):
+class closing(AbstractContextManager):
     """Context to automatically close something at the end of a block.
 
     Code like this:
@@ -151,8 +184,27 @@ class closing(object):
     def __exit__(self, *exc_info):
         self.thing.close()
 
-class redirect_stdout:
-    """Context manager for temporarily redirecting stdout to another file
+
+class _RedirectStream(AbstractContextManager):
+
+    _stream = None
+
+    def __init__(self, new_target):
+        self._new_target = new_target
+        # We use a list of old targets to make this CM re-entrant
+        self._old_targets = []
+
+    def __enter__(self):
+        self._old_targets.append(getattr(sys, self._stream))
+        setattr(sys, self._stream, self._new_target)
+        return self._new_target
+
+    def __exit__(self, exctype, excinst, exctb):
+        setattr(sys, self._stream, self._old_targets.pop())
+
+
+class redirect_stdout(_RedirectStream):
+    """Context manager for temporarily redirecting stdout to another file.
 
         # How to send help() to stderr
         with redirect_stdout(sys.stderr):
@@ -164,21 +216,16 @@ class redirect_stdout:
                 help(pow)
     """
 
-    def __init__(self, new_target):
-        self._new_target = new_target
-        # We use a list of old targets to make this CM re-entrant
-        self._old_targets = []
-
-    def __enter__(self):
-        self._old_targets.append(sys.stdout)
-        sys.stdout = self._new_target
-        return self._new_target
-
-    def __exit__(self, exctype, excinst, exctb):
-        sys.stdout = self._old_targets.pop()
+    _stream = "stdout"
 
 
-class suppress:
+class redirect_stderr(_RedirectStream):
+    """Context manager for temporarily redirecting stderr to another file."""
+
+    _stream = "stderr"
+
+
+class suppress(AbstractContextManager):
     """Context manager to suppress specified exceptions
 
     After the exception is suppressed, execution proceeds with the next
@@ -209,7 +256,7 @@ class suppress:
 
 
 # Inspired by discussions on http://bugs.python.org/issue13585
-class ExitStack(object):
+class ExitStack(AbstractContextManager):
     """Context manager for dynamic management of a stack of exit callbacks
 
     For example:
@@ -287,9 +334,6 @@ class ExitStack(object):
     def close(self):
         """Immediately unwind the context stack"""
         self.__exit__(None, None, None)
-
-    def __enter__(self):
-        return self
 
     def __exit__(self, *exc_details):
         received_exc = exc_details[0] is not None

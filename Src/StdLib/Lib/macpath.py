@@ -1,5 +1,17 @@
 """Pathname and path-related operations for the Macintosh."""
 
+# strings representing various path-related bits and pieces
+# These are primarily for export; internally, they are hardcoded.
+# Should be set before imports for resolving cyclic dependency.
+curdir = ':'
+pardir = '::'
+extsep = '.'
+sep = ':'
+pathsep = '\n'
+defpath = ':'
+altsep = None
+devnull = 'Dev:Null'
+
 import os
 from stat import *
 import genericpath
@@ -11,17 +23,6 @@ __all__ = ["normcase","isabs","join","splitdrive","split","splitext",
            "expanduser","expandvars","normpath","abspath",
            "curdir","pardir","sep","pathsep","defpath","altsep","extsep",
            "devnull","realpath","supports_unicode_filenames"]
-
-# strings representing various path-related bits and pieces
-# These are primarily for export; internally, they are hardcoded.
-curdir = ':'
-pardir = '::'
-extsep = '.'
-sep = ':'
-pathsep = '\n'
-defpath = ':'
-altsep = None
-devnull = 'Dev:Null'
 
 def _get_colon(path):
     if isinstance(path, bytes):
@@ -50,20 +51,26 @@ def isabs(s):
 
 
 def join(s, *p):
-    colon = _get_colon(s)
-    path = s
-    for t in p:
-        if (not path) or isabs(t):
-            path = t
-            continue
-        if t[:1] == colon:
-            t = t[1:]
-        if colon not in path:
-            path = colon + path
-        if path[-1:] != colon:
-            path = path + colon
-        path = path + t
-    return path
+    try:
+        colon = _get_colon(s)
+        path = s
+        if not p:
+            path[:0] + colon  #23780: Ensure compatible data type even if p is null.
+        for t in p:
+            if (not path) or isabs(t):
+                path = t
+                continue
+            if t[:1] == colon:
+                t = t[1:]
+            if colon not in path:
+                path = colon + path
+            if path[-1:] != colon:
+                path = path + colon
+            path = path + t
+        return path
+    except (TypeError, AttributeError, BytesWarning):
+        genericpath._check_arg_types('join', s, *p)
+        raise
 
 
 def split(s):

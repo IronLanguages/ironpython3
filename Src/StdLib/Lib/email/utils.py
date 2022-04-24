@@ -87,7 +87,7 @@ def formataddr(pair, charset='utf-8'):
     'utf-8'.
     """
     name, address = pair
-    # The address MUST (per RFC) be ascii, so raise an UnicodeError if it isn't.
+    # The address MUST (per RFC) be ascii, so raise a UnicodeError if it isn't.
     address.encode('ascii')
     if name:
         try:
@@ -215,6 +215,12 @@ def parsedate_to_datetime(data):
 
 
 def parseaddr(addr):
+    """
+    Parse addr into its constituent realname and email address parts.
+
+    Return a tuple of realname and email address, unless the parse fails, in
+    which case return a 2-tuple of ('', '').
+    """
     addrs = _AddressList(addr).addresslist
     if not addrs:
         return '', ''

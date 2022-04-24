@@ -1,4 +1,4 @@
-from test.support import run_unittest, check_warnings
+from test.support import check_warnings
 import cgi
 import os
 import sys
@@ -7,6 +7,7 @@ import unittest
 import warnings
 from collections import namedtuple
 from io import StringIO, BytesIO
+from test import support
 
 class HackedSysModule:
     # The regression test will have real values in sys.argv, which
@@ -54,12 +55,9 @@ parse_strict_test_cases = [
     ("", ValueError("bad query field: ''")),
     ("&", ValueError("bad query field: ''")),
     ("&&", ValueError("bad query field: ''")),
-    (";", ValueError("bad query field: ''")),
-    (";&;", ValueError("bad query field: ''")),
     # Should the next few really be valid?
     ("=", {}),
     ("=&=", {}),
-    ("=;=", {}),
     # This rest seem to make sense
     ("=a", {'': ['a']}),
     ("&=a", ValueError("bad query field: ''")),
@@ -74,8 +72,6 @@ parse_strict_test_cases = [
     ("a=a+b&b=b+c", {'a': ['a b'], 'b': ['b c']}),
     ("a=a+b&a=b+a", {'a': ['a b', 'b a']}),
     ("x=1&y=2.0&z=2-3.%2b0", {'x': ['1'], 'y': ['2.0'], 'z': ['2-3.+0']}),
-    ("x=1;y=2.0&z=2-3.%2b0", {'x': ['1'], 'y': ['2.0'], 'z': ['2-3.+0']}),
-    ("x=1;y=2.0;z=2-3.%2b0", {'x': ['1'], 'y': ['2.0'], 'z': ['2-3.+0']}),
     ("Hbc5161168c542333633315dee1182227:key_store_seqid=400006&cuyer=r&view=bustomer&order_id=0bb2e248638833d48cb7fed300000f1b&expire=964546263&lobale=en-US&kid=130003.300038&ss=env",
      {'Hbc5161168c542333633315dee1182227:key_store_seqid': ['400006'],
       'cuyer': ['r'],
@@ -147,7 +143,7 @@ class CgiTests(unittest.TestCase):
     def test_escape(self):
         # cgi.escape() is deprecated.
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', 'cgi\.escape',
+            warnings.filterwarnings('ignore', r'cgi\.escape',
                                      DeprecationWarning)
             self.assertEqual("test &amp; string", cgi.escape("test & string"))
             self.assertEqual("&lt;test string&gt;", cgi.escape("<test string>"))
@@ -171,6 +167,30 @@ class CgiTests(unittest.TestCase):
                 ##self.assertEqual(norm(expect.items()), norm(fs.items()))
                 self.assertEqual(fs.getvalue("nonexistent field", "default"), "default")
                 # test individual fields
+                for key in expect.keys():
+                    expect_val = expect[key]
+                    self.assertIn(key, fs)
+                    if len(expect_val) > 1:
+                        self.assertEqual(fs.getvalue(key), expect_val)
+                    else:
+                        self.assertEqual(fs.getvalue(key), expect_val[0])
+
+    def test_separator(self):
+        parse_semicolon = [
+            ("x=1;y=2.0", {'x': ['1'], 'y': ['2.0']}),
+            ("x=1;y=2.0;z=2-3.%2b0", {'x': ['1'], 'y': ['2.0'], 'z': ['2-3.+0']}),
+            (";", ValueError("bad query field: ''")),
+            (";;", ValueError("bad query field: ''")),
+            ("=;a", ValueError("bad query field: 'a'")),
+            (";b=a", ValueError("bad query field: ''")),
+            ("b;=a", ValueError("bad query field: 'b'")),
+            ("a=a+b;b=b+c", {'a': ['a b'], 'b': ['b c']}),
+            ("a=a+b;a=b+a", {'a': ['a b', 'b a']}),
+        ]
+        for orig, expect in parse_semicolon:
+            env = {'QUERY_STRING': orig}
+            fs = cgi.FieldStorage(separator=';', environ=env)
+            if isinstance(expect, dict):
                 for key in expect.keys():
                     expect_val = expect[key]
                     self.assertIn(key, fs)
@@ -344,6 +364,16 @@ Larry
         self.assertEqual(fs.list[0].name, 'submit-name')
         self.assertEqual(fs.list[0].value, 'Larry')
 
+    def test_fieldstorage_as_context_manager(self):
+        fp = BytesIO(b'x' * 10)
+        env = {'REQUEST_METHOD': 'PUT'}
+        with cgi.FieldStorage(fp=fp, environ=env) as fs:
+            content = fs.file.read()
+            self.assertFalse(fs.file.closed)
+        self.assertTrue(fs.file.closed)
+        self.assertEqual(content, 'x' * 10)
+        with self.assertRaisesRegex(ValueError, 'I/O operation on closed file'):
+            fs.file.read()
 
     _qs_result = {
         'key1': 'value1',
@@ -361,6 +391,60 @@ Larry
         }
         v = gen_result(data, environ)
         self.assertEqual(self._qs_result, v)
+
+    def test_max_num_fields(self):
+        # For application/x-www-form-urlencoded
+        data = '&'.join(['a=a']*11)
+        environ = {
+            'CONTENT_LENGTH': str(len(data)),
+            'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+            'REQUEST_METHOD': 'POST',
+        }
+
+        with self.assertRaises(ValueError):
+            cgi.FieldStorage(
+                fp=BytesIO(data.encode()),
+                environ=environ,
+                max_num_fields=10,
+            )
+
+        # For multipart/form-data
+        data = """---123
+Content-Disposition: form-data; name="a"
+
+3
+---123
+Content-Type: application/x-www-form-urlencoded
+
+a=4
+---123
+Content-Type: application/x-www-form-urlencoded
+
+a=5
+---123--
+"""
+        environ = {
+            'CONTENT_LENGTH':   str(len(data)),
+            'CONTENT_TYPE':     'multipart/form-data; boundary=-123',
+            'QUERY_STRING':     'a=1&a=2',
+            'REQUEST_METHOD':   'POST',
+        }
+
+        # 2 GET entities
+        # 1 top level POST entities
+        # 1 entity within the second POST entity
+        # 1 entity within the third POST entity
+        with self.assertRaises(ValueError):
+            cgi.FieldStorage(
+                fp=BytesIO(data.encode()),
+                environ=environ,
+                max_num_fields=4,
+            )
+        cgi.FieldStorage(
+            fp=BytesIO(data.encode()),
+            environ=environ,
+            max_num_fields=5,
+        )
 
     def testQSAndFormData(self):
         data = """---123
@@ -463,6 +547,11 @@ this is the content of the fake file
             cgi.parse_header('form-data; name="files"; filename="fo\\"o;bar"'),
             ("form-data", {"name": "files", "filename": 'fo"o;bar'}))
 
+    def test_all(self):
+        blacklist = {"logfile", "logfp", "initlog", "dolog", "nolog",
+                     "closelog", "log", "maxlen", "valid_boundary"}
+        support.check__all__(self, cgi, blacklist=blacklist)
+
 
 BOUNDARY = "---------------------------721837373350705526688164684"
 
@@ -519,9 +608,5 @@ Content-Transfer-Encoding: binary
 --AaB03x--
 """
 
-
-def test_main():
-    run_unittest(CgiTests)
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

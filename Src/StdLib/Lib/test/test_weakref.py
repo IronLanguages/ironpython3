@@ -6,8 +6,10 @@ import weakref
 import operator
 import contextlib
 import copy
+import time
 
-from test import support, script_helper
+from test import support
+from test.support import script_helper
 
 # Used in ReferencesTestCase.test_ref_created_during_del() .
 ref_from_del = None
@@ -71,6 +73,29 @@ class TestBase(unittest.TestCase):
         self.cbcalled += 1
 
 
+@contextlib.contextmanager
+def collect_in_thread(period=0.0001):
+    """
+    Ensure GC collections happen in a different thread, at a high frequency.
+    """
+    threading = support.import_module('threading')
+    please_stop = False
+
+    def collect():
+        while not please_stop:
+            time.sleep(period)
+            gc.collect()
+
+    with support.disable_gc():
+        t = threading.Thread(target=collect)
+        t.start()
+        try:
+            yield
+        finally:
+            please_stop = True
+            t.join()
+
+
 class ReferencesTestCase(TestBase):
 
     def test_basic_ref(self):
@@ -91,6 +116,18 @@ class ReferencesTestCase(TestBase):
         self.check_basic_callback(C)
         self.check_basic_callback(create_function)
         self.check_basic_callback(create_bound_method)
+
+    @support.cpython_only
+    def test_cfunction(self):
+        import _testcapi
+        create_cfunction = _testcapi.create_cfunction
+        f = create_cfunction()
+        wr = weakref.ref(f)
+        self.assertIs(wr(), f)
+        del f
+        self.assertIsNone(wr())
+        self.check_basic_ref(create_cfunction)
+        self.check_basic_callback(create_cfunction)
 
     def test_multiple_callbacks(self):
         o = C()
@@ -119,6 +156,10 @@ class ReferencesTestCase(TestBase):
         self.ref = weakref.ref(c, callback)
         ref1 = weakref.ref(c, callback)
         del c
+
+    def test_constructor_kwargs(self):
+        c = C()
+        self.assertRaises(TypeError, weakref.ref, c, callback=None)
 
     def test_proxy_ref(self):
         o = C()
@@ -572,6 +613,7 @@ class ReferencesTestCase(TestBase):
         del c1, c2, C, D
         gc.collect()
 
+    @support.requires_type_collecting
     def test_callback_in_cycle_resurrection(self):
         import gc
 
@@ -901,7 +943,7 @@ class SubclassableWeakrefTestCase(TestBase):
         self.assertFalse(hasattr(r, "__dict__"))
 
     def test_subclass_refs_with_cycle(self):
-        # Bug #3110
+        """Confirm https://bugs.python.org/issue3100 is fixed."""
         # An instance of a weakref subclass can have attributes.
         # If such a weakref holds the only strong reference to the object,
         # deleting the weakref will delete the object. In this case,
@@ -1315,13 +1357,16 @@ class MappingTestCase(TestBase):
         o = Object(123456)
         with testcontext():
             n = len(dict)
-            dict.popitem()
+            # Since underlaying dict is ordered, first item is popped
+            dict.pop(next(dict.keys()))
             self.assertEqual(len(dict), n - 1)
             dict[o] = o
             self.assertEqual(len(dict), n)
+        # last item in objects is removed from dict in context shutdown
         with testcontext():
             self.assertEqual(len(dict), n - 1)
-            dict.pop(next(dict.keys()))
+            # Then, (o, o) is popped
+            dict.popitem()
             self.assertEqual(len(dict), n - 2)
         with testcontext():
             self.assertEqual(len(dict), n - 3)
@@ -1592,7 +1637,7 @@ class MappingTestCase(TestBase):
         # has to keep looping to find the first object we delete.
         objs.reverse()
 
-        # Turn on mutation in C.__eq__.  The first time thru the loop,
+        # Turn on mutation in C.__eq__.  The first time through the loop,
         # under the iterkeys() business the first comparison will delete
         # the last item iterkeys() would see, and that causes a
         #     RuntimeError: dictionary changed size during iteration
@@ -1606,6 +1651,43 @@ class MappingTestCase(TestBase):
             del d[o]
         self.assertEqual(len(d), 0)
         self.assertEqual(count, 2)
+
+    def test_make_weak_valued_dict_repr(self):
+        dict = weakref.WeakValueDictionary()
+        self.assertRegex(repr(dict), '<WeakValueDictionary at 0x.*>')
+
+    def test_make_weak_keyed_dict_repr(self):
+        dict = weakref.WeakKeyDictionary()
+        self.assertRegex(repr(dict), '<WeakKeyDictionary at 0x.*>')
+
+    def test_threaded_weak_valued_setdefault(self):
+        d = weakref.WeakValueDictionary()
+        with collect_in_thread():
+            for i in range(100000):
+                x = d.setdefault(10, RefCycle())
+                self.assertIsNot(x, None)  # we never put None in there!
+                del x
+
+    def test_threaded_weak_valued_pop(self):
+        d = weakref.WeakValueDictionary()
+        with collect_in_thread():
+            for i in range(100000):
+                d[10] = RefCycle()
+                x = d.pop(10, 10)
+                self.assertIsNot(x, None)  # we never put None in there!
+
+    def test_threaded_weak_valued_consistency(self):
+        # Issue #28427: old keys should not remove new values from
+        # WeakValueDictionary when collecting from another thread.
+        d = weakref.WeakValueDictionary()
+        with collect_in_thread():
+            for i in range(200000):
+                o = RefCycle()
+                d[10] = o
+                # o is still alive, so the dict can't be empty
+                self.assertEqual(len(d), 1)
+                o = None  # lose ref
+
 
 from test import mapping_tests
 

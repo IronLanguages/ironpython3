@@ -2,7 +2,6 @@
 
 import unittest
 
-from test import support
 
 testmeths = [
 
@@ -13,6 +12,8 @@ testmeths = [
     "rsub",
     "mul",
     "rmul",
+    "matmul",
+    "rmatmul",
     "truediv",
     "rtruediv",
     "floordiv",
@@ -175,6 +176,14 @@ class ClassTests(unittest.TestCase):
         callLst[:] = []
         1 * testme
         self.assertCallStack([("__rmul__", (testme, 1))])
+
+        callLst[:] = []
+        testme @ 1
+        self.assertCallStack([("__matmul__", (testme, 1))])
+
+        callLst[:] = []
+        1 @ testme
+        self.assertCallStack([("__rmatmul__", (testme, 1))])
 
         callLst[:] = []
         testme / 1
@@ -491,10 +500,10 @@ class ClassTests(unittest.TestCase):
 
         try:
             a() # This should not segfault
-        except RuntimeError:
+        except RecursionError:
             pass
         else:
-            self.fail("Failed to raise RuntimeError")
+            self.fail("Failed to raise RecursionError")
 
     def testForExceptionsRaisedInInstanceGetattr2(self):
         # Tests for exceptions raised in instance_getattr2().
@@ -559,8 +568,33 @@ class ClassTests(unittest.TestCase):
         a = A(hash(A.f)^(-1))
         hash(a.f)
 
-def test_main():
-    support.run_unittest(ClassTests)
+    def testSetattrWrapperNameIntern(self):
+        # Issue #25794: __setattr__ should intern the attribute name
+        class A:
+            pass
 
-if __name__=='__main__':
-    test_main()
+        def add(self, other):
+            return 'summa'
+
+        name = str(b'__add__', 'ascii')  # shouldn't be optimized
+        self.assertIsNot(name, '__add__')  # not interned
+        type.__setattr__(A, name, add)
+        self.assertEqual(A() + 1, 'summa')
+
+        name2 = str(b'__add__', 'ascii')
+        self.assertIsNot(name2, '__add__')
+        self.assertIsNot(name2, name)
+        type.__delattr__(A, name2)
+        with self.assertRaises(TypeError):
+            A() + 1
+
+    def testSetattrNonStringName(self):
+        class A:
+            pass
+
+        with self.assertRaises(TypeError):
+            type.__setattr__(A, b'x', None)
+
+
+if __name__ == '__main__':
+    unittest.main()

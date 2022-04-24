@@ -20,11 +20,11 @@ import itertools
 
 import _multiprocessing
 
-from . import reduction
 from . import util
 
 from . import AuthenticationError, BufferTooShort
-from .reduction import ForkingPickler
+from .context import reduction
+_ForkingPickler = reduction.ForkingPickler
 
 try:
     import _winapi
@@ -57,10 +57,10 @@ if sys.platform == 'win32':
 
 
 def _init_timeout(timeout=CONNECTION_TIMEOUT):
-    return time.time() + timeout
+    return time.monotonic() + timeout
 
 def _check_timeout(t):
-    return time.time() > t
+    return time.monotonic() > t
 
 #
 #
@@ -203,7 +203,7 @@ class _ConnectionBase:
         """Send a (picklable) object"""
         self._check_closed()
         self._check_writable()
-        self._send_bytes(ForkingPickler.dumps(obj))
+        self._send_bytes(_ForkingPickler.dumps(obj))
 
     def recv_bytes(self, maxlength=None):
         """
@@ -248,7 +248,7 @@ class _ConnectionBase:
         self._check_closed()
         self._check_readable()
         buf = self._recv_bytes()
-        return ForkingPickler.loads(buf.getbuffer())
+        return _ForkingPickler.loads(buf.getbuffer())
 
     def poll(self, timeout=0.0):
         """Whether there is any input available to be read"""
@@ -365,10 +365,7 @@ class Connection(_ConnectionBase):
     def _send(self, buf, write=_write):
         remaining = len(buf)
         while True:
-            try:
-                n = write(self._handle, buf)
-            except InterruptedError:
-                continue
+            n = write(self._handle, buf)
             remaining -= n
             if remaining == 0:
                 break
@@ -379,10 +376,7 @@ class Connection(_ConnectionBase):
         handle = self._handle
         remaining = size
         while remaining > 0:
-            try:
-                chunk = read(handle, remaining)
-            except InterruptedError:
-                continue
+            chunk = read(handle, remaining)
             n = len(chunk)
             if n == 0:
                 if remaining == size:
@@ -400,17 +394,14 @@ class Connection(_ConnectionBase):
         if n > 16384:
             # The payload is large so Nagle's algorithm won't be triggered
             # and we'd better avoid the cost of concatenation.
-            chunks = [header, buf]
-        elif n > 0:
-            # Issue # 20540: concatenate before sending, to avoid delays due
-            # to Nagle's algorithm on a TCP socket.
-            chunks = [header + buf]
+            self._send(header)
+            self._send(buf)
         else:
-            # This code path is necessary to avoid "broken pipe" errors
-            # when sending a 0-length buffer if the other end closed the pipe.
-            chunks = [header]
-        for chunk in chunks:
-            self._send(chunk)
+            # Issue #20540: concatenate before sending, to avoid delays due
+            # to Nagle's algorithm on a TCP socket.
+            # Also note we want to avoid sending a 0-length buffer separately,
+            # to avoid "broken pipe" errors if the other end closed the pipe.
+            self._send(header + buf)
 
     def _recv_bytes(self, maxsize=None):
         buf = self._recv(4)
@@ -599,13 +590,7 @@ class SocketListener(object):
             self._unlink = None
 
     def accept(self):
-        while True:
-            try:
-                s, self._last_accepted = self._socket.accept()
-            except InterruptedError:
-                pass
-            else:
-                break
+        s, self._last_accepted = self._socket.accept()
         s.setblocking(True)
         return Connection(s.detach())
 
@@ -920,7 +905,7 @@ else:
                 selector.register(obj, selectors.EVENT_READ)
 
             if timeout is not None:
-                deadline = time.time() + timeout
+                deadline = time.monotonic() + timeout
 
             while True:
                 ready = selector.select(timeout)
@@ -928,7 +913,7 @@ else:
                     return [key.fileobj for (key, events) in ready]
                 else:
                     if timeout is not None:
-                        timeout = deadline - time.time()
+                        timeout = deadline - time.monotonic()
                         if timeout < 0:
                             return ready
 

@@ -3,7 +3,7 @@ import os
 import sys
 import unittest
 import warnings
-from test.support import TestFailed
+from test.support import TestFailed, FakePath
 from test import support, test_genericpath
 from tempfile import TemporaryFile
 
@@ -303,6 +303,12 @@ class TestNtpath(unittest.TestCase):
         try:
             import nt
             tester('ntpath.abspath("C:\\")', "C:\\")
+            with support.temp_cwd(support.TESTFN) as cwd_dir: # bpo-31047
+                tester('ntpath.abspath("")', cwd_dir)
+                tester('ntpath.abspath(" ")', cwd_dir + "\\ ")
+                tester('ntpath.abspath("?")', cwd_dir + "\\?")
+                drive, _ = ntpath.splitdrive(cwd_dir)
+                tester('ntpath.abspath("/abc/")', drive + "\\abc")
         except ImportError:
             self.skipTest('nt module not available')
 
@@ -329,6 +335,75 @@ class TestNtpath(unittest.TestCase):
         tester('ntpath.relpath("/a", "/a")', '.')
         tester('ntpath.relpath("/a/b", "/a/b")', '.')
         tester('ntpath.relpath("c:/foo", "C:/FOO")', '.')
+
+    def test_commonpath(self):
+        def check(paths, expected):
+            tester(('ntpath.commonpath(%r)' % paths).replace('\\\\', '\\'),
+                   expected)
+        def check_error(exc, paths):
+            self.assertRaises(exc, ntpath.commonpath, paths)
+            self.assertRaises(exc, ntpath.commonpath,
+                              [os.fsencode(p) for p in paths])
+
+        self.assertRaises(ValueError, ntpath.commonpath, [])
+        check_error(ValueError, ['C:\\Program Files', 'Program Files'])
+        check_error(ValueError, ['C:\\Program Files', 'C:Program Files'])
+        check_error(ValueError, ['\\Program Files', 'Program Files'])
+        check_error(ValueError, ['Program Files', 'C:\\Program Files'])
+        check(['C:\\Program Files'], 'C:\\Program Files')
+        check(['C:\\Program Files', 'C:\\Program Files'], 'C:\\Program Files')
+        check(['C:\\Program Files\\', 'C:\\Program Files'],
+              'C:\\Program Files')
+        check(['C:\\Program Files\\', 'C:\\Program Files\\'],
+              'C:\\Program Files')
+        check(['C:\\\\Program Files', 'C:\\Program Files\\\\'],
+              'C:\\Program Files')
+        check(['C:\\.\\Program Files', 'C:\\Program Files\\.'],
+              'C:\\Program Files')
+        check(['C:\\', 'C:\\bin'], 'C:\\')
+        check(['C:\\Program Files', 'C:\\bin'], 'C:\\')
+        check(['C:\\Program Files', 'C:\\Program Files\\Bar'],
+              'C:\\Program Files')
+        check(['C:\\Program Files\\Foo', 'C:\\Program Files\\Bar'],
+              'C:\\Program Files')
+        check(['C:\\Program Files', 'C:\\Projects'], 'C:\\')
+        check(['C:\\Program Files\\', 'C:\\Projects'], 'C:\\')
+
+        check(['C:\\Program Files\\Foo', 'C:/Program Files/Bar'],
+              'C:\\Program Files')
+        check(['C:\\Program Files\\Foo', 'c:/program files/bar'],
+              'C:\\Program Files')
+        check(['c:/program files/bar', 'C:\\Program Files\\Foo'],
+              'c:\\program files')
+
+        check_error(ValueError, ['C:\\Program Files', 'D:\\Program Files'])
+
+        check(['spam'], 'spam')
+        check(['spam', 'spam'], 'spam')
+        check(['spam', 'alot'], '')
+        check(['and\\jam', 'and\\spam'], 'and')
+        check(['and\\\\jam', 'and\\spam\\\\'], 'and')
+        check(['and\\.\\jam', '.\\and\\spam'], 'and')
+        check(['and\\jam', 'and\\spam', 'alot'], '')
+        check(['and\\jam', 'and\\spam', 'and'], 'and')
+        check(['C:and\\jam', 'C:and\\spam'], 'C:and')
+
+        check([''], '')
+        check(['', 'spam\\alot'], '')
+        check_error(ValueError, ['', '\\spam\\alot'])
+
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          [b'C:\\Program Files', 'C:\\Program Files\\Foo'])
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          [b'C:\\Program Files', 'Program Files\\Foo'])
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          [b'Program Files', 'C:\\Program Files\\Foo'])
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          ['C:\\Program Files', b'C:\\Program Files\\Foo'])
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          ['C:\\Program Files', b'Program Files\\Foo'])
+        self.assertRaises(TypeError, ntpath.commonpath,
+                          ['Program Files', b'C:\\Program Files\\Foo'])
 
     def test_sameopenfile(self):
         with TemporaryFile() as tf1, TemporaryFile() as tf2:
@@ -381,6 +456,80 @@ class TestNtpath(unittest.TestCase):
 class NtCommonTest(test_genericpath.CommonTest, unittest.TestCase):
     pathmodule = ntpath
     attributes = ['relpath', 'splitunc']
+
+
+class PathLikeTests(unittest.TestCase):
+
+    path = ntpath
+
+    def setUp(self):
+        self.file_name = support.TESTFN.lower()
+        self.file_path = FakePath(support.TESTFN)
+        self.addCleanup(support.unlink, self.file_name)
+        with open(self.file_name, 'xb', 0) as file:
+            file.write(b"test_ntpath.PathLikeTests")
+
+    def assertPathEqual(self, func):
+        self.assertEqual(func(self.file_path), func(self.file_name))
+
+    def test_path_normcase(self):
+        self.assertPathEqual(self.path.normcase)
+
+    def test_path_isabs(self):
+        self.assertPathEqual(self.path.isabs)
+
+    def test_path_join(self):
+        self.assertEqual(self.path.join('a', FakePath('b'), 'c'),
+                         self.path.join('a', 'b', 'c'))
+
+    def test_path_split(self):
+        self.assertPathEqual(self.path.split)
+
+    def test_path_splitext(self):
+        self.assertPathEqual(self.path.splitext)
+
+    def test_path_splitdrive(self):
+        self.assertPathEqual(self.path.splitdrive)
+
+    def test_path_basename(self):
+        self.assertPathEqual(self.path.basename)
+
+    def test_path_dirname(self):
+        self.assertPathEqual(self.path.dirname)
+
+    def test_path_islink(self):
+        self.assertPathEqual(self.path.islink)
+
+    def test_path_lexists(self):
+        self.assertPathEqual(self.path.lexists)
+
+    def test_path_ismount(self):
+        self.assertPathEqual(self.path.ismount)
+
+    def test_path_expanduser(self):
+        self.assertPathEqual(self.path.expanduser)
+
+    def test_path_expandvars(self):
+        self.assertPathEqual(self.path.expandvars)
+
+    def test_path_normpath(self):
+        self.assertPathEqual(self.path.normpath)
+
+    def test_path_abspath(self):
+        self.assertPathEqual(self.path.abspath)
+
+    def test_path_realpath(self):
+        self.assertPathEqual(self.path.realpath)
+
+    def test_path_relpath(self):
+        self.assertPathEqual(self.path.relpath)
+
+    def test_path_commonpath(self):
+        common_path = self.path.commonpath([self.file_path, self.file_name])
+        self.assertEqual(common_path, self.file_name)
+
+    def test_path_isdir(self):
+        self.assertPathEqual(self.path.isdir)
 
 
 if __name__ == "__main__":

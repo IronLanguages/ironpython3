@@ -10,8 +10,9 @@ import traceback
 import types
 
 from . import compat
+from . import constants
 from . import events
-from . import futures
+from . import base_futures
 from .log import logger
 
 
@@ -33,12 +34,16 @@ _DEBUG = (not sys.flags.ignore_environment and
 
 try:
     _types_coroutine = types.coroutine
+    _types_CoroutineType = types.CoroutineType
 except AttributeError:
+    # Python 3.4
     _types_coroutine = None
+    _types_CoroutineType = None
 
 try:
     _inspect_iscoroutinefunction = inspect.iscoroutinefunction
 except AttributeError:
+    # Python 3.4
     _inspect_iscoroutinefunction = lambda func: False
 
 try:
@@ -87,7 +92,7 @@ class CoroWrapper:
         assert inspect.isgenerator(gen) or inspect.iscoroutine(gen), gen
         self.gen = gen
         self.func = func  # Used to unwrap @coroutine decorator
-        self._source_traceback = traceback.extract_stack(sys._getframe(1))
+        self._source_traceback = events.extract_stack(sys._getframe(1))
         self.__name__ = getattr(gen, '__name__', None)
         self.__qualname__ = getattr(gen, '__qualname__', None)
 
@@ -120,8 +125,8 @@ class CoroWrapper:
         def send(self, value):
             return self.gen.send(value)
 
-    def throw(self, exc):
-        return self.gen.throw(exc)
+    def throw(self, type, value=None, traceback=None):
+        return self.gen.throw(type, value, traceback)
 
     def close(self):
         return self.gen.close()
@@ -179,8 +184,9 @@ class CoroWrapper:
             tb = getattr(self, '_source_traceback', ())
             if tb:
                 tb = ''.join(traceback.format_list(tb))
-                msg += ('\nCoroutine object created at '
-                        '(most recent call last):\n')
+                msg += (f'\nCoroutine object created at '
+                        f'(most recent call last, truncated to '
+                        f'{constants.DEBUG_STACK_DEPTH} last lines):\n')
                 msg += tb.rstrip()
             logger.error(msg)
 
@@ -193,7 +199,7 @@ def coroutine(func):
     """
     if _inspect_iscoroutinefunction(func):
         # In Python 3.5 that's all we need to do for coroutines
-        # defiend with "async def".
+        # defined with "async def".
         # Wrapping in CoroWrapper will happen via
         # 'sys.set_coroutine_wrapper' function.
         return func
@@ -204,7 +210,8 @@ def coroutine(func):
         @functools.wraps(func)
         def coro(*args, **kw):
             res = func(*args, **kw)
-            if isinstance(res, futures.Future) or inspect.isgenerator(res):
+            if (base_futures.isfuture(res) or inspect.isgenerator(res) or
+                isinstance(res, CoroWrapper)):
                 res = yield from res
             elif _AwaitableABC is not None:
                 # If 'func' returns an Awaitable (new in 3.5) we
@@ -237,19 +244,27 @@ def coroutine(func):
             w.__qualname__ = getattr(func, '__qualname__', None)
             return w
 
-    wrapper._is_coroutine = True  # For iscoroutinefunction().
+    wrapper._is_coroutine = _is_coroutine  # For iscoroutinefunction().
     return wrapper
+
+
+# A marker for iscoroutinefunction.
+_is_coroutine = object()
 
 
 def iscoroutinefunction(func):
     """Return True if func is a decorated coroutine function."""
-    return (getattr(func, '_is_coroutine', False) or
+    return (getattr(func, '_is_coroutine', None) is _is_coroutine or
             _inspect_iscoroutinefunction(func))
 
 
 _COROUTINE_TYPES = (types.GeneratorType, CoroWrapper)
 if _CoroutineABC is not None:
     _COROUTINE_TYPES += (_CoroutineABC,)
+if _types_CoroutineType is not None:
+    # Prioritize native coroutine check to speed-up
+    # asyncio.iscoroutine.
+    _COROUTINE_TYPES = (_types_CoroutineType,) + _COROUTINE_TYPES
 
 
 def iscoroutine(obj):
@@ -259,6 +274,29 @@ def iscoroutine(obj):
 
 def _format_coroutine(coro):
     assert iscoroutine(coro)
+
+    if not hasattr(coro, 'cr_code') and not hasattr(coro, 'gi_code'):
+        # Most likely a built-in type or a Cython coroutine.
+
+        # Built-in types might not have __qualname__ or __name__.
+        coro_name = getattr(
+            coro, '__qualname__',
+            getattr(coro, '__name__', type(coro).__name__))
+        coro_name = '{}()'.format(coro_name)
+
+        running = False
+        try:
+            running = coro.cr_running
+        except AttributeError:
+            try:
+                running = coro.gi_running
+            except AttributeError:
+                pass
+
+        if running:
+            return '{} running'.format(coro_name)
+        else:
+            return coro_name
 
     coro_name = None
     if isinstance(coro, CoroWrapper):
@@ -270,20 +308,27 @@ def _format_coroutine(coro):
         func = coro
 
     if coro_name is None:
-        coro_name = events._format_callback(func, ())
+        coro_name = events._format_callback(func, (), {})
 
-    try:
-        coro_code = coro.gi_code
-    except AttributeError:
+    coro_code = None
+    if hasattr(coro, 'cr_code') and coro.cr_code:
         coro_code = coro.cr_code
+    elif hasattr(coro, 'gi_code') and coro.gi_code:
+        coro_code = coro.gi_code
 
-    try:
-        coro_frame = coro.gi_frame
-    except AttributeError:
+    coro_frame = None
+    if hasattr(coro, 'cr_frame') and coro.cr_frame:
         coro_frame = coro.cr_frame
+    elif hasattr(coro, 'gi_frame') and coro.gi_frame:
+        coro_frame = coro.gi_frame
 
-    filename = coro_code.co_filename
+    filename = '<empty co_filename>'
+    if coro_code and coro_code.co_filename:
+        filename = coro_code.co_filename
+
     lineno = 0
+    coro_repr = coro_name
+
     if (isinstance(coro, CoroWrapper) and
             not inspect.isgeneratorfunction(coro.func) and
             coro.func is not None):
@@ -300,7 +345,7 @@ def _format_coroutine(coro):
         lineno = coro_frame.f_lineno
         coro_repr = ('%s running at %s:%s'
                      % (coro_name, filename, lineno))
-    else:
+    elif coro_code:
         lineno = coro_code.co_firstlineno
         coro_repr = ('%s done, defined at %s:%s'
                      % (coro_name, filename, lineno))

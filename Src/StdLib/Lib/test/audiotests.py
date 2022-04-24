@@ -1,9 +1,8 @@
 from test.support import findfile, TESTFN, unlink
-import unittest
 import array
 import io
 import pickle
-import sys
+
 
 class UnseekableIO(io.FileIO):
     def tell(self):

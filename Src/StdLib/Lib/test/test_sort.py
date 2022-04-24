@@ -1,6 +1,5 @@
 from test import support
 import random
-import sys
 import unittest
 from functools import cmp_to_key
 
@@ -129,8 +128,6 @@ class TestBase(unittest.TestCase):
             x = [e for e, i in augmented] # a stable sort of s
             check("stability", x, s)
 
-        self.assertEqual(nerrors, 0) # fail if we ran into any errors
-
 #==============================================================================
 
 class TestBugs(unittest.TestCase):
@@ -208,7 +205,6 @@ class TestDecorateSortUndecorate(unittest.TestCase):
             return x
         self.assertRaises(ValueError, data.sort, key=k)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "__del__ is only invoked when the GC runs")
     def test_key_with_mutating_del(self):
         data = list(range(10))
         class SortKiller(object):
@@ -221,7 +217,6 @@ class TestDecorateSortUndecorate(unittest.TestCase):
                 return id(self) < id(other)
         self.assertRaises(ValueError, data.sort, key=SortKiller)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "__del__ is only invoked when the GC runs")
     def test_key_with_mutating_del_and_exception(self):
         data = list(range(10))
         ## dup = data[:]
@@ -266,24 +261,5 @@ class TestDecorateSortUndecorate(unittest.TestCase):
 
 #==============================================================================
 
-def test_main(verbose=None):
-    test_classes = (
-        TestBase,
-        TestDecorateSortUndecorate,
-        TestBugs,
-    )
-
-    support.run_unittest(*test_classes)
-
-    # verify reference counting
-    if verbose and hasattr(sys, "gettotalrefcount"):
-        import gc
-        counts = [None] * 5
-        for i in range(len(counts)):
-            support.run_unittest(*test_classes)
-            gc.collect()
-            counts[i] = sys.gettotalrefcount()
-        print(counts)
-
 if __name__ == "__main__":
-    test_main(verbose=True)
+    unittest.main()

@@ -7,6 +7,7 @@ import warnings
 from functools import partial
 from math import log, exp, pi, fsum, sin
 from test import support
+from fractions import Fraction
 
 class TestBasicOps:
     # Superclass with tests common to all generators.
@@ -21,7 +22,7 @@ class TestBasicOps:
         self.gen.seed()
         state1 = self.gen.getstate()
         time.sleep(0.1)
-        self.gen.seed()      # diffent seeds at different times
+        self.gen.seed()      # different seeds at different times
         state2 = self.gen.getstate()
         self.assertNotEqual(state1, state2)
 
@@ -109,6 +110,7 @@ class TestBasicOps:
         self.assertEqual(self.gen.sample([], 0), [])  # test edge case N==k==0
         # Exception raised if size of sample exceeds that of population
         self.assertRaises(ValueError, self.gen.sample, population, N+1)
+        self.assertRaises(ValueError, self.gen.sample, [], -1)
 
     def test_sample_distribution(self):
         # For the entire allowable range of 0 <= k <= N, validate that
@@ -140,6 +142,91 @@ class TestBasicOps:
 
     def test_sample_on_dicts(self):
         self.assertRaises(TypeError, self.gen.sample, dict.fromkeys('abcdef'), 2)
+
+    def test_choices(self):
+        choices = self.gen.choices
+        data = ['red', 'green', 'blue', 'yellow']
+        str_data = 'abcd'
+        range_data = range(4)
+        set_data = set(range(4))
+
+        # basic functionality
+        for sample in [
+            choices(data, k=5),
+            choices(data, range(4), k=5),
+            choices(k=5, population=data, weights=range(4)),
+            choices(k=5, population=data, cum_weights=range(4)),
+        ]:
+            self.assertEqual(len(sample), 5)
+            self.assertEqual(type(sample), list)
+            self.assertTrue(set(sample) <= set(data))
+
+        # test argument handling
+        with self.assertRaises(TypeError):                               # missing arguments
+            choices(2)
+
+        self.assertEqual(choices(data, k=0), [])                         # k == 0
+        self.assertEqual(choices(data, k=-1), [])                        # negative k behaves like ``[0] * -1``
+        with self.assertRaises(TypeError):
+            choices(data, k=2.5)                                         # k is a float
+
+        self.assertTrue(set(choices(str_data, k=5)) <= set(str_data))    # population is a string sequence
+        self.assertTrue(set(choices(range_data, k=5)) <= set(range_data))  # population is a range
+        with self.assertRaises(TypeError):
+            choices(set_data, k=2)                                       # population is not a sequence
+
+        self.assertTrue(set(choices(data, None, k=5)) <= set(data))      # weights is None
+        self.assertTrue(set(choices(data, weights=None, k=5)) <= set(data))
+        with self.assertRaises(ValueError):
+            choices(data, [1,2], k=5)                                    # len(weights) != len(population)
+        with self.assertRaises(TypeError):
+            choices(data, 10, k=5)                                       # non-iterable weights
+        with self.assertRaises(TypeError):
+            choices(data, [None]*4, k=5)                                 # non-numeric weights
+        for weights in [
+                [15, 10, 25, 30],                                                 # integer weights
+                [15.1, 10.2, 25.2, 30.3],                                         # float weights
+                [Fraction(1, 3), Fraction(2, 6), Fraction(3, 6), Fraction(4, 6)], # fractional weights
+                [True, False, True, False]                                        # booleans (include / exclude)
+        ]:
+            self.assertTrue(set(choices(data, weights, k=5)) <= set(data))
+
+        with self.assertRaises(ValueError):
+            choices(data, cum_weights=[1,2], k=5)                        # len(weights) != len(population)
+        with self.assertRaises(TypeError):
+            choices(data, cum_weights=10, k=5)                           # non-iterable cum_weights
+        with self.assertRaises(TypeError):
+            choices(data, cum_weights=[None]*4, k=5)                     # non-numeric cum_weights
+        with self.assertRaises(TypeError):
+            choices(data, range(4), cum_weights=range(4), k=5)           # both weights and cum_weights
+        for weights in [
+                [15, 10, 25, 30],                                                 # integer cum_weights
+                [15.1, 10.2, 25.2, 30.3],                                         # float cum_weights
+                [Fraction(1, 3), Fraction(2, 6), Fraction(3, 6), Fraction(4, 6)], # fractional cum_weights
+        ]:
+            self.assertTrue(set(choices(data, cum_weights=weights, k=5)) <= set(data))
+
+        # Test weight focused on a single element of the population
+        self.assertEqual(choices('abcd', [1, 0, 0, 0]), ['a'])
+        self.assertEqual(choices('abcd', [0, 1, 0, 0]), ['b'])
+        self.assertEqual(choices('abcd', [0, 0, 1, 0]), ['c'])
+        self.assertEqual(choices('abcd', [0, 0, 0, 1]), ['d'])
+
+        # Test consistency with random.choice() for empty population
+        with self.assertRaises(IndexError):
+            choices([], k=1)
+        with self.assertRaises(IndexError):
+            choices([], weights=[], k=1)
+        with self.assertRaises(IndexError):
+            choices([], cum_weights=[], k=5)
+
+    def test_choices_subnormal(self):
+        # Subnormal weights would occassionally trigger an IndexError
+        # in choices() when the value returned by random() was large
+        # enough to make `random() * total` round up to the total.
+        # See https://bugs.python.org/msg275594 for more detail.
+        choices = self.gen.choices
+        choices(population=[1, 2], weights=[1e-323, 1e-323], k=5000)
 
     def test_gauss(self):
         # Ensure that the seed() method initializes all the hidden state.  In
@@ -326,10 +413,67 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             ['0x1.1239ddfb11b7cp-3', '0x1.b3cbb5c51b120p-4',
              '0x1.8c4f55116b60fp-1', '0x1.63eb525174a27p-1'])
 
+    def test_bug_27706(self):
+        # Verify that version 1 seeds are unaffected by hash randomization
+
+        self.gen.seed('nofar', version=1)   # hash('nofar') == 5990528763808513177
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5',
+             '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'])
+
+        self.gen.seed('rachel', version=1)  # hash('rachel') == -9091735575445484789
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3',
+             '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'])
+
+        self.gen.seed('', version=1)        # hash('') == 0
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1',
+             '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'])
+
+    def test_bug_31478(self):
+        # There shouldn't be an assertion failure in _random.Random.seed() in
+        # case the argument has a bad __abs__() method.
+        class BadInt(int):
+            def __abs__(self):
+                return None
+        try:
+            self.gen.seed(BadInt())
+        except TypeError:
+            pass
+
+    def test_bug_31482(self):
+        # Verify that version 1 seeds are unaffected by hash randomization
+        # when the seeds are expressed as bytes rather than strings.
+        # The hash(b) values listed are the Python2.7 hash() values
+        # which were used for seeding.
+
+        self.gen.seed(b'nofar', version=1)   # hash('nofar') == 5990528763808513177
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.8645314505ad7p-1', '0x1.afb1f82e40a40p-5',
+             '0x1.2a59d2285e971p-1', '0x1.56977142a7880p-6'])
+
+        self.gen.seed(b'rachel', version=1)  # hash('rachel') == -9091735575445484789
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.0b294cc856fcdp-1', '0x1.2ad22d79e77b8p-3',
+             '0x1.3052b9c072678p-2', '0x1.578f332106574p-3'])
+
+        self.gen.seed(b'', version=1)        # hash('') == 0
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.b0580f98a7dbep-1', '0x1.84129978f9c1ap-1',
+             '0x1.aeaa51052e978p-2', '0x1.092178fb945a6p-2'])
+
+        b = b'\x00\x20\x40\x60\x80\xA0\xC0\xE0\xF0'
+        self.gen.seed(b, version=1)         # hash(b) == 5015594239749365497
+        self.assertEqual([self.gen.random().hex() for i in range(4)],
+            ['0x1.52c2fde444d23p-1', '0x1.875174f0daea4p-2',
+             '0x1.9e9b2c50e5cd2p-1', '0x1.fa57768bd321cp-2'])
+
     def test_setstate_first_arg(self):
         self.assertRaises(ValueError, self.gen.setstate, (1, None, None))
 
     def test_setstate_middle_arg(self):
+        start_state = self.gen.getstate()
         # Wrong type, s/b tuple
         self.assertRaises(TypeError, self.gen.setstate, (2, None, None))
         # Wrong length, s/b 625
@@ -343,6 +487,10 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             self.gen.setstate((2, (1,)*624+(625,), None))
         with self.assertRaises((ValueError, OverflowError)):
             self.gen.setstate((2, (1,)*624+(-1,), None))
+        # Failed calls to setstate() should not have changed the state.
+        bits100 = self.gen.getrandbits(100)
+        self.gen.setstate(start_state)
+        self.assertEqual(self.gen.getrandbits(100), bits100)
 
         # Little trick to make "tuple(x % (2**32) for x in internalstate)"
         # raise ValueError. I cannot think of a simple way to achieve this, so
@@ -494,7 +642,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             self.assertTrue(2**k > n > 2**(k-1))   # note the stronger assertion
 
     @unittest.mock.patch('random.Random.random')
-    def test_randbelow_overriden_random(self, random_mock):
+    def test_randbelow_overridden_random(self, random_mock):
         # Random._randbelow() can only use random() when the built-in one
         # has been overridden but no new getrandbits() method was supplied.
         random_mock.side_effect = random.SystemRandom().random
@@ -504,7 +652,10 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             # Population range too large (n >= maxsize)
             self.gen._randbelow(maxsize+1, maxsize = maxsize)
         self.gen._randbelow(5640, maxsize = maxsize)
-
+        # issue 33203: test that _randbelow raises ValueError on
+        # n == 0 also in its getrandbits-independent branch.
+        with self.assertRaises(ValueError):
+            self.gen._randbelow(0, maxsize=maxsize)
         # This might be going too far to test a single line, but because of our
         # noble aim of achieving 100% test coverage we need to write a case in
         # which the following line in Random._randbelow() gets executed:
@@ -532,6 +683,39 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
         x = self.gen.randrange(start, stop, step)
         self.assertTrue(stop < x <= start)
         self.assertEqual((x+stop)%step, 0)
+
+    def test_choices_algorithms(self):
+        # The various ways of specifying weights should produce the same results
+        choices = self.gen.choices
+        n = 104729
+
+        self.gen.seed(8675309)
+        a = self.gen.choices(range(n), k=10000)
+
+        self.gen.seed(8675309)
+        b = self.gen.choices(range(n), [1]*n, k=10000)
+        self.assertEqual(a, b)
+
+        self.gen.seed(8675309)
+        c = self.gen.choices(range(n), cum_weights=range(1, n+1), k=10000)
+        self.assertEqual(a, c)
+
+        # Amerian Roulette
+        population = ['Red', 'Black', 'Green']
+        weights = [18, 18, 2]
+        cum_weights = [18, 36, 38]
+        expanded_population = ['Red'] * 18 + ['Black'] * 18 + ['Green'] * 2
+
+        self.gen.seed(9035768)
+        a = self.gen.choices(expanded_population, k=10000)
+
+        self.gen.seed(9035768)
+        b = self.gen.choices(population, weights, k=10000)
+        self.assertEqual(a, b)
+
+        self.gen.seed(9035768)
+        c = self.gen.choices(population, cum_weights=cum_weights, k=10000)
+        self.assertEqual(a, c)
 
 def gamma(z, sqrt2pi=(2.0*pi)**0.5):
     # Reflection to right half of complex plane

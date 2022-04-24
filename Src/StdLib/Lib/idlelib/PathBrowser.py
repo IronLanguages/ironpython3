@@ -1,20 +1,21 @@
+import importlib.machinery
 import os
 import sys
-import importlib.machinery
 
-from idlelib.TreeWidget import TreeItem
-from idlelib.ClassBrowser import ClassBrowser, ModuleBrowserTreeItem
-from idlelib.PyShell import PyShellFileList
+from idlelib.browser import ModuleBrowser, ModuleBrowserTreeItem
+from idlelib.tree import TreeItem
 
 
-class PathBrowser(ClassBrowser):
+class PathBrowser(ModuleBrowser):
 
-    def __init__(self, flist, _htest=False):
+    def __init__(self, master, *, _htest=False, _utest=False):
         """
         _htest - bool, change box location when running htest
         """
+        self.master = master
         self._htest = _htest
-        self.init(flist)
+        self._utest = _utest
+        self.init()
 
     def settitle(self):
         "Set window titles."
@@ -23,6 +24,7 @@ class PathBrowser(ClassBrowser):
 
     def rootnode(self):
         return PathBrowserTreeItem()
+
 
 class PathBrowserTreeItem(TreeItem):
 
@@ -35,6 +37,7 @@ class PathBrowserTreeItem(TreeItem):
             item = DirBrowserTreeItem(dir)
             sublist.append(item)
         return sublist
+
 
 class DirBrowserTreeItem(TreeItem):
 
@@ -95,9 +98,9 @@ class DirBrowserTreeItem(TreeItem):
         sorted.sort()
         return sorted
 
+
 def _path_browser(parent):  # htest #
-    flist = PyShellFileList(parent)
-    PathBrowser(flist, _htest=True)
+    PathBrowser(parent, _htest=True)
     parent.mainloop()
 
 if __name__ == "__main__":

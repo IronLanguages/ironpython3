@@ -40,12 +40,10 @@ Instances of this class have the following instance variables:
 """
 
 import io
-import os
 import sys
 import importlib.util
 import tokenize
 from token import NAME, DEDENT, OP
-from operator import itemgetter
 
 __all__ = ["readmodule", "readmodule_ex", "Class", "Function"]
 
@@ -142,10 +140,10 @@ def _readmodule(module, path, inpackage=None):
         search_path = path + sys.path
     # XXX This will change once issue19944 lands.
     spec = importlib.util._find_spec_from_path(fullmodule, search_path)
-    fname = spec.loader.get_filename(fullmodule)
     _modules[fullmodule] = dict
-    if spec.loader.is_package(fullmodule):
-        dict['__path__'] = [os.path.dirname(fname)]
+    # is module a package?
+    if spec.submodule_search_locations is not None:
+        dict['__path__'] = spec.submodule_search_locations
     try:
         source = spec.loader.get_source(fullmodule)
         if source is None:
@@ -153,6 +151,8 @@ def _readmodule(module, path, inpackage=None):
     except (AttributeError, ImportError):
         # not Python source, can't do anything with this module
         return dict
+
+    fname = spec.loader.get_filename(fullmodule)
 
     f = io.StringIO(source)
 
@@ -326,6 +326,7 @@ def _getname(g):
 def _main():
     # Main program for testing.
     import os
+    from operator import itemgetter
     mod = sys.argv[1]
     if os.path.exists(mod):
         path = [os.path.dirname(mod)]

@@ -96,6 +96,13 @@ class BoolTest(unittest.TestCase):
         self.assertEqual(False/1, 0)
         self.assertIsNot(False/1, False)
 
+        self.assertEqual(True%1, 0)
+        self.assertIsNot(True%1, False)
+        self.assertEqual(True%2, 1)
+        self.assertIsNot(True%2, True)
+        self.assertEqual(False%1, 0)
+        self.assertIsNot(False%1, False)
+
         for b in False, True:
             for i in 0, 1, 2:
                 self.assertEqual(b**i, int(b)**i)
@@ -314,6 +321,10 @@ class BoolTest(unittest.TestCase):
                 return -1
         self.assertRaises(ValueError, bool, Eggs())
 
+    def test_from_bytes(self):
+        self.assertIs(bool.from_bytes(b'\x00'*8, 'big'), False)
+        self.assertIs(bool.from_bytes(b'abcd', 'little'), True)
+
     def test_sane_len(self):
         # this test just tests our assumptions about __len__
         # this will start failing if __len__ changes assertions
@@ -328,6 +339,17 @@ class BoolTest(unittest.TestCase):
                     len(A())
                 except (Exception) as e_len:
                     self.assertEqual(str(e_bool), str(e_len))
+
+    def test_blocked(self):
+        class A:
+            __bool__ = None
+        self.assertRaises(TypeError, bool, A())
+
+        class B:
+            def __len__(self):
+                return 10
+            __bool__ = None
+        self.assertRaises(TypeError, bool, B())
 
     def test_real_and_imag(self):
         self.assertEqual(True.real, 1)

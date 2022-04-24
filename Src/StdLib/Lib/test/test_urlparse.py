@@ -8,8 +8,8 @@ RFC2396_BASE = "http://a/b/c/d;p?q"
 RFC3986_BASE = 'http://a/b/c/d;p?q'
 SIMPLE_BASE  = 'http://a/b/c/d'
 
-# A list of test cases.  Each test case is a two-tuple that contains
-# a string with the query and a dictionary with the expected result.
+# Each parse_qsl testcase is a two-tuple that contains
+# a string with the query and a list with the expected result.
 
 parse_qsl_test_cases = [
     ("", []),
@@ -18,7 +18,6 @@ parse_qsl_test_cases = [
     ("=", [('', '')]),
     ("=a", [('', 'a')]),
     ("a", [('a', '')]),
-    ("a=", [('a', '')]),
     ("a=", [('a', '')]),
     ("&a=b", [('a', 'b')]),
     ("a=a+b&b=b+c", [('a', 'a b'), ('b', 'b c')]),
@@ -30,10 +29,43 @@ parse_qsl_test_cases = [
     (b"=a", [(b'', b'a')]),
     (b"a", [(b'a', b'')]),
     (b"a=", [(b'a', b'')]),
-    (b"a=", [(b'a', b'')]),
     (b"&a=b", [(b'a', b'b')]),
     (b"a=a+b&b=b+c", [(b'a', b'a b'), (b'b', b'b c')]),
     (b"a=1&a=2", [(b'a', b'1'), (b'a', b'2')]),
+    (";a=b", [(';a', 'b')]),
+    ("a=a+b;b=b+c", [('a', 'a b;b=b c')]),
+    (b";a=b", [(b';a', b'b')]),
+    (b"a=a+b;b=b+c", [(b'a', b'a b;b=b c')]),
+]
+
+# Each parse_qs testcase is a two-tuple that contains
+# a string with the query and a dictionary with the expected result.
+
+parse_qs_test_cases = [
+    ("", {}),
+    ("&", {}),
+    ("&&", {}),
+    ("=", {'': ['']}),
+    ("=a", {'': ['a']}),
+    ("a", {'a': ['']}),
+    ("a=", {'a': ['']}),
+    ("&a=b", {'a': ['b']}),
+    ("a=a+b&b=b+c", {'a': ['a b'], 'b': ['b c']}),
+    ("a=1&a=2", {'a': ['1', '2']}),
+    (b"", {}),
+    (b"&", {}),
+    (b"&&", {}),
+    (b"=", {b'': [b'']}),
+    (b"=a", {b'': [b'a']}),
+    (b"a", {b'a': [b'']}),
+    (b"a=", {b'a': [b'']}),
+    (b"&a=b", {b'a': [b'b']}),
+    (b"a=a+b&b=b+c", {b'a': [b'a b'], b'b': [b'b c']}),
+    (b"a=1&a=2", {b'a': [b'1', b'2']}),
+    (";a=b", {';a': ['b']}),
+    ("a=a+b;b=b+c", {'a': ['a b;b=b c']}),
+    (b";a=b", {b';a': [b'b']}),
+    (b"a=a+b;b=b+c", {b'a':[ b'a b;b=b c']}),
 ]
 
 class UrlParseTestCase(unittest.TestCase):
@@ -95,6 +127,16 @@ class UrlParseTestCase(unittest.TestCase):
             self.assertEqual(result, expect, "Error parsing %r" % orig)
             expect_without_blanks = [v for v in expect if len(v[1])]
             result = urllib.parse.parse_qsl(orig, keep_blank_values=False)
+            self.assertEqual(result, expect_without_blanks,
+                            "Error parsing %r" % orig)
+
+    def test_qs(self):
+        for orig, expect in parse_qs_test_cases:
+            result = urllib.parse.parse_qs(orig, keep_blank_values=True)
+            self.assertEqual(result, expect, "Error parsing %r" % orig)
+            expect_without_blanks = {v: expect[v]
+                                     for v in expect if len(expect[v][0])}
+            result = urllib.parse.parse_qs(orig, keep_blank_values=False)
             self.assertEqual(result, expect_without_blanks,
                             "Error parsing %r" % orig)
 
@@ -212,10 +254,6 @@ class UrlParseTestCase(unittest.TestCase):
 
         # "abnormal" cases from RFC 1808:
         self.checkJoin(RFC1808_BASE, '', 'http://a/b/c/d;p?q#f')
-        self.checkJoin(RFC1808_BASE, '../../../g', 'http://a/../g')
-        self.checkJoin(RFC1808_BASE, '../../../../g', 'http://a/../../g')
-        self.checkJoin(RFC1808_BASE, '/./g', 'http://a/./g')
-        self.checkJoin(RFC1808_BASE, '/../g', 'http://a/../g')
         self.checkJoin(RFC1808_BASE, 'g.', 'http://a/b/c/g.')
         self.checkJoin(RFC1808_BASE, '.g', 'http://a/b/c/.g')
         self.checkJoin(RFC1808_BASE, 'g..', 'http://a/b/c/g..')
@@ -230,6 +268,13 @@ class UrlParseTestCase(unittest.TestCase):
         #self.checkJoin(RFC1808_BASE, 'http:g', 'http:g')
         #self.checkJoin(RFC1808_BASE, 'http:', 'http:')
 
+        # XXX: The following tests are no longer compatible with RFC3986
+        # self.checkJoin(RFC1808_BASE, '../../../g', 'http://a/../g')
+        # self.checkJoin(RFC1808_BASE, '../../../../g', 'http://a/../../g')
+        # self.checkJoin(RFC1808_BASE, '/./g', 'http://a/./g')
+        # self.checkJoin(RFC1808_BASE, '/../g', 'http://a/../g')
+
+
     def test_RFC2368(self):
         # Issue 11467: path that starts with a number is not parsed correctly
         self.assertEqual(urllib.parse.urlparse('mailto:1337@example.org'),
@@ -237,7 +282,6 @@ class UrlParseTestCase(unittest.TestCase):
 
     def test_RFC2396(self):
         # cases from RFC 2396
-
 
         self.checkJoin(RFC2396_BASE, 'g:h', 'g:h')
         self.checkJoin(RFC2396_BASE, 'g', 'http://a/b/c/g')
@@ -260,10 +304,6 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin(RFC2396_BASE, '../../', 'http://a/')
         self.checkJoin(RFC2396_BASE, '../../g', 'http://a/g')
         self.checkJoin(RFC2396_BASE, '', RFC2396_BASE)
-        self.checkJoin(RFC2396_BASE, '../../../g', 'http://a/../g')
-        self.checkJoin(RFC2396_BASE, '../../../../g', 'http://a/../../g')
-        self.checkJoin(RFC2396_BASE, '/./g', 'http://a/./g')
-        self.checkJoin(RFC2396_BASE, '/../g', 'http://a/../g')
         self.checkJoin(RFC2396_BASE, 'g.', 'http://a/b/c/g.')
         self.checkJoin(RFC2396_BASE, '.g', 'http://a/b/c/.g')
         self.checkJoin(RFC2396_BASE, 'g..', 'http://a/b/c/g..')
@@ -279,10 +319,15 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin(RFC2396_BASE, 'g#s/./x', 'http://a/b/c/g#s/./x')
         self.checkJoin(RFC2396_BASE, 'g#s/../x', 'http://a/b/c/g#s/../x')
 
+        # XXX: The following tests are no longer compatible with RFC3986
+        # self.checkJoin(RFC2396_BASE, '../../../g', 'http://a/../g')
+        # self.checkJoin(RFC2396_BASE, '../../../../g', 'http://a/../../g')
+        # self.checkJoin(RFC2396_BASE, '/./g', 'http://a/./g')
+        # self.checkJoin(RFC2396_BASE, '/../g', 'http://a/../g')
+
     def test_RFC3986(self):
-        # Test cases from RFC3986
         self.checkJoin(RFC3986_BASE, '?y','http://a/b/c/d;p?y')
-        self.checkJoin(RFC2396_BASE, ';x', 'http://a/b/c/;x')
+        self.checkJoin(RFC3986_BASE, ';x', 'http://a/b/c/;x')
         self.checkJoin(RFC3986_BASE, 'g:h','g:h')
         self.checkJoin(RFC3986_BASE, 'g','http://a/b/c/g')
         self.checkJoin(RFC3986_BASE, './g','http://a/b/c/g')
@@ -306,17 +351,17 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin(RFC3986_BASE, '../..','http://a/')
         self.checkJoin(RFC3986_BASE, '../../','http://a/')
         self.checkJoin(RFC3986_BASE, '../../g','http://a/g')
+        self.checkJoin(RFC3986_BASE, '../../../g', 'http://a/g')
 
-        #Abnormal Examples
+        # Abnormal Examples
 
         # The 'abnormal scenarios' are incompatible with RFC2986 parsing
         # Tests are here for reference.
 
-        #self.checkJoin(RFC3986_BASE, '../../../g','http://a/g')
-        #self.checkJoin(RFC3986_BASE, '../../../../g','http://a/g')
-        #self.checkJoin(RFC3986_BASE, '/./g','http://a/g')
-        #self.checkJoin(RFC3986_BASE, '/../g','http://a/g')
-
+        self.checkJoin(RFC3986_BASE, '../../../g','http://a/g')
+        self.checkJoin(RFC3986_BASE, '../../../../g','http://a/g')
+        self.checkJoin(RFC3986_BASE, '/./g','http://a/g')
+        self.checkJoin(RFC3986_BASE, '/../g','http://a/g')
         self.checkJoin(RFC3986_BASE, 'g.','http://a/b/c/g.')
         self.checkJoin(RFC3986_BASE, '.g','http://a/b/c/.g')
         self.checkJoin(RFC3986_BASE, 'g..','http://a/b/c/g..')
@@ -356,10 +401,8 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin(SIMPLE_BASE, '../g','http://a/b/g')
         self.checkJoin(SIMPLE_BASE, '../..','http://a/')
         self.checkJoin(SIMPLE_BASE, '../../g','http://a/g')
-        self.checkJoin(SIMPLE_BASE, '../../../g','http://a/../g')
         self.checkJoin(SIMPLE_BASE, './../g','http://a/b/g')
         self.checkJoin(SIMPLE_BASE, './g/.','http://a/b/c/g/')
-        self.checkJoin(SIMPLE_BASE, '/./g','http://a/./g')
         self.checkJoin(SIMPLE_BASE, 'g/./h','http://a/b/c/g/h')
         self.checkJoin(SIMPLE_BASE, 'g/../h','http://a/b/c/h')
         self.checkJoin(SIMPLE_BASE, 'http:g','http://a/b/c/g')
@@ -372,6 +415,27 @@ class UrlParseTestCase(unittest.TestCase):
         self.checkJoin('', 'http://a/./g', 'http://a/./g')
         self.checkJoin('svn://pathtorepo/dir1', 'dir2', 'svn://pathtorepo/dir2')
         self.checkJoin('svn+ssh://pathtorepo/dir1', 'dir2', 'svn+ssh://pathtorepo/dir2')
+        self.checkJoin('ws://a/b','g','ws://a/g')
+        self.checkJoin('wss://a/b','g','wss://a/g')
+
+        # XXX: The following tests are no longer compatible with RFC3986
+        # self.checkJoin(SIMPLE_BASE, '../../../g','http://a/../g')
+        # self.checkJoin(SIMPLE_BASE, '/./g','http://a/./g')
+
+        # test for issue22118 duplicate slashes
+        self.checkJoin(SIMPLE_BASE + '/', 'foo', SIMPLE_BASE + '/foo')
+
+        # Non-RFC-defined tests, covering variations of base and trailing
+        # slashes
+        self.checkJoin('http://a/b/c/d/e/', '../../f/g/', 'http://a/b/c/f/g/')
+        self.checkJoin('http://a/b/c/d/e', '../../f/g/', 'http://a/b/f/g/')
+        self.checkJoin('http://a/b/c/d/e/', '/../../f/g/', 'http://a/f/g/')
+        self.checkJoin('http://a/b/c/d/e', '/../../f/g/', 'http://a/f/g/')
+        self.checkJoin('http://a/b/c/d/e/', '../../f/g', 'http://a/b/c/f/g')
+        self.checkJoin('http://a/b/', '../../f/g/', 'http://a/f/g/')
+
+        # issue 23703: don't duplicate filename
+        self.checkJoin('a', 'b', 'b')
 
     def test_RFC2732(self):
         str_cases = [
@@ -445,6 +509,15 @@ class UrlParseTestCase(unittest.TestCase):
             self.assertEqual(result, (defrag, frag))
             self.assertEqual(result.url, defrag)
             self.assertEqual(result.fragment, frag)
+
+    def test_urlsplit_scoped_IPv6(self):
+        p = urllib.parse.urlsplit('http://[FE80::822a:a8ff:fe49:470c%tESt]:1234')
+        self.assertEqual(p.hostname, "fe80::822a:a8ff:fe49:470c%tESt")
+        self.assertEqual(p.netloc, '[FE80::822a:a8ff:fe49:470c%tESt]:1234')
+
+        p = urllib.parse.urlsplit(b'http://[FE80::822a:a8ff:fe49:470c%tESt]:1234')
+        self.assertEqual(p.hostname, b"fe80::822a:a8ff:fe49:470c%tESt")
+        self.assertEqual(p.netloc, b'[FE80::822a:a8ff:fe49:470c%tESt]:1234')
 
     def test_urlsplit_attributes(self):
         url = "HTTP://WWW.PYTHON.ORG/doc/#frag"
@@ -533,10 +606,11 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertEqual(p.port, 80)
         self.assertEqual(p.geturl(), url)
 
-        # Verify an illegal port is returned as None
+        # Verify an illegal port raises ValueError
         url = b"HTTP://WWW.PYTHON.ORG:65536/doc/#frag"
         p = urllib.parse.urlsplit(url)
-        self.assertEqual(p.port, None)
+        with self.assertRaisesRegex(ValueError, "out of range"):
+            p.port
 
     def test_urlsplit_remove_unsafe_bytes(self):
         # Remove ASCII tabs and newlines from input, for http common case scenario.
@@ -587,23 +661,20 @@ class UrlParseTestCase(unittest.TestCase):
             self.assertEqual(p.geturl(), "https://www.python.org/javascript:alert('msg')/?query=something#fragment")
 
     def test_attributes_bad_port(self):
-        """Check handling of non-integer ports."""
-        p = urllib.parse.urlsplit("http://www.example.net:foo")
-        self.assertEqual(p.netloc, "www.example.net:foo")
-        self.assertRaises(ValueError, lambda: p.port)
-
-        p = urllib.parse.urlparse("http://www.example.net:foo")
-        self.assertEqual(p.netloc, "www.example.net:foo")
-        self.assertRaises(ValueError, lambda: p.port)
-
-        # Once again, repeat ourselves to test bytes
-        p = urllib.parse.urlsplit(b"http://www.example.net:foo")
-        self.assertEqual(p.netloc, b"www.example.net:foo")
-        self.assertRaises(ValueError, lambda: p.port)
-
-        p = urllib.parse.urlparse(b"http://www.example.net:foo")
-        self.assertEqual(p.netloc, b"www.example.net:foo")
-        self.assertRaises(ValueError, lambda: p.port)
+        """Check handling of invalid ports."""
+        for bytes in (False, True):
+            for parse in (urllib.parse.urlsplit, urllib.parse.urlparse):
+                for port in ("foo", "1.5", "-1", "0x10"):
+                    with self.subTest(bytes=bytes, parse=parse, port=port):
+                        netloc = "www.example.net:" + port
+                        url = "http://" + netloc
+                        if bytes:
+                            netloc = netloc.encode("ascii")
+                            url = url.encode("ascii")
+                        p = parse(url)
+                        self.assertEqual(p.netloc, netloc)
+                        with self.assertRaises(ValueError):
+                            p.port
 
     def test_attributes_without_netloc(self):
         # This example is straight from RFC 3261.  It looks like it
@@ -846,6 +917,49 @@ class UrlParseTestCase(unittest.TestCase):
                                                           errors="ignore")
         self.assertEqual(result, [('key', '\u0141-')])
 
+    def test_parse_qsl_max_num_fields(self):
+        with self.assertRaises(ValueError):
+            urllib.parse.parse_qs('&'.join(['a=a']*11), max_num_fields=10)
+        urllib.parse.parse_qs('&'.join(['a=a']*10), max_num_fields=10)
+
+    def test_parse_qs_separator(self):
+        parse_qs_semicolon_cases = [
+            (";", {}),
+            (";;", {}),
+            (";a=b", {'a': ['b']}),
+            ("a=a+b;b=b+c", {'a': ['a b'], 'b': ['b c']}),
+            ("a=1;a=2", {'a': ['1', '2']}),
+            (b";", {}),
+            (b";;", {}),
+            (b";a=b", {b'a': [b'b']}),
+            (b"a=a+b;b=b+c", {b'a': [b'a b'], b'b': [b'b c']}),
+            (b"a=1;a=2", {b'a': [b'1', b'2']}),
+        ]
+        for orig, expect in parse_qs_semicolon_cases:
+            with self.subTest(f"Original: {orig!r}, Expected: {expect!r}"):
+                result = urllib.parse.parse_qs(orig, separator=';')
+                self.assertEqual(result, expect, "Error parsing %r" % orig)
+
+
+    def test_parse_qsl_separator(self):
+        parse_qsl_semicolon_cases = [
+            (";", []),
+            (";;", []),
+            (";a=b", [('a', 'b')]),
+            ("a=a+b;b=b+c", [('a', 'a b'), ('b', 'b c')]),
+            ("a=1;a=2", [('a', '1'), ('a', '2')]),
+            (b";", []),
+            (b";;", []),
+            (b";a=b", [(b'a', b'b')]),
+            (b"a=a+b;b=b+c", [(b'a', b'a b'), (b'b', b'b c')]),
+            (b"a=1;a=2", [(b'a', b'1'), (b'a', b'2')]),
+        ]
+        for orig, expect in parse_qsl_semicolon_cases:
+            with self.subTest(f"Original: {orig!r}, Expected: {expect!r}"):
+                result = urllib.parse.parse_qsl(orig, separator=';')
+                self.assertEqual(result, expect, "Error parsing %r" % orig)
+
+
     def test_urlencode_sequences(self):
         # Other tests incidentally urlencode things; test non-covered cases:
         # Sequence and object values.
@@ -859,6 +973,16 @@ class UrlParseTestCase(unittest.TestCase):
 
         result = urllib.parse.urlencode({'a': Trivial()}, True)
         self.assertEqual(result, 'a=trivial')
+
+    def test_urlencode_quote_via(self):
+        result = urllib.parse.urlencode({'a': 'some value'})
+        self.assertEqual(result, "a=some+value")
+        result = urllib.parse.urlencode({'a': 'some value/another'},
+                                        quote_via=urllib.parse.quote)
+        self.assertEqual(result, "a=some%20value%2Fanother")
+        result = urllib.parse.urlencode({'a': 'some value/another'},
+                                        safe='/', quote_via=urllib.parse.quote)
+        self.assertEqual(result, "a=some%20value/another")
 
     def test_quote_from_bytes(self):
         self.assertRaises(TypeError, urllib.parse.quote_from_bytes, 'foo')
@@ -918,15 +1042,30 @@ class UrlParseTestCase(unittest.TestCase):
         quoter = urllib.parse.Quoter(urllib.parse._ALWAYS_SAFE)
         self.assertIn('Quoter', repr(quoter))
 
+    def test_all(self):
+        expected = []
+        undocumented = {
+            'splitattr', 'splithost', 'splitnport', 'splitpasswd',
+            'splitport', 'splitquery', 'splittag', 'splittype', 'splituser',
+            'splitvalue',
+            'Quoter', 'ResultBase', 'clear_cache', 'to_bytes', 'unwrap',
+        }
+        for name in dir(urllib.parse):
+            if name.startswith('_') or name in undocumented:
+                continue
+            object = getattr(urllib.parse, name)
+            if getattr(object, '__module__', None) == 'urllib.parse':
+                expected.append(name)
+        self.assertCountEqual(urllib.parse.__all__, expected)
+
     def test_urlsplit_normalization(self):
         # Certain characters should never occur in the netloc,
         # including under normalization.
         # Ensure that ALL of them are detected and cause an error
         illegal_chars = '/:#?@'
         hex_chars = {'{:04X}'.format(ord(c)) for c in illegal_chars}
-        maxunicode = 0xffff if sys.implementation.name == "ironpython" else sys.maxunicode # https://github.com/IronLanguages/ironpython3/issues/252
         denorm_chars = [
-            c for c in map(chr, range(128, maxunicode))
+            c for c in map(chr, range(128, sys.maxunicode))
             if (hex_chars & set(unicodedata.decomposition(c).split()))
             and c not in illegal_chars
         ]
@@ -934,22 +1073,19 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertIn('\u2100', denorm_chars)
         self.assertIn('\uFF03', denorm_chars)
 
-        # https://github.com/IronLanguages/ironpython3/issues/614
-        is_mono = False
-        mono_issue_chars = ("\ufe13", "\ufe16", "\ufe5f")
-        if sys.implementation.name == "ironpython":
-            import clr
-            is_mono = clr.IsMono
+        # bpo-36742: Verify port separators are ignored when they
+        # existed prior to decomposition
+        urllib.parse.urlsplit('http://\u30d5\u309a:80')
+        with self.assertRaises(ValueError):
+            urllib.parse.urlsplit('http://\u30d5\u309a\ufe1380')
 
         for scheme in ["http", "https", "ftp"]:
-            for c in denorm_chars:
-                url = "{}://netloc{}false.netloc/path".format(scheme, c)
-                with self.subTest(url=url, char='{:04X}'.format(ord(c))):
-                    if is_mono and c in mono_issue_chars:
-                        urllib.parse.urlsplit(url) # ensure we fail if this ever gets fixed
-                        continue
-                    with self.assertRaises(ValueError):
-                        urllib.parse.urlsplit(url)
+            for netloc in ["netloc{}false.netloc", "n{}user@netloc"]:
+                for c in denorm_chars:
+                    url = "{}://{}/path".format(scheme, netloc.format(c))
+                    with self.subTest(url=url, char='{:04X}'.format(ord(c))):
+                        with self.assertRaises(ValueError):
+                            urllib.parse.urlsplit(url)
 
 class Utility_Tests(unittest.TestCase):
     """Testcase to test the various utility functions in the urllib."""

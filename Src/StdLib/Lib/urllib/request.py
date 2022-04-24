@@ -91,6 +91,7 @@ import os
 import posixpath
 import re
 import socket
+import string
 import sys
 import time
 import collections
@@ -120,9 +121,10 @@ __all__ = [
     'Request', 'OpenerDirector', 'BaseHandler', 'HTTPDefaultErrorHandler',
     'HTTPRedirectHandler', 'HTTPCookieProcessor', 'ProxyHandler',
     'HTTPPasswordMgr', 'HTTPPasswordMgrWithDefaultRealm',
-    'AbstractBasicAuthHandler', 'HTTPBasicAuthHandler', 'ProxyBasicAuthHandler',
-    'AbstractDigestAuthHandler', 'HTTPDigestAuthHandler', 'ProxyDigestAuthHandler',
-    'HTTPHandler', 'FileHandler', 'FTPHandler', 'CacheFTPHandler', 'DataHandler',
+    'HTTPPasswordMgrWithPriorAuth', 'AbstractBasicAuthHandler',
+    'HTTPBasicAuthHandler', 'ProxyBasicAuthHandler', 'AbstractDigestAuthHandler',
+    'HTTPDigestAuthHandler', 'ProxyDigestAuthHandler', 'HTTPHandler',
+    'FileHandler', 'FTPHandler', 'CacheFTPHandler', 'DataHandler',
     'UnknownHandler', 'HTTPErrorProcessor',
     # Functions
     'urlopen', 'install_opener', 'build_opener',
@@ -132,13 +134,73 @@ __all__ = [
 ]
 
 # used in User-Agent header sent
-__version__ = sys.version[:3]
+__version__ = '%d.%d' % sys.version_info[:2]
 
 _opener = None
 def urlopen(url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
             *, cafile=None, capath=None, cadefault=False, context=None):
+    '''Open the URL url, which can be either a string or a Request object.
+
+    *data* must be an object specifying additional data to be sent to
+    the server, or None if no such data is needed.  See Request for
+    details.
+
+    urllib.request module uses HTTP/1.1 and includes a "Connection:close"
+    header in its HTTP requests.
+
+    The optional *timeout* parameter specifies a timeout in seconds for
+    blocking operations like the connection attempt (if not specified, the
+    global default timeout setting will be used). This only works for HTTP,
+    HTTPS and FTP connections.
+
+    If *context* is specified, it must be a ssl.SSLContext instance describing
+    the various SSL options. See HTTPSConnection for more details.
+
+    The optional *cafile* and *capath* parameters specify a set of trusted CA
+    certificates for HTTPS requests. cafile should point to a single file
+    containing a bundle of CA certificates, whereas capath should point to a
+    directory of hashed certificate files. More information can be found in
+    ssl.SSLContext.load_verify_locations().
+
+    The *cadefault* parameter is ignored.
+
+    This function always returns an object which can work as a context
+    manager and has methods such as
+
+    * geturl() - return the URL of the resource retrieved, commonly used to
+      determine if a redirect was followed
+
+    * info() - return the meta-information of the page, such as headers, in the
+      form of an email.message_from_string() instance (see Quick Reference to
+      HTTP Headers)
+
+    * getcode() - return the HTTP status code of the response.  Raises URLError
+      on errors.
+
+    For HTTP and HTTPS URLs, this function returns a http.client.HTTPResponse
+    object slightly modified. In addition to the three new methods above, the
+    msg attribute contains the same information as the reason attribute ---
+    the reason phrase returned by the server --- instead of the response
+    headers as it is specified in the documentation for HTTPResponse.
+
+    For FTP, file, and data URLs and requests explicitly handled by legacy
+    URLopener and FancyURLopener classes, this function returns a
+    urllib.response.addinfourl object.
+
+    Note that None may be returned if no handler handles the request (though
+    the default installed global OpenerDirector uses UnknownHandler to ensure
+    this never happens).
+
+    In addition, if proxy settings are detected (for example, when a *_proxy
+    environment variable like http_proxy is set), ProxyHandler is default
+    installed and makes sure the requests are handled through the proxy.
+
+    '''
     global _opener
     if cafile or capath or cadefault:
+        import warnings
+        warnings.warn("cafile, capath and cadefault are deprecated, use a "
+                      "custom context instead.", DeprecationWarning, 2)
         if context is not None:
             raise ValueError(
                 "You can't pass both context and any of cafile, capath, and "
@@ -615,8 +677,12 @@ class HTTPRedirectHandler(BaseHandler):
         # from the user (of urllib.request, in this case).  In practice,
         # essentially all clients do redirect in this case, so we do
         # the same.
-        # be conciliant with URIs containing a space
+
+        # Be conciliant with URIs containing a space.  This is mainly
+        # redundant with the more complete encoding done in http_error_302(),
+        # but it is kept for compatibility with other callers.
         newurl = newurl.replace(' ', '%20')
+
         CONTENT_HEADERS = ("content-length", "content-type")
         newheaders = dict((k, v) for k, v in req.headers.items()
                           if k.lower() not in CONTENT_HEADERS)
@@ -651,11 +717,16 @@ class HTTPRedirectHandler(BaseHandler):
                 "%s - Redirection to url '%s' is not allowed" % (msg, newurl),
                 headers, fp)
 
-        if not urlparts.path:
+        if not urlparts.path and urlparts.netloc:
             urlparts = list(urlparts)
             urlparts[2] = "/"
         newurl = urlunparse(urlparts)
 
+        # http.client.parse_headers() decodes as ISO-8859-1.  Recover the
+        # original bytes and percent-encode non-ASCII bytes, and any special
+        # characters such as the space.
+        newurl = quote(
+            newurl, encoding="iso-8859-1", safe=string.punctuation)
         newurl = urljoin(req.full_url, newurl)
 
         # XXX Probably want to forget about the state of the current
@@ -836,6 +907,37 @@ class HTTPPasswordMgrWithDefaultRealm(HTTPPasswordMgr):
         return HTTPPasswordMgr.find_user_password(self, None, authuri)
 
 
+class HTTPPasswordMgrWithPriorAuth(HTTPPasswordMgrWithDefaultRealm):
+
+    def __init__(self, *args, **kwargs):
+        self.authenticated = {}
+        super().__init__(*args, **kwargs)
+
+    def add_password(self, realm, uri, user, passwd, is_authenticated=False):
+        self.update_authenticated(uri, is_authenticated)
+        # Add a default for prior auth requests
+        if realm is not None:
+            super().add_password(None, uri, user, passwd)
+        super().add_password(realm, uri, user, passwd)
+
+    def update_authenticated(self, uri, is_authenticated=False):
+        # uri could be a single URI or a sequence
+        if isinstance(uri, str):
+            uri = [uri]
+
+        for default_port in True, False:
+            for u in uri:
+                reduced_uri = self.reduce_uri(u, default_port)
+                self.authenticated[reduced_uri] = is_authenticated
+
+    def is_authenticated(self, authuri):
+        for default_port in True, False:
+            reduced_authuri = self.reduce_uri(authuri, default_port)
+            for uri in self.authenticated:
+                if self.is_suburi(uri, reduced_authuri):
+                    return self.authenticated[uri]
+
+
 class AbstractBasicAuthHandler:
 
     # XXX this allows for multiple auth-schemes, but will stupidly pick
@@ -843,8 +945,15 @@ class AbstractBasicAuthHandler:
 
     # allow for double- and single-quoted realm values
     # (single quotes are a violation of the RFC, but appear in the wild)
-    rx = re.compile('(?:.*,)*[ \t]*([^ \t]+)[ \t]+'
-                    'realm=(["\']?)([^"\']*)\\2', re.I)
+    rx = re.compile('(?:^|,)'   # start of the string or ','
+                    '[ \t]*'    # optional whitespaces
+                    '([^ \t,]+)' # scheme like "Basic"
+                    '[ \t]+'    # mandatory whitespaces
+                    # realm=xxx
+                    # realm='xxx'
+                    # realm="xxx"
+                    'realm=(["\']?)([^"\']*)\\2',
+                    re.I)
 
     # XXX could pre-emptively send auth info already accepted (RFC 2617,
     # end of section 2, and section 1.2 immediately after "credentials"
@@ -856,27 +965,51 @@ class AbstractBasicAuthHandler:
         self.passwd = password_mgr
         self.add_password = self.passwd.add_password
 
+    def _parse_realm(self, header):
+        # parse WWW-Authenticate header: accept multiple challenges per header
+        found_challenge = False
+        for mo in AbstractBasicAuthHandler.rx.finditer(header):
+            scheme, quote, realm = mo.groups()
+            if quote not in ['"', "'"]:
+                warnings.warn("Basic Auth Realm was unquoted",
+                              UserWarning, 3)
+
+            yield (scheme, realm)
+
+            found_challenge = True
+
+        if not found_challenge:
+            if header:
+                scheme = header.split()[0]
+            else:
+                scheme = ''
+            yield (scheme, None)
+
     def http_error_auth_reqed(self, authreq, host, req, headers):
         # host may be an authority (without userinfo) or a URL with an
         # authority
-        # XXX could be multiple headers
-        authreq = headers.get(authreq, None)
+        headers = headers.get_all(authreq)
+        if not headers:
+            # no header found
+            return
 
-        if authreq:
-            scheme = authreq.split()[0]
-            if scheme.lower() != 'basic':
-                raise ValueError("AbstractBasicAuthHandler does not"
-                                 " support the following scheme: '%s'" %
-                                 scheme)
-            else:
-                mo = AbstractBasicAuthHandler.rx.search(authreq)
-                if mo:
-                    scheme, quote, realm = mo.groups()
-                    if quote not in ['"',"'"]:
-                        warnings.warn("Basic Auth Realm was unquoted",
-                                      UserWarning, 2)
-                    if scheme.lower() == 'basic':
-                        return self.retry_http_basic_auth(host, req, realm)
+        unsupported = None
+        for header in headers:
+            for scheme, realm in self._parse_realm(header):
+                if scheme.lower() != 'basic':
+                    unsupported = scheme
+                    continue
+
+                if realm is not None:
+                    # Use the first matching Basic challenge.
+                    # Ignore following challenges even if they use the Basic
+                    # scheme.
+                    return self.retry_http_basic_auth(host, req, realm)
+
+        if unsupported is not None:
+            raise ValueError("AbstractBasicAuthHandler does not "
+                             "support the following scheme: %r"
+                             % (scheme,))
 
     def retry_http_basic_auth(self, host, req, realm):
         user, pw = self.passwd.find_user_password(realm, host)
@@ -889,6 +1022,31 @@ class AbstractBasicAuthHandler:
             return self.parent.open(req, timeout=req.timeout)
         else:
             return None
+
+    def http_request(self, req):
+        if (not hasattr(self.passwd, 'is_authenticated') or
+           not self.passwd.is_authenticated(req.full_url)):
+            return req
+
+        if not req.has_header('Authorization'):
+            user, passwd = self.passwd.find_user_password(None, req.full_url)
+            credentials = '{0}:{1}'.format(user, passwd).encode()
+            auth_str = base64.standard_b64encode(credentials).decode()
+            req.add_unredirected_header('Authorization',
+                                        'Basic {}'.format(auth_str.strip()))
+        return req
+
+    def http_response(self, req, response):
+        if hasattr(self.passwd, 'is_authenticated'):
+            if 200 <= response.code < 300:
+                self.passwd.update_authenticated(req.full_url, True)
+            else:
+                self.passwd.update_authenticated(req.full_url, False)
+        return response
+
+    https_request = http_request
+    https_response = http_response
+
 
 
 class HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
@@ -1054,6 +1212,9 @@ class AbstractDigestAuthHandler:
         elif algorithm == 'SHA':
             H = lambda x: hashlib.sha1(x.encode("ascii")).hexdigest()
         # XXX MD5-sess
+        else:
+            raise ValueError("Unsupported digest authentication "
+                             "algorithm %r" % algorithm)
         KD = lambda s, d: H("%s:%s" % (s, d))
         return H, KD
 
@@ -1100,6 +1261,11 @@ class AbstractHTTPHandler(BaseHandler):
     def set_http_debuglevel(self, level):
         self._debuglevel = level
 
+    def _get_content_length(self, request):
+        return http.client.HTTPConnection._get_content_length(
+            request.data,
+            request.get_method())
+
     def do_request_(self, request):
         host = request.host
         if not host:
@@ -1108,24 +1274,22 @@ class AbstractHTTPHandler(BaseHandler):
         if request.data is not None:  # POST
             data = request.data
             if isinstance(data, str):
-                msg = "POST data should be bytes or an iterable of bytes. " \
-                      "It cannot be of type str."
+                msg = "POST data should be bytes, an iterable of bytes, " \
+                      "or a file object. It cannot be of type str."
                 raise TypeError(msg)
             if not request.has_header('Content-type'):
                 request.add_unredirected_header(
                     'Content-type',
                     'application/x-www-form-urlencoded')
-            if not request.has_header('Content-length'):
-                try:
-                    mv = memoryview(data)
-                except TypeError:
-                    if isinstance(data, collections.Iterable):
-                        raise ValueError("Content-Length should be specified "
-                                "for iterable data of type %r %r" % (type(data),
-                                data))
+            if (not request.has_header('Content-length')
+                    and not request.has_header('Transfer-encoding')):
+                content_length = self._get_content_length(request)
+                if content_length is not None:
+                    request.add_unredirected_header(
+                            'Content-length', str(content_length))
                 else:
                     request.add_unredirected_header(
-                            'Content-length', '%d' % (len(mv) * mv.itemsize))
+                            'Transfer-encoding', 'chunked')
 
         sel_host = host
         if request.has_proxy():
@@ -1151,6 +1315,7 @@ class AbstractHTTPHandler(BaseHandler):
 
         # will parse host:port
         h = http_class(host, timeout=req.timeout, **http_conn_args)
+        h.set_debuglevel(self._debuglevel)
 
         headers = dict(req.unredirected_hdrs)
         headers.update(dict((k, v) for k, v in req.headers.items()
@@ -1180,7 +1345,8 @@ class AbstractHTTPHandler(BaseHandler):
 
         try:
             try:
-                h.request(req.get_method(), req.selector, req.data, headers)
+                h.request(req.get_method(), req.selector, req.data, headers,
+                          encode_chunked=req.has_header('Transfer-encoding'))
             except OSError as err: # timeout error
                 raise URLError(err)
             r = h.getresponse()
@@ -1353,7 +1519,6 @@ class FileHandler(BaseHandler):
                     origurl = 'file://' + filename
                 return addinfourl(open(localfile, 'rb'), headers, origurl)
         except OSError as exp:
-            # users shouldn't expect OSErrors coming from urlopen()
             raise URLError(exp)
         raise URLError('file not on local host')
 
@@ -1523,14 +1688,10 @@ else:
         of the 'file' scheme; not recommended for general use."""
         return quote(pathname)
 
-# This really consists of two pieces:
-# (1) a class which handles opening of all sorts of URLs
-#     (plus assorted utilities etc.)
-# (2) a set of functions for parsing URLs
-# XXX Should these be separated out into different modules?
-
 
 ftpcache = {}
+
+
 class URLopener:
     """Class to open URLs.
     This is a class rather than just a subroutine because we may need
@@ -1554,7 +1715,7 @@ class URLopener:
         self.proxies = proxies
         self.key_file = x509.get('key_file')
         self.cert_file = x509.get('cert_file')
-        self.addheaders = [('User-Agent', self.version)]
+        self.addheaders = [('User-Agent', self.version), ('Accept', '*/*')]
         self.__tempfiles = []
         self.__unlink = os.unlink # See cleanup()
         self.tempcache = None
@@ -1617,7 +1778,7 @@ class URLopener:
         name = 'open_' + urltype
         self.type = urltype
         name = name.replace('-', '_')
-        if not hasattr(self, name):
+        if not hasattr(self, name) or name == 'open_local_file':
             if proxy:
                 return self.open_unknown_proxy(proxy, fullurl, data)
             else:
@@ -1993,18 +2154,20 @@ class FancyURLopener(URLopener):
     def http_error_302(self, url, fp, errcode, errmsg, headers, data=None):
         """Error 302 -- relocated (temporarily)."""
         self.tries += 1
-        if self.maxtries and self.tries >= self.maxtries:
-            if hasattr(self, "http_error_500"):
-                meth = self.http_error_500
-            else:
-                meth = self.http_error_default
+        try:
+            if self.maxtries and self.tries >= self.maxtries:
+                if hasattr(self, "http_error_500"):
+                    meth = self.http_error_500
+                else:
+                    meth = self.http_error_default
+                return meth(url, fp, 500,
+                            "Internal Server Error: Redirect Recursion",
+                            headers)
+            result = self.redirect_internal(url, fp, errcode, errmsg,
+                                            headers, data)
+            return result
+        finally:
             self.tries = 0
-            return meth(url, fp, 500,
-                        "Internal Server Error: Redirect Recursion", headers)
-        result = self.redirect_internal(url, fp, errcode, errmsg, headers,
-                                        data)
-        self.tries = 0
-        return result
 
     def redirect_internal(self, url, fp, errcode, errmsg, headers, data):
         if 'location' in headers:
@@ -2333,26 +2496,41 @@ def getproxies_environment():
 
     """
     proxies = {}
+    # in order to prefer lowercase variables, process environment in
+    # two passes: first matches any, second pass matches lowercase only
     for name, value in os.environ.items():
         name = name.lower()
         if value and name[-6:] == '_proxy':
             proxies[name[:-6]] = value
-
     # CVE-2016-1000110 - If we are running as CGI script, forget HTTP_PROXY
     # (non-all-lowercase) as it may be set from the web server by a "Proxy:"
     # header from the client
+    # If "proxy" is lowercase, it will still be used thanks to the next block
     if 'REQUEST_METHOD' in os.environ:
         proxies.pop('http', None)
-
+    for name, value in os.environ.items():
+        if name[-6:] == '_proxy':
+            name = name.lower()
+            if value:
+                proxies[name[:-6]] = value
+            else:
+                proxies.pop(name[:-6], None)
     return proxies
 
-def proxy_bypass_environment(host):
+def proxy_bypass_environment(host, proxies=None):
     """Test if proxies should not be used for a particular host.
 
-    Checks the environment for a variable named no_proxy, which should
-    be a list of DNS suffixes separated by commas, or '*' for all hosts.
+    Checks the proxy dict for the value of no_proxy, which should
+    be a list of comma separated DNS suffixes, or '*' for all hosts.
+
     """
-    no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
+    if proxies is None:
+        proxies = getproxies_environment()
+    # don't bypass, if no_proxy isn't specified
+    try:
+        no_proxy = proxies['no']
+    except KeyError:
+        return 0
     # '*' is special case for always bypass
     if no_proxy == '*':
         return 1
@@ -2361,8 +2539,13 @@ def proxy_bypass_environment(host):
     # check if the host ends with any of the DNS suffixes
     no_proxy_list = [proxy.strip() for proxy in no_proxy.split(',')]
     for name in no_proxy_list:
-        if name and (hostonly.endswith(name) or host.endswith(name)):
-            return 1
+        if name:
+            name = name.lstrip('.')  # ignore leading dots
+            name = re.escape(name)
+            pattern = r'(.+\.)?%s$' % name
+            if (re.match(pattern, hostonly, re.I)
+                    or re.match(pattern, host, re.I)):
+                return 1
     # otherwise, don't bypass
     return 0
 
@@ -2429,7 +2612,7 @@ def _proxy_bypass_macosx_sysconf(host, proxy_settings):
     return False
 
 
-if sys.platform == 'darwin' and sys.implementation.name != "ironpython": # https://github.com/IronLanguages/ironpython3/issues/1050
+if sys.platform == 'darwin':
     from _scproxy import _get_proxy_settings, _get_proxies
 
     def proxy_bypass_macosx_sysconf(host):
@@ -2447,8 +2630,15 @@ if sys.platform == 'darwin' and sys.implementation.name != "ironpython": # https
 
 
     def proxy_bypass(host):
-        if getproxies_environment():
-            return proxy_bypass_environment(host)
+        """Return True, if host should be bypassed.
+
+        Checks proxy settings gathered from the environment, if specified,
+        or from the MacOSX framework SystemConfiguration.
+
+        """
+        proxies = getproxies_environment()
+        if proxies:
+            return proxy_bypass_environment(host, proxies)
         else:
             return proxy_bypass_macosx_sysconf(host)
 
@@ -2562,14 +2752,15 @@ elif os.name == 'nt':
         return 0
 
     def proxy_bypass(host):
-        """Return a dictionary of scheme -> proxy server URL mappings.
+        """Return True, if host should be bypassed.
 
-        Returns settings gathered from the environment, if specified,
+        Checks proxy settings gathered from the environment, if specified,
         or the registry.
 
         """
-        if getproxies_environment():
-            return proxy_bypass_environment(host)
+        proxies = getproxies_environment()
+        if proxies:
+            return proxy_bypass_environment(host, proxies)
         else:
             return proxy_bypass_registry(host)
 

@@ -3,6 +3,7 @@
 import collections
 import copy
 import doctest
+import inspect
 import keyword
 import operator
 import pickle
@@ -11,17 +12,41 @@ import re
 import string
 import sys
 from test import support
+import types
 import unittest
 
 from collections import namedtuple, Counter, OrderedDict, _count_elements
-from collections import UserDict
+from collections import UserDict, UserString, UserList
 from collections import ChainMap
-from collections.abc import Hashable, Iterable, Iterator
-from collections.abc import Sized, Container, Callable
+from collections import deque
+from collections.abc import Awaitable, Coroutine
+from collections.abc import AsyncIterator, AsyncIterable, AsyncGenerator
+from collections.abc import Hashable, Iterable, Iterator, Generator, Reversible
+from collections.abc import Sized, Container, Callable, Collection
 from collections.abc import Set, MutableSet
-from collections.abc import Mapping, MutableMapping, KeysView, ItemsView
+from collections.abc import Mapping, MutableMapping, KeysView, ItemsView, ValuesView
 from collections.abc import Sequence, MutableSequence
 from collections.abc import ByteString
+
+
+class TestUserObjects(unittest.TestCase):
+    def _superset_test(self, a, b):
+        self.assertGreaterEqual(
+            set(dir(a)),
+            set(dir(b)),
+            '{a} should have all the methods of {b}'.format(
+                a=a.__name__,
+                b=b.__name__,
+            ),
+        )
+    def test_str_protocol(self):
+        self._superset_test(UserString, str)
+
+    def test_list_protocol(self):
+        self._superset_test(UserList, list)
+
+    def test_dict_protocol(self):
+        self._superset_test(UserDict, dict)
 
 
 ################################################################################
@@ -90,7 +115,7 @@ class TestChainMap(unittest.TestCase):
         self.assertEqual(f['b'], 5)                                    # find first in chain
         self.assertEqual(f.parents['b'], 2)                            # look beyond maps[0]
 
-    def test_contructor(self):
+    def test_constructor(self):
         self.assertEqual(ChainMap().maps, [{}])                        # no-args --> one new dict
         self.assertEqual(ChainMap({1:2}).maps, [{1:2}])                # 1 arg --> list
 
@@ -199,6 +224,14 @@ class TestNamedTuple(unittest.TestCase):
         Point = namedtuple('Point', 'x y')
         self.assertEqual(Point.__doc__, 'Point(x, y)')
 
+    @unittest.skipIf(sys.flags.optimize >= 2,
+                     "Docstrings are omitted with -O2 and above")
+    def test_doc_writable(self):
+        Point = namedtuple('Point', 'x y')
+        self.assertEqual(Point.x.__doc__, 'Alias for field number 0')
+        Point.x.__doc__ = 'docstring for Point.x'
+        self.assertEqual(Point.x.__doc__, 'docstring for Point.x')
+
     def test_name_fixer(self):
         for spec, renamed in [
             [('efg', 'g%hi'),  ('efg', '_1')],                              # field with non-alpha char
@@ -209,6 +242,10 @@ class TestNamedTuple(unittest.TestCase):
             [('abc', '', 'x'), ('abc', '_1', 'x')],                         # fieldname is a space
         ]:
             self.assertEqual(namedtuple('NT', spec, rename=True)._fields, renamed)
+
+    def test_module_parameter(self):
+        NT = namedtuple('NT', ['x', 'y'], module=collections)
+        self.assertEqual(NT.__module__, collections)
 
     def test_instance(self):
         Point = namedtuple('Point', 'x y')
@@ -380,6 +417,18 @@ class TestNamedTuple(unittest.TestCase):
         self.assertEqual(NTColor._fields, ('red', 'green', 'blue'))
         globals().pop('NTColor', None)          # clean-up after this test
 
+    def test_keyword_only_arguments(self):
+        # See issue 25628
+        with support.captured_stdout() as template:
+            NT = namedtuple('NT', ['x', 'y'], verbose=True)
+        self.assertIn('class NT', NT._source)
+        with self.assertRaises(TypeError):
+            NT = namedtuple('NT', ['x', 'y'], True)
+
+        NT = namedtuple('NT', ['abc', 'def'], rename=True)
+        self.assertEqual(NT._fields, ('abc', '_1'))
+        with self.assertRaises(TypeError):
+            NT = namedtuple('NT', ['abc', 'def'], False, True)
 
     def test_namedtuple_subclass_issue_24931(self):
         class Point(namedtuple('_Point', ['x', 'y'])):
@@ -455,7 +504,125 @@ class ABCTestCase(unittest.TestCase):
             self.assertTrue(other.right_side,'Right side not called for %s.%s'
                             % (type(instance), name))
 
+def _test_gen():
+    yield
+
 class TestOneTrickPonyABCs(ABCTestCase):
+
+    def test_Awaitable(self):
+        def gen():
+            yield
+
+        @types.coroutine
+        def coro():
+            yield
+
+        async def new_coro():
+            pass
+
+        class Bar:
+            def __await__(self):
+                yield
+
+        class MinimalCoro(Coroutine):
+            def send(self, value):
+                return value
+            def throw(self, typ, val=None, tb=None):
+                super().throw(typ, val, tb)
+            def __await__(self):
+                yield
+
+        non_samples = [None, int(), gen(), object()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Awaitable)
+            self.assertFalse(issubclass(type(x), Awaitable), repr(type(x)))
+
+        samples = [Bar(), MinimalCoro()]
+        for x in samples:
+            self.assertIsInstance(x, Awaitable)
+            self.assertTrue(issubclass(type(x), Awaitable))
+
+        c = coro()
+        # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
+        # flag don't have '__await__' method, hence can't be instances
+        # of Awaitable. Use inspect.isawaitable to detect them.
+        self.assertNotIsInstance(c, Awaitable)
+
+        c = new_coro()
+        self.assertIsInstance(c, Awaitable)
+        c.close() # avoid RuntimeWarning that coro() was not awaited
+
+        class CoroLike: pass
+        Coroutine.register(CoroLike)
+        self.assertTrue(isinstance(CoroLike(), Awaitable))
+        self.assertTrue(issubclass(CoroLike, Awaitable))
+        CoroLike = None
+        support.gc_collect() # Kill CoroLike to clean-up ABCMeta cache
+
+    def test_Coroutine(self):
+        def gen():
+            yield
+
+        @types.coroutine
+        def coro():
+            yield
+
+        async def new_coro():
+            pass
+
+        class Bar:
+            def __await__(self):
+                yield
+
+        class MinimalCoro(Coroutine):
+            def send(self, value):
+                return value
+            def throw(self, typ, val=None, tb=None):
+                super().throw(typ, val, tb)
+            def __await__(self):
+                yield
+
+        non_samples = [None, int(), gen(), object(), Bar()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Coroutine)
+            self.assertFalse(issubclass(type(x), Coroutine), repr(type(x)))
+
+        samples = [MinimalCoro()]
+        for x in samples:
+            self.assertIsInstance(x, Awaitable)
+            self.assertTrue(issubclass(type(x), Awaitable))
+
+        c = coro()
+        # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
+        # flag don't have '__await__' method, hence can't be instances
+        # of Coroutine. Use inspect.isawaitable to detect them.
+        self.assertNotIsInstance(c, Coroutine)
+
+        c = new_coro()
+        self.assertIsInstance(c, Coroutine)
+        c.close() # avoid RuntimeWarning that coro() was not awaited
+
+        class CoroLike:
+            def send(self, value):
+                pass
+            def throw(self, typ, val=None, tb=None):
+                pass
+            def close(self):
+                pass
+            def __await__(self):
+                pass
+        self.assertTrue(isinstance(CoroLike(), Coroutine))
+        self.assertTrue(issubclass(CoroLike, Coroutine))
+
+        class CoroLike:
+            def send(self, value):
+                pass
+            def close(self):
+                pass
+            def __await__(self):
+                pass
+        self.assertFalse(isinstance(CoroLike(), Coroutine))
+        self.assertFalse(issubclass(CoroLike, Coroutine))
 
     def test_Hashable(self):
         # Check some non-hashables
@@ -483,6 +650,40 @@ class TestOneTrickPonyABCs(ABCTestCase):
         self.validate_abstract_methods(Hashable, '__hash__')
         self.validate_isinstance(Hashable, '__hash__')
 
+    def test_AsyncIterable(self):
+        class AI:
+            async def __aiter__(self):
+                return self
+        self.assertTrue(isinstance(AI(), AsyncIterable))
+        self.assertTrue(issubclass(AI, AsyncIterable))
+        # Check some non-iterables
+        non_samples = [None, object, []]
+        for x in non_samples:
+            self.assertNotIsInstance(x, AsyncIterable)
+            self.assertFalse(issubclass(type(x), AsyncIterable), repr(type(x)))
+        self.validate_abstract_methods(AsyncIterable, '__aiter__')
+        self.validate_isinstance(AsyncIterable, '__aiter__')
+
+    def test_AsyncIterator(self):
+        class AI:
+            async def __aiter__(self):
+                return self
+            async def __anext__(self):
+                raise StopAsyncIteration
+        self.assertTrue(isinstance(AI(), AsyncIterator))
+        self.assertTrue(issubclass(AI, AsyncIterator))
+        non_samples = [None, object, []]
+        # Check some non-iterables
+        for x in non_samples:
+            self.assertNotIsInstance(x, AsyncIterator)
+            self.assertFalse(issubclass(type(x), AsyncIterator), repr(type(x)))
+        # Similarly to regular iterators (see issue 10565)
+        class AnextOnly:
+            async def __anext__(self):
+                raise StopAsyncIteration
+        self.assertNotIsInstance(AnextOnly(), AsyncIterator)
+        self.validate_abstract_methods(AsyncIterator, '__anext__', '__aiter__')
+
     def test_Iterable(self):
         # Check some non-iterables
         non_samples = [None, 42, 3.14, 1j]
@@ -493,7 +694,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
         samples = [bytes(), str(),
                    tuple(), list(), set(), frozenset(), dict(),
                    dict().keys(), dict().items(), dict().values(),
-                   (lambda: (yield))(),
+                   _test_gen(),
                    (x for x in []),
                    ]
         for x in samples:
@@ -507,6 +708,161 @@ class TestOneTrickPonyABCs(ABCTestCase):
         self.assertFalse(issubclass(str, I))
         self.validate_abstract_methods(Iterable, '__iter__')
         self.validate_isinstance(Iterable, '__iter__')
+        # Check None blocking
+        class It:
+            def __iter__(self): return iter([])
+        class ItBlocked(It):
+            __iter__ = None
+        self.assertTrue(issubclass(It, Iterable))
+        self.assertTrue(isinstance(It(), Iterable))
+        self.assertFalse(issubclass(ItBlocked, Iterable))
+        self.assertFalse(isinstance(ItBlocked(), Iterable))
+
+    def test_Reversible(self):
+        # Check some non-reversibles
+        non_samples = [None, 42, 3.14, 1j, dict(), set(), frozenset()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Reversible)
+            self.assertFalse(issubclass(type(x), Reversible), repr(type(x)))
+        # Check some non-reversible iterables
+        non_reversibles = [dict().keys(), dict().items(), dict().values(),
+                           Counter(), Counter().keys(), Counter().items(),
+                           Counter().values(), _test_gen(),
+                           (x for x in []), iter([]), reversed([])]
+        for x in non_reversibles:
+            self.assertNotIsInstance(x, Reversible)
+            self.assertFalse(issubclass(type(x), Reversible), repr(type(x)))
+        # Check some reversible iterables
+        samples = [bytes(), str(), tuple(), list(), OrderedDict(),
+                   OrderedDict().keys(), OrderedDict().items(),
+                   OrderedDict().values()]
+        for x in samples:
+            self.assertIsInstance(x, Reversible)
+            self.assertTrue(issubclass(type(x), Reversible), repr(type(x)))
+        # Check also Mapping, MutableMapping, and Sequence
+        self.assertTrue(issubclass(Sequence, Reversible), repr(Sequence))
+        self.assertFalse(issubclass(Mapping, Reversible), repr(Mapping))
+        self.assertFalse(issubclass(MutableMapping, Reversible), repr(MutableMapping))
+        # Check direct subclassing
+        class R(Reversible):
+            def __iter__(self):
+                return iter(list())
+            def __reversed__(self):
+                return iter(list())
+        self.assertEqual(list(reversed(R())), [])
+        self.assertFalse(issubclass(float, R))
+        self.validate_abstract_methods(Reversible, '__reversed__', '__iter__')
+        # Check reversible non-iterable (which is not Reversible)
+        class RevNoIter:
+            def __reversed__(self): return reversed([])
+        class RevPlusIter(RevNoIter):
+            def __iter__(self): return iter([])
+        self.assertFalse(issubclass(RevNoIter, Reversible))
+        self.assertFalse(isinstance(RevNoIter(), Reversible))
+        self.assertTrue(issubclass(RevPlusIter, Reversible))
+        self.assertTrue(isinstance(RevPlusIter(), Reversible))
+        # Check None blocking
+        class Rev:
+            def __iter__(self): return iter([])
+            def __reversed__(self): return reversed([])
+        class RevItBlocked(Rev):
+            __iter__ = None
+        class RevRevBlocked(Rev):
+            __reversed__ = None
+        self.assertTrue(issubclass(Rev, Reversible))
+        self.assertTrue(isinstance(Rev(), Reversible))
+        self.assertFalse(issubclass(RevItBlocked, Reversible))
+        self.assertFalse(isinstance(RevItBlocked(), Reversible))
+        self.assertFalse(issubclass(RevRevBlocked, Reversible))
+        self.assertFalse(isinstance(RevRevBlocked(), Reversible))
+
+    def test_Collection(self):
+        # Check some non-collections
+        non_collections = [None, 42, 3.14, 1j, lambda x: 2*x]
+        for x in non_collections:
+            self.assertNotIsInstance(x, Collection)
+            self.assertFalse(issubclass(type(x), Collection), repr(type(x)))
+        # Check some non-collection iterables
+        non_col_iterables = [_test_gen(), iter(b''), iter(bytearray()),
+                             (x for x in []), dict().values()]
+        for x in non_col_iterables:
+            self.assertNotIsInstance(x, Collection)
+            self.assertFalse(issubclass(type(x), Collection), repr(type(x)))
+        # Check some collections
+        samples = [set(), frozenset(), dict(), bytes(), str(), tuple(),
+                   list(), dict().keys(), dict().items()]
+        for x in samples:
+            self.assertIsInstance(x, Collection)
+            self.assertTrue(issubclass(type(x), Collection), repr(type(x)))
+        # Check also Mapping, MutableMapping, etc.
+        self.assertTrue(issubclass(Sequence, Collection), repr(Sequence))
+        self.assertTrue(issubclass(Mapping, Collection), repr(Mapping))
+        self.assertTrue(issubclass(MutableMapping, Collection),
+                                    repr(MutableMapping))
+        self.assertTrue(issubclass(Set, Collection), repr(Set))
+        self.assertTrue(issubclass(MutableSet, Collection), repr(MutableSet))
+        self.assertTrue(issubclass(Sequence, Collection), repr(MutableSet))
+        # Check direct subclassing
+        class Col(Collection):
+            def __iter__(self):
+                return iter(list())
+            def __len__(self):
+                return 0
+            def __contains__(self, item):
+                return False
+        class DerCol(Col): pass
+        self.assertEqual(list(iter(Col())), [])
+        self.assertFalse(issubclass(list, Col))
+        self.assertFalse(issubclass(set, Col))
+        self.assertFalse(issubclass(float, Col))
+        self.assertEqual(list(iter(DerCol())), [])
+        self.assertFalse(issubclass(list, DerCol))
+        self.assertFalse(issubclass(set, DerCol))
+        self.assertFalse(issubclass(float, DerCol))
+        self.validate_abstract_methods(Collection, '__len__', '__iter__',
+                                                   '__contains__')
+        # Check sized container non-iterable (which is not Collection) etc.
+        class ColNoIter:
+            def __len__(self): return 0
+            def __contains__(self, item): return False
+        class ColNoSize:
+            def __iter__(self): return iter([])
+            def __contains__(self, item): return False
+        class ColNoCont:
+            def __iter__(self): return iter([])
+            def __len__(self): return 0
+        self.assertFalse(issubclass(ColNoIter, Collection))
+        self.assertFalse(isinstance(ColNoIter(), Collection))
+        self.assertFalse(issubclass(ColNoSize, Collection))
+        self.assertFalse(isinstance(ColNoSize(), Collection))
+        self.assertFalse(issubclass(ColNoCont, Collection))
+        self.assertFalse(isinstance(ColNoCont(), Collection))
+        # Check None blocking
+        class SizeBlock:
+            def __iter__(self): return iter([])
+            def __contains__(self): return False
+            __len__ = None
+        class IterBlock:
+            def __len__(self): return 0
+            def __contains__(self): return True
+            __iter__ = None
+        self.assertFalse(issubclass(SizeBlock, Collection))
+        self.assertFalse(isinstance(SizeBlock(), Collection))
+        self.assertFalse(issubclass(IterBlock, Collection))
+        self.assertFalse(isinstance(IterBlock(), Collection))
+        # Check None blocking in subclass
+        class ColImpl:
+            def __iter__(self):
+                return iter(list())
+            def __len__(self):
+                return 0
+            def __contains__(self, item):
+                return False
+        class NonCol(ColImpl):
+            __contains__ = None
+        self.assertFalse(issubclass(NonCol, Collection))
+        self.assertFalse(isinstance(NonCol(), Collection))
+
 
     def test_Iterator(self):
         non_samples = [None, 42, 3.14, 1j, b"", "", (), [], {}, set()]
@@ -518,7 +874,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
                    iter(set()), iter(frozenset()),
                    iter(dict().keys()), iter(dict().items()),
                    iter(dict().values()),
-                   (lambda: (yield))(),
+                   _test_gen(),
                    (x for x in []),
                    ]
         for x in samples:
@@ -530,12 +886,164 @@ class TestOneTrickPonyABCs(ABCTestCase):
         class NextOnly:
             def __next__(self):
                 yield 1
-                raise StopIteration
+                return
         self.assertNotIsInstance(NextOnly(), Iterator)
+
+    def test_Generator(self):
+        class NonGen1:
+            def __iter__(self): return self
+            def __next__(self): return None
+            def close(self): pass
+            def throw(self, typ, val=None, tb=None): pass
+
+        class NonGen2:
+            def __iter__(self): return self
+            def __next__(self): return None
+            def close(self): pass
+            def send(self, value): return value
+
+        class NonGen3:
+            def close(self): pass
+            def send(self, value): return value
+            def throw(self, typ, val=None, tb=None): pass
+
+        non_samples = [
+            None, 42, 3.14, 1j, b"", "", (), [], {}, set(),
+            iter(()), iter([]), NonGen1(), NonGen2(), NonGen3()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Generator)
+            self.assertFalse(issubclass(type(x), Generator), repr(type(x)))
+
+        class Gen:
+            def __iter__(self): return self
+            def __next__(self): return None
+            def close(self): pass
+            def send(self, value): return value
+            def throw(self, typ, val=None, tb=None): pass
+
+        class MinimalGen(Generator):
+            def send(self, value):
+                return value
+            def throw(self, typ, val=None, tb=None):
+                super().throw(typ, val, tb)
+
+        def gen():
+            yield 1
+
+        samples = [gen(), (lambda: (yield))(), Gen(), MinimalGen()]
+        for x in samples:
+            self.assertIsInstance(x, Iterator)
+            self.assertIsInstance(x, Generator)
+            self.assertTrue(issubclass(type(x), Generator), repr(type(x)))
+        self.validate_abstract_methods(Generator, 'send', 'throw')
+
+        # mixin tests
+        mgen = MinimalGen()
+        self.assertIs(mgen, iter(mgen))
+        self.assertIs(mgen.send(None), next(mgen))
+        self.assertEqual(2, mgen.send(2))
+        self.assertIsNone(mgen.close())
+        self.assertRaises(ValueError, mgen.throw, ValueError)
+        self.assertRaisesRegex(ValueError, "^huhu$",
+                               mgen.throw, ValueError, ValueError("huhu"))
+        self.assertRaises(StopIteration, mgen.throw, StopIteration())
+
+        class FailOnClose(Generator):
+            def send(self, value): return value
+            def throw(self, *args): raise ValueError
+
+        self.assertRaises(ValueError, FailOnClose().close)
+
+        class IgnoreGeneratorExit(Generator):
+            def send(self, value): return value
+            def throw(self, *args): pass
+
+        self.assertRaises(RuntimeError, IgnoreGeneratorExit().close)
+
+    def test_AsyncGenerator(self):
+        class NonAGen1:
+            def __aiter__(self): return self
+            def __anext__(self): return None
+            def aclose(self): pass
+            def athrow(self, typ, val=None, tb=None): pass
+
+        class NonAGen2:
+            def __aiter__(self): return self
+            def __anext__(self): return None
+            def aclose(self): pass
+            def asend(self, value): return value
+
+        class NonAGen3:
+            def aclose(self): pass
+            def asend(self, value): return value
+            def athrow(self, typ, val=None, tb=None): pass
+
+        non_samples = [
+            None, 42, 3.14, 1j, b"", "", (), [], {}, set(),
+            iter(()), iter([]), NonAGen1(), NonAGen2(), NonAGen3()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, AsyncGenerator)
+            self.assertFalse(issubclass(type(x), AsyncGenerator), repr(type(x)))
+
+        class Gen:
+            def __aiter__(self): return self
+            async def __anext__(self): return None
+            async def aclose(self): pass
+            async def asend(self, value): return value
+            async def athrow(self, typ, val=None, tb=None): pass
+
+        class MinimalAGen(AsyncGenerator):
+            async def asend(self, value):
+                return value
+            async def athrow(self, typ, val=None, tb=None):
+                await super().athrow(typ, val, tb)
+
+        async def gen():
+            yield 1
+
+        samples = [gen(), Gen(), MinimalAGen()]
+        for x in samples:
+            self.assertIsInstance(x, AsyncIterator)
+            self.assertIsInstance(x, AsyncGenerator)
+            self.assertTrue(issubclass(type(x), AsyncGenerator), repr(type(x)))
+        self.validate_abstract_methods(AsyncGenerator, 'asend', 'athrow')
+
+        def run_async(coro):
+            result = None
+            while True:
+                try:
+                    coro.send(None)
+                except StopIteration as ex:
+                    result = ex.args[0] if ex.args else None
+                    break
+            return result
+
+        # mixin tests
+        mgen = MinimalAGen()
+        self.assertIs(mgen, mgen.__aiter__())
+        self.assertIs(run_async(mgen.asend(None)), run_async(mgen.__anext__()))
+        self.assertEqual(2, run_async(mgen.asend(2)))
+        self.assertIsNone(run_async(mgen.aclose()))
+        with self.assertRaises(ValueError):
+            run_async(mgen.athrow(ValueError))
+
+        class FailOnClose(AsyncGenerator):
+            async def asend(self, value): return value
+            async def athrow(self, *args): raise ValueError
+
+        with self.assertRaises(ValueError):
+            run_async(FailOnClose().aclose())
+
+        class IgnoreGeneratorExit(AsyncGenerator):
+            async def asend(self, value): return value
+            async def athrow(self, *args): pass
+
+        with self.assertRaises(RuntimeError):
+            run_async(IgnoreGeneratorExit().aclose())
 
     def test_Sized(self):
         non_samples = [None, 42, 3.14, 1j,
-                       (lambda: (yield))(),
+                       _test_gen(),
                        (x for x in []),
                        ]
         for x in non_samples:
@@ -553,7 +1061,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
     def test_Container(self):
         non_samples = [None, 42, 3.14, 1j,
-                       (lambda: (yield))(),
+                       _test_gen(),
                        (x for x in []),
                        ]
         for x in non_samples:
@@ -572,7 +1080,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
     def test_Callable(self):
         non_samples = [None, 42, 3.14, 1j,
                        "", b"", (), [], {}, set(),
-                       (lambda: (yield))(),
+                       _test_gen(),
                        (x for x in []),
                        ]
         for x in non_samples:
@@ -590,14 +1098,14 @@ class TestOneTrickPonyABCs(ABCTestCase):
         self.validate_isinstance(Callable, '__call__')
 
     def test_direct_subclassing(self):
-        for B in Hashable, Iterable, Iterator, Sized, Container, Callable:
+        for B in Hashable, Iterable, Iterator, Reversible, Sized, Container, Callable:
             class C(B):
                 pass
             self.assertTrue(issubclass(C, B))
             self.assertFalse(issubclass(int, C))
 
     def test_registration(self):
-        for B in Hashable, Iterable, Iterator, Sized, Container, Callable:
+        for B in Hashable, Iterable, Iterator, Reversible, Sized, Container, Callable:
             class C:
                 __hash__ = None  # Make sure it isn't hashable by default
             self.assertFalse(issubclass(C, B), B.__name__)
@@ -658,6 +1166,59 @@ class TestCollectionABCs(ABCTestCase):
                 return self._hash()
         a, b = OneTwoThreeSet(), OneTwoThreeSet()
         self.assertTrue(hash(a) == hash(b))
+
+    def test_isdisjoint_Set(self):
+        class MySet(Set):
+            def __init__(self, itr):
+                self.contents = itr
+            def __contains__(self, x):
+                return x in self.contents
+            def __iter__(self):
+                return iter(self.contents)
+            def __len__(self):
+                return len([x for x in self.contents])
+        s1 = MySet((1, 2, 3))
+        s2 = MySet((4, 5, 6))
+        s3 = MySet((1, 5, 6))
+        self.assertTrue(s1.isdisjoint(s2))
+        self.assertFalse(s1.isdisjoint(s3))
+
+    def test_equality_Set(self):
+        class MySet(Set):
+            def __init__(self, itr):
+                self.contents = itr
+            def __contains__(self, x):
+                return x in self.contents
+            def __iter__(self):
+                return iter(self.contents)
+            def __len__(self):
+                return len([x for x in self.contents])
+        s1 = MySet((1,))
+        s2 = MySet((1, 2))
+        s3 = MySet((3, 4))
+        s4 = MySet((3, 4))
+        self.assertTrue(s2 > s1)
+        self.assertTrue(s1 < s2)
+        self.assertFalse(s2 <= s1)
+        self.assertFalse(s2 <= s3)
+        self.assertFalse(s1 >= s2)
+        self.assertEqual(s3, s4)
+        self.assertNotEqual(s2, s3)
+
+    def test_arithmetic_Set(self):
+        class MySet(Set):
+            def __init__(self, itr):
+                self.contents = itr
+            def __contains__(self, x):
+                return x in self.contents
+            def __iter__(self):
+                return iter(self.contents)
+            def __len__(self):
+                return len([x for x in self.contents])
+        s1 = MySet((1, 2, 3))
+        s2 = MySet((3, 4, 5))
+        s3 = s1 & s2
+        self.assertEqual(s3, MySet((3,)))
 
     def test_MutableSet(self):
         self.assertIsInstance(set(), MutableSet)
@@ -743,6 +1304,35 @@ class TestCollectionABCs(ABCTestCase):
         self.assertTrue(ncs <= cs)
         self.assertFalse(ncs > cs)
         self.assertTrue(ncs >= cs)
+
+    def test_issue26915(self):
+        # Container membership test should check identity first
+        class CustomEqualObject:
+            def __eq__(self, other):
+                return False
+        class CustomSequence(Sequence):
+            def __init__(self, seq):
+                self._seq = seq
+            def __getitem__(self, index):
+                return self._seq[index]
+            def __len__(self):
+                return len(self._seq)
+
+        nan = float('nan')
+        obj = CustomEqualObject()
+        seq = CustomSequence([nan, obj, nan])
+        containers = [
+            seq,
+            ItemsView({1: nan, 2: obj}),
+            ValuesView({1: nan, 2: obj})
+        ]
+        for container in containers:
+            for elem in container:
+                self.assertIn(elem, container)
+        self.assertEqual(seq.index(nan), 0)
+        self.assertEqual(seq.index(obj), 1)
+        self.assertEqual(seq.count(nan), 2)
+        self.assertEqual(seq.count(obj), 1)
 
     def assertSameSet(self, s1, s2):
         # coerce both to a real set then check equality
@@ -914,6 +1504,7 @@ class TestCollectionABCs(ABCTestCase):
             def __iter__(self):
                 return iter(())
         self.validate_comparison(MyMapping())
+        self.assertRaises(TypeError, reversed, MyMapping())
 
     def test_MutableMapping(self):
         for sample in [dict]:
@@ -959,6 +1550,41 @@ class TestCollectionABCs(ABCTestCase):
         self.validate_abstract_methods(Sequence, '__contains__', '__iter__', '__len__',
             '__getitem__')
 
+    def test_Sequence_mixins(self):
+        class SequenceSubclass(Sequence):
+            def __init__(self, seq=()):
+                self.seq = seq
+
+            def __getitem__(self, index):
+                return self.seq[index]
+
+            def __len__(self):
+                return len(self.seq)
+
+        # Compare Sequence.index() behavior to (list|str).index() behavior
+        def assert_index_same(seq1, seq2, index_args):
+            try:
+                expected = seq1.index(*index_args)
+            except ValueError:
+                with self.assertRaises(ValueError):
+                    seq2.index(*index_args)
+            else:
+                actual = seq2.index(*index_args)
+                self.assertEqual(
+                    actual, expected, '%r.index%s' % (seq1, index_args))
+
+        for ty in list, str:
+            nativeseq = ty('abracadabra')
+            indexes = [-10000, -9999] + list(range(-3, len(nativeseq) + 3))
+            seqseq = SequenceSubclass(nativeseq)
+            for letter in set(nativeseq) | {'z'}:
+                assert_index_same(nativeseq, seqseq, (letter,))
+                for start in range(-3, len(nativeseq) + 3):
+                    assert_index_same(nativeseq, seqseq, (letter, start))
+                    for stop in range(-3, len(nativeseq) + 3):
+                        assert_index_same(
+                            nativeseq, seqseq, (letter, start, stop))
+
     def test_ByteString(self):
         for sample in [bytes, bytearray]:
             self.assertIsInstance(sample(), ByteString)
@@ -973,7 +1599,7 @@ class TestCollectionABCs(ABCTestCase):
         for sample in [tuple, str, bytes]:
             self.assertNotIsInstance(sample(), MutableSequence)
             self.assertFalse(issubclass(sample, MutableSequence))
-        for sample in [list, bytearray]:
+        for sample in [list, bytearray, deque]:
             self.assertIsInstance(sample(), MutableSequence)
             self.assertTrue(issubclass(sample, MutableSequence))
         self.assertFalse(issubclass(str, MutableSequence))
@@ -981,7 +1607,7 @@ class TestCollectionABCs(ABCTestCase):
             '__len__', '__getitem__', '__setitem__', '__delitem__', 'insert')
 
     def test_MutableSequence_mixins(self):
-        # Test the mixins of MutableSequence by creating a miminal concrete
+        # Test the mixins of MutableSequence by creating a minimal concrete
         # class inherited from it.
         class MutableSequenceSubclass(MutableSequence):
             def __init__(self):
@@ -1289,7 +1915,9 @@ class TestCounter(unittest.TestCase):
 def test_main(verbose=None):
     NamedTupleDocs = doctest.DocTestSuite(module=collections)
     test_classes = [TestNamedTuple, NamedTupleDocs, TestOneTrickPonyABCs,
-                    TestCollectionABCs, TestCounter, TestChainMap]
+                    TestCollectionABCs, TestCounter, TestChainMap,
+                    TestUserObjects,
+                    ]
     support.run_unittest(*test_classes)
     support.run_doctest(collections, verbose)
 

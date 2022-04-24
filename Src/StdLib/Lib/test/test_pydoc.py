@@ -2,7 +2,6 @@ import os
 import sys
 import builtins
 import contextlib
-import difflib
 import importlib.util
 import inspect
 import pydoc
@@ -16,13 +15,15 @@ import string
 import test.support
 import time
 import types
+import typing
 import unittest
 import urllib.parse
 import xml.etree
+import xml.etree.ElementTree
 import textwrap
 from io import StringIO
 from collections import namedtuple
-from test.script_helper import assert_python_ok
+from test.support.script_helper import assert_python_ok
 from test.support import (
     TESTFN, rmtree,
     reap_children, reap_threads, captured_output, captured_stdout,
@@ -83,6 +84,8 @@ CLASSES
      |  Data and other attributes defined here:
      |\x20\x20
      |  NO_MEANING = 'eggs'
+     |\x20\x20
+     |  __annotations__ = {'NO_MEANING': <class 'str'>}
 \x20\x20\x20\x20
     class C(builtins.object)
      |  Methods defined here:
@@ -195,6 +198,8 @@ Data descriptors defined here:<br>
 Data and other attributes defined here:<br>
 <dl><dt><strong>NO_MEANING</strong> = 'eggs'</dl>
 
+<dl><dt><strong>__annotations__</strong> = {'NO_MEANING': &lt;class 'str'&gt;}</dl>
+
 </td></tr></table> <p>
 <table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
@@ -257,10 +262,13 @@ expected_html_data_docstrings = tuple(s.replace(' ', '&nbsp;')
                                       for s in expected_data_docstrings)
 
 # output pattern for missing module
-missing_pattern = "no Python documentation found for '%s'"
+missing_pattern = '''\
+No Python documentation found for %r.
+Use help() to get the interactive help utility.
+Use help(str) for help on the str class.'''.replace('\n', os.linesep)
 
 # output pattern for module with bad imports
-badimport_pattern = "problem in %s - ImportError: No module named %r"
+badimport_pattern = "problem in %s - ModuleNotFoundError: No module named %r"
 
 expected_dynamicattribute_pattern = """
 Help on class DA in module %s:
@@ -350,6 +358,14 @@ def get_pydoc_html(module):
         loc = "<br><a href=\"" + loc + "\">Module Docs</a>"
     return output.strip(), loc
 
+def get_pydoc_link(module):
+    "Returns a documentation web link of a module"
+    dirname = os.path.dirname
+    basedir = dirname(dirname(os.path.realpath(__file__)))
+    doc = pydoc.TextDoc()
+    loc = doc.getdocloc(module, basedir=basedir)
+    return loc
+
 def get_pydoc_text(module):
     "Returns pydoc generated output as text"
     doc = pydoc.TextDoc()
@@ -363,15 +379,6 @@ def get_pydoc_text(module):
     patt = re.compile('\b.')
     output = patt.sub('', output)
     return output.strip(), loc
-
-def print_diffs(text1, text2):
-    "Prints unified diffs for two texts"
-    # XXX now obsolete, use unittest built-in support
-    lines1 = text1.splitlines(keepends=True)
-    lines2 = text2.splitlines(keepends=True)
-    diffs = difflib.unified_diff(lines1, lines2, n=0, fromfile='expected',
-                                 tofile='got')
-    print('\n' + ''.join(diffs))
 
 def get_html_title(text):
     # Bit of hack, but good enough for test purposes
@@ -412,6 +419,7 @@ class PydocBaseTest(unittest.TestCase):
 
 
 class PydocDocTest(unittest.TestCase):
+    maxDiff = None
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -425,9 +433,7 @@ class PydocDocTest(unittest.TestCase):
         expected_html = expected_html_pattern % (
                         (mod_url, mod_file, doc_loc) +
                         expected_html_data_docstrings)
-        if result != expected_html:
-            print_diffs(expected_html, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(result, expected_html)
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -440,9 +446,7 @@ class PydocDocTest(unittest.TestCase):
                         (doc_loc,) +
                         expected_text_data_docstrings +
                         (inspect.getabsfile(pydoc_mod),))
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(expected_text, result)
 
     def test_text_enum_member_with_value_zero(self):
         # Test issue #20654 to ensure enum member with value 0 can be
@@ -453,6 +457,11 @@ class PydocDocTest(unittest.TestCase):
             one = 1
         doc = pydoc.render_doc(BinaryInteger)
         self.assertIn('<BinaryInteger.zero: 0>', doc)
+
+    def test_mixed_case_module_names_are_lower_cased(self):
+        # issue16484
+        doc_link = get_pydoc_link(xml.etree.ElementTree)
+        self.assertIn('xml.etree.elementtree', doc_link)
 
     def test_issue8225(self):
         # Test issue8225 to ensure no doc link appears for xml.etree
@@ -635,11 +644,110 @@ class PydocDocTest(unittest.TestCase):
         del expected['__doc__']
         del expected['__class__']
         # inspect resolves descriptors on type into methods, but vars doesn't,
-        # so we need to update __subclasshook__.
+        # so we need to update __subclasshook__ and __init_subclass__.
         expected['__subclasshook__'] = TestClass.__subclasshook__
+        expected['__init_subclass__'] = TestClass.__init_subclass__
 
         methods = pydoc.allmethods(TestClass)
         self.assertDictEqual(methods, expected)
+
+    def test_method_aliases(self):
+        class A:
+            def tkraise(self, aboveThis=None):
+                """Raise this widget in the stacking order."""
+            lift = tkraise
+            def a_size(self):
+                """Return size"""
+        class B(A):
+            def itemconfigure(self, tagOrId, cnf=None, **kw):
+                """Configure resources of an item TAGORID."""
+            itemconfig = itemconfigure
+            b_size = A.a_size
+
+        doc = pydoc.render_doc(B)
+        # clean up the extra text formatting that pydoc performs
+        doc = re.sub('\b.', '', doc)
+        self.assertEqual(doc, '''\
+Python Library Documentation: class B in module %s
+
+class B(A)
+ |  Method resolution order:
+ |      B
+ |      A
+ |      builtins.object
+ |\x20\x20
+ |  Methods defined here:
+ |\x20\x20
+ |  b_size = a_size(self)
+ |\x20\x20
+ |  itemconfig = itemconfigure(self, tagOrId, cnf=None, **kw)
+ |\x20\x20
+ |  itemconfigure(self, tagOrId, cnf=None, **kw)
+ |      Configure resources of an item TAGORID.
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Methods inherited from A:
+ |\x20\x20
+ |  a_size(self)
+ |      Return size
+ |\x20\x20
+ |  lift = tkraise(self, aboveThis=None)
+ |\x20\x20
+ |  tkraise(self, aboveThis=None)
+ |      Raise this widget in the stacking order.
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from A:
+ |\x20\x20
+ |  __dict__
+ |      dictionary for instance variables (if defined)
+ |\x20\x20
+ |  __weakref__
+ |      list of weak references to the object (if defined)
+''' % __name__)
+
+        doc = pydoc.render_doc(B, renderer=pydoc.HTMLDoc())
+        self.assertEqual(doc, '''\
+Python Library Documentation: class B in module %s
+
+<p>
+<table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="B">class <strong>B</strong></a>(A)</font></td></tr>
+\x20\x20\x20\x20
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%%"><dl><dt>Method resolution order:</dt>
+<dd>B</dd>
+<dd>A</dd>
+<dd><a href="builtins.html#object">builtins.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="B-b_size"><strong>b_size</strong></a> = <a href="#B-a_size">a_size</a>(self)</dt></dl>
+
+<dl><dt><a name="B-itemconfig"><strong>itemconfig</strong></a> = <a href="#B-itemconfigure">itemconfigure</a>(self, tagOrId, cnf=None, **kw)</dt></dl>
+
+<dl><dt><a name="B-itemconfigure"><strong>itemconfigure</strong></a>(self, tagOrId, cnf=None, **kw)</dt><dd><tt>Configure&nbsp;resources&nbsp;of&nbsp;an&nbsp;item&nbsp;TAGORID.</tt></dd></dl>
+
+<hr>
+Methods inherited from A:<br>
+<dl><dt><a name="B-a_size"><strong>a_size</strong></a>(self)</dt><dd><tt>Return&nbsp;size</tt></dd></dl>
+
+<dl><dt><a name="B-lift"><strong>lift</strong></a> = <a href="#B-tkraise">tkraise</a>(self, aboveThis=None)</dt></dl>
+
+<dl><dt><a name="B-tkraise"><strong>tkraise</strong></a>(self, aboveThis=None)</dt><dd><tt>Raise&nbsp;this&nbsp;widget&nbsp;in&nbsp;the&nbsp;stacking&nbsp;order.</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from A:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table>\
+''' % __name__)
 
 
 class PydocImportTest(PydocBaseTest):
@@ -745,7 +853,7 @@ class PydocImportTest(PydocBaseTest):
             finally:
                 sys.path[:] = saved_paths
 
-    @unittest.skip('causes undesireable side-effects (#20128)')
+    @unittest.skip('causes undesirable side-effects (#20128)')
     def test_modules(self):
         # See Helper.listmodules().
         num_header_lines = 2
@@ -761,7 +869,7 @@ class PydocImportTest(PydocBaseTest):
 
         self.assertGreaterEqual(num_lines, expected)
 
-    @unittest.skip('causes undesireable side-effects (#20128)')
+    @unittest.skip('causes undesirable side-effects (#20128)')
     def test_modules_search(self):
         # See Helper.listmodules().
         expected = 'pydoc - '
@@ -812,6 +920,18 @@ class TestDescriptions(unittest.TestCase):
         expected = 'C in module %s object' % __name__
         self.assertIn(expected, pydoc.render_doc(c))
 
+    def test_typing_pydoc(self):
+        def foo(data: typing.List[typing.Any],
+                x: int) -> typing.Iterator[typing.Tuple[int, typing.Any]]:
+            ...
+        T = typing.TypeVar('T')
+        class C(typing.Generic[T], typing.Mapping[int, str]): ...
+        self.assertEqual(pydoc.render_doc(foo).splitlines()[-1],
+                         'f\x08fo\x08oo\x08o(data:List[Any], x:int)'
+                         ' -> Iterator[Tuple[int, Any]]')
+        self.assertEqual(pydoc.render_doc(C).splitlines()[2],
+                         'class C\x08C(typing.Mapping)')
+
     def test_builtin(self):
         for name in ('str', 'str.translate', 'builtins.str',
                      'builtins.str.translate'):
@@ -851,6 +971,22 @@ class TestDescriptions(unittest.TestCase):
         t = textwrap.TextWrapper()
         self.assertEqual(self._get_summary_line(t.wrap),
             "wrap(text) method of textwrap.TextWrapper instance")
+
+    def test_field_order_for_named_tuples(self):
+        Person = namedtuple('Person', ['nickname', 'firstname', 'agegroup'])
+        s = pydoc.render_doc(Person)
+        self.assertLess(s.index('nickname'), s.index('firstname'))
+        self.assertLess(s.index('firstname'), s.index('agegroup'))
+
+        class NonIterableFields:
+            _fields = None
+
+        class NonHashableFields:
+            _fields = [[]]
+
+        # Make sure these doesn't fail
+        pydoc.render_doc(NonIterableFields)
+        pydoc.render_doc(NonHashableFields)
 
     @requires_docstrings
     def test_bound_builtin_method(self):
@@ -916,17 +1052,11 @@ class PydocUrlHandlerTest(PydocBaseTest):
             ("topic?key=def", "Pydoc: KEYWORD def"),
             ("topic?key=STRINGS", "Pydoc: TOPIC STRINGS"),
             ("foobar", "Pydoc: Error - foobar"),
-            ("getfile?key=foobar", "Pydoc: Error - getfile?key=foobar"),
             ]
 
         with self.restrict_walk_packages():
             for url, title in requests:
                 self.call_url_handler(url, title)
-
-            path = string.__file__
-            title = "Pydoc: getfile " + path
-            url = "getfile?key=" + path
-            self.call_url_handler(url, title)
 
 
 class TestHelper(unittest.TestCase):
@@ -957,9 +1087,7 @@ class PydocWithMetaClasses(unittest.TestCase):
         expected_text = expected_dynamicattribute_pattern % (
                 (__name__,) + expected_text_data_docstrings[:2])
         result = output.getvalue().strip()
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(expected_text, result)
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -980,9 +1108,7 @@ class PydocWithMetaClasses(unittest.TestCase):
         helper(Class)
         expected_text = expected_virtualattribute_pattern1 % __name__
         result = output.getvalue().strip()
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(expected_text, result)
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -1022,19 +1148,13 @@ class PydocWithMetaClasses(unittest.TestCase):
         helper(Class1)
         expected_text1 = expected_virtualattribute_pattern2 % __name__
         result1 = output.getvalue().strip()
-        if result1 != expected_text1:
-            print_diffs(expected_text1, result1)
-            fail1 = True
+        self.assertEqual(expected_text1, result1)
         output = StringIO()
         helper = pydoc.Helper(output=output)
         helper(Class2)
         expected_text2 = expected_virtualattribute_pattern3 % __name__
         result2 = output.getvalue().strip()
-        if result2 != expected_text2:
-            print_diffs(expected_text2, result2)
-            fail2 = True
-        if fail1 or fail2:
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(expected_text2, result2)
 
     @unittest.skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
@@ -1051,9 +1171,7 @@ class PydocWithMetaClasses(unittest.TestCase):
         helper(C)
         expected_text = expected_missingattribute_pattern % __name__
         result = output.getvalue().strip()
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(expected_text, result)
 
     def test_resolve_false(self):
         # Issue #23008: pydoc enum.{,Int}Enum failed

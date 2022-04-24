@@ -1,24 +1,14 @@
 """Test the binascii C module."""
 
-from test import support
 import unittest
 import binascii
 import array
-import sys
 
 # Note: "*_hex" functions are aliases for "(un)hexlify"
 b2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_hqx', 'b2a_qp', 'b2a_uu',
                  'hexlify', 'rlecode_hqx']
 a2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_hqx', 'a2b_qp', 'a2b_uu',
                  'unhexlify', 'rledecode_hqx']
-
-if sys.implementation.name == "ironpython":
-    # these are not yet implemented in IronPython
-    b2a_functions.remove('b2a_hqx')
-    b2a_functions.remove('rlecode_hqx')
-    a2b_functions.remove('a2b_hqx')
-    a2b_functions.remove('rledecode_hqx')
-    
 all_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']
 
 
@@ -164,16 +154,29 @@ class BinASCIITest(unittest.TestCase):
 
         self.assertRaises(TypeError, binascii.crc32)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: not implemented")
     def test_hqx(self):
         # Perform binhex4 style RLE-compression
         # Then calculate the hexbin4 binary-to-ASCII translation
         rle = binascii.rlecode_hqx(self.data)
         a = binascii.b2a_hqx(self.type2test(rle))
+
         b, _ = binascii.a2b_hqx(self.type2test(a))
         res = binascii.rledecode_hqx(b)
-
         self.assertEqual(res, self.rawdata)
+
+    def test_rle(self):
+        # test repetition with a repetition longer than the limit of 255
+        data = (b'a' * 100 + b'b' + b'c' * 300)
+
+        encoded = binascii.rlecode_hqx(data)
+        self.assertEqual(encoded,
+                         (b'a\x90d'      # 'a' * 100
+                          b'b'           # 'b'
+                          b'c\x90\xff'   # 'c' * 255
+                          b'c\x90-'))    # 'c' * 45
+
+        decoded = binascii.rledecode_hqx(encoded)
+        self.assertEqual(decoded, data)
 
     def test_hex(self):
         # test hexlification
@@ -189,37 +192,106 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.unhexlify(self.type2test(t)), u)
 
     def test_qp(self):
-        binascii.a2b_qp(data=b"", header=False)  # Keyword arguments allowed
+        type2test = self.type2test
+        a2b_qp = binascii.a2b_qp
+        b2a_qp = binascii.b2a_qp
+
+        a2b_qp(data=b"", header=False)  # Keyword arguments allowed
 
         # A test for SF bug 534347 (segfaults without the proper fix)
         try:
-            binascii.a2b_qp(b"", **{1:1})
+            a2b_qp(b"", **{1:1})
         except TypeError:
             pass
         else:
             self.fail("binascii.a2b_qp(**{1:1}) didn't raise TypeError")
 
-        self.assertEqual(binascii.a2b_qp(b"= "), b"= ")
-        self.assertEqual(binascii.a2b_qp(b"=="), b"=")
-        self.assertEqual(binascii.a2b_qp(b"=AX"), b"=AX")
-        self.assertRaises(TypeError, binascii.b2a_qp, foo="bar")
-        self.assertEqual(binascii.a2b_qp(b"=00\r\n=00"), b"\x00\r\n\x00")
-        self.assertEqual(
-            binascii.b2a_qp(b"\xff\r\n\xff\n\xff"),
-            b"=FF\r\n=FF\r\n=FF")
-        self.assertEqual(
-            binascii.b2a_qp(b"0"*75+b"\xff\r\n\xff\r\n\xff"),
-            b"0"*75+b"=\r\n=FF\r\n=FF\r\n=FF")
+        self.assertEqual(a2b_qp(type2test(b"=")), b"")
+        self.assertEqual(a2b_qp(type2test(b"= ")), b"= ")
+        self.assertEqual(a2b_qp(type2test(b"==")), b"=")
+        self.assertEqual(a2b_qp(type2test(b"=\nAB")), b"AB")
+        self.assertEqual(a2b_qp(type2test(b"=\r\nAB")), b"AB")
+        self.assertEqual(a2b_qp(type2test(b"=\rAB")), b"")  # ?
+        self.assertEqual(a2b_qp(type2test(b"=\rAB\nCD")), b"CD")  # ?
+        self.assertEqual(a2b_qp(type2test(b"=AB")), b"\xab")
+        self.assertEqual(a2b_qp(type2test(b"=ab")), b"\xab")
+        self.assertEqual(a2b_qp(type2test(b"=AX")), b"=AX")
+        self.assertEqual(a2b_qp(type2test(b"=XA")), b"=XA")
+        self.assertEqual(a2b_qp(type2test(b"=AB")[:-1]), b"=A")
 
-        self.assertEqual(binascii.b2a_qp(b'\0\n'), b'=00\n')
-        self.assertEqual(binascii.b2a_qp(b'\0\n', quotetabs=True), b'=00\n')
-        self.assertEqual(binascii.b2a_qp(b'foo\tbar\t\n'), b'foo\tbar=09\n')
-        self.assertEqual(binascii.b2a_qp(b'foo\tbar\t\n', quotetabs=True),
-                         b'foo=09bar=09\n')
+        self.assertEqual(a2b_qp(type2test(b'_')), b'_')
+        self.assertEqual(a2b_qp(type2test(b'_'), header=True), b' ')
 
-        self.assertEqual(binascii.b2a_qp(b'.'), b'=2E')
-        self.assertEqual(binascii.b2a_qp(b'.\n'), b'=2E\n')
-        self.assertEqual(binascii.b2a_qp(b'a.\n'), b'a.\n')
+        self.assertRaises(TypeError, b2a_qp, foo="bar")
+        self.assertEqual(a2b_qp(type2test(b"=00\r\n=00")), b"\x00\r\n\x00")
+        self.assertEqual(b2a_qp(type2test(b"\xff\r\n\xff\n\xff")),
+                         b"=FF\r\n=FF\r\n=FF")
+        self.assertEqual(b2a_qp(type2test(b"0"*75+b"\xff\r\n\xff\r\n\xff")),
+                         b"0"*75+b"=\r\n=FF\r\n=FF\r\n=FF")
+
+        self.assertEqual(b2a_qp(type2test(b'\x7f')), b'=7F')
+        self.assertEqual(b2a_qp(type2test(b'=')), b'=3D')
+
+        self.assertEqual(b2a_qp(type2test(b'_')), b'_')
+        self.assertEqual(b2a_qp(type2test(b'_'), header=True), b'=5F')
+        self.assertEqual(b2a_qp(type2test(b'x y'), header=True), b'x_y')
+        self.assertEqual(b2a_qp(type2test(b'x '), header=True), b'x=20')
+        self.assertEqual(b2a_qp(type2test(b'x y'), header=True, quotetabs=True),
+                         b'x=20y')
+        self.assertEqual(b2a_qp(type2test(b'x\ty'), header=True), b'x\ty')
+
+        self.assertEqual(b2a_qp(type2test(b' ')), b'=20')
+        self.assertEqual(b2a_qp(type2test(b'\t')), b'=09')
+        self.assertEqual(b2a_qp(type2test(b' x')), b' x')
+        self.assertEqual(b2a_qp(type2test(b'\tx')), b'\tx')
+        self.assertEqual(b2a_qp(type2test(b' x')[:-1]), b'=20')
+        self.assertEqual(b2a_qp(type2test(b'\tx')[:-1]), b'=09')
+        self.assertEqual(b2a_qp(type2test(b'\0')), b'=00')
+
+        self.assertEqual(b2a_qp(type2test(b'\0\n')), b'=00\n')
+        self.assertEqual(b2a_qp(type2test(b'\0\n'), quotetabs=True), b'=00\n')
+
+        self.assertEqual(b2a_qp(type2test(b'x y\tz')), b'x y\tz')
+        self.assertEqual(b2a_qp(type2test(b'x y\tz'), quotetabs=True),
+                         b'x=20y=09z')
+        self.assertEqual(b2a_qp(type2test(b'x y\tz'), istext=False),
+                         b'x y\tz')
+        self.assertEqual(b2a_qp(type2test(b'x \ny\t\n')),
+                         b'x=20\ny=09\n')
+        self.assertEqual(b2a_qp(type2test(b'x \ny\t\n'), quotetabs=True),
+                         b'x=20\ny=09\n')
+        self.assertEqual(b2a_qp(type2test(b'x \ny\t\n'), istext=False),
+                         b'x =0Ay\t=0A')
+        self.assertEqual(b2a_qp(type2test(b'x \ry\t\r')),
+                         b'x \ry\t\r')
+        self.assertEqual(b2a_qp(type2test(b'x \ry\t\r'), quotetabs=True),
+                         b'x=20\ry=09\r')
+        self.assertEqual(b2a_qp(type2test(b'x \ry\t\r'), istext=False),
+                         b'x =0Dy\t=0D')
+        self.assertEqual(b2a_qp(type2test(b'x \r\ny\t\r\n')),
+                         b'x=20\r\ny=09\r\n')
+        self.assertEqual(b2a_qp(type2test(b'x \r\ny\t\r\n'), quotetabs=True),
+                         b'x=20\r\ny=09\r\n')
+        self.assertEqual(b2a_qp(type2test(b'x \r\ny\t\r\n'), istext=False),
+                         b'x =0D=0Ay\t=0D=0A')
+
+        self.assertEqual(b2a_qp(type2test(b'x \r\n')[:-1]), b'x \r')
+        self.assertEqual(b2a_qp(type2test(b'x\t\r\n')[:-1]), b'x\t\r')
+        self.assertEqual(b2a_qp(type2test(b'x \r\n')[:-1], quotetabs=True),
+                         b'x=20\r')
+        self.assertEqual(b2a_qp(type2test(b'x\t\r\n')[:-1], quotetabs=True),
+                         b'x=09\r')
+        self.assertEqual(b2a_qp(type2test(b'x \r\n')[:-1], istext=False),
+                         b'x =0D')
+        self.assertEqual(b2a_qp(type2test(b'x\t\r\n')[:-1], istext=False),
+                         b'x\t=0D')
+
+        self.assertEqual(b2a_qp(type2test(b'.')), b'=2E')
+        self.assertEqual(b2a_qp(type2test(b'.\n')), b'=2E\n')
+        self.assertEqual(b2a_qp(type2test(b'.\r')), b'=2E\r')
+        self.assertEqual(b2a_qp(type2test(b'.\0')), b'=2E=00')
+        self.assertEqual(b2a_qp(type2test(b'a.\n')), b'a.\n')
+        self.assertEqual(b2a_qp(type2test(b'.a')[:-1]), b'=2E')
 
     def test_empty_string(self):
         # A test for SF bug #1022953.  Make sure SystemError is not raised.
@@ -238,7 +310,6 @@ class BinASCIITest(unittest.TestCase):
     def test_unicode_b2a(self):
         # Unicode strings are not accepted by b2a_* functions.
         for func in set(all_functions) - set(a2b_functions) | {'rledecode_hqx'}:
-            if sys.implementation.name == "ironpython" and func == 'rledecode_hqx': continue
             try:
                 self.assertRaises(TypeError, getattr(binascii, func), "test")
             except Exception as err:
@@ -274,6 +345,16 @@ class BinASCIITest(unittest.TestCase):
             # non-ASCII string
             self.assertRaises(ValueError, a2b, "\x80")
 
+    def test_b2a_base64_newline(self):
+        # Issue #25357: test newline parameter
+        b = self.type2test(b'hello')
+        self.assertEqual(binascii.b2a_base64(b),
+                         b'aGVsbG8=\n')
+        self.assertEqual(binascii.b2a_base64(b, newline=True),
+                         b'aGVsbG8=\n')
+        self.assertEqual(binascii.b2a_base64(b, newline=False),
+                         b'aGVsbG8=')
+
 
 class ArrayBinASCIITest(BinASCIITest):
     def type2test(self, s):
@@ -288,11 +369,5 @@ class MemoryviewBinASCIITest(BinASCIITest):
     type2test = memoryview
 
 
-def test_main():
-    support.run_unittest(BinASCIITest,
-                         ArrayBinASCIITest,
-                         BytearrayBinASCIITest,
-                         MemoryviewBinASCIITest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

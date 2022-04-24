@@ -120,7 +120,7 @@ def time2netscape(t=None):
         dt = datetime.datetime.utcnow()
     else:
         dt = datetime.datetime.utcfromtimestamp(t)
-    return "%s %02d-%s-%04d %02d:%02d:%02d GMT" % (
+    return "%s, %02d-%s-%04d %02d:%02d:%02d GMT" % (
         DAYS[dt.weekday()], dt.day, MONTHS[dt.month-1],
         dt.year, dt.hour, dt.minute, dt.second)
 
@@ -143,6 +143,10 @@ def offset_from_tz_string(tz):
     return offset
 
 def _str2time(day, mon, yr, hr, min, sec, tz):
+    yr = int(yr)
+    if yr > datetime.MAXYEAR:
+        return None
+
     # translate month name to number
     # month numbers start with 1 (January)
     try:
@@ -163,7 +167,6 @@ def _str2time(day, mon, yr, hr, min, sec, tz):
     if min is None: min = 0
     if sec is None: sec = 0
 
-    yr = int(yr)
     day = int(day)
     hr = int(hr)
     min = int(min)
@@ -197,7 +200,7 @@ def _str2time(day, mon, yr, hr, min, sec, tz):
 
 STRICT_DATE_RE = re.compile(
     r"^[SMTWF][a-z][a-z], (\d\d) ([JFMASOND][a-z][a-z]) "
-    "(\d\d\d\d) (\d\d):(\d\d):(\d\d) GMT$", re.ASCII)
+    r"(\d\d\d\d) (\d\d):(\d\d):(\d\d) GMT$", re.ASCII)
 WEEKDAY_RE = re.compile(
     r"^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*,?\s*", re.I | re.ASCII)
 LOOSE_HTTP_DATE_RE = re.compile(
@@ -213,10 +216,14 @@ LOOSE_HTTP_DATE_RE = re.compile(
        (?::(\d\d))?    # optional seconds
     )?                 # optional clock
        \s*
-    ([-+]?\d{2,4}|(?![APap][Mm]\b)[A-Za-z]+)? # timezone
+    (?:
+       ([-+]?\d{2,4}|(?![APap][Mm]\b)[A-Za-z]+) # timezone
        \s*
-    (?:\(\w+\))?       # ASCII representation of timezone in parens.
-       \s*$""", re.X | re.ASCII)
+    )?
+    (?:
+       \(\w+\)         # ASCII representation of timezone in parens.
+       \s*
+    )?$""", re.X | re.ASCII)
 def http2time(text):
     """Returns time in seconds since epoch of time represented by a string.
 
@@ -274,7 +281,7 @@ def http2time(text):
     return _str2time(day, mon, yr, hr, min, sec, tz)
 
 ISO_DATE_RE = re.compile(
-    """^
+    r"""^
     (\d{4})              # year
        [-\/]?
     (\d\d?)              # numerical month
@@ -286,9 +293,11 @@ ISO_DATE_RE = re.compile(
       (?::?(\d\d(?:\.\d*)?))?  # optional seconds (and fractional)
    )?                    # optional clock
       \s*
-   ([-+]?\d\d?:?(:?\d\d)?
-    |Z|z)?               # timezone  (Z is "zero meridian", i.e. GMT)
-      \s*$""", re.X | re. ASCII)
+   (?:
+      ([-+]?\d\d?:?(:?\d\d)?
+       |Z|z)             # timezone  (Z is "zero meridian", i.e. GMT)
+      \s*
+   )?$""", re.X | re. ASCII)
 def iso2time(text):
     """
     As for http2time, but parses the ISO 8601 formats:
@@ -408,7 +417,7 @@ def split_header_words(header_values):
                 pairs = []
             else:
                 # skip junk
-                non_junk, nr_junk_chars = re.subn("^[=\s;]*", "", text)
+                non_junk, nr_junk_chars = re.subn(r"^[=\s;]*", "", text)
                 assert nr_junk_chars > 0, (
                     "split_header_words bug: '%s', '%s', %s" %
                     (orig_text, text, pairs))
@@ -821,7 +830,7 @@ class Cookie:
             args.append("%s=%s" % (name, repr(attr)))
         args.append("rest=%s" % repr(self._rest))
         args.append("rfc2109=%s" % repr(self.rfc2109))
-        return "Cookie(%s)" % ", ".join(args)
+        return "%s(%s)" % (self.__class__.__name__, ", ".join(args))
 
 
 class CookiePolicy:
@@ -830,7 +839,7 @@ class CookiePolicy:
     May also modify cookies, though this is probably a bad idea.
 
     The subclass DefaultCookiePolicy defines the standard rules for Netscape
-    and RFC 2965 cookies -- override that if you want a customised policy.
+    and RFC 2965 cookies -- override that if you want a customized policy.
 
     """
     def set_ok(self, cookie, request):
@@ -1851,7 +1860,7 @@ def lwp_cookie_str(cookie):
 class LWPCookieJar(FileCookieJar):
     """
     The LWPCookieJar saves a sequence of "Set-Cookie3" lines.
-    "Set-Cookie3" is the format used by the libwww-perl libary, not known
+    "Set-Cookie3" is the format used by the libwww-perl library, not known
     to be compatible with any browser, but which is easy to read and
     doesn't lose information about RFC 2965 cookies.
 
@@ -2012,7 +2021,6 @@ class MozillaCookieJar(FileCookieJar):
 
         magic = f.readline()
         if not self.magic_re.search(magic):
-            f.close()
             raise LoadError(
                 "%r does not look like a Netscape format cookies file" %
                 filename)

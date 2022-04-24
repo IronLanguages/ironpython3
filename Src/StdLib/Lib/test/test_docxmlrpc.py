@@ -1,13 +1,10 @@
 from xmlrpc.server import DocXMLRPCServer
 import http.client
+import re
 import sys
 from test import support
 threading = support.import_module('threading')
-import time
-import socket
 import unittest
-
-PORT = None
 
 def make_request_and_skipIf(condition, reason):
     # If we skip the test, we have to make a request because
@@ -23,13 +20,10 @@ def make_request_and_skipIf(condition, reason):
     return decorator
 
 
-def server(evt, numrequests):
+def make_server():
     serv = DocXMLRPCServer(("localhost", 0), logRequests=False)
 
     try:
-        global PORT
-        PORT = serv.socket.getsockname()[1]
-
         # Add some documentation
         serv.set_server_title("DocXMLRPCServer Test Documentation")
         serv.set_server_name("DocXMLRPCServer Test Docs")
@@ -66,42 +60,31 @@ def server(evt, numrequests):
         serv.register_function(lambda x, y: x-y)
         serv.register_function(annotation)
         serv.register_instance(ClassWithAnnotation())
-
-        while numrequests > 0:
-            serv.handle_request()
-            numrequests -= 1
-    except socket.timeout:
-        pass
-    finally:
+        return serv
+    except:
         serv.server_close()
-        PORT = None
-        evt.set()
+        raise
 
 class DocXMLRPCHTTPGETServer(unittest.TestCase):
     def setUp(self):
-        self._threads = support.threading_setup()
         # Enable server feedback
         DocXMLRPCServer._send_traceback_header = True
 
-        self.evt = threading.Event()
-        threading.Thread(target=server, args=(self.evt, 1)).start()
+        self.serv = make_server()
+        self.thread = threading.Thread(target=self.serv.serve_forever)
+        self.thread.start()
 
-        # wait for port to be assigned
-        n = 1000
-        while n > 0 and PORT is None:
-            time.sleep(0.001)
-            n -= 1
-
+        PORT = self.serv.server_address[1]
         self.client = http.client.HTTPConnection("localhost:%d" % PORT)
 
     def tearDown(self):
         self.client.close()
 
-        self.evt.wait()
-
         # Disable server feedback
         DocXMLRPCServer._send_traceback_header = False
-        support.threading_cleanup(*self._threads)
+        self.serv.shutdown()
+        self.thread.join()
+        self.serv.server_close()
 
     def test_valid_get_response(self):
         self.client.request("GET", "/")
@@ -163,7 +146,7 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
     @make_request_and_skipIf(sys.flags.optimize >= 2,
                      "Docstrings are omitted with -O2 and above")
     def test_system_methods(self):
-        """Test the precense of three consecutive system.* methods.
+        """Test the presence of three consecutive system.* methods.
 
         This also tests their use of parameter type recognition and the
         systems related to that process.
@@ -211,9 +194,21 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
              b'method_annotation</strong></a>(x: bytes)</dt></dl>'),
             response.read())
 
+    def test_server_title_escape(self):
+        # bpo-38243: Ensure that the server title and documentation
+        # are escaped for HTML.
+        self.serv.set_server_title('test_title<script>')
+        self.serv.set_server_documentation('test_documentation<script>')
+        self.assertEqual('test_title<script>', self.serv.server_title)
+        self.assertEqual('test_documentation<script>',
+                self.serv.server_documentation)
 
-def test_main():
-    support.run_unittest(DocXMLRPCHTTPGETServer)
+        generated = self.serv.generate_html_documentation()
+        title = re.search(r'<title>(.+?)</title>', generated).group()
+        documentation = re.search(r'<p><tt>(.+?)</tt></p>', generated).group()
+        self.assertEqual('<title>Python: test_title&lt;script&gt;</title>', title)
+        self.assertEqual('<p><tt>test_documentation&lt;script&gt;</tt></p>', documentation)
+
 
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

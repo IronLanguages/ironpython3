@@ -1,5 +1,5 @@
 import macpath
-from test import support, test_genericpath
+from test import test_genericpath
 import unittest
 
 
@@ -141,6 +141,8 @@ class MacPathTestCase(unittest.TestCase):
 
 class MacCommonTest(test_genericpath.CommonTest, unittest.TestCase):
     pathmodule = macpath
+
+    test_relpath_errors = None
 
 
 if __name__ == "__main__":

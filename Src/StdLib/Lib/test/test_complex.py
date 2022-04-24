@@ -1,5 +1,7 @@
 import unittest
 from test import support
+from test.test_grammar import (VALID_UNDERSCORE_LITERALS,
+                               INVALID_UNDERSCORE_LITERALS)
 
 from random import random
 from math import atan2, isnan, copysign
@@ -326,6 +328,14 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(ValueError, complex, "1e1ej")
         self.assertRaises(ValueError, complex, "1e++1ej")
         self.assertRaises(ValueError, complex, ")1+2j(")
+        self.assertRaisesRegex(
+            TypeError,
+            "first argument must be a string or a number, not 'dict'",
+            complex, {1:2}, 1)
+        self.assertRaisesRegex(
+            TypeError,
+            "second argument must be a number, not 'dict'",
+            complex, 1, {1:2})
         # the following three are accepted by Python 2.6
         self.assertRaises(ValueError, complex, "1..1j")
         self.assertRaises(ValueError, complex, "1.11.1j")
@@ -335,6 +345,9 @@ class ComplexTest(unittest.TestCase):
         self.assertEqual(type(complex("1"*500)), complex)
         # check whitespace processing
         self.assertEqual(complex('\N{EM SPACE}(\N{EN SPACE}1+1j ) '), 1+1j)
+        # Invalid unicode string
+        # See bpo-34087
+        self.assertRaises(ValueError, complex, '\u3053\u3093\u306b\u3061\u306f')
 
         class EvilExc(Exception):
             pass
@@ -376,6 +389,41 @@ class ComplexTest(unittest.TestCase):
         self.assertAlmostEqual(complex(complex0(1j)), 42j)
         self.assertAlmostEqual(complex(complex1(1j)), 2j)
         self.assertRaises(TypeError, complex, complex2(1j))
+
+    @support.requires_IEEE_754
+    def test_constructor_special_numbers(self):
+        class complex2(complex):
+            pass
+        for x in 0.0, -0.0, INF, -INF, NAN:
+            for y in 0.0, -0.0, INF, -INF, NAN:
+                with self.subTest(x=x, y=y):
+                    z = complex(x, y)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex2(x, y)
+                    self.assertIs(type(z), complex2)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex(complex2(x, y))
+                    self.assertIs(type(z), complex)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex2(complex(x, y))
+                    self.assertIs(type(z), complex2)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+
+    def test_underscores(self):
+        # check underscores
+        for lit in VALID_UNDERSCORE_LITERALS:
+            if not any(ch in lit for ch in 'xXoObB'):
+                self.assertEqual(complex(lit), eval(lit))
+                self.assertEqual(complex(lit), complex(lit.replace('_', '')))
+        for lit in INVALID_UNDERSCORE_LITERALS:
+            if lit in ('0_7', '09_99'):  # octals are not recognized here
+                continue
+            if not any(ch in lit for ch in 'xXoObB'):
+                self.assertRaises(ValueError, complex, lit)
 
     def test_hash(self):
         for x in range(-30, 30):

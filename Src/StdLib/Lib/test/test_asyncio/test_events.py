@@ -1,5 +1,7 @@
 """Tests for events.py."""
 
+import collections.abc
+import concurrent.futures
 import functools
 import gc
 import io
@@ -21,27 +23,20 @@ import unittest
 from unittest import mock
 import weakref
 
+if sys.platform != 'win32':
+    import tty
 
 import asyncio
+from asyncio import coroutines
 from asyncio import proactor_events
 from asyncio import selector_events
 from asyncio import sslproto
 from asyncio import test_utils
+from asyncio.test_utils import ONLYKEY, ONLYCERT, data_file
 try:
     from test import support
 except ImportError:
     from asyncio import test_support as support
-
-
-def data_file(filename):
-    if hasattr(support, 'TEST_HOME_DIR'):
-        fullname = os.path.join(support.TEST_HOME_DIR, filename)
-        if os.path.isfile(fullname):
-            return fullname
-    fullname = os.path.join(os.path.dirname(__file__), filename)
-    if os.path.isfile(fullname):
-        return fullname
-    raise FileNotFoundError(filename)
 
 
 def osx_tiger():
@@ -53,21 +48,34 @@ def osx_tiger():
     return version < (10, 5)
 
 
-ONLYCERT = data_file('ssl_cert.pem')
-ONLYKEY = data_file('ssl_key.pem')
-SIGNED_CERTFILE = data_file('keycert3.pem')
-SIGNING_CA = data_file('pycacert.pem')
-PEERCERT = {'serialNumber': 'B09264B1F2DA21D1',
-            'version': 1,
-            'subject': ((('countryName', 'XY'),),
-                    (('localityName', 'Castle Anthrax'),),
-                    (('organizationName', 'Python Software Foundation'),),
-                    (('commonName', 'localhost'),)),
-            'issuer': ((('countryName', 'XY'),),
-                    (('organizationName', 'Python Software Foundation CA'),),
-                    (('commonName', 'our-ca-server'),)),
-            'notAfter': 'Nov 13 19:47:07 2022 GMT',
-            'notBefore': 'Jan  4 19:47:07 2013 GMT'}
+def _test_get_event_loop_new_process__sub_proc():
+    async def doit():
+        return 'hello'
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(doit())
+
+
+SIGNED_CERTFILE = test_utils.data_file('keycert3.pem')
+SIGNING_CA = test_utils.data_file('pycacert.pem')
+PEERCERT = {
+    'OCSP': ('http://testca.pythontest.net/testca/ocsp/',),
+    'caIssuers': ('http://testca.pythontest.net/testca/pycacert.cer',),
+    'crlDistributionPoints': ('http://testca.pythontest.net/testca/revocation.crl',),
+    'issuer': ((('countryName', 'XY'),),
+            (('organizationName', 'Python Software Foundation CA'),),
+            (('commonName', 'our-ca-server'),)),
+    'notAfter': 'Jul  7 14:23:16 2028 GMT',
+    'notBefore': 'Aug 29 14:23:16 2018 GMT',
+    'serialNumber': 'CB2D80995A69525C',
+    'subject': ((('countryName', 'XY'),),
+             (('localityName', 'Castle Anthrax'),),
+             (('organizationName', 'Python Software Foundation'),),
+             (('commonName', 'localhost'),)),
+    'subjectAltName': (('DNS', 'localhost'),),
+    'version': 3
+}
 
 
 class MyBaseProto(asyncio.Protocol):
@@ -244,8 +252,8 @@ class EventLoopTestsMixin:
         if not self.loop.is_closed():
             test_utils.run_briefly(self.loop)
 
-        self.loop.close()
-        gc.collect()
+        self.doCleanups()
+        support.gc_collect()
         super().tearDown()
 
     def test_run_until_complete_nesting(self):
@@ -347,6 +355,24 @@ class EventLoopTestsMixin:
         res, thread_id = self.loop.run_until_complete(f2)
         self.assertEqual(res, 'yo')
         self.assertNotEqual(thread_id, threading.get_ident())
+
+    def test_run_in_executor_cancel(self):
+        called = False
+
+        def patched_call_soon(*args):
+            nonlocal called
+            called = True
+
+        def run():
+            time.sleep(0.05)
+
+        f2 = self.loop.run_in_executor(None, run)
+        f2.cancel()
+        self.loop.close()
+        self.loop.call_soon = patched_call_soon
+        self.loop.call_soon_threadsafe = patched_call_soon
+        time.sleep(0.4)
+        self.assertFalse(called)
 
     def test_reader_callback(self):
         r, w = test_utils.socketpair()
@@ -531,6 +557,7 @@ class EventLoopTestsMixin:
         self.loop.add_signal_handler(signal.SIGALRM, my_handler)
 
         signal.setitimer(signal.ITIMER_REAL, 0.01, 0)  # Send SIGALRM once.
+        self.loop.call_later(60, self.loop.stop)
         self.loop.run_forever()
         self.assertEqual(caught, 1)
 
@@ -543,11 +570,12 @@ class EventLoopTestsMixin:
             nonlocal caught
             caught += 1
             self.assertEqual(args, some_args)
+            self.loop.stop()
 
         self.loop.add_signal_handler(signal.SIGALRM, my_handler, *some_args)
 
         signal.setitimer(signal.ITIMER_REAL, 0.1, 0)  # Send SIGALRM once.
-        self.loop.call_later(0.5, self.loop.stop)
+        self.loop.call_later(60, self.loop.stop)
         self.loop.run_forever()
         self.assertEqual(caught, 1)
 
@@ -744,39 +772,121 @@ class EventLoopTestsMixin:
             self.assertEqual(cm.exception.errno, errno.EADDRINUSE)
             self.assertIn(str(httpd.address), cm.exception.strerror)
 
+    def test_connect_accepted_socket(self, server_ssl=None, client_ssl=None):
+        loop = self.loop
+
+        class MyProto(MyBaseProto):
+
+            def connection_lost(self, exc):
+                super().connection_lost(exc)
+                loop.call_soon(loop.stop)
+
+            def data_received(self, data):
+                super().data_received(data)
+                self.transport.write(expected_response)
+
+        lsock = socket.socket()
+        lsock.bind(('127.0.0.1', 0))
+        lsock.listen(1)
+        addr = lsock.getsockname()
+
+        message = b'test data'
+        response = None
+        expected_response = b'roger'
+
+        def client():
+            nonlocal response
+            try:
+                csock = socket.socket()
+                if client_ssl is not None:
+                    csock = client_ssl.wrap_socket(csock)
+                csock.connect(addr)
+                csock.sendall(message)
+                response = csock.recv(99)
+                csock.close()
+            except Exception as exc:
+                print(
+                    "Failure in client thread in test_connect_accepted_socket",
+                    exc)
+
+        thread = threading.Thread(target=client, daemon=True)
+        thread.start()
+
+        conn, _ = lsock.accept()
+        proto = MyProto(loop=loop)
+        proto.loop = loop
+        loop.run_until_complete(
+            loop.connect_accepted_socket(
+                (lambda: proto), conn, ssl=server_ssl))
+        loop.run_forever()
+        proto.transport.close()
+        lsock.close()
+
+        thread.join(1)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(proto.state, 'CLOSED')
+        self.assertEqual(proto.nbytes, len(message))
+        self.assertEqual(response, expected_response)
+
+    @unittest.skipIf(ssl is None, 'No ssl module')
+    def test_ssl_connect_accepted_socket(self):
+        if (sys.platform == 'win32' and
+            sys.version_info < (3, 5) and
+            isinstance(self.loop, proactor_events.BaseProactorEventLoop)
+            ):
+            raise unittest.SkipTest(
+                'SSL not supported with proactor event loops before Python 3.5'
+                )
+
+        server_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        server_context.load_cert_chain(ONLYCERT, ONLYKEY)
+        if hasattr(server_context, 'check_hostname'):
+            server_context.check_hostname = False
+        server_context.verify_mode = ssl.CERT_NONE
+
+        client_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        if hasattr(server_context, 'check_hostname'):
+            client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+
+        self.test_connect_accepted_socket(server_context, client_context)
+
     @mock.patch('asyncio.base_events.socket')
     def create_server_multiple_hosts(self, family, hosts, mock_sock):
         @asyncio.coroutine
         def getaddrinfo(host, port, *args, **kw):
             if family == socket.AF_INET:
-                return [[family, socket.SOCK_STREAM, 6, '', (host, port)]]
+                return [(family, socket.SOCK_STREAM, 6, '', (host, port))]
             else:
-                return [[family, socket.SOCK_STREAM, 6, '', (host, port, 0, 0)]]
+                return [(family, socket.SOCK_STREAM, 6, '', (host, port, 0, 0))]
 
         def getaddrinfo_task(*args, **kwds):
             return asyncio.Task(getaddrinfo(*args, **kwds), loop=self.loop)
 
+        unique_hosts = set(hosts)
+
         if family == socket.AF_INET:
-            mock_sock.socket().getsockbyname.side_effect = [(host, 80)
-                                                            for host in hosts]
+            mock_sock.socket().getsockbyname.side_effect = [
+                (host, 80) for host in unique_hosts]
         else:
-            mock_sock.socket().getsockbyname.side_effect = [(host, 80, 0, 0)
-                                                            for host in hosts]
+            mock_sock.socket().getsockbyname.side_effect = [
+                (host, 80, 0, 0) for host in unique_hosts]
         self.loop.getaddrinfo = getaddrinfo_task
         self.loop._start_serving = mock.Mock()
         self.loop._stop_serving = mock.Mock()
         f = self.loop.create_server(lambda: MyProto(self.loop), hosts, 80)
         server = self.loop.run_until_complete(f)
         self.addCleanup(server.close)
-        server_hosts = [sock.getsockbyname()[0] for sock in server.sockets]
-        self.assertEqual(server_hosts, hosts)
+        server_hosts = {sock.getsockbyname()[0] for sock in server.sockets}
+        self.assertEqual(server_hosts, unique_hosts)
 
     def test_create_server_multiple_hosts_ipv4(self):
         self.create_server_multiple_hosts(socket.AF_INET,
-                                          ['1.2.3.4', '5.6.7.8'])
+                                          ['1.2.3.4', '5.6.7.8', '1.2.3.4'])
 
     def test_create_server_multiple_hosts_ipv6(self):
-        self.create_server_multiple_hosts(socket.AF_INET6, ['::1', '::2'])
+        self.create_server_multiple_hosts(socket.AF_INET6,
+                                          ['::1', '::2', '::1'])
 
     def test_create_server(self):
         proto = MyProto(self.loop)
@@ -999,7 +1109,7 @@ class EventLoopTestsMixin:
         with mock.patch.object(self.loop, 'call_exception_handler'):
             with test_utils.disable_logger():
                 with self.assertRaisesRegex(ssl.SSLError,
-                                            '(?i)certificate.verify.failed '):
+                                            '(?i)certificate.verify.failed'):
                     self.loop.run_until_complete(f_c)
 
             # execute the loop to log the connection error
@@ -1033,7 +1143,7 @@ class EventLoopTestsMixin:
         with mock.patch.object(self.loop, 'call_exception_handler'):
             with test_utils.disable_logger():
                 with self.assertRaisesRegex(ssl.SSLError,
-                                            '(?i)certificate.verify.failed '):
+                                            '(?i)certificate.verify.failed'):
                     self.loop.run_until_complete(f_c)
 
             # execute the loop to log the connection error
@@ -1073,7 +1183,11 @@ class EventLoopTestsMixin:
                     self.loop.run_until_complete(f_c)
 
         # close connection
-        proto.transport.close()
+        # transport may be None with TLS 1.3, because connection is
+        # interrupted, server is unable to send session tickets, and
+        # transport is closed.
+        if proto.transport is not None:
+            proto.transport.close()
         server.close()
 
     def test_legacy_create_server_ssl_match_failed(self):
@@ -1291,6 +1405,11 @@ class EventLoopTestsMixin:
         server.transport.close()
 
     def test_create_datagram_endpoint_sock(self):
+        if (sys.platform == 'win32' and
+                isinstance(self.loop, proactor_events.BaseProactorEventLoop)):
+            raise unittest.SkipTest(
+                'UDP is not supported with proactor event loops')
+
         sock = None
         local_address = ('127.0.0.1', 0)
         infos = self.loop.run_until_complete(
@@ -1308,7 +1427,7 @@ class EventLoopTestsMixin:
         else:
             assert False, 'Can not create socket.'
 
-        f = self.loop.create_connection(
+        f = self.loop.create_datagram_endpoint(
             lambda: MyDatagramProto(loop=self.loop), sock=sock)
         tr, pr = self.loop.run_until_complete(f)
         self.assertIsInstance(tr, asyncio.Transport)
@@ -1365,6 +1484,41 @@ class EventLoopTestsMixin:
 
     @unittest.skipUnless(sys.platform != 'win32',
                          "Don't support pipes for Windows")
+    def test_unclosed_pipe_transport(self):
+        # This test reproduces the issue #314 on GitHub
+        loop = self.create_event_loop()
+        read_proto = MyReadPipeProto(loop=loop)
+        write_proto = MyWritePipeProto(loop=loop)
+
+        rpipe, wpipe = os.pipe()
+        rpipeobj = io.open(rpipe, 'rb', 1024)
+        wpipeobj = io.open(wpipe, 'w', 1024)
+
+        @asyncio.coroutine
+        def connect():
+            read_transport, _ = yield from loop.connect_read_pipe(
+                lambda: read_proto, rpipeobj)
+            write_transport, _ = yield from loop.connect_write_pipe(
+                lambda: write_proto, wpipeobj)
+            return read_transport, write_transport
+
+        # Run and close the loop without closing the transports
+        read_transport, write_transport = loop.run_until_complete(connect())
+        loop.close()
+
+        # These 'repr' calls used to raise an AttributeError
+        # See Issue #314 on GitHub
+        self.assertIn('open', repr(read_transport))
+        self.assertIn('open', repr(write_transport))
+
+        # Clean up (avoid ResourceWarning)
+        rpipeobj.close()
+        wpipeobj.close()
+        read_transport._pipe = None
+        write_transport._pipe = None
+
+    @unittest.skipUnless(sys.platform != 'win32',
+                         "Don't support pipes for Windows")
     # select, poll and kqueue don't support character devices (PTY) on Mac OS X
     # older than 10.6 (Snow Leopard)
     @support.requires_mac_ver(10, 6)
@@ -1397,6 +1551,7 @@ class EventLoopTestsMixin:
         self.assertEqual(5, proto.nbytes)
 
         os.close(slave)
+        proto.transport.close()
         self.loop.run_until_complete(proto.done)
         self.assertEqual(
             ['INITIAL', 'CONNECTED', 'EOF', 'CLOSED'], proto.state)
@@ -1509,6 +1664,79 @@ class EventLoopTestsMixin:
         self.loop.run_until_complete(proto.done)
         self.assertEqual('CLOSED', proto.state)
 
+    @unittest.skipUnless(sys.platform != 'win32',
+                         "Don't support pipes for Windows")
+    # select, poll and kqueue don't support character devices (PTY) on Mac OS X
+    # older than 10.6 (Snow Leopard)
+    @support.requires_mac_ver(10, 6)
+    def test_bidirectional_pty(self):
+        master, read_slave = os.openpty()
+        write_slave = os.dup(read_slave)
+        tty.setraw(read_slave)
+
+        slave_read_obj = io.open(read_slave, 'rb', 0)
+        read_proto = MyReadPipeProto(loop=self.loop)
+        read_connect = self.loop.connect_read_pipe(lambda: read_proto,
+                                                   slave_read_obj)
+        read_transport, p = self.loop.run_until_complete(read_connect)
+        self.assertIs(p, read_proto)
+        self.assertIs(read_transport, read_proto.transport)
+        self.assertEqual(['INITIAL', 'CONNECTED'], read_proto.state)
+        self.assertEqual(0, read_proto.nbytes)
+
+
+        slave_write_obj = io.open(write_slave, 'wb', 0)
+        write_proto = MyWritePipeProto(loop=self.loop)
+        write_connect = self.loop.connect_write_pipe(lambda: write_proto,
+                                                     slave_write_obj)
+        write_transport, p = self.loop.run_until_complete(write_connect)
+        self.assertIs(p, write_proto)
+        self.assertIs(write_transport, write_proto.transport)
+        self.assertEqual('CONNECTED', write_proto.state)
+
+        data = bytearray()
+        def reader(data):
+            chunk = os.read(master, 1024)
+            data += chunk
+            return len(data)
+
+        write_transport.write(b'1')
+        test_utils.run_until(self.loop, lambda: reader(data) >= 1, timeout=10)
+        self.assertEqual(b'1', data)
+        self.assertEqual(['INITIAL', 'CONNECTED'], read_proto.state)
+        self.assertEqual('CONNECTED', write_proto.state)
+
+        os.write(master, b'a')
+        test_utils.run_until(self.loop, lambda: read_proto.nbytes >= 1,
+                             timeout=10)
+        self.assertEqual(['INITIAL', 'CONNECTED'], read_proto.state)
+        self.assertEqual(1, read_proto.nbytes)
+        self.assertEqual('CONNECTED', write_proto.state)
+
+        write_transport.write(b'2345')
+        test_utils.run_until(self.loop, lambda: reader(data) >= 5, timeout=10)
+        self.assertEqual(b'12345', data)
+        self.assertEqual(['INITIAL', 'CONNECTED'], read_proto.state)
+        self.assertEqual('CONNECTED', write_proto.state)
+
+        os.write(master, b'bcde')
+        test_utils.run_until(self.loop, lambda: read_proto.nbytes >= 5,
+                             timeout=10)
+        self.assertEqual(['INITIAL', 'CONNECTED'], read_proto.state)
+        self.assertEqual(5, read_proto.nbytes)
+        self.assertEqual('CONNECTED', write_proto.state)
+
+        os.close(master)
+
+        read_transport.close()
+        self.loop.run_until_complete(read_proto.done)
+        self.assertEqual(
+            ['INITIAL', 'CONNECTED', 'EOF', 'CLOSED'], read_proto.state)
+
+        write_transport.close()
+        self.loop.run_until_complete(write_proto.done)
+        self.assertEqual('CLOSED', write_proto.state)
+
     def test_prompt_cancellation(self):
         r, w = test_utils.socketpair()
         r.setblocking(False)
@@ -1571,25 +1799,6 @@ class EventLoopTestsMixin:
         self.assertLessEqual(self.loop._run_once_counter, 20,
             {'clock_resolution': self.loop._clock_resolution,
              'selector': self.loop._selector.__class__.__name__})
-
-    def test_sock_connect_address(self):
-        addresses = [(socket.AF_INET, ('www.python.org', 80))]
-        if support.IPV6_ENABLED:
-            addresses.extend((
-                (socket.AF_INET6, ('www.python.org', 80)),
-                (socket.AF_INET6, ('www.python.org', 80, 0, 0)),
-            ))
-
-        for family, address in addresses:
-            for sock_type in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-                sock = socket.socket(family, sock_type)
-                with sock:
-                    sock.setblocking(False)
-                    connect = self.loop.sock_connect(sock, address)
-                    with self.assertRaises(ValueError) as cm:
-                        self.loop.run_until_complete(connect)
-                    self.assertIn('address must be resolved',
-                                  str(cm.exception))
 
     def test_remove_fds_after_closing(self):
         loop = self.create_event_loop()
@@ -1790,19 +1999,26 @@ class SubprocessTestsMixin:
 
     @unittest.skipIf(sys.platform == 'win32', "Don't have SIGHUP")
     def test_subprocess_send_signal(self):
-        prog = os.path.join(os.path.dirname(__file__), 'echo.py')
+        # bpo-31034: Make sure that we get the default signal handler (killing
+        # the process). The parent process may have decided to ignore SIGHUP,
+        # and signal handlers are inherited.
+        old_handler = signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        try:
+            prog = os.path.join(os.path.dirname(__file__), 'echo.py')
 
-        connect = self.loop.subprocess_exec(
-                        functools.partial(MySubprocessProtocol, self.loop),
-                        sys.executable, prog)
-        transp, proto = self.loop.run_until_complete(connect)
-        self.assertIsInstance(proto, MySubprocessProtocol)
-        self.loop.run_until_complete(proto.connected)
+            connect = self.loop.subprocess_exec(
+                            functools.partial(MySubprocessProtocol, self.loop),
+                            sys.executable, prog)
+            transp, proto = self.loop.run_until_complete(connect)
+            self.assertIsInstance(proto, MySubprocessProtocol)
+            self.loop.run_until_complete(proto.connected)
 
-        transp.send_signal(signal.SIGHUP)
-        self.loop.run_until_complete(proto.completed)
-        self.assertEqual(-signal.SIGHUP, proto.returncode)
-        transp.close()
+            transp.send_signal(signal.SIGHUP)
+            self.loop.run_until_complete(proto.completed)
+            self.assertEqual(-signal.SIGHUP, proto.returncode)
+            transp.close()
+        finally:
+            signal.signal(signal.SIGHUP, old_handler)
 
     def test_subprocess_stderr(self):
         prog = os.path.join(os.path.dirname(__file__), 'echo2.py')
@@ -2001,6 +2217,20 @@ else:
             asyncio.set_child_watcher(None)
             super().tearDown()
 
+        def test_get_event_loop_new_process(self):
+            async def main():
+                pool = concurrent.futures.ProcessPoolExecutor()
+                result = await self.loop.run_in_executor(
+                    pool, _test_get_event_loop_new_process__sub_proc)
+                pool.shutdown()
+                return result
+
+            self.unpatch_get_running_loop()
+
+            self.assertEqual(
+                self.loop.run_until_complete(main()),
+                'hello')
+
     if hasattr(selectors, 'KqueueSelector'):
         class KqueueEventLoopTests(UnixEventLoopTestsMixin,
                                    SubprocessTestsMixin,
@@ -2051,13 +2281,14 @@ else:
             return asyncio.SelectorEventLoop(selectors.SelectSelector())
 
 
-def noop(*args):
+def noop(*args, **kwargs):
     pass
 
 
 class HandleTests(test_utils.TestCase):
 
     def setUp(self):
+        super().setUp()
         self.loop = mock.Mock()
         self.loop.get_debug.return_value = True
 
@@ -2073,13 +2304,6 @@ class HandleTests(test_utils.TestCase):
 
         h.cancel()
         self.assertTrue(h._cancelled)
-
-    def test_handle_from_handle(self):
-        def callback(*args):
-            return args
-        h1 = asyncio.Handle(callback, (), loop=self.loop)
-        self.assertRaises(
-            AssertionError, asyncio.Handle, h1, (), self.loop)
 
     def test_callback_with_exception(self):
         def callback():
@@ -2129,6 +2353,13 @@ class HandleTests(test_utils.TestCase):
         cb = functools.partial(noop, 1, 2)
         h = asyncio.Handle(cb, (3,), self.loop)
         regex = (r'^<Handle noop\(1, 2\)\(3\) at %s:%s>$'
+                 % (re.escape(filename), lineno))
+        self.assertRegex(repr(h), regex)
+
+        # partial function with keyword args
+        cb = functools.partial(noop, x=1)
+        h = asyncio.Handle(cb, (2, 3), self.loop)
+        regex = (r'^<Handle noop\(x=1\)\(2, 3\) at %s:%s>$'
                  % (re.escape(filename), lineno))
         self.assertRegex(repr(h), regex)
 
@@ -2200,10 +2431,69 @@ class HandleTests(test_utils.TestCase):
         h = loop.call_later(0, noop)
         check_source_traceback(h)
 
+    @unittest.skipUnless(hasattr(collections.abc, 'Coroutine'),
+                         'No collections.abc.Coroutine')
+    def test_coroutine_like_object_debug_formatting(self):
+        # Test that asyncio can format coroutines that are instances of
+        # collections.abc.Coroutine, but lack cr_core or gi_code attributes
+        # (such as ones compiled with Cython).
+
+        class Coro:
+            def send(self, v):
+                pass
+
+            def throw(self, *exc):
+                pass
+
+            def close(self):
+                pass
+
+            def __await__(self):
+                pass
+
+        coro = Coro()
+        coro.__name__ = 'AAA'
+        self.assertTrue(asyncio.iscoroutine(coro))
+        self.assertEqual(coroutines._format_coroutine(coro), 'AAA()')
+
+        coro.__qualname__ = 'BBB'
+        self.assertEqual(coroutines._format_coroutine(coro), 'BBB()')
+
+        coro.cr_running = True
+        self.assertEqual(coroutines._format_coroutine(coro), 'BBB() running')
+
+        coro = Coro()
+        # Some coroutines might not have '__name__', such as
+        # built-in async_gen.asend().
+        self.assertEqual(coroutines._format_coroutine(coro), 'Coro()')
+
+        coro = Coro()
+        coro.__qualname__ = 'AAA'
+        coro.cr_code = None
+        self.assertEqual(coroutines._format_coroutine(coro), 'AAA()')
+
+        coro = Coro()
+        coro.__qualname__ = 'AAA'
+        coro.cr_code = None
+        coro.cr_frame = None
+        self.assertEqual(coroutines._format_coroutine(coro), 'AAA()')
+
+        coro = Coro()
+        coro.__qualname__ = None
+        coro.cr_code = None
+        coro.cr_frame = None
+        self.assertEqual(coroutines._format_coroutine(coro), f'{repr(coro)}()')
+
+        coro = Coro()
+        coro.cr_code = None
+        coro.cr_frame = None
+        self.assertEqual(coroutines._format_coroutine(coro), f'{repr(coro)}()')
+
 
 class TimerTests(unittest.TestCase):
 
     def setUp(self):
+        super().setUp()
         self.loop = mock.Mock()
 
     def test_hash(self):
@@ -2511,6 +2801,31 @@ class PolicyTests(unittest.TestCase):
         asyncio.set_event_loop_policy(policy)
         self.assertIs(policy, asyncio.get_event_loop_policy())
         self.assertIsNot(policy, old_policy)
+
+    def test_get_event_loop_returns_running_loop(self):
+        class Policy(asyncio.DefaultEventLoopPolicy):
+            def get_event_loop(self):
+                raise NotImplementedError
+
+        loop = None
+
+        old_policy = asyncio.get_event_loop_policy()
+        try:
+            asyncio.set_event_loop_policy(Policy())
+            loop = asyncio.new_event_loop()
+            self.assertIs(asyncio._get_running_loop(), None)
+
+            async def func():
+                self.assertIs(asyncio.get_event_loop(), loop)
+                self.assertIs(asyncio._get_running_loop(), loop)
+
+            loop.run_until_complete(func())
+        finally:
+            asyncio.set_event_loop_policy(old_policy)
+            if loop is not None:
+                loop.close()
+
+        self.assertIs(asyncio._get_running_loop(), None)
 
 
 if __name__ == '__main__':

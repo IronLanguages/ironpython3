@@ -994,13 +994,31 @@ class AbstractUnpickleTests(unittest.TestCase):
             self.assertIs(type(unpickled), collections.UserDict)
             self.assertEqual(unpickled, collections.UserDict({1: 2}))
 
+    def test_bad_reduce(self):
+        self.assertEqual(self.loads(b'cbuiltins\nint\n)R.'), 0)
+        self.check_unpickling_error(TypeError, b'N)R.')
+        self.check_unpickling_error(TypeError, b'cbuiltins\nint\nNR.')
+
+    def test_bad_newobj(self):
+        error = (pickle.UnpicklingError, TypeError)
+        self.assertEqual(self.loads(b'cbuiltins\nint\n)\x81.'), 0)
+        self.check_unpickling_error(error, b'cbuiltins\nlen\n)\x81.')
+        self.check_unpickling_error(error, b'cbuiltins\nint\nN\x81.')
+
+    def test_bad_newobj_ex(self):
+        error = (pickle.UnpicklingError, TypeError)
+        self.assertEqual(self.loads(b'cbuiltins\nint\n)}\x92.'), 0)
+        self.check_unpickling_error(error, b'cbuiltins\nlen\n)}\x92.')
+        self.check_unpickling_error(error, b'cbuiltins\nint\nN}\x92.')
+        self.check_unpickling_error(error, b'cbuiltins\nint\n)N\x92.')
+
     def test_bad_stack(self):
         badpickles = [
             b'.',                       # STOP
             b'0',                       # POP
             b'1',                       # POP_MARK
             b'2',                       # DUP
-            # b'(2',                    # PyUnpickler doesn't raise
+            b'(2',
             b'R',                       # REDUCE
             b')R',
             b'a',                       # APPEND
@@ -1009,7 +1027,7 @@ class AbstractUnpickleTests(unittest.TestCase):
             b'Nb',
             b'd',                       # DICT
             b'e',                       # APPENDS
-            # b'(e',                    # PyUnpickler raises AttributeError
+            b'(e',
             b'ibuiltins\nlist\n',       # INST
             b'l',                       # LIST
             b'o',                       # OBJ
@@ -1022,7 +1040,7 @@ class AbstractUnpickleTests(unittest.TestCase):
             b'NNs',
             b't',                       # TUPLE
             b'u',                       # SETITEMS
-            # b'(u',                    # PyUnpickler doesn't raise
+            b'(u',
             b'}(Nu',
             b'\x81',                    # NEWOBJ
             b')\x81',
@@ -1033,7 +1051,7 @@ class AbstractUnpickleTests(unittest.TestCase):
             b'N\x87',
             b'NN\x87',
             b'\x90',                    # ADDITEMS
-            # b'(\x90',                 # PyUnpickler raises AttributeError
+            b'(\x90',
             b'\x91',                    # FROZENSET
             b'\x92',                    # NEWOBJ_EX
             b')}\x92',
@@ -1046,7 +1064,7 @@ class AbstractUnpickleTests(unittest.TestCase):
 
     def test_bad_mark(self):
         badpickles = [
-            # b'N(.',                     # STOP
+            b'N(.',                     # STOP
             b'N(2',                     # DUP
             b'cbuiltins\nlist\n)(R',    # REDUCE
             b'cbuiltins\nlist\n()R',
@@ -1081,7 +1099,7 @@ class AbstractUnpickleTests(unittest.TestCase):
             b'N(\x94',                  # MEMOIZE
         ]
         for p in badpickles:
-            self.check_unpickling_error(self.bad_mark_errors, p)
+            self.check_unpickling_error(self.bad_stack_errors, p)
 
     def test_truncated_data(self):
         self.check_unpickling_error(EOFError, b'')
@@ -1815,16 +1833,60 @@ class AbstractPickleTests(unittest.TestCase):
                 self.assertGreaterEqual(num_additems, 2)
 
     def test_simple_newobj(self):
-        x = object.__new__(SimpleNewObj)  # avoid __init__
+        x = SimpleNewObj.__new__(SimpleNewObj, 0xface)  # avoid __init__
         x.abc = 666
         for proto in protocols:
-            s = self.dumps(x, proto)
-            self.assertEqual(opcode_in_pickle(pickle.NEWOBJ, s),
-                             2 <= proto < 4)
-            self.assertEqual(opcode_in_pickle(pickle.NEWOBJ_EX, s),
-                             proto >= 4)
-            y = self.loads(s)   # will raise TypeError if __init__ called
-            self.assert_is_copy(x, y)
+            with self.subTest(proto=proto):
+                s = self.dumps(x, proto)
+                if proto < 1:
+                    self.assertIn(b'\nL64206', s)  # LONG
+                else:
+                    self.assertIn(b'M\xce\xfa', s)  # BININT2
+                self.assertEqual(opcode_in_pickle(pickle.NEWOBJ, s),
+                                 2 <= proto)
+                self.assertFalse(opcode_in_pickle(pickle.NEWOBJ_EX, s))
+                y = self.loads(s)   # will raise TypeError if __init__ called
+                self.assert_is_copy(x, y)
+
+    def test_complex_newobj(self):
+        x = ComplexNewObj.__new__(ComplexNewObj, 0xface)  # avoid __init__
+        x.abc = 666
+        for proto in protocols:
+            with self.subTest(proto=proto):
+                s = self.dumps(x, proto)
+                if proto < 1:
+                    self.assertIn(b'\nL64206', s)  # LONG
+                elif proto < 2:
+                    self.assertIn(b'M\xce\xfa', s)  # BININT2
+                elif proto < 4:
+                    self.assertIn(b'X\x04\x00\x00\x00FACE', s)  # BINUNICODE
+                else:
+                    self.assertIn(b'\x8c\x04FACE', s)  # SHORT_BINUNICODE
+                self.assertEqual(opcode_in_pickle(pickle.NEWOBJ, s),
+                                 2 <= proto)
+                self.assertFalse(opcode_in_pickle(pickle.NEWOBJ_EX, s))
+                y = self.loads(s)   # will raise TypeError if __init__ called
+                self.assert_is_copy(x, y)
+
+    def test_complex_newobj_ex(self):
+        x = ComplexNewObjEx.__new__(ComplexNewObjEx, 0xface)  # avoid __init__
+        x.abc = 666
+        for proto in protocols:
+            with self.subTest(proto=proto):
+                s = self.dumps(x, proto)
+                if proto < 1:
+                    self.assertIn(b'\nL64206', s)  # LONG
+                elif proto < 2:
+                    self.assertIn(b'M\xce\xfa', s)  # BININT2
+                elif proto < 4:
+                    self.assertIn(b'X\x04\x00\x00\x00FACE', s)  # BINUNICODE
+                else:
+                    self.assertIn(b'\x8c\x04FACE', s)  # SHORT_BINUNICODE
+                self.assertFalse(opcode_in_pickle(pickle.NEWOBJ, s))
+                self.assertEqual(opcode_in_pickle(pickle.NEWOBJ_EX, s),
+                                 4 <= proto)
+                y = self.loads(s)   # will raise TypeError if __init__ called
+                self.assert_is_copy(x, y)
 
     def test_newobj_list_slots(self):
         x = SlotList([1, 2, 3])
@@ -1898,15 +1960,15 @@ class AbstractPickleTests(unittest.TestCase):
                 # 5th item is not an iterator
                 return dict, (), None, None, []
 
-        # Protocol 0 is less strict and also accept iterables.
+        # Python implementation is less strict and also accepts iterables.
         for proto in protocols:
             try:
                 self.dumps(C(), proto)
-            except (pickle.PickleError):
+            except pickle.PicklingError:
                 pass
             try:
                 self.dumps(D(), proto)
-            except (pickle.PickleError):
+            except pickle.PicklingError:
                 pass
 
     def test_many_puts_and_gets(self):
@@ -2088,12 +2150,23 @@ class AbstractPickleTests(unittest.TestCase):
                 class B:
                     class C:
                         pass
-
-        for proto in range(4, pickle.HIGHEST_PROTOCOL + 1):
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             for obj in [Nested.A, Nested.A.B, Nested.A.B.C]:
                 with self.subTest(proto=proto, obj=obj):
                     unpickled = self.loads(self.dumps(obj, proto))
                     self.assertIs(obj, unpickled)
+
+    def test_recursive_nested_names(self):
+        global Recursive
+        class Recursive:
+            pass
+        Recursive.mod = sys.modules[Recursive.__module__]
+        Recursive.__qualname__ = 'Recursive.mod.Recursive'
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                unpickled = self.loads(self.dumps(Recursive, proto))
+                self.assertIs(unpickled, Recursive)
+        del Recursive.mod # break reference loop
 
     def test_py_methods(self):
         global PyMethodsTest
@@ -2133,7 +2206,7 @@ class AbstractPickleTests(unittest.TestCase):
             (PyMethodsTest.biscuits, PyMethodsTest),
             (PyMethodsTest.Nested.pie, PyMethodsTest.Nested)
         )
-        for proto in range(4, pickle.HIGHEST_PROTOCOL + 1):
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             for method in py_methods:
                 with self.subTest(proto=proto, method=method):
                     unpickled = self.loads(self.dumps(method, proto))
@@ -2173,7 +2246,7 @@ class AbstractPickleTests(unittest.TestCase):
             (Subclass.Nested("sweet").count, ("e",)),
             (Subclass.Nested.count, (Subclass.Nested("sweet"), "e")),
         )
-        for proto in range(4, pickle.HIGHEST_PROTOCOL + 1):
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             for method, args in c_methods:
                 with self.subTest(proto=proto, method=method):
                     unpickled = self.loads(self.dumps(method, proto))
@@ -2196,6 +2269,27 @@ class AbstractPickleTests(unittest.TestCase):
                     pickled = self.dumps(val, proto)
                     self.assertIn(('c%s\n%s' % (mod, name)).encode(), pickled)
                     self.assertIs(type(self.loads(pickled)), type(val))
+
+    def test_local_lookup_error(self):
+        # Test that whichmodule() errors out cleanly when looking up
+        # an assumed globally-reachable object fails.
+        def f():
+            pass
+        # Since the function is local, lookup will fail
+        for proto in range(0, pickle.HIGHEST_PROTOCOL + 1):
+            with self.assertRaises((AttributeError, pickle.PicklingError)):
+                pickletools.dis(self.dumps(f, proto))
+        # Same without a __module__ attribute (exercises a different path
+        # in _pickle.c).
+        del f.__module__
+        for proto in range(0, pickle.HIGHEST_PROTOCOL + 1):
+            with self.assertRaises((AttributeError, pickle.PicklingError)):
+                pickletools.dis(self.dumps(f, proto))
+        # Yet a different path.
+        f.__name__ = f.__qualname__
+        for proto in range(0, pickle.HIGHEST_PROTOCOL + 1):
+            with self.assertRaises((AttributeError, pickle.PicklingError)):
+                pickletools.dis(self.dumps(f, proto))
 
 
 class BigmemPickleTests(unittest.TestCase):
@@ -2370,7 +2464,7 @@ class REX_six(object):
     def __init__(self, items=None):
         self.items = items if items is not None else []
     def __eq__(self, other):
-        return type(self) is type(other) and self.items == self.items
+        return type(self) is type(other) and self.items == other.items
     def append(self, item):
         self.items.append(item)
     def __reduce__(self):
@@ -2383,7 +2477,7 @@ class REX_seven(object):
     def __init__(self, table=None):
         self.table = table if table is not None else {}
     def __eq__(self, other):
-        return type(self) is type(other) and self.table == self.table
+        return type(self) is type(other) and self.table == other.table
     def __setitem__(self, key, value):
         self.table[key] = value
     def __reduce__(self):
@@ -2431,12 +2525,20 @@ myclasses = [MyInt, MyFloat,
 class SlotList(MyList):
     __slots__ = ["foo"]
 
-class SimpleNewObj(object):
-    def __init__(self, a, b, c):
+class SimpleNewObj(int):
+    def __init__(self, *args, **kwargs):
         # raise an error, to make sure this isn't called
         raise TypeError("SimpleNewObj.__init__() didn't expect to get called")
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return int(self) == int(other) and self.__dict__ == other.__dict__
+
+class ComplexNewObj(SimpleNewObj):
+    def __getnewargs__(self):
+        return ('%X' % self, 16)
+
+class ComplexNewObjEx(SimpleNewObj):
+    def __getnewargs_ex__(self):
+        return ('%X' % self,), {'base': 16}
 
 class BadGetattr:
     def __getattr__(self, key):
@@ -2450,7 +2552,7 @@ class AbstractPickleModuleTests(unittest.TestCase):
         f = open(TESTFN, "wb")
         try:
             f.close()
-            self.assertRaises(ValueError, pickle.dump, 123, f)
+            self.assertRaises(ValueError, self.dump, 123, f)
         finally:
             os.remove(TESTFN)
 
@@ -2459,16 +2561,16 @@ class AbstractPickleModuleTests(unittest.TestCase):
         f = open(TESTFN, "wb")
         try:
             f.close()
-            self.assertRaises(ValueError, pickle.dump, 123, f)
+            self.assertRaises(ValueError, self.dump, 123, f)
         finally:
             os.remove(TESTFN)
 
     def test_load_from_and_dump_to_file(self):
         stream = io.BytesIO()
         data = [123, {}, 124]
-        pickle.dump(data, stream)
+        self.dump(data, stream)
         stream.seek(0)
-        unpickled = pickle.load(stream)
+        unpickled = self.load(stream)
         self.assertEqual(unpickled, data)
 
     def test_highest_protocol(self):
@@ -2478,29 +2580,24 @@ class AbstractPickleModuleTests(unittest.TestCase):
     def test_callapi(self):
         f = io.BytesIO()
         # With and without keyword arguments
-        pickle.dump(123, f, -1)
-        pickle.dump(123, file=f, protocol=-1)
-        pickle.dumps(123, -1)
-        pickle.dumps(123, protocol=-1)
-        pickle.Pickler(f, -1)
-        pickle.Pickler(f, protocol=-1)
+        self.dump(123, f, -1)
+        self.dump(123, file=f, protocol=-1)
+        self.dumps(123, -1)
+        self.dumps(123, protocol=-1)
+        self.Pickler(f, -1)
+        self.Pickler(f, protocol=-1)
 
     def test_bad_init(self):
         # Test issue3664 (pickle can segfault from a badly initialized Pickler).
         # Override initialization without calling __init__() of the superclass.
-        class BadPickler(pickle.Pickler):
+        class BadPickler(self.Pickler):
             def __init__(self): pass
 
-        class BadUnpickler(pickle.Unpickler):
+        class BadUnpickler(self.Unpickler):
             def __init__(self): pass
 
         self.assertRaises(pickle.PicklingError, BadPickler().dump, 0)
         self.assertRaises(pickle.UnpicklingError, BadUnpickler().load)
-
-    def test_bad_input(self):
-        # Test issue4298
-        s = bytes([0x58, 0, 0, 0, 0x54])
-        self.assertRaises(EOFError, pickle.loads, s)
 
 
 class AbstractPersistentPicklerTests(unittest.TestCase):
@@ -2543,6 +2640,35 @@ class AbstractPersistentPicklerTests(unittest.TestCase):
             self.assertEqual(self.load_false_count, 1)
 
 
+class AbstractIdentityPersistentPicklerTests(unittest.TestCase):
+
+    def persistent_id(self, obj):
+        return obj
+
+    def persistent_load(self, pid):
+        return pid
+
+    def _check_return_correct_type(self, obj, proto):
+        unpickled = self.loads(self.dumps(obj, proto))
+        self.assertIsInstance(unpickled, type(obj))
+        self.assertEqual(unpickled, obj)
+
+    def test_return_correct_type(self):
+        for proto in protocols:
+            # Protocol 0 supports only ASCII strings.
+            if proto == 0:
+                self._check_return_correct_type("abc", 0)
+            else:
+                for obj in [b"abc\n", "abc\n", -1, -1.1 * 0.1, str]:
+                    self._check_return_correct_type(obj, proto)
+
+    def test_protocol0_is_ascii_only(self):
+        non_ascii_str = "\N{EMPTY SET}"
+        self.assertRaises(pickle.PicklingError, self.dumps, non_ascii_str, 0)
+        pickled = pickle.PERSID + non_ascii_str.encode('utf-8') + b'\n.'
+        self.assertRaises(pickle.UnpicklingError, self.loads, pickled)
+
+
 class AbstractPicklerUnpicklerObjectTests(unittest.TestCase):
 
     pickler_class = None
@@ -2559,29 +2685,30 @@ class AbstractPicklerUnpicklerObjectTests(unittest.TestCase):
         # object again, the third serialized form should be identical to the
         # first one we obtained.
         data = ["abcdefg", "abcdefg", 44]
-        f = io.BytesIO()
-        pickler = self.pickler_class(f)
+        for proto in protocols:
+            f = io.BytesIO()
+            pickler = self.pickler_class(f, proto)
 
-        pickler.dump(data)
-        first_pickled = f.getvalue()
+            pickler.dump(data)
+            first_pickled = f.getvalue()
 
-        # Reset BytesIO object.
-        f.seek(0)
-        f.truncate()
+            # Reset BytesIO object.
+            f.seek(0)
+            f.truncate()
 
-        pickler.dump(data)
-        second_pickled = f.getvalue()
+            pickler.dump(data)
+            second_pickled = f.getvalue()
 
-        # Reset the Pickler and BytesIO objects.
-        pickler.clear_memo()
-        f.seek(0)
-        f.truncate()
+            # Reset the Pickler and BytesIO objects.
+            pickler.clear_memo()
+            f.seek(0)
+            f.truncate()
 
-        pickler.dump(data)
-        third_pickled = f.getvalue()
+            pickler.dump(data)
+            third_pickled = f.getvalue()
 
-        self.assertNotEqual(first_pickled, second_pickled)
-        self.assertEqual(first_pickled, third_pickled)
+            self.assertNotEqual(first_pickled, second_pickled)
+            self.assertEqual(first_pickled, third_pickled)
 
     def test_priming_pickler_memo(self):
         # Verify that we can set the Pickler's memo attribute.

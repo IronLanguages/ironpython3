@@ -20,7 +20,6 @@ class MmapTests(unittest.TestCase):
             os.unlink(TESTFN)
 
     def tearDown(self):
-        self.doCleanups() # ironpython: close mmap before deleting
         try:
             os.unlink(TESTFN)
         except OSError:
@@ -53,7 +52,7 @@ class MmapTests(unittest.TestCase):
 
         # Shouldn't crash on boundary (Issue #5292)
         self.assertRaises(IndexError, m.__getitem__, len(m))
-        self.assertRaises(IndexError, m.__setitem__, len(m), 0)
+        self.assertRaises(IndexError, m.__setitem__, len(m), b'\0')
 
         # Modify the file's content
         m[0] = b'3'[0]
@@ -176,8 +175,6 @@ class MmapTests(unittest.TestCase):
                 self.assertEqual(fp.read(), b'a'*mapsize,
                                  "Readonly memory map data file was modified")
 
-            m.close()
-
         # Opening mmap with size too big
         with open(TESTFN, "r+b") as f:
             try:
@@ -285,8 +282,8 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.find(b'one', 1), 8)
         self.assertEqual(m.find(b'one', 1, -1), 8)
         self.assertEqual(m.find(b'one', 1, -2), -1)
+        self.assertEqual(m.find(bytearray(b'one')), 0)
 
-        m.close()
 
     def test_rfind(self):
         # test the new 'end' parameter works as expected
@@ -304,8 +301,8 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.rfind(b'one', 0, -2), 0)
         self.assertEqual(m.rfind(b'one', 1, -1), 8)
         self.assertEqual(m.rfind(b'one', 1, -2), -1)
+        self.assertEqual(m.rfind(bytearray(b'one')), 8)
 
-        m.close()
 
     def test_double_close(self):
         # make sure a double close doesn't crash on Solaris (Bug# 665913)
@@ -606,9 +603,10 @@ class MmapTests(unittest.TestCase):
         m.write(b"bar")
         self.assertEqual(m.tell(), 6)
         self.assertEqual(m[:], b"012bar6789")
-        m.seek(8)
-        self.assertRaises(ValueError, m.write, b"bar")
-        m.close()
+        m.write(bytearray(b"baz"))
+        self.assertEqual(m.tell(), 9)
+        self.assertEqual(m[:], b"012barbaz9")
+        self.assertRaises(ValueError, m.write, b"ba")
 
     def test_non_ascii_byte(self):
         for b in (129, 200, 255): # > 128
@@ -715,7 +713,35 @@ class MmapTests(unittest.TestCase):
         gc_collect()
         self.assertIs(wr(), None)
 
-@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
+    def test_write_returning_the_number_of_bytes_written(self):
+        mm = mmap.mmap(-1, 16)
+        self.assertEqual(mm.write(b""), 0)
+        self.assertEqual(mm.write(b"x"), 1)
+        self.assertEqual(mm.write(b"yz"), 2)
+        self.assertEqual(mm.write(b"python"), 6)
+
+    @unittest.skipIf(os.name == 'nt', 'cannot resize anonymous mmaps on Windows')
+    def test_resize_past_pos(self):
+        m = mmap.mmap(-1, 8192)
+        self.addCleanup(m.close)
+        m.read(5000)
+        try:
+            m.resize(4096)
+        except SystemError:
+            self.skipTest("resizing not supported")
+        self.assertEqual(m.read(14), b'')
+        self.assertRaises(ValueError, m.read_byte)
+        self.assertRaises(ValueError, m.write_byte, 42)
+        self.assertRaises(ValueError, m.write, b'abc')
+
+    def test_concat_repeat_exception(self):
+        m = mmap.mmap(-1, 16)
+        with self.assertRaises(TypeError):
+            m + m
+        with self.assertRaises(TypeError):
+            m * 2
+
+
 class LargeMmapTests(unittest.TestCase):
 
     def setUp(self):
@@ -733,7 +759,7 @@ class LargeMmapTests(unittest.TestCase):
             f.seek(num_zeroes)
             f.write(tail)
             f.flush()
-        except (OSError, OverflowError):
+        except (OSError, OverflowError, ValueError):
             try:
                 f.close()
             except (OSError, OverflowError):

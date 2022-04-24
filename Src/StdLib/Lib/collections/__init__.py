@@ -1,3 +1,19 @@
+'''This module implements specialized container datatypes providing
+alternatives to Python's general purpose built-in containers, dict,
+list, set, and tuple.
+
+* namedtuple   factory function for creating tuple subclasses with named fields
+* deque        list-like container with fast appends and pops on either end
+* ChainMap     dict-like class for creating a single view of multiple mappings
+* Counter      dict subclass for counting hashable objects
+* OrderedDict  dict subclass that remembers the order entries were added
+* defaultdict  dict subclass that calls a factory function to supply missing values
+* UserDict     wrapper around dictionary objects for easier dict subclassing
+* UserList     wrapper around list objects for easier list subclassing
+* UserString   wrapper around string objects for easier string subclassing
+
+'''
+
 __all__ = ['deque', 'defaultdict', 'namedtuple', 'UserDict', 'UserList',
             'UserString', 'Counter', 'OrderedDict', 'ChainMap']
 
@@ -7,7 +23,6 @@ from _collections_abc import *
 import _collections_abc
 __all__ += _collections_abc.__all__
 
-from _collections import deque, defaultdict
 from operator import itemgetter as _itemgetter, eq as _eq
 from keyword import iskeyword as _iskeyword
 import sys as _sys
@@ -16,9 +31,39 @@ from _weakref import proxy as _proxy
 from itertools import repeat as _repeat, chain as _chain, starmap as _starmap
 from reprlib import recursive_repr as _recursive_repr
 
+try:
+    from _collections import deque
+except ImportError:
+    pass
+else:
+    MutableSequence.register(deque)
+
+try:
+    from _collections import defaultdict
+except ImportError:
+    pass
+
+
 ################################################################################
 ### OrderedDict
 ################################################################################
+
+class _OrderedDictKeysView(KeysView):
+
+    def __reversed__(self):
+        yield from reversed(self._mapping)
+
+class _OrderedDictItemsView(ItemsView):
+
+    def __reversed__(self):
+        for key in reversed(self._mapping):
+            yield (key, self._mapping[key])
+
+class _OrderedDictValuesView(ValuesView):
+
+    def __reversed__(self):
+        for key in reversed(self._mapping):
+            yield self._mapping[key]
 
 class _Link(object):
     __slots__ = 'prev', 'next', 'key', '__weakref__'
@@ -40,9 +85,7 @@ class OrderedDict(dict):
 
     def __init__(*args, **kwds):
         '''Initialize an ordered dictionary.  The signature is the same as
-        regular dictionaries, but keyword arguments are not recommended because
-        their insertion order is arbitrary.
-
+        regular dictionaries.  Keyword argument order is preserved.
         '''
         if not args:
             raise TypeError("descriptor '__init__' of 'OrderedDict' object "
@@ -83,6 +126,8 @@ class OrderedDict(dict):
         link_next = link.next
         link_prev.next = link_next
         link_next.prev = link_prev
+        link.prev = None
+        link.next = None
 
     def __iter__(self):
         'od.__iter__() <==> iter(od)'
@@ -110,9 +155,9 @@ class OrderedDict(dict):
         dict.clear(self)
 
     def popitem(self, last=True):
-        '''od.popitem() -> (k, v), return and remove a (key, value) pair.
-        Pairs are returned in LIFO order if last is true or FIFO order if false.
+        '''Remove and return a (key, value) pair from the dictionary.
 
+        Pairs are returned in LIFO order if last is true or FIFO order if false.
         '''
         if not self:
             raise KeyError('dictionary is empty')
@@ -142,6 +187,7 @@ class OrderedDict(dict):
         link = self.__map[key]
         link_prev = link.prev
         link_next = link.next
+        soft_link = link_next.prev
         link_prev.next = link_next
         link_next.prev = link_prev
         root = self.__root
@@ -149,12 +195,14 @@ class OrderedDict(dict):
             last = root.prev
             link.prev = last
             link.next = root
-            last.next = root.prev = link
+            root.prev = soft_link
+            last.next = link
         else:
             first = root.next
             link.prev = root
             link.next = first
-            root.next = first.prev = link
+            first.prev = soft_link
+            root.next = link
 
     def __sizeof__(self):
         sizeof = _sys.getsizeof
@@ -166,9 +214,19 @@ class OrderedDict(dict):
         return size
 
     update = __update = MutableMapping.update
-    keys = MutableMapping.keys
-    values = MutableMapping.values
-    items = MutableMapping.items
+
+    def keys(self):
+        "D.keys() -> a set-like object providing a view on D's keys"
+        return _OrderedDictKeysView(self)
+
+    def items(self):
+        "D.items() -> a set-like object providing a view on D's items"
+        return _OrderedDictItemsView(self)
+
+    def values(self):
+        "D.values() -> an object providing a view on D's values"
+        return _OrderedDictValuesView(self)
+
     __ne__ = MutableMapping.__ne__
 
     __marker = object()
@@ -233,6 +291,13 @@ class OrderedDict(dict):
         return dict.__eq__(self, other)
 
 
+try:
+    from _collections import OrderedDict
+except ImportError:
+    # Leave the pure Python version in place.
+    pass
+
+
 ################################################################################
 ### namedtuple
 ################################################################################
@@ -289,7 +354,7 @@ _field_template = '''\
     {name} = _property(_itemgetter({index:d}), doc='Alias for field number {index:d}')
 '''
 
-def namedtuple(typename, field_names, verbose=False, rename=False):
+def namedtuple(typename, field_names, *, verbose=False, rename=False, module=None):
     """Returns a new subclass of tuple with named fields.
 
     >>> Point = namedtuple('Point', ['x', 'y'])
@@ -301,7 +366,7 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
     >>> x, y = p                        # unpack like a regular tuple
     >>> x, y
     (11, 22)
-    >>> p.x + p.y                       # fields also accessable by name
+    >>> p.x + p.y                       # fields also accessible by name
     33
     >>> d = p._asdict()                 # convert to a dictionary
     >>> d['x']
@@ -329,7 +394,7 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
                 field_names[index] = '_%d' % index
             seen.add(name)
     for name in [typename] + field_names:
-        if type(name) != str:
+        if type(name) is not str:
             raise TypeError('Type names and field names must be strings')
         if not name.isidentifier():
             raise ValueError('Type names and field names must be valid '
@@ -370,11 +435,15 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
     # For pickling to work, the __module__ variable needs to be set to the frame
     # where the named tuple is created.  Bypass this step in environments where
     # sys._getframe is not defined (Jython for example) or sys._getframe is not
-    # defined for arguments greater than 0 (IronPython).
-    try:
-        result.__module__ = _sys._getframe(1).f_globals.get('__name__', '__main__')
-    except (AttributeError, ValueError):
-        pass
+    # defined for arguments greater than 0 (IronPython), or where the user has
+    # specified a particular module.
+    if module is None:
+        try:
+            module = _sys._getframe(1).f_globals.get('__name__', '__main__')
+        except (AttributeError, ValueError):
+            pass
+    if module is not None:
+        result.__module__ = module
 
     return result
 
@@ -696,14 +765,22 @@ class Counter(dict):
 
     def __pos__(self):
         'Adds an empty counter, effectively stripping negative and zero counts'
-        return self + Counter()
+        result = Counter()
+        for elem, count in self.items():
+            if count > 0:
+                result[elem] = count
+        return result
 
     def __neg__(self):
         '''Subtracts from an empty counter.  Strips positive and zero counts,
         and flips the sign on negative counts.
 
         '''
-        return Counter() - self
+        result = Counter()
+        for elem, count in self.items():
+            if count < 0:
+                result[elem] = 0 - count
+        return result
 
     def _keep_positive(self):
         '''Internal method to strip elements with a negative or zero count'''
@@ -770,7 +847,7 @@ class Counter(dict):
 
 
 ########################################################################
-###  ChainMap (helper for configparser and string.Template)
+###  ChainMap
 ########################################################################
 
 class ChainMap(MutableMapping):
@@ -778,7 +855,8 @@ class ChainMap(MutableMapping):
     to create a single, updateable view.
 
     The underlying mappings are stored in a list.  That list is public and can
-    accessed or updated using the *maps* attribute.  There is no other state.
+    be accessed or updated using the *maps* attribute.  There is no other
+    state.
 
     Lookups search the underlying mappings successively until a key is found.
     In contrast, writes, updates, and deletions only operate on the first
@@ -896,7 +974,7 @@ class UserDict(MutableMapping):
             dict = kwargs.pop('dict')
             import warnings
             warnings.warn("Passing 'dict' as keyword argument is deprecated",
-                          PendingDeprecationWarning, stacklevel=2)
+                          DeprecationWarning, stacklevel=2)
         else:
             dict = None
         self.data = {}
@@ -963,7 +1041,6 @@ class UserList(MutableSequence):
     def __lt__(self, other): return self.data <  self.__cast(other)
     def __le__(self, other): return self.data <= self.__cast(other)
     def __eq__(self, other): return self.data == self.__cast(other)
-    def __ne__(self, other): return self.data != self.__cast(other)
     def __gt__(self, other): return self.data >  self.__cast(other)
     def __ge__(self, other): return self.data >= self.__cast(other)
     def __cast(self, other):
@@ -1035,15 +1112,13 @@ class UserString(Sequence):
     def __float__(self): return float(self.data)
     def __complex__(self): return complex(self.data)
     def __hash__(self): return hash(self.data)
+    def __getnewargs__(self):
+        return (self.data[:],)
 
     def __eq__(self, string):
         if isinstance(string, UserString):
             return self.data == string.data
         return self.data == string
-    def __ne__(self, string):
-        if isinstance(string, UserString):
-            return self.data != string.data
-        return self.data != string
     def __lt__(self, string):
         if isinstance(string, UserString):
             return self.data < string.data
@@ -1083,9 +1158,13 @@ class UserString(Sequence):
     __rmul__ = __mul__
     def __mod__(self, args):
         return self.__class__(self.data % args)
+    def __rmod__(self, format):
+        return self.__class__(format % args)
 
     # the following methods are defined in alphabetical order:
     def capitalize(self): return self.__class__(self.data.capitalize())
+    def casefold(self):
+        return self.__class__(self.data.casefold())
     def center(self, width, *args):
         return self.__class__(self.data.center(width, *args))
     def count(self, sub, start=0, end=_sys.maxsize):
@@ -1108,6 +1187,8 @@ class UserString(Sequence):
         return self.data.find(sub, start, end)
     def format(self, *args, **kwds):
         return self.data.format(*args, **kwds)
+    def format_map(self, mapping):
+        return self.data.format_map(mapping)
     def index(self, sub, start=0, end=_sys.maxsize):
         return self.data.index(sub, start, end)
     def isalpha(self): return self.data.isalpha()
@@ -1117,6 +1198,7 @@ class UserString(Sequence):
     def isidentifier(self): return self.data.isidentifier()
     def islower(self): return self.data.islower()
     def isnumeric(self): return self.data.isnumeric()
+    def isprintable(self): return self.data.isprintable()
     def isspace(self): return self.data.isspace()
     def istitle(self): return self.data.istitle()
     def isupper(self): return self.data.isupper()
@@ -1125,6 +1207,7 @@ class UserString(Sequence):
         return self.__class__(self.data.ljust(width, *args))
     def lower(self): return self.__class__(self.data.lower())
     def lstrip(self, chars=None): return self.__class__(self.data.lstrip(chars))
+    maketrans = str.maketrans
     def partition(self, sep):
         return self.data.partition(sep)
     def replace(self, old, new, maxsplit=-1):

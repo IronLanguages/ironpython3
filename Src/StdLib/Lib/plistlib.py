@@ -47,7 +47,7 @@ Parse Plist example:
 """
 __all__ = [
     "readPlist", "writePlist", "readPlistFromBytes", "writePlistToBytes",
-    "Plist", "Data", "Dict", "FMT_XML", "FMT_BINARY",
+    "Plist", "Data", "Dict", "InvalidFileException", "FMT_XML", "FMT_BINARY",
     "load", "dump", "loads", "dumps"
 ]
 
@@ -225,10 +225,10 @@ class Data:
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.data == other.data
-        elif isinstance(other, str):
+        elif isinstance(other, bytes):
             return self.data == other
         else:
-            return id(self) == id(other)
+            return NotImplemented
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, repr(self.data))
@@ -322,8 +322,15 @@ class _PlistParser:
         self.parser.StartElementHandler = self.handle_begin_element
         self.parser.EndElementHandler = self.handle_end_element
         self.parser.CharacterDataHandler = self.handle_data
+        self.parser.EntityDeclHandler = self.handle_entity_decl
         self.parser.ParseFile(fileobj)
         return self.root
+
+    def handle_entity_decl(self, entity_name, is_parameter_entity, value, base, system_id, public_id, notation_name):
+        # Reject plist files with entity declarations to avoid XML vulnerabilies in expat.
+        # Regular plist files don't contain those declerations, and Apple's plutil tool does not
+        # accept them either.
+        raise InvalidFileException("XML entity declarations are not supported in plist files")
 
     def handle_begin_element(self, element, attrs):
         self.data = []
@@ -625,7 +632,8 @@ class _BinaryPlistParser:
             self._objects = [_undefined] * num_objects
             return self._read_object(top_object)
 
-        except (OSError, IndexError, struct.error):
+        except (OSError, IndexError, struct.error, OverflowError,
+                ValueError):
             raise InvalidFileException()
 
     def _get_size(self, tokenL):
@@ -641,8 +649,10 @@ class _BinaryPlistParser:
     def _read_ints(self, n, size):
         data = self._fp.read(size * n)
         if size in _BINARY_FORMAT:
-            return struct.unpack('>' + _BINARY_FORMAT[size] * n, data)
+            return struct.unpack(f'>{n}{_BINARY_FORMAT[size]}', data)
         else:
+            if not size or len(data) != size * n:
+                raise InvalidFileException()
             return tuple(int.from_bytes(data[i: i + size], 'big')
                          for i in range(0, size * n, size))
 
@@ -693,23 +703,30 @@ class _BinaryPlistParser:
             f = struct.unpack('>d', self._fp.read(8))[0]
             # timestamp 0 of binary plists corresponds to 1/1/2001
             # (year of Mac OS X 10.0), instead of 1/1/1970.
-            result = datetime.datetime.utcfromtimestamp(f + (31 * 365 + 8) * 86400)
+            result = (datetime.datetime(2001, 1, 1) +
+                      datetime.timedelta(seconds=f))
 
         elif tokenH == 0x40:  # data
             s = self._get_size(tokenL)
-            if self._use_builtin_types:
-                result = self._fp.read(s)
-            else:
-                result = Data(self._fp.read(s))
+            result = self._fp.read(s)
+            if len(result) != s:
+                raise InvalidFileException()
+            if not self._use_builtin_types:
+                result = Data(result)
 
         elif tokenH == 0x50:  # ascii string
             s = self._get_size(tokenL)
-            result =  self._fp.read(s).decode('ascii')
-            result = result
+            data = self._fp.read(s)
+            if len(data) != s:
+                raise InvalidFileException()
+            result = data.decode('ascii')
 
         elif tokenH == 0x60:  # unicode string
-            s = self._get_size(tokenL)
-            result = self._fp.read(s * 2).decode('utf-16be')
+            s = self._get_size(tokenL) * 2
+            data = self._fp.read(s)
+            if len(data) != s:
+                raise InvalidFileException()
+            result = data.decode('utf-16be')
 
         # tokenH == 0x80 is documented as 'UID' and appears to be used for
         # keyed-archiving, not in plists.
@@ -733,9 +750,11 @@ class _BinaryPlistParser:
             obj_refs = self._read_refs(s)
             result = self._dict_type()
             self._objects[ref] = result
-            for k, o in zip(key_refs, obj_refs):
-                result[self._read_object(k)] = self._read_object(o)
-
+            try:
+                for k, o in zip(key_refs, obj_refs):
+                    result[self._read_object(k)] = self._read_object(o)
+            except TypeError:
+                raise InvalidFileException()
         else:
             raise InvalidFileException()
 
@@ -932,7 +951,7 @@ class _BinaryPlistWriter (object):
                 self._write_size(0x50, len(value))
             except UnicodeEncodeError:
                 t = value.encode('utf-16be')
-                self._write_size(0x60, len(value))
+                self._write_size(0x60, len(t) // 2)
 
             self._fp.write(t)
 

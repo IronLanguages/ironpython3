@@ -221,7 +221,7 @@ class Command:
         self._ensure_stringlike(option, "string", default)
 
     def ensure_string_list(self, option):
-        """Ensure that 'option' is a list of strings.  If 'option' is
+        r"""Ensure that 'option' is a list of strings.  If 'option' is
         currently a string, we split it either on /,\s*/ or /\s+/, so
         "foo bar baz", "foo,bar,baz", and "foo,   bar baz" all become
         ["foo", "bar", "baz"].
@@ -329,8 +329,7 @@ class Command:
     # -- External world manipulation -----------------------------------
 
     def warn(self, msg):
-        log.warn("warning: %s: %s\n" %
-                (self.get_command_name(), msg))
+        log.warn("warning: %s: %s\n", self.get_command_name(), msg)
 
     def execute(self, func, args, msg=None, level=1):
         util.execute(func, args, msg, dry_run=self.dry_run)

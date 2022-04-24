@@ -1,5 +1,6 @@
 # Python test set -- part 5, built-in exceptions
 
+import copy
 import os
 import sys
 import unittest
@@ -7,10 +8,10 @@ import pickle
 import weakref
 import errno
 
-from test.support import (TESTFN, captured_output, check_impl_detail,
+from test.support import (TESTFN, captured_stderr, check_impl_detail,
                           check_warnings, cpython_only, gc_collect, run_unittest,
-                          no_tracing, unlink, import_module)
-
+                          no_tracing, unlink, import_module, script_helper,
+                          SuppressCrashReport)
 class NaiveException(Exception):
     def __init__(self, x):
         self.x = x
@@ -19,6 +20,10 @@ class SlottedNaiveException(Exception):
     __slots__ = ('x',)
     def __init__(self, x):
         self.x = x
+
+class BrokenStrException(Exception):
+    def __str__(self):
+        raise Exception("str() is broken")
 
 # XXX This is not really enough, each *operation* should be tested!
 
@@ -84,6 +89,7 @@ class ExceptionTests(unittest.TestCase):
             x += x  # this simply shouldn't blow up
 
         self.raise_catch(RuntimeError, "RuntimeError")
+        self.raise_catch(RecursionError, "RecursionError")
 
         self.raise_catch(SyntaxError, "SyntaxError")
         try: exec('/\n')
@@ -117,6 +123,8 @@ class ExceptionTests(unittest.TestCase):
         try: x = 1/0
         except Exception as e: pass
 
+        self.raise_catch(StopAsyncIteration, "StopAsyncIteration")
+
     def testSyntaxErrorMessage(self):
         # make sure the right exception message is raised for each of
         # these code fragments
@@ -147,6 +155,34 @@ class ExceptionTests(unittest.TestCase):
 
         ckmsg(s, "'continue' not properly in loop")
         ckmsg("continue\n", "'continue' not properly in loop")
+
+    def testSyntaxErrorMissingParens(self):
+        def ckmsg(src, msg, exception=SyntaxError):
+            try:
+                compile(src, '<fragment>', 'exec')
+            except exception as e:
+                if e.msg != msg:
+                    self.fail("expected %s, got %s" % (msg, e.msg))
+            else:
+                self.fail("failed to get expected SyntaxError")
+
+        s = '''print "old style"'''
+        ckmsg(s, "Missing parentheses in call to 'print'. "
+                 "Did you mean print(\"old style\")?")
+
+        s = '''print "old style",'''
+        ckmsg(s, "Missing parentheses in call to 'print'. "
+                 "Did you mean print(\"old style\", end=\" \")?")
+
+        s = '''exec "old style"'''
+        ckmsg(s, "Missing parentheses in call to 'exec'")
+
+        # should not apply to subclasses, see issue #31161
+        s = '''if True:\nprint "No indent"'''
+        ckmsg(s, "expected an indented block", IndentationError)
+
+        s = '''if True:\n        print()\n\texec "mixed tabs and spaces"'''
+        ckmsg(s, "inconsistent use of tabs and spaces in indentation", TabError)
 
     def testSyntaxErrorOffset(self):
         def check(src, lineno, offset):
@@ -481,14 +517,14 @@ class ExceptionTests(unittest.TestCase):
     def testInfiniteRecursion(self):
         def f():
             return f()
-        self.assertRaises(RuntimeError, f)
+        self.assertRaises(RecursionError, f)
 
         def g():
             try:
                 return g()
             except ValueError:
                 return -1
-        self.assertRaises(RuntimeError, g)
+        self.assertRaises(RecursionError, g)
 
     def test_str(self):
         # Make sure both instances and classes have a str representation.
@@ -879,7 +915,7 @@ class ExceptionTests(unittest.TestCase):
         class MyException(Exception, metaclass=Meta):
             pass
 
-        with captured_output("stderr") as stderr:
+        with captured_stderr() as stderr:
             try:
                 raise KeyError()
             except MyException as e:
@@ -894,12 +930,111 @@ class ExceptionTests(unittest.TestCase):
         def g():
             try:
                 return g()
-            except RuntimeError:
+            except RecursionError:
                 return sys.exc_info()
         e, v, tb = g()
-        self.assertTrue(isinstance(v, RuntimeError), type(v))
+        self.assertTrue(isinstance(v, RecursionError), type(v))
         self.assertIn("maximum recursion depth exceeded", str(v))
 
+    @cpython_only
+    def test_recursion_normalizing_exception(self):
+        # Issue #22898.
+        # Test that a RecursionError is raised when tstate->recursion_depth is
+        # equal to recursion_limit in PyErr_NormalizeException() and check
+        # that a ResourceWarning is printed.
+        # Prior to #22898, the recursivity of PyErr_NormalizeException() was
+        # controled by tstate->recursion_depth and a PyExc_RecursionErrorInst
+        # singleton was being used in that case, that held traceback data and
+        # locals indefinitely and would cause a segfault in _PyExc_Fini() upon
+        # finalization of these locals.
+        code = """if 1:
+            import sys
+            from _testcapi import get_recursion_depth
+
+            class MyException(Exception): pass
+
+            def setrecursionlimit(depth):
+                while 1:
+                    try:
+                        sys.setrecursionlimit(depth)
+                        return depth
+                    except RecursionError:
+                        # sys.setrecursionlimit() raises a RecursionError if
+                        # the new recursion limit is too low (issue #25274).
+                        depth += 1
+
+            def recurse(cnt):
+                cnt -= 1
+                if cnt:
+                    recurse(cnt)
+                else:
+                    generator.throw(MyException)
+
+            def gen():
+                f = open(%a, mode='rb', buffering=0)
+                yield
+
+            generator = gen()
+            next(generator)
+            recursionlimit = sys.getrecursionlimit()
+            depth = get_recursion_depth()
+            try:
+                # Upon the last recursive invocation of recurse(),
+                # tstate->recursion_depth is equal to (recursion_limit - 1)
+                # and is equal to recursion_limit when _gen_throw() calls
+                # PyErr_NormalizeException().
+                recurse(setrecursionlimit(depth + 2) - depth - 1)
+            finally:
+                sys.setrecursionlimit(recursionlimit)
+                print('Done.')
+        """ % __file__
+        rc, out, err = script_helper.assert_python_failure("-Wd", "-c", code)
+        # Check that the program does not fail with SIGABRT.
+        self.assertEqual(rc, 1)
+        self.assertIn(b'RecursionError', err)
+        self.assertIn(b'ResourceWarning', err)
+        self.assertIn(b'Done.', out)
+
+    @cpython_only
+    def test_recursion_normalizing_infinite_exception(self):
+        # Issue #30697. Test that a RecursionError is raised when
+        # PyErr_NormalizeException() maximum recursion depth has been
+        # exceeded.
+        code = """if 1:
+            import _testcapi
+            try:
+                raise _testcapi.RecursingInfinitelyError
+            finally:
+                print('Done.')
+        """
+        rc, out, err = script_helper.assert_python_failure("-c", code)
+        self.assertEqual(rc, 1)
+        self.assertIn(b'RecursionError: maximum recursion depth exceeded '
+                      b'while normalizing an exception', err)
+        self.assertIn(b'Done.', out)
+
+    @cpython_only
+    def test_recursion_normalizing_with_no_memory(self):
+        # Issue #30697. Test that in the abort that occurs when there is no
+        # memory left and the size of the Python frames stack is greater than
+        # the size of the list of preallocated MemoryError instances, the
+        # Fatal Python error message mentions MemoryError.
+        code = """if 1:
+            import _testcapi
+            class C(): pass
+            def recurse(cnt):
+                cnt -= 1
+                if cnt:
+                    recurse(cnt)
+                else:
+                    _testcapi.set_nomemory(0)
+                    C()
+            recurse(16)
+        """
+        with SuppressCrashReport():
+            rc, out, err = script_helper.assert_python_failure("-c", code)
+            self.assertIn(b'Fatal Python error: Cannot recover from '
+                          b'MemoryErrors while normalizing exceptions.', err)
 
     @cpython_only
     def test_MemoryError(self):
@@ -996,10 +1131,10 @@ class ExceptionTests(unittest.TestCase):
         # We cannot use assertRaises since it manually deletes the traceback
         try:
             inner()
-        except RuntimeError as e:
+        except RecursionError as e:
             self.assertNotEqual(wr(), None)
         else:
-            self.fail("RuntimeError not raised")
+            self.fail("RecursionError not raised")
         self.assertEqual(wr(), None)
 
     def test_errno_ENOTDIR(self):
@@ -1007,6 +1142,83 @@ class ExceptionTests(unittest.TestCase):
         with self.assertRaises(OSError) as cm:
             os.listdir(__file__)
         self.assertEqual(cm.exception.errno, errno.ENOTDIR, cm.exception)
+
+    def test_unraisable(self):
+        # Issue #22836: PyErr_WriteUnraisable() should give sensible reports
+        class BrokenDel:
+            def __del__(self):
+                exc = ValueError("del is broken")
+                # The following line is included in the traceback report:
+                raise exc
+
+        class BrokenRepr(BrokenDel):
+            def __repr__(self):
+                raise AttributeError("repr() is broken")
+
+        class BrokenExceptionDel:
+            def __del__(self):
+                exc = BrokenStrException()
+                # The following line is included in the traceback report:
+                raise exc
+
+        for test_class in (BrokenDel, BrokenRepr, BrokenExceptionDel):
+            with self.subTest(test_class):
+                obj = test_class()
+                with captured_stderr() as stderr:
+                    del obj
+                report = stderr.getvalue()
+                self.assertIn("Exception ignored", report)
+                if test_class is BrokenRepr:
+                    self.assertIn("<object repr() failed>", report)
+                else:
+                    self.assertIn(test_class.__del__.__qualname__, report)
+                self.assertIn("test_exceptions.py", report)
+                self.assertIn("raise exc", report)
+                if test_class is BrokenExceptionDel:
+                    self.assertIn("BrokenStrException", report)
+                    self.assertIn("<exception str() failed>", report)
+                else:
+                    self.assertIn("ValueError", report)
+                    self.assertIn("del is broken", report)
+                self.assertTrue(report.endswith("\n"))
+
+    def test_unhandled(self):
+        # Check for sensible reporting of unhandled exceptions
+        for exc_type in (ValueError, BrokenStrException):
+            with self.subTest(exc_type):
+                try:
+                    exc = exc_type("test message")
+                    # The following line is included in the traceback report:
+                    raise exc
+                except exc_type:
+                    with captured_stderr() as stderr:
+                        sys.__excepthook__(*sys.exc_info())
+                report = stderr.getvalue()
+                self.assertIn("test_exceptions.py", report)
+                self.assertIn("raise exc", report)
+                self.assertIn(exc_type.__name__, report)
+                if exc_type is BrokenStrException:
+                    self.assertIn("<exception str() failed>", report)
+                else:
+                    self.assertIn("test message", report)
+                self.assertTrue(report.endswith("\n"))
+
+    @cpython_only
+    def test_memory_error_in_PyErr_PrintEx(self):
+        code = """if 1:
+            import _testcapi
+            class C(): pass
+            _testcapi.set_nomemory(0, %d)
+            C()
+        """
+
+        # Issue #30817: Abort in PyErr_PrintEx() when no memory.
+        # Span a large range of tests as the CPython code always evolves with
+        # changes that add or remove memory allocations.
+        for i in range(1, 20):
+            rc, out, err = script_helper.assert_python_failure("-c", code % i)
+            self.assertIn(rc, (1, 120))
+            self.assertIn(b'MemoryError', err)
 
 
 class ImportErrorTests(unittest.TestCase):
@@ -1029,12 +1241,47 @@ class ImportErrorTests(unittest.TestCase):
         self.assertEqual(exc.name, 'somename')
         self.assertEqual(exc.path, 'somepath')
 
+        msg = "'invalid' is an invalid keyword argument for this function"
+        with self.assertRaisesRegex(TypeError, msg):
+            ImportError('test', invalid='keyword')
+
+        with self.assertRaisesRegex(TypeError, msg):
+            ImportError('test', name='name', invalid='keyword')
+
+        with self.assertRaisesRegex(TypeError, msg):
+            ImportError('test', path='path', invalid='keyword')
+
+        with self.assertRaisesRegex(TypeError, msg):
+            ImportError(invalid='keyword')
+
+        with self.assertRaisesRegex(TypeError, msg):
+            ImportError('test', invalid='keyword', another=True)
+
     def test_non_str_argument(self):
         # Issue #15778
         with check_warnings(('', BytesWarning), quiet=True):
             arg = b'abc'
             exc = ImportError(arg)
             self.assertEqual(str(arg), str(exc))
+
+    def test_copy_pickle(self):
+        for kwargs in (dict(),
+                       dict(name='somename'),
+                       dict(path='somepath'),
+                       dict(name='somename', path='somepath')):
+            orig = ImportError('test', **kwargs)
+            for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+                exc = pickle.loads(pickle.dumps(orig, proto))
+                self.assertEqual(exc.args, ('test',))
+                self.assertEqual(exc.msg, 'test')
+                self.assertEqual(exc.name, orig.name)
+                self.assertEqual(exc.path, orig.path)
+            for c in copy.copy, copy.deepcopy:
+                exc = c(orig)
+                self.assertEqual(exc.args, ('test',))
+                self.assertEqual(exc.msg, 'test')
+                self.assertEqual(exc.name, orig.name)
+                self.assertEqual(exc.path, orig.path)
 
 
 if __name__ == '__main__':

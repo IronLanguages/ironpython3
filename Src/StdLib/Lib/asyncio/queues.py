@@ -7,7 +7,6 @@ import heapq
 
 from . import compat
 from . import events
-from . import futures
 from . import locks
 from .coroutines import coroutine
 
@@ -128,7 +127,7 @@ class Queue:
         This method is a coroutine.
         """
         while self.full():
-            putter = futures.Future(loop=self._loop)
+            putter = self._loop.create_future()
             self._putters.append(putter)
             try:
                 yield from putter
@@ -162,12 +161,18 @@ class Queue:
         This method is a coroutine.
         """
         while self.empty():
-            getter = futures.Future(loop=self._loop)
+            getter = self._loop.create_future()
             self._getters.append(getter)
             try:
                 yield from getter
             except:
                 getter.cancel()  # Just in case getter is not done yet.
+
+                try:
+                    self._getters.remove(getter)
+                except ValueError:
+                    pass
+
                 if not self.empty() and not getter.cancelled():
                     # We were woken up by put_nowait(), but can't take
                     # the call.  Wake up the next in line.

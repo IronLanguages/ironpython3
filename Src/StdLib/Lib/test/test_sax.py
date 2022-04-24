@@ -4,6 +4,7 @@
 from xml.sax import make_parser, ContentHandler, \
                     SAXException, SAXReaderNotAvailable, SAXParseException
 import unittest
+from unittest import mock
 try:
     make_parser()
 except SAXReaderNotAvailable:
@@ -12,13 +13,14 @@ except SAXReaderNotAvailable:
 from xml.sax.saxutils import XMLGenerator, escape, unescape, quoteattr, \
                              XMLFilterBase, prepare_input_source
 from xml.sax.expatreader import create_parser
-from xml.sax.handler import feature_namespaces
+from xml.sax.handler import feature_namespaces, feature_external_ges
 from xml.sax.xmlreader import InputSource, AttributesImpl, AttributesNSImpl
 from io import BytesIO, StringIO
 import codecs
 import gc
 import os.path
 import shutil
+from urllib.error import URLError
 from test import support
 from test.support import findfile, run_unittest, TESTFN
 
@@ -175,12 +177,8 @@ class ParseTest(unittest.TestCase):
         with self.assertRaises(SAXException):
             self.check_parse(BytesIO(xml_bytes(self.data, 'iso-8859-1', None)))
         make_xml_file(self.data, 'iso-8859-1', None)
-        with support.check_warnings(('unclosed file', ResourceWarning)):
-            # XXX Failed parser leaks an opened file.
-            with self.assertRaises(SAXException):
-                self.check_parse(TESTFN)
-            # Collect leaked file.
-            gc.collect()
+        with self.assertRaises(SAXException):
+            self.check_parse(TESTFN)
         with open(TESTFN, 'rb') as f:
             with self.assertRaises(SAXException):
                 self.check_parse(f)
@@ -194,11 +192,33 @@ class ParseTest(unittest.TestCase):
             input.setEncoding('iso-8859-1')
             self.check_parse(input)
 
+    def test_parse_close_source(self):
+        builtin_open = open
+        fileobj = None
+
+        def mock_open(*args):
+            nonlocal fileobj
+            fileobj = builtin_open(*args)
+            return fileobj
+
+        with mock.patch('xml.sax.saxutils.open', side_effect=mock_open):
+            make_xml_file(self.data, 'iso-8859-1', None)
+            with self.assertRaises(SAXException):
+                self.check_parse(TESTFN)
+            self.assertTrue(fileobj.closed)
+
     def check_parseString(self, s):
         from xml.sax import parseString
         result = StringIO()
         parseString(s, XMLGenerator(result, 'utf-8'))
         self.assertEqual(result.getvalue(), xml_str(self.data, 'utf-8'))
+
+    def test_parseString_text(self):
+        encodings = ('us-ascii', 'iso-8859-1', 'utf-8',
+                     'utf-16', 'utf-16le', 'utf-16be')
+        for encoding in encodings:
+            self.check_parseString(xml_str(self.data, encoding))
+        self.check_parseString(self.data)
 
     def test_parseString_bytes(self):
         # UTF-8 is default encoding, US-ASCII is compatible with UTF-8,
@@ -306,11 +326,23 @@ class PrepareInputSourceTest(unittest.TestCase):
     def make_byte_stream(self):
         return BytesIO(b"This is a byte stream.")
 
+    def make_character_stream(self):
+        return StringIO("This is a character stream.")
+
     def checkContent(self, stream, content):
         self.assertIsNotNone(stream)
         self.assertEqual(stream.read(), content)
         stream.close()
 
+
+    def test_character_stream(self):
+        # If the source is an InputSource with a character stream, use it.
+        src = InputSource(self.file)
+        src.setCharacterStream(self.make_character_stream())
+        prep = prepare_input_source(src)
+        self.assertIsNone(prep.getByteStream())
+        self.checkContent(prep.getCharacterStream(),
+                          "This is a character stream.")
 
     def test_byte_stream(self):
         # If the source is an InputSource that does not have a character
@@ -345,6 +377,14 @@ class PrepareInputSourceTest(unittest.TestCase):
         self.assertIsNone(prep.getCharacterStream())
         self.checkContent(prep.getByteStream(),
                           b"This is a byte stream.")
+
+    def test_text_file(self):
+        # If the source is a text file-like object, use it as a character
+        # stream.
+        prep = prepare_input_source(self.make_character_stream())
+        self.assertIsNone(prep.getByteStream())
+        self.checkContent(prep.getCharacterStream(),
+                          "This is a character stream.")
 
 
 # ===== XMLGenerator
@@ -872,6 +912,18 @@ class ExpatReaderTest(XmlTestBase):
         def unparsedEntityDecl(self, name, publicId, systemId, ndata):
             self._entities.append((name, publicId, systemId, ndata))
 
+
+    class TestEntityRecorder:
+        def __init__(self):
+            self.entities = []
+
+        def resolveEntity(self, publicId, systemId):
+            self.entities.append((publicId, systemId))
+            source = InputSource()
+            source.setPublicId(publicId)
+            source.setSystemId(systemId)
+            return source
+
     def test_expat_dtdhandler(self):
         parser = create_parser()
         handler = self.TestDTDHandler()
@@ -888,6 +940,32 @@ class ExpatReaderTest(XmlTestBase):
             [("GIF", "-//CompuServe//NOTATION Graphics Interchange Format 89a//EN", None)])
         self.assertEqual(handler._entities, [("img", None, "expat.gif", "GIF")])
 
+    def test_expat_external_dtd_enabled(self):
+        parser = create_parser()
+        parser.setFeature(feature_external_ges, True)
+        resolver = self.TestEntityRecorder()
+        parser.setEntityResolver(resolver)
+
+        with self.assertRaises(URLError):
+            parser.feed(
+                '<!DOCTYPE external SYSTEM "unsupported://non-existing">\n'
+            )
+        self.assertEqual(
+            resolver.entities, [(None, 'unsupported://non-existing')]
+        )
+
+    def test_expat_external_dtd_default(self):
+        parser = create_parser()
+        resolver = self.TestEntityRecorder()
+        parser.setEntityResolver(resolver)
+
+        parser.feed(
+            '<!DOCTYPE external SYSTEM "unsupported://non-existing">\n'
+        )
+        parser.feed('<doc />')
+        parser.close()
+        self.assertEqual(resolver.entities, [])
+
     # ===== EntityResolver support
 
     class TestEntityResolver:
@@ -897,8 +975,9 @@ class ExpatReaderTest(XmlTestBase):
             inpsrc.setByteStream(BytesIO(b"<entity/>"))
             return inpsrc
 
-    def test_expat_entityresolver(self):
+    def test_expat_entityresolver_enabled(self):
         parser = create_parser()
+        parser.setFeature(feature_external_ges, True)
         parser.setEntityResolver(self.TestEntityResolver())
         result = BytesIO()
         parser.setContentHandler(XMLGenerator(result))
@@ -911,6 +990,22 @@ class ExpatReaderTest(XmlTestBase):
 
         self.assertEqual(result.getvalue(), start +
                          b"<doc><entity></entity></doc>")
+
+    def test_expat_entityresolver_default(self):
+        parser = create_parser()
+        self.assertEqual(parser.getFeature(feature_external_ges), False)
+        parser.setEntityResolver(self.TestEntityResolver())
+        result = BytesIO()
+        parser.setContentHandler(XMLGenerator(result))
+
+        parser.feed('<!DOCTYPE doc [\n')
+        parser.feed('  <!ENTITY test SYSTEM "whatever">\n')
+        parser.feed(']>\n')
+        parser.feed('<doc>&test;</doc>')
+        parser.close()
+
+        self.assertEqual(result.getvalue(), start +
+                         b"<doc></doc>")
 
     # ===== Attributes support
 
@@ -1021,6 +1116,19 @@ class ExpatReaderTest(XmlTestBase):
         inpsrc = InputSource()
         with open(TEST_XMLFILE, 'rb') as f:
             inpsrc.setByteStream(f)
+            parser.parse(inpsrc)
+
+        self.assertEqual(result.getvalue(), xml_test_out)
+
+    def test_expat_inpsource_character_stream(self):
+        parser = create_parser()
+        result = BytesIO()
+        xmlgen = XMLGenerator(result)
+
+        parser.setContentHandler(xmlgen)
+        inpsrc = InputSource()
+        with open(TEST_XMLFILE, 'rt', encoding='iso-8859-1') as f:
+            inpsrc.setCharacterStream(f)
             parser.parse(inpsrc)
 
         self.assertEqual(result.getvalue(), xml_test_out)

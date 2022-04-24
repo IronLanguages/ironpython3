@@ -124,10 +124,8 @@ class Test_Assertions(unittest.TestCase):
                     self.foo()
 
         Foo("test_functional").run()
-        import gc; gc.collect() # ironpython requires a GC to release the reference
         self.assertIsNone(wr())
         Foo("test_with").run()
-        gc.collect() # ironpython requires a GC to release the reference
         self.assertIsNone(wr())
 
     def testAssertNotRegex(self):
@@ -135,7 +133,6 @@ class Test_Assertions(unittest.TestCase):
         try:
             self.assertNotRegex('Ala ma kota', r'k.t', 'Message')
         except self.failureException as e:
-            self.assertIn("'kot'", e.args[0])
             self.assertIn('Message', e.args[0])
         else:
             self.fail('assertNotRegex should have failed.')
@@ -243,7 +240,7 @@ class TestLongMessage(unittest.TestCase):
         # Error messages are multiline so not testing on full message
         # assertTupleEqual and assertListEqual delegate to this method
         self.assertMessages('assertSequenceEqual', ([], [None]),
-                            ["\+ \[None\]$", "^oops$", r"\+ \[None\]$",
+                            [r"\+ \[None\]$", "^oops$", r"\+ \[None\]$",
                              r"\+ \[None\] : oops$"])
 
     def testAssertSetEqual(self):
@@ -253,21 +250,21 @@ class TestLongMessage(unittest.TestCase):
 
     def testAssertIn(self):
         self.assertMessages('assertIn', (None, []),
-                            ['^None not found in \[\]$', "^oops$",
-                             '^None not found in \[\]$',
-                             '^None not found in \[\] : oops$'])
+                            [r'^None not found in \[\]$', "^oops$",
+                             r'^None not found in \[\]$',
+                             r'^None not found in \[\] : oops$'])
 
     def testAssertNotIn(self):
         self.assertMessages('assertNotIn', (None, [None]),
-                            ['^None unexpectedly found in \[None\]$', "^oops$",
-                             '^None unexpectedly found in \[None\]$',
-                             '^None unexpectedly found in \[None\] : oops$'])
+                            [r'^None unexpectedly found in \[None\]$', "^oops$",
+                             r'^None unexpectedly found in \[None\]$',
+                             r'^None unexpectedly found in \[None\] : oops$'])
 
     def testAssertDictEqual(self):
         self.assertMessages('assertDictEqual', ({}, {'key': 'value'}),
                             [r"\+ \{'key': 'value'\}$", "^oops$",
-                             "\+ \{'key': 'value'\}$",
-                             "\+ \{'key': 'value'\} : oops$"])
+                             r"\+ \{'key': 'value'\}$",
+                             r"\+ \{'key': 'value'\} : oops$"])
 
     def testAssertDictContainsSubset(self):
         with warnings.catch_warnings():
@@ -330,6 +327,20 @@ class TestLongMessage(unittest.TestCase):
                             ["^unexpectedly identical: None$", "^oops$",
                              "^unexpectedly identical: None$",
                              "^unexpectedly identical: None : oops$"])
+
+    def testAssertRegex(self):
+        self.assertMessages('assertRegex', ('foo', 'bar'),
+                            ["^Regex didn't match:",
+                             "^oops$",
+                             "^Regex didn't match:",
+                             "^Regex didn't match: (.*) : oops$"])
+
+    def testAssertNotRegex(self):
+        self.assertMessages('assertNotRegex', ('foo', 'foo'),
+                            ["^Regex matched:",
+                             "^oops$",
+                             "^Regex matched:",
+                             "^Regex matched: (.*) : oops$"])
 
 
     def assertMessagesCM(self, methodName, args, func, errors):

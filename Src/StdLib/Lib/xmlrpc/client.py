@@ -132,6 +132,7 @@ import base64
 import sys
 import time
 from datetime import datetime
+from decimal import Decimal
 import http.client
 import urllib.parse
 from xml.parsers import expat
@@ -151,7 +152,7 @@ def escape(s):
     return s.replace(">", "&gt;",)
 
 # used in User-Agent header sent
-__version__ = sys.version[:3]
+__version__ = '%d.%d' % sys.version_info[:2]
 
 # xmlrpc integer limits
 MAXINT =  2**31-1
@@ -208,8 +209,8 @@ class ProtocolError(Error):
         self.headers = headers
     def __repr__(self):
         return (
-            "<ProtocolError for %s: %s %s>" %
-            (self.url, self.errcode, self.errmsg)
+            "<%s for %s: %s %s>" %
+            (self.__class__.__name__, self.url, self.errcode, self.errmsg)
             )
 
 ##
@@ -237,7 +238,8 @@ class Fault(Error):
         self.faultCode = faultCode
         self.faultString = faultString
     def __repr__(self):
-        return "<Fault %s: %r>" % (self.faultCode, self.faultString)
+        return "<%s %s: %r>" % (self.__class__.__name__,
+                                self.faultCode, self.faultString)
 
 # --------------------------------------------------------------------
 # Special values
@@ -339,10 +341,6 @@ class DateTime:
         s, o = self.make_comparable(other)
         return s == o
 
-    def __ne__(self, other):
-        s, o = self.make_comparable(other)
-        return s != o
-
     def timetuple(self):
         return time.strptime(self.value, "%Y%m%dT%H:%M:%S")
 
@@ -355,7 +353,7 @@ class DateTime:
         return self.value
 
     def __repr__(self):
-        return "<DateTime %r at %x>" % (self.value, id(self))
+        return "<%s %r at %#x>" % (self.__class__.__name__, self.value, id(self))
 
     def decode(self, data):
         self.value = str(data).strip()
@@ -405,11 +403,6 @@ class Binary:
         if isinstance(other, Binary):
             other = other.data
         return self.data == other
-
-    def __ne__(self, other):
-        if isinstance(other, Binary):
-            other = other.data
-        return self.data != other
 
     def decode(self, data):
         self.data = base64.decodebytes(data)
@@ -648,6 +641,7 @@ class Unmarshaller:
         self._stack = []
         self._marks = []
         self._data = []
+        self._value = False
         self._methodname = None
         self._encoding = "utf-8"
         self.append = self._stack.append
@@ -674,9 +668,13 @@ class Unmarshaller:
 
     def start(self, tag, attrs):
         # prepare to handle this element
+        if ':' in tag:
+            tag = tag.split(':')[-1]
         if tag == "array" or tag == "struct":
             self._marks.append(len(self._stack))
         self._data = []
+        if self._value and tag not in self.dispatch:
+            raise ResponseError("unknown tag %r" % tag)
         self._value = (tag == "value")
 
     def data(self, text):
@@ -687,9 +685,13 @@ class Unmarshaller:
         try:
             f = self.dispatch[tag]
         except KeyError:
-            pass # unknown tag ?
-        else:
-            return f(self, "".join(self._data))
+            if ':' not in tag:
+                return # unknown tag ?
+            try:
+                f = self.dispatch[tag.split(':')[-1]]
+            except KeyError:
+                return # unknown tag ?
+        return f(self, "".join(self._data))
 
     #
     # accelerator support
@@ -699,9 +701,13 @@ class Unmarshaller:
         try:
             f = self.dispatch[tag]
         except KeyError:
-            pass # unknown tag ?
-        else:
-            return f(self, data)
+            if ':' not in tag:
+                return # unknown tag ?
+            try:
+                f = self.dispatch[tag.split(':')[-1]]
+            except KeyError:
+                return # unknown tag ?
+        return f(self, data)
 
     #
     # element decoders
@@ -726,14 +732,23 @@ class Unmarshaller:
     def end_int(self, data):
         self.append(int(data))
         self._value = 0
+    dispatch["i1"] = end_int
+    dispatch["i2"] = end_int
     dispatch["i4"] = end_int
     dispatch["i8"] = end_int
     dispatch["int"] = end_int
+    dispatch["biginteger"] = end_int
 
     def end_double(self, data):
         self.append(float(data))
         self._value = 0
     dispatch["double"] = end_double
+    dispatch["float"] = end_double
+
+    def end_bigdecimal(self, data):
+        self.append(Decimal(data))
+        self._value = 0
+    dispatch["bigdecimal"] = end_bigdecimal
 
     def end_string(self, data):
         if self._encoding:
@@ -852,7 +867,7 @@ class MultiCall:
         self.__call_list = []
 
     def __repr__(self):
-        return "<MultiCall at %x>" % id(self)
+        return "<%s at %#x>" % (self.__class__.__name__, id(self))
 
     __str__ = __repr__
 
@@ -963,8 +978,6 @@ def dumps(params, methodname=None, methodresponse=None, encoding=None,
     # standard XML-RPC wrappings
     if methodname:
         # a method call
-        if not isinstance(methodname, str):
-            methodname = methodname.encode(encoding)
         data = (
             xmlheader,
             "<methodCall>\n"
@@ -1023,12 +1036,9 @@ def gzip_encode(data):
     if not gzip:
         raise NotImplementedError
     f = BytesIO()
-    gzf = gzip.GzipFile(mode="wb", fileobj=f, compresslevel=1)
-    gzf.write(data)
-    gzf.close()
-    encoded = f.getvalue()
-    f.close()
-    return encoded
+    with gzip.GzipFile(mode="wb", fileobj=f, compresslevel=1) as gzf:
+        gzf.write(data)
+    return f.getvalue()
 
 ##
 # Decode a string using the gzip content encoding such as specified by the
@@ -1049,17 +1059,14 @@ def gzip_decode(data, max_decode=20971520):
     """
     if not gzip:
         raise NotImplementedError
-    f = BytesIO(data)
-    gzf = gzip.GzipFile(mode="rb", fileobj=f)
-    try:
-        if max_decode < 0: # no limit
-            decoded = gzf.read()
-        else:
-            decoded = gzf.read(max_decode + 1)
-    except OSError:
-        raise ValueError("invalid data")
-    f.close()
-    gzf.close()
+    with gzip.GzipFile(mode="rb", fileobj=BytesIO(data)) as gzf:
+        try:
+            if max_decode < 0: # no limit
+                decoded = gzf.read()
+            else:
+                decoded = gzf.read(max_decode + 1)
+        except OSError:
+            raise ValueError("invalid data")
     if max_decode >= 0 and len(decoded) > max_decode:
         raise ValueError("max gzipped payload length exceeded")
     return decoded
@@ -1120,7 +1127,7 @@ class Transport:
     accept_gzip_encoding = True
 
     # if positive, encode request using gzip if it exceeds this threshold
-    # note that many server will get confused, so only use it if you know
+    # note that many servers will get confused, so only use it if you know
     # that they can decode such a request
     encode_threshold = None #None = don't encode
 
@@ -1145,12 +1152,12 @@ class Transport:
         for i in (0, 1):
             try:
                 return self.single_request(host, handler, request_body, verbose)
+            except http.client.RemoteDisconnected:
+                if i:
+                    raise
             except OSError as e:
                 if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED,
                                         errno.EPIPE):
-                    raise
-            except http.client.BadStatusLine: #close after we sent request
-                if i:
                     raise
 
     def single_request(self, host, handler, request_body, verbose=False):
@@ -1251,7 +1258,7 @@ class Transport:
     # Send HTTP request.
     #
     # @param host Host descriptor (URL or (URL, x509 info) tuple).
-    # @param handler Targer RPC handler (a path relative to host)
+    # @param handler Target RPC handler (a path relative to host)
     # @param request_body The XML-RPC request body
     # @param debug Enable debugging if debug is true.
     # @return An HTTPConnection.
@@ -1436,7 +1443,7 @@ class ServerProxy:
         # call a method on the remote server
 
         request = dumps(params, methodname, encoding=self.__encoding,
-                        allow_none=self.__allow_none).encode(self.__encoding)
+                        allow_none=self.__allow_none).encode(self.__encoding, 'xmlcharrefreplace')
 
         response = self.__transport.request(
             self.__host,
@@ -1452,8 +1459,8 @@ class ServerProxy:
 
     def __repr__(self):
         return (
-            "<ServerProxy for %s%s>" %
-            (self.__host, self.__handler)
+            "<%s for %s%s>" %
+            (self.__class__.__name__, self.__host, self.__handler)
             )
 
     __str__ = __repr__
@@ -1462,7 +1469,7 @@ class ServerProxy:
         # magic method dispatcher
         return _Method(self.__request, name)
 
-    # note: to call a remote object with an non-standard name, use
+    # note: to call a remote object with a non-standard name, use
     # result getattr(server, "strange-python-name")(args)
 
     def __call__(self, attr):
@@ -1474,6 +1481,12 @@ class ServerProxy:
         elif attr == "transport":
             return self.__transport
         raise AttributeError("Attribute %r not found" % (attr,))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.__close()
 
 # compatibility
 

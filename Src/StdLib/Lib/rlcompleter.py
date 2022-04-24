@@ -75,7 +75,12 @@ class Completer:
 
         if not text.strip():
             if state == 0:
-                return '\t'
+                if _readline_available:
+                    readline.insert_text('\t')
+                    readline.redisplay()
+                    return ''
+                else:
+                    return '\t'
             else:
                 return None
 
@@ -108,6 +113,12 @@ class Completer:
         for word in keyword.kwlist:
             if word[:n] == text:
                 seen.add(word)
+                if word in {'finally', 'try'}:
+                    word = word + ':'
+                elif word not in {'False', 'None', 'True',
+                                  'break', 'continue', 'pass',
+                                  'else'}:
+                    word = word + ' '
                 matches.append(word)
         for nspace in [self.namespace, builtins.__dict__]:
             for word, val in nspace.items():
@@ -147,14 +158,30 @@ class Completer:
             words.update(get_class_members(thisobject.__class__))
         matches = []
         n = len(attr)
-        for word in words:
-            if word[:n] == attr:
-                try:
-                    val = getattr(thisobject, word)
-                except Exception:
-                    continue  # Exclude properties that are not set
-                word = self._callable_postfix(val, "%s.%s" % (expr, word))
-                matches.append(word)
+        if attr == '':
+            noprefix = '_'
+        elif attr == '_':
+            noprefix = '__'
+        else:
+            noprefix = None
+        while True:
+            for word in words:
+                if (word[:n] == attr and
+                    not (noprefix and word[:n+1] == noprefix)):
+                    match = "%s.%s" % (expr, word)
+                    try:
+                        val = getattr(thisobject, word)
+                    except Exception:
+                        pass  # Include even if attribute not set
+                    else:
+                        match = self._callable_postfix(val, match)
+                    matches.append(match)
+            if matches or not noprefix:
+                break
+            if noprefix == '_':
+                noprefix = '__'
+            else:
+                noprefix = None
         matches.sort()
         return matches
 
@@ -168,10 +195,11 @@ def get_class_members(klass):
 try:
     import readline
 except ImportError:
-    pass
+    _readline_available = False
 else:
     readline.set_completer(Completer().complete)
     # Release references early at shutdown (the readline module's
     # contents are quasi-immortal, and the completer function holds a
     # reference to globals).
     atexit.register(lambda: readline.set_completer(None))
+    _readline_available = True

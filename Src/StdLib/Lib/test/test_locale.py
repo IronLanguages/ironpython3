@@ -1,4 +1,4 @@
-from test.support import verbose
+from test.support import verbose, is_android
 import unittest
 import locale
 import sys
@@ -339,9 +339,14 @@ class TestCollation(unittest.TestCase):
         self.assertLess(locale.strcoll('a', 'b'), 0)
         self.assertEqual(locale.strcoll('a', 'a'), 0)
         self.assertGreater(locale.strcoll('b', 'a'), 0)
+        # embedded null character
+        self.assertRaises(ValueError, locale.strcoll, 'a\0', 'a')
+        self.assertRaises(ValueError, locale.strcoll, 'a', 'a\0')
 
     def test_strxfrm(self):
         self.assertLess(locale.strxfrm('a'), locale.strxfrm('b'))
+        # embedded null character
+        self.assertRaises(ValueError, locale.strxfrm, 'a\0')
 
 
 class TestEnUSCollation(BaseLocalizedTest, TestCollation):
@@ -353,7 +358,7 @@ class TestEnUSCollation(BaseLocalizedTest, TestCollation):
         enc = codecs.lookup(locale.getpreferredencoding(False) or 'ascii').name
         if enc not in ('utf-8', 'iso8859-1', 'cp1252'):
             raise unittest.SkipTest('encoding not suitable')
-        if enc != 'iso8859-1' and (sys.platform == 'darwin' or
+        if enc != 'iso8859-1' and (sys.platform == 'darwin' or is_android or
                                    sys.platform.startswith('freebsd')):
             raise unittest.SkipTest('wcscoll/wcsxfrm have known bugs')
         BaseLocalizedTest.setUp(self)
@@ -425,7 +430,7 @@ class NormalizeTest(unittest.TestCase):
 
     def test_valencia_modifier(self):
         self.check('ca_ES.UTF-8@valencia', 'ca_ES.UTF-8@valencia')
-        self.check('ca_ES@valencia', 'ca_ES.ISO8859-15@valencia')
+        self.check('ca_ES@valencia', 'ca_ES.UTF-8@valencia')
         self.check('ca@valencia', 'ca_ES.ISO8859-1@valencia')
 
     def test_devanagari_modifier(self):
@@ -522,6 +527,60 @@ class TestMiscellaneous(unittest.TestCase):
     def test_invalid_iterable_in_localetuple(self):
         with self.assertRaises(TypeError):
             locale.setlocale(locale.LC_ALL, (b'not', b'valid'))
+
+
+class BaseDelocalizeTest(BaseLocalizedTest):
+
+    def _test_delocalize(self, value, out):
+        self.assertEqual(locale.delocalize(value), out)
+
+    def _test_atof(self, value, out):
+        self.assertEqual(locale.atof(value), out)
+
+    def _test_atoi(self, value, out):
+        self.assertEqual(locale.atoi(value), out)
+
+
+class TestEnUSDelocalize(EnUSCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000.00', '50000.00')
+        self._test_delocalize('50,000.00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000.00', 50000.)
+        self._test_atof('50,000.00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+        self._test_atoi('50,000', 50000)
+
+
+class TestCDelocalizeTest(CCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000.00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000.00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+
+
+class TestfrFRDelocalizeTest(FrFRCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000,00', '50000.00')
+        self._test_delocalize('50 000,00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000,00', 50000.)
+        self._test_atof('50 000,00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+        self._test_atoi('50 000', 50000)
 
 
 if __name__ == '__main__':

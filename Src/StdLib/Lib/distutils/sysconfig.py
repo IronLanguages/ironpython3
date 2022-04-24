@@ -9,6 +9,7 @@ Written by:   Fred L. Drake, Jr.
 Email:        <fdrake@acm.org>
 """
 
+import _imp
 import os
 import re
 import sys
@@ -22,23 +23,15 @@ BASE_PREFIX = os.path.normpath(sys.base_prefix)
 BASE_EXEC_PREFIX = os.path.normpath(sys.base_exec_prefix)
 
 # Path to the base directory of the project. On Windows the binary may
-# live in project/PCBuild9.  If we're dealing with an x64 Windows build,
-# it'll live in project/PCbuild/amd64.
+# live in project/PCBuild/win32 or project/PCBuild/amd64.
 # set for cross builds
 if "_PYTHON_PROJECT_BASE" in os.environ:
     project_base = os.path.abspath(os.environ["_PYTHON_PROJECT_BASE"])
 else:
     project_base = os.path.dirname(os.path.abspath(sys.executable))
-if os.name == "nt" and "pcbuild" in project_base[-8:].lower():
-    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir))
-# PC/VS7.1
-if os.name == "nt" and "\\pc\\v" in project_base[-10:].lower():
-    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir,
-                                                os.path.pardir))
-# PC/AMD64
-if os.name == "nt" and "\\pcbuild\\amd64" in project_base[-14:].lower():
-    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir,
-                                                os.path.pardir))
+if (os.name == 'nt' and
+    project_base.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
+    project_base = os.path.dirname(os.path.dirname(project_base))
 
 # python_build: (Boolean) if true, we're either building Python or
 # building an extension with an un-installed Python, so we use
@@ -51,11 +44,9 @@ def _is_python_source_dir(d):
             return True
     return False
 _sys_home = getattr(sys, '_home', None)
-if _sys_home and os.name == 'nt' and \
-    _sys_home.lower().endswith(('pcbuild', 'pcbuild\\amd64')):
-    _sys_home = os.path.dirname(_sys_home)
-    if _sys_home.endswith('pcbuild'):   # must be amd64
-        _sys_home = os.path.dirname(_sys_home)
+if (_sys_home and os.name == 'nt' and
+    _sys_home.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
+    _sys_home = os.path.dirname(os.path.dirname(_sys_home))
 def _python_build():
     if _sys_home:
         return _is_python_source_dir(_sys_home)
@@ -79,7 +70,7 @@ def get_python_version():
     leaving off the patchlevel.  Sample return values could be '1.5'
     or '2.2'.
     """
-    return sys.version[:3]
+    return '%d.%d' % sys.version_info[:2]
 
 
 def get_python_inc(plat_specific=0, prefix=None):
@@ -102,14 +93,11 @@ def get_python_inc(plat_specific=0, prefix=None):
             # the build directory may not be the source directory, we
             # must use "srcdir" from the makefile to find the "Include"
             # directory.
-            base = _sys_home or project_base
             if plat_specific:
-                return base
-            if _sys_home:
-                incdir = os.path.join(_sys_home, get_config_var('AST_H_DIR'))
+                return _sys_home or project_base
             else:
                 incdir = os.path.join(get_config_var('srcdir'), 'Include')
-            return os.path.normpath(incdir)
+                return os.path.normpath(incdir)
         python_dir = 'python' + get_python_version() + build_flags
         return os.path.join(prefix, "include", python_dir)
     elif os.name == "nt":
@@ -142,7 +130,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
 
     if os.name == "posix":
         libpython = os.path.join(prefix,
-                                 "lib", "ironpython" + get_python_version())
+                                 "lib", "python" + get_python_version())
         if standard_lib:
             return libpython
         else:
@@ -251,6 +239,8 @@ def get_makefile_filename():
         return os.path.join(_sys_home or project_base, "Makefile")
     lib_dir = get_python_lib(plat_specific=0, standard_lib=1)
     config_file = 'config-{}{}'.format(get_python_version(), build_flags)
+    if hasattr(sys.implementation, '_multiarch'):
+        config_file += '-%s' % sys.implementation._multiarch
     return os.path.join(lib_dir, config_file, 'Makefile')
 
 
@@ -285,7 +275,7 @@ def parse_config_h(fp, g=None):
 
 # Regexes needed for parsing Makefile (and similar syntaxes,
 # like old-style Setup files).
-_variable_rx = re.compile("([a-zA-Z][a-zA-Z0-9_]+)\s*=\s*(.*)")
+_variable_rx = re.compile(r"([a-zA-Z][a-zA-Z0-9_]+)\s*=\s*(.*)")
 _findvar1_rx = re.compile(r"\$\(([A-Za-z][A-Za-z0-9_]*)\)")
 _findvar2_rx = re.compile(r"\${([A-Za-z][A-Za-z0-9_]*)}")
 
@@ -425,7 +415,14 @@ _config_vars = None
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see the sysconfig module
-    from _sysconfigdata import build_time_vars # ironpython
+    name = os.environ.get('_PYTHON_SYSCONFIGDATA_NAME',
+        '_sysconfigdata_{abi}_{platform}_{multiarch}'.format(
+        abi=sys.abiflags,
+        platform=sys.platform,
+        multiarch=getattr(sys.implementation, '_multiarch', ''),
+    ))
+    _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+    build_time_vars = _temp.build_time_vars
     global _config_vars
     _config_vars = {}
     _config_vars.update(build_time_vars)
@@ -441,7 +438,7 @@ def _init_nt():
     # XXX hmmm.. a normal install puts include files here
     g['INCLUDEPY'] = get_python_inc(plat_specific=0)
 
-    g['EXT_SUFFIX'] = '.pyd'
+    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
     g['EXE'] = ".exe"
     g['VERSION'] = get_python_version().replace(".", "")
     g['BINDIR'] = os.path.dirname(os.path.abspath(sys.executable))

@@ -1,7 +1,11 @@
 # Copyright (C) 2005 Martin v. Löwis
 # Licensed to PSF under a Contributor Agreement.
 from _msi import *
-import os, string, re, sys
+import fnmatch
+import os
+import re
+import string
+import sys
 
 AMD64 = "AMD64" in sys.version
 Itanium = "Itanium" in sys.version
@@ -285,7 +289,7 @@ class Directory:
     def make_short(self, file):
         oldfile = file
         file = file.replace('+', '_')
-        file = ''.join(c for c in file if not c in ' "/\[]:;=,')
+        file = ''.join(c for c in file if not c in r' "/\[]:;=,')
         parts = file.split(".")
         if len(parts) > 1:
             prefix = "".join(parts[:-1]).upper()
@@ -361,7 +365,7 @@ class Directory:
         #             [(logical, 0, filehash.IntegerData(1),
         #               filehash.IntegerData(2), filehash.IntegerData(3),
         #               filehash.IntegerData(4))])
-        # Automatically remove .pyc/.pyo files on uninstall (2)
+        # Automatically remove .pyc files on uninstall (2)
         # XXX: adding so many RemoveFile entries makes installer unbelievably
         # slow. So instead, we have to use wildcard remove entries
         if file.endswith(".py"):
@@ -375,17 +379,22 @@ class Directory:
     def glob(self, pattern, exclude = None):
         """Add a list of files to the current component as specified in the
         glob pattern. Individual files can be excluded in the exclude list."""
-        files = glob.glob1(self.absolute, pattern)
+        try:
+            files = os.listdir(self.absolute)
+        except OSError:
+            return []
+        if pattern[:1] != '.':
+            files = (f for f in files if f[0] != '.')
+        files = fnmatch.filter(files, pattern)
         for f in files:
             if exclude and f in exclude: continue
             self.add_file(f)
         return files
 
     def remove_pyc(self):
-        "Remove .pyc/.pyo files on uninstall"
+        "Remove .pyc files on uninstall"
         add_data(self.db, "RemoveFile",
-                 [(self.component+"c", self.component, "*.pyc", self.logical, 2),
-                  (self.component+"o", self.component, "*.pyo", self.logical, 2)])
+                 [(self.component+"c", self.component, "*.pyc", self.logical, 2)])
 
 class Binary:
     def __init__(self, fname):

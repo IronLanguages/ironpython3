@@ -7,7 +7,7 @@ import datetime
 import os
 import sys
 import unittest
-from test.script_helper import assert_python_ok
+from test.support.script_helper import assert_python_ok
 from collections import Hashable
 
 IS_64BIT = sys.maxsize > 2**32
@@ -166,7 +166,6 @@ class HashBuiltinsTestCase(unittest.TestCase):
         for obj in self.hashes_to_check:
             self.assertEqual(hash(obj), _default_hash(obj))
 
-@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
 class HashRandomizationTests:
 
     # Each subclass should define a field "repr_", containing the repr() of

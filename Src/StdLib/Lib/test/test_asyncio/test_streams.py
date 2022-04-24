@@ -3,6 +3,7 @@
 import gc
 import os
 import queue
+import pickle
 import socket
 import sys
 import threading
@@ -22,6 +23,7 @@ class StreamReaderTests(test_utils.TestCase):
     DATA = b'line1\nline2\nline3\n'
 
     def setUp(self):
+        super().setUp()
         self.loop = asyncio.new_event_loop()
         self.set_event_loop(self.loop)
 
@@ -831,7 +833,7 @@ os.close(fd)
         stream._waiter = asyncio.Future(loop=self.loop)
         self.assertRegex(
             repr(stream),
-            "<StreamReader w=<Future pending[\S ]*>>")
+            r"<StreamReader w=<Future pending[\S ]*>>")
         stream._waiter.set_result(None)
         self.loop.run_until_complete(stream._waiter)
         stream._waiter = None
@@ -843,6 +845,23 @@ os.close(fd)
         stream._transport.__repr__ = mock.Mock()
         stream._transport.__repr__.return_value = "<Transport>"
         self.assertEqual("<StreamReader t=<Transport>>", repr(stream))
+
+    def test_IncompleteReadError_pickleable(self):
+        e = asyncio.IncompleteReadError(b'abc', 10)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(pickle_protocol=proto):
+                e2 = pickle.loads(pickle.dumps(e, protocol=proto))
+                self.assertEqual(str(e), str(e2))
+                self.assertEqual(e.partial, e2.partial)
+                self.assertEqual(e.expected, e2.expected)
+
+    def test_LimitOverrunError_pickleable(self):
+        e = asyncio.LimitOverrunError('message', 10)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(pickle_protocol=proto):
+                e2 = pickle.loads(pickle.dumps(e, protocol=proto))
+                self.assertEqual(str(e), str(e2))
+                self.assertEqual(e.consumed, e2.consumed)
 
 
 if __name__ == '__main__':

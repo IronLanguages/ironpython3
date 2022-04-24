@@ -7,11 +7,16 @@ XXX The functions here don't copy the resource fork or other metadata on Mac.
 import os
 import sys
 import stat
-from os.path import abspath
 import fnmatch
 import collections
 import errno
-import tarfile
+
+try:
+    import zlib
+    del zlib
+    _ZLIB_SUPPORTED = True
+except ImportError:
+    _ZLIB_SUPPORTED = False
 
 try:
     import bz2
@@ -19,6 +24,13 @@ try:
     _BZ2_SUPPORTED = True
 except ImportError:
     _BZ2_SUPPORTED = False
+
+try:
+    import lzma
+    del lzma
+    _LZMA_SUPPORTED = True
+except ImportError:
+    _LZMA_SUPPORTED = False
 
 try:
     from pwd import getpwnam
@@ -58,7 +70,7 @@ class ReadError(OSError):
 
 class RegistryError(Exception):
     """Raised when a registry operation with the archiving
-    and unpacking registeries fails"""
+    and unpacking registries fails"""
 
 
 def copyfileobj(fsrc, fdst, length=16*1024):
@@ -159,11 +171,15 @@ else:
         pass
 
 def copystat(src, dst, *, follow_symlinks=True):
-    """Copy all stat info (mode bits, atime, mtime, flags) from src to dst.
+    """Copy file metadata
 
-    If the optional flag `follow_symlinks` is not set, symlinks aren't followed if and
-    only if both `src` and `dst` are symlinks.
+    Copy the permission bits, last access time, last modification time, and
+    flags from `src` to `dst`. On Linux, copystat() also copies the "extended
+    attributes" where possible. The file contents, owner, and group are
+    unaffected. `src` and `dst` are path names given as strings.
 
+    If the optional flag `follow_symlinks` is not set, symlinks aren't
+    followed if and only if both `src` and `dst` are symlinks.
     """
     def _nop(*args, ns=None, follow_symlinks=None):
         pass
@@ -231,8 +247,10 @@ def copy(src, dst, *, follow_symlinks=True):
     return dst
 
 def copy2(src, dst, *, follow_symlinks=True):
-    """Copy data and all stat info ("cp -p src dst"). Return the file's
-    destination."
+    """Copy data and metadata. Return the file's destination.
+
+    Metadata is copied with copystat(). Please see the copystat function
+    for more information.
 
     The destination may be a directory.
 
@@ -491,7 +509,7 @@ def _basename(path):
     sep = os.path.sep + (os.path.altsep or '')
     return os.path.basename(path.rstrip(sep))
 
-def move(src, dst):
+def move(src, dst, copy_function=copy2):
     """Recursively move a file or directory to another location. This is
     similar to the Unix "mv" command. Return the file or directory's
     destination.
@@ -507,6 +525,11 @@ def move(src, dst):
     Otherwise, src is copied to the destination and then removed. Symlinks are
     recreated under the new name if os.rename() fails because of cross
     filesystem renames.
+
+    The optional `copy_function` argument is a callable that will be used
+    to copy the source or it will be delegated to `copytree`.
+    By default, copy2() is used, but any function that supports the same
+    signature (like copy()) can be used.
 
     A lot more could be done here...  A look at a mv.c shows a lot of
     the issues this implementation glosses over.
@@ -532,17 +555,19 @@ def move(src, dst):
             os.unlink(src)
         elif os.path.isdir(src):
             if _destinsrc(src, dst):
-                raise Error("Cannot move a directory '%s' into itself '%s'." % (src, dst))
-            copytree(src, real_dst, symlinks=True)
+                raise Error("Cannot move a directory '%s' into itself"
+                            " '%s'." % (src, dst))
+            copytree(src, real_dst, copy_function=copy_function,
+                     symlinks=True)
             rmtree(src)
         else:
-            copy2(src, real_dst)
+            copy_function(src, real_dst)
             os.unlink(src)
     return real_dst
 
 def _destinsrc(src, dst):
-    src = abspath(src)
-    dst = abspath(dst)
+    src = os.path.abspath(src)
+    dst = os.path.abspath(dst)
     if not src.endswith(os.path.sep):
         src += os.path.sep
     if not dst.endswith(os.path.sep):
@@ -578,30 +603,33 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     """Create a (possibly compressed) tar file from all the files under
     'base_dir'.
 
-    'compress' must be "gzip" (the default), "bzip2", or None.
+    'compress' must be "gzip" (the default), "bzip2", "xz", or None.
 
     'owner' and 'group' can be used to define an owner and a group for the
     archive that is being built. If not provided, the current owner and group
     will be used.
 
     The output tar file will be named 'base_name' +  ".tar", possibly plus
-    the appropriate compression extension (".gz", or ".bz2").
+    the appropriate compression extension (".gz", ".bz2", or ".xz").
 
     Returns the output filename.
     """
-    tar_compression = {'gzip': 'gz', None: ''}
-    compress_ext = {'gzip': '.gz'}
-
-    if _BZ2_SUPPORTED:
-        tar_compression['bzip2'] = 'bz2'
-        compress_ext['bzip2'] = '.bz2'
-
-    # flags for compression program, each element of list will be an argument
-    if compress is not None and compress not in compress_ext:
+    if compress is None:
+        tar_compression = ''
+    elif _ZLIB_SUPPORTED and compress == 'gzip':
+        tar_compression = 'gz'
+    elif _BZ2_SUPPORTED and compress == 'bzip2':
+        tar_compression = 'bz2'
+    elif _LZMA_SUPPORTED and compress == 'xz':
+        tar_compression = 'xz'
+    else:
         raise ValueError("bad value for 'compress', or compression format not "
                          "supported : {0}".format(compress))
 
-    archive_name = base_name + '.tar' + compress_ext.get(compress, '')
+    import tarfile  # late import for breaking circular dependency
+
+    compress_ext = '.' + tar_compression if compress else ''
+    archive_name = base_name + '.tar' + compress_ext
     archive_dir = os.path.dirname(archive_name)
 
     if archive_dir and not os.path.exists(archive_dir):
@@ -627,7 +655,7 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
         return tarinfo
 
     if not dry_run:
-        tar = tarfile.open(archive_name, 'w|%s' % tar_compression[compress])
+        tar = tarfile.open(archive_name, 'w|%s' % tar_compression)
         try:
             tar.add(base_dir, filter=_set_uid_gid)
         finally:
@@ -635,32 +663,14 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
 
     return archive_name
 
-def _call_external_zip(base_dir, zip_filename, verbose=False, dry_run=False):
-    # XXX see if we want to keep an external call here
-    if verbose:
-        zipoptions = "-r"
-    else:
-        zipoptions = "-rq"
-    from distutils.errors import DistutilsExecError
-    from distutils.spawn import spawn
-    try:
-        spawn(["zip", zipoptions, zip_filename, base_dir], dry_run=dry_run)
-    except DistutilsExecError:
-        # XXX really should distinguish between "couldn't find
-        # external 'zip' command" and "zip failed".
-        raise ExecError("unable to create zip file '%s': "
-            "could neither import the 'zipfile' module nor "
-            "find a standalone zip utility") % zip_filename
-
 def _make_zipfile(base_name, base_dir, verbose=0, dry_run=0, logger=None):
     """Create a zip file from all the files under 'base_dir'.
 
-    The output zip file will be named 'base_name' + ".zip".  Uses either the
-    "zipfile" Python module (if available) or the InfoZIP "zip" utility
-    (if installed and found on the default search path).  If neither tool is
-    available, raises ExecError.  Returns the name of the output zip
-    file.
+    The output zip file will be named 'base_name' + ".zip".  Returns the
+    name of the output zip file.
     """
+    import zipfile  # late import for breaking circular dependency
+
     zip_filename = base_name + ".zip"
     archive_dir = os.path.dirname(base_name)
 
@@ -670,51 +680,49 @@ def _make_zipfile(base_name, base_dir, verbose=0, dry_run=0, logger=None):
         if not dry_run:
             os.makedirs(archive_dir)
 
-    # If zipfile module is not available, try spawning an external 'zip'
-    # command.
-    try:
-        import zipfile
-    except ImportError:
-        zipfile = None
+    if logger is not None:
+        logger.info("creating '%s' and adding '%s' to it",
+                    zip_filename, base_dir)
 
-    if zipfile is None:
-        _call_external_zip(base_dir, zip_filename, verbose, dry_run)
-    else:
-        if logger is not None:
-            logger.info("creating '%s' and adding '%s' to it",
-                        zip_filename, base_dir)
-
-        if not dry_run:
-            with zipfile.ZipFile(zip_filename, "w",
-                                 compression=zipfile.ZIP_DEFLATED) as zf:
-                path = os.path.normpath(base_dir)
+    if not dry_run:
+        with zipfile.ZipFile(zip_filename, "w",
+                             compression=zipfile.ZIP_DEFLATED) as zf:
+            path = os.path.normpath(base_dir)
+            if path != os.curdir:
                 zf.write(path, path)
                 if logger is not None:
                     logger.info("adding '%s'", path)
-                for dirpath, dirnames, filenames in os.walk(base_dir):
-                    for name in sorted(dirnames):
-                        path = os.path.normpath(os.path.join(dirpath, name))
+            for dirpath, dirnames, filenames in os.walk(base_dir):
+                for name in sorted(dirnames):
+                    path = os.path.normpath(os.path.join(dirpath, name))
+                    zf.write(path, path)
+                    if logger is not None:
+                        logger.info("adding '%s'", path)
+                for name in filenames:
+                    path = os.path.normpath(os.path.join(dirpath, name))
+                    if os.path.isfile(path):
                         zf.write(path, path)
                         if logger is not None:
                             logger.info("adding '%s'", path)
-                    for name in filenames:
-                        path = os.path.normpath(os.path.join(dirpath, name))
-                        if os.path.isfile(path):
-                            zf.write(path, path)
-                            if logger is not None:
-                                logger.info("adding '%s'", path)
 
     return zip_filename
 
 _ARCHIVE_FORMATS = {
-    'gztar': (_make_tarball, [('compress', 'gzip')], "gzip'ed tar-file"),
     'tar':   (_make_tarball, [('compress', None)], "uncompressed tar file"),
-    'zip':   (_make_zipfile, [], "ZIP file")
-    }
+}
+
+if _ZLIB_SUPPORTED:
+    _ARCHIVE_FORMATS['gztar'] = (_make_tarball, [('compress', 'gzip')],
+                                "gzip'ed tar-file")
+    _ARCHIVE_FORMATS['zip'] = (_make_zipfile, [], "ZIP file")
 
 if _BZ2_SUPPORTED:
     _ARCHIVE_FORMATS['bztar'] = (_make_tarball, [('compress', 'bzip2')],
                                 "bzip2'ed tar-file")
+
+if _LZMA_SUPPORTED:
+    _ARCHIVE_FORMATS['xztar'] = (_make_tarball, [('compress', 'xz')],
+                                "xz'ed tar-file")
 
 def get_archive_formats():
     """Returns a list of supported formats for archiving and unarchiving.
@@ -755,8 +763,8 @@ def make_archive(base_name, format, root_dir=None, base_dir=None, verbose=0,
     """Create an archive file (eg. zip or tar).
 
     'base_name' is the name of the file to create, minus any format-specific
-    extension; 'format' is the archive format: one of "zip", "tar", "bztar"
-    or "gztar".
+    extension; 'format' is the archive format: one of "zip", "tar", "gztar",
+    "bztar", or "xztar".  Or any other registered format.
 
     'root_dir' is a directory that will be the root directory of the
     archive; ie. we typically chdir into 'root_dir' before creating the
@@ -857,7 +865,7 @@ def register_unpack_format(name, extensions, function, extra_args=None,
     _UNPACK_FORMATS[name] = extensions, function, extra_args, description
 
 def unregister_unpack_format(name):
-    """Removes the pack format from the registery."""
+    """Removes the pack format from the registry."""
     del _UNPACK_FORMATS[name]
 
 def _ensure_directory(path):
@@ -869,10 +877,7 @@ def _ensure_directory(path):
 def _unpack_zipfile(filename, extract_dir):
     """Unpack zip `filename` to `extract_dir`
     """
-    try:
-        import zipfile
-    except ImportError:
-        raise ReadError('zlib not supported, cannot unpack this archive.')
+    import zipfile  # late import for breaking circular dependency
 
     if not zipfile.is_zipfile(filename):
         raise ReadError("%s is not a zip file" % filename)
@@ -904,8 +909,9 @@ def _unpack_zipfile(filename, extract_dir):
         zip.close()
 
 def _unpack_tarfile(filename, extract_dir):
-    """Unpack tar/tar.gz/tar.bz2 `filename` to `extract_dir`
+    """Unpack tar/tar.gz/tar.bz2/tar.xz `filename` to `extract_dir`
     """
+    import tarfile  # late import for breaking circular dependency
     try:
         tarobj = tarfile.open(filename)
     except tarfile.TarError:
@@ -917,14 +923,21 @@ def _unpack_tarfile(filename, extract_dir):
         tarobj.close()
 
 _UNPACK_FORMATS = {
-    'gztar': (['.tar.gz', '.tgz'], _unpack_tarfile, [], "gzip'ed tar-file"),
     'tar':   (['.tar'], _unpack_tarfile, [], "uncompressed tar file"),
-    'zip':   (['.zip'], _unpack_zipfile, [], "ZIP file")
-    }
+    'zip':   (['.zip'], _unpack_zipfile, [], "ZIP file"),
+}
+
+if _ZLIB_SUPPORTED:
+    _UNPACK_FORMATS['gztar'] = (['.tar.gz', '.tgz'], _unpack_tarfile, [],
+                                "gzip'ed tar-file")
 
 if _BZ2_SUPPORTED:
-    _UNPACK_FORMATS['bztar'] = (['.bz2'], _unpack_tarfile, [],
+    _UNPACK_FORMATS['bztar'] = (['.tar.bz2', '.tbz2'], _unpack_tarfile, [],
                                 "bzip2'ed tar-file")
+
+if _LZMA_SUPPORTED:
+    _UNPACK_FORMATS['xztar'] = (['.tar.xz', '.txz'], _unpack_tarfile, [],
+                                "xz'ed tar-file")
 
 def _find_unpack_format(filename):
     for name, info in _UNPACK_FORMATS.items():
@@ -941,10 +954,10 @@ def unpack_archive(filename, extract_dir=None, format=None):
     `extract_dir` is the name of the target directory, where the archive
     is unpacked. If not provided, the current working directory is used.
 
-    `format` is the archive format: one of "zip", "tar", or "gztar". Or any
-    other registered format. If not provided, unpack_archive will use the
-    filename extension and see if an unpacker was registered for that
-    extension.
+    `format` is the archive format: one of "zip", "tar", "gztar", "bztar",
+    or "xztar".  Or any other registered format.  If not provided,
+    unpack_archive will use the filename extension and see if an unpacker
+    was registered for that extension.
 
     In case none is found, a ValueError is raised.
     """
@@ -974,6 +987,9 @@ if hasattr(os, 'statvfs'):
 
     __all__.append('disk_usage')
     _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
+    _ntuple_diskusage.total.__doc__ = 'Total space in bytes'
+    _ntuple_diskusage.used.__doc__ = 'Used space in bytes'
+    _ntuple_diskusage.free.__doc__ = 'Free space in bytes'
 
     def disk_usage(path):
         """Return disk usage statistics about the given path.
@@ -1069,7 +1085,9 @@ def get_terminal_size(fallback=(80, 24)):
     if columns <= 0 or lines <= 0:
         try:
             size = os.get_terminal_size(sys.__stdout__.fileno())
-        except (NameError, OSError):
+        except (AttributeError, ValueError, OSError):
+            # stdout is None, closed, detached, or not a terminal, or
+            # os.get_terminal_size() is unsupported
             size = os.terminal_size(fallback)
         if columns <= 0:
             columns = size.columns

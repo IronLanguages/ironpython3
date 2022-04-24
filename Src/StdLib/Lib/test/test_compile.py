@@ -1,3 +1,4 @@
+import dis
 import math
 import os
 import unittest
@@ -5,7 +6,8 @@ import sys
 import _ast
 import tempfile
 import types
-from test import support, script_helper
+from test import support
+from test.support import script_helper, FakePath
 
 class TestSpecifics(unittest.TestCase):
 
@@ -34,6 +36,7 @@ class TestSpecifics(unittest.TestCase):
         import builtins
         prev = builtins.__debug__
         setattr(builtins, '__debug__', 'sure')
+        self.assertEqual(__debug__, prev)
         setattr(builtins, '__debug__', prev)
 
     def test_argument_handling(self):
@@ -283,7 +286,7 @@ if 1:
             'from sys import stdin)',
             'from sys import stdin, stdout,\nstderr',
             'from sys import stdin si',
-            'from sys import stdin,'
+            'from sys import stdin,',
             'from sys import (*)',
             'from sys import (stdin,, stdout, stderr)',
             'from sys import (stdin, stdout),',
@@ -427,7 +430,7 @@ if 1:
 
     def test_compile_ast(self):
         fname = __file__
-        if fname.lower().endswith(('pyc', 'pyo')):
+        if fname.lower().endswith('pyc'):
             fname = fname[:-1]
         with open(fname, 'r') as f:
             fcontents = f.read()
@@ -459,6 +462,27 @@ if 1:
         ast = _ast.Module()
         ast.body = [_ast.BoolOp()]
         self.assertRaises(TypeError, compile, ast, '<ast>', 'exec')
+
+    def test_dict_evaluation_order(self):
+        i = 0
+
+        def f():
+            nonlocal i
+            i += 1
+            return i
+
+        d = {f(): f(), f(): f()}
+        self.assertEqual(d, {1: 2, 3: 4})
+
+    def test_compile_filename(self):
+        for filename in 'file.py', b'file.py':
+            code = compile('pass', filename, 'exec')
+            self.assertEqual(code.co_filename, 'file.py')
+        for filename in bytearray(b'file.py'), memoryview(b'file.py'):
+            with self.assertWarns(DeprecationWarning):
+                code = compile('pass', filename, 'exec')
+            self.assertEqual(code.co_filename, 'file.py')
+        self.assertRaises(TypeError, compile, 'pass', list(b'file.py'), 'exec')
 
     @support.cpython_only
     def test_same_filename_used(self):
@@ -532,7 +556,7 @@ if 1:
             broken = prefix + repeated * fail_depth
             details = "Compiling ({!r} + {!r} * {})".format(
                          prefix, repeated, fail_depth)
-            with self.assertRaises(RuntimeError, msg=details):
+            with self.assertRaises(RecursionError, msg=details):
                 self.compile_single(broken)
 
         check_limit("a", "()")
@@ -543,10 +567,9 @@ if 1:
     def test_null_terminated(self):
         # The source code is null-terminated internally, but bytes-like
         # objects are accepted, which could be not terminated.
-        # Exception changed from TypeError to ValueError in 3.5
-        with self.assertRaisesRegex(Exception, "cannot contain null"):
+        with self.assertRaisesRegex(ValueError, "cannot contain null"):
             compile("123\x00", "<dummy>", "eval")
-        with self.assertRaisesRegex(Exception, "cannot contain null"):
+        with self.assertRaisesRegex(ValueError, "cannot contain null"):
             compile(memoryview(b"123\x00"), "<dummy>", "eval")
         code = compile(memoryview(b"123\x00")[1:-1], "<dummy>", "eval")
         self.assertEqual(eval(code), 23)
@@ -560,6 +583,113 @@ if 1:
         namespace = dict()
         exec(memoryview(b"ax = 123")[1:-1], namespace)
         self.assertEqual(namespace['x'], 12)
+
+    def check_constant(self, func, expected):
+        for const in func.__code__.co_consts:
+            if repr(const) == repr(expected):
+                break
+        else:
+            self.fail("unable to find constant %r in %r"
+                      % (expected, func.__code__.co_consts))
+
+    # Merging equal constants is not a strict requirement for the Python
+    # semantics, it's a more an implementation detail.
+    @support.cpython_only
+    def test_merge_constants(self):
+        # Issue #25843: compile() must merge constants which are equal
+        # and have the same type.
+
+        def check_same_constant(const):
+            ns = {}
+            code = "f1, f2 = lambda: %r, lambda: %r" % (const, const)
+            exec(code, ns)
+            f1 = ns['f1']
+            f2 = ns['f2']
+            self.assertIs(f1.__code__, f2.__code__)
+            self.check_constant(f1, const)
+            self.assertEqual(repr(f1()), repr(const))
+
+        check_same_constant(None)
+        check_same_constant(0)
+        check_same_constant(0.0)
+        check_same_constant(b'abc')
+        check_same_constant('abc')
+
+        # Note: "lambda: ..." emits "LOAD_CONST Ellipsis",
+        # whereas "lambda: Ellipsis" emits "LOAD_GLOBAL Ellipsis"
+        f1, f2 = lambda: ..., lambda: ...
+        self.assertIs(f1.__code__, f2.__code__)
+        self.check_constant(f1, Ellipsis)
+        self.assertEqual(repr(f1()), repr(Ellipsis))
+
+        # {0} is converted to a constant frozenset({0}) by the peephole
+        # optimizer
+        f1, f2 = lambda x: x in {0}, lambda x: x in {0}
+        self.assertIs(f1.__code__, f2.__code__)
+        self.check_constant(f1, frozenset({0}))
+        self.assertTrue(f1(0))
+
+    # This is a regression test for a CPython specific peephole optimizer
+    # implementation bug present in a few releases.  It's assertion verifies
+    # that peephole optimization was actually done though that isn't an
+    # indication of the bugs presence or not (crashing is).
+    @support.cpython_only
+    def test_peephole_opt_unreachable_code_array_access_in_bounds(self):
+        """Regression test for issue35193 when run under clang msan."""
+        def unused_code_at_end():
+            return 3
+            raise RuntimeError("unreachable")
+        # The above function definition will trigger the out of bounds
+        # bug in the peephole optimizer as it scans opcodes past the
+        # RETURN_VALUE opcode.  This does not always crash an interpreter.
+        # When you build with the clang memory sanitizer it reliably aborts.
+        self.assertEqual(
+            'RETURN_VALUE',
+            list(dis.get_instructions(unused_code_at_end))[-1].opname)
+
+    def test_dont_merge_constants(self):
+        # Issue #25843: compile() must not merge constants which are equal
+        # but have a different type.
+
+        def check_different_constants(const1, const2):
+            ns = {}
+            exec("f1, f2 = lambda: %r, lambda: %r" % (const1, const2), ns)
+            f1 = ns['f1']
+            f2 = ns['f2']
+            self.assertIsNot(f1.__code__, f2.__code__)
+            self.assertNotEqual(f1.__code__, f2.__code__)
+            self.check_constant(f1, const1)
+            self.check_constant(f2, const2)
+            self.assertEqual(repr(f1()), repr(const1))
+            self.assertEqual(repr(f2()), repr(const2))
+
+        check_different_constants(0, 0.0)
+        check_different_constants(+0.0, -0.0)
+        check_different_constants((0,), (0.0,))
+        check_different_constants('a', b'a')
+        check_different_constants(('a',), (b'a',))
+
+        # check_different_constants() cannot be used because repr(-0j) is
+        # '(-0-0j)', but when '(-0-0j)' is evaluated to 0j: we loose the sign.
+        f1, f2 = lambda: +0.0j, lambda: -0.0j
+        self.assertIsNot(f1.__code__, f2.__code__)
+        self.check_constant(f1, +0.0j)
+        self.check_constant(f2, -0.0j)
+        self.assertEqual(repr(f1()), repr(+0.0j))
+        self.assertEqual(repr(f2()), repr(-0.0j))
+
+        # {0} is converted to a constant frozenset({0}) by the peephole
+        # optimizer
+        f1, f2 = lambda x: x in {0}, lambda x: x in {0.0}
+        self.assertIsNot(f1.__code__, f2.__code__)
+        self.check_constant(f1, frozenset({0}))
+        self.check_constant(f2, frozenset({0.0}))
+        self.assertTrue(f1(0))
+        self.assertTrue(f2(0.0))
+
+    def test_path_like_objects(self):
+        # An implicit test for PyUnicode_FSDecoder().
+        compile("42", FakePath("test_compile_pathlike"), "single")
 
 
 class TestStackSize(unittest.TestCase):

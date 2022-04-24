@@ -260,7 +260,7 @@ class Text:
         elif op == '!=':
             return line1 != line2 or  char1 != char2
         else:
-            raise TclError('''bad comparison operator "%s":'''
+            raise TclError('''bad comparison operator "%s": '''
                                   '''must be <, <=, ==, >=, >, or !=''' % op)
 
     # The following Text methods normally do something and return None.
@@ -295,4 +295,9 @@ class Text:
 
     def bind(sequence=None, func=None, add=None):
         "Bind to this widget at event sequence a call to function func."
+        pass
+
+class Entry:
+    "Mock for tkinter.Entry."
+    def focus_set(self):
         pass

@@ -1,5 +1,4 @@
 """Tests for distutils.unixccompiler."""
-import os
 import sys
 import unittest
 from test.support import EnvironmentVarGuard, run_unittest
@@ -127,7 +126,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
         self.assertEqual(self.cc.linker_so[0], 'my_cc')
 
     @unittest.skipUnless(sys.platform == 'darwin', 'test only relevant for OS X')
-    def test_osx_explict_ldshared(self):
+    def test_osx_explicit_ldshared(self):
         # Issue #18080:
         # ensure that setting CC env variable does not change
         #   explicit LDSHARED setting for linker

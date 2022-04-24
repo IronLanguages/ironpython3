@@ -1,6 +1,7 @@
 # A test suite for pdb; not very comprehensive at the moment.
 
 import doctest
+import os
 import pdb
 import sys
 import types
@@ -34,7 +35,7 @@ def test_pdb_displayhook():
     """This tests the custom displayhook for pdb.
 
     >>> def test_function(foo, bar):
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     pass
 
     >>> with PdbTestInput([
@@ -74,7 +75,7 @@ def test_pdb_basic_commands():
     ...     return foo.upper()
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     ret = test_function_2('baz')
     ...     print(ret)
 
@@ -173,7 +174,7 @@ def test_pdb_breakpoint_commands():
     """Test basic commands related to breakpoints.
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     print(1)
     ...     print(2)
     ...     print(3)
@@ -305,7 +306,7 @@ def test_list_commands():
     ...     return foo
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     ret = test_function_2('baz')
 
     >>> with PdbTestInput([  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
@@ -328,7 +329,7 @@ def test_list_commands():
     -> ret = test_function_2('baz')
     (Pdb) list
       1         def test_function():
-      2             import pdb; pdb.Pdb(nosigint=True).set_trace()
+      2             import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
       3  ->         ret = test_function_2('baz')
     [EOF]
     (Pdb) step
@@ -391,7 +392,7 @@ def test_post_mortem():
     ...         print('Exception!')
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     test_function_2()
     ...     print('Not reached.')
 
@@ -424,7 +425,7 @@ def test_post_mortem():
     -> 1/0
     (Pdb) list
       1         def test_function():
-      2             import pdb; pdb.Pdb(nosigint=True).set_trace()
+      2             import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
       3  ->         test_function_2()
       4             print('Not reached.')
     [EOF]
@@ -448,7 +449,7 @@ def test_pdb_skip_modules():
 
     >>> def skip_module():
     ...     import string
-    ...     import pdb; pdb.Pdb(skip=['stri*'], nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(skip=['stri*'], nosigint=True, readrc=False).set_trace()
     ...     string.capwords('FOO')
 
     >>> with PdbTestInput([
@@ -477,7 +478,7 @@ def test_pdb_skip_modules_with_callback():
     >>> def skip_module():
     ...     def callback():
     ...         return None
-    ...     import pdb; pdb.Pdb(skip=['module_to_skip*'], nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(skip=['module_to_skip*'], nosigint=True, readrc=False).set_trace()
     ...     mod.foo_pony(callback)
 
     >>> with PdbTestInput([
@@ -518,7 +519,7 @@ def test_pdb_continue_in_bottomframe():
     """Test that "continue" and "next" work properly in bottom frame (issue #5294).
 
     >>> def test_function():
-    ...     import pdb, sys; inst = pdb.Pdb(nosigint=True)
+    ...     import pdb, sys; inst = pdb.Pdb(nosigint=True, readrc=False)
     ...     inst.set_trace()
     ...     inst.botframe = sys._getframe()  # hackery to get the right botframe
     ...     print(1)
@@ -558,8 +559,7 @@ def test_pdb_continue_in_bottomframe():
 
 def pdb_invoke(method, arg):
     """Run pdb.method(arg)."""
-    import pdb
-    getattr(pdb.Pdb(nosigint=True), method)(arg)
+    getattr(pdb.Pdb(nosigint=True, readrc=False), method)(arg)
 
 
 def test_pdb_run_with_incorrect_argument():
@@ -608,7 +608,7 @@ def test_next_until_return_at_return_event():
     ...     x = 2
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     test_function_2()
     ...     test_function_2()
     ...     test_function_2()
@@ -674,7 +674,7 @@ def test_pdb_next_command_for_generator():
     ...     yield 2
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     it = test_gen()
     ...     try:
     ...         if next(it) != 0:
@@ -724,6 +724,121 @@ def test_pdb_next_command_for_generator():
     finished
     """
 
+def test_pdb_next_command_for_coroutine():
+    """Testing skip unwindng stack on yield for coroutines for "next" command
+
+    >>> import asyncio
+
+    >>> async def test_coro():
+    ...     await asyncio.sleep(0)
+    ...     await asyncio.sleep(0)
+    ...     await asyncio.sleep(0)
+
+    >>> async def test_main():
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     await test_coro()
+
+    >>> def test_function():
+    ...     loop = asyncio.new_event_loop()
+    ...     loop.run_until_complete(test_main())
+    ...     loop.close()
+    ...     print("finished")
+
+    >>> with PdbTestInput(['step',
+    ...                    'step',
+    ...                    'next',
+    ...                    'next',
+    ...                    'next',
+    ...                    'step',
+    ...                    'continue']):
+    ...     test_function()
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[2]>(3)test_main()
+    -> await test_coro()
+    (Pdb) step
+    --Call--
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[1]>(1)test_coro()
+    -> async def test_coro():
+    (Pdb) step
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[1]>(2)test_coro()
+    -> await asyncio.sleep(0)
+    (Pdb) next
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[1]>(3)test_coro()
+    -> await asyncio.sleep(0)
+    (Pdb) next
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[1]>(4)test_coro()
+    -> await asyncio.sleep(0)
+    (Pdb) next
+    Internal StopIteration
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[2]>(3)test_main()
+    -> await test_coro()
+    (Pdb) step
+    --Return--
+    > <doctest test.test_pdb.test_pdb_next_command_for_coroutine[2]>(3)test_main()->None
+    -> await test_coro()
+    (Pdb) continue
+    finished
+    """
+
+def test_pdb_next_command_for_asyncgen():
+    """Testing skip unwindng stack on yield for coroutines for "next" command
+
+    >>> import asyncio
+
+    >>> async def agen():
+    ...     yield 1
+    ...     await asyncio.sleep(0)
+    ...     yield 2
+
+    >>> async def test_coro():
+    ...     async for x in agen():
+    ...         print(x)
+
+    >>> async def test_main():
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     await test_coro()
+
+    >>> def test_function():
+    ...     loop = asyncio.new_event_loop()
+    ...     loop.run_until_complete(test_main())
+    ...     loop.close()
+    ...     print("finished")
+
+    >>> with PdbTestInput(['step',
+    ...                    'step',
+    ...                    'next',
+    ...                    'next',
+    ...                    'step',
+    ...                    'next',
+    ...                    'continue']):
+    ...     test_function()
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[3]>(3)test_main()
+    -> await test_coro()
+    (Pdb) step
+    --Call--
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[2]>(1)test_coro()
+    -> async def test_coro():
+    (Pdb) step
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[2]>(2)test_coro()
+    -> async for x in agen():
+    (Pdb) next
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[2]>(3)test_coro()
+    -> print(x)
+    (Pdb) next
+    1
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[2]>(2)test_coro()
+    -> async for x in agen():
+    (Pdb) step
+    --Call--
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[1]>(2)agen()
+    -> yield 1
+    (Pdb) next
+    > <doctest test.test_pdb.test_pdb_next_command_for_asyncgen[1]>(3)agen()
+    -> await asyncio.sleep(0)
+    (Pdb) continue
+    2
+    finished
+    """
+
 def test_pdb_return_command_for_generator():
     """Testing no unwindng stack on yield for generators
        for "return" command
@@ -734,7 +849,7 @@ def test_pdb_return_command_for_generator():
     ...     yield 2
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     it = test_gen()
     ...     try:
     ...         if next(it) != 0:
@@ -779,6 +894,47 @@ def test_pdb_return_command_for_generator():
     finished
     """
 
+def test_pdb_return_command_for_coroutine():
+    """Testing no unwindng stack on yield for coroutines for "return" command
+
+    >>> import asyncio
+
+    >>> async def test_coro():
+    ...     await asyncio.sleep(0)
+    ...     await asyncio.sleep(0)
+    ...     await asyncio.sleep(0)
+
+    >>> async def test_main():
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     await test_coro()
+
+    >>> def test_function():
+    ...     loop = asyncio.new_event_loop()
+    ...     loop.run_until_complete(test_main())
+    ...     loop.close()
+    ...     print("finished")
+
+    >>> with PdbTestInput(['step',
+    ...                    'step',
+    ...                    'next',
+    ...                    'continue']):
+    ...     test_function()
+    > <doctest test.test_pdb.test_pdb_return_command_for_coroutine[2]>(3)test_main()
+    -> await test_coro()
+    (Pdb) step
+    --Call--
+    > <doctest test.test_pdb.test_pdb_return_command_for_coroutine[1]>(1)test_coro()
+    -> async def test_coro():
+    (Pdb) step
+    > <doctest test.test_pdb.test_pdb_return_command_for_coroutine[1]>(2)test_coro()
+    -> await asyncio.sleep(0)
+    (Pdb) next
+    > <doctest test.test_pdb.test_pdb_return_command_for_coroutine[1]>(3)test_coro()
+    -> await asyncio.sleep(0)
+    (Pdb) continue
+    finished
+    """
+
 def test_pdb_until_command_for_generator():
     """Testing no unwindng stack on yield for generators
        for "until" command if target breakpoing is not reached
@@ -789,7 +945,7 @@ def test_pdb_until_command_for_generator():
     ...     yield 2
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     for i in test_gen():
     ...         print(i)
     ...     print("finished")
@@ -823,15 +979,61 @@ def test_pdb_until_command_for_generator():
     finished
     """
 
+def test_pdb_until_command_for_coroutine():
+    """Testing no unwindng stack for coroutines
+       for "until" command if target breakpoing is not reached
+
+    >>> import asyncio
+
+    >>> async def test_coro():
+    ...     print(0)
+    ...     await asyncio.sleep(0)
+    ...     print(1)
+    ...     await asyncio.sleep(0)
+    ...     print(2)
+    ...     await asyncio.sleep(0)
+    ...     print(3)
+
+    >>> async def test_main():
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     await test_coro()
+
+    >>> def test_function():
+    ...     loop = asyncio.new_event_loop()
+    ...     loop.run_until_complete(test_main())
+    ...     loop.close()
+    ...     print("finished")
+
+    >>> with PdbTestInput(['step',
+    ...                    'until 8',
+    ...                    'continue']):
+    ...     test_function()
+    > <doctest test.test_pdb.test_pdb_until_command_for_coroutine[2]>(3)test_main()
+    -> await test_coro()
+    (Pdb) step
+    --Call--
+    > <doctest test.test_pdb.test_pdb_until_command_for_coroutine[1]>(1)test_coro()
+    -> async def test_coro():
+    (Pdb) until 8
+    0
+    1
+    2
+    > <doctest test.test_pdb.test_pdb_until_command_for_coroutine[1]>(8)test_coro()
+    -> print(3)
+    (Pdb) continue
+    3
+    finished
+    """
+
 def test_pdb_next_command_in_generator_for_loop():
-    """The next command on returning from a generator controled by a for loop.
+    """The next command on returning from a generator controlled by a for loop.
 
     >>> def test_gen():
     ...     yield 0
     ...     return 1
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     for i in test_gen():
     ...         print('value', i)
     ...     x = 123
@@ -876,7 +1078,7 @@ def test_pdb_next_command_subiterator():
     ...     return x
 
     >>> def test_function():
-    ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     ...     for i in test_gen():
     ...         print('value', i)
     ...     x = 123
@@ -911,6 +1113,29 @@ def test_pdb_next_command_subiterator():
     (Pdb) continue
     """
 
+def test_pdb_issue_20766():
+    """Test for reference leaks when the SIGINT handler is set.
+
+    >>> def test_function():
+    ...     i = 1
+    ...     while i <= 2:
+    ...         sess = pdb.Pdb()
+    ...         sess.set_trace(sys._getframe())
+    ...         print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+    ...         i += 1
+
+    >>> with PdbTestInput(['continue',
+    ...                    'continue']):
+    ...     test_function()
+    > <doctest test.test_pdb.test_pdb_issue_20766[0]>(6)test_function()
+    -> print('pdb %d: %s' % (i, sess._previous_sigint_handler))
+    (Pdb) continue
+    pdb 1: <built-in function default_int_handler>
+    > <doctest test.test_pdb.test_pdb_issue_20766[0]>(5)test_function()
+    -> sess.set_trace(sys._getframe())
+    (Pdb) continue
+    pdb 2: <built-in function default_int_handler>
+    """
 
 class PdbTestCase(unittest.TestCase):
 
@@ -1026,7 +1251,7 @@ class PdbTestCase(unittest.TestCase):
                 import pdb
 
                 def start_pdb():
-                    pdb.Pdb().set_trace()
+                    pdb.Pdb(readrc=False).set_trace()
                     x = 1
                     y = 1
 
@@ -1054,6 +1279,38 @@ class PdbTestCase(unittest.TestCase):
             'Fail to handle a syntax error in the debuggee.'
             .format(expected, stdout))
 
+
+    def test_readrc_kwarg(self):
+        script = textwrap.dedent("""
+            import pdb; pdb.Pdb(readrc=False).set_trace()
+
+            print('hello')
+        """)
+
+        save_home = os.environ.pop('HOME', None)
+        try:
+            with support.temp_cwd():
+                with open('.pdbrc', 'w') as f:
+                    f.write("invalid\n")
+
+                with open('main.py', 'w') as f:
+                    f.write(script)
+
+                cmd = [sys.executable, 'main.py']
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                with proc:
+                    stdout, stderr = proc.communicate(b'q\n')
+                    self.assertNotIn("NameError: name 'invalid' is not defined",
+                                  stdout.decode())
+
+        finally:
+            if save_home is not None:
+                os.environ['HOME'] = save_home
 
     def tearDown(self):
         support.unlink(support.TESTFN)

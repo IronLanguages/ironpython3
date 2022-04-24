@@ -3,7 +3,6 @@ import subprocess
 import warnings
 
 from . import compat
-from . import futures
 from . import protocols
 from . import transports
 from .coroutines import coroutine
@@ -87,6 +86,12 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
     def _start(self, args, shell, stdin, stdout, stderr, bufsize, **kwargs):
         raise NotImplementedError
 
+    def set_protocol(self, protocol):
+        self._protocol = protocol
+
+    def get_protocol(self):
+        return self._protocol
+
     def is_closing(self):
         return self._closed
 
@@ -122,7 +127,8 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
     if compat.PY34:
         def __del__(self):
             if not self._closed:
-                warnings.warn("unclosed transport %r" % self, ResourceWarning)
+                warnings.warn("unclosed transport %r" % self, ResourceWarning,
+                              source=self)
                 self.close()
 
     def get_pid(self):
@@ -210,6 +216,10 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
             logger.info('%r exited with return code %r',
                         self, returncode)
         self._returncode = returncode
+        if self._proc.returncode is None:
+            # asyncio uses a child watcher: copy the status into the Popen
+            # object. On Python 3.6, it is required to avoid a ResourceWarning.
+            self._proc.returncode = returncode
         self._call(self._protocol.process_exited)
         self._try_finish()
 
@@ -227,7 +237,7 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
         if self._returncode is not None:
             return self._returncode
 
-        waiter = futures.Future(loop=self._loop)
+        waiter = self._loop.create_future()
         self._exit_waiters.append(waiter)
         return (yield from waiter)
 

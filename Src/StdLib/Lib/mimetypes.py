@@ -33,8 +33,10 @@ except ImportError:
     _winreg = None
 
 __all__ = [
-    "guess_type","guess_extension","guess_all_extensions",
-    "add_type","read_mime_types","init"
+    "knownfiles", "inited", "MimeTypes",
+    "guess_type", "guess_all_extensions", "guess_extension",
+    "add_type", "init", "read_mime_types",
+    "suffix_map", "encodings_map", "types_map", "common_types"
 ]
 
 knownfiles = [
@@ -252,21 +254,19 @@ class MimeTypes:
 
         with _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT, '') as hkcr:
             for subkeyname in enum_types(hkcr):
-                # ironpython: code modified to avoid StackOverflowException - https://github.com/IronLanguages/ironpython3/issues/1182
-                with _winreg.OpenKey(hkcr, subkeyname) as subkey:
-                    # Only check file extensions
-                    if not subkeyname.startswith("."):
-                        continue
-                    try:
+                try:
+                    with _winreg.OpenKey(hkcr, subkeyname) as subkey:
+                        # Only check file extensions
+                        if not subkeyname.startswith("."):
+                            continue
                         # raises EnvironmentError if no 'Content Type' value
                         mimetype, datatype = _winreg.QueryValueEx(
                             subkey, 'Content Type')
-                    except EnvironmentError:
-                        pass
-                    else:
                         if datatype != _winreg.REG_SZ:
                             continue
                         self.add_type(mimetype, subkeyname, strict)
+                except EnvironmentError:
+                    continue
 
 def guess_type(url, strict=True):
     """Guess the type of a file based on its URL.
@@ -418,6 +418,7 @@ def _default_mime_types():
         '.cpio'   : 'application/x-cpio',
         '.csh'    : 'application/x-csh',
         '.css'    : 'text/css',
+        '.csv'    : 'text/csv',
         '.dll'    : 'application/octet-stream',
         '.doc'    : 'application/msword',
         '.dot'    : 'application/msword',
@@ -438,6 +439,7 @@ def _default_mime_types():
         '.jpeg'   : 'image/jpeg',
         '.jpg'    : 'image/jpeg',
         '.js'     : 'application/javascript',
+        '.json'   : 'application/json',
         '.ksh'    : 'text/plain',
         '.latex'  : 'application/x-latex',
         '.m1v'    : 'video/mpeg',
@@ -448,6 +450,7 @@ def _default_mime_types():
         '.mht'    : 'message/rfc822',
         '.mhtml'  : 'message/rfc822',
         '.mif'    : 'application/x-mif',
+        '.mjs'    : 'application/javascript',
         '.mov'    : 'video/quicktime',
         '.movie'  : 'video/x-sgi-movie',
         '.mp2'    : 'audio/mpeg',
@@ -515,6 +518,7 @@ def _default_mime_types():
         '.ustar'  : 'application/x-ustar',
         '.vcf'    : 'text/x-vcard',
         '.wav'    : 'audio/x-wav',
+        '.webm'   : 'video/webm',
         '.wiz'    : 'application/msword',
         '.wsdl'   : 'application/xml',
         '.xbm'    : 'image/x-xbitmap',

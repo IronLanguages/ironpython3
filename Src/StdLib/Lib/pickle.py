@@ -27,6 +27,7 @@ from types import FunctionType
 from copyreg import dispatch_table
 from copyreg import _extension_registry, _inverted_registry, _extension_cache
 from itertools import islice
+from functools import partial
 import sys
 from sys import maxsize
 from struct import pack, unpack
@@ -258,24 +259,20 @@ class _Unframer:
 
 # Tools used for pickling.
 
-def _getattribute(obj, name, allow_qualname=False):
-    dotted_path = name.split(".")
-    if not allow_qualname and len(dotted_path) > 1:
-        raise AttributeError("Can't get qualified attribute {!r} on {!r}; " +
-                             "use protocols >= 4 to enable support"
-                             .format(name, obj))
-    for subpath in dotted_path:
+def _getattribute(obj, name):
+    for subpath in name.split('.'):
         if subpath == '<locals>':
             raise AttributeError("Can't get local attribute {!r} on {!r}"
                                  .format(name, obj))
         try:
+            parent = obj
             obj = getattr(obj, subpath)
         except AttributeError:
             raise AttributeError("Can't get attribute {!r} on {!r}"
                                  .format(name, obj))
-    return obj
+    return obj, parent
 
-def whichmodule(obj, name, allow_qualname=False):
+def whichmodule(obj, name):
     """Find the module an object belong to."""
     module_name = getattr(obj, '__module__', None)
     if module_name is not None:
@@ -286,7 +283,7 @@ def whichmodule(obj, name, allow_qualname=False):
         if module_name == '__main__' or module is None:
             continue
         try:
-            if _getattribute(module, name, allow_qualname) is obj:
+            if _getattribute(module, name)[0] is obj:
                 return module_name
         except AttributeError:
             pass
@@ -533,7 +530,11 @@ class _Pickler:
             self.save(pid, save_persistent_id=False)
             self.write(BINPERSID)
         else:
-            self.write(PERSID + str(pid).encode("ascii") + b'\n')
+            try:
+                self.write(PERSID + str(pid).encode("ascii") + b'\n')
+            except UnicodeEncodeError:
+                raise PicklingError(
+                    "persistent IDs in protocol 0 must be ASCII strings")
 
     def save_reduce(self, func, args, state=None, listitems=None,
                     dictitems=None, obj=None):
@@ -548,7 +549,7 @@ class _Pickler:
         write = self.write
 
         func_name = getattr(func, "__name__", "")
-        if self.proto >= 4 and func_name == "__newobj_ex__":
+        if self.proto >= 2 and func_name == "__newobj_ex__":
             cls, args, kwargs = args
             if not hasattr(cls, "__new__"):
                 raise PicklingError("args[0] from {} args has no __new__"
@@ -556,10 +557,16 @@ class _Pickler:
             if obj is not None and cls is not obj.__class__:
                 raise PicklingError("args[0] from {} args has the wrong class"
                                     .format(func_name))
-            save(cls)
-            save(args)
-            save(kwargs)
-            write(NEWOBJ_EX)
+            if self.proto >= 4:
+                save(cls)
+                save(args)
+                save(kwargs)
+                write(NEWOBJ_EX)
+            else:
+                func = partial(cls.__new__, cls, *args, **kwargs)
+                save(func)
+                save(())
+                write(REDUCE)
         elif self.proto >= 2 and func_name == "__newobj__":
             # A __reduce__ implementation can direct protocol 2 or newer to
             # use the more efficient NEWOBJ opcode, while still
@@ -899,16 +906,16 @@ class _Pickler:
         write = self.write
         memo = self.memo
 
-        if name is None and self.proto >= 4:
+        if name is None:
             name = getattr(obj, '__qualname__', None)
         if name is None:
             name = obj.__name__
 
-        module_name = whichmodule(obj, name, allow_qualname=self.proto >= 4)
+        module_name = whichmodule(obj, name)
         try:
             __import__(module_name, level=0)
             module = sys.modules[module_name]
-            obj2 = _getattribute(module, name, allow_qualname=self.proto >= 4)
+            obj2, parent = _getattribute(module, name)
         except (ImportError, KeyError, AttributeError):
             raise PicklingError(
                 "Can't pickle %r: it's not found as %s.%s" %
@@ -930,11 +937,16 @@ class _Pickler:
                 else:
                     write(EXT4 + pack("<i", code))
                 return
+        lastname = name.rpartition('.')[2]
+        if parent is module:
+            name = lastname
         # Non-ASCII identifiers are supported only with protocols >= 3.
         if self.proto >= 4:
             self.save(module_name)
             self.save(name)
             write(STACK_GLOBAL)
+        elif parent is not module:
+            self.save_reduce(getattr, (parent, lastname))
         elif self.proto >= 3:
             write(GLOBAL + bytes(module_name, "utf-8") + b'\n' +
                   bytes(name, "utf-8") + b'\n')
@@ -994,7 +1006,7 @@ class _Unpickler:
         meets this interface.
 
         Optional keyword arguments are *fix_imports*, *encoding* and
-        *errors*, which are used to control compatiblity support for
+        *errors*, which are used to control compatibility support for
         pickle stream generated by Python 2.  If *fix_imports* is True,
         pickle will try to map the old Python 2 names to the new names
         used in Python 3.  The *encoding* and *errors* tell pickle how
@@ -1023,7 +1035,7 @@ class _Unpickler:
         self._unframer = _Unframer(self._file_read, self._file_readline)
         self.read = self._unframer.read
         self.readline = self._unframer.readline
-        self.mark = object() # any new unique object
+        self.metastack = []
         self.stack = []
         self.append = self.stack.append
         self.proto = 0
@@ -1039,20 +1051,12 @@ class _Unpickler:
         except _Stop as stopinst:
             return stopinst.value
 
-    # Return largest index k such that self.stack[k] is self.mark.
-    # If the stack doesn't contain a mark, eventually raises IndexError.
-    # This could be sped by maintaining another stack, of indices at which
-    # the mark appears.  For that matter, the latter stack would suffice,
-    # and we wouldn't need to push mark objects on self.stack at all.
-    # Doing so is probably a good thing, though, since if the pickle is
-    # corrupt (or hostile) we may get a clue from finding self.mark embedded
-    # in unpickled objects.
-    def marker(self):
-        stack = self.stack
-        mark = self.mark
-        k = len(stack)-1
-        while stack[k] is not mark: k = k-1
-        return k
+    # Return a list of items pushed in the stack after last MARK instruction.
+    def pop_mark(self):
+        items = self.stack
+        self.stack = self.metastack.pop()
+        self.append = self.stack.append
+        return items
 
     def persistent_load(self, pid):
         raise UnpicklingError("unsupported persistent id encountered")
@@ -1074,7 +1078,11 @@ class _Unpickler:
     dispatch[FRAME[0]] = load_frame
 
     def load_persid(self):
-        pid = self.readline()[:-1].decode("ascii")
+        try:
+            pid = self.readline()[:-1].decode("ascii")
+        except UnicodeDecodeError:
+            raise UnpicklingError(
+                "persistent IDs in protocol 0 must be ASCII strings")
         self.append(self.persistent_load(pid))
     dispatch[PERSID[0]] = load_persid
 
@@ -1229,8 +1237,8 @@ class _Unpickler:
     dispatch[SHORT_BINUNICODE[0]] = load_short_binunicode
 
     def load_tuple(self):
-        k = self.marker()
-        self.stack[k:] = [tuple(self.stack[k+1:])]
+        items = self.pop_mark()
+        self.append(tuple(items))
     dispatch[TUPLE[0]] = load_tuple
 
     def load_empty_tuple(self):
@@ -1262,21 +1270,20 @@ class _Unpickler:
     dispatch[EMPTY_SET[0]] = load_empty_set
 
     def load_frozenset(self):
-        k = self.marker()
-        self.stack[k:] = [frozenset(self.stack[k+1:])]
+        items = self.pop_mark()
+        self.append(frozenset(items))
     dispatch[FROZENSET[0]] = load_frozenset
 
     def load_list(self):
-        k = self.marker()
-        self.stack[k:] = [self.stack[k+1:]]
+        items = self.pop_mark()
+        self.append(items)
     dispatch[LIST[0]] = load_list
 
     def load_dict(self):
-        k = self.marker()
-        items = self.stack[k+1:]
+        items = self.pop_mark()
         d = {items[i]: items[i+1]
              for i in range(0, len(items), 2)}
-        self.stack[k:] = [d]
+        self.append(d)
     dispatch[DICT[0]] = load_dict
 
     # INST and OBJ differ only in how they get a class object.  It's not
@@ -1284,9 +1291,7 @@ class _Unpickler:
     # previously diverged and grew different bugs.
     # klass is the class to instantiate, and k points to the topmost mark
     # object, following which are the arguments for klass.__init__.
-    def _instantiate(self, klass, k):
-        args = tuple(self.stack[k+1:])
-        del self.stack[k:]
+    def _instantiate(self, klass, args):
         if (args or not isinstance(klass, type) or
             hasattr(klass, "__getinitargs__")):
             try:
@@ -1302,14 +1307,14 @@ class _Unpickler:
         module = self.readline()[:-1].decode("ascii")
         name = self.readline()[:-1].decode("ascii")
         klass = self.find_class(module, name)
-        self._instantiate(klass, self.marker())
+        self._instantiate(klass, self.pop_mark())
     dispatch[INST[0]] = load_inst
 
     def load_obj(self):
         # Stack is ... markobject classobject arg1 arg2 ...
-        k = self.marker()
-        klass = self.stack.pop(k+1)
-        self._instantiate(klass, k)
+        args = self.pop_mark()
+        cls = args.pop(0)
+        self._instantiate(cls, args)
     dispatch[OBJ[0]] = load_obj
 
     def load_newobj(self):
@@ -1381,8 +1386,10 @@ class _Unpickler:
             elif module in _compat_pickle.IMPORT_MAPPING:
                 module = _compat_pickle.IMPORT_MAPPING[module]
         __import__(module, level=0)
-        return _getattribute(sys.modules[module], name,
-                             allow_qualname=self.proto >= 4)
+        if self.proto >= 4:
+            return _getattribute(sys.modules[module], name)[0]
+        else:
+            return getattr(sys.modules[module], name)
 
     def load_reduce(self):
         stack = self.stack
@@ -1392,12 +1399,14 @@ class _Unpickler:
     dispatch[REDUCE[0]] = load_reduce
 
     def load_pop(self):
-        del self.stack[-1]
+        if self.stack:
+            del self.stack[-1]
+        else:
+            self.pop_mark()
     dispatch[POP[0]] = load_pop
 
     def load_pop_mark(self):
-        k = self.marker()
-        del self.stack[k:]
+        self.pop_mark()
     dispatch[POP_MARK[0]] = load_pop_mark
 
     def load_dup(self):
@@ -1453,17 +1462,14 @@ class _Unpickler:
     dispatch[APPEND[0]] = load_append
 
     def load_appends(self):
-        stack = self.stack
-        mark = self.marker()
-        list_obj = stack[mark - 1]
-        items = stack[mark + 1:]
+        items = self.pop_mark()
+        list_obj = self.stack[-1]
         if isinstance(list_obj, list):
             list_obj.extend(items)
         else:
             append = list_obj.append
             for item in items:
                 append(item)
-        del stack[mark:]
     dispatch[APPENDS[0]] = load_appends
 
     def load_setitem(self):
@@ -1475,27 +1481,21 @@ class _Unpickler:
     dispatch[SETITEM[0]] = load_setitem
 
     def load_setitems(self):
-        stack = self.stack
-        mark = self.marker()
-        dict = stack[mark - 1]
-        for i in range(mark + 1, len(stack), 2):
-            dict[stack[i]] = stack[i + 1]
-
-        del stack[mark:]
+        items = self.pop_mark()
+        dict = self.stack[-1]
+        for i in range(0, len(items), 2):
+            dict[items[i]] = items[i + 1]
     dispatch[SETITEMS[0]] = load_setitems
 
     def load_additems(self):
-        stack = self.stack
-        mark = self.marker()
-        set_obj = stack[mark - 1]
-        items = stack[mark + 1:]
+        items = self.pop_mark()
+        set_obj = self.stack[-1]
         if isinstance(set_obj, set):
             set_obj.update(items)
         else:
             add = set_obj.add
             for item in items:
                 add(item)
-        del stack[mark:]
     dispatch[ADDITEMS[0]] = load_additems
 
     def load_build(self):
@@ -1523,7 +1523,9 @@ class _Unpickler:
     dispatch[BUILD[0]] = load_build
 
     def load_mark(self):
-        self.append(self.mark)
+        self.metastack.append(self.stack)
+        self.stack = []
+        self.append = self.stack.append
     dispatch[MARK[0]] = load_mark
 
     def load_stop(self):

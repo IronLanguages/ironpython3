@@ -1,7 +1,6 @@
 import os
 import sys
 import signal
-import errno
 
 from . import util
 
@@ -15,8 +14,7 @@ class Popen(object):
     method = 'fork'
 
     def __init__(self, process_obj):
-        sys.stdout.flush()
-        sys.stderr.flush()
+        util._flush_std_streams()
         self.returncode = None
         self._launch(process_obj)
 
@@ -29,8 +27,6 @@ class Popen(object):
                 try:
                     pid, sts = os.waitpid(self.pid, flag)
                 except OSError as e:
-                    if e.errno == errno.EINTR:
-                        continue
                     # Child process not yet created. See #1731717
                     # e.errno == errno.ECHILD == 10
                     return None

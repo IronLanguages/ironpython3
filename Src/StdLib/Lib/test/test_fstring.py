@@ -94,13 +94,12 @@ f'{a * x()}'"""
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 3)
-        #self.assertEqual(binop.left.lineno, 3)
-        #self.assertEqual(binop.right.lineno, 3)
-        #self.assertEqual(binop.col_offset, 3)
-        #self.assertEqual(binop.left.col_offset, 3)
-        #self.assertEqual(binop.right.col_offset, 7)
+        self.assertEqual(binop.lineno, 3)
+        self.assertEqual(binop.left.lineno, 3)
+        self.assertEqual(binop.right.lineno, 3)
+        self.assertEqual(binop.col_offset, 3)
+        self.assertEqual(binop.left.col_offset, 3)
+        self.assertEqual(binop.right.col_offset, 7)
 
     def test_ast_line_numbers_multiple_formattedvalues(self):
         expr = """
@@ -121,39 +120,36 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(type(t.body[1].value.values[1]), ast.FormattedValue)
         self.assertEqual(type(t.body[1].value.values[2]), ast.Str)
         self.assertEqual(type(t.body[1].value.values[3]), ast.FormattedValue)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(t.body[1].lineno, 3)
-        #self.assertEqual(t.body[1].value.lineno, 3)
-        #self.assertEqual(t.body[1].value.values[0].lineno, 3)
-        #self.assertEqual(t.body[1].value.values[1].lineno, 3)
-        #self.assertEqual(t.body[1].value.values[2].lineno, 3)
-        #self.assertEqual(t.body[1].value.values[3].lineno, 3)
+        self.assertEqual(t.body[1].lineno, 3)
+        self.assertEqual(t.body[1].value.lineno, 3)
+        self.assertEqual(t.body[1].value.values[0].lineno, 3)
+        self.assertEqual(t.body[1].value.values[1].lineno, 3)
+        self.assertEqual(t.body[1].value.values[2].lineno, 3)
+        self.assertEqual(t.body[1].value.values[3].lineno, 3)
         # check the first binop location
         binop1 = t.body[1].value.values[1].value
         self.assertEqual(type(binop1), ast.BinOp)
         self.assertEqual(type(binop1.left), ast.Name)
         self.assertEqual(type(binop1.op), ast.Mult)
         self.assertEqual(type(binop1.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop1.lineno, 3)
-        #self.assertEqual(binop1.left.lineno, 3)
-        #self.assertEqual(binop1.right.lineno, 3)
-        #self.assertEqual(binop1.col_offset, 8)
-        #self.assertEqual(binop1.left.col_offset, 8)
-        #self.assertEqual(binop1.right.col_offset, 12)
+        self.assertEqual(binop1.lineno, 3)
+        self.assertEqual(binop1.left.lineno, 3)
+        self.assertEqual(binop1.right.lineno, 3)
+        self.assertEqual(binop1.col_offset, 8)
+        self.assertEqual(binop1.left.col_offset, 8)
+        self.assertEqual(binop1.right.col_offset, 12)
         # check the second binop location
         binop2 = t.body[1].value.values[3].value
         self.assertEqual(type(binop2), ast.BinOp)
         self.assertEqual(type(binop2.left), ast.Name)
         self.assertEqual(type(binop2.op), ast.Add)
         self.assertEqual(type(binop2.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop2.lineno, 3)
-        #self.assertEqual(binop2.left.lineno, 3)
-        #self.assertEqual(binop2.right.lineno, 3)
-        #self.assertEqual(binop2.col_offset, 23)
-        #self.assertEqual(binop2.left.col_offset, 23)
-        #self.assertEqual(binop2.right.col_offset, 27)
+        self.assertEqual(binop2.lineno, 3)
+        self.assertEqual(binop2.left.lineno, 3)
+        self.assertEqual(binop2.right.lineno, 3)
+        self.assertEqual(binop2.col_offset, 23)
+        self.assertEqual(binop2.left.col_offset, 23)
+        self.assertEqual(binop2.right.col_offset, 27)
 
     def test_ast_line_numbers_nested(self):
         expr = """
@@ -179,27 +175,24 @@ f'{a * f"-{x()}-"}'"""
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.JoinedStr)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 3)
-        #self.assertEqual(binop.left.lineno, 3)
-        #self.assertEqual(binop.right.lineno, 3)
-        #self.assertEqual(binop.col_offset, 3)
-        #self.assertEqual(binop.left.col_offset, 3)
-        #self.assertEqual(binop.right.col_offset, 7)
+        self.assertEqual(binop.lineno, 3)
+        self.assertEqual(binop.left.lineno, 3)
+        self.assertEqual(binop.right.lineno, 3)
+        self.assertEqual(binop.col_offset, 3)
+        self.assertEqual(binop.left.col_offset, 3)
+        self.assertEqual(binop.right.col_offset, 7)
         # check the nested call location
         self.assertEqual(len(binop.right.values), 3)
         self.assertEqual(type(binop.right.values[0]), ast.Str)
         self.assertEqual(type(binop.right.values[1]), ast.FormattedValue)
         self.assertEqual(type(binop.right.values[2]), ast.Str)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.right.values[0].lineno, 3)
-        #self.assertEqual(binop.right.values[1].lineno, 3)
-        #self.assertEqual(binop.right.values[2].lineno, 3)
+        self.assertEqual(binop.right.values[0].lineno, 3)
+        self.assertEqual(binop.right.values[1].lineno, 3)
+        self.assertEqual(binop.right.values[2].lineno, 3)
         call = binop.right.values[1].value
         self.assertEqual(type(call), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(call.lineno, 3)
-        #self.assertEqual(call.col_offset, 11)
+        self.assertEqual(call.lineno, 3)
+        self.assertEqual(call.col_offset, 11)
 
     def test_ast_line_numbers_duplicate_expression(self):
         """Duplicate expression
@@ -239,39 +232,36 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 3)
-        #self.assertEqual(binop.left.lineno, 3)
-        #self.assertEqual(binop.right.lineno, 3)
-        #self.assertEqual(binop.col_offset, 3)
-        #self.assertEqual(binop.left.col_offset, 3)
-        #self.assertEqual(binop.right.col_offset, 7)
+        self.assertEqual(binop.lineno, 3)
+        self.assertEqual(binop.left.lineno, 3)
+        self.assertEqual(binop.right.lineno, 3)
+        self.assertEqual(binop.col_offset, 3)
+        self.assertEqual(binop.left.col_offset, 3)
+        self.assertEqual(binop.right.col_offset, 7)
         # check the second binop location
         binop = t.body[1].value.values[2].value
         self.assertEqual(type(binop), ast.BinOp)
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 3)
-        #self.assertEqual(binop.left.lineno, 3)
-        #self.assertEqual(binop.right.lineno, 3)
-        #self.assertEqual(binop.col_offset, 3)  # FIXME: this is wrong
-        #self.assertEqual(binop.left.col_offset, 3)  # FIXME: this is wrong
-        #self.assertEqual(binop.right.col_offset, 7)  # FIXME: this is wrong
+        self.assertEqual(binop.lineno, 3)
+        self.assertEqual(binop.left.lineno, 3)
+        self.assertEqual(binop.right.lineno, 3)
+        self.assertEqual(binop.col_offset, 3)  # FIXME: this is wrong
+        self.assertEqual(binop.left.col_offset, 3)  # FIXME: this is wrong
+        self.assertEqual(binop.right.col_offset, 7)  # FIXME: this is wrong
         # check the third binop location
         binop = t.body[1].value.values[4].value
         self.assertEqual(type(binop), ast.BinOp)
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 3)
-        #self.assertEqual(binop.left.lineno, 3)
-        #self.assertEqual(binop.right.lineno, 3)
-        #self.assertEqual(binop.col_offset, 3)  # FIXME: this is wrong
-        #self.assertEqual(binop.left.col_offset, 3)  # FIXME: this is wrong
-        #self.assertEqual(binop.right.col_offset, 7)  # FIXME: this is wrong
+        self.assertEqual(binop.lineno, 3)
+        self.assertEqual(binop.left.lineno, 3)
+        self.assertEqual(binop.right.lineno, 3)
+        self.assertEqual(binop.col_offset, 3)  # FIXME: this is wrong
+        self.assertEqual(binop.left.col_offset, 3)  # FIXME: this is wrong
+        self.assertEqual(binop.right.col_offset, 7)  # FIXME: this is wrong
 
     def test_ast_line_numbers_multiline_fstring(self):
         # FIXME: This test demonstrates invalid behavior due to JoinedStr's
@@ -303,17 +293,16 @@ non-important content
         # NOTE: the following invalid behavior is described in bpo-16806.
         # - line number should be the *first* line (3), not the *last* (8)
         # - column offset should not be -1
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(t.body[1].lineno, 8)
-        #self.assertEqual(t.body[1].value.lineno, 8)
-        #self.assertEqual(t.body[1].value.values[0].lineno, 8)
-        #self.assertEqual(t.body[1].value.values[1].lineno, 8)
-        #self.assertEqual(t.body[1].value.values[2].lineno, 8)
-        #self.assertEqual(t.body[1].col_offset, -1)
-        #self.assertEqual(t.body[1].value.col_offset, -1)
-        #self.assertEqual(t.body[1].value.values[0].col_offset, -1)
-        #self.assertEqual(t.body[1].value.values[1].col_offset, -1)
-        #self.assertEqual(t.body[1].value.values[2].col_offset, -1)
+        self.assertEqual(t.body[1].lineno, 8)
+        self.assertEqual(t.body[1].value.lineno, 8)
+        self.assertEqual(t.body[1].value.values[0].lineno, 8)
+        self.assertEqual(t.body[1].value.values[1].lineno, 8)
+        self.assertEqual(t.body[1].value.values[2].lineno, 8)
+        self.assertEqual(t.body[1].col_offset, -1)
+        self.assertEqual(t.body[1].value.col_offset, -1)
+        self.assertEqual(t.body[1].value.values[0].col_offset, -1)
+        self.assertEqual(t.body[1].value.values[1].col_offset, -1)
+        self.assertEqual(t.body[1].value.values[2].col_offset, -1)
         # NOTE: the following lineno information and col_offset is correct for
         # expressions within FormattedValues.
         binop = t.body[1].value.values[1].value
@@ -321,13 +310,12 @@ non-important content
         self.assertEqual(type(binop.left), ast.Name)
         self.assertEqual(type(binop.op), ast.Mult)
         self.assertEqual(type(binop.right), ast.Call)
-        # ironpython: wrong locations (https://github.com/IronLanguages/ironpython3/issues/1345)
-        #self.assertEqual(binop.lineno, 4)
-        #self.assertEqual(binop.left.lineno, 4)
-        #self.assertEqual(binop.right.lineno, 6)
-        #self.assertEqual(binop.col_offset, 3)
-        #self.assertEqual(binop.left.col_offset, 3)
-        #self.assertEqual(binop.right.col_offset, 7)
+        self.assertEqual(binop.lineno, 4)
+        self.assertEqual(binop.left.lineno, 4)
+        self.assertEqual(binop.right.lineno, 6)
+        self.assertEqual(binop.col_offset, 3)
+        self.assertEqual(binop.left.col_offset, 3)
+        self.assertEqual(binop.right.col_offset, 7)
 
     def test_docstring(self):
         def f():
@@ -371,29 +359,10 @@ non-important content
                              r"""f'{("x}'""",
                              ])
 
-    # ironpython: version of test from CPython 3.8
     def test_mismatched_parens(self):
-        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
-                            r"does not match opening parenthesis '\('",
+        self.assertAllRaise(SyntaxError, 'f-string: mismatched',
                             ["f'{((}'",
                              ])
-        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\)' "
-                            r"does not match opening parenthesis '\['",
-                            ["f'{a[4)}'",
-                            ])
-        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\]' "
-                            r"does not match opening parenthesis '\('",
-                            ["f'{a(4]}'",
-                            ])
-        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
-                            r"does not match opening parenthesis '\['",
-                            ["f'{a[4}'",
-                            ])
-        self.assertAllRaise(SyntaxError, r"f-string: closing parenthesis '\}' "
-                            r"does not match opening parenthesis '\('",
-                            ["f'{a(4}'",
-                            ])
-        self.assertRaises(SyntaxError, eval, "f'{" + "("*500 + "}'")
 
     def test_double_braces(self):
         self.assertEqual(f'{{', '{')
@@ -461,7 +430,6 @@ non-important content
                             ["f'{3' f'}'",  # can't concat to get a valid f-string
                              ])
 
-    # ironpython: version of test from CPython 3.8
     def test_comments(self):
         # These aren't comments, since they're in strings.
         d = {'#': 'hash'}
@@ -472,9 +440,7 @@ non-important content
                             ["f'{1#}'",   # error because the expression becomes "(1#)"
                              "f'{3(#)}'",
                              "f'{#}'",
-                             ])
-        self.assertAllRaise(SyntaxError, r"f-string: unmatched '\)'",
-                            ["f'{)#}'",   # When wrapped in parens, this becomes
+                             "f'{)#}'",   # When wrapped in parens, this becomes
                                           #  '()#)'.  Make sure that doesn't compile.
                              ])
 
@@ -538,7 +504,7 @@ non-important content
                             [# No expansion inside conversion or for
                              #  the : or ! itself.
                              """f'{"s"!{"r"}}'""",
-                                 ])
+                             ])
 
     def test_side_effect_order(self):
         class X:
@@ -586,13 +552,11 @@ non-important content
                              ])
 
         # Different error message is raised for other whitespace characters.
-        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
-        self.assertAllRaise(SyntaxError, 'invalid syntax', #'invalid character in identifier',
+        self.assertAllRaise(SyntaxError, 'invalid character in identifier',
                             ["f'''{\xa0}'''",
                              "\xa0",
                              ])
 
-    # ironpython: version of test from CPython 3.8
     def test_parens_in_expressions(self):
         self.assertEqual(f'{3,}', '(3,)')
 
@@ -605,7 +569,7 @@ non-important content
                              "f'{,}'",  # this is (,), which is an error
                              ])
 
-        self.assertAllRaise(SyntaxError, r"f-string: unmatched '\)'",
+        self.assertAllRaise(SyntaxError, "f-string: expecting '}'",
                             ["f'{3)+(4}'",
                              ])
 
@@ -654,9 +618,8 @@ non-important content
         self.assertEqual(f'2\x203', '2 3')
         self.assertEqual(f'\x203', ' 3')
 
-        # ironpython: DeprecationWarning in CPython 3.6 (https://github.com/IronLanguages/ironpython3/issues/1343)
-        #with self.assertWarns(DeprecationWarning):  # invalid escape sequence
-        value = eval(r"f'\{6*7}'")
+        with self.assertWarns(DeprecationWarning):  # invalid escape sequence
+            value = eval(r"f'\{6*7}'")
         self.assertEqual(value, '\\42')
         self.assertEqual(f'\\{6*7}', '\\42')
         self.assertEqual(fr'\{6*7}', '\\42')
@@ -672,8 +635,7 @@ non-important content
     def test_misformed_unicode_character_name(self):
         # These test are needed because unicode names are parsed
         # differently inside f-strings.
-        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1348)
-        self.assertAllRaise(SyntaxError, r"\(unicode error\) malformed \\N character escape", #r"\(unicode error\) 'unicodeescape' codec can't decode bytes in position .*: malformed \\N character escape",
+        self.assertAllRaise(SyntaxError, r"\(unicode error\) 'unicodeescape' codec can't decode bytes in position .*: malformed \\N character escape",
                             [r"f'\N'",
                              r"f'\N{'",
                              r"f'\N{GREEK CAPITAL LETTER DELTA'",
@@ -720,29 +682,27 @@ non-important content
 
         # lambda doesn't work without parens, because the colon
         #  makes the parser think it's a format_spec
-        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
-        self.assertAllRaise(SyntaxError, 'invalid syntax', #'unexpected EOF while parsing',
+        self.assertAllRaise(SyntaxError, 'unexpected EOF while parsing',
                             ["f'{lambda x:x}'",
                              ])
 
-# ironpython: yield/yield from are not implemented (https://github.com/IronLanguages/ironpython3/issues/1344)
-#    def test_yield(self):
-#        # Not terribly useful, but make sure the yield turns
-#        #  a function into a generator
-#        def fn(y):
-#            f'y:{yield y*2}'
-#
-#        g = fn(4)
-#        self.assertEqual(next(g), 8)
+    def test_yield(self):
+        # Not terribly useful, but make sure the yield turns
+        #  a function into a generator
+        def fn(y):
+            f'y:{yield y*2}'
 
-#    def test_yield_send(self):
-#        def fn(x):
-#            yield f'x:{yield (lambda i: x * i)}'
-#
-#        g = fn(10)
-#        the_lambda = next(g)
-#        self.assertEqual(the_lambda(4), 40)
-#        self.assertEqual(g.send('string'), 'x:string')
+        g = fn(4)
+        self.assertEqual(next(g), 8)
+
+    def test_yield_send(self):
+        def fn(x):
+            yield f'x:{yield (lambda i: x * i)}'
+
+        g = fn(10)
+        the_lambda = next(g)
+        self.assertEqual(the_lambda(4), 40)
+        self.assertEqual(g.send('string'), 'x:string')
 
     def test_expressions_with_triple_quoted_strings(self):
         self.assertEqual(f"{'''x'''}", 'x')
@@ -850,8 +810,7 @@ non-important content
         self.assertEqual(f'{f"{y}"*3}', '555')
 
     def test_invalid_string_prefixes(self):
-        # ironpython: different error message (https://github.com/IronLanguages/ironpython3/issues/1346)
-        self.assertAllRaise(SyntaxError, 'invalid syntax', #'unexpected EOF while parsing',
+        self.assertAllRaise(SyntaxError, 'unexpected EOF while parsing',
                             ["fu''",
                              "uf''",
                              "Fu''",
@@ -899,10 +858,9 @@ non-important content
 
     def test_conversions(self):
         self.assertEqual(f'{3.14:10.10}', '      3.14')
-        # ironpython: float repr differences (https://github.com/IronLanguages/ironpython2/issues/102)
-        #self.assertEqual(f'{3.14!s:10.10}', '3.14      ')
-        #self.assertEqual(f'{3.14!r:10.10}', '3.14      ')
-        #self.assertEqual(f'{3.14!a:10.10}', '3.14      ')
+        self.assertEqual(f'{3.14!s:10.10}', '3.14      ')
+        self.assertEqual(f'{3.14!r:10.10}', '3.14      ')
+        self.assertEqual(f'{3.14!a:10.10}', '3.14      ')
 
         self.assertEqual(f'{"a"}', 'a')
         self.assertEqual(f'{"a"!r}', "'a'")
@@ -1036,6 +994,12 @@ non-important content
         self.assertEqual(f'{d[a]}', 'integer')
         self.assertEqual('{d[a]}'.format(d=d), 'string')
         self.assertEqual('{d[0]}'.format(d=d), 'integer')
+
+    def test_invalid_expressions(self):
+        self.assertAllRaise(SyntaxError, 'invalid syntax',
+                            [r"f'{a[4)}'",
+                             r"f'{a(4]}'",
+                            ])
 
     def test_errors(self):
         # see issue 26287

@@ -11,7 +11,7 @@ import traceback
 from xml.parsers import expat
 from xml.parsers.expat import errors
 
-from test.support import sortdict, run_unittest
+from test.support import sortdict
 
 
 class SetAttributeTest(unittest.TestCase):
@@ -35,12 +35,6 @@ class SetAttributeTest(unittest.TestCase):
         for x in 0, 1, 2, 0:
             self.parser.ordered_attributes = x
             self.assertIs(self.parser.ordered_attributes, bool(x))
-
-    def test_specified_attributes(self):
-        self.assertIs(self.parser.specified_attributes, False)
-        for x in 0, 1, 2, 0:
-            self.parser.specified_attributes = x
-            self.assertIs(self.parser.specified_attributes, bool(x))
 
     def test_specified_attributes(self):
         self.assertIs(self.parser.specified_attributes, False)
@@ -735,19 +729,5 @@ class ForeignDTDTests(unittest.TestCase):
         self.assertEqual(handler_call_args, [("bar", "baz")])
 
 
-def test_main():
-    run_unittest(SetAttributeTest,
-                 ParseTest,
-                 NamespaceSeparatorTest,
-                 InterningTest,
-                 BufferTextTest,
-                 HandlerExceptionTest,
-                 PositionTest,
-                 sf1296433Test,
-                 ChardataBufferTest,
-                 MalformedInputTest,
-                 ErrorMessageTest,
-                 ForeignDTDTests)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

@@ -1,5 +1,6 @@
 # Copyright (C) 2003-2013 Python Software Foundation
 
+import struct
 import unittest
 import plistlib
 import os
@@ -7,7 +8,6 @@ import datetime
 import codecs
 import binascii
 import collections
-import struct
 from test import support
 from io import BytesIO
 
@@ -90,6 +90,298 @@ TESTDATA={
         AW4BcAFyAXQBdgF/AYMBhQGHAYwBlQGbAZ0BnwGhAaUBpwGwAbkBwAHBAcIB
         xQHHAsQC0gAAAAAAAAIBAAAAAAAAADkAAAAAAAAAAAAAAAAAAALs'''),
 }
+
+XML_PLIST_WITH_ENTITY=b'''\
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd" [
+   <!ENTITY entity "replacement text">
+  ]>
+<plist version="1.0">
+  <dict>
+    <key>A</key>
+    <string>&entity;</string>
+  </dict>
+</plist>
+'''
+
+INVALID_BINARY_PLISTS = [
+    ('too short data',
+        b''
+    ),
+    ('too large offset_table_offset and offset_size = 1',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x2a'
+    ),
+    ('too large offset_table_offset and nonstandard offset_size',
+        b'\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x03\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x2c'
+    ),
+    ('integer overflow in offset_table_offset',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\xff\xff\xff\xff\xff\xff\xff\xff'
+    ),
+    ('too large top_object',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('integer overflow in top_object',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\xff\xff\xff\xff\xff\xff\xff\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('too large num_objects and offset_size = 1',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('too large num_objects and nonstandard offset_size',
+        b'\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x03\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('extremally large num_objects (32 bit)',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x7f\xff\xff\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('extremally large num_objects (64 bit)',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\xff\xff\xff\xff\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('integer overflow in num_objects',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\xff\xff\xff\xff\xff\xff\xff\xff'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('offset_size = 0',
+        b'\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('ref_size = 0',
+        b'\xa1\x01\x00\x08\x0a'
+        b'\x00\x00\x00\x00\x00\x00\x01\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0b'
+    ),
+    ('too large offset',
+        b'\x00\x2a'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('integer overflow in offset',
+        b'\x00\xff\xff\xff\xff\xff\xff\xff\xff'
+        b'\x00\x00\x00\x00\x00\x00\x08\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x09'
+    ),
+    ('too large array size',
+        b'\xaf\x00\x01\xff\x00\x08\x0c'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0d'
+    ),
+    ('extremally large array size (32-bit)',
+        b'\xaf\x02\x7f\xff\xff\xff\x01\x00\x08\x0f'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x10'
+    ),
+    ('extremally large array size (64-bit)',
+        b'\xaf\x03\x00\x00\x00\xff\xff\xff\xff\xff\x01\x00\x08\x13'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x14'
+    ),
+    ('integer overflow in array size',
+        b'\xaf\x03\xff\xff\xff\xff\xff\xff\xff\xff\x01\x00\x08\x13'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x14'
+    ),
+    ('too large reference index',
+        b'\xa1\x02\x00\x08\x0a'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0b'
+    ),
+    ('integer overflow in reference index',
+        b'\xa1\xff\xff\xff\xff\xff\xff\xff\xff\x00\x08\x11'
+        b'\x00\x00\x00\x00\x00\x00\x01\x08'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x12'
+    ),
+    ('too large bytes size',
+        b'\x4f\x00\x23\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0c'
+    ),
+    ('extremally large bytes size (32-bit)',
+        b'\x4f\x02\x7f\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0f'
+    ),
+    ('extremally large bytes size (64-bit)',
+        b'\x4f\x03\x00\x00\x00\xff\xff\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x13'
+    ),
+    ('integer overflow in bytes size',
+        b'\x4f\x03\xff\xff\xff\xff\xff\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x13'
+    ),
+    ('too large ASCII size',
+        b'\x5f\x00\x23\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0c'
+    ),
+    ('extremally large ASCII size (32-bit)',
+        b'\x5f\x02\x7f\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0f'
+    ),
+    ('extremally large ASCII size (64-bit)',
+        b'\x5f\x03\x00\x00\x00\xff\xff\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x13'
+    ),
+    ('integer overflow in ASCII size',
+        b'\x5f\x03\xff\xff\xff\xff\xff\xff\xff\xff\x41\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x13'
+    ),
+    ('invalid ASCII',
+        b'\x51\xff\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0a'
+    ),
+    ('too large UTF-16 size',
+        b'\x6f\x00\x13\x20\xac\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0e'
+    ),
+    ('extremally large UTF-16 size (32-bit)',
+        b'\x6f\x02\x4f\xff\xff\xff\x20\xac\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x11'
+    ),
+    ('extremally large UTF-16 size (64-bit)',
+        b'\x6f\x03\x00\x00\x00\xff\xff\xff\xff\xff\x20\xac\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x15'
+    ),
+    ('integer overflow in UTF-16 size',
+        b'\x6f\x03\xff\xff\xff\xff\xff\xff\xff\xff\x20\xac\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x15'
+    ),
+    ('invalid UTF-16',
+        b'\x61\xd8\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0b'
+    ),
+    ('non-hashable key',
+        b'\xd1\x01\x01\xa0\x08\x0b'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x02'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x0c'
+    ),
+    ('too large datetime (datetime overflow)',
+        b'\x33\x42\x50\x00\x00\x00\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x11'
+    ),
+    ('too large datetime (timedelta overflow)',
+        b'\x33\x42\xe0\x00\x00\x00\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x11'
+    ),
+    ('invalid datetime (Infinity)',
+        b'\x33\x7f\xf0\x00\x00\x00\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x11'
+    ),
+    ('invalid datetime (NaN)',
+        b'\x33\x7f\xf8\x00\x00\x00\x00\x00\x00\x08'
+        b'\x00\x00\x00\x00\x00\x00\x01\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x01'
+        b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x00\x00\x00\x00\x11'
+    ),
+]
 
 
 class TestPlistlib(unittest.TestCase):
@@ -367,11 +659,28 @@ class TestPlistlib(unittest.TestCase):
             testString = "string containing %s" % c
             if i >= 32 or c in "\r\n\t":
                 # \r, \n and \t are the only legal control chars in XML
-                plistlib.dumps(testString, fmt=plistlib.FMT_XML)
+                data = plistlib.dumps(testString, fmt=plistlib.FMT_XML)
+                if c != "\r":
+                    self.assertEqual(plistlib.loads(data), testString)
             else:
-                self.assertRaises(ValueError,
-                                  plistlib.dumps,
-                                  testString)
+                with self.assertRaises(ValueError):
+                    plistlib.dumps(testString, fmt=plistlib.FMT_XML)
+            plistlib.dumps(testString, fmt=plistlib.FMT_BINARY)
+
+    def test_non_bmp_characters(self):
+        pl = {'python': '\U0001f40d'}
+        for fmt in ALL_FORMATS:
+            with self.subTest(fmt=fmt):
+                data = plistlib.dumps(pl, fmt=fmt)
+                self.assertEqual(plistlib.loads(data), pl)
+
+    def test_lone_surrogates(self):
+        for fmt in ALL_FORMATS:
+            with self.subTest(fmt=fmt):
+                with self.assertRaises(UnicodeEncodeError):
+                    plistlib.dumps('\ud8ff', fmt=fmt)
+                with self.assertRaises(UnicodeEncodeError):
+                    plistlib.dumps('\udcff', fmt=fmt)
 
     def test_nondictroot(self):
         for fmt in ALL_FORMATS:
@@ -428,8 +737,28 @@ class TestPlistlib(unittest.TestCase):
                 pl2 = plistlib.loads(data)
                 self.assertEqual(dict(pl), dict(pl2))
 
+    def test_xml_plist_with_entity_decl(self):
+        with self.assertRaisesRegex(plistlib.InvalidFileException,
+                                    "XML entity declarations are not supported"):
+            plistlib.loads(XML_PLIST_WITH_ENTITY, fmt=plistlib.FMT_XML)
+
 
 class TestBinaryPlistlib(unittest.TestCase):
+
+    @staticmethod
+    def decode(*objects, offset_size=1, ref_size=1):
+        data = [b'bplist00']
+        offset = 8
+        offsets = []
+        for x in objects:
+            offsets.append(offset.to_bytes(offset_size, 'big'))
+            data.append(x)
+            offset += len(x)
+        tail = struct.pack('>6xBBQQQ', offset_size, ref_size,
+                           len(objects), 0, offset)
+        data.extend(offsets)
+        data.append(tail)
+        return plistlib.loads(b''.join(data), fmt=plistlib.FMT_BINARY)
 
     def test_nonstandard_refs_size(self):
         # Issue #21538: Refs and offsets are 24-bit integers
@@ -445,7 +774,7 @@ class TestBinaryPlistlib(unittest.TestCase):
 
     def test_dump_duplicates(self):
         # Test effectiveness of saving duplicated objects
-        for x in (None, False, True, 12345, 123.45, 'abcde', b'abcde',
+        for x in (None, False, True, 12345, 123.45, 'abcde', 'абвгд', b'abcde',
                   datetime.datetime(2004, 10, 26, 10, 33, 33),
                   plistlib.Data(b'abcde'), bytearray(b'abcde'),
                   [12, 345], (12, 345), {'12': 345}):
@@ -483,6 +812,61 @@ class TestBinaryPlistlib(unittest.TestCase):
         a['x'] = a
         b = plistlib.loads(plistlib.dumps(a, fmt=plistlib.FMT_BINARY))
         self.assertIs(b['x'], b)
+
+    def test_deep_nesting(self):
+        for N in [300, 100000]:
+            chunks = [b'\xa1' + (i + 1).to_bytes(4, 'big') for i in range(N)]
+            try:
+                result = self.decode(*chunks, b'\x54seed', offset_size=4, ref_size=4)
+            except RecursionError:
+                pass
+            else:
+                for i in range(N):
+                    self.assertIsInstance(result, list)
+                    self.assertEqual(len(result), 1)
+                    result = result[0]
+                self.assertEqual(result, 'seed')
+
+    def test_large_timestamp(self):
+        # Issue #26709: 32-bit timestamp out of range
+        for ts in -2**31-1, 2**31:
+            with self.subTest(ts=ts):
+                d = (datetime.datetime.utcfromtimestamp(0) +
+                     datetime.timedelta(seconds=ts))
+                data = plistlib.dumps(d, fmt=plistlib.FMT_BINARY)
+                self.assertEqual(plistlib.loads(data), d)
+
+    def test_load_singletons(self):
+        self.assertIs(self.decode(b'\x00'), None)
+        self.assertIs(self.decode(b'\x08'), False)
+        self.assertIs(self.decode(b'\x09'), True)
+        self.assertEqual(self.decode(b'\x0f'), b'')
+
+    def test_load_int(self):
+        self.assertEqual(self.decode(b'\x10\x00'), 0)
+        self.assertEqual(self.decode(b'\x10\xfe'), 0xfe)
+        self.assertEqual(self.decode(b'\x11\xfe\xdc'), 0xfedc)
+        self.assertEqual(self.decode(b'\x12\xfe\xdc\xba\x98'), 0xfedcba98)
+        self.assertEqual(self.decode(b'\x13\x01\x23\x45\x67\x89\xab\xcd\xef'),
+                         0x0123456789abcdef)
+        self.assertEqual(self.decode(b'\x13\xfe\xdc\xba\x98\x76\x54\x32\x10'),
+                         -0x123456789abcdf0)
+
+    def test_unsupported(self):
+        unsupported = [*range(1, 8), *range(10, 15),
+                       0x20, 0x21, *range(0x24, 0x33), *range(0x34, 0x40)]
+        for i in [0x70, 0x90, 0xb0, 0xc0, 0xe0, 0xf0]:
+            unsupported.extend(i + j for j in range(16))
+        for token in unsupported:
+            with self.subTest(f'token {token:02x}'):
+                with self.assertRaises(plistlib.InvalidFileException):
+                    self.decode(bytes([token]) + b'\x00'*16)
+
+    def test_invalid_binary(self):
+        for name, data in INVALID_BINARY_PLISTS:
+            with self.subTest(name):
+                with self.assertRaises(plistlib.InvalidFileException):
+                    plistlib.loads(b'bplist00' + data, fmt=plistlib.FMT_BINARY)
 
 
 class TestPlistlibDeprecated(unittest.TestCase):
@@ -562,21 +946,23 @@ class TestPlistlibDeprecated(unittest.TestCase):
 
         cur = plistlib.loads(buf)
         self.assertEqual(cur, out_data)
-        self.assertNotEqual(cur, in_data)
+        self.assertEqual(cur, in_data)
 
         cur = plistlib.loads(buf, use_builtin_types=False)
-        self.assertNotEqual(cur, out_data)
+        self.assertEqual(cur, out_data)
         self.assertEqual(cur, in_data)
 
         with self.assertWarns(DeprecationWarning):
             cur = plistlib.readPlistFromBytes(buf)
-        self.assertNotEqual(cur, out_data)
+        self.assertEqual(cur, out_data)
         self.assertEqual(cur, in_data)
 
 
-def test_main():
-    support.run_unittest(TestPlistlib, TestPlistlibDeprecated)
+class MiscTestCase(unittest.TestCase):
+    def test__all__(self):
+        blacklist = {"PlistFormat", "PLISTHEADER"}
+        support.check__all__(self, plistlib, blacklist=blacklist)
 
 
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

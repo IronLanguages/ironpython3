@@ -1,14 +1,6 @@
 import unittest
-from test import support
-from weakref import proxy, ref, WeakSet
-import operator
-import copy
+from weakref import WeakSet
 import string
-import os
-from random import randrange, shuffle
-import sys
-import warnings
-import collections
 from collections import UserString as ustr
 import gc
 import contextlib
@@ -55,7 +47,6 @@ class TestWeakSet(unittest.TestCase):
         self.assertEqual(len(self.s), len(self.d))
         self.assertEqual(len(self.fs), 1)
         del self.obj
-        gc.collect() # required for IronPython
         self.assertEqual(len(self.fs), 0)
 
     def test_contains(self):
@@ -65,7 +56,6 @@ class TestWeakSet(unittest.TestCase):
         self.assertNotIn(1, self.s)
         self.assertIn(self.obj, self.fs)
         del self.obj
-        gc.collect() # required for IronPython
         self.assertNotIn(ustr('F'), self.fs)
 
     def test_union(self):
@@ -224,7 +214,6 @@ class TestWeakSet(unittest.TestCase):
         self.assertEqual(self.s, dup)
         self.assertRaises(TypeError, self.s.add, [])
         self.fs.add(Foo())
-        gc.collect() # required for IronPython
         self.assertTrue(len(self.fs) == 1)
         self.fs.add(self.obj)
         self.assertTrue(len(self.fs) == 1)
@@ -362,7 +351,6 @@ class TestWeakSet(unittest.TestCase):
         # We have removed either the first consumed items, or another one
         self.assertIn(len(list(it)), [len(items), len(items) - 1])
         del it
-        gc.collect() # required for IronPython
         # The removal has been committed
         self.assertEqual(len(s), len(items))
 
@@ -447,8 +435,5 @@ class TestWeakSet(unittest.TestCase):
             self.assertLessEqual(n2, n1)
 
 
-def test_main(verbose=None):
-    support.run_unittest(TestWeakSet)
-
 if __name__ == "__main__":
-    test_main(verbose=True)
+    unittest.main()

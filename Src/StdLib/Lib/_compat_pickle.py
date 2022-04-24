@@ -177,6 +177,13 @@ IMPORT_MAPPING.update({
     'DocXMLRPCServer': 'xmlrpc.server',
     'SimpleHTTPServer': 'http.server',
     'CGIHTTPServer': 'http.server',
+    # For compatibility with broken pickles saved in old Python 3 versions
+    'UserDict': 'collections',
+    'UserList': 'collections',
+    'UserString': 'collections',
+    'whichdb': 'dbm',
+    'StringIO':  'io',
+    'cStringIO': 'io',
 })
 
 REVERSE_IMPORT_MAPPING.update({
@@ -235,3 +242,10 @@ PYTHON3_OSERROR_EXCEPTIONS = (
 
 for excname in PYTHON3_OSERROR_EXCEPTIONS:
     REVERSE_NAME_MAPPING[('builtins', excname)] = ('exceptions', 'OSError')
+
+PYTHON3_IMPORTERROR_EXCEPTIONS = (
+    'ModuleNotFoundError',
+)
+
+for excname in PYTHON3_IMPORTERROR_EXCEPTIONS:
+    REVERSE_NAME_MAPPING[('builtins', excname)] = ('exceptions', 'ImportError')

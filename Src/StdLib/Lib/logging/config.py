@@ -78,8 +78,8 @@ def fileConfig(fname, defaults=None, disable_existing_loggers=True):
     # critical section
     logging._acquireLock()
     try:
-        logging._handlers.clear()
-        del logging._handlerList[:]
+        _clearExistingHandlers()
+
         # Handlers add themselves to logging._handlers
         handlers = _install_handlers(cp, formatters)
         _install_loggers(cp, handlers, disable_existing_loggers)
@@ -116,11 +116,12 @@ def _create_formatters(cp):
         sectname = "formatter_%s" % form
         fs = cp.get(sectname, "format", raw=True, fallback=None)
         dfs = cp.get(sectname, "datefmt", raw=True, fallback=None)
+        stl = cp.get(sectname, "style", raw=True, fallback='%')
         c = logging.Formatter
         class_name = cp[sectname].get("class")
         if class_name:
             c = _resolve(class_name)
-        f = c(fs, dfs)
+        f = c(fs, dfs, stl)
         formatters[form] = f
     return formatters
 
@@ -266,6 +267,14 @@ def _install_loggers(cp, handlers, disable_existing):
     #    elif disable_existing_loggers:
     #        logger.disabled = 1
     _handle_existing_loggers(existing, child_loggers, disable_existing)
+
+
+def _clearExistingHandlers():
+    """Clear and close existing handlers"""
+    logging._handlers.clear()
+    logging.shutdown(logging._handlerList[:])
+    del logging._handlerList[:]
+
 
 IDENTIFIER = re.compile('^[a-z_][a-z0-9_]*$', re.I)
 
@@ -526,8 +535,7 @@ class DictConfigurator(BaseConfigurator):
             else:
                 disable_existing = config.pop('disable_existing_loggers', True)
 
-                logging._handlers.clear()
-                del logging._handlerList[:]
+                _clearExistingHandlers()
 
                 # Do formatters first - they don't refer to anything else
                 formatters = config.get('formatters', EMPTY_DICT)
@@ -660,7 +668,12 @@ class DictConfigurator(BaseConfigurator):
             fmt = config.get('format', None)
             dfmt = config.get('datefmt', None)
             style = config.get('style', '%')
-            result = logging.Formatter(fmt, dfmt, style)
+            cname = config.get('class', None)
+            if not cname:
+                c = logging.Formatter
+            else:
+                c = _resolve(cname)
+            result = c(fmt, dfmt, style)
         return result
 
     def configure_filter(self, config):

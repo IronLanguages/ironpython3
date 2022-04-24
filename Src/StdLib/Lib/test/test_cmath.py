@@ -1,8 +1,11 @@
-from test.support import run_unittest, requires_IEEE_754, cpython_only
+from test.support import requires_IEEE_754, cpython_only
 from test.test_math import parse_testfile, test_file
+import test.test_math as test_math
 import unittest
 import cmath, math
 from cmath import phase, polar, rect, pi
+import platform
+import sys
 import sysconfig
 
 INF = float('inf')
@@ -152,6 +155,23 @@ class CMathTests(unittest.TestCase):
             msg="cmath.pi is {}; should be {}".format(cmath.pi, pi_expected))
         self.assertAlmostEqual(cmath.e, e_expected, places=9,
             msg="cmath.e is {}; should be {}".format(cmath.e, e_expected))
+
+    def test_infinity_and_nan_constants(self):
+        self.assertEqual(cmath.inf.real, math.inf)
+        self.assertEqual(cmath.inf.imag, 0.0)
+        self.assertEqual(cmath.infj.real, 0.0)
+        self.assertEqual(cmath.infj.imag, math.inf)
+
+        self.assertTrue(math.isnan(cmath.nan.real))
+        self.assertEqual(cmath.nan.imag, 0.0)
+        self.assertEqual(cmath.nanj.real, 0.0)
+        self.assertTrue(math.isnan(cmath.nanj.imag))
+
+        # Check consistency with reprs.
+        self.assertEqual(repr(cmath.inf), "inf")
+        self.assertEqual(repr(cmath.infj), "infj")
+        self.assertEqual(repr(cmath.nan), "nan")
+        self.assertEqual(repr(cmath.nanj), "nanj")
 
     def test_user_object(self):
         # Test automatic calling of __complex__ and __float__ by cmath
@@ -314,6 +334,18 @@ class CMathTests(unittest.TestCase):
 
     @requires_IEEE_754
     def test_specific_values(self):
+        # Some tests need to be skipped on ancient OS X versions.
+        # See issue #27953.
+        SKIP_ON_TIGER = {'tan0064'}
+
+        osx_version = None
+        if sys.platform == 'darwin':
+            version_txt = platform.mac_ver()[0]
+            try:
+                osx_version = tuple(map(int, version_txt.split('.')))
+            except ValueError:
+                pass
+
         def rect_complex(z):
             """Wrapped version of rect that accepts a complex number instead of
             two float arguments."""
@@ -327,6 +359,12 @@ class CMathTests(unittest.TestCase):
         for id, fn, ar, ai, er, ei, flags in parse_testfile(test_file):
             arg = complex(ar, ai)
             expected = complex(er, ei)
+
+            # Skip certain tests on OS X 10.4.
+            if osx_version is not None and osx_version < (10, 5):
+                if id in SKIP_ON_TIGER:
+                    continue
+
             if fn == 'rect':
                 function = rect_complex
             elif fn == 'polar':
@@ -560,8 +598,46 @@ class CMathTests(unittest.TestCase):
             self.assertComplexIdentical(cmath.atanh(z), z)
 
 
-def test_main():
-    run_unittest(CMathTests)
+class IsCloseTests(test_math.IsCloseTests):
+    isclose = cmath.isclose
+
+    def test_reject_complex_tolerances(self):
+        with self.assertRaises(TypeError):
+            self.isclose(1j, 1j, rel_tol=1j)
+
+        with self.assertRaises(TypeError):
+            self.isclose(1j, 1j, abs_tol=1j)
+
+        with self.assertRaises(TypeError):
+            self.isclose(1j, 1j, rel_tol=1j, abs_tol=1j)
+
+    def test_complex_values(self):
+        # test complex values that are close to within 12 decimal places
+        complex_examples = [(1.0+1.0j, 1.000000000001+1.0j),
+                            (1.0+1.0j, 1.0+1.000000000001j),
+                            (-1.0+1.0j, -1.000000000001+1.0j),
+                            (1.0-1.0j, 1.0-0.999999999999j),
+                            ]
+
+        self.assertAllClose(complex_examples, rel_tol=1e-12)
+        self.assertAllNotClose(complex_examples, rel_tol=1e-13)
+
+    def test_complex_near_zero(self):
+        # test values near zero that are near to within three decimal places
+        near_zero_examples = [(0.001j, 0),
+                              (0.001, 0),
+                              (0.001+0.001j, 0),
+                              (-0.001+0.001j, 0),
+                              (0.001-0.001j, 0),
+                              (-0.001-0.001j, 0),
+                              ]
+
+        self.assertAllClose(near_zero_examples, abs_tol=1.5e-03)
+        self.assertAllNotClose(near_zero_examples, abs_tol=0.5e-03)
+
+        self.assertIsClose(0.001-0.001j, 0.001+0.001j, abs_tol=2e-03)
+        self.assertIsNotClose(0.001-0.001j, 0.001+0.001j, abs_tol=1e-03)
+
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

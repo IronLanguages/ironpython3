@@ -187,7 +187,7 @@ class AbstractLabelTest(AbstractWidgetTest):
 @add_standard_options(StandardTtkOptionsTests)
 class LabelTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
-        'anchor', 'background',
+        'anchor', 'background', 'borderwidth',
         'class', 'compound', 'cursor', 'font', 'foreground',
         'image', 'justify', 'padding', 'relief', 'state', 'style',
         'takefocus', 'text', 'textvariable',
@@ -208,7 +208,8 @@ class LabelTest(AbstractLabelTest, unittest.TestCase):
 class ButtonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'command', 'compound', 'cursor', 'default',
-        'image', 'state', 'style', 'takefocus', 'text', 'textvariable',
+        'image', 'padding', 'state', 'style',
+        'takefocus', 'text', 'textvariable',
         'underline', 'width',
     )
 
@@ -232,7 +233,7 @@ class CheckbuttonTest(AbstractLabelTest, unittest.TestCase):
         'class', 'command', 'compound', 'cursor',
         'image',
         'offvalue', 'onvalue',
-        'state', 'style',
+        'padding', 'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'variable', 'width',
     )
@@ -276,11 +277,151 @@ class CheckbuttonTest(AbstractLabelTest, unittest.TestCase):
 
 
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-class ComboboxTest(AbstractWidgetTest, unittest.TestCase):
+class EntryTest(AbstractWidgetTest, unittest.TestCase):
     OPTIONS = (
-        'class', 'cursor', 'exportselection', 'height',
-        'justify', 'postcommand', 'state', 'style',
-        'takefocus', 'textvariable', 'values', 'width',
+        'background', 'class', 'cursor',
+        'exportselection', 'font', 'foreground',
+        'invalidcommand', 'justify',
+        'show', 'state', 'style', 'takefocus', 'textvariable',
+        'validate', 'validatecommand', 'width', 'xscrollcommand',
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.entry = self.create()
+
+    def create(self, **kwargs):
+        return ttk.Entry(self.root, **kwargs)
+
+    def test_invalidcommand(self):
+        widget = self.create()
+        self.checkCommandParam(widget, 'invalidcommand')
+
+    def test_show(self):
+        widget = self.create()
+        self.checkParam(widget, 'show', '*')
+        self.checkParam(widget, 'show', '')
+        self.checkParam(widget, 'show', ' ')
+
+    def test_state(self):
+        widget = self.create()
+        self.checkParams(widget, 'state',
+                         'disabled', 'normal', 'readonly')
+
+    def test_validate(self):
+        widget = self.create()
+        self.checkEnumParam(widget, 'validate',
+                'all', 'key', 'focus', 'focusin', 'focusout', 'none')
+
+    def test_validatecommand(self):
+        widget = self.create()
+        self.checkCommandParam(widget, 'validatecommand')
+
+
+    def test_bbox(self):
+        self.assertIsBoundingBox(self.entry.bbox(0))
+        self.assertRaises(tkinter.TclError, self.entry.bbox, 'noindex')
+        self.assertRaises(tkinter.TclError, self.entry.bbox, None)
+
+
+    def test_identify(self):
+        self.entry.pack()
+        self.entry.wait_visibility()
+        self.entry.update_idletasks()
+
+        # bpo-27313: macOS Cocoa widget differs from X, allow either
+        if sys.platform == 'darwin':
+            self.assertIn(self.entry.identify(5, 5),
+                ("textarea", "Combobox.button") )
+        else:
+            self.assertEqual(self.entry.identify(5, 5), "textarea")
+        self.assertEqual(self.entry.identify(-1, -1), "")
+
+        self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
+        self.assertRaises(tkinter.TclError, self.entry.identify, 5, None)
+        self.assertRaises(tkinter.TclError, self.entry.identify, 5, '')
+
+
+    def test_validation_options(self):
+        success = []
+        test_invalid = lambda: success.append(True)
+
+        self.entry['validate'] = 'none'
+        self.entry['validatecommand'] = lambda: False
+
+        self.entry['invalidcommand'] = test_invalid
+        self.entry.validate()
+        self.assertTrue(success)
+
+        self.entry['invalidcommand'] = ''
+        self.entry.validate()
+        self.assertEqual(len(success), 1)
+
+        self.entry['invalidcommand'] = test_invalid
+        self.entry['validatecommand'] = lambda: True
+        self.entry.validate()
+        self.assertEqual(len(success), 1)
+
+        self.entry['validatecommand'] = ''
+        self.entry.validate()
+        self.assertEqual(len(success), 1)
+
+        self.entry['validatecommand'] = True
+        self.assertRaises(tkinter.TclError, self.entry.validate)
+
+
+    def test_validation(self):
+        validation = []
+        def validate(to_insert):
+            if not 'a' <= to_insert.lower() <= 'z':
+                validation.append(False)
+                return False
+            validation.append(True)
+            return True
+
+        self.entry['validate'] = 'key'
+        self.entry['validatecommand'] = self.entry.register(validate), '%S'
+
+        self.entry.insert('end', 1)
+        self.entry.insert('end', 'a')
+        self.assertEqual(validation, [False, True])
+        self.assertEqual(self.entry.get(), 'a')
+
+
+    def test_revalidation(self):
+        def validate(content):
+            for letter in content:
+                if not 'a' <= letter.lower() <= 'z':
+                    return False
+            return True
+
+        self.entry['validatecommand'] = self.entry.register(validate), '%P'
+
+        self.entry.insert('end', 'avocado')
+        self.assertEqual(self.entry.validate(), True)
+        self.assertEqual(self.entry.state(), ())
+
+        self.entry.delete(0, 'end')
+        self.assertEqual(self.entry.get(), '')
+
+        self.entry.insert('end', 'a1b')
+        self.assertEqual(self.entry.validate(), False)
+        self.assertEqual(self.entry.state(), ('invalid', ))
+
+        self.entry.delete(1)
+        self.assertEqual(self.entry.validate(), True)
+        self.assertEqual(self.entry.state(), ())
+
+
+@add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
+class ComboboxTest(EntryTest, unittest.TestCase):
+    OPTIONS = (
+        'background', 'class', 'cursor', 'exportselection',
+        'font', 'foreground', 'height', 'invalidcommand',
+        'justify', 'postcommand', 'show', 'state', 'style',
+        'takefocus', 'textvariable',
+        'validate', 'validatecommand', 'values',
+        'width', 'xscrollcommand',
     )
 
     def setUp(self):
@@ -293,10 +434,6 @@ class ComboboxTest(AbstractWidgetTest, unittest.TestCase):
     def test_height(self):
         widget = self.create()
         self.checkParams(widget, 'height', 100, 101.2, 102.6, -100, 0, '1i')
-
-    def test_state(self):
-        widget = self.create()
-        self.checkParams(widget, 'state', 'active', 'disabled', 'normal')
 
     def _show_drop_down_listbox(self):
         width = self.combo.winfo_width()
@@ -400,138 +537,6 @@ class ComboboxTest(AbstractWidgetTest, unittest.TestCase):
         self.assertEqual(combo2['values'],
                          ('1', '2', '') if self.wantobjects else '1 2 {}')
         combo2.destroy()
-
-
-@add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-class EntryTest(AbstractWidgetTest, unittest.TestCase):
-    OPTIONS = (
-        'background', 'class', 'cursor',
-        'exportselection', 'font',
-        'invalidcommand', 'justify',
-        'show', 'state', 'style', 'takefocus', 'textvariable',
-        'validate', 'validatecommand', 'width', 'xscrollcommand',
-    )
-
-    def setUp(self):
-        super().setUp()
-        self.entry = self.create()
-
-    def create(self, **kwargs):
-        return ttk.Entry(self.root, **kwargs)
-
-    def test_invalidcommand(self):
-        widget = self.create()
-        self.checkCommandParam(widget, 'invalidcommand')
-
-    def test_show(self):
-        widget = self.create()
-        self.checkParam(widget, 'show', '*')
-        self.checkParam(widget, 'show', '')
-        self.checkParam(widget, 'show', ' ')
-
-    def test_state(self):
-        widget = self.create()
-        self.checkParams(widget, 'state',
-                         'disabled', 'normal', 'readonly')
-
-    def test_validate(self):
-        widget = self.create()
-        self.checkEnumParam(widget, 'validate',
-                'all', 'key', 'focus', 'focusin', 'focusout', 'none')
-
-    def test_validatecommand(self):
-        widget = self.create()
-        self.checkCommandParam(widget, 'validatecommand')
-
-
-    def test_bbox(self):
-        self.assertIsBoundingBox(self.entry.bbox(0))
-        self.assertRaises(tkinter.TclError, self.entry.bbox, 'noindex')
-        self.assertRaises(tkinter.TclError, self.entry.bbox, None)
-
-
-    def test_identify(self):
-        self.entry.pack()
-        self.entry.wait_visibility()
-        self.entry.update_idletasks()
-
-        self.assertEqual(self.entry.identify(5, 5), "textarea")
-        self.assertEqual(self.entry.identify(-1, -1), "")
-
-        self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-        self.assertRaises(tkinter.TclError, self.entry.identify, 5, None)
-        self.assertRaises(tkinter.TclError, self.entry.identify, 5, '')
-
-
-    def test_validation_options(self):
-        success = []
-        test_invalid = lambda: success.append(True)
-
-        self.entry['validate'] = 'none'
-        self.entry['validatecommand'] = lambda: False
-
-        self.entry['invalidcommand'] = test_invalid
-        self.entry.validate()
-        self.assertTrue(success)
-
-        self.entry['invalidcommand'] = ''
-        self.entry.validate()
-        self.assertEqual(len(success), 1)
-
-        self.entry['invalidcommand'] = test_invalid
-        self.entry['validatecommand'] = lambda: True
-        self.entry.validate()
-        self.assertEqual(len(success), 1)
-
-        self.entry['validatecommand'] = ''
-        self.entry.validate()
-        self.assertEqual(len(success), 1)
-
-        self.entry['validatecommand'] = True
-        self.assertRaises(tkinter.TclError, self.entry.validate)
-
-
-    def test_validation(self):
-        validation = []
-        def validate(to_insert):
-            if not 'a' <= to_insert.lower() <= 'z':
-                validation.append(False)
-                return False
-            validation.append(True)
-            return True
-
-        self.entry['validate'] = 'key'
-        self.entry['validatecommand'] = self.entry.register(validate), '%S'
-
-        self.entry.insert('end', 1)
-        self.entry.insert('end', 'a')
-        self.assertEqual(validation, [False, True])
-        self.assertEqual(self.entry.get(), 'a')
-
-
-    def test_revalidation(self):
-        def validate(content):
-            for letter in content:
-                if not 'a' <= letter.lower() <= 'z':
-                    return False
-            return True
-
-        self.entry['validatecommand'] = self.entry.register(validate), '%P'
-
-        self.entry.insert('end', 'avocado')
-        self.assertEqual(self.entry.validate(), True)
-        self.assertEqual(self.entry.state(), ())
-
-        self.entry.delete(0, 'end')
-        self.assertEqual(self.entry.get(), '')
-
-        self.entry.insert('end', 'a1b')
-        self.assertEqual(self.entry.validate(), False)
-        self.assertEqual(self.entry.state(), ('invalid', ))
-
-        self.entry.delete(1)
-        self.assertEqual(self.entry.validate(), True)
-        self.assertEqual(self.entry.state(), ())
 
 
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
@@ -674,7 +679,7 @@ class RadiobuttonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'command', 'compound', 'cursor',
         'image',
-        'state', 'style',
+        'padding', 'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'value', 'variable', 'width',
     )
@@ -724,7 +729,7 @@ class RadiobuttonTest(AbstractLabelTest, unittest.TestCase):
 class MenubuttonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'compound', 'cursor', 'direction',
-        'image', 'menu', 'state', 'style',
+        'image', 'menu', 'padding', 'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'width',
     )
@@ -902,7 +907,7 @@ class ScrollbarTest(AbstractWidgetTest, unittest.TestCase):
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
 class NotebookTest(AbstractWidgetTest, unittest.TestCase):
     OPTIONS = (
-        'class', 'cursor', 'height', 'padding', 'style', 'takefocus',
+        'class', 'cursor', 'height', 'padding', 'style', 'takefocus', 'width',
     )
 
     def setUp(self):
@@ -1485,6 +1490,107 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
             self.tv.insert('', 'end', text=value), text=None),
             value)
 
+        # test for values which are not None
+        itemid = self.tv.insert('', 'end', 0)
+        self.assertEqual(itemid, '0')
+        itemid = self.tv.insert('', 'end', 0.0)
+        self.assertEqual(itemid, '0.0')
+        # this is because False resolves to 0 and element with 0 iid is already present
+        self.assertRaises(tkinter.TclError, self.tv.insert, '', 'end', False)
+        self.assertRaises(tkinter.TclError, self.tv.insert, '', 'end', '')
+
+
+    def test_selection(self):
+        self.assertRaises(TypeError, self.tv.selection, 'spam')
+        # item 'none' doesn't exist
+        self.assertRaises(tkinter.TclError, self.tv.selection_set, 'none')
+        self.assertRaises(tkinter.TclError, self.tv.selection_add, 'none')
+        self.assertRaises(tkinter.TclError, self.tv.selection_remove, 'none')
+        self.assertRaises(tkinter.TclError, self.tv.selection_toggle, 'none')
+
+        item1 = self.tv.insert('', 'end')
+        item2 = self.tv.insert('', 'end')
+        c1 = self.tv.insert(item1, 'end')
+        c2 = self.tv.insert(item1, 'end')
+        c3 = self.tv.insert(item1, 'end')
+        self.assertEqual(self.tv.selection(), ())
+
+        self.tv.selection_set(c1, item2)
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        self.tv.selection_set(c2)
+        self.assertEqual(self.tv.selection(), (c2,))
+
+        self.tv.selection_add(c1, item2)
+        self.assertEqual(self.tv.selection(), (c1, c2, item2))
+        self.tv.selection_add(item1)
+        self.assertEqual(self.tv.selection(), (item1, c1, c2, item2))
+        self.tv.selection_add()
+        self.assertEqual(self.tv.selection(), (item1, c1, c2, item2))
+
+        self.tv.selection_remove(item1, c3)
+        self.assertEqual(self.tv.selection(), (c1, c2, item2))
+        self.tv.selection_remove(c2)
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        self.tv.selection_remove()
+        self.assertEqual(self.tv.selection(), (c1, item2))
+
+        self.tv.selection_toggle(c1, c3)
+        self.assertEqual(self.tv.selection(), (c3, item2))
+        self.tv.selection_toggle(item2)
+        self.assertEqual(self.tv.selection(), (c3,))
+        self.tv.selection_toggle()
+        self.assertEqual(self.tv.selection(), (c3,))
+
+        self.tv.insert('', 'end', id='with spaces')
+        self.tv.selection_set('with spaces')
+        self.assertEqual(self.tv.selection(), ('with spaces',))
+
+        self.tv.insert('', 'end', id='{brace')
+        self.tv.selection_set('{brace')
+        self.assertEqual(self.tv.selection(), ('{brace',))
+
+        self.tv.insert('', 'end', id='unicode\u20ac')
+        self.tv.selection_set('unicode\u20ac')
+        self.assertEqual(self.tv.selection(), ('unicode\u20ac',))
+
+        self.tv.insert('', 'end', id=b'bytes\xe2\x82\xac')
+        self.tv.selection_set(b'bytes\xe2\x82\xac')
+        self.assertEqual(self.tv.selection(), ('bytes\xe2\x82\xac',))
+
+        self.tv.selection_set()
+        self.assertEqual(self.tv.selection(), ())
+
+        # Old interface
+        self.tv.selection_set((c1, item2))
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        self.tv.selection_add((c1, item1))
+        self.assertEqual(self.tv.selection(), (item1, c1, item2))
+        self.tv.selection_remove((item1, c3))
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        self.tv.selection_toggle((c1, c3))
+        self.assertEqual(self.tv.selection(), (c3, item2))
+
+        if sys.version_info >= (3, 8):
+            import warnings
+            warnings.warn(
+                'Deprecated API of Treeview.selection() should be removed')
+        self.tv.selection_set()
+        self.assertEqual(self.tv.selection(), ())
+        with self.assertWarns(DeprecationWarning):
+            self.tv.selection('set', (c1, item2))
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        with self.assertWarns(DeprecationWarning):
+            self.tv.selection('add', (c1, item1))
+        self.assertEqual(self.tv.selection(), (item1, c1, item2))
+        with self.assertWarns(DeprecationWarning):
+            self.tv.selection('remove', (item1, c3))
+        self.assertEqual(self.tv.selection(), (c1, item2))
+        with self.assertWarns(DeprecationWarning):
+            self.tv.selection('toggle', (c1, c3))
+        self.assertEqual(self.tv.selection(), (c3, item2))
+        with self.assertWarns(DeprecationWarning):
+            selection = self.tv.selection(None)
+        self.assertEqual(selection, (c3, item2))
 
     def test_set(self):
         self.tv['columns'] = ['A', 'B']

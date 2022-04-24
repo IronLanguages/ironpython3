@@ -104,6 +104,9 @@ class BaseProcess(object):
         _cleanup()
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
+        # Avoid a refcycle if the target function holds an indirect
+        # reference to the process object (see bpo-30775)
+        del self._target, self._args, self._kwargs
         _children.add(self)
 
     def terminate(self):
@@ -129,10 +132,16 @@ class BaseProcess(object):
         if self is _current_process:
             return True
         assert self._parent_pid == os.getpid(), 'can only test a child process'
+
         if self._popen is None:
             return False
-        self._popen.poll()
-        return self._popen.returncode is None
+
+        returncode = self._popen.poll()
+        if returncode is None:
+            return True
+        else:
+            _children.discard(self)
+            return False
 
     @property
     def name(self):
@@ -234,12 +243,7 @@ class BaseProcess(object):
                 context._force_start_method(self._start_method)
             _process_counter = itertools.count(1)
             _children = set()
-            if sys.stdin is not None:
-                try:
-                    sys.stdin.close()
-                    sys.stdin = open(os.devnull)
-                except (OSError, ValueError):
-                    pass
+            util._close_stdin()
             old_process = _current_process
             _current_process = self
             try:
@@ -270,8 +274,7 @@ class BaseProcess(object):
             traceback.print_exc()
         finally:
             util.info('process exiting with exitcode %d' % exitcode)
-            sys.stdout.flush()
-            sys.stderr.flush()
+            util._flush_std_streams()
 
         return exitcode
 

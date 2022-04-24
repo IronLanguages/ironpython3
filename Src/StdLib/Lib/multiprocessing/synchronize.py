@@ -15,8 +15,7 @@ import threading
 import sys
 import tempfile
 import _multiprocessing
-
-from time import time as _time
+import time
 
 from . import context
 from . import process
@@ -134,7 +133,7 @@ class Semaphore(SemLock):
             value = self._semlock._get_value()
         except Exception:
             value = 'unknown'
-        return '<Semaphore(value=%s)>' % value
+        return '<%s(value=%s)>' % (self.__class__.__name__, value)
 
 #
 # Bounded semaphore
@@ -150,8 +149,8 @@ class BoundedSemaphore(Semaphore):
             value = self._semlock._get_value()
         except Exception:
             value = 'unknown'
-        return '<BoundedSemaphore(value=%s, maxvalue=%s)>' % \
-               (value, self._semlock.maxvalue)
+        return '<%s(value=%s, maxvalue=%s)>' % \
+               (self.__class__.__name__, value, self._semlock.maxvalue)
 
 #
 # Non-recursive lock
@@ -176,7 +175,7 @@ class Lock(SemLock):
                 name = 'SomeOtherProcess'
         except Exception:
             name = 'unknown'
-        return '<Lock(owner=%s)>' % name
+        return '<%s(owner=%s)>' % (self.__class__.__name__, name)
 
 #
 # Recursive lock
@@ -202,7 +201,7 @@ class RLock(SemLock):
                 name, count = 'SomeOtherProcess', 'nonzero'
         except Exception:
             name, count = 'unknown', 'unknown'
-        return '<RLock(%s, %s)>' % (name, count)
+        return '<%s(%s, %s)>' % (self.__class__.__name__, name, count)
 
 #
 # Condition variable
@@ -243,7 +242,7 @@ class Condition(object):
                            self._woken_count._semlock._get_value())
         except Exception:
             num_waiters = 'unknown'
-        return '<Condition(%s, %s)>' % (self._lock, num_waiters)
+        return '<%s(%s, %s)>' % (self.__class__.__name__, self._lock, num_waiters)
 
     def wait(self, timeout=None):
         assert self._lock._semlock._is_mine(), \
@@ -313,13 +312,13 @@ class Condition(object):
         if result:
             return result
         if timeout is not None:
-            endtime = _time() + timeout
+            endtime = time.monotonic() + timeout
         else:
             endtime = None
             waittime = None
         while not result:
             if endtime is not None:
-                waittime = endtime - _time()
+                waittime = endtime - time.monotonic()
                 if waittime <= 0:
                     break
             self.wait(waittime)
@@ -337,34 +336,24 @@ class Event(object):
         self._flag = ctx.Semaphore(0)
 
     def is_set(self):
-        self._cond.acquire()
-        try:
+        with self._cond:
             if self._flag.acquire(False):
                 self._flag.release()
                 return True
             return False
-        finally:
-            self._cond.release()
 
     def set(self):
-        self._cond.acquire()
-        try:
+        with self._cond:
             self._flag.acquire(False)
             self._flag.release()
             self._cond.notify_all()
-        finally:
-            self._cond.release()
 
     def clear(self):
-        self._cond.acquire()
-        try:
+        with self._cond:
             self._flag.acquire(False)
-        finally:
-            self._cond.release()
 
     def wait(self, timeout=None):
-        self._cond.acquire()
-        try:
+        with self._cond:
             if self._flag.acquire(False):
                 self._flag.release()
             else:
@@ -374,8 +363,6 @@ class Event(object):
                 self._flag.release()
                 return True
             return False
-        finally:
-            self._cond.release()
 
 #
 # Barrier

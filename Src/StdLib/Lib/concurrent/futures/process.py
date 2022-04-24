@@ -55,12 +55,15 @@ from multiprocessing import SimpleQueue
 from multiprocessing.connection import wait
 import threading
 import weakref
+from functools import partial
+import itertools
+import traceback
 
 # Workers are created as daemon threads and processes. This is done to allow the
 # interpreter to exit when there are still idle processes in a
 # ProcessPoolExecutor's process pool (i.e. shutdown() was not called). However,
 # allowing workers to die with the interpreter has two undesirable properties:
-#   - The workers would still be running during interpretor shutdown,
+#   - The workers would still be running during interpreter shutdown,
 #     meaning that they would fail in unpredictable ways.
 #   - The workers could be killed while evaluating a work item, which could
 #     be bad if the callable being evaluated has external side-effects e.g.
@@ -88,6 +91,27 @@ def _python_exit():
 # (Futures in the call queue cannot be cancelled).
 EXTRA_QUEUED_CALLS = 1
 
+# Hack to embed stringification of remote traceback in local traceback
+
+class _RemoteTraceback(Exception):
+    def __init__(self, tb):
+        self.tb = tb
+    def __str__(self):
+        return self.tb
+
+class _ExceptionWithTraceback:
+    def __init__(self, exc, tb):
+        tb = traceback.format_exception(type(exc), exc, tb)
+        tb = ''.join(tb)
+        self.exc = exc
+        self.tb = '\n"""\n%s"""' % tb
+    def __reduce__(self):
+        return _rebuild_exc, (self.exc, self.tb)
+
+def _rebuild_exc(exc, tb):
+    exc.__cause__ = _RemoteTraceback(tb)
+    return exc
+
 class _WorkItem(object):
     def __init__(self, future, fn, args, kwargs):
         self.future = future
@@ -107,6 +131,26 @@ class _CallItem(object):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
+
+def _get_chunks(*iterables, chunksize):
+    """ Iterates over zip()ed iterables in chunks. """
+    it = zip(*iterables)
+    while True:
+        chunk = tuple(itertools.islice(it, chunksize))
+        if not chunk:
+            return
+        yield chunk
+
+def _process_chunk(fn, chunk):
+    """ Processes a chunk of an iterable passed to map.
+
+    Runs the function passed to map() on a chunk of the
+    iterable passed to map.
+
+    This function is run in a separate process.
+
+    """
+    return [fn(*args) for args in chunk]
 
 def _process_worker(call_queue, result_queue):
     """Evaluates calls from call_queue and places the results in result_queue.
@@ -130,8 +174,8 @@ def _process_worker(call_queue, result_queue):
         try:
             r = call_item.fn(*call_item.args, **call_item.kwargs)
         except BaseException as e:
-            result_queue.put(_ResultItem(call_item.work_id,
-                                         exception=e))
+            exc = _ExceptionWithTraceback(e, e.__traceback__)
+            result_queue.put(_ResultItem(call_item.work_id, exception=exc))
         else:
             result_queue.put(_ResultItem(call_item.work_id,
                                          result=r))
@@ -313,6 +357,18 @@ def _check_system_limits():
     raise NotImplementedError(_system_limited)
 
 
+def _chain_from_iterable_of_lists(iterable):
+    """
+    Specialized implementation of itertools.chain.from_iterable.
+    Each item in *iterable* should be a list.  This function is
+    careful not to keep references to yielded objects.
+    """
+    for element in iterable:
+        element.reverse()
+        while element:
+            yield element.pop()
+
+
 class BrokenProcessPool(RuntimeError):
     """
     Raised when a process in a ProcessPoolExecutor terminated abruptly
@@ -334,6 +390,9 @@ class ProcessPoolExecutor(_base.Executor):
         if max_workers is None:
             self._max_workers = os.cpu_count() or 1
         else:
+            if max_workers <= 0:
+                raise ValueError("max_workers must be greater than 0")
+
             self._max_workers = max_workers
 
         # Make the call queue slightly larger than the number of processes to
@@ -407,6 +466,35 @@ class ProcessPoolExecutor(_base.Executor):
             self._start_queue_management_thread()
             return f
     submit.__doc__ = _base.Executor.submit.__doc__
+
+    def map(self, fn, *iterables, timeout=None, chunksize=1):
+        """Returns an iterator equivalent to map(fn, iter).
+
+        Args:
+            fn: A callable that will take as many arguments as there are
+                passed iterables.
+            timeout: The maximum number of seconds to wait. If None, then there
+                is no limit on the wait time.
+            chunksize: If greater than one, the iterables will be chopped into
+                chunks of size chunksize and submitted to the process pool.
+                If set to one, the items in the list will be sent one at a time.
+
+        Returns:
+            An iterator equivalent to: map(func, *iterables) but the calls may
+            be evaluated out-of-order.
+
+        Raises:
+            TimeoutError: If the entire result iterator could not be generated
+                before the given timeout.
+            Exception: If fn(*args) raises for any values.
+        """
+        if chunksize < 1:
+            raise ValueError("chunksize must be >= 1.")
+
+        results = super().map(partial(_process_chunk, fn),
+                              _get_chunks(*iterables, chunksize=chunksize),
+                              timeout=timeout)
+        return _chain_from_iterable_of_lists(results)
 
     def shutdown(self, wait=True):
         with self._shutdown_lock:

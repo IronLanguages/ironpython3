@@ -44,7 +44,7 @@ class TestSpwdRoot(unittest.TestCase):
         self.assertEqual(entry.sp_flag, entry[8])
         with self.assertRaises(KeyError) as cx:
             spwd.getspnam('invalid user name')
-        self.assertEqual(str(cx.exception), "getspnam(): name not found")
+        self.assertEqual(str(cx.exception), "'getspnam(): name not found'")
         self.assertRaises(TypeError, spwd.getspnam)
         self.assertRaises(TypeError, spwd.getspnam, 0)
         self.assertRaises(TypeError, spwd.getspnam, random_name, 0)
@@ -54,6 +54,19 @@ class TestSpwdRoot(unittest.TestCase):
             pass
         else:
             self.assertRaises(TypeError, spwd.getspnam, bytes_name)
+
+
+@unittest.skipUnless(hasattr(os, 'geteuid') and os.geteuid() != 0,
+                     'non-root user required')
+class TestSpwdNonRoot(unittest.TestCase):
+
+    def test_getspnam_exception(self):
+        name = 'bin'
+        try:
+            with self.assertRaises(PermissionError) as cm:
+                spwd.getspnam(name)
+        except KeyError as exc:
+            self.skipTest("spwd entry %r doesn't exist: %s" % (name, exc))
 
 
 if __name__ == "__main__":

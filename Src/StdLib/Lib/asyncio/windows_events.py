@@ -171,8 +171,13 @@ class _WaitCancelFuture(_BaseWaitHandleFuture):
     def cancel(self):
         raise RuntimeError("_WaitCancelFuture must not be cancelled")
 
-    def _schedule_callbacks(self):
-        super(_WaitCancelFuture, self)._schedule_callbacks()
+    def set_result(self, result):
+        super().set_result(result)
+        if self._done_callback is not None:
+            self._done_callback(self)
+
+    def set_exception(self, exception):
+        super().set_exception(exception)
         if self._done_callback is not None:
             self._done_callback(self)
 
@@ -197,7 +202,7 @@ class _WaitHandleFuture(_BaseWaitHandleFuture):
         #
         # If the IocpProactor already received the event, it's safe to call
         # _unregister() because we kept a reference to the Overlapped object
-        # which is used as an unique key.
+        # which is used as a unique key.
         self._proactor._unregister(self._ov)
         self._proactor = None
 
@@ -366,7 +371,7 @@ class ProactorEventLoop(proactor_events.BaseProactorEventLoop):
     def _make_subprocess_transport(self, protocol, args, shell,
                                    stdin, stdout, stderr, bufsize,
                                    extra=None, **kwargs):
-        waiter = futures.Future(loop=self)
+        waiter = self.create_future()
         transp = _WindowsSubprocessTransport(self, protocol, args, shell,
                                              stdin, stdout, stderr, bufsize,
                                              waiter=waiter, extra=extra,
@@ -417,7 +422,7 @@ class IocpProactor:
         return tmp
 
     def _result(self, value):
-        fut = futures.Future(loop=self._loop)
+        fut = self._loop.create_future()
         fut.set_result(value)
         return fut
 

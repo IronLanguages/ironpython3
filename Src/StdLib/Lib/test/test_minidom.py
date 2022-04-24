@@ -2,8 +2,7 @@
 
 import copy
 import pickle
-import sys
-from test.support import run_unittest, findfile
+from test import support
 import unittest
 
 import xml.dom.minidom
@@ -12,7 +11,7 @@ from xml.dom.minidom import parse, Node, Document, parseString
 from xml.dom.minidom import getDOMImplementation
 
 
-tstfile = findfile("test.xml", subdir="xmltestdata")
+tstfile = support.findfile("test.xml", subdir="xmltestdata")
 sample = ("<?xml version='1.0' encoding='us-ascii'?>\n"
           "<!DOCTYPE doc PUBLIC 'http://xml.python.org/public'"
           " 'http://xml.python.org/system' [\n"
@@ -57,6 +56,21 @@ class MinidomTest(unittest.TestCase):
     def checkWholeText(self, node, s):
         t = node.wholeText
         self.confirm(t == s, "looking for %r, found %r" % (s, t))
+
+    def testDocumentAsyncAttr(self):
+        doc = Document()
+        self.assertFalse(doc.async_)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(getattr(doc, 'async', True))
+        with self.assertWarns(DeprecationWarning):
+            setattr(doc, 'async', True)
+        with self.assertWarns(DeprecationWarning):
+            self.assertTrue(getattr(doc, 'async', False))
+        self.assertTrue(doc.async_)
+
+        self.assertFalse(Document.async_)
+        with self.assertWarns(DeprecationWarning):
+            self.assertFalse(getattr(Document, 'async', True))
 
     def testParseFromBinaryFile(self):
         with open(tstfile, 'rb') as file:
@@ -832,6 +846,57 @@ class MinidomTest(unittest.TestCase):
     def testClonePIDeep(self):
         self.check_clone_pi(1, "testClonePIDeep")
 
+    def check_clone_node_entity(self, clone_document):
+        # bpo-35052: Test user data handler in cloneNode() on a document with
+        # an entity
+        document = xml.dom.minidom.parseString("""
+            <?xml version="1.0" ?>
+            <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+                "http://www.w3.org/TR/html4/strict.dtd"
+                [ <!ENTITY smile "☺"> ]
+            >
+            <doc>Don't let entities make you frown &smile;</doc>
+        """.strip())
+
+        class Handler:
+            def handle(self, operation, key, data, src, dst):
+                self.operation = operation
+                self.key = key
+                self.data = data
+                self.src = src
+                self.dst = dst
+
+        handler = Handler()
+        doctype = document.doctype
+        entity = doctype.entities['smile']
+        entity.setUserData("key", "data", handler)
+
+        if clone_document:
+            # clone Document
+            clone = document.cloneNode(deep=True)
+
+            self.assertEqual(clone.documentElement.firstChild.wholeText,
+                             "Don't let entities make you frown ☺")
+            operation = xml.dom.UserDataHandler.NODE_IMPORTED
+            dst = clone.doctype.entities['smile']
+        else:
+            # clone DocumentType
+            with support.swap_attr(doctype, 'ownerDocument', None):
+                clone = doctype.cloneNode(deep=True)
+
+            operation = xml.dom.UserDataHandler.NODE_CLONED
+            dst = clone.entities['smile']
+
+        self.assertEqual(handler.operation, operation)
+        self.assertEqual(handler.key, "key")
+        self.assertEqual(handler.data, "data")
+        self.assertIs(handler.src, entity)
+        self.assertIs(handler.dst, dst)
+
+    def testCloneNodeEntity(self):
+        self.check_clone_node_entity(False)
+        self.check_clone_node_entity(True)
+
     def testNormalize(self):
         doc = parseString("<doc/>")
         root = doc.documentElement
@@ -1075,7 +1140,6 @@ class MinidomTest(unittest.TestCase):
                 "test NodeList.item()")
         doc.unlink()
 
-    @unittest.skipIf(sys.implementation.name == 'ironpython', 'https://github.com/IronLanguages/ironpython2/issues/464')
     def testEncodings(self):
         doc = parseString('<foo>&#x20ac;</foo>')
         self.assertEqual(doc.toxml(),
@@ -1557,8 +1621,5 @@ class MinidomTest(unittest.TestCase):
         pi = doc.createProcessingInstruction("y", "z")
         pi.nodeValue = "crash"
 
-def test_main():
-    run_unittest(MinidomTest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

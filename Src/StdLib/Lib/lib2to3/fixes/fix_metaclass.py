@@ -20,12 +20,12 @@
 # Local imports
 from .. import fixer_base
 from ..pygram import token
-from ..fixer_util import Name, syms, Node, Leaf
+from ..fixer_util import syms, Node, Leaf
 
 
 def has_metaclass(parent):
     """ we have to check the cls_node without changing it.
-        There are two possiblities:
+        There are two possibilities:
           1)  clsdef => suite => simple_stmt => expr_stmt => Leaf('__meta')
           2)  clsdef => simple_stmt => expr_stmt => Leaf('__meta')
     """

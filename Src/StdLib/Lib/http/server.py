@@ -87,6 +87,7 @@ __all__ = [
     "SimpleHTTPRequestHandler", "CGIHTTPRequestHandler",
 ]
 
+import email.utils
 import html
 import http.client
 import io
@@ -102,6 +103,8 @@ import time
 import urllib.parse
 import copy
 import argparse
+
+from http import HTTPStatus
 
 
 # Default error message template
@@ -124,9 +127,6 @@ DEFAULT_ERROR_MESSAGE = """\
 
 DEFAULT_ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
 
-def _quote_html(html):
-    return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
 class HTTPServer(socketserver.TCPServer):
 
     allow_reuse_address = 1    # Seems to make sense in testing environment
@@ -134,7 +134,7 @@ class HTTPServer(socketserver.TCPServer):
     def server_bind(self):
         """Override server_bind to store the server name."""
         socketserver.TCPServer.server_bind(self)
-        host, port = self.socket.getsockname()[:2]
+        host, port = self.server_address[:2]
         self.server_name = socket.getfqdn(host)
         self.server_port = port
 
@@ -280,10 +280,9 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         words = requestline.split()
         if len(words) == 3:
             command, path, version = words
-            if version[:5] != 'HTTP/':
-                self.send_error(400, "Bad request version (%r)" % version)
-                return False
             try:
+                if version[:5] != 'HTTP/':
+                    raise ValueError
                 base_version_number = version.split('/', 1)[1]
                 version_number = base_version_number.split(".")
                 # RFC 2145 section 3.1 says there can be only one "." and
@@ -296,25 +295,31 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
                     raise ValueError
                 version_number = int(version_number[0]), int(version_number[1])
             except (ValueError, IndexError):
-                self.send_error(400, "Bad request version (%r)" % version)
+                self.send_error(
+                    HTTPStatus.BAD_REQUEST,
+                    "Bad request version (%r)" % version)
                 return False
             if version_number >= (1, 1) and self.protocol_version >= "HTTP/1.1":
                 self.close_connection = False
             if version_number >= (2, 0):
-                self.send_error(505,
-                          "Invalid HTTP Version (%s)" % base_version_number)
+                self.send_error(
+                    HTTPStatus.HTTP_VERSION_NOT_SUPPORTED,
+                    "Invalid HTTP version (%s)" % base_version_number)
                 return False
         elif len(words) == 2:
             command, path = words
             self.close_connection = True
             if command != 'GET':
-                self.send_error(400,
-                                "Bad HTTP/0.9 request type (%r)" % command)
+                self.send_error(
+                    HTTPStatus.BAD_REQUEST,
+                    "Bad HTTP/0.9 request type (%r)" % command)
                 return False
         elif not words:
             return False
         else:
-            self.send_error(400, "Bad request syntax (%r)" % requestline)
+            self.send_error(
+                HTTPStatus.BAD_REQUEST,
+                "Bad request syntax (%r)" % requestline)
             return False
         self.command, self.path, self.request_version = command, path, version
 
@@ -322,8 +327,18 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         try:
             self.headers = http.client.parse_headers(self.rfile,
                                                      _class=self.MessageClass)
-        except http.client.LineTooLong:
-            self.send_error(400, "Line too long")
+        except http.client.LineTooLong as err:
+            self.send_error(
+                HTTPStatus.REQUEST_HEADER_FIELDS_TOO_LARGE,
+                "Line too long",
+                str(err))
+            return False
+        except http.client.HTTPException as err:
+            self.send_error(
+                HTTPStatus.REQUEST_HEADER_FIELDS_TOO_LARGE,
+                "Too many headers",
+                str(err)
+            )
             return False
 
         conntype = self.headers.get('Connection', "")
@@ -355,7 +370,7 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         False.
 
         """
-        self.send_response_only(100)
+        self.send_response_only(HTTPStatus.CONTINUE)
         self.end_headers()
         return True
 
@@ -373,7 +388,7 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
                 self.requestline = ''
                 self.request_version = ''
                 self.command = ''
-                self.send_error(414)
+                self.send_error(HTTPStatus.REQUEST_URI_TOO_LONG)
                 return
             if not self.raw_requestline:
                 self.close_connection = True
@@ -383,7 +398,9 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
                 return
             mname = 'do_' + self.command
             if not hasattr(self, mname):
-                self.send_error(501, "Unsupported method (%r)" % self.command)
+                self.send_error(
+                    HTTPStatus.NOT_IMPLEMENTED,
+                    "Unsupported method (%r)" % self.command)
                 return
             method = getattr(self, mname)
             method()
@@ -429,16 +446,30 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         if explain is None:
             explain = longmsg
         self.log_error("code %d, message %s", code, message)
-        # using _quote_html to prevent Cross Site Scripting attacks (see bug #1100201)
-        content = (self.error_message_format %
-                   {'code': code, 'message': _quote_html(message), 'explain': _quote_html(explain)})
-        body = content.encode('UTF-8', 'replace')
         self.send_response(code, message)
-        self.send_header("Content-Type", self.error_content_type)
         self.send_header('Connection', 'close')
-        self.send_header('Content-Length', int(len(body)))
+
+        # Message body is omitted for cases described in:
+        #  - RFC7230: 3.3. 1xx, 204(No Content), 304(Not Modified)
+        #  - RFC7231: 6.3.6. 205(Reset Content)
+        body = None
+        if (code >= 200 and
+            code not in (HTTPStatus.NO_CONTENT,
+                         HTTPStatus.RESET_CONTENT,
+                         HTTPStatus.NOT_MODIFIED)):
+            # HTML encode to prevent Cross Site Scripting attacks
+            # (see bug #1100201)
+            content = (self.error_message_format % {
+                'code': code,
+                'message': html.escape(message, quote=False),
+                'explain': html.escape(explain, quote=False)
+            })
+            body = content.encode('UTF-8', 'replace')
+            self.send_header("Content-Type", self.error_content_type)
+            self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
+
+        if self.command != 'HEAD' and body:
             self.wfile.write(body)
 
     def send_response(self, code, message=None):
@@ -456,12 +487,12 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
 
     def send_response_only(self, code, message=None):
         """Send the response header only."""
-        if message is None:
-            if code in self.responses:
-                message = self.responses[code][0]
-            else:
-                message = ''
         if self.request_version != 'HTTP/0.9':
+            if message is None:
+                if code in self.responses:
+                    message = self.responses[code][0]
+                else:
+                    message = ''
             if not hasattr(self, '_headers_buffer'):
                 self._headers_buffer = []
             self._headers_buffer.append(("%s %d %s\r\n" %
@@ -499,7 +530,8 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         This is called by send_response().
 
         """
-
+        if isinstance(code, HTTPStatus):
+            code = code.value
         self.log_message('"%s" %s %s',
                          self.requestline, str(code), str(size))
 
@@ -547,12 +579,7 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         """Return the current date and time formatted for a message header."""
         if timestamp is None:
             timestamp = time.time()
-        year, month, day, hh, mm, ss, wd, y, z = time.gmtime(timestamp)
-        s = "%s, %02d %3s %4d %02d:%02d:%02d GMT" % (
-                self.weekdayname[wd],
-                day, self.monthname[month], year,
-                hh, mm, ss)
-        return s
+        return email.utils.formatdate(timestamp, usegmt=True)
 
     def log_date_time_string(self):
         """Return the current time formatted for logging."""
@@ -582,82 +609,11 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
     # MessageClass used to parse headers
     MessageClass = http.client.HTTPMessage
 
-    # Table mapping response codes to messages; entries have the
-    # form {code: (shortmessage, longmessage)}.
-    # See RFC 2616 and 6585.
+    # hack to maintain backwards compatibility
     responses = {
-        100: ('Continue', 'Request received, please continue'),
-        101: ('Switching Protocols',
-              'Switching to new protocol; obey Upgrade header'),
-
-        200: ('OK', 'Request fulfilled, document follows'),
-        201: ('Created', 'Document created, URL follows'),
-        202: ('Accepted',
-              'Request accepted, processing continues off-line'),
-        203: ('Non-Authoritative Information', 'Request fulfilled from cache'),
-        204: ('No Content', 'Request fulfilled, nothing follows'),
-        205: ('Reset Content', 'Clear input form for further input.'),
-        206: ('Partial Content', 'Partial content follows.'),
-
-        300: ('Multiple Choices',
-              'Object has several resources -- see URI list'),
-        301: ('Moved Permanently', 'Object moved permanently -- see URI list'),
-        302: ('Found', 'Object moved temporarily -- see URI list'),
-        303: ('See Other', 'Object moved -- see Method and URL list'),
-        304: ('Not Modified',
-              'Document has not changed since given time'),
-        305: ('Use Proxy',
-              'You must use proxy specified in Location to access this '
-              'resource.'),
-        307: ('Temporary Redirect',
-              'Object moved temporarily -- see URI list'),
-
-        400: ('Bad Request',
-              'Bad request syntax or unsupported method'),
-        401: ('Unauthorized',
-              'No permission -- see authorization schemes'),
-        402: ('Payment Required',
-              'No payment -- see charging schemes'),
-        403: ('Forbidden',
-              'Request forbidden -- authorization will not help'),
-        404: ('Not Found', 'Nothing matches the given URI'),
-        405: ('Method Not Allowed',
-              'Specified method is invalid for this resource.'),
-        406: ('Not Acceptable', 'URI not available in preferred format.'),
-        407: ('Proxy Authentication Required', 'You must authenticate with '
-              'this proxy before proceeding.'),
-        408: ('Request Timeout', 'Request timed out; try again later.'),
-        409: ('Conflict', 'Request conflict.'),
-        410: ('Gone',
-              'URI no longer exists and has been permanently removed.'),
-        411: ('Length Required', 'Client must specify Content-Length.'),
-        412: ('Precondition Failed', 'Precondition in headers is false.'),
-        413: ('Request Entity Too Large', 'Entity is too large.'),
-        414: ('Request-URI Too Long', 'URI is too long.'),
-        415: ('Unsupported Media Type', 'Entity body in unsupported format.'),
-        416: ('Requested Range Not Satisfiable',
-              'Cannot satisfy request range.'),
-        417: ('Expectation Failed',
-              'Expect condition could not be satisfied.'),
-        428: ('Precondition Required',
-              'The origin server requires the request to be conditional.'),
-        429: ('Too Many Requests', 'The user has sent too many requests '
-              'in a given amount of time ("rate limiting").'),
-        431: ('Request Header Fields Too Large', 'The server is unwilling to '
-              'process the request because its header fields are too large.'),
-
-        500: ('Internal Server Error', 'Server got itself in trouble'),
-        501: ('Not Implemented',
-              'Server does not support this operation'),
-        502: ('Bad Gateway', 'Invalid responses from another server/proxy.'),
-        503: ('Service Unavailable',
-              'The server cannot process the request due to a high load'),
-        504: ('Gateway Timeout',
-              'The gateway server did not receive a timely response'),
-        505: ('HTTP Version Not Supported', 'Cannot fulfill request.'),
-        511: ('Network Authentication Required',
-              'The client needs to authenticate to gain network access.'),
-        }
+        v: (v.phrase, v.description)
+        for v in HTTPStatus.__members__.values()
+    }
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -707,7 +663,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             parts = urllib.parse.urlsplit(self.path)
             if not parts.path.endswith('/'):
                 # redirect browser - doing basically what apache does
-                self.send_response(301)
+                self.send_response(HTTPStatus.MOVED_PERMANENTLY)
                 new_parts = (parts[0], parts[1], parts[2] + '/',
                              parts[3], parts[4])
                 new_url = urllib.parse.urlunsplit(new_parts)
@@ -725,10 +681,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             f = open(path, 'rb')
         except OSError:
-            self.send_error(404, "File not found")
+            self.send_error(HTTPStatus.NOT_FOUND, "File not found")
             return None
         try:
-            self.send_response(200)
+            self.send_response(HTTPStatus.OK)
             self.send_header("Content-type", ctype)
             fs = os.fstat(f.fileno())
             self.send_header("Content-Length", str(fs[6]))
@@ -750,7 +706,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             list = os.listdir(path)
         except OSError:
-            self.send_error(404, "No permission to list directory")
+            self.send_error(
+                HTTPStatus.NOT_FOUND,
+                "No permission to list directory")
             return None
         list.sort(key=lambda a: a.lower())
         r = []
@@ -759,7 +717,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                                                errors='surrogatepass')
         except UnicodeDecodeError:
             displaypath = urllib.parse.unquote(path)
-        displaypath = html.escape(displaypath)
+        displaypath = html.escape(displaypath, quote=False)
         enc = sys.getfilesystemencoding()
         title = 'Directory listing for %s' % displaypath
         r.append('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" '
@@ -783,13 +741,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             r.append('<li><a href="%s">%s</a></li>'
                     % (urllib.parse.quote(linkname,
                                           errors='surrogatepass'),
-                       html.escape(displayname)))
+                       html.escape(displayname, quote=False)))
         r.append('</ul>\n<hr>\n</body>\n</html>\n')
         encoded = '\n'.join(r).encode(enc, 'surrogateescape')
         f = io.BytesIO()
         f.write(encoded)
         f.seek(0)
-        self.send_response(200)
+        self.send_response(HTTPStatus.OK)
         self.send_header("Content-type", "text/html; charset=%s" % enc)
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
@@ -976,7 +934,9 @@ class CGIHTTPRequestHandler(SimpleHTTPRequestHandler):
         if self.is_cgi():
             self.run_cgi()
         else:
-            self.send_error(501, "Can only POST to CGI scripts")
+            self.send_error(
+                HTTPStatus.NOT_IMPLEMENTED,
+                "Can only POST to CGI scripts")
 
     def send_head(self):
         """Version of send_head that support CGI scripts"""
@@ -1050,17 +1010,21 @@ class CGIHTTPRequestHandler(SimpleHTTPRequestHandler):
         scriptname = dir + '/' + script
         scriptfile = self.translate_path(scriptname)
         if not os.path.exists(scriptfile):
-            self.send_error(404, "No such CGI script (%r)" % scriptname)
+            self.send_error(
+                HTTPStatus.NOT_FOUND,
+                "No such CGI script (%r)" % scriptname)
             return
         if not os.path.isfile(scriptfile):
-            self.send_error(403, "CGI script is not a plain file (%r)" %
-                            scriptname)
+            self.send_error(
+                HTTPStatus.FORBIDDEN,
+                "CGI script is not a plain file (%r)" % scriptname)
             return
         ispy = self.is_python(scriptname)
         if self.have_fork or not ispy:
             if not self.is_executable(scriptfile):
-                self.send_error(403, "CGI script is not executable (%r)" %
-                                scriptname)
+                self.send_error(
+                    HTTPStatus.FORBIDDEN,
+                    "CGI script is not executable (%r)" % scriptname)
                 return
 
         # Reference: http://hoohoo.ncsa.uiuc.edu/cgi/env.html
@@ -1128,7 +1092,7 @@ class CGIHTTPRequestHandler(SimpleHTTPRequestHandler):
                   'HTTP_USER_AGENT', 'HTTP_COOKIE', 'HTTP_REFERER'):
             env.setdefault(k, "")
 
-        self.send_response(200, "Script output follows")
+        self.send_response(HTTPStatus.OK, "Script output follows")
         self.flush_headers()
 
         decoded_query = query.replace('+', ' ')
@@ -1218,16 +1182,15 @@ def test(HandlerClass=BaseHTTPRequestHandler,
     server_address = (bind, port)
 
     HandlerClass.protocol_version = protocol
-    httpd = ServerClass(server_address, HandlerClass)
-
-    sa = httpd.socket.getsockname()
-    print("Serving HTTP on", sa[0], "port", sa[1], "...")
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nKeyboard interrupt received, exiting.")
-        httpd.server_close()
-        sys.exit(0)
+    with ServerClass(server_address, HandlerClass) as httpd:
+        sa = httpd.socket.getsockname()
+        serve_message = "Serving HTTP on {host} port {port} (http://{host}:{port}/) ..."
+        print(serve_message.format(host=sa[0], port=sa[1]))
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nKeyboard interrupt received, exiting.")
+            sys.exit(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

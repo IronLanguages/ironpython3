@@ -119,34 +119,46 @@ This module also defines an exception 'error'.
 
 """
 
-import sys
+import enum
 import sre_compile
 import sre_parse
+import functools
 try:
     import _locale
 except ImportError:
     _locale = None
 
 # public symbols
-__all__ = [ "match", "fullmatch", "search", "sub", "subn", "split", "findall",
-    "compile", "purge", "template", "escape", "A", "I", "L", "M", "S", "X",
-    "U", "ASCII", "IGNORECASE", "LOCALE", "MULTILINE", "DOTALL", "VERBOSE",
-    "UNICODE", "error" ]
+__all__ = [
+    "match", "fullmatch", "search", "sub", "subn", "split",
+    "findall", "finditer", "compile", "purge", "template", "escape",
+    "error", "A", "I", "L", "M", "S", "X", "U",
+    "ASCII", "IGNORECASE", "LOCALE", "MULTILINE", "DOTALL", "VERBOSE",
+    "UNICODE",
+]
 
 __version__ = "2.2.1"
 
-# flags
-A = ASCII = sre_compile.SRE_FLAG_ASCII # assume ascii "locale"
-I = IGNORECASE = sre_compile.SRE_FLAG_IGNORECASE # ignore case
-L = LOCALE = sre_compile.SRE_FLAG_LOCALE # assume current 8-bit locale
-U = UNICODE = sre_compile.SRE_FLAG_UNICODE # assume unicode "locale"
-M = MULTILINE = sre_compile.SRE_FLAG_MULTILINE # make anchors look for newline
-S = DOTALL = sre_compile.SRE_FLAG_DOTALL # make dot match newline
-X = VERBOSE = sre_compile.SRE_FLAG_VERBOSE # ignore whitespace and comments
-
-# sre extensions (experimental, don't rely on these)
-T = TEMPLATE = sre_compile.SRE_FLAG_TEMPLATE # disable backtracking
-DEBUG = sre_compile.SRE_FLAG_DEBUG # dump pattern after compilation
+class RegexFlag(enum.IntFlag):
+    ASCII = sre_compile.SRE_FLAG_ASCII # assume ascii "locale"
+    IGNORECASE = sre_compile.SRE_FLAG_IGNORECASE # ignore case
+    LOCALE = sre_compile.SRE_FLAG_LOCALE # assume current 8-bit locale
+    UNICODE = sre_compile.SRE_FLAG_UNICODE # assume unicode "locale"
+    MULTILINE = sre_compile.SRE_FLAG_MULTILINE # make anchors look for newline
+    DOTALL = sre_compile.SRE_FLAG_DOTALL # make dot match newline
+    VERBOSE = sre_compile.SRE_FLAG_VERBOSE # ignore whitespace and comments
+    A = ASCII
+    I = IGNORECASE
+    L = LOCALE
+    U = UNICODE
+    M = MULTILINE
+    S = DOTALL
+    X = VERBOSE
+    # sre extensions (experimental, don't rely on these)
+    TEMPLATE = sre_compile.SRE_FLAG_TEMPLATE # disable backtracking
+    T = TEMPLATE
+    DEBUG = sre_compile.SRE_FLAG_DEBUG # dump pattern after compilation
+globals().update(RegexFlag.__members__)
 
 # sre exception
 error = sre_compile.error
@@ -209,14 +221,12 @@ def findall(pattern, string, flags=0):
     Empty matches are included in the result."""
     return _compile(pattern, flags).findall(string)
 
-if sys.hexversion >= 0x02020000:
-    __all__.append("finditer")
-    def finditer(pattern, string, flags=0):
-        """Return an iterator over all non-overlapping matches in the
-        string.  For each match, the iterator returns a match object.
+def finditer(pattern, string, flags=0):
+    """Return an iterator over all non-overlapping matches in the
+    string.  For each match, the iterator returns a match object.
 
-        Empty matches are included in the result."""
-        return _compile(pattern, flags).finditer(string)
+    Empty matches are included in the result."""
+    return _compile(pattern, flags).finditer(string)
 
 def compile(pattern, flags=0):
     "Compile a regular expression pattern, returning a pattern object."
@@ -225,7 +235,7 @@ def compile(pattern, flags=0):
 def purge():
     "Clear the regular expression caches"
     _cache.clear()
-    _cache_repl.clear()
+    _compile_repl.cache_clear()
 
 def template(pattern, flags=0):
     "Compile a template pattern, returning a pattern object"
@@ -269,30 +279,27 @@ def escape(pattern):
 # internals
 
 _cache = {}
-_cache_repl = {}
 
 _pattern_type = type(sre_compile.compile("", 0))
 
 _MAXCACHE = 512
 def _compile(pattern, flags):
     # internal: compile pattern
-    bypass_cache = flags & DEBUG
-    if not bypass_cache:
-        try:
-            p, loc = _cache[type(pattern), pattern, flags]
-            if loc is None or loc == _locale.setlocale(_locale.LC_CTYPE):
-                return p
-        except KeyError:
-            pass
+    try:
+        p, loc = _cache[type(pattern), pattern, flags]
+        if loc is None or loc == _locale.setlocale(_locale.LC_CTYPE):
+            return p
+    except KeyError:
+        pass
     if isinstance(pattern, _pattern_type):
         if flags:
             raise ValueError(
-                "Cannot process flags argument with a compiled pattern")
+                "cannot process flags argument with a compiled pattern")
         return pattern
     if not sre_compile.isstring(pattern):
         raise TypeError("first argument must be string or compiled pattern")
     p = sre_compile.compile(pattern, flags)
-    if not bypass_cache:
+    if not (flags & DEBUG):
         if len(_cache) >= _MAXCACHE:
             _cache.clear()
         if p.flags & LOCALE:
@@ -304,17 +311,10 @@ def _compile(pattern, flags):
         _cache[type(pattern), pattern, flags] = p, loc
     return p
 
+@functools.lru_cache(_MAXCACHE)
 def _compile_repl(repl, pattern):
     # internal: compile replacement pattern
-    try:
-        return _cache_repl[repl, pattern]
-    except KeyError:
-        pass
-    p = sre_parse.parse_template(repl, pattern)
-    if len(_cache_repl) >= _MAXCACHE:
-        _cache_repl.clear()
-    _cache_repl[repl, pattern] = p
-    return p
+    return sre_parse.parse_template(repl, pattern)
 
 def _expand(pattern, match, template):
     # internal: match.expand implementation hook
@@ -352,10 +352,11 @@ class Scanner:
         s = sre_parse.Pattern()
         s.flags = flags
         for phrase, action in lexicon:
+            gid = s.opengroup()
             p.append(sre_parse.SubPattern(s, [
-                (SUBPATTERN, (len(p)+1, sre_parse.parse(phrase, flags))),
+                (SUBPATTERN, (gid, 0, 0, sre_parse.parse(phrase, flags))),
                 ]))
-        s.groups = len(p)+1
+            s.closegroup(gid, p[-1])
         p = sre_parse.SubPattern(s, [(BRANCH, (None, p))])
         self.scanner = sre_compile.compile(p)
     def scan(self, string):
@@ -363,7 +364,7 @@ class Scanner:
         append = result.append
         match = self.scanner.scanner(string).match
         i = 0
-        while 1:
+        while True:
             m = match()
             if not m:
                 break

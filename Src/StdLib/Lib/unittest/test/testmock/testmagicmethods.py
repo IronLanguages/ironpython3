@@ -1,5 +1,4 @@
 import unittest
-import inspect
 import sys
 from unittest.mock import Mock, MagicMock, _magics
 
@@ -424,6 +423,17 @@ class TestMockingMagicMethods(unittest.TestCase):
         self.assertEqual(list(m), [])
 
 
+    def test_matmul(self):
+        m = MagicMock()
+        self.assertIsInstance(m @ 1, MagicMock)
+        m.__matmul__.return_value = 42
+        m.__rmatmul__.return_value = 666
+        m.__imatmul__.return_value = 24
+        self.assertEqual(m @ 1, 42)
+        self.assertEqual(1 @ m, 666)
+        m @= 24
+        self.assertEqual(m, 24)
+
     def test_divmod_and_rdivmod(self):
         m = MagicMock()
         self.assertIsInstance(divmod(5, m), MagicMock)
@@ -440,7 +450,7 @@ class TestMockingMagicMethods(unittest.TestCase):
         self.assertIsInstance(bar_direct, MagicMock)
 
     # http://bugs.python.org/issue23310
-    # Check if you can change behaviour of magic methds in MagicMock init
+    # Check if you can change behaviour of magic methods in MagicMock init
     def test_magic_in_initialization(self):
         m = MagicMock(**{'__str__.return_value': "12"})
         self.assertEqual(str(m), "12")

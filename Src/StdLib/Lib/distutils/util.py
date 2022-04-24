@@ -7,8 +7,8 @@ one of the other *util.py modules.
 import os
 import re
 import importlib.util
-import sys
 import string
+import sys
 from distutils.errors import DistutilsPlatformError
 from distutils.dep_util import newer
 from distutils.spawn import spawn
@@ -322,11 +322,11 @@ def byte_compile (py_files,
                   prefix=None, base_dir=None,
                   verbose=1, dry_run=0,
                   direct=None):
-    """Byte-compile a collection of Python source files to either .pyc
-    or .pyo files in a __pycache__ subdirectory.  'py_files' is a list
+    """Byte-compile a collection of Python source files to .pyc
+    files in a __pycache__ subdirectory.  'py_files' is a list
     of files to compile; any files that don't end in ".py" are silently
     skipped.  'optimize' must be one of the following:
-      0 - don't optimize (generate .pyc)
+      0 - don't optimize
       1 - normal optimization (like "python -O")
       2 - extra optimization (like "python -OO")
     If 'force' is true, all files are recompiled regardless of
@@ -350,6 +350,11 @@ def byte_compile (py_files,
     generated in indirect mode; unless you know what you're doing, leave
     it set to None.
     """
+
+    # Late import to fix a bootstrap issue: _posixsubprocess is built by
+    # setup.py, but setup.py uses distutils.
+    import subprocess
+
     # nothing is done if sys.dont_write_bytecode is True
     if sys.dont_write_bytecode:
         raise DistutilsByteCompileError('byte-compiling is disabled.')
@@ -412,11 +417,9 @@ byte_compile(files, optimize=%r, force=%r,
 
             script.close()
 
-        cmd = [sys.executable, script_name]
-        if optimize == 1:
-            cmd.insert(1, "-O")
-        elif optimize == 2:
-            cmd.insert(1, "-OO")
+        cmd = [sys.executable]
+        cmd.extend(subprocess._optim_args_from_interpreter_flags())
+        cmd.append(script_name)
         spawn(cmd, dry_run=dry_run)
         execute(os.remove, (script_name,), "removing %s" % script_name,
                 dry_run=dry_run)
@@ -438,8 +441,9 @@ byte_compile(files, optimize=%r, force=%r,
             #   cfile - byte-compiled file
             #   dfile - purported source filename (same as 'file' by default)
             if optimize >= 0:
+                opt = '' if optimize == 0 else optimize
                 cfile = importlib.util.cache_from_source(
-                    file, debug_override=not optimize)
+                    file, optimization=opt)
             else:
                 cfile = importlib.util.cache_from_source(file)
             dfile = file

@@ -76,7 +76,7 @@ Specializing JSON object encoding::
     >>> def encode_complex(obj):
     ...     if isinstance(obj, complex):
     ...         return [obj.real, obj.imag]
-    ...     raise TypeError(repr(o) + " is not JSON serializable")
+    ...     raise TypeError(repr(obj) + " is not JSON serializable")
     ...
     >>> json.dumps(2 + 1j, default=encode_complex)
     '[2.0, 1.0]'
@@ -98,13 +98,14 @@ Using json.tool from the shell to validate and pretty-print::
 __version__ = '2.0.9'
 __all__ = [
     'dump', 'dumps', 'load', 'loads',
-    'JSONDecoder', 'JSONEncoder',
+    'JSONDecoder', 'JSONDecodeError', 'JSONEncoder',
 ]
 
 __author__ = 'Bob Ippolito <bob@redivi.com>'
 
-from .decoder import JSONDecoder
+from .decoder import JSONDecoder, JSONDecodeError
 from .encoder import JSONEncoder
+import codecs
 
 _default_encoder = JSONEncoder(
     skipkeys=False,
@@ -116,7 +117,7 @@ _default_encoder = JSONEncoder(
     default=None,
 )
 
-def dump(obj, fp, skipkeys=False, ensure_ascii=True, check_circular=True,
+def dump(obj, fp, *, skipkeys=False, ensure_ascii=True, check_circular=True,
         allow_nan=True, cls=None, indent=None, separators=None,
         default=None, sort_keys=False, **kw):
     """Serialize ``obj`` as a JSON formatted stream to ``fp`` (a
@@ -152,7 +153,7 @@ def dump(obj, fp, skipkeys=False, ensure_ascii=True, check_circular=True,
     ``default(obj)`` is a function that should return a serializable version
     of obj or raise TypeError. The default simply raises TypeError.
 
-    If *sort_keys* is ``True`` (default: ``False``), then the output of
+    If *sort_keys* is true (default: ``False``), then the output of
     dictionaries will be sorted by key.
 
     To use a custom ``JSONEncoder`` subclass (e.g. one that overrides the
@@ -179,7 +180,7 @@ def dump(obj, fp, skipkeys=False, ensure_ascii=True, check_circular=True,
         fp.write(chunk)
 
 
-def dumps(obj, skipkeys=False, ensure_ascii=True, check_circular=True,
+def dumps(obj, *, skipkeys=False, ensure_ascii=True, check_circular=True,
         allow_nan=True, cls=None, indent=None, separators=None,
         default=None, sort_keys=False, **kw):
     """Serialize ``obj`` to a JSON formatted ``str``.
@@ -214,7 +215,7 @@ def dumps(obj, skipkeys=False, ensure_ascii=True, check_circular=True,
     ``default(obj)`` is a function that should return a serializable version
     of obj or raise TypeError. The default simply raises TypeError.
 
-    If *sort_keys* is ``True`` (default: ``False``), then the output of
+    If *sort_keys* is true (default: ``False``), then the output of
     dictionaries will be sorted by key.
 
     To use a custom ``JSONEncoder`` subclass (e.g. one that overrides the
@@ -240,7 +241,37 @@ def dumps(obj, skipkeys=False, ensure_ascii=True, check_circular=True,
 _default_decoder = JSONDecoder(object_hook=None, object_pairs_hook=None)
 
 
-def load(fp, cls=None, object_hook=None, parse_float=None,
+def detect_encoding(b):
+    bstartswith = b.startswith
+    if bstartswith((codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE)):
+        return 'utf-32'
+    if bstartswith((codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)):
+        return 'utf-16'
+    if bstartswith(codecs.BOM_UTF8):
+        return 'utf-8-sig'
+
+    if len(b) >= 4:
+        if not b[0]:
+            # 00 00 -- -- - utf-32-be
+            # 00 XX -- -- - utf-16-be
+            return 'utf-16-be' if b[1] else 'utf-32-be'
+        if not b[1]:
+            # XX 00 00 00 - utf-32-le
+            # XX 00 00 XX - utf-16-le
+            # XX 00 XX -- - utf-16-le
+            return 'utf-16-le' if b[2] or b[3] else 'utf-32-le'
+    elif len(b) == 2:
+        if not b[0]:
+            # 00 XX - utf-16-be
+            return 'utf-16-be'
+        if not b[1]:
+            # XX 00 - utf-16-le
+            return 'utf-16-le'
+    # default
+    return 'utf-8'
+
+
+def load(fp, *, cls=None, object_hook=None, parse_float=None,
         parse_int=None, parse_constant=None, object_pairs_hook=None, **kw):
     """Deserialize ``fp`` (a ``.read()``-supporting file-like object containing
     a JSON document) to a Python object.
@@ -268,10 +299,10 @@ def load(fp, cls=None, object_hook=None, parse_float=None,
         parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
 
 
-def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
+def loads(s, *, encoding=None, cls=None, object_hook=None, parse_float=None,
         parse_int=None, parse_constant=None, object_pairs_hook=None, **kw):
-    """Deserialize ``s`` (a ``str`` instance containing a JSON
-    document) to a Python object.
+    """Deserialize ``s`` (a ``str``, ``bytes`` or ``bytearray`` instance
+    containing a JSON document) to a Python object.
 
     ``object_hook`` is an optional function that will be called with the
     result of any object literal decode (a ``dict``). The return value of
@@ -297,7 +328,7 @@ def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
     for JSON integers (e.g. float).
 
     ``parse_constant``, if specified, will be called with one of the
-    following strings: -Infinity, Infinity, NaN, null, true, false.
+    following strings: -Infinity, Infinity, NaN.
     This can be used to raise an exception if invalid JSON numbers
     are encountered.
 
@@ -307,11 +338,16 @@ def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
     The ``encoding`` argument is ignored and deprecated.
 
     """
-    if not isinstance(s, str):
-        raise TypeError('the JSON object must be str, not {!r}'.format(
-                            s.__class__.__name__))
-    if s.startswith(u'\ufeff'):
-        raise ValueError("Unexpected UTF-8 BOM (decode using utf-8-sig)")
+    if isinstance(s, str):
+        if s.startswith('\ufeff'):
+            raise JSONDecodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)",
+                                  s, 0)
+    else:
+        if not isinstance(s, (bytes, bytearray)):
+            raise TypeError('the JSON object must be str, bytes or bytearray, '
+                            'not {!r}'.format(s.__class__.__name__))
+        s = s.decode(detect_encoding(s), 'surrogatepass')
+
     if (cls is None and object_hook is None and
             parse_int is None and parse_float is None and
             parse_constant is None and object_pairs_hook is None and not kw):

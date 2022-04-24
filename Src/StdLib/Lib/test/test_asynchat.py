@@ -38,7 +38,7 @@ if threading:
             self.start_resend_event = None
 
         def run(self):
-            self.sock.listen(1)
+            self.sock.listen()
             self.event.set()
             conn, client = self.sock.accept()
             self.buffer = b""
@@ -294,31 +294,6 @@ class TestHelperFunctions(unittest.TestCase):
     def test_find_prefix_at_end(self):
         self.assertEqual(asynchat.find_prefix_at_end("qwerty\r", "\r\n"), 1)
         self.assertEqual(asynchat.find_prefix_at_end("qwertydkjf", "\r\n"), 0)
-
-
-class TestFifo(unittest.TestCase):
-    def test_basic(self):
-        f = asynchat.fifo()
-        f.push(7)
-        f.push(b'a')
-        self.assertEqual(len(f), 2)
-        self.assertEqual(f.first(), 7)
-        self.assertEqual(f.pop(), (1, 7))
-        self.assertEqual(len(f), 1)
-        self.assertEqual(f.first(), b'a')
-        self.assertEqual(f.is_empty(), False)
-        self.assertEqual(f.pop(), (1, b'a'))
-        self.assertEqual(len(f), 0)
-        self.assertEqual(f.is_empty(), True)
-        self.assertEqual(f.pop(), (0, None))
-
-    def test_given_list(self):
-        f = asynchat.fifo([b'x', 17, 3])
-        self.assertEqual(len(f), 3)
-        self.assertEqual(f.pop(), (1, b'x'))
-        self.assertEqual(f.pop(), (1, 17))
-        self.assertEqual(f.pop(), (1, 3))
-        self.assertEqual(f.pop(), (0, None))
 
 
 class TestNotConnected(unittest.TestCase):

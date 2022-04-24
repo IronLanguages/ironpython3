@@ -16,6 +16,7 @@ from io import StringIO
 from test import support
 
 
+import optparse
 from optparse import make_option, Option, \
      TitledHelpFormatter, OptionParser, OptionGroup, \
      SUPPRESS_USAGE, OptionError, OptionConflictError, \
@@ -610,7 +611,6 @@ Options:
         self.parser.set_defaults(file=None)
         self.assertHelp(self.parser, self.expected_help_none)
 
-    @unittest.expectedFailure # remove this expectedFailure once repr(0.43) == '0.43'
     def test_float_default(self):
         self.parser.add_option(
             "-p", "--prob",
@@ -1649,6 +1649,12 @@ class TestParseNumber(BaseTest):
                              "option -l: invalid integer value: '0b0123'")
         self.assertParseFail(["-l", "0x12x"],
                              "option -l: invalid integer value: '0x12x'")
+
+
+class MiscTestCase(unittest.TestCase):
+    def test__all__(self):
+        blacklist = {'check_builtin', 'AmbiguousOptionError', 'NO_DEFAULT'}
+        support.check__all__(self, optparse, blacklist=blacklist)
 
 
 def test_main():

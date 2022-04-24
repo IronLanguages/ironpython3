@@ -1,7 +1,8 @@
+import collections
 import copy
 import pickle
+import sys
 import unittest
-from test import support
 
 class DictSetTest(unittest.TestCase):
 
@@ -202,13 +203,53 @@ class DictSetTest(unittest.TestCase):
     def test_recursive_repr(self):
         d = {}
         d[42] = d.values()
-        self.assertRaises(RuntimeError, repr, d)
+        r = repr(d)
+        # Cannot perform a stronger test, as the contents of the repr
+        # are implementation-dependent.  All we can say is that we
+        # want a str result, not an exception of any sort.
+        self.assertIsInstance(r, str)
+        d[42] = d.items()
+        r = repr(d)
+        # Again.
+        self.assertIsInstance(r, str)
+
+    def test_deeply_nested_repr(self):
+        d = {}
+        for i in range(sys.getrecursionlimit() + 100):
+            d = {42: d.values()}
+        self.assertRaises(RecursionError, repr, d)
 
     def test_copy(self):
         d = {1: 10, "a": "ABC"}
         self.assertRaises(TypeError, copy.copy, d.keys())
         self.assertRaises(TypeError, copy.copy, d.values())
         self.assertRaises(TypeError, copy.copy, d.items())
+
+    def test_compare_error(self):
+        class Exc(Exception):
+            pass
+
+        class BadEq:
+            def __hash__(self):
+                return 7
+            def __eq__(self, other):
+                raise Exc
+
+        k1, k2 = BadEq(), BadEq()
+        v1, v2 = BadEq(), BadEq()
+        d = {k1: v1}
+
+        self.assertIn(k1, d)
+        self.assertIn(k1, d.keys())
+        self.assertIn(v1, d.values())
+        self.assertIn((k1, v1), d.items())
+
+        self.assertRaises(Exc, d.__contains__, k2)
+        self.assertRaises(Exc, d.keys().__contains__, k2)
+        self.assertRaises(Exc, d.items().__contains__, (k2, v1))
+        self.assertRaises(Exc, d.items().__contains__, (k1, v2))
+        with self.assertRaises(Exc):
+            v2 in d.values()
 
     def test_pickle(self):
         d = {1: 10, "a": "ABC"}
@@ -220,9 +261,27 @@ class DictSetTest(unittest.TestCase):
             self.assertRaises((TypeError, pickle.PicklingError),
                 pickle.dumps, d.items(), proto)
 
+    def test_abc_registry(self):
+        d = dict(a=1)
 
-def test_main():
-    support.run_unittest(DictSetTest)
+        self.assertIsInstance(d.keys(), collections.KeysView)
+        self.assertIsInstance(d.keys(), collections.MappingView)
+        self.assertIsInstance(d.keys(), collections.Set)
+        self.assertIsInstance(d.keys(), collections.Sized)
+        self.assertIsInstance(d.keys(), collections.Iterable)
+        self.assertIsInstance(d.keys(), collections.Container)
+
+        self.assertIsInstance(d.values(), collections.ValuesView)
+        self.assertIsInstance(d.values(), collections.MappingView)
+        self.assertIsInstance(d.values(), collections.Sized)
+
+        self.assertIsInstance(d.items(), collections.ItemsView)
+        self.assertIsInstance(d.items(), collections.MappingView)
+        self.assertIsInstance(d.items(), collections.Set)
+        self.assertIsInstance(d.items(), collections.Sized)
+        self.assertIsInstance(d.items(), collections.Iterable)
+        self.assertIsInstance(d.items(), collections.Container)
+
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

@@ -130,7 +130,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
 
     if os.name == "posix":
         libpython = os.path.join(prefix,
-                                 "lib", "python" + get_python_version())
+                                 "lib", "ironpython" + get_python_version())
         if standard_lib:
             return libpython
         else:
@@ -415,14 +415,7 @@ _config_vars = None
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see the sysconfig module
-    name = os.environ.get('_PYTHON_SYSCONFIGDATA_NAME',
-        '_sysconfigdata_{abi}_{platform}_{multiarch}'.format(
-        abi=sys.abiflags,
-        platform=sys.platform,
-        multiarch=getattr(sys.implementation, '_multiarch', ''),
-    ))
-    _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
-    build_time_vars = _temp.build_time_vars
+    from _sysconfigdata import build_time_vars # ironpython
     global _config_vars
     _config_vars = {}
     _config_vars.update(build_time_vars)
@@ -438,7 +431,7 @@ def _init_nt():
     # XXX hmmm.. a normal install puts include files here
     g['INCLUDEPY'] = get_python_inc(plat_specific=0)
 
-    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
+    g['EXT_SUFFIX'] = (_imp.extension_suffixes() or [".pyd"])[0] # ironpython: extension_suffixes is empty
     g['EXE'] = ".exe"
     g['VERSION'] = get_python_version().replace(".", "")
     g['BINDIR'] = os.path.dirname(os.path.abspath(sys.executable))

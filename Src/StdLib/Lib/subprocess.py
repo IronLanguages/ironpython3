@@ -42,6 +42,7 @@ getstatusoutput(...): Runs a command in the shell, waits for it to complete,
 """
 
 import sys
+ironpython = (sys.implementation.name == 'ironpython')
 _mswindows = (sys.platform == "win32")
 
 import io
@@ -132,6 +133,11 @@ if _mswindows:
         hStdOutput = None
         hStdError = None
         wShowWindow = 0
+elif ironpython:
+    import threading
+    import clr
+    clr.AddReference("System")
+    from System.Diagnostics import Process
 else:
     import _posixsubprocess
     import select
@@ -192,6 +198,8 @@ if _mswindows:
 
         __del__ = Close
         __str__ = __repr__
+elif ironpython:
+    __all__.extend(["Process"])
 
 
 # This lists holds Popen instances for which the underlying process had not
@@ -643,6 +651,13 @@ class Popen(object):
                 raise ValueError(
                         "close_fds is not supported on Windows platforms"
                         " if you redirect stdin/stdout/stderr")
+
+        elif ironpython:
+            if preexec_fn is not None:
+                raise ValueError("preexec_fn is not supported by IronPython")
+            # if close_fds:
+            #     raise ValueError("close_fds is not supported by IronPython")
+
         else:
             # POSIX
             if close_fds is _PLATFORM_DEFAULT_CLOSE_FDS:
@@ -973,6 +988,10 @@ class Popen(object):
                 _winapi.GetCurrentProcess(), handle,
                 _winapi.GetCurrentProcess(), 0, 1,
                 _winapi.DUPLICATE_SAME_ACCESS)
+            # IronPython: Not closing this handle may cause read operations to block down the line.
+            #    Because of the GC of .NET, it may not be closed fast enough so we force it to close.
+            #    This is not an issue with CPython because the handle is closed via __del__.
+            if isinstance(handle, Handle): handle.Close()
             return Handle(h)
 
 
@@ -1164,6 +1183,117 @@ class Popen(object):
                 if rc == _winapi.STILL_ACTIVE:
                     raise
                 self.returncode = rc
+
+        kill = terminate
+
+
+    elif ironpython:
+        #
+        # Dotnet methods
+        #
+        def _get_handles(self, stdin, stdout, stderr):
+            # Can't get redirect file before Process.Start() is called
+            # postpone it to _execute_child
+            return (stdin, -1, -1, stdout, -1, stderr)
+
+        def _execute_child(self, args, executable, preexec_fn, close_fds,
+                           pass_fds, cwd, env,
+                           startupinfo, creationflags, shell,
+                           stdin, unused_p2cwrite,
+                           unused_c2pread, stdout,
+                           unused_errread, stderr,
+                           unused_restore_signals, unused_start_new_session):
+            """Execute program (Dotnet version)"""
+            p = Process()
+            s = p.StartInfo
+
+            if env:
+                for k, v in env.items():
+                    s.Environment[k] = v
+
+            if shell:
+                if not isinstance(args, str):
+                    args = list2cmdline(args)
+                # escape backslash and double quote
+                args = ''.join('\\' + c if c in {'\\', '"'} else c for c in args)
+                s.Arguments = '-c "{}"'.format(args)
+                s.FileName = executable or '/bin/sh'
+            else:
+                if not isinstance(args, str):
+                    s.FileName = args[0]
+                    s.Arguments = list2cmdline(args[1:])
+                else:
+                    s.FileName = args
+
+            s.RedirectStandardInput = stdin is not None
+            s.RedirectStandardOutput = stdout is not None
+            s.RedirectStandardError = stderr is not None
+            s.WorkingDirectory = cwd
+            s.UseShellExecute = False
+
+            p.Start()
+
+            self.pid = p.Id
+            self._child_created = True
+            self._handle = p
+
+            if stdin == PIPE:
+                self.stdin = open(p.StandardInput.BaseStream)
+            if stdout == PIPE:
+                self.stdout = io.BufferedReader(open(p.StandardOutput.BaseStream))
+            if stderr == PIPE:
+                self.stderr = io.BufferedReader(open(p.StandardError.BaseStream))
+
+            # dotnet can't redirect stdio to file/stream, thus has to feed from parent
+            if stdin not in (None,  DEVNULL, PIPE):
+                # assume file-like object
+                input = stdin.read()
+                with open(self._handle.StandardInput.BaseStream) as f:
+                    f.write(input)
+
+        def _internal_poll(self):
+            """Check if child process has terminated.  Returns returncode
+            attribute.
+
+            This method is called by __del__, so it can only refer to objects
+            in its local scope.
+
+            """
+            if self.returncode is None and self._handle.HasExited:
+                self.returncode = self._handle.ExitCode
+            return self.returncode
+
+        def wait(self, timeout=None, endtime=None):
+            """Wait for child process to terminate.  Returns returncode
+            attribute."""
+            if endtime is not None:
+                timeout = self._remaining_time(endtime)
+            if timeout is None:
+                self._handle.WaitForExit()
+            else:
+                self._handle.WaitForExit(int(timeout * 1000))
+            self.returncode = self._handle.ExitCode
+            return self.returncode
+
+        def _communicate(self, input, endtime, orig_timeout):
+            # .NET framework caches stdout and stderr
+            # so we can simply wait then read
+            if self.stdin:
+                if input:
+                    self.stdin.write(input)
+                self.stdin.close()
+
+            if orig_timeout is not None:
+                self.wait(endtime=endtime)
+
+            return (
+                self.stdout.read() if self.stdout else None,
+                self.stderr.read() if self.stderr else None,
+            )
+
+        def terminate(self):
+            """Terminates the process."""
+            self._handle.Kill()
 
         kill = terminate
 

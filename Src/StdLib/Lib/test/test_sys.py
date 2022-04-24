@@ -445,7 +445,13 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(sys.float_info), 11)
         self.assertEqual(sys.float_info.radix, 2)
         self.assertEqual(len(sys.int_info), 2)
-        self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
+
+        # ironpython-specific integer representation https://github.com/IronLanguages/ironpython3/issues/974
+        if sys.implementation.name == "ironpython":
+            self.assertTrue(sys.int_info.bits_per_digit == 32)
+        else:
+            self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
+
         self.assertTrue(sys.int_info.sizeof_digit >= 1)
         self.assertEqual(type(sys.int_info.bits_per_digit), int)
         self.assertEqual(type(sys.int_info.sizeof_digit), int)
@@ -479,13 +485,19 @@ class SysModuleTest(unittest.TestCase):
                 self.assertIn(sys.hash_info.algorithm, {"fnv", "siphash24"})
         else:
             # PY_HASH_EXTERNAL
-            self.assertEqual(algo, 0)
+            if sys.implementation.name == "ironpython":
+                self.assertEqual(algo, None)
+            else:
+                self.assertEqual(algo, 0)
         self.assertGreaterEqual(sys.hash_info.cutoff, 0)
         self.assertLess(sys.hash_info.cutoff, 8)
 
         self.assertIsInstance(sys.maxsize, int)
         self.assertIsInstance(sys.maxunicode, int)
-        self.assertEqual(sys.maxunicode, 0x10FFFF)
+        if sys.implementation.name == "ironpython": # https://github.com/IronLanguages/ironpython3/pull/1196
+            self.assertEqual(sys.maxunicode, 0xFFFF)
+        else:
+            self.assertEqual(sys.maxunicode, 0x10FFFF)
         self.assertIsInstance(sys.platform, str)
         self.assertIsInstance(sys.prefix, str)
         self.assertIsInstance(sys.base_prefix, str)

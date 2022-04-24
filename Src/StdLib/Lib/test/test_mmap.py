@@ -20,6 +20,7 @@ class MmapTests(unittest.TestCase):
             os.unlink(TESTFN)
 
     def tearDown(self):
+        self.doCleanups() # ironpython: close mmap before deleting
         try:
             os.unlink(TESTFN)
         except OSError:
@@ -175,6 +176,8 @@ class MmapTests(unittest.TestCase):
                 self.assertEqual(fp.read(), b'a'*mapsize,
                                  "Readonly memory map data file was modified")
 
+            m.close()
+
         # Opening mmap with size too big
         with open(TESTFN, "r+b") as f:
             try:
@@ -284,6 +287,7 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.find(b'one', 1, -2), -1)
         self.assertEqual(m.find(bytearray(b'one')), 0)
 
+        m.close()
 
     def test_rfind(self):
         # test the new 'end' parameter works as expected
@@ -303,6 +307,7 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.rfind(b'one', 1, -2), -1)
         self.assertEqual(m.rfind(bytearray(b'one')), 8)
 
+        m.close()
 
     def test_double_close(self):
         # make sure a double close doesn't crash on Solaris (Bug# 665913)
@@ -608,6 +613,8 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m[:], b"012barbaz9")
         self.assertRaises(ValueError, m.write, b"ba")
 
+        m.close() # ironpython
+
     def test_non_ascii_byte(self):
         for b in (129, 200, 255): # > 128
             m = mmap.mmap(-1, 1)
@@ -742,6 +749,7 @@ class MmapTests(unittest.TestCase):
             m * 2
 
 
+@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
 class LargeMmapTests(unittest.TestCase):
 
     def setUp(self):

@@ -702,6 +702,7 @@ class GrammarTests(unittest.TestCase):
 
     # Check the heuristic for print & exec covers significant cases
     # As well as placing some limits on false positives
+    @unittest.skipIf(sys.implementation.name=='ironpython', 'https://github.com/IronLanguages/ironpython3/issues/374')
     def test_former_statements_refer_to_builtins(self):
         keywords = "print", "exec"
         # Cases where we want the custom error

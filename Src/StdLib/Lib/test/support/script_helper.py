@@ -68,6 +68,7 @@ def run_python_until_end(*args, **env_vars):
     else:
         isolated = not env_vars and not env_required
     cmd_line = [sys.executable, '-X', 'faulthandler']
+    if sys.implementation.name == "ironpython": del cmd_line[1:]
     if isolated:
         # isolated mode: ignore Python environment variables, ignore user
         # site-packages, and don't add the current directory to sys.path

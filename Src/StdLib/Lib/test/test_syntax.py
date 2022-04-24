@@ -361,7 +361,7 @@ build.  The number of blocks must be greater than CO_MAXBLOCKS.  SF #1565514
    ...                   while 20:
    ...                    while 21:
    ...                     while 22:
-   ...                      break
+   ...                      assert False
    Traceback (most recent call last):
      ...
    SyntaxError: too many statically nested blocks

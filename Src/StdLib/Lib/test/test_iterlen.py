@@ -41,6 +41,7 @@ enumerate(iter('abc')).
 
 """
 
+import sys
 import unittest
 from itertools import repeat
 from collections import deque
@@ -147,6 +148,7 @@ class TestList(TestInvariantWithoutMutations, unittest.TestCase):
     def setUp(self):
         self.it = iter(range(n))
 
+    @unittest.skipIf(sys.implementation.name=='ironpython', 'Test crashing IronPython test suite')
     def test_mutation(self):
         d = list(range(n))
         it = iter(d)
@@ -167,6 +169,7 @@ class TestListReversed(TestInvariantWithoutMutations, unittest.TestCase):
     def setUp(self):
         self.it = reversed(range(n))
 
+    @unittest.skipIf(sys.implementation.name=='ironpython', 'https://github.com/IronLanguages/ironpython2/issues/387')
     def test_mutation(self):
         d = list(range(n))
         it = reversed(d)

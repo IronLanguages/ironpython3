@@ -4,6 +4,7 @@ import unittest
 from array import array
 from weakref import proxy
 
+import gc
 import io
 import _pyio as pyio
 
@@ -29,6 +30,7 @@ class AutoFileTests:
         self.assertEqual(self.f.tell(), p.tell())
         self.f.close()
         self.f = None
+        gc.collect() # required by IronPython
         self.assertRaises(ReferenceError, getattr, p, 'tell')
 
     def testAttributes(self):

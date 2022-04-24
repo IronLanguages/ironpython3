@@ -28,7 +28,8 @@ class AbstractMemoryTests:
 
     def check_getitem_with_type(self, tp):
         b = tp(self._source)
-        oldrefcount = sys.getrefcount(b)
+        if hasattr(sys, 'getrefcount'):
+            oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         self.assertEqual(m[0], ord(b"a"))
         self.assertIsInstance(m[0], int)
@@ -45,7 +46,8 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, lambda: m[0.0])
         self.assertRaises(TypeError, lambda: m["a"])
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        if hasattr(sys, 'getrefcount'):
+            self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_getitem(self):
         for tp in self._types:
@@ -61,7 +63,8 @@ class AbstractMemoryTests:
         if not self.ro_type:
             self.skipTest("no read-only type to test")
         b = self.ro_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        if hasattr(sys, 'getrefcount'):
+            oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         def setitem(value):
             m[0] = value
@@ -69,14 +72,16 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, setitem, 65)
         self.assertRaises(TypeError, setitem, memoryview(b"a"))
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        if hasattr(sys, 'getrefcount'):
+            self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_setitem_writable(self):
         if not self.rw_type:
             self.skipTest("no writable type to test")
         tp = self.rw_type
         b = self.rw_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        if hasattr(sys, 'getrefcount'):
+            oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         m[0] = ord(b'1')
         self._check_contents(tp, b, b"1bcdef")
@@ -121,7 +126,8 @@ class AbstractMemoryTests:
         self.assertRaises(ValueError, setitem, slice(0,2), b"a")
 
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        if hasattr(sys, 'getrefcount'):
+            self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_delitem(self):
         for tp in self._types:
@@ -205,14 +211,18 @@ class AbstractMemoryTests:
         # Test PyObject_GetBuffer() on a memoryview object.
         for tp in self._types:
             b = tp(self._source)
-            oldrefcount = sys.getrefcount(b)
+            if hasattr(sys, 'getrefcount'):
+                oldrefcount = sys.getrefcount(b)
             m = self._view(b)
-            oldviewrefcount = sys.getrefcount(m)
+            if hasattr(sys, 'getrefcount'):
+                oldviewrefcount = sys.getrefcount(m)
             s = str(m, "utf-8")
             self._check_contents(tp, b, s.encode("utf-8"))
-            self.assertEqual(sys.getrefcount(m), oldviewrefcount)
+            if hasattr(sys, 'getrefcount'):
+                self.assertEqual(sys.getrefcount(m), oldviewrefcount)
             m = None
-            self.assertEqual(sys.getrefcount(b), oldrefcount)
+            if hasattr(sys, 'getrefcount'):
+                self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_gc(self):
         for tp in self._types:
@@ -339,6 +349,8 @@ class AbstractMemoryTests:
         m = self._view(b)
         self.assertRaises(ValueError, hash, m)
 
+    # WIP: Fails on net4.5
+    @unittest.skipIf(sys.implementation.name == 'ironpython', 'net4.5 not releasing weakrefs')
     def test_weakref(self):
         # Check memoryviews are weakrefable
         for tp in self._types:
@@ -432,6 +444,7 @@ class BaseMemorySliceTests:
     def _check_contents(self, tp, obj, contents):
         self.assertEqual(obj[1:7], tp(contents))
 
+    @unittest.skipUnless(hasattr(sys, 'getrefcount'), 'test needs sys.getrefcount()')
     def test_refs(self):
         for tp in self._types:
             m = memoryview(tp(self._source))

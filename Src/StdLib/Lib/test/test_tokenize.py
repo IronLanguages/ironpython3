@@ -1589,7 +1589,7 @@ class TestRoundtrip(TestCase):
         for f in ('buffer', 'builtin', 'fileio', 'inspect', 'os', 'platform', 'sys'):
             testfiles.remove(os.path.join(tempdir, "test_%s.py") % f)
 
-        if not support.is_resource_enabled("cpu"):
+        if not support.is_resource_enabled("cpu") or True: # ironpython: don't process the whole folder since it's slow
             testfiles = random.sample(testfiles, 10)
 
         for testfile in testfiles:

@@ -78,7 +78,7 @@ class SequenceMatcher:
     sequences are close matches:
 
     >>> print(round(s.ratio(), 3))
-    0.866
+    0.86599999999999999
     >>>
 
     If you're only interested in where the sequences match,

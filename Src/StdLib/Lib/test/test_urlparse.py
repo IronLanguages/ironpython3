@@ -1064,8 +1064,9 @@ class UrlParseTestCase(unittest.TestCase):
         # Ensure that ALL of them are detected and cause an error
         illegal_chars = '/:#?@'
         hex_chars = {'{:04X}'.format(ord(c)) for c in illegal_chars}
+        maxunicode = 0xffff if sys.implementation.name == "ironpython" else sys.maxunicode # https://github.com/IronLanguages/ironpython3/issues/252
         denorm_chars = [
-            c for c in map(chr, range(128, sys.maxunicode))
+            c for c in map(chr, range(128, maxunicode))
             if (hex_chars & set(unicodedata.decomposition(c).split()))
             and c not in illegal_chars
         ]
@@ -1079,13 +1080,24 @@ class UrlParseTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             urllib.parse.urlsplit('http://\u30d5\u309a\ufe1380')
 
+        # https://github.com/IronLanguages/ironpython3/issues/614
+        is_mono = False
+        mono_issue_chars = ("\ufe13", "\ufe16", "\ufe5f")
+        if sys.implementation.name == "ironpython":
+            import clr
+            is_mono = clr.IsMono
+
         for scheme in ["http", "https", "ftp"]:
             for netloc in ["netloc{}false.netloc", "n{}user@netloc"]:
                 for c in denorm_chars:
                     url = "{}://{}/path".format(scheme, netloc.format(c))
                     with self.subTest(url=url, char='{:04X}'.format(ord(c))):
+                        if is_mono and c in mono_issue_chars:
+                            urllib.parse.urlsplit(url) # ensure we fail if this ever gets fixed
+                            continue
                         with self.assertRaises(ValueError):
                             urllib.parse.urlsplit(url)
+
 
 class Utility_Tests(unittest.TestCase):
     """Testcase to test the various utility functions in the urllib."""

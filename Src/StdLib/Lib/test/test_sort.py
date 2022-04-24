@@ -128,6 +128,8 @@ class TestBase(unittest.TestCase):
             x = [e for e, i in augmented] # a stable sort of s
             check("stability", x, s)
 
+        self.assertEqual(nerrors, 0) # fail if we ran into any errors
+
 #==============================================================================
 
 class TestBugs(unittest.TestCase):
@@ -205,6 +207,7 @@ class TestDecorateSortUndecorate(unittest.TestCase):
             return x
         self.assertRaises(ValueError, data.sort, key=k)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "__del__ is only invoked when the GC runs")
     def test_key_with_mutating_del(self):
         data = list(range(10))
         class SortKiller(object):
@@ -217,6 +220,7 @@ class TestDecorateSortUndecorate(unittest.TestCase):
                 return id(self) < id(other)
         self.assertRaises(ValueError, data.sort, key=SortKiller)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "__del__ is only invoked when the GC runs")
     def test_key_with_mutating_del_and_exception(self):
         data = list(range(10))
         ## dup = data[:]

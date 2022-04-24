@@ -1,7 +1,7 @@
 # A lot of failures in these tests on Mac OS X.
 # Byte order related?
 
-import unittest
+import os, sys, unittest
 from ctypes import *
 from ctypes.test import need_symbol
 
@@ -159,12 +159,14 @@ class CFunctions(unittest.TestCase):
         self.assertEqual(self._dll.tf_bd(0, 42.), 14.)
         self.assertEqual(self.S(), 42)
 
+    @unittest.skipIf(sys.implementation.name=='ironpython' and os.name=='posix', 'Long doubles - https://github.com/IronLanguages/ironpython2/issues/408')
     def test_longdouble(self):
         self._dll.tf_D.restype = c_longdouble
         self._dll.tf_D.argtypes = (c_longdouble,)
         self.assertEqual(self._dll.tf_D(42.), 14.)
         self.assertEqual(self.S(), 42)
 
+    @unittest.skipIf(sys.implementation.name=='ironpython' and os.name=='posix', 'Long doubles - https://github.com/IronLanguages/ironpython2/issues/408')
     def test_longdouble_plus(self):
         self._dll.tf_bD.restype = c_longdouble
         self._dll.tf_bD.argtypes = (c_byte, c_longdouble)

@@ -186,12 +186,12 @@ namespace IronPython.Modules {
 
             }
 
-            public void set_ecdh_curve(CodeContext context, [NotNull] string curve) {
+            public void set_ecdh_curve(CodeContext context, [NotNone] string curve) {
                 if (curve != "prime256v1")
                     throw PythonOps.ValueError($"unknown elliptic curve name {PythonOps.Repr(context, curve)}");
             }
 
-            public void set_ecdh_curve(CodeContext context, [NotNull] Bytes curve) {
+            public void set_ecdh_curve(CodeContext context, [NotNone] Bytes curve) {
                 if (curve.MakeString() != "prime256v1")
                     throw PythonOps.ValueError($"unknown elliptic curve name {PythonOps.Repr(context, curve)}");
             }
@@ -701,7 +701,7 @@ Returns the number of bytes written.")]
                 return Bytes.Make(res);
             }
 
-            public int write(CodeContext context, [NotNull] IBufferProtocol b) {
+            public int write(CodeContext context, [NotNone] IBufferProtocol b) {
                 if (_write_eof) throw PythonExceptions.CreateThrowable(SSLError(context), "cannot write() after write_eof()");
 
                 if (b is not Bytes bytes) {

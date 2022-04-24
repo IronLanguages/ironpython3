@@ -332,19 +332,19 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object find([NotNull] IBufferProtocol s) {
+            public object find([NotNone] IBufferProtocol s) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object find([NotNull] IBufferProtocol s, long start) {
+            public object find([NotNone] IBufferProtocol s, long start) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object find([NotNull] IBufferProtocol s, long start, long end) {
+            public object find([NotNone] IBufferProtocol s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, end);
                 }
@@ -609,19 +609,19 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object rfind([NotNull] IBufferProtocol s) {
+            public object rfind([NotNone] IBufferProtocol s) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull] IBufferProtocol s, long start) {
+            public object rfind([NotNone] IBufferProtocol s, long start) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull] IBufferProtocol s, long start, long end) {
+            public object rfind([NotNone] IBufferProtocol s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, end);
                 }

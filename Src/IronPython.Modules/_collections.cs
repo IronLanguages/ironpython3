@@ -580,12 +580,12 @@ namespace IronPython.Modules {
 
             #region binary operators
 
-            public static deque operator +([NotNull] deque x, object y) {
+            public static deque operator +([NotNone] deque x, object y) {
                 if (y is deque t) return x + t;
                 throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonOps.GetPythonTypeName(y)}\") to deque");
             }
 
-            public static deque operator +([NotNull] deque x, [NotNull] deque y) {
+            public static deque operator +([NotNone] deque x, [NotNone] deque y) {
                 var d = new deque(x._maxLen);
                 d.extend(x);
                 d.extend(y);
@@ -616,30 +616,30 @@ namespace IronPython.Modules {
                 return d;
             }
 
-            public static deque operator *([NotNull] deque x, int n) {
+            public static deque operator *([NotNone] deque x, int n) {
                 return MultiplyWorker(x, n);
             }
 
-            public static deque operator *(int n, [NotNull] deque x) {
+            public static deque operator *(int n, [NotNone] deque x) {
                 return MultiplyWorker(x, n);
             }
 
-            public static object operator *([NotNull] deque self, [NotNull] Runtime.Index count) {
+            public static object operator *([NotNone] deque self, [NotNone] Runtime.Index count) {
                 return PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
             }
 
-            public static object operator *([NotNull] Runtime.Index count, [NotNull] deque self) {
+            public static object operator *([NotNone] Runtime.Index count, [NotNone] deque self) {
                 return PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
             }
 
-            public static object operator *([NotNull] deque self, object count) {
+            public static object operator *([NotNone] deque self, object count) {
                 if (Converter.TryConvertToIndex(count, out int index)) {
                     return self * index;
                 }
                 throw PythonOps.TypeErrorForUnIndexableObject(count);
             }
 
-            public static object operator *(object count, [NotNull] deque self) {
+            public static object operator *(object count, [NotNone] deque self) {
                 if (Converter.TryConvertToIndex(count, out int index)) {
                     return index * self;
                 }
@@ -1067,16 +1067,16 @@ namespace IronPython.Modules {
                 }
             }
 
-            public static object operator >([NotNull] deque self, [NotNull] deque other)
+            public static object operator >([NotNone] deque self, [NotNone] deque other)
                 => self.CompareToWorker(DefaultContext.Default, other, PythonOperationKind.GreaterThan);
 
-            public static object operator <([NotNull] deque self, [NotNull] deque other)
+            public static object operator <([NotNone] deque self, [NotNone] deque other)
                 => self.CompareToWorker(DefaultContext.Default, other, PythonOperationKind.LessThan);
 
-            public static object operator >=([NotNull] deque self, [NotNull] deque other)
+            public static object operator >=([NotNone] deque self, [NotNone] deque other)
                 => self.CompareToWorker(DefaultContext.Default, other, PythonOperationKind.GreaterThanOrEqual);
 
-            public static object operator <=([NotNull] deque self, [NotNull] deque other)
+            public static object operator <=([NotNone] deque self, [NotNone] deque other)
                 => self.CompareToWorker(DefaultContext.Default, other, PythonOperationKind.LessThanOrEqual);
 
             #endregion
@@ -1156,7 +1156,7 @@ namespace IronPython.Modules {
                 this.default_factory = default_factory;
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [NotNull]params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [NotNone] params object[] args) {
                 __init__(context, default_factory);
 
                 foreach (object o in args) {
@@ -1164,7 +1164,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary, NotNull]IDictionary<object, object> dict, [NotNull]params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary, NotNone] IDictionary<object, object> dict, [NotNone] params object[] args) {
                 __init__(context, default_factory, args);
 
                 foreach (KeyValuePair<object , object> kvp in dict) {

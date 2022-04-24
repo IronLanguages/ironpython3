@@ -63,7 +63,7 @@ namespace IronPython.Modules {
             }            
         }
 
-        public static object init_builtin(CodeContext/*!*/ context, [NotNull] string/*!*/ name) {
+        public static object init_builtin(CodeContext/*!*/ context, [NotNone] string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("init_builtin() argument 1 must be string, not None");
 
             PythonContext pc = context.LanguageContext;

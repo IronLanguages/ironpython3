@@ -73,7 +73,7 @@ objects support decompress() and flush().";
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int adler32([NotNull] IBufferProtocol data, long value=1L)
+        public static int adler32([NotNone] IBufferProtocol data, long value=1L)
         {
             using var buffer = data.GetBuffer();
             return (int)Adler32.GetAdler32Checksum(value, buffer.AsUnsafeArray() ?? buffer.ToArray(), 0, buffer.NumBytes());
@@ -83,14 +83,14 @@ a signed integer.")]
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static object crc32([NotNull] IBufferProtocol data, uint value = 0)
+        public static object crc32([NotNone] IBufferProtocol data, uint value = 0)
             // TODO: [PythonIndex(overflow=mask)] uint value = 0
             => IronPython.Modules.PythonBinaryAscii.crc32(data, value);
 
         [Documentation(@"compress(data[, level]) -- Returns a bytes object containing compressed data.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static Bytes compress([NotNull] IBufferProtocol data,
+        public static Bytes compress([NotNone] IBufferProtocol data,
             int level=Z_DEFAULT_COMPRESSION)
         {
             using var buffer = data.GetBuffer();
@@ -156,7 +156,7 @@ Optional arg level is the compression level, in 1-9.")]
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static Bytes decompress([NotNull] IBufferProtocol data,
+        public static Bytes decompress([NotNone] IBufferProtocol data,
             int wbits=MAX_WBITS,
             int bufsize=DEFAULTALLOC)
         {

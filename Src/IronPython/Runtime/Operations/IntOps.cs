@@ -17,6 +17,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
 

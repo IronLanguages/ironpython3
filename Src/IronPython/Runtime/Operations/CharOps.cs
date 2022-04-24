@@ -53,17 +53,17 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEquals(char x, char y) => x != y;
 
         [SpecialName]
-        public static bool LessThan(char x, [NotNull] string y) => StringOps.LessThan(char.ToString(x), y);
+        public static bool LessThan(char x, [NotNone] string y) => StringOps.LessThan(char.ToString(x), y);
         [SpecialName]
-        public static bool LessThanOrEqual(char x, [NotNull] string y) => StringOps.LessThanOrEqual(char.ToString(x), y);
+        public static bool LessThanOrEqual(char x, [NotNone] string y) => StringOps.LessThanOrEqual(char.ToString(x), y);
         [SpecialName]
-        public static bool GreaterThan(char x, [NotNull] string y) => StringOps.GreaterThan(char.ToString(x), y);
+        public static bool GreaterThan(char x, [NotNone] string y) => StringOps.GreaterThan(char.ToString(x), y);
         [SpecialName]
-        public static bool GreaterThanOrEqual(char x, [NotNull] string y) => StringOps.GreaterThanOrEqual(char.ToString(x), y);
+        public static bool GreaterThanOrEqual(char x, [NotNone] string y) => StringOps.GreaterThanOrEqual(char.ToString(x), y);
         [SpecialName]
-        public static bool Equals(char x, [NotNull] string y) => StringOps.Equals(char.ToString(x), y);
+        public static bool Equals(char x, [NotNone] string y) => StringOps.Equals(char.ToString(x), y);
         [SpecialName]
-        public static bool NotEquals(char x, [NotNull] string y) => StringOps.NotEquals(char.ToString(x), y);
+        public static bool NotEquals(char x, [NotNone] string y) => StringOps.NotEquals(char.ToString(x), y);
 
         public static bool __contains__(char self, char other) => self == other;
 

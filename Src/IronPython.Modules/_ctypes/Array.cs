@@ -67,7 +67,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object this[[NotNull] Slice slice] {
+            public object this[[NotNone] Slice slice] {
                 get {
                     int start, stop, step, count;
                     int size = ((ArrayType)NativeType).Length;

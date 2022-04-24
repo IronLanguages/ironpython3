@@ -30,7 +30,7 @@ namespace IronPython.Runtime.Types {
             type = dt;
         }
 
-        public MappingProxy([NotNull] PythonDictionary dict) {
+        public MappingProxy([NotNone] PythonDictionary dict) {
             dictionary = dict;
         }
 

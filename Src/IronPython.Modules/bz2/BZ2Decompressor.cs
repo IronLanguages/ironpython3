@@ -56,7 +56,7 @@ after the end of stream is found, EOFError will be raised. If any data
 was found after the end of stream, it'll be ignored and saved in
 unused_data attribute.
 ")]
-            public Bytes decompress([NotNull] IBufferProtocol data, int max_length = -1) {
+            public Bytes decompress([NotNone] IBufferProtocol data, int max_length = -1) {
                 if (_finished)
                     throw PythonOps.EofError("End of stream was already found");
 

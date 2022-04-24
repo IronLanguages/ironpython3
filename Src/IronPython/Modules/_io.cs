@@ -2933,7 +2933,7 @@ namespace IronPython.Modules {
                 _errors = errors;
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNull]IList<byte> input, bool final=false) {
+            public string decode(CodeContext/*!*/ context, [NotNone] IList<byte> input, bool final=false) {
                 object output;
                 if (_decoder == null) {
                     output = input.MakeString();
@@ -2957,7 +2957,7 @@ namespace IronPython.Modules {
                 return DecodeWorker(context, decoded, final);
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNull]string input, bool final=false) {
+            public string decode(CodeContext/*!*/ context, [NotNone] string input, bool final=false) {
                 if (_decoder == null) {
                     return DecodeWorker(context, input, final);
                 }
@@ -3031,7 +3031,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void setstate(CodeContext/*!*/ context, [NotNull]PythonTuple state) {
+            public void setstate(CodeContext/*!*/ context, [NotNone] PythonTuple state) {
                 object buf = state[0];
                 int flags = Converter.ConvertToInt32(state[1]);
 

@@ -197,7 +197,7 @@ namespace IronPython.Modules {
         public class compress : IterBase {
             private compress() { }
 
-            public compress(CodeContext/*!*/ context, [NotNull]object data, [NotNull]object selectors) {
+            public compress(CodeContext/*!*/ context, [NotNone] object data, [NotNone] object selectors) {
                 EnsureIterator(context, data);
                 EnsureIterator(context, selectors);
                 InnerEnumerator = LazyYielder(data, selectors);

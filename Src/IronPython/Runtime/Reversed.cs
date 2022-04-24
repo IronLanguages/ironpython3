@@ -27,11 +27,11 @@ namespace IronPython.Runtime {
             _getItemMethod = getitem;
         }
 
-        public static object? __new__(CodeContext context, [NotNull] PythonType type, [NotNull] IReversible o) {
+        public static object? __new__(CodeContext context, [NotNone] PythonType type, [NotNone] IReversible o) {
             return o.__reversed__();
         }
 
-        public static object? __new__(CodeContext context, [NotNull] PythonType type, object? o) {
+        public static object? __new__(CodeContext context, [NotNone] PythonType type, object? o) {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__reversed__", out object? res))
                 return res;
 

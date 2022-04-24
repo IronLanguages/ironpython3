@@ -217,7 +217,7 @@ namespace IronPython.Modules {
                 + "set port to 0, the system will assign an available port number between 1024\n"
                 + "and 5000."
                 )]
-            public void bind([NotNull] PythonTuple address) {
+            public void bind([NotNone] PythonTuple address) {
                 IPEndPoint localEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     _socket.Bind(localEP);
@@ -268,7 +268,7 @@ namespace IronPython.Modules {
                 + "If a timeout is set and the socket is in blocking mode, connect() will block\n"
                 + "indefinitely until a connection is made or an error occurs."
                 )]
-            public void connect([NotNull] PythonTuple address) {
+            public void connect([NotNone] PythonTuple address) {
                 IPEndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     _socket.Connect(remoteEP);
@@ -289,7 +289,7 @@ namespace IronPython.Modules {
                 + "mode. If a timeout is set and the socket is in blocking mode, connect_ex() will\n"
                 + "block indefinitely until a connection is made or an error occurs."
                 )]
-            public int connect_ex([NotNull] PythonTuple address) {
+            public int connect_ex([NotNone] PythonTuple address) {
                 IPEndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     _socket.Connect(remoteEP);
@@ -430,7 +430,7 @@ namespace IronPython.Modules {
                 + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
                 + "See recv() for documentation about the flags.\n"
                 )]
-            public int recv_into([NotNull] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
+            public int recv_into([NotNone] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
                 using var buf = buffer.GetBufferNoThrow(BufferFlags.Writable);
                 if (buf is null) throw PythonOps.TypeError($"{nameof(recv_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
                 var span = buf.AsSpan();
@@ -500,7 +500,7 @@ namespace IronPython.Modules {
             [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
                 + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
                 )]
-            public PythonTuple recvfrom_into([NotNull] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
+            public PythonTuple recvfrom_into([NotNone] IBufferProtocol buffer, int nbytes = 0, int flags = 0) {
                 using var buf = buffer.GetBufferNoThrow(BufferFlags.Writable);
                 if (buf is null) throw PythonOps.TypeError($"{nameof(recvfrom_into)}() argument 1 must be read-write buffer, not {PythonOps.GetPythonTypeName(buffer)}");
                 var span = buf.AsSpan();
@@ -577,11 +577,11 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public int send([NotNull] Bytes data, int flags = 0) {
+            public int send([NotNone] Bytes data, int flags = 0) {
                 return sendWorker(data.UnsafeByteArray, flags);
             }
 
-            public int send([NotNull] IBufferProtocol data, int flags = 0) {
+            public int send([NotNone] IBufferProtocol data, int flags = 0) {
                 using IPythonBuffer buffer = data.GetBuffer();
                 return sendWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags);
             }
@@ -614,11 +614,11 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public void sendall([NotNull] Bytes data, int flags = 0) {
+            public void sendall([NotNone] Bytes data, int flags = 0) {
                 sendallWorker(data.UnsafeByteArray, flags);
             }
 
-            public void sendall([NotNull] IBufferProtocol data, int flags = 0) {
+            public void sendall([NotNone] IBufferProtocol data, int flags = 0) {
                 using IPythonBuffer buffer = data.GetBuffer();
                 sendallWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags);
             }
@@ -652,20 +652,20 @@ namespace IronPython.Modules {
                 + "successful completion of the Send method means that the underlying system has\n"
                 + "had room to buffer your data for a network send"
                 )]
-            public int sendto([NotNull] Bytes data, int flags, [NotNull] PythonTuple address) {
+            public int sendto([NotNone] Bytes data, int flags, [NotNone] PythonTuple address) {
                 return sendtoWorker(data.UnsafeByteArray, flags, address);
             }
 
-            public int sendto([NotNull] IBufferProtocol data, int flags, [NotNull] PythonTuple address) {
+            public int sendto([NotNone] IBufferProtocol data, int flags, [NotNone] PythonTuple address) {
                 using IPythonBuffer buffer = data.GetBuffer();
                 return sendtoWorker(buffer.AsUnsafeArray() ?? buffer.ToArray(), flags, address);
             }
 
             [Documentation("")]
-            public int sendto([NotNull] Bytes data, [NotNull] PythonTuple address)
+            public int sendto([NotNone] Bytes data, [NotNone] PythonTuple address)
                 => sendto(data, 0, address);
 
-            public int sendto([NotNull] IBufferProtocol data, [NotNull] PythonTuple address)
+            public int sendto([NotNone] IBufferProtocol data, [NotNone] PythonTuple address)
                 => sendto(data, 0, address);
 
             private int sendtoWorker(byte[] buffer, int flags, PythonTuple address) {
@@ -1000,7 +1000,7 @@ namespace IronPython.Modules {
         [Documentation("")]
         public static PythonList getaddrinfo(
             CodeContext/*!*/ context,
-            [NotNull] Bytes host,
+            [NotNone] Bytes host,
             object? port,
             int family = (int)AddressFamily.Unspecified,
             int socktype = 0,
@@ -1047,7 +1047,7 @@ namespace IronPython.Modules {
             + "\n"
             + "gethostbyname() doesn't support IPv6; for IPv4/IPv6 support, use getaddrinfo()."
             )]
-        public static string gethostbyname(CodeContext/*!*/ context, [NotNull] string host) {
+        public static string gethostbyname(CodeContext/*!*/ context, [NotNone] string host) {
             return HostToAddress(context, host, AddressFamily.InterNetwork).ToString();
         }
 
@@ -1059,7 +1059,7 @@ namespace IronPython.Modules {
             + "gethostbyname_ex() doesn't support IPv6; for IPv4/IPv6 support, use\n"
             + "getaddrinfo()."
             )]
-        public static PythonTuple gethostbyname_ex(CodeContext/*!*/ context, [NotNull] string host) {
+        public static PythonTuple gethostbyname_ex(CodeContext/*!*/ context, [NotNone] string host) {
             string hostname;
             PythonList aliases;
             PythonList ips = new PythonList();
@@ -1100,7 +1100,7 @@ namespace IronPython.Modules {
             + "Return a tuple of (primary hostname, alias hostnames, ip addresses). host may\n"
             + "be either a hostname or an IP address."
             )]
-        public static object gethostbyaddr(CodeContext/*!*/ context, [NotNull] string host) {
+        public static object gethostbyaddr(CodeContext/*!*/ context, [NotNone] string host) {
             if (host == "") {
                 host = gethostname();
             }
@@ -1137,7 +1137,7 @@ namespace IronPython.Modules {
             + " - NI_DGRAM: Silently ignored (see below).\n"
             + "\n"
             )]
-        public static object getnameinfo(CodeContext/*!*/ context, [NotNull] PythonTuple socketAddr, int flags) {
+        public static object getnameinfo(CodeContext/*!*/ context, [NotNone] PythonTuple socketAddr, int flags) {
             var socketAddrLen = socketAddr.__len__();
             if (socketAddrLen < 2 || socketAddrLen > 4) {
                 throw PythonOps.TypeError("socket address must be a 2-tuple (IPv4 or IPv6) or 4-tuple (IPv6)");
@@ -1231,7 +1231,7 @@ namespace IronPython.Modules {
             + "\n"
             + "Raises socket.error if no protocol number can be found."
             )]
-        public static object getprotobyname(CodeContext/*!*/ context, [NotNull] string protocolName) {
+        public static object getprotobyname(CodeContext/*!*/ context, [NotNone] string protocolName) {
             switch (protocolName.ToLower()) {
                 case "ah": return IPPROTO_AH;
                 case "esp": return IPPROTO_ESP;
@@ -1260,11 +1260,11 @@ namespace IronPython.Modules {
             + "The optional protocol name, if given, should be 'tcp' or 'udp',\n"
             + "otherwise any protocol will match."
             )]
-        public static int getservbyname(CodeContext/*!*/ context, [NotNull] string serviceName)
+        public static int getservbyname(CodeContext/*!*/ context, [NotNone] string serviceName)
             => getservbyname(context, serviceName, null!);
 
         [Documentation("")]
-        public static int getservbyname(CodeContext/*!*/ context, [NotNull] string serviceName, [NotNull] string protocolName) {
+        public static int getservbyname(CodeContext/*!*/ context, [NotNone] string serviceName, [NotNone] string protocolName) {
             if (protocolName != null) {
                 protocolName = protocolName.ToLower();
                 if (protocolName != "udp" && protocolName != "tcp")
@@ -1322,7 +1322,7 @@ namespace IronPython.Modules {
             => getservbyport(context, port, null!);
 
         [Documentation("")]
-        public static string getservbyport(CodeContext/*!*/ context, int port, [NotNull] string protocolName) {
+        public static string getservbyport(CodeContext/*!*/ context, int port, [NotNone] string protocolName) {
             if (port < 0 || port > 65535)
                 throw PythonOps.OverflowError("getservbyport: port must be 0-65535.");
 
@@ -1374,7 +1374,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("ntohl(x) -> integer\n\nConvert a 32-bit integer from network byte order to host byte order.")]
-        public static object ntohl([NotNull] object x) {
+        public static object ntohl([NotNone] object x) {
             int res = IPAddress.NetworkToHostOrder(SignInsensitiveToInt32(x));
 
             if (res < 0) {
@@ -1385,12 +1385,12 @@ namespace IronPython.Modules {
         }
 
         [Documentation("ntohs(x) -> integer\n\nConvert a 16-bit integer from network byte order to host byte order.")]
-        public static int ntohs([NotNull] object x) {
+        public static int ntohs([NotNone] object x) {
             return (int)(ushort)IPAddress.NetworkToHostOrder(SignInsensitiveToInt16(x));
         }
 
         [Documentation("htonl(x) -> integer\n\nConvert a 32bit integer from host byte order to network byte order.")]
-        public static object htonl([NotNull] object x) {
+        public static object htonl([NotNone] object x) {
             int res = IPAddress.HostToNetworkOrder(SignInsensitiveToInt32(x));
 
             if (res < 0) {
@@ -1401,7 +1401,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("htons(x) -> integer\n\nConvert a 16-bit integer from host byte order to network byte order.")]
-        public static int htons([NotNull] object x) {
+        public static int htons([NotNone] object x) {
             return (int)(ushort)IPAddress.HostToNetworkOrder(SignInsensitiveToInt16(x));
         }
 
@@ -1453,7 +1453,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_pton() supports IPv4 and IPv6."
             )]
-        public static Bytes inet_pton(CodeContext/*!*/ context, int addressFamily, [NotNull] string ipString) {
+        public static Bytes inet_pton(CodeContext/*!*/ context, int addressFamily, [NotNone] string ipString) {
             if (addressFamily != (int)AddressFamily.InterNetwork && addressFamily != (int)AddressFamily.InterNetworkV6) {
                 throw MakeException(context, new SocketException((int)SocketError.AddressFamilyNotSupported));
             }
@@ -1480,7 +1480,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntop() supports IPv4 and IPv6."
             )]
-        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, [NotNull] IBufferProtocol packedIP) {
+        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, [NotNone] IBufferProtocol packedIP) {
             using var buffer = packedIP.GetBuffer();
             var span = buffer.AsReadOnlySpan();
             if (!(
@@ -1509,7 +1509,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_aton() supports only IPv4."
             )]
-        public static Bytes inet_aton(CodeContext/*!*/ context, [NotNull] string ipString) {
+        public static Bytes inet_aton(CodeContext/*!*/ context, [NotNone] string ipString) {
             return inet_pton(context, (int)AddressFamily.InterNetwork, ipString);
         }
 
@@ -1522,7 +1522,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntoa() supports only IPv4."
             )]
-        public static string inet_ntoa(CodeContext/*!*/ context, [NotNull] IBufferProtocol packedIP) {
+        public static string inet_ntoa(CodeContext/*!*/ context, [NotNone] IBufferProtocol packedIP) {
             return inet_ntop(context, (int)AddressFamily.InterNetwork, packedIP);
         }
 

@@ -20,7 +20,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides access to functions for operating on complex numbers";
 
         //cos(a+ ib) = cosa*coshb - i*sina*sinhb
-        public static Complex cos([NotNull]object x) {
+        public static Complex cos([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         }
 
         //sin(a+ ib) = sina*coshb + i*cosa*sinhb
-        public static Complex sin([NotNull]object x) {
+        public static Complex sin([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -61,7 +61,7 @@ namespace IronPython.Modules {
             return new Complex(real, imag);
         }
 
-        public static Complex tan([NotNull]object x) {
+        public static Complex tan([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // limit as num.Imaginary -> Infinity
@@ -78,7 +78,7 @@ namespace IronPython.Modules {
         }
 
         //cosh(a+ ib) = cosha*cosb + i*sinha*sinb
-        public static Complex cosh([NotNull]object x) {
+        public static Complex cosh([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -99,7 +99,7 @@ namespace IronPython.Modules {
         }
 
         //sin(a+ ib) = sinha*cosb + i*cosha*sinb
-        public static Complex sinh([NotNull]object x) {
+        public static Complex sinh([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // magnitude is always NaN
@@ -119,7 +119,7 @@ namespace IronPython.Modules {
             return new Complex(real, imag);
         }
 
-        public static Complex tanh([NotNull]object x) {
+        public static Complex tanh([NotNone] object x) {
             Complex num = GetComplexNum(x);
             if (num.IsZero()) return num;
 
@@ -137,7 +137,7 @@ namespace IronPython.Modules {
         }
 
         //acos(x) = -i*ln( x + i*(1-x*x)^1/2)
-        public static Complex acos([NotNull]object x) {
+        public static Complex acos([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary);
@@ -150,7 +150,7 @@ namespace IronPython.Modules {
         }
 
         //asin(x) = -i*ln( i*x + (1-x*x)^1/2)
-        public static Complex asin([NotNull]object x) {
+        public static Complex asin([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             double a = MathUtils.Hypot(num.Real + 1.0, num.Imaginary);
@@ -163,7 +163,7 @@ namespace IronPython.Modules {
         }
 
         //atan(x) = i/2*ln( (i+x)/ (i-x))
-        public static Complex atan([NotNull]object x) {
+        public static Complex atan([NotNone] object x) {
             Complex num = GetComplexNum(x);
             if (num.IsZero()) return num;
             Complex i = Complex.ImaginaryOne;
@@ -172,14 +172,14 @@ namespace IronPython.Modules {
         }
 
         //acosh(x) = ln( x + (x*x -1)^1/2)
-        public static Complex acosh([NotNull]object x) {
+        public static Complex acosh([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             return log(num + sqrt(num + 1) * sqrt(num - 1));
         }
 
         //asin(x) = ln( x + (x*x +1)^1/2)
-        public static Complex asinh([NotNull]object x) {
+        public static Complex asinh([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             if (num.IsZero()) {
@@ -192,7 +192,7 @@ namespace IronPython.Modules {
         }
 
         //atanh(x) = (ln(1 +x) - ln(1-x))/2
-        public static Complex atanh([NotNull]object x) {
+        public static Complex atanh([NotNone] object x) {
             Complex num = GetComplexNum(x);
             if (num.IsZero()) return num;
 
@@ -200,7 +200,7 @@ namespace IronPython.Modules {
         }
 
         //ln(re^iO) = ln(r) + iO 
-        public static Complex log([NotNull]object x) {
+        public static Complex log([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             if (num.IsZero()) {
@@ -215,15 +215,15 @@ namespace IronPython.Modules {
         }
 
         //log b to base a = ln b / ln a
-        public static Complex log([NotNull]object x, [NotNull]object logBase) {
+        public static Complex log([NotNone] object x, [NotNone] object logBase) {
             return log(x) / log(logBase);
         }
 
-        public static Complex log10([NotNull]object x) {
+        public static Complex log10([NotNone] object x) {
             return log(x, 10);
         }
 
-        public static Complex exp([NotNull]object x) {
+        public static Complex exp([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             // degenerate case: num is real
@@ -290,7 +290,7 @@ namespace IronPython.Modules {
             return new Complex(real, imag);
         }
 
-        public static Complex sqrt([NotNull]object x) {
+        public static Complex sqrt([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             if (num.Imaginary == 0.0) {
@@ -308,13 +308,13 @@ namespace IronPython.Modules {
             return new Complex(real, imag);
         }
 
-        public static double phase([NotNull]object x) {
+        public static double phase([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             return GetAngle(num);
         }
 
-        public static PythonTuple polar([NotNull]object x) {
+        public static PythonTuple polar([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             var abs = ComplexOps.Abs(num);
@@ -357,19 +357,19 @@ namespace IronPython.Modules {
             return new Complex(r * Math.Cos(theta), r * Math.Sin(theta));
         }
 
-        public static bool isinf([NotNull]object x) {
+        public static bool isinf([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             return IsInfinity(num);
         }
 
-        public static bool isnan([NotNull]object x) {
+        public static bool isnan([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             return IsNaN(num);
         }
 
-        public static bool isfinite([NotNull]object x) {
+        public static bool isfinite([NotNone] object x) {
             Complex num = GetComplexNum(x);
 
             return IsFinite(num);

@@ -45,7 +45,7 @@ namespace IronPython.Runtime {
         private readonly bool _isFContig;
 
         /// <seealso href="https://docs.python.org/3/c-api/memoryview.html#c.PyMemoryView_FromObject"/>
-        public MemoryView([NotNull]IBufferProtocol @object) {
+        public MemoryView([NotNone] IBufferProtocol @object) {
             _exporter = @object;
 
             // MemoryView should support all possible buffer exports (BufferFlags.FullRO)
@@ -101,7 +101,7 @@ namespace IronPython.Runtime {
             Debug.Assert(_numItems == 0 || VerifyStructure(memblock.Length, _itemSize, _numDims, _numDims > 0 ? _shape : null, _numDims > 0 ? _strides : null, _offset));
         }
 
-        public MemoryView([NotNull]MemoryView @object) {
+        public MemoryView([NotNone] MemoryView @object) {
             _exporter    = @object._exporter;
             _flags       = BufferFlags.RecordsRO;
             _buffer      = _exporter.GetBuffer(_flags);
@@ -445,11 +445,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public MemoryView cast([NotNull]string format) {
+        public MemoryView cast([NotNone] string format) {
             return cast(format, null);
         }
 
-        public MemoryView cast([NotNull]string format, [NotNull, AllowNull]object shape) {
+        public MemoryView cast([NotNone] string format, [NotNone, AllowNull]object shape) {
             if (!_isCContig) {
                 throw PythonOps.TypeError("memoryview: casts are restricted to C-contiguous views");
             }
@@ -675,7 +675,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("cannot delete memory");
         }
 
-        public void __delitem__([NotNull]Slice slice) {
+        public void __delitem__([NotNone] Slice slice) {
             CheckBuffer();
             if (_isReadOnly) {
                 throw PythonOps.TypeError("cannot modify read-only memory");
@@ -683,7 +683,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("cannot delete memory");
         }
 
-        public object? this[[NotNull]Slice slice] {
+        public object? this[[NotNone] Slice slice] {
             get {
                 CheckBuffer();
                 if (_numDims == 0) {
@@ -740,7 +740,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object? this[[NotNull]PythonTuple index] {
+        public object? this[[NotNone] PythonTuple index] {
             get {
                 CheckBuffer();
                 return GetItem(GetItemOffset(index));
@@ -861,7 +861,7 @@ namespace IronPython.Runtime {
             return _storedHash.Value;
         }
 
-        public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) {
+        public bool __eq__(CodeContext/*!*/ context, [NotNone] MemoryView value) {
             if (_buffer == null) {
                 return value._buffer == null;
             }
@@ -869,14 +869,14 @@ namespace IronPython.Runtime {
             return tobytes().Equals(value.tobytes());
         }
 
-        public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => __eq__(context, new MemoryView(value));
+        public bool __eq__(CodeContext/*!*/ context, [NotNone] IBufferProtocol value) => __eq__(context, new MemoryView(value));
 
         [return: MaybeNotImplemented]
         public NotImplementedType __eq__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;
 
-        public bool __ne__(CodeContext/*!*/ context, [NotNull]MemoryView value) => !__eq__(context, value);
+        public bool __ne__(CodeContext/*!*/ context, [NotNone] MemoryView value) => !__eq__(context, value);
 
-        public bool __ne__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
+        public bool __ne__(CodeContext/*!*/ context, [NotNone] IBufferProtocol value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
         public NotImplementedType __ne__(CodeContext/*!*/ context, object? value) => NotImplementedType.Value;

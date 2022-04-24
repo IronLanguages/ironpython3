@@ -38,7 +38,7 @@ namespace IronPython.Runtime {
             _size = 0;
         }
 
-        public void __init__([NotNull]IEnumerable enumerable) {
+        public void __init__([NotNone] IEnumerable enumerable) {
             __init__();
 
             foreach (object? o in enumerable) {
@@ -46,7 +46,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void __init__([NotNull]ICollection sequence) {
+        public void __init__([NotNone] ICollection sequence) {
             _data = new object[sequence.Count];
             int i = 0;
             foreach (object? item in sequence) {
@@ -55,19 +55,19 @@ namespace IronPython.Runtime {
             _size = i;
         }
 
-        public void __init__([NotNull]SetCollection sequence) {
+        public void __init__([NotNone] SetCollection sequence) {
             PythonList list = sequence._items.GetItems();
             _size = list._size;
             _data = list._data;
         }
 
-        public void __init__([NotNull]FrozenSetCollection sequence) {
+        public void __init__([NotNone] FrozenSetCollection sequence) {
             PythonList list = sequence._items.GetItems();
             _size = list._size;
             _data = list._data;
         }
 
-        public void __init__([NotNull]PythonList sequence) {
+        public void __init__([NotNone] PythonList sequence) {
             if (this == sequence) {
                 // list.__init__(l, l) resets l
                 _size = 0;
@@ -85,7 +85,7 @@ namespace IronPython.Runtime {
             _size = _data.Length;
         }
 
-        public void __init__([NotNull]string sequence) {
+        public void __init__([NotNone] string sequence) {
             _data = new object[sequence.Length];
             _size = sequence.Length;
 
@@ -109,7 +109,7 @@ namespace IronPython.Runtime {
             ExtendNoLengthCheck(sequence);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == TypeCache.PythonList) {
                 return new PythonList();
             }
@@ -117,13 +117,13 @@ namespace IronPython.Runtime {
             return cls.CreateInstance(context);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, object? arg)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, object? arg)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [NotNull]params object[] args\u00F8)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object[] args\u00F8)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, [ParamDictionary, NotNull]IDictionary<object, object> kwArgs\u00F8, [NotNull]params object[] args\u00F8)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, [NotNone] params object[] args\u00F8)
             => __new__(context, cls);
 
         private PythonList(IEnumerator e)
@@ -205,7 +205,7 @@ namespace IronPython.Runtime {
 
         #region binary operators
 
-        public static PythonList operator +([NotNull]PythonList l1, [NotNull]PythonList l2) {
+        public static PythonList operator +([NotNone] PythonList l1, [NotNone] PythonList l2) {
             object?[] ret;
             int size;
             lock (l1) {
@@ -244,19 +244,19 @@ namespace IronPython.Runtime {
             return length + (16 - 1) & ~(16 - 1);
         }
 
-        public static PythonList operator *([NotNull]PythonList self, int count)
+        public static PythonList operator *([NotNone] PythonList self, int count)
             => MultiplyWorker(self, count);
 
-        public static PythonList operator *(int count, [NotNull]PythonList self)
+        public static PythonList operator *(int count, [NotNone] PythonList self)
             => MultiplyWorker(self, count);
 
-        public static object operator *([NotNull]PythonList self, [NotNull]Index count)
+        public static object operator *([NotNone] PythonList self, [NotNone] Index count)
             => PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, true);
 
-        public static object operator *([NotNull]Index count, [NotNull]PythonList self)
+        public static object operator *([NotNone] Index count, [NotNone] PythonList self)
             => PythonOps.MultiplySequence<PythonList>(MultiplyWorker, self, count, false);
 
-        public static object operator *([NotNull]PythonList self, object? count) {
+        public static object operator *([NotNone] PythonList self, object? count) {
             if (Converter.TryConvertToIndex(count, out int index)) {
                 return self * index;
             }
@@ -264,7 +264,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        public static object operator *(object? count, [NotNull]PythonList self) {
+        public static object operator *(object? count, [NotNone] PythonList self) {
             if (Converter.TryConvertToIndex(count, out int index)) {
                 return index * self;
             }
@@ -388,7 +388,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public object InPlaceMultiply([NotNull]Index count)
+        public object InPlaceMultiply([NotNone] Index count)
             => PythonOps.MultiplySequence<PythonList>(InPlaceMultiplyWorker, this, count, true);
 
         [SpecialName]
@@ -414,7 +414,7 @@ namespace IronPython.Runtime {
         private static readonly object _boxedOne = ScriptingRuntimeHelpers.Int32ToObject(1);
 
         [System.Diagnostics.CodeAnalysis.NotNull]
-        public virtual object? this[[NotNull]Slice slice] {
+        public virtual object? this[[NotNone] Slice slice] {
             get {
                 int start, stop, step, count;
                 slice.GetIndicesAndCount(_size, out start, out stop, out step, out count);
@@ -568,7 +568,7 @@ namespace IronPython.Runtime {
             __delitem__(idx);
         }
 
-        public void __delitem__([NotNull]Slice slice) {
+        public void __delitem__([NotNone] Slice slice) {
             lock (this) {
                 slice.Indices(_size, out int start, out int stop, out int step);
 
@@ -716,7 +716,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend([NotNull]PythonList/*!*/ seq) {
+        public void extend([NotNone] PythonList/*!*/ seq) {
             using (new OrderedLocker(this, seq)) {
                 // use the original count for if we're extending this w/ this
                 int count = seq.Count;
@@ -728,7 +728,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend([NotNull]PythonTuple/*!*/ seq) {
+        public void extend([NotNone] PythonTuple/*!*/ seq) {
             lock (this) {
                 EnsureSize(Count + seq.Count);
 
@@ -855,7 +855,7 @@ namespace IronPython.Runtime {
         }
 
         public void sort(CodeContext/*!*/ context,
-            [ParamDictionary, NotNull]IDictionary<string, object> kwArgs) {
+            [ParamDictionary, NotNone] IDictionary<string, object> kwArgs) {
 
             object? key = null;
             bool reverse = false;
@@ -1322,7 +1322,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object? operator >([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator >([NotNone] PythonList self, [NotNone] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1331,7 +1331,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object? operator <([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator <([NotNone] PythonList self, [NotNone] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1340,7 +1340,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object? operator >=([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator >=([NotNone] PythonList self, [NotNone] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
@@ -1349,7 +1349,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object? operator <=([NotNull] PythonList self, [NotNull] PythonList other) {
+        public static object? operator <=([NotNone] PythonList self, [NotNone] PythonList other) {
             CompareUtil.Push(self, other);
             try {
                 return PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());

@@ -25,6 +25,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
+using NotNullOnReturn = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -35,7 +36,7 @@ namespace IronPython.Modules {
 
         public static readonly string typecodes = "bBuhHiIlLqQfd";
 
-        private static array ArrayReconstructor(CodeContext context, [NotNull]PythonType cls, [NotNull]string typecode, int mformat_code, [NotNull]Bytes items) {
+        private static array ArrayReconstructor(CodeContext context, [NotNone] PythonType cls, [NotNone] string typecode, int mformat_code, [NotNone] Bytes items) {
             if (typecode.Length != 1)
                 throw PythonOps.TypeError("expected character, got {0}", PythonOps.GetPythonTypeName(typecode));
             if (!typecodes.Contains(typecode))
@@ -114,7 +115,7 @@ namespace IronPython.Modules {
             private readonly char _typeCode;
             private WeakRefTracker? _tracker;
 
-            public array([NotNull]string type) {
+            public array([NotNone] string type) {
                 if (type == null || type.Length != 1) {
                     throw PythonOps.TypeError("expected character, got {0}", PythonOps.GetPythonTypeName(type));
                 }
@@ -123,15 +124,15 @@ namespace IronPython.Modules {
                 _data = CreateData(_typeCode);
             }
 
-            public array([NotNull]string type, [NotNull]Bytes initializer) : this(type) {
+            public array([NotNone] string type, [NotNone] Bytes initializer) : this(type) {
                 frombytes(initializer);
             }
 
-            public array([NotNull]string type, [NotNull]ByteArray initializer) : this(type) {
+            public array([NotNone] string type, [NotNone] ByteArray initializer) : this(type) {
                 frombytes(initializer);
             }
 
-            public array([NotNull]string type, [NotNull]array initializer) : this(type) {
+            public array([NotNone] string type, [NotNone] array initializer) : this(type) {
                 if (_typeCode != 'u' && initializer._typeCode == 'u') {
                     throw PythonOps.TypeError("cannot use a unicode array to initialize an array with typecode '{0}'", _typeCode);
                 }
@@ -139,7 +140,7 @@ namespace IronPython.Modules {
                 ExtendIter(initializer);
             }
 
-            public array([NotNull]string type, object? initializer) : this(type) {
+            public array([NotNone] string type, object? initializer) : this(type) {
                 if (_typeCode != 'u') {
                     if (initializer is string || initializer is Extensible<string>)
                         throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
@@ -176,12 +177,12 @@ namespace IronPython.Modules {
             }
 
             [SpecialName]
-            public array InPlaceAdd([NotNull]array other) {
+            public array InPlaceAdd([NotNone] array other) {
                 ExtendArray(other);
                 return this;
             }
 
-            public static array operator +([NotNull]array self, [NotNull]array other) {
+            public static array operator +([NotNone] array self, [NotNone] array other) {
                 if (self.typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
                 array res = new array(self.typecode);
@@ -204,7 +205,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public static array operator *([NotNull]array array, int value) {
+            public static array operator *([NotNone] array array, int value) {
                 if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
@@ -216,7 +217,7 @@ namespace IronPython.Modules {
                 return new array(array._typeCode, array._data.Multiply(value));
             }
 
-            public static array operator *([NotNull]array array, BigInteger value) {
+            public static array operator *([NotNone] array array, BigInteger value) {
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
@@ -227,11 +228,11 @@ namespace IronPython.Modules {
                 return array * intValue;
             }
 
-            public static array operator *(int value, [NotNull]array array) {
+            public static array operator *(int value, [NotNone] array array) {
                 return array * value;
             }
 
-            public static array operator *(BigInteger value, [NotNull]array array) {
+            public static array operator *(BigInteger value, [NotNone] array array) {
                 return array * value;
             }
 
@@ -305,7 +306,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void fromlist([NotNull]PythonList iterable) {
+            public void fromlist([NotNone] PythonList iterable) {
                 IEnumerator ie = PythonOps.GetEnumerator(iterable);
 
                 List<object> items = new List<object>();
@@ -321,14 +322,14 @@ namespace IronPython.Modules {
                 ExtendIter(items);
             }
 
-            public void fromfile(CodeContext/*!*/ context, [NotNull]PythonIOModule._IOBase f, int n) {
+            public void fromfile(CodeContext/*!*/ context, [NotNone] PythonIOModule._IOBase f, int n) {
                 int bytesNeeded = n * itemsize;
                 Bytes bytes = (Bytes)f.read(context, bytesNeeded);
                 frombytes(bytes);
                 if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
             }
 
-            public void frombytes([NotNull]IBufferProtocol buffer) {
+            public void frombytes([NotNone] IBufferProtocol buffer) {
                 using IPythonBuffer pb = buffer.GetBuffer();
                 if ((pb.NumBytes() % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of item size");
 
@@ -345,13 +346,13 @@ namespace IronPython.Modules {
                 FromStream(new MemoryStream(b.UnsafeByteArray, false));
             }
 
-            public void fromstring(CodeContext/*!*/ context, [NotNull]Bytes b) {
+            public void fromstring(CodeContext/*!*/ context, [NotNone] Bytes b) {
                 PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.");
                 if ((b.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
                 FromBytes(b);
             }
 
-            public void fromstring(CodeContext/*!*/ context, [NotNull]string s) {
+            public void fromstring(CodeContext/*!*/ context, [NotNone] string s) {
                 PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.");
                 if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
                 byte[] bytes = new byte[s.Length];
@@ -363,7 +364,7 @@ namespace IronPython.Modules {
                 FromStream(ms);
             }
 
-            public void fromunicode(CodeContext/*!*/ context, [NotNull]string s) {
+            public void fromunicode(CodeContext/*!*/ context, [NotNone] string s) {
                 if (_typeCode != 'u') {
                     throw PythonOps.ValueError("fromunicode() may only be called on type 'u' arrays");
                 }
@@ -383,7 +384,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public void insert(int i, [NotNull]object x) {
+            public void insert(int i, [NotNone] object x) {
                 if (i > _data.Count) i = _data.Count;
                 if (i < 0) i = _data.Count + i;
                 if (i < 0) i = 0;
@@ -488,12 +489,12 @@ namespace IronPython.Modules {
                 _data.RemoveAt(PythonOps.FixIndex(index, _data.Count));
             }
 
-            public void __delitem__([NotNull]Slice slice) {
+            public void __delitem__([NotNone] Slice slice) {
                 _data.RemoveSlice(slice);
             }
 
-            [System.Diagnostics.CodeAnalysis.NotNull]
-            public object? this[[NotNull]Slice index] {
+            [NotNullOnReturn]
+            public object? this[[NotNone] Slice index] {
                 get {
                     index.Indices(_data.Count, out int start, out int stop, out int step);
 
@@ -526,7 +527,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private array CheckSliceAssignType([System.Diagnostics.CodeAnalysis.NotNull]object? value) {
+            private array CheckSliceAssignType([NotNullOnReturn] object? value) {
                 if (!(value is array pa)) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonOps.GetPythonTypeName(value));
                 } else if (pa._typeCode != _typeCode) {
@@ -604,7 +605,7 @@ namespace IronPython.Modules {
                 _data[index] = value;
             }
 
-            public void tofile(CodeContext context, [NotNull]PythonIOModule._IOBase f) {
+            public void tofile(CodeContext context, [NotNone] PythonIOModule._IOBase f) {
                 f.write(context, tobytes());
             }
 
@@ -945,16 +946,16 @@ namespace IronPython.Modules {
 
             #region IRichComparable Members
 
-            public static object? operator >([NotNull] array self, [NotNull] array other)
+            public static object? operator >([NotNone] array self, [NotNone] array other)
                 => PythonOps.ArraysGreaterThan(DefaultContext.Default, self!, other!);
 
-            public static object? operator <([NotNull] array self, [NotNull] array other)
+            public static object? operator <([NotNone] array self, [NotNone] array other)
                 => PythonOps.ArraysLessThan(DefaultContext.Default, self!, other!);
 
-            public static object? operator >=([NotNull] array self, [NotNull] array other)
+            public static object? operator >=([NotNone] array self, [NotNone] array other)
                 => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self!, other!);
 
-            public static object? operator <=([NotNull] array self, [NotNull] array other)
+            public static object? operator <=([NotNone] array self, [NotNone] array other)
                 => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self!, other!);
 
             #endregion

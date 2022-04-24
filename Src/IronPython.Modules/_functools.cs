@@ -88,14 +88,14 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new partial object with the provided positional arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNull]params object[]/*!*/ args)
+            public partial(CodeContext/*!*/ context, object? func, [NotNone] params object[]/*!*/ args)
                 : this(context, func, new PythonDictionary(), args) {
             }
 
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNull, ParamDictionary]IDictionary<object, object> keywords, [NotNull]params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object? func, [NotNone, ParamDictionary] IDictionary<object, object> keywords, [NotNone] params object[]/*!*/ args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -111,12 +111,12 @@ namespace IronPython.Modules {
             #region Public Python API
 
             [SpecialName, PropertyMethod, WrapperDescriptor]
-            public static object Get__doc__(CodeContext context, [NotNull]partial self) {
+            public static object Get__doc__(CodeContext context, [NotNone] partial self) {
                 return self._doc ?? _defaultDoc;
             }
 
             [SpecialName, PropertyMethod, WrapperDescriptor]
-            public static void Set__doc__([NotNull]partial self, object? value) {
+            public static void Set__doc__([NotNone] partial self, object? value) {
                 self._doc = value as string;
             }
 
@@ -147,7 +147,7 @@ namespace IronPython.Modules {
                 get {
                     return EnsureDict();
                 }
-                [param: NotNull]
+                [param: NotNone] 
                 set {
                     _dict = value;
                 }
@@ -159,7 +159,7 @@ namespace IronPython.Modules {
             }
 
             // This exists for subtypes because we don't yet automap DeleteMember onto __delattr__
-            public void __delattr__([NotNull]string name) {
+            public void __delattr__([NotNone] string name) {
                 if (name == "__dict__") Delete__dict__();
 
                 _dict?.Remove(name);
@@ -173,7 +173,7 @@ namespace IronPython.Modules {
                 );
             }
 
-            public void __setstate__(CodeContext context, [NotNull] PythonTuple state) {
+            public void __setstate__(CodeContext context, [NotNone] PythonTuple state) {
                 if (state.Count == 4
                         && PythonOps.IsCallable(context, state[0])
                         && state[1] is PythonTuple args
@@ -199,7 +199,7 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+            public object? Call(CodeContext/*!*/ context, [NotNone] params object?[] args) {
                 if (_keywordArgs == null) {
                     EnsureSplatSite();
                     return _splatSite!.Target(_splatSite, context, func, ArrayUtils.AppendRange(_args, args));
@@ -213,7 +213,7 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<object, object?> dict, [NotNull]params object?[] args) {
+            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<object, object?> dict, [NotNone] params object?[] args) {
 
                 IDictionary<object, object?> finalDict;
                 if (_keywordArgs != null) {
@@ -234,7 +234,7 @@ namespace IronPython.Modules {
             /// Operator method to set arbitrary members on the partial object.
             /// </summary>
             [SpecialName]
-            public void SetMemberAfter(CodeContext/*!*/ context, [NotNull]string name, object? value) {
+            public void SetMemberAfter(CodeContext/*!*/ context, [NotNone] string name, object? value) {
                 EnsureDict();
 
                 _dict![name] = value;
@@ -244,7 +244,7 @@ namespace IronPython.Modules {
             /// Operator method to get additional arbitrary members defined on the partial object.
             /// </summary>
             [SpecialName]
-            public object GetBoundMember(CodeContext/*!*/ context, [NotNull]string name) {
+            public object GetBoundMember(CodeContext/*!*/ context, [NotNone] string name) {
                 if (_dict != null && _dict.TryGetValue(name, out object value)) {
                     return value;
                 }
@@ -255,7 +255,7 @@ namespace IronPython.Modules {
             /// Operator method to delete arbitrary members defined in the partial object.
             /// </summary>
             [SpecialName]
-            public bool DeleteMember(CodeContext/*!*/ context, [NotNull]string name) {
+            public bool DeleteMember(CodeContext/*!*/ context, [NotNone] string name) {
                 switch (name) {
                     case "__dict__":
                         Delete__dict__();

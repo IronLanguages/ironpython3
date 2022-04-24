@@ -103,7 +103,7 @@ For flag values, ored together, see module documentation.")]
 
 The sound argument can be a filename, data, or None.
 For flag values, ored together, see module documentation.")]
-        public static void PlaySound(CodeContext/*!*/ context, [NotNull] IBufferProtocol sound, int flags) {
+        public static void PlaySound(CodeContext/*!*/ context, [NotNone] IBufferProtocol sound, int flags) {
             if (((flags & SND_ASYNC) == SND_ASYNC) && ((flags & SND_MEMORY) == SND_MEMORY)) throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
             if ((flags & SND_MEMORY) == 0) throw PythonOps.TypeError($"'{nameof(sound)}' must be str or None, not '{PythonOps.GetPythonTypeName(sound)}'");
 

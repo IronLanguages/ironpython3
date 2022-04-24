@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Operations {
             return ((BigInteger)x).GetHashCode();
         }
 
-        public static string __format__(CodeContext/*!*/ context, decimal self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, decimal self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             // default to the normal
             if (spec.IsEmpty) {

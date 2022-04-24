@@ -312,18 +312,18 @@ namespace IronPython.Runtime.Operations {
             return x.GetHashCode(context.LanguageContext.EqualityComparerNonGeneric);
         }
 
-        public static bool StructuralEqualityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralEqualityMethod<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralEquatable {
             return x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric);
         }
 
-        public static bool StructuralInequalityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralInequalityMethod<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralEquatable {
             return !x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric);
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralEquatable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -333,7 +333,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralEquatable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -343,7 +343,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralEqualityMethod<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralEquatable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -353,7 +353,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralInequalityMethod<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralEquatable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -368,38 +368,38 @@ namespace IronPython.Runtime.Operations {
             return x.CompareTo(y, context.LanguageContext.GetComparer(null));
         }
 
-        public static bool StructuralComparableEquality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableEquality<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) == 0;
         }
 
-        public static bool StructuralComparableInequality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableInequality<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) != 0;
         }
 
-        public static bool StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) > 0;
         }
 
-        public static bool StructuralComparableLessThan<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableLessThan<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) < 0;
         }
 
-        public static bool StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) >= 0;
         }
 
-        public static bool StructuralComparableLessEqual<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
+        public static bool StructuralComparableLessEqual<T>(CodeContext/*!*/ context, T x, [NotNone] T y)
             where T : IStructuralComparable {
             return StructuralCompare(context, x, y) <= 0;
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -409,7 +409,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -419,7 +419,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -429,7 +429,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -439,7 +439,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -449,7 +449,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, [NotNull]T x, object y)
+        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, [NotNone] T x, object y)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -459,7 +459,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableEquality<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -469,7 +469,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableInequality<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -479,7 +479,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableGreaterThan<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -490,7 +490,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableLessThan<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -501,7 +501,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableGreaterEqual<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -512,7 +512,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, object y, [NotNull]T x)
+        public static object StructuralComparableLessEqual<T>(CodeContext/*!*/ context, object y, [NotNone] T x)
             where T : IStructuralComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -524,38 +524,38 @@ namespace IronPython.Runtime.Operations {
 
         // Comparison Helpers
 
-        public static bool ComparableEquality<T>(T x, [NotNull]T y)
+        public static bool ComparableEquality<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) == 0;
         }
 
-        public static bool ComparableInequality<T>(T x, [NotNull]T y)
+        public static bool ComparableInequality<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) != 0;
         }
 
-        public static bool ComparableGreaterThan<T>(T x, [NotNull]T y)
+        public static bool ComparableGreaterThan<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) > 0;
         }
 
-        public static bool ComparableLessThan<T>(T x, [NotNull]T y)
+        public static bool ComparableLessThan<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) < 0;
         }
 
-        public static bool ComparableGreaterEqual<T>(T x, [NotNull]T y)
+        public static bool ComparableGreaterEqual<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) >= 0;
         }
 
-        public static bool ComparableLessEqual<T>(T x, [NotNull]T y)
+        public static bool ComparableLessEqual<T>(T x, [NotNone] T y)
             where T : IComparable {
             return x.CompareTo(y) <= 0;
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableEquality<T>([NotNull]T x, object y)
+        public static object ComparableEquality<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -563,7 +563,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableInequality<T>([NotNull]T x, object y)
+        public static object ComparableInequality<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -571,7 +571,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableGreaterThan<T>([NotNull]T x, object y)
+        public static object ComparableGreaterThan<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -579,7 +579,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableLessThan<T>([NotNull]T x, object y)
+        public static object ComparableLessThan<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -587,7 +587,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableGreaterEqual<T>([NotNull]T x, object y)
+        public static object ComparableGreaterEqual<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -595,7 +595,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableLessEqual<T>([NotNull]T x, object y)
+        public static object ComparableLessEqual<T>([NotNone] T x, object y)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -603,7 +603,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableEquality<T>(object y, [NotNull]T x)
+        public static object ComparableEquality<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -611,7 +611,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableInequality<T>(object y, [NotNull]T x)
+        public static object ComparableInequality<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -619,7 +619,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableGreaterThan<T>(object y, [NotNull]T x)
+        public static object ComparableGreaterThan<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -628,7 +628,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableLessThan<T>(object y, [NotNull]T x)
+        public static object ComparableLessThan<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -637,7 +637,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableGreaterEqual<T>(object y, [NotNull]T x)
+        public static object ComparableGreaterEqual<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 
@@ -646,7 +646,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public static object ComparableLessEqual<T>(object y, [NotNull]T x)
+        public static object ComparableLessEqual<T>(object y, [NotNone] T x)
             where T : IComparable {
             if (!(y is T)) return NotImplementedType.Value;
 

@@ -62,10 +62,10 @@ namespace IronPython.Modules {
 
 #nullable enable
 
-        public static string name([NotNull] string unichr)
+        public static string name([NotNone] string unichr)
             => ucd_5_2_0.name(unichr);
 
-        public static object? name([NotNull] string unichr, object? @default)
+        public static object? name([NotNone] string unichr, object? @default)
             => ucd_5_2_0.name(unichr, @default);
 
         internal static bool TryGetName(int rune, [NotNullWhen(true)] out string? name)
@@ -159,10 +159,10 @@ namespace IronPython.Modules {
 
 #nullable enable
 
-            public string name([NotNull] string unichr)
+            public string name([NotNone] string unichr)
                 => TryGetName(GetRune(unichr), out var name) ? name : throw PythonOps.ValueError("no such name");
 
-            public object? name([NotNull] string unichr, object? @default)
+            public object? name([NotNone] string unichr, object? @default)
                 => TryGetName(GetRune(unichr), out var name) ? name : @default;
 
             internal bool TryGetName(int rune, [NotNullWhen(true)] out string? name) {

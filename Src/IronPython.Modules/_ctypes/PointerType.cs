@@ -47,7 +47,7 @@ namespace IronPython.Modules {
                 : base(underlyingSystemType) {
             }
 
-            public object from_param([NotNull]CData obj) {
+            public object from_param([NotNone] CData obj) {
                 return new NativeArgument((CData)PythonCalls.Call(this, obj), "P");
             }
 
@@ -68,7 +68,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public object from_param([NotNull]NativeArgument obj) {
+            public object from_param([NotNone] NativeArgument obj) {
                 return (CData)PythonCalls.Call(this, obj._obj);
             }
 

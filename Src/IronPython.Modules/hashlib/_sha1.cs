@@ -18,11 +18,11 @@ namespace IronPython.Modules {
         private const int BLOCK_SIZE = 64;
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static SHA1Type sha1([NotNull] IBufferProtocol data) {
+        public static SHA1Type sha1([NotNone] IBufferProtocol data) {
             return new SHA1Type(data);
         }
 
-        public static SHA1Type sha1([NotNull] string data) {
+        public static SHA1Type sha1([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 

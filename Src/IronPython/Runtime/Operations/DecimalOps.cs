@@ -9,8 +9,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
-
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
         public static bool __bool__(decimal x) => x != 0;
@@ -59,7 +57,7 @@ namespace IronPython.Runtime.Operations {
             return ((BigInteger)x).GetHashCode();
         }
 
-        public static string __format__(CodeContext/*!*/ context, decimal self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, decimal self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             // default to the normal
             if (spec.IsEmpty) {

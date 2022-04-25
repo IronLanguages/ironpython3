@@ -67,7 +67,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, [NotNull]params object[] args\u00F8) {
+        public static void __init__(CodeContext/*!*/ context, object self, [NotNone] params object[] args\u00F8) {
             InstanceOps.CheckInitArgs(context, null, args\u00F8, self);
         }
 
@@ -94,7 +94,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNone] params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
@@ -108,7 +108,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, [NotNull]params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, [NotNone] params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
@@ -251,7 +251,7 @@ namespace IronPython.Runtime.Operations {
         [return: MaybeNotImplemented]
         public static NotImplementedType __le__(object self, object value) => NotImplementedType.Value;
 
-        public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, object self, [NotNone] string/*!*/ formatSpec) {
             if (formatSpec != string.Empty)
                 throw PythonOps.TypeError("unsupported format string passed to {0}.__format__", PythonOps.GetPythonTypeName(self));
 

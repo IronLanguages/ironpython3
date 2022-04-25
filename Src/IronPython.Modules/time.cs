@@ -18,7 +18,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("time", typeof(IronPython.Modules.PythonTime))]
 namespace IronPython.Modules {
@@ -660,7 +659,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
             }
 
-            public static struct_time __new__(CodeContext context, PythonType cls, [NotNull]PythonTuple sequence) {
+            public static struct_time __new__(CodeContext context, PythonType cls, [NotNone] PythonTuple sequence) {
                 if (sequence.__len__() != 9) {
                     throw PythonOps.TypeError("time.struct_time() takes a 9-sequence ({0}-sequence given)", sequence.__len__());
                 }
@@ -673,7 +672,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
             }
 
-            public static struct_time __new__(CodeContext context, PythonType cls, [NotNull]IEnumerable sequence) {
+            public static struct_time __new__(CodeContext context, PythonType cls, [NotNone] IEnumerable sequence) {
                 return __new__(context, cls, PythonTuple.Make(sequence));
             }
 

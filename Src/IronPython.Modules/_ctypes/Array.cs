@@ -14,8 +14,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
-
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
@@ -67,7 +65,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object this[[NotNull] Slice slice] {
+            public object this[[NotNone] Slice slice] {
                 get {
                     int start, stop, step, count;
                     int size = ((ArrayType)NativeType).Length;

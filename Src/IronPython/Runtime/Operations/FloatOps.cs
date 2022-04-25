@@ -778,7 +778,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static string __format__(CodeContext/*!*/ context, double self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, double self, [NotNone] string/*!*/ formatSpec) {
             if (formatSpec == string.Empty) return __str__(context, self);
 
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
@@ -1156,7 +1156,7 @@ namespace IronPython.Runtime.Operations {
             return __str__(context, self);
         }
 
-        public static string __format__(CodeContext/*!*/ context, float self, [NotNull]string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, float self, [NotNone] string/*!*/ formatSpec) {
             return DoubleOps.__format__(context, self, formatSpec);
         }
 

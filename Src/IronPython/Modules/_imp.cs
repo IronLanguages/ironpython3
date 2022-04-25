@@ -10,7 +10,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
@@ -63,7 +62,7 @@ namespace IronPython.Modules {
             }            
         }
 
-        public static object init_builtin(CodeContext/*!*/ context, [NotNull] string/*!*/ name) {
+        public static object init_builtin(CodeContext/*!*/ context, [NotNone] string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("init_builtin() argument 1 must be string, not None");
 
             PythonContext pc = context.LanguageContext;

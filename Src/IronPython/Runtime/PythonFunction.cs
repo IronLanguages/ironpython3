@@ -544,22 +544,22 @@ namespace IronPython.Runtime {
 
         public const object __hash__ = null;
 
-        public object __eq__(CodeContext context, [NotNull] ClosureCell other)
+        public object __eq__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.Equal);
 
-        public object __ne__(CodeContext context, [NotNull] ClosureCell other)
+        public object __ne__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.NotEqual);
 
-        public object __lt__(CodeContext context, [NotNull] ClosureCell other)
+        public object __lt__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.LessThan);
 
-        public object __le__(CodeContext context, [NotNull] ClosureCell other)
+        public object __le__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.LessThanOrEqual);
 
-        public object __ge__(CodeContext context, [NotNull] ClosureCell other)
+        public object __ge__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.GreaterThanOrEqual);
 
-        public object __gt__(CodeContext context, [NotNull] ClosureCell other)
+        public object __gt__(CodeContext context, [NotNone] ClosureCell other)
             => PythonOps.RichCompare(context, Value, other.Value, PythonOperationKind.GreaterThan);
     }
 }

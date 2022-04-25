@@ -5,7 +5,6 @@
 using System;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;

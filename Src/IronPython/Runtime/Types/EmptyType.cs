@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static Ellipsis __new__(CodeContext/*!*/ context, [NotNull]PythonType cls) {
+        public static Ellipsis __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(Ellipsis)))
                 return Value;
             throw PythonOps.TypeError("{0} is not a subtype of ellipsis", cls.Name);
@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static NotImplementedType __new__(CodeContext/*!*/ context, [NotNull]PythonType cls) {
+        public static NotImplementedType __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(NotImplementedType)))
                 return Value;
             throw PythonOps.TypeError("{0} is not a subtype of NotImplementedType", cls.Name);
@@ -86,7 +86,7 @@ namespace IronPython.Runtime.Types {
         internal const int NoneHashCode = 0x1e1a2e40;
 
         [StaticExtensionMethod]
-        public static object? __new__(CodeContext/*!*/ context, [NotNull]PythonType cls) {
+        public static object? __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(DynamicNull)))
                 return null;
             throw PythonOps.TypeError("{0} is not a subtype of NoneType", cls.Name);

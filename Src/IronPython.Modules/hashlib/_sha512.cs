@@ -19,11 +19,11 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA512 hash algorithm";
 
-        public static SHA384Type sha384([NotNull] IBufferProtocol data) {
+        public static SHA384Type sha384([NotNone] IBufferProtocol data) {
             return new SHA384Type(data);
         }
 
-        public static SHA384Type sha384([NotNull] string data) {
+        public static SHA384Type sha384([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
@@ -51,11 +51,11 @@ namespace IronPython.Modules {
             }
         }
 
-        public static SHA512Type sha512([NotNull] IBufferProtocol data) {
+        public static SHA512Type sha512([NotNone] IBufferProtocol data) {
             return new SHA512Type(data);
         }
 
-        public static SHA512Type sha512([NotNull] string data) {
+        public static SHA512Type sha512([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 

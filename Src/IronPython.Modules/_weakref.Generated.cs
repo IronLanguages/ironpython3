@@ -5,7 +5,6 @@
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     public static partial class PythonWeakRef {

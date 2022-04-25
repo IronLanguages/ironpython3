@@ -341,7 +341,7 @@ namespace IronPython.Modules {
 
             public string GetBase() => _base;
 
-            public void SetBase([NotNull]string @base) => _base = @base;
+            public void SetBase([NotNone] string @base) => _base = @base;
 
             public bool SetParamEntityParsing(int flag) {
                 // TODO: implement this
@@ -591,7 +591,7 @@ namespace IronPython.Modules {
 
             private Encoder _encoder;
 
-            public void Parse(CodeContext context, [NotNull] string data, bool isfinal = false) {
+            public void Parse(CodeContext context, [NotNone] string data, bool isfinal = false) {
                 // CPython converts to UTF-8 via PyUnicode_AsUTF8AndSize
                 _encoder ??= context.LanguageContext.DefaultEncoding.GetEncoder();
 
@@ -607,7 +607,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void Parse(CodeContext context, [NotNull] IBufferProtocol data, bool isfinal = false) {
+            public void Parse(CodeContext context, [NotNone] IBufferProtocol data, bool isfinal = false) {
                 CheckParsingDone(context);
                 using var pybuf = data.GetBuffer();
 

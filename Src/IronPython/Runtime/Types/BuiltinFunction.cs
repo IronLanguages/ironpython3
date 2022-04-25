@@ -572,9 +572,9 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        public bool __eq__([NotNull] BuiltinFunction/*!*/ other) => Equals(other);
+        public bool __eq__([NotNone] BuiltinFunction/*!*/ other) => Equals(other);
 
-        public bool __ne__([NotNull] BuiltinFunction/*!*/ other) => !Equals(other);
+        public bool __ne__([NotNone] BuiltinFunction/*!*/ other) => !Equals(other);
 
         [return: MaybeNotImplemented]
         public NotImplementedType __gt__(CodeContext context, object other) => NotImplementedType.Value;

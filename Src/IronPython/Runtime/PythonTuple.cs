@@ -21,8 +21,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
@@ -53,7 +51,7 @@ namespace IronPython.Runtime {
         // They also explicitly implement __new__ so they can perform the
         // appropriate caching.  
 
-        public static PythonTuple __new__(CodeContext context, [NotNull]PythonType cls) {
+        public static PythonTuple __new__(CodeContext context, [NotNone] PythonType cls) {
             if (cls == TypeCache.PythonTuple) {
                 return EMPTY;
             } else {
@@ -62,7 +60,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static PythonTuple __new__(CodeContext context, [NotNull]PythonType cls, object? sequence) {
+        public static PythonTuple __new__(CodeContext context, [NotNone] PythonType cls, object? sequence) {
             if (sequence == null) return new PythonTuple(sequence); // this will throw the proper exception
 
             if (cls == TypeCache.PythonTuple) {
@@ -192,7 +190,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual object this[[NotNull]Slice slice] {
+        public virtual object this[[NotNone] Slice slice] {
             get {
                 slice.Indices(_data.Length, out int start, out int stop, out int step);
 
@@ -208,12 +206,12 @@ namespace IronPython.Runtime {
 
         #region binary operators
 
-        public static PythonTuple operator +([NotNull]PythonTuple x, object? y) {
+        public static PythonTuple operator +([NotNone] PythonTuple x, object? y) {
             if (y is PythonTuple t) return x + t;
             throw PythonOps.TypeError($"can only concatenate tuple (not \"{PythonOps.GetPythonTypeName(y)}\") to tuple");
         }
 
-        public static PythonTuple operator +([NotNull]PythonTuple x, [NotNull]PythonTuple y) {
+        public static PythonTuple operator +([NotNone] PythonTuple x, [NotNone] PythonTuple y) {
             return MakeTuple(ArrayOps.Add(x._data, x._data.Length, y._data, y._data.Length));
         }
 
@@ -227,30 +225,30 @@ namespace IronPython.Runtime {
             return MakeTuple(ArrayOps.Multiply(self._data, self._data.Length, count));
         }
 
-        public static PythonTuple operator *([NotNull]PythonTuple x, int n) {
+        public static PythonTuple operator *([NotNone] PythonTuple x, int n) {
             return MultiplyWorker(x, n);
         }
 
-        public static PythonTuple operator *(int n, [NotNull]PythonTuple x) {
+        public static PythonTuple operator *(int n, [NotNone] PythonTuple x) {
             return MultiplyWorker(x, n);
         }
 
-        public static object operator *([NotNull]PythonTuple self, [NotNull]Index count) {
+        public static object operator *([NotNone] PythonTuple self, [NotNone] Index count) {
             return PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
         }
 
-        public static object operator *([NotNull]Index count, [NotNull]PythonTuple self) {
+        public static object operator *([NotNone] Index count, [NotNone] PythonTuple self) {
             return PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
         }
 
-        public static object operator *([NotNull]PythonTuple self, object? count) {
+        public static object operator *([NotNone] PythonTuple self, object? count) {
             if (Converter.TryConvertToIndex(count, out int index)) {
                 return self * index;
             }
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        public static object operator *(object? count, [NotNull]PythonTuple self) {
+        public static object operator *(object? count, [NotNone] PythonTuple self) {
             if (Converter.TryConvertToIndex(count, out int index)) {
                 return index * self;
             }
@@ -400,16 +398,16 @@ namespace IronPython.Runtime {
 
         private ReadOnlySpan<object?> AsSpan() => _data.AsSpan();
 
-        public static object? operator >([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+        public static object? operator >([NotNone] PythonTuple self, [NotNone] PythonTuple other)
             => PythonOps.ArraysGreaterThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
-        public static object? operator <([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+        public static object? operator <([NotNone] PythonTuple self, [NotNone] PythonTuple other)
             => PythonOps.ArraysLessThan(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
-        public static object? operator >=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+        public static object? operator >=([NotNone] PythonTuple self, [NotNone] PythonTuple other)
             => PythonOps.ArraysGreaterThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
-        public static object? operator <=([NotNull]PythonTuple self, [NotNull]PythonTuple other)
+        public static object? operator <=([NotNone] PythonTuple self, [NotNone] PythonTuple other)
             => PythonOps.ArraysLessThanOrEqual(DefaultContext.Default, self.AsSpan(), other.AsSpan());
 
         #endregion

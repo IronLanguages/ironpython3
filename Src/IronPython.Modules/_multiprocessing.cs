@@ -7,7 +7,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Win32.SafeHandles;
 
 using IronPython.Runtime;
@@ -53,7 +52,7 @@ namespace IronPython.Modules {
                                          );
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static unsafe int send(int handle, [NotNull] IBufferProtocol data) {
+        public static unsafe int send(int handle, [NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             var span = buffer.AsReadOnlySpan();
             fixed (byte* ptr = &MemoryMarshal.GetReference(span))

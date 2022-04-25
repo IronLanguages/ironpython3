@@ -17,7 +17,6 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
 
@@ -205,7 +204,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Public API - String/Bytes
 
-        public static string __format__(CodeContext/*!*/ context, int self, [NotDynamicNull] string/*!*/ formatSpec) {
+        public static string __format__(CodeContext/*!*/ context, int self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
             if (spec.Precision != null) {
@@ -336,7 +335,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ClassMethod, StaticExtensionMethod]
-        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotDynamicNull] string byteorder, bool signed = false)
+        public static object from_bytes(CodeContext context, PythonType type, object bytes, [NotNone] string byteorder, bool signed = false)
             // TODO: signed should be a keyword only argument
             => BigIntegerOps.from_bytes(context, type, bytes, byteorder, signed);
 
@@ -574,7 +573,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Public API - Bytes
 
-        public static Bytes to_bytes(Int64 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+        public static Bytes to_bytes(Int64 value, int length, [NotNone] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
             bool isLittle = (byteorder == "little");
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
@@ -627,7 +626,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Public API - Bytes
 
-        public static Bytes to_bytes(UInt64 value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+        public static Bytes to_bytes(UInt64 value, int length, [NotNone] string byteorder, bool signed = false) {
             bool isLittle = (byteorder == "little");
             if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
 

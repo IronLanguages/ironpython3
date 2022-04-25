@@ -40,7 +40,7 @@ namespace IronPython.Modules {
                 _data = new byte[DEFAULT_BUF_SIZE];
             }
 
-            public BytesIO(CodeContext/*!*/ context, [ParamDictionary, NotNull] IDictionary<object, object> kwArgs\u00F8, params object[] args)
+            public BytesIO(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, params object[] args)
                 : this(context) { }
 
             public void __init__(IBufferProtocol initial_bytes = null) {
@@ -143,7 +143,7 @@ namespace IronPython.Modules {
             [Documentation("readinto(array_or_bytearray) -> int.  Read up to len(b) bytes into b.\n\n"
                 + "Returns number of bytes read (0 for EOF)."
                 )]
-            public BigInteger readinto([NotNull] IBufferProtocol buffer) {
+            public BigInteger readinto([NotNone] IBufferProtocol buffer) {
                 using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
                     ?? throw PythonOps.TypeError("readinto() argument must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
 
@@ -326,14 +326,14 @@ namespace IronPython.Modules {
             [Documentation("write(bytes) -> int.  Write bytes to file.\n\n"
                 + "Return the number of bytes written."
                 )]
-            public override BigInteger write(CodeContext/*!*/ context, [NotNull] object bytes) {
+            public override BigInteger write(CodeContext/*!*/ context, [NotNone] object bytes) {
                 _checkClosed();
                 if (bytes is IBufferProtocol bufferProtocol) return DoWrite(bufferProtocol);
                 throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonOps.GetPythonTypeName(bytes));
             }
 
             // TODO: get rid of virtual? see https://github.com/IronLanguages/ironpython3/issues/1070
-            public virtual BigInteger write(CodeContext/*!*/ context, [NotNull] IBufferProtocol bytes) {
+            public virtual BigInteger write(CodeContext/*!*/ context, [NotNone] IBufferProtocol bytes) {
                 _checkClosed();
                 return DoWrite(bytes);
             }
@@ -343,7 +343,7 @@ namespace IronPython.Modules {
                 + "object producing strings. This is equivalent to calling write() for\n"
                 + "each string."
                 )]
-            public void writelines([NotNull] IEnumerable lines) {
+            public void writelines([NotNone] IEnumerable lines) {
                 _checkClosed();
 
                 IEnumerator en = lines.GetEnumerator();

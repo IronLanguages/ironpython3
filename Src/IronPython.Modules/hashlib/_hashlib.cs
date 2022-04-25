@@ -39,14 +39,14 @@ namespace IronPython.Modules {
         protected abstract void CreateHasher();
 
         [Documentation("update(string) -> None (update digest with string data)")]
-        public void update([NotNull]IBufferProtocol data) {
+        public void update([NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             byte[] bytes = buffer.ToArray();
             lock (_hasher) {
                 _hasher.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
             }
         }
-        public void update([NotNull]string data) {
+        public void update([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 

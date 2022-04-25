@@ -139,10 +139,10 @@ namespace IronPython.Modules {
             }
 
             // supported operations:
-            public static timedelta operator +(timedelta self, [NotNull] timedelta other)
+            public static timedelta operator +(timedelta self, [NotNone] timedelta other)
                 => new timedelta(self._days + other._days, self._seconds + other._seconds, self._microseconds + other._microseconds);
 
-            public static timedelta operator -(timedelta self, [NotNull] timedelta other)
+            public static timedelta operator -(timedelta self, [NotNone] timedelta other)
                 => new timedelta(self._days - other._days, self._seconds - other._seconds, self._microseconds - other._microseconds);
 
             public static timedelta operator -(timedelta self)
@@ -154,18 +154,18 @@ namespace IronPython.Modules {
             public static timedelta operator *(timedelta self, int other)
                 => new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
 
-            public static timedelta operator *(int other, [NotNull] timedelta self) => self * other;
+            public static timedelta operator *(int other, [NotNone] timedelta self) => self * other;
 
             public static timedelta operator *(timedelta self, BigInteger other) => self * (int)other;
 
-            public static timedelta operator *(BigInteger other, [NotNull] timedelta self) => (int)other * self;
+            public static timedelta operator *(BigInteger other, [NotNone] timedelta self) => (int)other * self;
 
             public static timedelta operator *(timedelta self, double other) {
                 DoubleOps.as_integer_ratio(other); // CPython calls this
                 return new timedelta(self._days * other, self._seconds * other, self._microseconds * other);
             }
 
-            public static timedelta operator *(double other, [NotNull] timedelta self) => self * other;
+            public static timedelta operator *(double other, [NotNone] timedelta self) => self * other;
 
             public static timedelta operator /(timedelta self, int other) {
                 if (other == 0) throw PythonOps.ZeroDivisionError();
@@ -180,7 +180,7 @@ namespace IronPython.Modules {
                 return new timedelta(self._days / other, self._seconds / other, self._microseconds / other);
             }
 
-            public static double operator /(timedelta self, [NotNull] timedelta other)
+            public static double operator /(timedelta self, [NotNone] timedelta other)
                 => DoubleOps.TrueDivide(self.total_seconds(), other.total_seconds());
 
             public timedelta __pos__() { return +this; }
@@ -262,13 +262,13 @@ namespace IronPython.Modules {
                 return this._microseconds - delta._microseconds;
             }
 
-            public static bool operator >([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) > 0;
+            public static bool operator >([NotNone] timedelta self, [NotNone] timedelta other) => self.CompareTo(other) > 0;
 
-            public static bool operator <([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) < 0;
+            public static bool operator <([NotNone] timedelta self, [NotNone] timedelta other) => self.CompareTo(other) < 0;
 
-            public static bool operator >=([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) >= 0;
+            public static bool operator >=([NotNone] timedelta self, [NotNone] timedelta other) => self.CompareTo(other) >= 0;
 
-            public static bool operator <=([NotNull] timedelta self, [NotNull] timedelta other) => self.CompareTo(other) <= 0;
+            public static bool operator <=([NotNone] timedelta self, [NotNone] timedelta other) => self.CompareTo(other) <= 0;
 
             #endregion
 
@@ -427,14 +427,14 @@ namespace IronPython.Modules {
             }
 
             // supported operations
-            public static date operator +([NotNull]date self, [NotNull]timedelta other) {
+            public static date operator +([NotNone] date self, [NotNone] timedelta other) {
                 try {
                     return new date(self._dateTime.AddDays(other.days));
                 } catch {
                     throw PythonOps.OverflowError("date value out of range");
                 }
             }
-            public static date operator +([NotNull]timedelta other, [NotNull]date self) {
+            public static date operator +([NotNone] timedelta other, [NotNone] date self) {
                 try {
                     return new date(self._dateTime.AddDays(other.days));
                 } catch {
@@ -670,7 +670,7 @@ namespace IronPython.Modules {
                 return string.Format("datetime.date({0}, {1}, {2})", _dateTime.Year, _dateTime.Month, _dateTime.Day);
             }
 
-            public virtual string __format__(CodeContext/*!*/ context, [NotNull] string dateFormat){
+            public virtual string __format__(CodeContext/*!*/ context, [NotNone] string dateFormat){
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 } else {
@@ -728,7 +728,7 @@ namespace IronPython.Modules {
                 _tz = tzinfo;
             }
 
-            public datetime([NotNull]Bytes bytes) {
+            public datetime([NotNone] Bytes bytes) {
                 var byteArray = bytes.UnsafeByteArray;
                 if (byteArray.Length != 10) {
                     throw PythonOps.TypeError("an integer is required");
@@ -751,7 +751,7 @@ namespace IronPython.Modules {
                 _lostMicroseconds = microsecond % 1000;
             }
 
-            public datetime([NotNull]Bytes bytes, [NotNull]tzinfo tzinfo)
+            public datetime([NotNone] Bytes bytes, [NotNone] tzinfo tzinfo)
                 : this(bytes) {
                 _tz = tzinfo;
             }
@@ -903,7 +903,7 @@ namespace IronPython.Modules {
             }
 
             // supported operations
-            public static datetime operator +([NotNull]datetime date, [NotNull]timedelta delta) {
+            public static datetime operator +([NotNone] datetime date, [NotNone] timedelta delta) {
                 try {
                     return new datetime(date.InternalDateTime.Add(delta.TimeSpanWithDaysAndSeconds), delta._microseconds + date._lostMicroseconds, date._tz);
                 } catch (ArgumentException) {
@@ -911,7 +911,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public static datetime operator +([NotNull]timedelta delta, [NotNull]datetime date) {
+            public static datetime operator +([NotNone] timedelta delta, [NotNone] datetime date) {
                 try {
                     return new datetime(date.InternalDateTime.Add(delta.TimeSpanWithDaysAndSeconds), delta._microseconds + date._lostMicroseconds, date._tz);
                 } catch (ArgumentException) {
@@ -1482,7 +1482,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public object __format__(CodeContext/*!*/ context, [NotNull] string dateFormat) {
+            public object __format__(CodeContext/*!*/ context, [NotNone] string dateFormat) {
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 }
@@ -1596,10 +1596,10 @@ namespace IronPython.Modules {
                 _name = name;
             }
 
-            public static timezone __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] timedelta offset)
+            public static timezone __new__(CodeContext context, [NotNone] PythonType cls, [NotNone] timedelta offset)
                 => __new__(context, cls, offset, null!);
 
-            public static timezone __new__(CodeContext context, [NotNull] PythonType cls, [NotNull] timedelta offset, [NotNull] string name) {
+            public static timezone __new__(CodeContext context, [NotNone] PythonType cls, [NotNone] timedelta offset, [NotNone] string name) {
                 if (name is null && offset.Equals(timedelta.Zero))
                     return utc;
                 return new timezone(offset, name);
@@ -1621,7 +1621,7 @@ namespace IronPython.Modules {
                 return null;
             }
 
-            public override object fromutc([NotNull] datetime dt) {
+            public override object fromutc([NotNone] datetime dt) {
                 if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError("fromutc: dt.tzinfo is not self");
                 return dt + _offset;
             }
@@ -1661,7 +1661,7 @@ namespace IronPython.Modules {
             }
 
 #pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
-            public bool Equals([NotNull] timezone other)
+            public bool Equals([NotNone] timezone other)
 #pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
                 => _offset.Equals(other!._offset);
 

@@ -116,6 +116,10 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Using Include="Microsoft.Scripting.Runtime.NotNullAttribute" Alias="NotNoneAttribute" />
+  </ItemGroup>
+
   <!-- Release -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>false</DebugSymbols>

@@ -410,7 +410,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("readinto() -> Same as RawIOBase.readinto().")]
-            public BigInteger readinto([NotNull] IBufferProtocol buffer) {
+            public BigInteger readinto([NotNone] IBufferProtocol buffer) {
                 EnsureReadable();
 
                 using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)

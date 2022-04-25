@@ -19,11 +19,11 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA256 hash algorithm";
 
-        public static SHA256Type sha256([NotNull] IBufferProtocol data) {
+        public static SHA256Type sha256([NotNone] IBufferProtocol data) {
             return new SHA256Type(data);
         }
 
-        public static SHA256Type sha256([NotNull] string data) {
+        public static SHA256Type sha256([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
@@ -51,11 +51,11 @@ namespace IronPython.Modules {
             }
         }
 
-        public static SHA224Type sha224([NotNull] IBufferProtocol data) {
+        public static SHA224Type sha224([NotNone] IBufferProtocol data) {
             return new SHA224Type(data);
         }
 
-        public static SHA256Type sha224([NotNull] string data) {
+        public static SHA256Type sha224([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 

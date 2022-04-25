@@ -20,8 +20,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime.Exceptions {
     public static partial class PythonExceptions {
         /// <summary>
@@ -79,13 +77,13 @@ namespace IronPython.Runtime.Exceptions {
 
             #region Public API Surface
 
-            public BaseException([NotNull]PythonType/*!*/ type) {
+            public BaseException([NotNone] PythonType/*!*/ type) {
                 ContractUtils.RequiresNotNull(type, nameof(type));
                 _type = type;
                 _args = PythonTuple.EMPTY;
             }
 
-            public static object __new__([NotNull]PythonType/*!*/ cls, [NotNull]params object?[] args\u00F8) {
+            public static object __new__([NotNone] PythonType/*!*/ cls, [NotNone] params object?[] args\u00F8) {
                 BaseException res;
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     res = new BaseException(cls);
@@ -97,13 +95,13 @@ namespace IronPython.Runtime.Exceptions {
                 return res;
             }
 
-            public static object __new__([NotNull]PythonType/*!*/ cls, [ParamDictionary, NotNull]IDictionary<string, object?> kwArgs\u00F8, [NotNull]params object?[] args\u00F8)
+            public static object __new__([NotNone] PythonType/*!*/ cls, [ParamDictionary, NotNone] IDictionary<string, object?> kwArgs\u00F8, [NotNone] params object?[] args\u00F8)
                 => __new__(cls, args\u00F8);
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__([NotNull]params object?[] args\u00F8) {
+            public virtual void __init__([NotNone] params object?[] args\u00F8) {
                 _args = PythonTuple.MakeTuple(args\u00F8 ?? new object?[] { null });
             }
 
@@ -198,7 +196,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Provides custom member lookup access that fallbacks to the dictionary
             /// </summary>
             [SpecialName]
-            public object GetBoundMember([NotNull]string name) {
+            public object GetBoundMember([NotNone] string name) {
                 if (_dict != null) {
                     if (_dict.TryGetValue(name, out object res)) {
                         return res;
@@ -212,7 +210,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Provides custom member assignment which stores values in the dictionary
             /// </summary>
             [SpecialName]
-            public void SetMemberAfter([NotNull]string name, object? value) {
+            public void SetMemberAfter([NotNone] string name, object? value) {
                 EnsureDict();
 
                 _dict![name] = value;
@@ -223,7 +221,7 @@ namespace IronPython.Runtime.Exceptions {
             /// or allows clearing 'message'.
             /// </summary>
             [SpecialName]
-            public bool DeleteCustomMember([NotNull]string name) {
+            public bool DeleteCustomMember([NotNone] string name) {
                 if (_dict == null) return false;
 
                 return _dict.Remove(name);

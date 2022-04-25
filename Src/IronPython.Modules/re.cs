@@ -21,7 +21,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using RegExpMatch = System.Text.RegularExpressions.Match;
@@ -596,7 +595,7 @@ namespace IronPython.Modules {
                 => g.Success ? ToPatternType(g.Value) : @default;
         }
 
-        public static PythonTuple _pickle(CodeContext/*!*/ context, [NotNull] Pattern pattern) {
+        public static PythonTuple _pickle(CodeContext/*!*/ context, [NotNone] Pattern pattern) {
             object scope = Importer.ImportModule(context, new PythonDictionary(), "re", false, 0);
             if (scope is PythonModule module && module.__dict__.TryGetValue("compile", out object compile)) {
                 return PythonTuple.MakeTuple(compile, PythonTuple.MakeTuple(pattern.pattern, pattern.flags));
@@ -664,7 +663,7 @@ namespace IronPython.Modules {
                 return g.Success ? g.Index + g.Length : -1;
             }
 
-            public object? group(object? index, [NotNull] params object?[] additional) {
+            public object? group(object? index, [NotNone] params object?[] additional) {
                 if (additional.Length == 0) {
                     return group(index);
                 }

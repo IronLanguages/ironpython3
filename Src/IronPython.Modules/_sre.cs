@@ -5,8 +5,6 @@
 using System;
 using System.Globalization;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 
 [assembly: PythonModule("_sre", typeof(IronPython.Modules.PythonSRegEx))]

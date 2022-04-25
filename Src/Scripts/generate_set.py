@@ -5,7 +5,7 @@
 from generate import generate
 
 def add_not_null(arg_t):
-    return arg_t if arg_t.endswith("?") else "[NotNull] " + arg_t
+    return arg_t if arg_t.endswith("?") else "[NotNone] " + arg_t
 
 def get_type(mutable):
     if mutable:
@@ -64,7 +64,7 @@ def simple_op_worker(cw, t, arg_t, name):
         )
 
 def enter_multiarg_op(cw, t, name):
-    cw.enter_block('public %s %s([NotNull] params object[]/*!*/ sets)' % (t, name))
+    cw.enter_block('public %s %s([NotNone] params object[]/*!*/ sets)' % (t, name))
 
 def union_multiarg(cw, mutable):
     t = get_type(mutable)
@@ -305,7 +305,7 @@ def is_strict(compare):
 def gen_comparison(cw, t, compare):
     cw.writeline('[return: MaybeNotImplemented]')
     cw.enter_block(
-        'public static object operator %s([NotNull] %s self, object? other)' %
+        'public static object operator %s([NotNone] %s self, object? other)' %
         (compare, t)
     )
 

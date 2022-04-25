@@ -59,7 +59,7 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public Bytes decompress([NotNull] IBufferProtocol data, int max_length=0)
+        public Bytes decompress([NotNone] IBufferProtocol data, int max_length=0)
         {
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 

@@ -21,8 +21,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [PythonType("range")]
     [DontMapIEnumerableToContains]
@@ -112,7 +110,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object this[[NotNull] Slice slice] {
+        public object this[[NotNone] Slice slice] {
             get {
                 slice.indices(_length, out BigInteger ostart, out BigInteger ostop, out BigInteger ostep);
                 return new PythonRange(Compute(ostart), Compute(ostop), _step * ostep);
@@ -123,7 +121,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool __eq__([NotNull] PythonRange other) {
+        public bool __eq__([NotNone] PythonRange other) {
             if (_length != other._length) {
                 return false;
             }

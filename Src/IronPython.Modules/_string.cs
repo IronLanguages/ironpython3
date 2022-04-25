@@ -8,15 +8,13 @@ using System.Collections.Generic;
 
 using IronPython.Runtime;
 
-using Microsoft.Scripting.Runtime;
-
 [assembly: PythonModule("_string", typeof(IronPython.Modules.PythonString))]
 namespace IronPython.Modules {
     public static class PythonString {
-        public static IEnumerable<PythonTuple>/*!*/ formatter_parser([NotNull]string/*!*/ self)
+        public static IEnumerable<PythonTuple>/*!*/ formatter_parser([NotNone] string/*!*/ self)
             => NewStringFormatter.GetFormatInfo(self);
 
-        public static PythonTuple/*!*/ formatter_field_name_split([NotNull]string/*!*/ self)
+        public static PythonTuple/*!*/ formatter_field_name_split([NotNone] string/*!*/ self)
             => NewStringFormatter.GetFieldNameInfo(self);
     }
 }

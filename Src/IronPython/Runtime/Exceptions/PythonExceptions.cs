@@ -634,7 +634,7 @@ for k, v in toError.items():
         }
 
         public partial class _SystemExit : BaseException {
-            public override void __init__([NotNull]params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 base.__init__(args);
 
                 if (args?.Length > 0) {

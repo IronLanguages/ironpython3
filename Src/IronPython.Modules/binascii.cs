@@ -38,7 +38,7 @@ namespace IronPython.Modules {
 
         #region uu
 
-        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNone] IBufferProtocol data) {
             using var buffer = data.GetBufferNoThrow();
             if (buffer is null) {
                 throw PythonOps.TypeError($"argument should be bytes, buffer or ASCII string, not '{PythonOps.GetPythonTypeName(data)}'");
@@ -83,10 +83,10 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull] string data)
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNone] string data)
             => a2b_uu(context, data.ToBytes());
 
-        public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
+        public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             return b2a_uu_impl(context, buffer.AsReadOnlySpan());
 
@@ -105,7 +105,7 @@ namespace IronPython.Modules {
 
         #region base64
 
-        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNone] IBufferProtocol data) {
             using var buffer = data.GetBufferNoThrow();
             if (buffer is null) {
                 throw PythonOps.TypeError($"argument should be bytes, buffer or ASCII string, not '{PythonOps.GetPythonTypeName(data)}'");
@@ -136,10 +136,10 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull] string data)
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNone] string data)
             => a2b_base64(context, data.ToBytes());
 
-        public static Bytes b2a_base64([NotNull] IBufferProtocol data) {
+        public static Bytes b2a_base64([NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             return b2a_base64_impl(buffer.AsReadOnlySpan());
 
@@ -173,7 +173,7 @@ namespace IronPython.Modules {
         private const int MAXLINESIZE = 76;
 
         [Documentation("a2b_qp(data, header=False)\n    Decode a string of qp-encoded data.")]
-        public static Bytes a2b_qp([NotNull] IBufferProtocol data, bool header = false) {
+        public static Bytes a2b_qp([NotNone] IBufferProtocol data, bool header = false) {
             using var buffer = data.GetBufferNoThrow();
             if (buffer is null) {
                 throw PythonOps.TypeError($"argument should be bytes, buffer or ASCII string, not '{PythonOps.GetPythonTypeName(data)}'");
@@ -221,7 +221,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static Bytes a2b_qp([NotNull] string data, bool header = false)
+        public static Bytes a2b_qp([NotNone] string data, bool header = false)
             => a2b_qp(data.ToBytes(), header);
 
         [Documentation(@"b2a_qp(data, quotetabs=False, istext=True, header=False) -> s;
@@ -230,7 +230,7 @@ namespace IronPython.Modules {
 On encoding, when istext is set, newlines are not encoded, and white
 space at end of lines is.  When istext is not set, \\r and \\n (CR/LF) are
 both encoded.  When quotetabs is set, space and tabs are encoded.")]
-        public static Bytes b2a_qp([NotNull] IBufferProtocol data, bool quotetabs = false, bool istext = true, bool header = false) {
+        public static Bytes b2a_qp([NotNone] IBufferProtocol data, bool quotetabs = false, bool istext = true, bool header = false) {
             using var buffer = data.GetBuffer();
             return b2a_qp_impl(buffer.AsReadOnlySpan().MakeString(), quotetabs, istext, header);
         }
@@ -364,7 +364,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
         };
 
-        public static int crc_hqx([NotNull] IBufferProtocol data, int crc) {
+        public static int crc_hqx([NotNone] IBufferProtocol data, int crc) {
             using var buffer = data.GetBuffer();
             return crc_hqx_impl(buffer.AsReadOnlySpan(), crc);
 
@@ -382,7 +382,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         #region crc32
 
         [Documentation("crc32(data[, crc]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of data.")]
-        public static object crc32([NotNull] IBufferProtocol data, uint crc = 0) {
+        public static object crc32([NotNone] IBufferProtocol data, uint crc = 0) {
             // TODO: [PythonIndex(overflow=mask)] uint crc = 0
             using var buffer = data.GetBuffer();
             var res = crc32(buffer.AsReadOnlySpan(), crc);
@@ -409,7 +409,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region hex
 
-        public static Bytes b2a_hex([NotNull] IBufferProtocol data) {
+        public static Bytes b2a_hex([NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             return b2a_hex_impl(buffer.AsReadOnlySpan());
 
@@ -428,10 +428,10 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        public static Bytes hexlify([NotNull] IBufferProtocol data)
+        public static Bytes hexlify([NotNone] IBufferProtocol data)
             => b2a_hex(data);
 
-        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull] IBufferProtocol data) {
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNone] IBufferProtocol data) {
             using var buffer = data.GetBufferNoThrow();
             if (buffer is null) {
                 throw PythonOps.TypeError($"argument should be bytes, buffer or ASCII string, not '{PythonOps.GetPythonTypeName(data)}'");
@@ -458,13 +458,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull] string data)
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNone] string data)
             => a2b_hex(context, data.ToBytes());
 
-        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull] IBufferProtocol hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNone] IBufferProtocol hexstr)
             => a2b_hex(context, hexstr);
 
-        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull] string hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNone] string hexstr)
             => a2b_hex(context, hexstr);
 
         #endregion

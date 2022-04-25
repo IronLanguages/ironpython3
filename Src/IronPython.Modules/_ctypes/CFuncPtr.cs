@@ -138,7 +138,7 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new CFuncPtr with the specfied address.
             /// </summary>
-            public _CFuncPtr([NotNull] BigInteger handle) {
+            public _CFuncPtr([NotNone] BigInteger handle) {
                 MemHolder = new MemoryHolder(IntPtr.Size);
                 addr = new IntPtr((long)handle);
                 _id = Interlocked.Increment(ref _curId);

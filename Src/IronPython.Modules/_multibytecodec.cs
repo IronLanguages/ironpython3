@@ -8,7 +8,6 @@ using System.Text;
 using System.Runtime.InteropServices;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting;
 
 #if FALSE

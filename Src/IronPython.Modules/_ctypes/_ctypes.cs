@@ -200,7 +200,7 @@ namespace IronPython.Modules {
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static object LoadLibrary([NotNull] string library, int mode = 0)
+        public static object LoadLibrary([NotNone] string library, int mode = 0)
             => LoadDLL(library, mode);
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
@@ -240,7 +240,7 @@ namespace IronPython.Modules {
            );
         }
 
-        public static PythonType POINTER(CodeContext/*!*/ context, [NotNull]string name) {
+        public static PythonType POINTER(CodeContext/*!*/ context, [NotNone] string name) {
             PythonType res = MakePointer(context, name, new PythonDictionary());
             PythonContext pc = context.LanguageContext;
             PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);

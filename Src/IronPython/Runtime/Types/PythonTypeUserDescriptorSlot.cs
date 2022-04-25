@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {

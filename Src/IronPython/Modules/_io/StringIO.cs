@@ -40,7 +40,7 @@ namespace IronPython.Modules {
                 _data = new char[DEFAULT_BUF_SIZE];
             }
 
-            public StringIO(CodeContext context, [ParamDictionary, NotNull] IDictionary<object, object> kwArgs\u00F8, [NotNull] params object[] args)
+            public StringIO(CodeContext context, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, [NotNone] params object[] args)
                 : this(context) { }
 
             public void __init__(CodeContext context, string? initial_value = "", string? newline = "\n") {
@@ -269,7 +269,7 @@ namespace IronPython.Modules {
 
             // TODO: get rid of virtual? see https://github.com/IronLanguages/ironpython3/issues/1070
             [Documentation("")]
-            public virtual BigInteger write(CodeContext context, [NotNull] string str) {
+            public virtual BigInteger write(CodeContext context, [NotNone] string str) {
                 _checkClosed();
                 return DoWrite(str);
             }
@@ -278,7 +278,7 @@ namespace IronPython.Modules {
                 + "Line separators are not added, so it is usual for each of the\n"
                 + "lines provided to have a line separator at the end."
                 )]
-            public void writelines(CodeContext context, [NotNull] IEnumerable lines) {
+            public void writelines(CodeContext context, [NotNone] IEnumerable lines) {
                 _checkClosed();
 
                 IEnumerator en = lines.GetEnumerator();
@@ -298,7 +298,7 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(getvalue(), _newline, tell(context), new PythonDictionary(__dict__));
             }
 
-            public void __setstate__(CodeContext context, [NotNull] PythonTuple tuple) {
+            public void __setstate__(CodeContext context, [NotNone] PythonTuple tuple) {
                 _checkClosed();
 
                 if (tuple.__len__() != 4) {

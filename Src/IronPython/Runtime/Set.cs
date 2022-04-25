@@ -15,7 +15,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
@@ -32,11 +31,11 @@ namespace IronPython.Runtime {
             clear();
         }
 
-        public void __init__([NotNull]SetCollection set) {
+        public void __init__([NotNone] SetCollection set) {
             _items = set._items.Clone();
         }
 
-        public void __init__([NotNull]FrozenSetCollection set) {
+        public void __init__([NotNone] FrozenSetCollection set) {
             _items = set._items.Clone();
         }
 
@@ -49,7 +48,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == TypeCache.Set) {
                 return new SetCollection();
             }
@@ -57,15 +56,15 @@ namespace IronPython.Runtime {
             return cls.CreateInstance(context);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, object? arg) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, object? arg) {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [NotNull] params object?[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object?[] args\u00F8) {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, [ParamDictionary, NotNull] IDictionary<object, object> kwArgs, [NotNull] params object?[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs, [NotNone] params object?[] args\u00F8) {
             return __new__(context, cls);
         }
 
@@ -219,7 +218,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void update([NotNull] SetCollection set) {
+        public void update([NotNone] SetCollection set) {
             if (ReferenceEquals(set, this)) {
                 return;
             }
@@ -229,7 +228,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void update([NotNull] FrozenSetCollection set) {
+        public void update([NotNone] FrozenSetCollection set) {
             lock (_items) {
                 _items.UnionUpdate(set._items);
             }
@@ -249,7 +248,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void update([NotNull]params object[]/*!*/ sets) {
+        public void update([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -265,7 +264,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void intersection_update([NotNull] SetCollection set) {
+        public void intersection_update([NotNone] SetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 return;
             }
@@ -275,7 +274,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void intersection_update([NotNull] FrozenSetCollection set) {
+        public void intersection_update([NotNone] FrozenSetCollection set) {
             lock (_items) {
                 _items.IntersectionUpdate(set._items);
             }
@@ -292,7 +291,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void intersection_update([NotNull]params object[]/*!*/ sets) {
+        public void intersection_update([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -308,7 +307,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void difference_update([NotNull] SetCollection set) {
+        public void difference_update([NotNone] SetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 _items.Clear();
                 return;
@@ -319,7 +318,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void difference_update([NotNull] FrozenSetCollection set) {
+        public void difference_update([NotNone] FrozenSetCollection set) {
             lock (_items) {
                 _items.DifferenceUpdate(set._items);
             }
@@ -337,7 +336,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void difference_update([NotNull]params object[]/*!*/ sets) {
+        public void difference_update([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -354,7 +353,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void symmetric_difference_update([NotNull] SetCollection set) {
+        public void symmetric_difference_update([NotNone] SetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 _items.Clear();
                 return;
@@ -365,7 +364,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void symmetric_difference_update([NotNull] FrozenSetCollection set) {
+        public void symmetric_difference_update([NotNone] FrozenSetCollection set) {
             lock (_items) {
                 _items.SymmetricDifferenceUpdate(set._items);
             }
@@ -390,11 +389,11 @@ namespace IronPython.Runtime {
         // *** BEGIN GENERATED CODE ***
         // generated by function: _gen_setops from: generate_set.py
 
-        public bool isdisjoint([NotNull] SetCollection set) {
+        public bool isdisjoint([NotNone] SetCollection set) {
             return _items.IsDisjoint(set._items);
         }
 
-        public bool isdisjoint([NotNull] FrozenSetCollection set) {
+        public bool isdisjoint([NotNone] FrozenSetCollection set) {
             return _items.IsDisjoint(set._items);
         }
 
@@ -402,11 +401,11 @@ namespace IronPython.Runtime {
             return _items.IsDisjoint(SetStorage.GetItems(set));
         }
 
-        public bool issubset([NotNull] SetCollection set) {
+        public bool issubset([NotNone] SetCollection set) {
             return _items.IsSubset(set._items);
         }
 
-        public bool issubset([NotNull] FrozenSetCollection set) {
+        public bool issubset([NotNone] FrozenSetCollection set) {
             return _items.IsSubset(set._items);
         }
 
@@ -414,11 +413,11 @@ namespace IronPython.Runtime {
             return _items.IsSubset(SetStorage.GetItems(set));
         }
 
-        public bool issuperset([NotNull] SetCollection set) {
+        public bool issuperset([NotNone] SetCollection set) {
             return set._items.IsSubset(_items);
         }
 
-        public bool issuperset([NotNull] FrozenSetCollection set) {
+        public bool issuperset([NotNone] FrozenSetCollection set) {
             return set._items.IsSubset(_items);
         }
 
@@ -430,11 +429,11 @@ namespace IronPython.Runtime {
             return copy();
         }
 
-        public SetCollection union([NotNull] SetCollection set) {
+        public SetCollection union([NotNone] SetCollection set) {
             return Make(SetStorage.Union(_items, set._items));
         }
 
-        public SetCollection union([NotNull] FrozenSetCollection set) {
+        public SetCollection union([NotNone] FrozenSetCollection set) {
             return Make(SetStorage.Union(_items, set._items));
         }
 
@@ -448,7 +447,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public SetCollection union([NotNull] params object[]/*!*/ sets) {
+        public SetCollection union([NotNone] params object[]/*!*/ sets) {
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -461,11 +460,11 @@ namespace IronPython.Runtime {
             return copy();
         }
 
-        public SetCollection intersection([NotNull] SetCollection set) {
+        public SetCollection intersection([NotNone] SetCollection set) {
             return Make(SetStorage.Intersection(_items, set._items));
         }
 
-        public SetCollection intersection([NotNull] FrozenSetCollection set) {
+        public SetCollection intersection([NotNone] FrozenSetCollection set) {
             return Make(SetStorage.Intersection(_items, set._items));
         }
 
@@ -479,7 +478,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public SetCollection intersection([NotNull] params object[]/*!*/ sets) {
+        public SetCollection intersection([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return copy();
             }
@@ -514,7 +513,7 @@ namespace IronPython.Runtime {
             return copy();
         }
 
-        public SetCollection difference([NotNull] SetCollection set) {
+        public SetCollection difference([NotNone] SetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
@@ -524,7 +523,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public SetCollection difference([NotNull] FrozenSetCollection set) {
+        public SetCollection difference([NotNone] FrozenSetCollection set) {
             return Make(
                 SetStorage.Difference(_items, set._items)
             );
@@ -536,7 +535,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public SetCollection difference([NotNull] params object[]/*!*/ sets) {
+        public SetCollection difference([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return copy();
             }
@@ -559,7 +558,7 @@ namespace IronPython.Runtime {
             return Make(res);
         }
 
-        public SetCollection symmetric_difference([NotNull] SetCollection set) {
+        public SetCollection symmetric_difference([NotNone] SetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
@@ -567,7 +566,7 @@ namespace IronPython.Runtime {
             return Make(SetStorage.SymmetricDifference(_items, set._items));
         }
 
-        public SetCollection symmetric_difference([NotNull] FrozenSetCollection set) {
+        public SetCollection symmetric_difference([NotNone] FrozenSetCollection set) {
             return Make(SetStorage.SymmetricDifference(_items, set._items));
         }
 
@@ -592,13 +591,13 @@ namespace IronPython.Runtime {
         // generated by function: gen_mutating_ops from: generate_set.py
 
         [SpecialName]
-        public SetCollection InPlaceBitwiseOr([NotNull] SetCollection set) {
+        public SetCollection InPlaceBitwiseOr([NotNone] SetCollection set) {
             update(set);
             return this;
         }
 
         [SpecialName]
-        public SetCollection InPlaceBitwiseOr([NotNull] FrozenSetCollection set) {
+        public SetCollection InPlaceBitwiseOr([NotNone] FrozenSetCollection set) {
             update(set);
             return this;
         }
@@ -617,13 +616,13 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public SetCollection InPlaceBitwiseAnd([NotNull] SetCollection set) {
+        public SetCollection InPlaceBitwiseAnd([NotNone] SetCollection set) {
             intersection_update(set);
             return this;
         }
 
         [SpecialName]
-        public SetCollection InPlaceBitwiseAnd([NotNull] FrozenSetCollection set) {
+        public SetCollection InPlaceBitwiseAnd([NotNone] FrozenSetCollection set) {
             intersection_update(set);
             return this;
         }
@@ -642,13 +641,13 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public SetCollection InPlaceExclusiveOr([NotNull] SetCollection set) {
+        public SetCollection InPlaceExclusiveOr([NotNone] SetCollection set) {
             symmetric_difference_update(set);
             return this;
         }
 
         [SpecialName]
-        public SetCollection InPlaceExclusiveOr([NotNull] FrozenSetCollection set) {
+        public SetCollection InPlaceExclusiveOr([NotNone] FrozenSetCollection set) {
             symmetric_difference_update(set);
             return this;
         }
@@ -667,13 +666,13 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public SetCollection InPlaceSubtract([NotNull] SetCollection set) {
+        public SetCollection InPlaceSubtract([NotNone] SetCollection set) {
             difference_update(set);
             return this;
         }
 
         [SpecialName]
-        public SetCollection InPlaceSubtract([NotNull] FrozenSetCollection set) {
+        public SetCollection InPlaceSubtract([NotNone] FrozenSetCollection set) {
             difference_update(set);
             return this;
         }
@@ -701,35 +700,35 @@ namespace IronPython.Runtime {
         // *** BEGIN GENERATED CODE ***
         // generated by function: _gen_ops from: generate_set.py
 
-        public static SetCollection operator |([NotNull] SetCollection x, [NotNull] SetCollection y) {
+        public static SetCollection operator |([NotNone] SetCollection x, [NotNone] SetCollection y) {
             return x.union(y);
         }
 
-        public static SetCollection operator &([NotNull] SetCollection x, [NotNull] SetCollection y) {
+        public static SetCollection operator &([NotNone] SetCollection x, [NotNone] SetCollection y) {
             return x.intersection(y);
         }
 
-        public static SetCollection operator ^([NotNull] SetCollection x, [NotNull] SetCollection y) {
+        public static SetCollection operator ^([NotNone] SetCollection x, [NotNone] SetCollection y) {
             return x.symmetric_difference(y);
         }
 
-        public static SetCollection operator -([NotNull] SetCollection x, [NotNull] SetCollection y) {
+        public static SetCollection operator -([NotNone] SetCollection x, [NotNone] SetCollection y) {
             return x.difference(y);
         }
 
-        public static SetCollection operator |([NotNull] SetCollection x, [NotNull] FrozenSetCollection y) {
+        public static SetCollection operator |([NotNone] SetCollection x, [NotNone] FrozenSetCollection y) {
             return x.union(y);
         }
 
-        public static SetCollection operator &([NotNull] SetCollection x, [NotNull] FrozenSetCollection y) {
+        public static SetCollection operator &([NotNone] SetCollection x, [NotNone] FrozenSetCollection y) {
             return x.intersection(y);
         }
 
-        public static SetCollection operator ^([NotNull] SetCollection x, [NotNull] FrozenSetCollection y) {
+        public static SetCollection operator ^([NotNone] SetCollection x, [NotNone] FrozenSetCollection y) {
             return x.symmetric_difference(y);
         }
 
-        public static SetCollection operator -([NotNull] SetCollection x, [NotNull] FrozenSetCollection y) {
+        public static SetCollection operator -([NotNone] SetCollection x, [NotNone] FrozenSetCollection y) {
             return x.difference(y);
         }
 
@@ -746,7 +745,7 @@ namespace IronPython.Runtime {
         #region IRichComparable
 
         [return: MaybeNotImplemented]
-        public static object operator >([NotNull] SetCollection self, object? other) {
+        public static object operator >([NotNone] SetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsStrictSubset(self._items);
             }
@@ -755,7 +754,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator <([NotNull] SetCollection self, object? other) {
+        public static object operator <([NotNone] SetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsStrictSubset(items);
             }
@@ -764,7 +763,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator >=([NotNull] SetCollection self, object? other) {
+        public static object operator >=([NotNone] SetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsSubset(self._items);
             }
@@ -773,7 +772,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator <=([NotNull] SetCollection self, object? other) {
+        public static object operator <=([NotNone] SetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsSubset(items);
             }
@@ -866,11 +865,11 @@ namespace IronPython.Runtime {
         #region Set Construction
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        public void __init__([NotNull] params object?[] o) {
+        public void __init__([NotNone] params object?[] o) {
             // nop
         }
 
-        public static FrozenSetCollection __new__(CodeContext/*!*/ context, [NotNull] PythonType cls) {
+        public static FrozenSetCollection __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
             if (cls == TypeCache.FrozenSet) {
                 return Empty;
             } else {
@@ -880,7 +879,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static FrozenSetCollection __new__(CodeContext/*!*/ context, [NotNull] PythonType cls, object? set) {
+        public static FrozenSetCollection __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, object? set) {
             if (cls == TypeCache.FrozenSet) {
                 return Make(set);
             } else {
@@ -1012,11 +1011,11 @@ namespace IronPython.Runtime {
         // *** BEGIN GENERATED CODE ***
         // generated by function: _gen_setops from: generate_set.py
 
-        public bool isdisjoint([NotNull] FrozenSetCollection set) {
+        public bool isdisjoint([NotNone] FrozenSetCollection set) {
             return _items.IsDisjoint(set._items);
         }
 
-        public bool isdisjoint([NotNull] SetCollection set) {
+        public bool isdisjoint([NotNone] SetCollection set) {
             return _items.IsDisjoint(set._items);
         }
 
@@ -1024,11 +1023,11 @@ namespace IronPython.Runtime {
             return _items.IsDisjoint(SetStorage.GetItems(set));
         }
 
-        public bool issubset([NotNull] FrozenSetCollection set) {
+        public bool issubset([NotNone] FrozenSetCollection set) {
             return _items.IsSubset(set._items);
         }
 
-        public bool issubset([NotNull] SetCollection set) {
+        public bool issubset([NotNone] SetCollection set) {
             return _items.IsSubset(set._items);
         }
 
@@ -1036,11 +1035,11 @@ namespace IronPython.Runtime {
             return _items.IsSubset(SetStorage.GetItems(set));
         }
 
-        public bool issuperset([NotNull] FrozenSetCollection set) {
+        public bool issuperset([NotNone] FrozenSetCollection set) {
             return set._items.IsSubset(_items);
         }
 
-        public bool issuperset([NotNull] SetCollection set) {
+        public bool issuperset([NotNone] SetCollection set) {
             return set._items.IsSubset(_items);
         }
 
@@ -1052,11 +1051,11 @@ namespace IronPython.Runtime {
             return Make(_items);
         }
 
-        public FrozenSetCollection union([NotNull] FrozenSetCollection set) {
+        public FrozenSetCollection union([NotNone] FrozenSetCollection set) {
             return Make(SetStorage.Union(_items, set._items));
         }
 
-        public FrozenSetCollection union([NotNull] SetCollection set) {
+        public FrozenSetCollection union([NotNone] SetCollection set) {
             return Make(SetStorage.Union(_items, set._items));
         }
 
@@ -1070,7 +1069,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public FrozenSetCollection union([NotNull] params object[]/*!*/ sets) {
+        public FrozenSetCollection union([NotNone] params object[]/*!*/ sets) {
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -1083,11 +1082,11 @@ namespace IronPython.Runtime {
             return Make(_items);
         }
 
-        public FrozenSetCollection intersection([NotNull] FrozenSetCollection set) {
+        public FrozenSetCollection intersection([NotNone] FrozenSetCollection set) {
             return Make(SetStorage.Intersection(_items, set._items));
         }
 
-        public FrozenSetCollection intersection([NotNull] SetCollection set) {
+        public FrozenSetCollection intersection([NotNone] SetCollection set) {
             return Make(SetStorage.Intersection(_items, set._items));
         }
 
@@ -1101,7 +1100,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public FrozenSetCollection intersection([NotNull] params object[]/*!*/ sets) {
+        public FrozenSetCollection intersection([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return Make(_items);
             }
@@ -1136,7 +1135,7 @@ namespace IronPython.Runtime {
             return Make(_items);
         }
 
-        public FrozenSetCollection difference([NotNull] FrozenSetCollection set) {
+        public FrozenSetCollection difference([NotNone] FrozenSetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
@@ -1146,7 +1145,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public FrozenSetCollection difference([NotNull] SetCollection set) {
+        public FrozenSetCollection difference([NotNone] SetCollection set) {
             return Make(
                 SetStorage.Difference(_items, set._items)
             );
@@ -1158,7 +1157,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public FrozenSetCollection difference([NotNull] params object[]/*!*/ sets) {
+        public FrozenSetCollection difference([NotNone] params object[]/*!*/ sets) {
             if (sets.Length == 0) {
                 return Make(_items);
             }
@@ -1181,7 +1180,7 @@ namespace IronPython.Runtime {
             return Make(res);
         }
 
-        public FrozenSetCollection symmetric_difference([NotNull] FrozenSetCollection set) {
+        public FrozenSetCollection symmetric_difference([NotNone] FrozenSetCollection set) {
             if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
@@ -1189,7 +1188,7 @@ namespace IronPython.Runtime {
             return Make(SetStorage.SymmetricDifference(_items, set._items));
         }
 
-        public FrozenSetCollection symmetric_difference([NotNull] SetCollection set) {
+        public FrozenSetCollection symmetric_difference([NotNone] SetCollection set) {
             return Make(SetStorage.SymmetricDifference(_items, set._items));
         }
 
@@ -1213,35 +1212,35 @@ namespace IronPython.Runtime {
         // *** BEGIN GENERATED CODE ***
         // generated by function: _gen_ops from: generate_set.py
 
-        public static FrozenSetCollection operator |([NotNull] FrozenSetCollection x, [NotNull] FrozenSetCollection y) {
+        public static FrozenSetCollection operator |([NotNone] FrozenSetCollection x, [NotNone] FrozenSetCollection y) {
             return x.union(y);
         }
 
-        public static FrozenSetCollection operator &([NotNull] FrozenSetCollection x, [NotNull] FrozenSetCollection y) {
+        public static FrozenSetCollection operator &([NotNone] FrozenSetCollection x, [NotNone] FrozenSetCollection y) {
             return x.intersection(y);
         }
 
-        public static FrozenSetCollection operator ^([NotNull] FrozenSetCollection x, [NotNull] FrozenSetCollection y) {
+        public static FrozenSetCollection operator ^([NotNone] FrozenSetCollection x, [NotNone] FrozenSetCollection y) {
             return x.symmetric_difference(y);
         }
 
-        public static FrozenSetCollection operator -([NotNull] FrozenSetCollection x, [NotNull] FrozenSetCollection y) {
+        public static FrozenSetCollection operator -([NotNone] FrozenSetCollection x, [NotNone] FrozenSetCollection y) {
             return x.difference(y);
         }
 
-        public static FrozenSetCollection operator |([NotNull] FrozenSetCollection x, [NotNull] SetCollection y) {
+        public static FrozenSetCollection operator |([NotNone] FrozenSetCollection x, [NotNone] SetCollection y) {
             return x.union(y);
         }
 
-        public static FrozenSetCollection operator &([NotNull] FrozenSetCollection x, [NotNull] SetCollection y) {
+        public static FrozenSetCollection operator &([NotNone] FrozenSetCollection x, [NotNone] SetCollection y) {
             return x.intersection(y);
         }
 
-        public static FrozenSetCollection operator ^([NotNull] FrozenSetCollection x, [NotNull] SetCollection y) {
+        public static FrozenSetCollection operator ^([NotNone] FrozenSetCollection x, [NotNone] SetCollection y) {
             return x.symmetric_difference(y);
         }
 
-        public static FrozenSetCollection operator -([NotNull] FrozenSetCollection x, [NotNull] SetCollection y) {
+        public static FrozenSetCollection operator -([NotNone] FrozenSetCollection x, [NotNone] SetCollection y) {
             return x.difference(y);
         }
 
@@ -1258,7 +1257,7 @@ namespace IronPython.Runtime {
         #region IRichComparable
 
         [return: MaybeNotImplemented]
-        public static object operator >([NotNull] FrozenSetCollection self, object? other) {
+        public static object operator >([NotNone] FrozenSetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsStrictSubset(self._items);
             }
@@ -1267,7 +1266,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator <([NotNull] FrozenSetCollection self, object? other) {
+        public static object operator <([NotNone] FrozenSetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsStrictSubset(items);
             }
@@ -1276,7 +1275,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator >=([NotNull] FrozenSetCollection self, object? other) {
+        public static object operator >=([NotNone] FrozenSetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return items.IsSubset(self._items);
             }
@@ -1285,7 +1284,7 @@ namespace IronPython.Runtime {
         }
 
         [return: MaybeNotImplemented]
-        public static object operator <=([NotNull] FrozenSetCollection self, object? other) {
+        public static object operator <=([NotNone] FrozenSetCollection self, object? other) {
             if (SetStorage.GetItemsIfSet(other, out SetStorage items)) {
                 return self._items.IsSubset(items);
             }

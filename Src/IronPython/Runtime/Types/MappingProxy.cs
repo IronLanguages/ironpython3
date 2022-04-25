@@ -13,8 +13,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
@@ -30,7 +28,7 @@ namespace IronPython.Runtime.Types {
             type = dt;
         }
 
-        public MappingProxy([NotNull] PythonDictionary dict) {
+        public MappingProxy([NotNone] PythonDictionary dict) {
             dictionary = dict;
         }
 

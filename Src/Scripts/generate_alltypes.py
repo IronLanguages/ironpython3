@@ -476,7 +476,7 @@ def gen_api(cw, ty):
 
         if ty.name not in ['Int64', 'UInt64']:
             cw.writeline()
-            cw.enter_block('public static Bytes to_bytes(%s value, int length, [NotDynamicNull] string byteorder, bool signed = false)' % ty.name)
+            cw.enter_block('public static Bytes to_bytes(%s value, int length, [NotNone] string byteorder, bool signed = false)' % ty.name)
             cw.write('// TODO: signed should be a keyword only argument')
             cw.write('return %s.to_bytes(value, length, byteorder, signed);' % ("Int64Ops" if ty.is_signed else "UInt64Ops"))
             cw.exit_block()

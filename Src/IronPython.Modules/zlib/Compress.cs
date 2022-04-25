@@ -49,7 +49,7 @@ namespace IronPython.Zlib
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public Bytes compress([NotNull] IBufferProtocol data)
+        public Bytes compress([NotNone] IBufferProtocol data)
         {
             using var buffer = data.GetBuffer();
             byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();

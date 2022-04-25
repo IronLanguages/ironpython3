@@ -324,7 +324,7 @@ the assembly object.")]
             }
         }
 
-        public static void ImportExtensions(CodeContext/*!*/ context, [NotNull]NamespaceTracker @namespace) {
+        public static void ImportExtensions(CodeContext/*!*/ context, [NotNone] NamespaceTracker @namespace) {
             lock (context.ModuleContext) {
                 context.ModuleContext.ExtensionMethods = ExtensionMethodSet.AddNamespace(context.LanguageContext, context.ModuleContext.ExtensionMethods, @namespace);
             }
@@ -1176,7 +1176,7 @@ import Namespace.")]
         /// 
         /// The second parameter is the serialized data.
         /// </summary>
-        public static object Deserialize(string serializationFormat, [NotNull]string/*!*/ data) {
+        public static object Deserialize(string serializationFormat, [NotNone] string/*!*/ data) {
             if (serializationFormat != null) {
                 switch (serializationFormat) {
                     case "System.Boolean": return Boolean.Parse(data);

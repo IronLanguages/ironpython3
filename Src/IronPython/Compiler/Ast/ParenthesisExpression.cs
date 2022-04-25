@@ -5,7 +5,6 @@
 using System;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 

@@ -20,11 +20,11 @@ namespace IronPython.Modules {
         private const int BLOCK_SIZE = 64;
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5([NotNull] IBufferProtocol data) {
+        public static MD5Type md5([NotNone] IBufferProtocol data) {
             return new MD5Type(data);
         }
 
-        public static MD5Type md5([NotNull] string data) {
+        public static MD5Type md5([NotNone] string data) {
             throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 

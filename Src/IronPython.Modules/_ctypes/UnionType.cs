@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;

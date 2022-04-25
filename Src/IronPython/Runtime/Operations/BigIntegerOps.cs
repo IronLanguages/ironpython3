@@ -20,8 +20,6 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using NotDynamicNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime.Operations {
 
     public static partial class BigIntegerOps {
@@ -136,7 +134,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls, object? x, object? @base) {
+        public static object __new__(CodeContext context, [NotNone] PythonType cls, object? x, object? @base) {
             ValidateType(cls);
 
             var b = BaseFromObject(@base);
@@ -148,7 +146,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls, object? x) {
+        public static object __new__(CodeContext context, [NotNone] PythonType cls, object? x) {
             ValidateType(cls);
 
             return ReturnObject(context, cls, FastNew(context, x));
@@ -157,11 +155,11 @@ namespace IronPython.Runtime.Operations {
         // "int()" calls ReflectedType.Call(), which calls "Activator.CreateInstance" and return directly.
         // this is for derived int creation or direct calls to __new__...
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotDynamicNull] PythonType cls)
+        public static object __new__(CodeContext context, [NotNone] PythonType cls)
             => __new__(context, cls, ScriptingRuntimeHelpers.Int32ToObject(0));
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotDynamicNull] PythonType cls, [NotDynamicNull] IBufferProtocol x, int @base = 10) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] IBufferProtocol x, int @base = 10) {
             ValidateType(cls);
 
             object? value;
@@ -178,7 +176,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, [NotDynamicNull] PythonType cls, [NotDynamicNull] IBufferProtocol x, object? @base)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] IBufferProtocol x, object? @base)
             => __new__(context, cls, x, BaseFromObject(@base));
 
         private static void ValidateType(PythonType cls) {
@@ -737,7 +735,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Public API - String/Bytes
 
-        public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotDynamicNull] string/*!*/ formatSpec) {
+        public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
             if (spec.Precision != null) {
@@ -860,7 +858,7 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self.IsZero, self.IsPositive());
         }
 
-        public static Bytes to_bytes(BigInteger value, int length, [NotDynamicNull] string byteorder, bool signed = false) {
+        public static Bytes to_bytes(BigInteger value, int length, [NotNone] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
 
             bool isLittle = (byteorder == "little");
@@ -909,7 +907,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ClassMethod, StaticExtensionMethod]
-        public static object from_bytes(CodeContext context, PythonType type, object? bytes, [NotDynamicNull] string byteorder, bool signed = false) {
+        public static object from_bytes(CodeContext context, PythonType type, object? bytes, [NotNone] string byteorder, bool signed = false) {
             // TODO: signed should be a keyword only argument
 
             bool isLittle = byteorder == "little";

@@ -14,8 +14,6 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using Microsoft.Scripting.Runtime;
-
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinApi {
@@ -36,7 +34,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static BigInteger CreateFile([NotNull] string file_name, int desired_access, int share_mode, int security_attributes, int creation_disposition, int flags_and_attributes, BigInteger template_file) {
+        public static BigInteger CreateFile([NotNone] string file_name, int desired_access, int share_mode, int security_attributes, int creation_disposition, int flags_and_attributes, BigInteger template_file) {
             if (security_attributes != 0) throw new NotImplementedException();
             if (template_file != 0) throw new NotImplementedException();
 
@@ -47,7 +45,7 @@ namespace IronPython.Modules {
             return (long)handle;
         }
 
-        public static BigInteger CreateNamedPipe([NotNull] string name, int open_mode, int pipe_mode, int max_instances, int out_buffer_size, int in_buffer_size, int default_timeout, int security_attributes) {
+        public static BigInteger CreateNamedPipe([NotNone] string name, int open_mode, int pipe_mode, int max_instances, int out_buffer_size, int in_buffer_size, int default_timeout, int security_attributes) {
             if (security_attributes != 0) throw new NotImplementedException();
 
             var handle = CreateNamedPipePI(name, (uint)open_mode, (uint)pipe_mode, (uint)max_instances, (uint)out_buffer_size, (uint)in_buffer_size, (uint)default_timeout, IntPtr.Zero);

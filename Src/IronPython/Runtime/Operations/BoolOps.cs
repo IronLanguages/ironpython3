@@ -71,7 +71,7 @@ namespace IronPython.Runtime.Operations {
             return self ? "True" : "False";
         }
 
-        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNull]string/*!*/ formatSpec) {
+        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             if (spec.IsEmpty) {
                 return __repr__(self);

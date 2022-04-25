@@ -6,7 +6,6 @@ using System;
 using IronPython.Runtime.Binding;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     public static partial class Symbols {

@@ -6,7 +6,6 @@ using MSAst = System.Linq.Expressions;
 
 using System;
 using System.Diagnostics;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 

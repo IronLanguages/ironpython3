@@ -10,8 +10,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("audioop", typeof(IronPython.Modules.PythonAudioOp))]
 namespace IronPython.Modules {
     public static class PythonAudioOp {
@@ -24,7 +22,7 @@ namespace IronPython.Modules {
 
         private static PythonType error(CodeContext/*!*/ context) => (PythonType)context.LanguageContext.GetModuleState("audiooperror");
 
-        public static Bytes byteswap(CodeContext/*!*/ context, [NotNull] IBufferProtocol fragment, int width) {
+        public static Bytes byteswap(CodeContext/*!*/ context, [NotNone] IBufferProtocol fragment, int width) {
             if (width < 1 || width > 4) {
                 throw PythonExceptions.CreateThrowable(error(context), "Size should be 1, 2, 3 or 4");
             }

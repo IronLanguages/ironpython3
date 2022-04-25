@@ -14,29 +14,27 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 namespace IronPython.Runtime {
     [PythonHidden, PythonType("types.SimpleNamespace")]
     public class SimpleNamespace {
-        public SimpleNamespace([ParamDictionary, NotNull]Dictionary<string, object?> kwargs\u00F8) {
+        public SimpleNamespace([ParamDictionary, NotNone] Dictionary<string, object?> kwargs\u00F8) {
             __dict__ = new PythonDictionary(kwargsø);
         }
 
         public PythonDictionary __dict__ { get; }
 
         [SpecialName]
-        public object GetCustomMember([NotNull]string name) {
+        public object GetCustomMember([NotNone] string name) {
             return __dict__.get(name, OperationFailed.Value);
         }
 
         [SpecialName]
-        public void SetMember([NotNull]string name, object? value) {
+        public void SetMember([NotNone] string name, object? value) {
             __dict__[name] = value;
         }
 
         [SpecialName]
-        public void DeleteMember([NotNull]string name) {
+        public void DeleteMember([NotNone] string name) {
             __dict__.__delitem__(name);
         }
 
@@ -57,7 +55,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool __eq__(CodeContext context, [NotNull]SimpleNamespace other)
+        public bool __eq__(CodeContext context, [NotNone] SimpleNamespace other)
             => PythonOps.IsOrEqualsRetBool(__dict__, other.__dict__);
 
         [return: MaybeNotImplemented]

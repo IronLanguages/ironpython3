@@ -25,8 +25,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = Microsoft.Scripting.Runtime.NotNullAttribute;
-
 [assembly: PythonModule("builtins", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
     [Documentation("")]  // Documentation suppresses XML Doc on startup.
@@ -50,7 +48,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
-        public static object __import__(CodeContext/*!*/ context, [NotNull]string name, object? globals = null, object? locals = null, object? fromlist = null, int level = 0) {
+        public static object __import__(CodeContext/*!*/ context, [NotNone] string name, object? globals = null, object? locals = null, object? fromlist = null, int level = 0) {
             if (fromlist is string || fromlist is Extensible<string>) {
                 fromlist = new List<object> { fromlist };
             }
@@ -164,7 +162,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "eval compiles the code as if were an expression\n" +
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
-        public static object compile(CodeContext/*!*/ context, [NotNull]_ast.AST source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] _ast.AST source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
             ValidateCompileMode(mode);
@@ -182,7 +180,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNull]IBufferProtocol source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] IBufferProtocol source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
             var sourceCodeKind = ValidateCompileMode(mode);
 
@@ -195,7 +193,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNull]string source, [NotNull]string filename, [NotNull]string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] string source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
             var sourceCodeKind = ValidateCompileMode(mode);
@@ -241,7 +239,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType complex => DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
 
-        public static void delattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static void delattr(CodeContext/*!*/ context, object? o, [NotNone] string name) {
             PythonOps.DeleteAttr(context, o, name);
         }
 
@@ -284,12 +282,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "The expression can be either be a string, bytes\n" +
             "or a code object returned by compile()")]
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary? globals = null, object? locals = null)
+        public static object eval(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null)
             => code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNull]IBufferProtocol expression, PythonDictionary? globals = null, object? locals = null) {
+        public static object eval(CodeContext/*!*/ context, [NotNone] IBufferProtocol expression, PythonDictionary? globals = null, object? locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
@@ -317,7 +315,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary? globals = null, object? locals = null) {
+        public static object eval(CodeContext/*!*/ context, [NotNone] string expression, PythonDictionary? globals = null, object? locals = null) {
             if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
@@ -336,7 +334,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [Documentation("exec(object[, globals[, locals]])\n\n" +
             "Read and execute code from an object, which can be a string, bytes or a code object.\n" +
             "The globals and locals are dictionaries providing the context.")]
-        public static void exec(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null) {
             if (locals == null) locals = globals;
             if (globals == null) globals = context.GlobalDict;
 
@@ -358,7 +356,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [NotNull]string code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [NotNone] string code, PythonDictionary? globals = null, object? locals = null) {
             SourceUnit source = context.LanguageContext.CreateSnippet(code, "<string>", SourceCodeKind.Statements);
             PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
@@ -367,7 +365,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [NotNull]IBufferProtocol code, PythonDictionary? globals = null, object? locals = null) {
+        public static void exec(CodeContext/*!*/ context, [NotNone] IBufferProtocol code, PythonDictionary? globals = null, object? locals = null) {
             using var buffer = code.GetBuffer();
             byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
             SourceUnit source = context.LanguageContext.CreateSourceUnit(
@@ -384,16 +382,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType @float => DynamicHelpers.GetPythonTypeFromType(typeof(double));
 
-        public static string format(CodeContext/*!*/ context, object? argValue, [NotNull]string formatSpec = "")
+        public static string format(CodeContext/*!*/ context, object? argValue, [NotNone] string formatSpec = "")
             => PythonOps.Format(context, argValue, formatSpec);
 
         public static PythonType frozenset => DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
 
-        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNone] string name) {
             return PythonOps.GetBoundAttr(context, o, name);
         }
 
-        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? def) {
+        public static object? getattr(CodeContext/*!*/ context, object? o, [NotNone] string name, object? def) {
             return PythonOps.TryGetBoundAttr(context, o, name, out object? ret) ? ret : def;
         }
 
@@ -401,7 +399,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.ModuleContext.Globals;
         }
 
-        public static bool hasattr(CodeContext/*!*/ context, object? o, [NotNull]string name) {
+        public static bool hasattr(CodeContext/*!*/ context, object? o, [NotNone] string name) {
             return PythonOps.HasAttr(context, o, name);
         }
 
@@ -409,7 +407,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonContext.Hash(o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
+        public static int hash(CodeContext/*!*/ context, [NotNone] PythonTuple o) {
             return ((IStructuralEquatable)o).GetHashCode(context.LanguageContext.EqualityComparerNonGeneric);
         }
 
@@ -422,20 +420,20 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return Int32Ops.__hash__(o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]string o) {
+        public static int hash(CodeContext/*!*/ context, [NotNone] string o) {
             return o.GetHashCode();
         }
 
         // this is necessary because overload resolution will coerce extensible strings to strings.
-        public static int hash(CodeContext/*!*/ context, [NotNull]ExtensibleString o) {
+        public static int hash(CodeContext/*!*/ context, [NotNone] ExtensibleString o) {
             return hash(context, (object)o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]BigInteger o) {
+        public static int hash(CodeContext/*!*/ context, [NotNone] BigInteger o) {
             return BigIntegerOps.__hash__(o);
         }
 
-        public static int hash(CodeContext/*!*/ context, [NotNull]Extensible<BigInteger> o) {
+        public static int hash(CodeContext/*!*/ context, [NotNone] Extensible<BigInteger> o) {
             return PythonContext.Hash(o);
         }
 
@@ -637,11 +635,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType @int => DynamicHelpers.GetPythonTypeFromType(typeof(BigInteger));
 
-        public static bool isinstance(object? o, [NotNull]PythonType typeinfo) {
+        public static bool isinstance(object? o, [NotNone] PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);
         }
 
-        public static bool isinstance(CodeContext context, object? o, [NotNull]PythonTuple typeinfo) {
+        public static bool isinstance(CodeContext context, object? o, [NotNone] PythonTuple typeinfo) {
             return PythonOps.IsInstance(context, o, typeinfo);
         }
 
@@ -649,11 +647,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.IsInstance(context, o, typeinfo);
         }
 
-        public static bool issubclass(CodeContext context, [NotNull]PythonType c, object? typeinfo) {
+        public static bool issubclass(CodeContext context, [NotNone] PythonType c, object? typeinfo) {
             return PythonOps.IsSubClass(context, c, typeinfo);
         }
 
-        public static bool issubclass(CodeContext context, [NotNull]PythonType c, [NotNull]PythonType typeinfo) {
+        public static bool issubclass(CodeContext context, [NotNone] PythonType c, [NotNone] PythonType typeinfo) {
             return PythonOps.IsSubClass(c, typeinfo);
         }
 
@@ -716,27 +714,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return new SentinelIterator(context, func, sentinel);
         }
 
-        public static int len([NotNull]string/*!*/ str) {
+        public static int len([NotNone] string/*!*/ str) {
             return str.Length;
         }
 
-        public static int len([NotNull]ExtensibleString/*!*/ str) {
+        public static int len([NotNone] ExtensibleString/*!*/ str) {
             return str.__len__();
         }
 
-        public static int len([NotNull]PythonList/*!*/ list) {
+        public static int len([NotNone] PythonList/*!*/ list) {
             return list.__len__();
         }
 
-        public static int len([NotNull]PythonTuple/*!*/ tuple) {
+        public static int len([NotNone] PythonTuple/*!*/ tuple) {
             return tuple.__len__();
         }
 
-        public static int len([NotNull]PythonDictionary/*!*/ dict) {
+        public static int len([NotNone] PythonDictionary/*!*/ dict) {
             return dict.__len__();
         }
 
-        public static int len([NotNull]ICollection/*!*/ collection) {
+        public static int len([NotNone] ICollection/*!*/ collection) {
             return collection.Count;
         }
 
@@ -781,7 +779,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.GreaterThan(x, y) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static object? max(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
                 object? ret = args[0];
                 if (args.Length == 1) {
@@ -801,7 +799,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
 
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: true);
@@ -830,7 +828,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -840,7 +838,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> dict, [NotNull]params object?[] args) {
+        public static object? max(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -895,7 +893,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.LessThan(x, y) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static object? min(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
                 object? ret = args[0];
                 if (args.Length == 1) {
@@ -912,7 +910,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object? method = kwargTuple.Item1;
@@ -939,7 +937,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNull]IDictionary<string, object?> dict) {
+        public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -948,7 +946,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> dict, [NotNull]params object?[] args) {
+        public static object? min(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -1023,7 +1021,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// </summary>
         /// <param name="iter">Iterable instance</param>
         /// <returns>Next object or throws an StopIterator exception</returns>
-        public static object? next([NotNull]IEnumerator iter) {
+        public static object? next([NotNone] IEnumerator iter) {
             if (iter.MoveNext()) {
                 return iter.Current;
             } else {
@@ -1037,7 +1035,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// <param name="iter">Iterable instance</param>
         /// <param name="defaultVal">Default operation value</param>
         /// <returns>Next object or throws an StopIterator exception</returns>
-        public static object? next([NotNull]IEnumerator iter, object? defaultVal) {
+        public static object? next([NotNone] IEnumerator iter, object? defaultVal) {
             if (iter.MoveNext()) {
                 return iter.Current;
             } else {
@@ -1046,12 +1044,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object? next([NotNull]PythonGenerator gen) {
+        public static object? next([NotNone] PythonGenerator gen) {
             return gen.__next__();
         }
 
         [LightThrowing]
-        public static object? next([NotNull]PythonGenerator gen, object? defaultVal) {
+        public static object? next([NotNone] PythonGenerator gen, object? defaultVal) {
             object res = gen.__next__();
             Exception exc = LightExceptions.GetLightException(res);
 
@@ -1103,8 +1101,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// <summary>
         /// Open file and return a corresponding file object.
         /// </summary>
-        public static PythonIOModule._IOBase open(CodeContext context, [NotNull]object file,
-            [NotNull]string mode = "r",
+        public static PythonIOModule._IOBase open(CodeContext context, [NotNone] object file,
+            [NotNone] string mode = "r",
             int buffering = -1,
             string? encoding = null,
             string? errors = null,
@@ -1119,7 +1117,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         ///
         /// stream -> the stream to wrap in a file object.
         /// </summary>
-        public static PythonIOModule.FileIO open(CodeContext context, [NotNull]Stream stream) {
+        public static PythonIOModule.FileIO open(CodeContext context, [NotNone] Stream stream) {
             return new PythonIOModule.FileIO(context, stream);
         }
 
@@ -1166,11 +1164,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static void print(CodeContext/*!*/ context, [NotNull]params object?[] args) {
+        public static void print(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             PrintHelper(context, " ", "\n", null, args, false);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNull]IDictionary<string, object?> kwargs, [NotNull]params object?[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> kwargs, [NotNone] params object?[] args) {
             object? sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonOps.GetPythonTypeName(sep));
@@ -1359,7 +1357,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             throw PythonOps.TypeError("type {0} doesn't define __round__ method", PythonOps.GetPythonTypeName(number));
         }
 
-        public static void setattr(CodeContext/*!*/ context, object? o, [NotNull]string name, object? val) {
+        public static void setattr(CodeContext/*!*/ context, object? o, [NotNone] string name, object? val) {
             PythonOps.SetAttr(context, o, name, val);
         }
 
@@ -1367,7 +1365,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonList sorted(CodeContext/*!*/ context,
             object? iterable,
-            [ParamDictionary, NotNull]IDictionary<string, object> kwArgs) {
+            [ParamDictionary, NotNone] IDictionary<string, object> kwArgs) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
             PythonList l = new PythonList(10);
@@ -1384,11 +1382,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sum(context, sequence, 0);
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonList sequence) {
+        public static object? sum(CodeContext/*!*/ context, [NotNone] PythonList sequence) {
             return sum(context, sequence, 0);
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence) {
+        public static object? sum(CodeContext/*!*/ context, [NotNone] PythonTuple sequence) {
             return sum(context, sequence, 0);
         }
 
@@ -1405,7 +1403,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sumState.CurrentValue;
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonList sequence, object? start) {
+        public static object? sum(CodeContext/*!*/ context, [NotNone] PythonList sequence, object? start) {
             if (sequence.GetType() != typeof(PythonList)) return sum(context, (object)sequence, start);
 
             ValidateSumStart(start);
@@ -1418,7 +1416,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sumState.CurrentValue;
         }
 
-        public static object? sum(CodeContext/*!*/ context, [NotNull]PythonTuple sequence, object? start) {
+        public static object? sum(CodeContext/*!*/ context, [NotNone] PythonTuple sequence, object? start) {
             if (sequence.GetType() != typeof(PythonTuple)) return sum(context, (object)sequence, start);
 
             ValidateSumStart(start);

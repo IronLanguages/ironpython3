@@ -8,7 +8,6 @@ using System;
 using System.Dynamic;
 using IronPython.Runtime.Binding;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {

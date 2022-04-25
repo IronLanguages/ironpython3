@@ -62,7 +62,7 @@ namespace IronPython.Modules {
         /// 
         /// The provided object is expected to be the same type as the root of the XAML element.
         /// </summary>
-        public static object LoadComponent(CodeContext context, object self, [NotNull]Stream stream) {
+        public static object LoadComponent(CodeContext context, object self, [NotNone] Stream stream) {
             if (self == null) {
                 throw PythonOps.TypeError("expected module, got None");
             }
@@ -76,7 +76,7 @@ namespace IronPython.Modules {
         /// 
         /// The provided object is expected to be the same type as the root of the XAML element.
         /// </summary>
-        public static object LoadComponent(CodeContext context, object self, [NotNull]XmlReader xmlReader) {
+        public static object LoadComponent(CodeContext context, object self, [NotNone] XmlReader xmlReader) {
             if (self == null) {
                 throw PythonOps.TypeError("expected module, got None");
             }
@@ -90,7 +90,7 @@ namespace IronPython.Modules {
         /// 
         /// The provided object is expected to be the same type as the root of the XAML element.
         /// </summary>
-        public static object LoadComponent(CodeContext context, object self, [NotNull]TextReader filename) {
+        public static object LoadComponent(CodeContext context, object self, [NotNone] TextReader filename) {
             if (self == null) {
                 throw PythonOps.TypeError("expected module, got None");
             }
@@ -103,7 +103,7 @@ namespace IronPython.Modules {
         /// 
         /// The provided object is expected to be the same type as the root of the XAML element.
         /// </summary>
-        public static object LoadComponent(CodeContext context, object self, [NotNull]System.Xaml.XamlXmlReader reader) {
+        public static object LoadComponent(CodeContext context, object self, [NotNone] System.Xaml.XamlXmlReader reader) {
             if (self == null) {
                 throw PythonOps.TypeError("expected module, got None");
             }

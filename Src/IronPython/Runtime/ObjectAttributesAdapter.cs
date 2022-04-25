@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     internal class ObjectAttributesAdapter  : DictionaryStorage {

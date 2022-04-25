@@ -49,7 +49,7 @@ When you've finished providing data
 to compress, call the flush() method to finish the compression process,
 and return what is left in the internal buffers.
 ")]
-            public Bytes compress([NotNull] IBufferProtocol data) {
+            public Bytes compress([NotNone] IBufferProtocol data) {
                 using var buffer = data.GetBuffer();
                 byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
 

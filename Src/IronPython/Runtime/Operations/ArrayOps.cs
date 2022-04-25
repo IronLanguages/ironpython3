@@ -199,7 +199,7 @@ namespace IronPython.Runtime.Operations {
                 value);
         }
 
-        public static string __repr__(CodeContext/*!*/ context, [NotNull]Array/*!*/ self) {
+        public static string __repr__(CodeContext/*!*/ context, [NotNone] Array/*!*/ self) {
             var infinite = PythonOps.GetAndCheckInfinite(self);
             if (infinite == null) {
                 return "...";

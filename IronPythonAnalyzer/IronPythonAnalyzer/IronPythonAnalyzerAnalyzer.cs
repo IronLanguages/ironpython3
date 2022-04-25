@@ -41,16 +41,14 @@ namespace IronPythonAnalyzer {
             var pythonTypeAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.PythonTypeAttribute");
             var pythonModuleAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.PythonModuleAttribute");
 
-#pragma warning disable RS1024 // Compare symbols correctly
-
             if (methodSymbol.ContainingType.GetAttributes()
-                    .Any(x => x.AttributeClass.Equals(pythonTypeAttributeSymbol)) ||
+                    .Any(x => x.AttributeClass.Equals(pythonTypeAttributeSymbol, SymbolEqualityComparer.Default)) ||
                 methodSymbol.ContainingAssembly.GetAttributes()
-                    .Where(x => x.AttributeClass.Equals(pythonModuleAttributeSymbol))
+                    .Where(x => x.AttributeClass.Equals(pythonModuleAttributeSymbol, SymbolEqualityComparer.Default))
                     .Select(x => (INamedTypeSymbol)x.ConstructorArguments[1].Value)
-                    .Any(x => x.Equals(methodSymbol.ContainingType))) {
+                    .Any(x => x.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))) {
                 var pythonHiddenAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.PythonHiddenAttribute");
-                if (methodSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(pythonHiddenAttributeSymbol))) return;
+                if (methodSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(pythonHiddenAttributeSymbol, SymbolEqualityComparer.Default))) return;
 
                 var codeContextSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.CodeContext");
                 var siteLocalStorageSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.SiteLocalStorage");
@@ -64,24 +62,24 @@ namespace IronPythonAnalyzer {
                 var ilistOfByteType = ilistType.Construct(byteType);
 
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
-                    if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol))
-                            && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType)
-                            && !parameterSymbol.Type.Equals(ilistOfByteType)) {
+                    if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol, SymbolEqualityComparer.Default))
+                            && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType, SymbolEqualityComparer.Default)
+                            && !parameterSymbol.Type.Equals(ilistOfByteType, SymbolEqualityComparer.Default)) {
                         var diagnostic = Diagnostic.Create(Rule3, parameterSymbol.Locations[0], parameterSymbol.Name, parameterSymbol.Type.MetadataName);
                         context.ReportDiagnostic(diagnostic);
                         continue;
                     }
                     if (parameterSymbol.Type.IsValueType) continue;
-                    if (parameterSymbol.Type.Equals(codeContextSymbol)) continue;
+                    if (parameterSymbol.Type.Equals(codeContextSymbol, SymbolEqualityComparer.Default)) continue;
                     if (SymbolEqualityComparer.Default.Equals(parameterSymbol.Type.BaseType, siteLocalStorageSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
-                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
+                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.GetAttributes().Any(x => IsAllowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule1, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }
                     } else if (parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated) {
-                        if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol))
+                        if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.GetAttributes().Any(x => IsDisallowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule2, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
@@ -96,9 +94,6 @@ namespace IronPythonAnalyzer {
                     return symbol.ToString() == "System.Diagnostics.CodeAnalysis.DisallowNullAttribute";
                 }
             }
-
-#pragma warning restore RS1024 // Compare symbols correctly
-
         }
 
         private static void AnalyzeInvocation(OperationAnalysisContext context) {

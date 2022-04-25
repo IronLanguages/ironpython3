@@ -23,9 +23,10 @@ namespace IronPythonAnalyzer {
         private static readonly DiagnosticDescriptor Rule2 = new DiagnosticDescriptor("IPY02", title: "Parameter which is marked nullable has the NotNoneAttribute", messageFormat: "Parameter '{0}' should not have the NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Nullable reference type parameters should not have the NotNoneAttribute.");
         private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type IReadOnlyList<byte>, or IList<byte>.");
         private static readonly DiagnosticDescriptor Rule4 = new DiagnosticDescriptor("IPY04", title: "Call to PythonTypeOps.GetName", messageFormat: "Direct call to PythonTypeOps.GetName", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "To obtain a name of a python type of a given object to display to a user, use PythonOps.GetPythonTypeName.");
+        private static readonly DiagnosticDescriptor Rule5 = new DiagnosticDescriptor("IPY05", title: "DLR NotNullAttribute accessed without an alias", messageFormat: "Microsoft.Scripting.Runtime.NotNullAttribute should be accessed though alias 'NotNone'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "NotNullAttribute is ambiguous between 'System.Diagnostics.CodeAnalysis.NotNullAttribute' and 'Microsoft.Scripting.Runtime.NotNullAttribute'. The latter should be accesses as 'NotNoneAttribute'.");
 #pragma warning restore RS2008 // Enable analyzer release tracking
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5); } }
 
         public override void Initialize(AnalysisContext context) {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
@@ -52,7 +53,7 @@ namespace IronPythonAnalyzer {
 
                 var codeContextSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.CodeContext");
                 var siteLocalStorageSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.SiteLocalStorage");
-                var notNullAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
+                var notNoneAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.Runtime.NotNullAttribute");
                 var bytesLikeAttributeSymbol = context.Compilation.GetTypeByMetadataName("IronPython.Runtime.BytesLikeAttribute");
 
                 var byteType = context.Compilation.GetTypeByMetadataName("System.Byte");
@@ -69,17 +70,24 @@ namespace IronPythonAnalyzer {
                         context.ReportDiagnostic(diagnostic);
                         continue;
                     }
+                    if (parameterSymbol.GetAttributes().FirstOrDefault(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default)) is AttributeData attr) {
+                        SyntaxNode node = attr.ApplicationSyntaxReference.GetSyntax(); // Async?
+                        if (node.GetLastToken().Text != "NotNone") {
+                            var diagnostic = Diagnostic.Create(Rule5, node.GetLocation());
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                    }
                     if (parameterSymbol.Type.IsValueType) continue;
                     if (parameterSymbol.Type.Equals(codeContextSymbol, SymbolEqualityComparer.Default)) continue;
                     if (SymbolEqualityComparer.Default.Equals(parameterSymbol.Type.BaseType, siteLocalStorageSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
-                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol, SymbolEqualityComparer.Default))
+                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.GetAttributes().Any(x => IsAllowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule1, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }
                     } else if (parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated) {
-                        if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNullAttributeSymbol, SymbolEqualityComparer.Default))
+                        if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.GetAttributes().Any(x => IsDisallowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule2, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);

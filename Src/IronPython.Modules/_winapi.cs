@@ -14,8 +14,6 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using Microsoft.Scripting.Runtime;
-
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinApi {

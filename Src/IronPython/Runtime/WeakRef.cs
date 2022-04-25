@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading;
 
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
@@ -172,7 +171,7 @@ namespace IronPython.Runtime {
                         // TODO (from Python docs):
                         // Exceptions raised by the callback will be noted on the standard error output, 
                         // but cannot be propagated; they are handled in exactly the same way as exceptions 
-                        // raised from an object’s __del__() method.
+                        // raised from an objectï¿½s __del__() method.
                     }
 
                     ci.Free();

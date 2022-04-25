@@ -21,7 +21,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using RegExpMatch = System.Text.RegularExpressions.Match;

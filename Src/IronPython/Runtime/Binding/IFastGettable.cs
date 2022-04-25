@@ -9,7 +9,6 @@ using System.Dynamic;
 
 using Microsoft.Scripting.Actions;
 
-using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace IronPython.Runtime.Binding {

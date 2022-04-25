@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Compiler;
 using IronPython.Runtime.Operations;

@@ -11,8 +11,6 @@ using System.Collections.Generic;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
-
 namespace IronPython.Runtime {
     [PythonType("reversed")]
     public class ReversedEnumerator : IEnumerator<object?>, IEnumerable<object?> {

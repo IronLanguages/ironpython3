@@ -14,8 +14,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
-
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.

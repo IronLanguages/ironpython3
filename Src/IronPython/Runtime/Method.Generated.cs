@@ -6,17 +6,16 @@ using System.Linq.Expressions;
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Binding;
-using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime {
     public sealed partial class Method {

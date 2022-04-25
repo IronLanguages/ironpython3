@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Reflection;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;

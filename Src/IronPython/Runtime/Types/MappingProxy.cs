@@ -13,8 +13,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {

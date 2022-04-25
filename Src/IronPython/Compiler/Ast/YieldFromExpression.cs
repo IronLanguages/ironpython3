@@ -9,7 +9,6 @@ using MSAst = System.Linq.Expressions;
 using System;
 using System.Diagnostics;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {

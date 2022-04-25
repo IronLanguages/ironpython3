@@ -9,8 +9,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
-
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
         public static bool __bool__(decimal x) => x != 0;

@@ -8,7 +8,6 @@ using System;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
     internal interface IFastInvokable {

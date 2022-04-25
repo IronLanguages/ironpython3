@@ -12,8 +12,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Linq;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 

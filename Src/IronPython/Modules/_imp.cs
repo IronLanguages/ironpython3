@@ -10,7 +10,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]

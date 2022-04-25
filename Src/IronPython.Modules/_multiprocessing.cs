@@ -7,7 +7,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Win32.SafeHandles;
 
 using IronPython.Runtime;

@@ -214,6 +214,7 @@ namespace IronPython.Modules {
                 stmt ast = stmt switch {
                     FunctionDefinition s => new FunctionDef(s),
                     ReturnStatement s => new Return(s),
+                    AnnAssignStatement s => new AnnAssign(s),
                     AssignmentStatement s => new Assign(s),
                     AugmentedAssignStatement s => new AugAssign(s),
                     DelStatement s => new Delete(s),
@@ -709,6 +710,43 @@ namespace IronPython.Modules {
         [PythonType]
         public class And : boolop {
             internal static readonly And Instance = new And();
+        }
+
+        [PythonType]
+        public class AnnAssign : stmt {
+            public AnnAssign() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(target), nameof(annotation), nameof(value), nameof(simple) });
+            }
+
+            public AnnAssign(expr target, expr annotation, expr value, int simple, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.target = target;
+                this.annotation = annotation;
+                this.value = value;
+                this.simple = simple;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal AnnAssign(AnnAssignStatement stmt)
+                : this() {
+                target = Convert(stmt.Target, Store.Instance);
+                annotation = Convert(stmt.Annotation);
+                value = stmt.Value is null ? null : Convert(stmt.Value);
+                simple = stmt.Simple ? 1 : 0;
+            }
+
+            internal override Statement Revert() {
+                return new AnnAssignStatement(expr.Revert(target), expr.Revert(annotation), expr.Revert(value), simple != 0);
+            }
+
+            public expr target { get; set; }
+
+            public expr annotation { get; set; }
+
+            public expr value { get; set; }
+
+            public int simple { get; set; }
         }
 
         [PythonType]

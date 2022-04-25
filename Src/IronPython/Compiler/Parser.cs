@@ -660,12 +660,31 @@ namespace IronPython.Compiler {
             return assign;
         }
 
-        // expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
+        // expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
         // augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=')
         private Statement ParseExprStmt() {
             Expression ret = ParseTestListStarExpr();
             if (ret is ErrorExpression) {
                 NextToken();
+            }
+
+            // annassign
+            if (MaybeEat(TokenKind.Colon)) {
+                if (ret.CheckAssign() is { } assignError) {
+                    ReportSyntaxError(ret.StartIndex, ret.EndIndex, assignError, ErrorCodes.SyntaxError | ErrorCodes.NoCaret);
+                }
+
+                var annotation = ParseTest();
+                if (MaybeEat(TokenKind.Assign)) {
+                    var right = ParseTest();
+                    var assign = new AnnAssignStatement(ret, annotation, right, ret is NameExpression);
+                    assign.SetLoc(_globalParent, ret.StartIndex, right.EndIndex);
+                    return assign;
+                } else {
+                    var assign = new AnnAssignStatement(ret, annotation, null, ret is NameExpression);
+                    assign.SetLoc(_globalParent, ret.IndexSpan);
+                    return assign;
+                }
             }
 
             if (PeekToken(TokenKind.Assign)) {

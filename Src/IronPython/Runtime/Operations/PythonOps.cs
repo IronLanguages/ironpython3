@@ -39,7 +39,7 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
 
@@ -361,7 +361,7 @@ namespace IronPython.Runtime.Operations {
             return typeinfo.__subclasscheck__(c);
         }
 
-        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNullOnReturn]object? typeinfo) {
+        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNull]object? typeinfo) {
             if (c == null) throw PythonOps.TypeError("issubclass: arg 1 must be a class");
             if (typeinfo == null) throw PythonOps.TypeError("issubclass: arg 2 must be a class");
 
@@ -445,7 +445,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNullOnReturn]object? typeinfo) {
+        internal static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull]object? typeinfo) {
             if (typeinfo == null) throw PythonOps.TypeError("isinstance: arg 2 must be a class, type, or tuple of classes and types");
 
             if (typeinfo is PythonTuple tt) {

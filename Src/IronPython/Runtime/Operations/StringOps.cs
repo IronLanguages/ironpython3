@@ -27,7 +27,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -1692,7 +1692,7 @@ namespace IronPython.Runtime.Operations {
             return b?.ToString() ?? s.Substring(start, count);
         }
 
-        private static void StringBuilderInit([NotNullOnReturn]ref StringBuilder? sb, string s, int start, int end) {
+        private static void StringBuilderInit([NotNull]ref StringBuilder? sb, string s, int start, int end) {
             if (sb != null) return;
 
             sb = new StringBuilder(s.Length);
@@ -2134,7 +2134,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static void AssertStringOrTuple([NotNullOnReturn]object? prefix) {
+        private static void AssertStringOrTuple([NotNull]object? prefix) {
             if (prefix == null) {
                 throw PythonOps.TypeError("expected string or tuple, got NoneType");
             }

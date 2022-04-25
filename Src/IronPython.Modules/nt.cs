@@ -30,7 +30,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
-using NotNullOnReturnAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 #if FEATURE_PIPES
 using System.IO.Pipes;
@@ -2244,7 +2244,7 @@ the 'status' value."),
             return new Bytes(bp); // accepts FULL_RO buffers in CPython
         }
 
-        private static string ConvertToFsString(CodeContext context, [NotNullOnReturn] object? o, string argname, [CallerMemberName] string? methodname = null)
+        private static string ConvertToFsString(CodeContext context, [NotNull] object? o, string argname, [CallerMemberName] string? methodname = null)
             => o switch {
                 string s            => s,
                 ExtensibleString es => es.Value,

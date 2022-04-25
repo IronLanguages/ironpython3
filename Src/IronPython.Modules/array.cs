@@ -25,7 +25,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
-using NotNullOnReturn = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using NotNull = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -493,7 +493,7 @@ namespace IronPython.Modules {
                 _data.RemoveSlice(slice);
             }
 
-            [NotNullOnReturn]
+            [NotNull]
             public object? this[[NotNone] Slice index] {
                 get {
                     index.Indices(_data.Count, out int start, out int stop, out int step);
@@ -527,7 +527,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private array CheckSliceAssignType([NotNullOnReturn] object? value) {
+            private array CheckSliceAssignType([NotNull] object? value) {
                 if (!(value is array pa)) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonOps.GetPythonTypeName(value));
                 } else if (pa._typeCode != _typeCode) {

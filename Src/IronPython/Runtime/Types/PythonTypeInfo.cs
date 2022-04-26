@@ -1882,7 +1882,7 @@ namespace IronPython.Runtime.Types {
                 MemberTracker mt = group[i];
 
                 if (mt.MemberType == TrackerTypes.Property && mt is ReflectedPropertyTracker rpt) {
-                    if (action == MemberRequestKind.Get && rpt.Property.GetMethod is null || action == MemberRequestKind.Set && rpt.Property.SetMethod is null) {
+                    if (FilterProperty(action, rpt.Property)) {
                         mts ??= MakeListWithPreviousMembers(group, mts, i);
                         continue;
                     }
@@ -1897,6 +1897,19 @@ namespace IronPython.Runtime.Types {
                 return new MemberGroup(mts.ToArray());
             }
             return group;
+
+            static bool FilterProperty(MemberRequestKind action, PropertyInfo property) {
+                if (action == MemberRequestKind.Get) {
+                    if (property.GetMethod is null && property.SetMethod is not null) {
+                        return property.SetMethod != property.SetMethod.GetBaseDefinition();
+                    }
+                } else if (action == MemberRequestKind.Set) {
+                    if (property.SetMethod is null && property.GetMethod is not null) {
+                        return property.GetMethod != property.GetMethod.GetBaseDefinition();
+                    }
+                }
+                return false;
+            }
         }
 
         private static MemberGroup/*!*/ FilterObjectMembers(MemberGroup/*!*/ group) {

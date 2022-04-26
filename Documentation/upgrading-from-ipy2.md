@@ -14,3 +14,167 @@ In an effort to improve compatibility, `sys.platform` no longer returns `cli`. I
 if sys.implementation.name == "ironpython":
     print("IronPython!")
 ```
+
+## `int` Type
+
+One of the major backward incompatible changes in Python 3 is [PEP 0237][]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type. From the pure Python perspective this means that `int` should be used wherever previously `long` was used. More consideration has to be applied in interop cases with .NET.
+
+The Python `int` type in IronPython 3 is implemented as `System.Numerics.BigInteger` (and not as `System.Int32` as it was in IronPython 2). It can contain in theory an arbitrarily large integer (only limited by the 2 GByte memory boundary).
+
+```pycon
+>>> import clr
+>>> clr.AddReference("System.Numerics")
+>>> import System
+>>> int is System.Numerics.BigInteger
+True
+>>> int is System.Int32
+False
+>>> clr.GetClrType(int).Name
+'BigInteger'
+```
+
+This means that in interop cases, when the `int` type is used (think generics), it will mean `BigInteger` and not `Int32` (which was the case in IronPython 2). For example, `System.Collections.Generic.List[int]` in IronPython 3 is equivalent to `System.Collections.Generic.List[System.Numerics.BigInteger]`. To retain IronPython 2 semantics, replace `int` with `System.Int32`.
+
+Overview of `int` type equivalency:
+
+| IronPython 2 | IronPython 3 | .NET                         |
+| ------------ | ------------ | ---------------------------- |
+| `long`       | `int`        | `System.Numerics.BigInteger` |
+| `int`        | N/A          | `System.Int32`               |
+
+### Instances of `int`
+
+As for instances of `int`, mostly for performance reasons, IronPython may use instances of `System.Int32` to hold smaller integers, while `BigInteger` instances are used for large integers. This is done transparently from the Python side, but again the distinction may become relevant for interop cases. Examples:
+
+```python
+i = 1        # instance of Int32
+j = 1 << 31  # instance of BigInteger
+k = j - 1    # still BigInteger, as one of the arguments makes the result type BigInteger
+```
+
+This means that the type of `Int32` objects is always reported as `int` (which is the same as `BigInteger`). If it is important to check what is the actual type of a given integer object, test for the presence of `MaxValue` or `MinValue`. For those properties to be visible, `System` has to be imported first.
+
+```pycon
+>>> import System
+>>> type(i)
+<class 'int'>
+>>> hasattr(i, 'MaxValue') # Int32
+True
+>>> hex(i.MaxValue)
+'0x7fffffff'
+>>> type(j)
+<class 'int'>
+>>> hasattr(j, 'MaxValue') # BigInteger
+False
+```
+
+The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected.
+
+```pycon
+>>> bi = i.ToBigInteger()
+>>> hasattr(bi, 'MaxValue')
+False
+```
+
+In the opposite direction, if it is essential to create `Int32` objects, either use constructors for `int` or `Int32`. The former converts an integer to `Int32` if the value fits in 32 bits, otherwise it leaves it as `BigInteger`. The latter throws an exception is the conversion is not possible.
+
+```pycon
+>>> # k is a BigInteger that fits in 32 bits
+>>> hasattr(k, 'MaxValue')
+False
+>>> hex(k)
+'0x7fffffff'
+>>> ki = int(k)  # converts k to Int32
+>>> hasattr(ki, 'MaxValue')
+True
+>>> ki = System.Int32(k) # also converts k to Int32
+>>> hasattr(ki, 'MaxValue')
+True
+>>> # j is a BigInteger that does not fit in 32 bits
+>>> hasattr(j, 'MaxValue') 
+False
+>>> hex(j)
+'0x80000000'
+>>> j = int(j)  # no type change, j stays BigInteger
+>>> hasattr(j, 'MaxValue')
+False
+>>> j = System.Int32(j)  # conversion fails
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+OverflowError: Arithmetic operation resulted in an overflow.
+```
+
+Such explicit conversions are in most cases unnecessary since the runtime recognizes `int`/`Int32` equivalence of instances and performs necessary conversions automatically.
+
+```pycon
+>>> import System
+>>> int_list = System.Collections.Generic.List[int]()
+>>> int_list.Add(1) # Int32 instance converted to BigInteger
+>>> int32_list = System.Collections.Generic.List[System.Int32]()
+>>> int32_list.Add((1).ToBigInteger()) # BigInteger instance converted to Int32
+>>> int_list[0] == int32_list[0]
+True
+```
+
+### Pickling and unpickling of `int`
+
+When an `int` object is serialized using `pickle.dump(x, myfile)` and subsequently unpickled with `x = pickle.load(myfile)` (or `pickle.loads(pickle.dumps(x))`, this has the same effect as reconstructing the object using the `int` constructor, i.e. `x = int(x)`. In other words, if the `x` instance was `BigInteger` but the value fits in `Int32`, it will be reconstructed as `Int32`.
+
+### BigIntegerV2 API
+
+In IronPython 2, `long` type carries an obsolete `BigIntegerV2` API, accessible after importing `System`. In IronPython 3 this API is not available directly on `int` instances (regardless whether the instance is `Int32` or `BigInteger`), but is still accessible in some form through `Microsoft.Scripting.Utils.MathUtils` in `Microsoft.Dynamic.dll`.
+
+```pycon
+>>> # IronPython 2
+>>> i = 1        # instance of Int32 (int)
+>>> j = 1 << 64  # instance of BigInteger (long)
+>>> import System
+>>> j.GetWords()
+Array[UInt32]((0, 0, 1))
+>>> i.GetWords()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'int' object has no attribute 'GetWords'
+>>> long.GetWords(i)
+Array[UInt32]((1))
+```
+
+```pycon
+>>> # IronPython 3
+>>> i = 1        # instance of Int32 (int)
+>>> j = 1 << 64  # instance of BigInteger (int)
+>>> import clr
+>>> clr.AddReference("Microsoft.Dynamic")
+>>> import Microsoft.Scripting.Utils.MathUtils
+>>> clr.ImportExtensions(Microsoft.Scripting.Utils.MathUtils)
+>>> j.GetWords()
+Array[UInt32]((0, 0, 1))
+>>> i.GetWords()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'int' object has no attribute 'GetWords'
+>>> Microsoft.Scripting.Utils.MathUtils.GetWords(i)
+Array[UInt32]((1))
+```
+
+Another set of Python-hidden methods on `long` in IronPython 2 that not available on `int` in IronPython 3 are conversion methods with names like `ToXxx`. The recommended way to perform type conversions like those is to use type constructors. The exception is the conversion to `BigInteger` itself, for the reasons explained above.
+
+```python
+# IronPython 2
+j = long(1)
+i64 = j.ToInt64()
+```
+
+```python
+# IronPython 3
+import System
+j = (1).ToBigInteger()
+i64 = System.Int64(j)
+```
+
+### `range`
+
+IronPython's `range` is a generator that produces a sequence of `int` values. The values are instances of `Int32` or `BigInteger`, depending on the actual integer value they represent. When `range` is used in a LINQ context, it exposes interface `IEnumerable<Int32>` and all values generated are of type `Int32`. This limits the possible value to the range `Int32.MinValue` to `Int32.MaxValue`.
+
+
+[PEP 0237]: https://python.org/dev/peps/pep-0237

@@ -185,7 +185,7 @@ class ComplexTest(IronPythonTestCase):
         test(complex(-0., +0.),  "(-0+0j)")
         test(complex(-0., -0.),  "(-0-0j)")
 
-        # NOTE: -0j not a complex literal in Python code but negated 0j, which is == -(0+0j) == (-0-0j)
+        # NOTE: -0j is not a complex literal in Python code but negated 0j, which is == -(0+0j) == (-0-0j)
         test(0j,  "0j")
         test(complex(0j),  "0j")
         test(-0j,  "(-0-0j)")

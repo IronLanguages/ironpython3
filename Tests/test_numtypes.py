@@ -12,7 +12,7 @@ results produced by the operators implemented on the .NET types.
 import unittest
 from operator import add, sub, mul, mod, and_, or_, xor, floordiv, truediv, lshift, rshift, neg, pos, abs, invert
 
-from iptest import is_cli, big, run_test, skipUnlessIronPython
+from iptest import is_cli, big, run_test, skipUnlessIronPython, IronPythonTestCase
 from iptest.type_util import *
 
 if is_cli:
@@ -89,7 +89,7 @@ def get_values(values, itypes, ftypes):
     ( python_value, [ all_values ] ),
     ... ]
 
-    all_values: Byte, UInt16, UInt32, UInt64, SByte, Int16, Int32, Int64, myint, Single, Double, myfloat, Complex, mycomplex
+    all_values: Byte, UInt16, UInt32, UInt64, SByte, Int16, Int32, Int64, BigInteger, myint, Single, Double, myfloat, Complex, mycomplex
     """
     all = []
     for v in values:
@@ -190,7 +190,7 @@ if is_cli:
     all = get_values(values, itypes, ftypes)
 
 @skipUnlessIronPython()
-class NumTypesTest(unittest.TestCase):
+class NumTypesTest(IronPythonTestCase):
     def verify_b(self, a, b, op, x_s, x_v, g_s, g_v):
         if not x_s == g_s:
             self.fail(get_message(a, b, op, x_s, x_v, g_s, g_v))
@@ -329,46 +329,46 @@ class NumTypesTest(unittest.TestCase):
 
     def test_validate_biops_bool_simple(self):
         total = self.validate_binary_ops(all, biops_bool_simple)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_bool_shift(self):
         total = self.validate_binary_ops(all, biops_bool_shift)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_add(self):
         total = self.validate_binary_ops(all, biops_math_add)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_sub(self):
         total = self.validate_binary_ops(all, biops_math_sub)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_mul(self):
         total = self.validate_binary_ops(all, biops_math_mul)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_floordiv(self):
         total = self.validate_binary_ops(all, biops_math_floordiv)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_truediv(self):
         total = self.validate_binary_ops(all, biops_math_truediv)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_mod(self):
         total = self.validate_binary_ops(all, biops_math_mod)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_biops_math_pow(self):
         total = self.validate_binary_ops(all, biops_math_pow)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_unary_ops(self):
         total = self.validate_unary_ops(all)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
     def test_validate_constructors(self):
         total = self.validate_constructors(values)
-        print(total, "tests ran.")
+        print(total, "tests ran: ", end='')
 
 run_test(__name__)

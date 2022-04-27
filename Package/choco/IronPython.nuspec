@@ -9,7 +9,7 @@
     <title>IronPython3</title>
     <authors>IronPython Contributors,Microsoft</authors>
     <owners>IronPython Community</owners>
-    <projectUrl>http://ironpython.net</projectUrl>
+    <projectUrl>https://ironpython.net</projectUrl>
     <licenseUrl>https://github.com/IronLanguages/ironpython3/blob/master/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.</description>

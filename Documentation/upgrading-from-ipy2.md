@@ -33,7 +33,19 @@ False
 'BigInteger'
 ```
 
-This means that in interop cases, when the `int` type is used (think generics), it will mean `BigInteger` and not `Int32` (which was the case in IronPython 2). For example, `System.Collections.Generic.List[int]` in IronPython 3 is equivalent to `System.Collections.Generic.List[System.Numerics.BigInteger]`. To retain IronPython 2 semantics, replace `int` with `System.Int32`.
+This means that in interop cases, when the `int` type is used (think generics), it will mean `BigInteger` and not `Int32` (which was the case in IronPython 2). To retain IronPython 2 semantics, replace `int` with `System.Int32`.
+
+Example:
+
+```python
+# IronPython 2
+System.Collections.Generic.List[int]
+```
+
+```python
+# IronPython 3
+System.Collections.Generic.List[System.Int32]
+```
 
 Overview of `int` type equivalency:
 
@@ -52,51 +64,51 @@ j = 1 << 31  # instance of BigInteger
 k = j - 1    # still BigInteger, as one of the arguments makes the result type BigInteger
 ```
 
-This means that the type of `Int32` objects is always reported as `int` (which is the same as `BigInteger`). If it is important to check what is the actual type of a given integer object, test for the presence of `MaxValue` or `MinValue`. For those properties to be visible, `System` has to be imported first.
+This means that the type of `Int32` objects is always reported as `int` (which is the same as `BigInteger`). If it is important to check what is the actual type of a given integer object, test if the object is an instance of `System.Int32`. (An alternative way is a test for the presence of `MaxValue` or `MinValue`. For those properties to be visible, `System` has to be imported first.)
 
 ```pycon
 >>> import System
 >>> type(i)
 <class 'int'>
->>> hasattr(i, 'MaxValue') # Int32
+>>> isinstance(i, System.Int32)
 True
->>> hex(i.MaxValue)
-'0x7fffffff'
 >>> type(j)
 <class 'int'>
->>> hasattr(j, 'MaxValue') # BigInteger
+>>> isinstance(j, System.Int32)
 False
+>>> hex(i.MaxValue)
+'0x7fffffff'
 ```
 
-The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected.
+The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected. 
 
 ```pycon
 >>> bi = i.ToBigInteger()
->>> hasattr(bi, 'MaxValue')
+>>> isinstance(j, System.Int32)
 False
 ```
 
-In the opposite direction, if it is essential to create `Int32` objects, either use constructors for `int` or `Int32`. The former converts an integer to `Int32` if the value fits in 32 bits, otherwise it leaves it as `BigInteger`. The latter throws an exception is the conversion is not possible.
+In the opposite direction, if it is essential to create `Int32` objects, either use constructors for `int` or `Int32`. In the current implementation, the former converts an integer to `Int32` if the value fits in 32 bits, otherwise it leaves it as `BigInteger`. The latter throws an exception is the conversion is not possible. Although the behavior of the constructor `int` may or may not change in the future, it is always guaranteed to convert the value to the "canonical form" adopted for that version of IronPython.
 
 ```pycon
 >>> # k is a BigInteger that fits in 32 bits
->>> hasattr(k, 'MaxValue')
+>>> isinstance(j, System.Int32)
 False
 >>> hex(k)
 '0x7fffffff'
 >>> ki = int(k)  # converts k to Int32
->>> hasattr(ki, 'MaxValue')
+>>> isinstance(ki, System.Int32)
 True
 >>> ki = System.Int32(k) # also converts k to Int32
->>> hasattr(ki, 'MaxValue')
+>>> isinstance(ki, System.Int32)
 True
 >>> # j is a BigInteger that does not fit in 32 bits
->>> hasattr(j, 'MaxValue') 
+>>> isinstance(j, System.Int32)
 False
 >>> hex(j)
 '0x80000000'
 >>> j = int(j)  # no type change, j stays BigInteger
->>> hasattr(j, 'MaxValue')
+>>> isinstance(j, System.Int32)
 False
 >>> j = System.Int32(j)  # conversion fails
 Traceback (most recent call last):
@@ -157,7 +169,7 @@ AttributeError: 'int' object has no attribute 'GetWords'
 Array[UInt32]((1))
 ```
 
-Another set of Python-hidden methods on `long` in IronPython 2 that not available on `int` in IronPython 3 are conversion methods with names like `ToXxx`. The recommended way to perform type conversions like those is to use type constructors. The exception is the conversion to `BigInteger` itself, for the reasons explained above.
+Another set of Python-hidden methods on `long` in IronPython 2 that are not available on `int` in IronPython 3 are conversion methods with names like `ToXxx`. The recommended way to perform type conversions like those is to use type constructors. The exception is the conversion to `BigInteger` itself, for the reasons explained above.
 
 ```python
 # IronPython 2

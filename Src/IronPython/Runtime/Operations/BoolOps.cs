@@ -48,6 +48,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static BigInteger BitwiseAnd(BigInteger x, bool y) {
+            return BigIntegerOps.BitwiseAnd(y ? 1 : 0, x);
+        }
+
+        [SpecialName]
+        public static BigInteger BitwiseAnd(bool x, BigInteger y) {
+            return BigIntegerOps.BitwiseAnd(x ? 1 : 0, y);
+        }
+
+        [SpecialName]
         public static int BitwiseOr(int x, bool y) {
             return Int32Ops.BitwiseOr(y ? 1 : 0, x);
         }
@@ -58,6 +68,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static BigInteger BitwiseOr(BigInteger x, bool y) {
+            return BigIntegerOps.BitwiseOr(y ? 1 : 0, x);
+        }
+
+        [SpecialName]
+        public static BigInteger BitwiseOr(bool x, BigInteger y) {
+            return BigIntegerOps.BitwiseOr(x ? 1 : 0, y);
+        }
+
+        [SpecialName]
         public static int ExclusiveOr(int x, bool y) {
             return Int32Ops.ExclusiveOr(y ? 1 : 0, x);
         }
@@ -65,6 +85,16 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static int ExclusiveOr(bool x, int y) {
             return Int32Ops.ExclusiveOr(x ? 1 : 0, y);
+        }
+
+        [SpecialName]
+        public static BigInteger ExclusiveOr(BigInteger x, bool y) {
+            return BigIntegerOps.ExclusiveOr(y ? 1 : 0, x);
+        }
+
+        [SpecialName]
+        public static BigInteger ExclusiveOr(bool x, BigInteger y) {
+            return BigIntegerOps.ExclusiveOr(x ? 1 : 0, y);
         }
 
         public static string/*!*/ __repr__(bool self) {

@@ -206,7 +206,10 @@ namespace IronPython.Runtime.Types {
                 MemberGroup res;
 
                 foreach (Type curType in binder.GetContributingTypes(type)) {
-                    res = FilterObjectMembers(FilterSpecialNames(binder.GetMember(curType, name), name, action));
+                    res = binder.GetMember(curType, name);
+                    res = FilterSpecialNames(res, name, action);
+                    res = FilterProperties(res, action);
+                    res = FilterObjectMembers(res);
                     if (res.Count > 0) {
                         return res;
                     }
@@ -214,7 +217,8 @@ namespace IronPython.Runtime.Types {
 
                 if (type.IsInterface) {
                     foreach (Type t in type.GetInterfaces()) {
-                        res = FilterSpecialNames(binder.GetMember(t, name), name, action);
+                        res = binder.GetMember(t, name);
+                        res = FilterSpecialNames(res, name, action);
                         if (res.Count > 0) {
                             return res;
                         }
@@ -265,7 +269,8 @@ namespace IronPython.Runtime.Types {
                         continue;
                     }
 
-                    res = FilterSpecialNames(binder.GetMember(curType, name), name, action);
+                    res = binder.GetMember(curType, name);
+                    res = FilterSpecialNames(res, name, action);
                     if (res.Count > 0) {
                         return res;
                     }
@@ -1869,20 +1874,67 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+#nullable enable
+
+        private static MemberGroup FilterProperties(MemberGroup group, MemberRequestKind action) {
+            List<MemberTracker>? mts = null;
+            for (int i = 0; i < group.Count; i++) {
+                MemberTracker mt = group[i];
+
+                if (mt.MemberType == TrackerTypes.Property && mt is ReflectedPropertyTracker rpt) {
+                    if (FilterProperty(action, rpt.Property)) {
+                        mts ??= MakeListWithPreviousMembers(group, mts, i);
+                        continue;
+                    }
+                }
+                mts?.Add(mt);
+            }
+
+            if (mts != null) {
+                if (mts.Count == 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+                return new MemberGroup(mts.ToArray());
+            }
+            return group;
+
+            static bool FilterProperty(MemberRequestKind action, PropertyInfo property) {
+                if (action == MemberRequestKind.Get) {
+                    if (property.GetMethod is null && property.SetMethod is not null) {
+                        return property.SetMethod != property.SetMethod.GetBaseDefinition();
+                    }
+                } else if (action == MemberRequestKind.Set) {
+                    if (property.SetMethod is null && property.GetMethod is not null) {
+                        return property.GetMethod != property.GetMethod.GetBaseDefinition();
+                    }
+                }
+                return false;
+            }
+        }
+
         private static MemberGroup/*!*/ FilterObjectMembers(MemberGroup/*!*/ group) {
             Assert.NotNull(group);
-            List<MemberTracker> mts = new List<MemberTracker>();
+            List<MemberTracker>? mts = null;
             for (int i = 0; i < group.Count; i++) {
                 MemberTracker mt = group[i];
 
                 if (mt.DeclaringType == typeof(object) || mt.DeclaringType == typeof(ObjectOps)) {
-                   continue;
+                    mts ??= MakeListWithPreviousMembers(group, mts, i);
+                    continue;
                 }
-                mts.Add(mt);
+                mts?.Add(mt);
             }
-            if (mts.Count == 0) return MemberGroup.EmptyGroup;
-            return new MemberGroup(mts.ToArray());
+
+            if (mts != null) {
+                if (mts.Count == 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+                return new MemberGroup(mts.ToArray());
+            }
+            return group;
         }
+
+#nullable restore
 
         private static MemberGroup/*!*/ FilterSpecialNames(MemberGroup/*!*/ group, string/*!*/ name, MemberRequestKind/*!*/ action) {
             Assert.NotNull(group, name, action);

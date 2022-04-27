@@ -208,6 +208,20 @@ namespace IronPythonTest {
         }
     }
 
+    public class PartialPropertyOverrideClass : BaseClass {
+        public override int Height {
+            set {
+                size.height = 2 * value;
+            }
+        }
+
+        public override int Width {
+            get {
+                return size.width * 2;
+            }
+        }
+    }
+
     public class UnaryClass {
         public int value;
 

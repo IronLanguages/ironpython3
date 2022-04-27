@@ -97,8 +97,8 @@ def get_values(values, itypes, ftypes):
 
         py  = int(v)
         clr = get_clr_values(sv, itypes)
-        clr.append(int(py))
-        clr.append(big(int(py)))
+        clr.append(py)
+        clr.append(big(py))
         clr.append(myint(py))
         all.append( (py, clr) )
 

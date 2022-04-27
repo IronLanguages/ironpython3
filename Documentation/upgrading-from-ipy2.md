@@ -17,7 +17,7 @@ if sys.implementation.name == "ironpython":
 
 ## `int` Type
 
-One of the major backward incompatible changes in Python 3 is [PEP 0237][]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type. From the pure Python perspective this means that `int` should be used wherever previously `long` was used. More consideration has to be applied in interop cases with .NET.
+One of the major backward incompatible changes in Python 3 is [PEP 237 – Unifying Long Integers and Integers][PEP 0237]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type. From the pure Python perspective this means that `int` should be used wherever previously `long` was used. More consideration has to be applied in interop cases with .NET.
 
 The Python `int` type in IronPython 3 is implemented as `System.Numerics.BigInteger` (and not as `System.Int32` as it was in IronPython 2). It can contain in theory an arbitrarily large integer (only limited by the 2 GByte memory boundary).
 

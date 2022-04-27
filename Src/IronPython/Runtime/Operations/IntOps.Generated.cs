@@ -2332,12 +2332,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Add(UInt64 x, Int64 y) {
+        public static object Add(UInt64 x, BigInteger y) {
             return BigIntegerOps.Add((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static object Add(Int64 x, UInt64 y) {
+        public static object Add(BigInteger x, UInt64 y) {
             return BigIntegerOps.Add((BigInteger)x, (BigInteger)y);
         }
 
@@ -2351,12 +2351,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Subtract(UInt64 x, Int64 y) {
+        public static object Subtract(UInt64 x, BigInteger y) {
             return BigIntegerOps.Subtract((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static object Subtract(Int64 x, UInt64 y) {
+        public static object Subtract(BigInteger x, UInt64 y) {
             return BigIntegerOps.Subtract((BigInteger)x, (BigInteger)y);
         }
 
@@ -2370,12 +2370,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Multiply(UInt64 x, Int64 y) {
+        public static object Multiply(UInt64 x, BigInteger y) {
             return BigIntegerOps.Multiply((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static object Multiply(Int64 x, UInt64 y) {
+        public static object Multiply(BigInteger x, UInt64 y) {
             return BigIntegerOps.Multiply((BigInteger)x, (BigInteger)y);
         }
 
@@ -2385,12 +2385,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static double TrueDivide(UInt64 x, Int64 y) {
+        public static double TrueDivide(UInt64 x, BigInteger y) {
             return BigIntegerOps.TrueDivide((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static double TrueDivide(Int64 x, UInt64 y) {
+        public static double TrueDivide(BigInteger x, UInt64 y) {
             return BigIntegerOps.TrueDivide((BigInteger)x, (BigInteger)y);
         }
 
@@ -2400,12 +2400,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object FloorDivide(UInt64 x, Int64 y) {
+        public static object FloorDivide(UInt64 x, BigInteger y) {
             return BigIntegerOps.FloorDivide((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static object FloorDivide(Int64 x, UInt64 y) {
+        public static object FloorDivide(BigInteger x, UInt64 y) {
             return BigIntegerOps.FloorDivide((BigInteger)x, (BigInteger)y);
         }
 
@@ -2415,12 +2415,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static BigInteger Mod(UInt64 x, Int64 y) {
+        public static BigInteger Mod(UInt64 x, BigInteger y) {
             return BigIntegerOps.Mod((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static BigInteger Mod(Int64 x, UInt64 y) {
+        public static BigInteger Mod(BigInteger x, UInt64 y) {
             return BigIntegerOps.Mod((BigInteger)x, (BigInteger)y);
         }
 
@@ -2430,12 +2430,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object Power(UInt64 x, Int64 y) {
+        public static object Power(UInt64 x, BigInteger y) {
             return BigIntegerOps.Power((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static object Power(Int64 x, UInt64 y) {
+        public static object Power(BigInteger x, UInt64 y) {
             return BigIntegerOps.Power((BigInteger)x, (BigInteger)y);
         }
 
@@ -2459,12 +2459,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static BigInteger BitwiseAnd(UInt64 x, Int64 y) {
+        public static BigInteger BitwiseAnd(UInt64 x, BigInteger y) {
             return BigIntegerOps.BitwiseAnd((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static BigInteger BitwiseAnd(Int64 x, UInt64 y) {
+        public static BigInteger BitwiseAnd(BigInteger x, UInt64 y) {
             return BigIntegerOps.BitwiseAnd((BigInteger)x, (BigInteger)y);
         }
 
@@ -2474,12 +2474,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static BigInteger BitwiseOr(UInt64 x, Int64 y) {
+        public static BigInteger BitwiseOr(UInt64 x, BigInteger y) {
             return BigIntegerOps.BitwiseOr((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static BigInteger BitwiseOr(Int64 x, UInt64 y) {
+        public static BigInteger BitwiseOr(BigInteger x, UInt64 y) {
             return BigIntegerOps.BitwiseOr((BigInteger)x, (BigInteger)y);
         }
 
@@ -2489,12 +2489,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static BigInteger ExclusiveOr(UInt64 x, Int64 y) {
+        public static BigInteger ExclusiveOr(UInt64 x, BigInteger y) {
             return BigIntegerOps.ExclusiveOr((BigInteger)x, (BigInteger)y);
         }
 
         [SpecialName]
-        public static BigInteger ExclusiveOr(Int64 x, UInt64 y) {
+        public static BigInteger ExclusiveOr(BigInteger x, UInt64 y) {
             return BigIntegerOps.ExclusiveOr((BigInteger)x, (BigInteger)y);
         }
 
@@ -2505,27 +2505,27 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static bool LessThan(UInt64 x, UInt64 y) => x < y;
         [SpecialName]
-        public static bool LessThan(UInt64 x, Int64 y) => BigIntegerOps.LessThan((BigInteger)x, (BigInteger)y);
+        public static bool LessThan(UInt64 x, BigInteger y) => BigIntegerOps.LessThan((BigInteger)x, (BigInteger)y);
         [SpecialName]
         public static bool LessThanOrEqual(UInt64 x, UInt64 y) => x <= y;
         [SpecialName]
-        public static bool LessThanOrEqual(UInt64 x, Int64 y) => BigIntegerOps.LessThanOrEqual((BigInteger)x, (BigInteger)y);
+        public static bool LessThanOrEqual(UInt64 x, BigInteger y) => BigIntegerOps.LessThanOrEqual((BigInteger)x, (BigInteger)y);
         [SpecialName]
         public static bool GreaterThan(UInt64 x, UInt64 y) => x > y;
         [SpecialName]
-        public static bool GreaterThan(UInt64 x, Int64 y) => BigIntegerOps.GreaterThan((BigInteger)x, (BigInteger)y);
+        public static bool GreaterThan(UInt64 x, BigInteger y) => BigIntegerOps.GreaterThan((BigInteger)x, (BigInteger)y);
         [SpecialName]
         public static bool GreaterThanOrEqual(UInt64 x, UInt64 y) => x >= y;
         [SpecialName]
-        public static bool GreaterThanOrEqual(UInt64 x, Int64 y) => BigIntegerOps.GreaterThanOrEqual((BigInteger)x, (BigInteger)y);
+        public static bool GreaterThanOrEqual(UInt64 x, BigInteger y) => BigIntegerOps.GreaterThanOrEqual((BigInteger)x, (BigInteger)y);
         [SpecialName]
         public static bool Equals(UInt64 x, UInt64 y) => x == y;
         [SpecialName]
-        public static bool Equals(UInt64 x, Int64 y) => BigIntegerOps.Equals((BigInteger)x, (BigInteger)y);
+        public static bool Equals(UInt64 x, BigInteger y) => BigIntegerOps.Equals((BigInteger)x, (BigInteger)y);
         [SpecialName]
         public static bool NotEquals(UInt64 x, UInt64 y) => x != y;
         [SpecialName]
-        public static bool NotEquals(UInt64 x, Int64 y) => BigIntegerOps.NotEquals((BigInteger)x, (BigInteger)y);
+        public static bool NotEquals(UInt64 x, BigInteger y) => BigIntegerOps.NotEquals((BigInteger)x, (BigInteger)y);
 
         #endregion
 

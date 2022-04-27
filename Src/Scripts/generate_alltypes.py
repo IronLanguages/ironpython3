@@ -285,7 +285,10 @@ def write_binop1_general(func, cw, body, name, ty, **kws):
     func(cw, body, name, ty, **kws)
 
     if not ty.is_signed:
-        oty = ty.get_signed()
+        if ty.name in ["UInt64"]:
+            oty = bigint
+        else:
+            oty = ty.get_signed()
         if 'return_type' not in kws or kws['return_type'] == ty.name:
             if name == 'FloorDivide':
                 kws['return_type'] = 'object'
@@ -313,7 +316,10 @@ def write_rich_comp_general(func, cw, body, name, ty, **kws):
     func(cw, body, name, ty, **kws)
 
     if not ty.is_signed:
-        oty = ty.get_signed()
+        if ty.name in ["UInt64"]:
+            oty = bigint
+        else:
+            oty = ty.get_signed()
         kws['ltype'] = oty.name
         if cw.kws.get('bigger_signed') == "BigInteger":
             func(cw, unsigned_signed_body, name, ty, **kws)

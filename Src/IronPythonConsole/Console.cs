@@ -55,6 +55,10 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         }
     }
 
+    protected override void PrintVersion() {
+        Console.WriteLine(Engine.Setup.DisplayName);
+    }
+
     public override void PrintLanguageHelp(StringBuilder output) {
         new PythonOptionsParser().GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments);
 

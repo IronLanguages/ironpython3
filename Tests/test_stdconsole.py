@@ -212,7 +212,8 @@ class StdConsoleTest(IronPythonTestCase):
     @skipUnlessIronPython()
     def test_V(self):
         """Test the -V (print version and exit) option."""
-        self.TestCommandLine(("-V",), ("regexp", "IronPython ([0-9.]+)(.*) on .NET ([0-9.]+)\n"))
+        version = "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        self.TestCommandLine(("-V",), ("regexp", "IronPython {}.*\n".format(re.escape(version))))
 
     def test_OO(self):
         """Test the -OO (suppress doc string optimization) option."""

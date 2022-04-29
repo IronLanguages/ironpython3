@@ -25,6 +25,7 @@ namespace IronPython.Hosting {
                 case '?':
                 case 'h':
                     ConsoleOptions.PrintUsage = true;
+                    ConsoleOptions.PrintVersion = false; // don't print the version!
                     ConsoleOptions.Exit = true;
                     IgnoreRemainingArgs();
                     return default;
@@ -107,10 +108,12 @@ namespace IronPython.Hosting {
                     break;
 
                 case 'V':
+                    if (ConsoleOptions.PrintVersion) {
+                        ConsoleOptions.PrintSysVersion = true;
+                    }
                     ConsoleOptions.PrintVersion = true;
                     ConsoleOptions.Exit = true;
-                    IgnoreRemainingArgs();
-                    return default;
+                    break;
 
                 case 'W':
                     _warningFilters ??= new List<string>();
@@ -144,6 +147,11 @@ namespace IronPython.Hosting {
 
             if (arg == "/?" || arg == "--help") {
                 HandleOptions("h".AsSpan());
+                return;
+            }
+
+            if (arg == "--version") {
+                HandleOptions("V".AsSpan());
                 return;
             }
 
@@ -311,10 +319,10 @@ namespace IronPython.Hosting {
             }
 
             string[,] pythonOptions = new string[,] {
-                { "-b",                     "issue warnings about str(bytes_instance), str(bytearray_instance) and comparing bytes/bytearray with str. (-bb: issue errors)"},
+                { "-b",                     "issue warnings about str(bytes_instance), str(bytearray_instance)\nand comparing bytes/bytearray with str. (-bb: issue errors)"},
                 { "-c cmd",                 "Program passed in as string (terminates option list)" },
                 { "-E",                     "Ignore environment variables" },
-                { "-h",                     "Display usage" },
+                { "-h",                     "print this help message and exit (also --help)" },
                 { "-i",                     "Inspect interactively after running script" },
                 { "-I",                     "isolate IronPython from the user's environment (implies -E and -s)" },
                 { "-m mod",                 "run library module as a script"},
@@ -327,7 +335,7 @@ namespace IronPython.Hosting {
 #if !IRONPYTHON_WINDOW
                 { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
 #endif
-                { "-V",                     "Print the version number and exit" },
+                { "-V",                     "print the Python version number and exit (also --version)\nwhen given twice, print more information about the build" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-x",                     "Skip first line of the source" },
 

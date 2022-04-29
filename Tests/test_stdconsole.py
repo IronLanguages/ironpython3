@@ -57,7 +57,7 @@ class StdConsoleTest(IronPythonTestCase):
         self.batfile = os.path.join(self.tmpdir, "__runconsole.bat")
 
         with open(self.batfile, "w") as f:
-            f.write("@" + sys.executable + " >" + self.tmpfile + " 2>&1 %*\n")
+            f.write("@\"" + sys.executable + "\" >" + self.tmpfile + " 2>&1 %*\n")
 
     # Runs the console with the given tuple of arguments and verifies that the output and exit code are as
     # specified. The expected_output argument can be specified in various ways:
@@ -209,11 +209,16 @@ class StdConsoleTest(IronPythonTestCase):
             self.TestCommandLine(("-c", "import site;import sys;print(hasattr(sys, 'foo'))"), "True\n")
         os.remove(os.path.join(self.tmpdir, "site.py"))
 
-    @skipUnlessIronPython()
     def test_V(self):
         """Test the -V (print version and exit) option."""
-        version = "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
-        self.TestCommandLine(("-V",), ("regexp", "IronPython {}.*\n".format(re.escape(version))))
+        version = "{}Python {}\n".format("Iron" if is_cli else "", sys.version.split(" ", 1)[0])
+        self.TestCommandLine(("-V",), version)
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3,6), "new in 3.6")
+    def test_VV(self):
+        """Test the -VV (print version and exit) option."""
+        version = "{}Python {}\n".format("Iron" if is_cli else "", sys.version)
+        self.TestCommandLine(("-VV",), version)
 
     def test_OO(self):
         """Test the -OO (suppress doc string optimization) option."""

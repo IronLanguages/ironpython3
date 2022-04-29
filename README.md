@@ -13,7 +13,7 @@ IronPython 3 targets Python 3, including the re-organized standard library, Unic
 | --------: | :------------: |
 | **Windows/Linux/macOS Builds** | [![Build status](https://dotnet.visualstudio.com/IronLanguages/_apis/build/status/ironpython3)](https://dotnet.visualstudio.com/IronLanguages/_build/latest?definitionId=43) [![Github build status](https://github.com/IronLanguages/ironpython3/workflows/CI/badge.svg)](https://github.com/IronLanguages/ironpython3/actions?workflow=CI) |
 | **Downloads** | [![NuGet](https://img.shields.io/nuget/vpre/IronPython.svg)](https://www.nuget.org/packages/IronPython/3.4.0-alpha1) [![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg?include_prereleases)](https://github.com/IronLanguages/ironpython3/releases/latest)|
-| **Help** | [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython) [![StackExchange](https://img.shields.io/stackexchange/stackoverflow/t/ironpython.svg)](https://stackoverflow.com/questions/tagged/ironpython) |
+| **Help** | [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython) [![StackExchange](https://img.shields.io/badge/stack%20overflow-ironpython-informational?logo=stack-overflow&logoColor=white)](https://stackoverflow.com/questions/tagged/ironpython) |
 
 
 ## Examples

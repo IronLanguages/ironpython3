@@ -4,7 +4,7 @@
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')"/>
 
     <ItemGroup>
-      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*;$(StageDir)\**\*.pdb;$(StageDir)\netcoreapp2.1\**\*;$(StageDir)\net5.0*\**\*;$(StageDir)\net6.0*\**\*" />
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*;$(StageDir)\**\*.pdb;$(StageDir)\netcoreapp2.1\**\*;$(StageDir)\net5.0*\**\*" />
     </ItemGroup>
     <Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
 

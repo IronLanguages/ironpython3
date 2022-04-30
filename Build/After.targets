@@ -19,8 +19,10 @@
   </Choose>
 
   <PropertyGroup>
-    <MainStageDir>$(StageDir)\$(TargetFramework)</MainStageDir>
-    <MainStageDir Condition=" '$(StoreInDLLs)' == 'true' ">$(StageDir)\$(TargetFramework)\DLLs</MainStageDir>
+    <_TargetFramework>$(TargetFramework)</_TargetFramework>
+    <_TargetFramework Condition=" $(TargetFramework.EndsWith('-windows')) ">$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-windows'))))</_TargetFramework>
+    <MainStageDir>$(StageDir)\$(_TargetFramework)</MainStageDir>
+    <MainStageDir Condition=" '$(StoreInDLLs)' == 'true' ">$(StageDir)\$(_TargetFramework)\DLLs</MainStageDir>
     <UnsignedItems>@(StageItem)</UnsignedItems>
     <UnsignedMainStaged>@(StageItem->'$(MainStageDir)\%(RecursiveDir)\%(Filename)%(Extension)')</UnsignedMainStaged>
   </PropertyGroup>

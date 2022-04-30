@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProductVersion>3.5</ProductVersion>
+    <ProductVersion>3.4</ProductVersion>
     <ProjectGuid>{49c7ae2b-d9d1-4b32-9d11-474f1be86658}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>IronPython-$(DisplayVersion)</OutputName>
@@ -30,37 +30,34 @@
     </WixConstant>
     <WixConstant Include="ReleaseSeries">
       <Value>$(MajorVersion).$(MinorVersion)</Value>
-    </WixConstant>    
+    </WixConstant>
     <WixConstant Include="BuildDir">
       <Value>$(BuildDir)</Value>
-    </WixConstant>    
+    </WixConstant>
     <WixConstant Include="StdLibDir">
       <Value>$(BindInputPaths)\Lib</Value>
     </WixConstant>
     <WixConstant Include="PlatformDir">
       <Value>$(BindInputPaths)\net46</Value>
     </WixConstant>
-    <WixConstant Include="IpyExeComponentGuid">
-      <Value>{419DAD09-D6E8-47F0-BC58-874019842004}</Value>
-    </WixConstant>
   </ItemGroup>
 
   <PropertyGroup>
     <CommonWixConstants>@(WixConstant->'%(Identity)=%(Value)')</CommonWixConstants>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug;$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Include="Dlr.wxs" />
     <Compile Include="IronPython.wxs" />

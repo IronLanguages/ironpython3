@@ -5,7 +5,7 @@
   2006-01-01 BobArnso Created
 -->
 
-<!-- 
+<!--
 WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 1. Update the UpgradeCode GUID
 2. Check that the IronPython "ARP*" property links are still valid
@@ -25,18 +25,18 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <!-- Major upgrade -->
     <MajorUpgrade AllowSameVersionUpgrades="no"
                   DowngradeErrorMessage="A later version of [ProductName] is already installed."/>
-    
+
     <!-- Normal upgrades -->
     <Upgrade Id="$(var.UpgradeCode)">
       <UpgradeVersion Minimum="0.0.0.0" IncludeMinimum="yes" Maximum="$(var.ProductVersion)" IncludeMaximum="yes" Property="OLDERVERSIONBEINGUPGRADED" OnlyDetect="no" />
     </Upgrade>
 
     <PropertyRef Id="WIX_IS_NETFRAMEWORK_46_OR_LATER_INSTALLED" />
-    
+
     <!-- Properties -->
     <Property Id="ARPPRODUCTICON" Value="ipy.ico" />
-    <Property Id="ARPHELPLINK" Value="http://ironpython.net/support/" />
-    <Property Id="ARPURLINFOABOUT" Value="http://www.ironpython.net" />
+    <Property Id="ARPHELPLINK" Value="https://ironpython.net/support/" />
+    <Property Id="ARPURLINFOABOUT" Value="https://ironpython.net" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/IronLanguages/ironpython3" />
     <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />      <!-- Remove repair -->
     <Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />      <!-- Remove modify -->
@@ -72,7 +72,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
       <Component Id="IronPythonCommonShortcuts">
         <Shortcut Id="IronPython_Readme" Name="IronPython Readme" Target="[INSTALLDIR]README.md" />
         <Shortcut Id="IronPython_Console" Name="IronPython Console" Target="[INSTALLDIR]ipy.exe" />
-        
+
         <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy" Type="integer" Value="1" KeyPath="yes" />
         <RemoveFolder Id="IronPythonStartMenu" On="uninstall" />
       </Component>
@@ -86,16 +86,11 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <ComponentGroupRef Id="IronPythonStdLib" />
 
         <ComponentRef Id="IronPythonCommonShortcuts" />
-
-        <Feature Id="IronPython_Core_Gac" AllowAdvertise="no" Level="1" Title="GAC Assemblies" Description="Install the IronPython assemblies into the GAC.">
-          <ComponentGroupRef Id="DlrGac" />
-          <ComponentGroupRef Id="IronPythonGac" />
-        </Feature>
       </Feature>
       <Feature Id="Pip_Setup" AllowAdvertise="no" Display="expand" Level="1" Title="pip" Description="Install or upgrade pip, a tool for installing and managing Python packages" />
     </Feature>
 
-    
+
 
     <!-- User interface -->
     <UIRef Id="WixUI_FeatureTree" />
@@ -114,7 +109,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <CustomAction Id="UpdatePip" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" />
         <CustomAction Id="RemovePip" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" />
     <?endif ?>
-    
+
     <SetProperty Id="UpdatePip" Value="&quot;[#ipy.exe]&quot; -E -s -m ensurepip -U --default-pip" Before="UpdatePip" Sequence="execute" />
     <SetProperty Id="RemovePip" Value="&quot;[#ipy.exe]&quot; -E -s -B -m ensurepip._uninstall" Before="RemovePip" Sequence="execute" />
 

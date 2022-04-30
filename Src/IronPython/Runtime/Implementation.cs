@@ -64,24 +64,8 @@ namespace IronPython.Runtime {
                    (serial << 0);
         }
 
-        private string GetShortReleaseLevel() {
-            switch (releaselevel) {
-                case "alpha": return "a";
-                case "beta": return "b";
-                case "candidate": return "rc";
-                case "final": return "f";
-                default: return "";
-            }
-        }
-
-        internal string GetVersionString() {
-            return string.Format("{0}.{1}.{2}{3}{4}",
-                major,
-                minor,
-                micro,
-                releaselevel != "final" ? GetShortReleaseLevel() : string.Empty,
-                releaselevel != "final" ? serial.ToString() : string.Empty);
-        }
+        internal string GetVersionString()
+            => CurrentVersion.GetVersionString(major, minor, micro, releaselevel, serial);
     }
 
     internal static class CurrentVersion {
@@ -93,6 +77,25 @@ namespace IronPython.Runtime {
         public static string Series { get; }
         public static string DisplayName { get; }
 
+        public static string GetVersionString(int major, int minor, int micro, string releaselevel, int serial) {
+            return string.Format("{0}.{1}.{2}{3}{4}",
+                major,
+                minor,
+                micro,
+                releaselevel != "final" ? GetShortReleaseLevel(releaselevel) : string.Empty,
+                releaselevel != "final" ? serial.ToString() : string.Empty);
+
+            static string GetShortReleaseLevel(string releaselevel) {
+                switch (releaselevel) {
+                    case "alpha": return "a";
+                    case "beta": return "b";
+                    case "candidate": return "rc";
+                    case "final": return "f";
+                    default: return "";
+                }
+            }
+        }
+
         static CurrentVersion() {
             var assembly = typeof(CurrentVersion).Assembly;
             var version = new AssemblyName(assembly.FullName).Version; // don't use Assembly.GetName since it fails in partial trust scenarios
@@ -100,10 +103,10 @@ namespace IronPython.Runtime {
             Minor = version.Minor;
             Micro = version.Build;
             Series = version.ToString(2);
-            DisplayName = $"IronPython {version.ToString(3)}";
             var split = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             ReleaseLevel = split[split.Length - 2];
             ReleaseSerial = int.Parse(split[split.Length - 1]);
+            DisplayName = $"IronPython {GetVersionString(Major, Minor, Micro, ReleaseLevel, ReleaseSerial)}";
         }
     }
 }

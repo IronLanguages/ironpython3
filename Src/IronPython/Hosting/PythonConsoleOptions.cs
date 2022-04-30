@@ -7,7 +7,7 @@ using Microsoft.Scripting.Hosting.Shell;
 
 namespace IronPython.Hosting {
     [CLSCompliant(true)]
-    public /* TODO: sealed */ class PythonConsoleOptions : ConsoleOptions {
+    public sealed class PythonConsoleOptions : ConsoleOptions {
         public bool IgnoreEnvironmentVariables { get; set; }
 
         public bool SkipImportSite { get; set; }
@@ -23,6 +23,8 @@ namespace IronPython.Hosting {
         public bool SkipFirstSourceLine { get; set; }
 
         public bool BasicConsole { get; set; }
+
+        public bool PrintSysVersion { get; set; }
     }
 }
 #endif

@@ -328,7 +328,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         public static readonly string abiflags = string.Empty;
 
         // version and version_info are set by PythonContext
-        public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
+
+        public static PythonTuple _git = PythonTuple.MakeTuple("IronPython", "", ""); // TODO: fill this up!
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static readonly string winver = CurrentVersion.Series;

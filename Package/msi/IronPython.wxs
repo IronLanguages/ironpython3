@@ -4,78 +4,69 @@
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
 
-      <Component Guid="{8CF1D19D-EF1C-4340-9C13-3DF5E08BAA45}">
-        <File Id="IronPython.dll" KeyPath="yes" Source="$(var.PlatformDir)\IronPython.dll" />
+      <Component>
+        <File Source="$(var.PlatformDir)\IronPython.dll" />
       </Component>
 
-      <Component Guid="{CC3AF708-7831-45DC-8CC6-60E33DE1A7EA}">
-        <File Id="IronPython.Modules.dll" KeyPath="yes" Source="$(var.PlatformDir)\IronPython.Modules.dll" />
+      <Component>
+        <File Source="$(var.PlatformDir)\IronPython.Modules.dll" />
       </Component>
 
-      <Component Guid="$(var.IpyExeComponentGuid)">
-        <File Id="ipy.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipy.exe">
+      <Component>
+        <File Source="$(var.PlatformDir)\ipy.exe">
           <netfx:NativeImage Id="ngen_ipy.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
-        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
-          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" KeyPath="no" />
-          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[#ipy.exe]" KeyPath="no" />
-        </RegistryKey>
-        <File Id="ipy32.exe" Source="$(var.PlatformDir)\ipy32.exe">
+      </Component>
+      <Component>
+        <File Source="$(var.PlatformDir)\ipy32.exe">
           <netfx:NativeImage Id="ngen_ipy32.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
-        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
-          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" KeyPath="no" />
-          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[#ipy32.exe]" KeyPath="no" />
-        </RegistryKey>
       </Component>
 
-      <Component Guid="{F7E1626D-3007-405D-A656-1A971D172A07}">
-        <File Id="ipyc.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipyc.exe">
+      <Component>
+        <File Source="$(var.PlatformDir)\ipyc.exe">
           <netfx:NativeImage Id="ngen_ipyc.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
-        <File Id="IKVM.Reflection.dll" Source="$(var.PlatformDir)\IKVM.Reflection.dll" />
+      </Component>
+      <Component>
+        <File Source="$(var.PlatformDir)\IKVM.Reflection.dll" />
       </Component>
 
-      <Component Guid="{A9A13553-6EAD-4C92-9334-149F223F854C}">
-        <File Id="ipyw.exe" KeyPath="yes" Source="$(var.PlatformDir)\ipyw.exe">
+      <Component>
+        <File Source="$(var.PlatformDir)\ipyw.exe">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
-        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
-          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[#ipyw.exe]" KeyPath="no" />
-        </RegistryKey>
-        <File Id="ipyw32.exe" Source="$(var.PlatformDir)\ipyw32.exe">
+      </Component>
+      <Component>
+        <File Source="$(var.PlatformDir)\ipyw32.exe">
           <netfx:NativeImage Id="ngen_ipyw32.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
-        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
-          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[#ipyw32.exe]" KeyPath="no" />
-        </RegistryKey>
       </Component>
 
       <Directory Id="IronPython_DLLs" Name="DLLs">
-        <Component Guid="{476E201D-7D77-4F4B-A17E-D49CD575B90C}">
-          <File Id="IronPython.Wpf.dll" KeyPath="yes" Source="$(var.PlatformDir)\DLLs\IronPython.Wpf.dll" />
+        <Component>
+          <File Source="$(var.PlatformDir)\DLLs\IronPython.Wpf.dll" />
         </Component>
-        <Component Guid="{218765CA-4881-450E-B406-23CF3C45CFE4}">
-          <File Id="IronPython.SQLite.dll" KeyPath="yes" Source="$(var.PlatformDir)\DLLs\IronPython.SQLite.dll" />
+        <Component>
+          <File Source="$(var.PlatformDir)\DLLs\IronPython.SQLite.dll" />
         </Component>
       </Directory>
 
       <Component>
-        <File Id="README.md" />
+        <File Source="$(var.PlatformDir)\System.Buffers.dll" />
+      </Component>
+      <Component>
+        <File Source="$(var.PlatformDir)\System.Memory.dll" />
+      </Component>
+      <Component>
+        <File Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
       </Component>
 
       <Component>
-        <File Id="System.Buffers.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Buffers.dll" />
+        <File Source="LICENSE" />
       </Component>
       <Component>
-        <File Id="System.Memory.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Memory.dll" />
-      </Component>
-      <Component>
-        <File Id="System.Runtime.CompilerServices.Unsafe.dll" KeyPath="yes" Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
-      </Component>
-
-      <Component Guid="{B5D964A4-37EB-4A59-9D63-726DB1F84E5E}">
-        <File Id="LICENSE" KeyPath="yes" />
+        <File Source="README.md" />
       </Component>
 
       <Component>
@@ -90,25 +81,27 @@
 
       <Component Id="CommonPythonRegistration">
         <RegistryKey Root="HKLM" Key="Software\Python\IronPython">
-          <RegistryValue Name="DisplayName" Type="string" Value="IronPython" KeyPath="yes" />
-          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="https://ironpython.net/" />
         </RegistryKey>
       </Component>
 
       <Component Id="PythonRegistration">
         <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
-          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (64-bit)" KeyPath="yes" />
-          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
-          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" KeyPath="no" />
-          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" KeyPath="no" />
-          <RegistryValue Name="SysArchitecture" Type="string" Value="64bit" KeyPath="no" />
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (64-bit)" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="https://ironpython.net/" />
+          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" />
+          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" />
+          <RegistryValue Name="SysArchitecture" Type="string" Value="64bit" />
+          <RegistryValue Name="PathEnvironmentVariable" Type="string" Value="IRONPYTHONPATH" />
         </RegistryKey>
         <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
-          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (32-bit)" KeyPath="no" />
-          <RegistryValue Name="SupportUrl" Type="string" Value="http://www.ironpython.net/" KeyPath="no" />
-          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" KeyPath="no" />
-          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" KeyPath="no" />
-          <RegistryValue Name="SysArchitecture" Type="string" Value="32bit" KeyPath="no" />
+          <RegistryValue Name="DisplayName" Type="string" Value="IronPython $(var.ReleaseSeries) (32-bit)" />
+          <RegistryValue Name="SupportUrl" Type="string" Value="https://ironpython.net/" />
+          <RegistryValue Name="Version" Type="string" Value="$(var.ProductVersionText)" />
+          <RegistryValue Name="SysVersion" Type="string" Value="$(var.ReleaseSeries)" />
+          <RegistryValue Name="SysArchitecture" Type="string" Value="32bit" />
+          <RegistryValue Name="PathEnvironmentVariable" Type="string" Value="IRONPYTHONPATH" />
         </RegistryKey>
       </Component>
 
@@ -121,34 +114,19 @@
         </RegistryKey>
       </Component>
 
-    </DirectoryRef>
-
-    <DirectoryRef Id="GAC">
-      <Component Guid="{38CF0071-81C1-41A2-9F64-F3667160A5F5}">
-        <File Id="gac_IronPython.dll" Name="IronPython.dll" Assembly=".net" KeyPath="yes" Source="$(var.PlatformDir)\IronPython.dll">
-          <netfx:NativeImage Id="ngen_IronPython.dll" Platform="all" AppBaseDirectory="INSTALLDIR" />
-        </File>
-      </Component>
-<!--
-      <Component Guid="{40B104FB-E966-425C-A960-7DB19E3344E3}">
-        <File Id="policy.$(var.ReleaseSeries).IronPython.dll" KeyPath="yes"
-              Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.dll" Assembly=".net" />
-        <File Id="policy.$(var.ReleaseSeries).IronPython.config" KeyPath="no"
-              Source="$(var.BuildDir)\policy.IronPython.config" />
-      </Component> -->
-
-      <Component Guid="{24B20236-2211-46B6-816E-A2118BDE76C9}">
-        <File Id="gac_IronPython.Modules.dll" Name="IronPython.Modules.dll" Assembly=".net" KeyPath="yes" Source="$(var.PlatformDir)\IronPython.Modules.dll">
-          <netfx:NativeImage Id="ngen_IronPython.Modules.dll" Platform="all" AppBaseDirectory="INSTALLDIR" />
-        </File>
+      <Component Id="InstallPathRegistry">
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)">
+          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" />
+          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[INSTALLDIR]ipy.exe" />
+          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[INSTALLDIR]ipyw.exe" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="Software\Python\IronPython\$(var.ReleaseSeries)-32">
+          <RegistryValue Key="InstallPath" Type="string" Value="[INSTALLDIR]" />
+          <RegistryValue Key="InstallPath" Name="ExecutablePath" Type="string" Value="[INSTALLDIR]ipy32.exe" />
+          <RegistryValue Key="InstallPath" Name="WindowedExecutablePath" Type="string" Value="[INSTALLDIR]ipyw32.exe" />
+        </RegistryKey>
       </Component>
 
-      <!-- <Component Guid="{9883A38B-A77C-4818-A13E-029F33A2D914}">
-        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll" KeyPath="yes"
-              Source="$(var.BuildDir)\policy.$(var.ReleaseSeries).IronPython.Modules.dll" Assembly=".net" />
-        <File Id="policy.$(var.ReleaseSeries).IronPython.Modules.config" KeyPath="no"
-              Source="$(var.BuildDir)\policy.IronPython.Modules.config" />
-      </Component> -->
     </DirectoryRef>
 
     <ComponentGroup Id="IronPython">
@@ -157,8 +135,11 @@
       <ComponentRef Id="IronPython.Wpf.dll" />
       <ComponentRef Id="IronPython.SQLite.dll" />
       <ComponentRef Id="ipy.exe" />
+      <ComponentRef Id="ipy32.exe" />
       <ComponentRef Id="ipyw.exe" />
+      <ComponentRef Id="ipyw32.exe" />
       <ComponentRef Id="ipyc.exe" />
+      <ComponentRef Id="IKVM.Reflection.dll" />
       <ComponentRef Id="README.md" />
       <ComponentRef Id="System.Buffers.dll" />
       <ComponentRef Id="System.Memory.dll" />
@@ -169,13 +150,7 @@
       <ComponentRef Id="CommonPythonRegistration" />
       <ComponentRef Id="PythonRegistration" />
       <ComponentRef Id="PythonPathRegistry" />
-    </ComponentGroup>
-
-    <ComponentGroup Id="IronPythonGac">
-      <ComponentRef Id="gac_IronPython.dll" />
-      <!-- <ComponentRef Id="policy.$(var.ReleaseSeries).IronPython.dll"/> -->
-      <ComponentRef Id="gac_IronPython.Modules.dll" />
-      <!-- <ComponentRef Id="policy.$(var.ReleaseSeries).IronPython.Modules.dll"/> -->
+      <ComponentRef Id="InstallPathRegistry" />
     </ComponentGroup>
   </Fragment>
 </Wix>

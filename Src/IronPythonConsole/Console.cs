@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 using IronPython.Hosting;
@@ -43,15 +44,40 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         return Python.CreateLanguageSetup(null);
     }
 
+    private PythonConsoleOptions _pyoptions;
+
     protected override IConsole CreateConsole(ScriptEngine engine, CommandLine commandLine, ConsoleOptions options) {
         PythonConsoleOptions pyoptions = (PythonConsoleOptions)options;
         return pyoptions.BasicConsole ? new BasicConsole(options.ColorfulConsole) : new SuperConsole(commandLine, options.ColorfulConsole);
+    }
+
+    protected override ConsoleOptions ParseOptions(string[] args, ScriptRuntimeSetup runtimeSetup, LanguageSetup languageSetup) {
+        var options = base.ParseOptions(args, runtimeSetup, languageSetup);
+        _pyoptions = (PythonConsoleOptions)options;
+        return options;
     }
 
     protected override void ParseHostOptions(string/*!*/[]/*!*/ args) {
         // Python doesn't want any of the DLR base options.
         foreach (string s in args) {
             Options.IgnoredArgs.Add(s);
+        }
+    }
+
+    protected override void PrintVersion() {
+        if (_pyoptions?.PrintSysVersion == true) {
+            Console.WriteLine(GetVersionString(Engine.Setup.DisplayName));
+        } else {
+            Console.WriteLine(Engine.Setup.DisplayName);
+        }
+
+        // replicates PythonContext.GetVersionString
+        static string GetVersionString(string displayName) {
+            string configuration = ClrModule.IsDebug ? " DEBUG" : string.Empty;
+            string bitness = (IntPtr.Size * 8).ToString();
+
+            return $"{displayName}{configuration} ({typeof(ClrModule).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version})\n" +
+                $"[{ClrModule.TargetFramework} on {ClrModule.FrameworkDescription} ({bitness}-bit)]";
         }
     }
 
@@ -94,7 +120,7 @@ internal sealed class PythonConsoleHost : ConsoleHost {
                 }
 
                 output.AppendLine("Options:");
-                ArrayUtils.PrintTable(output, options);
+                PrintTable(output, options);
             }
 
             if (environmentVariables != null) {
@@ -107,6 +133,28 @@ internal sealed class PythonConsoleHost : ConsoleHost {
             if (comments != null) {
                 if (appendLine) output.AppendLine();
                 output.AppendLine(comments);
+            }
+        }
+
+        static void PrintTable(StringBuilder output, string[,] table) {
+            int max_width = 0;
+            for (int i = 0; i < table.GetLength(0); i++) {
+                if (table[i, 0].Length > max_width) {
+                    max_width = table[i, 0].Length;
+                }
+            }
+
+            for (int i = 0; i < table.GetLength(0); i++) {
+                output.Append(" ");
+                output.Append(table[i, 0]);
+                output.Append(' ', max_width - table[i, 0].Length + 1);
+                var lines = table[i, 1].Split('\n');
+                output.AppendLine(lines[0]);
+
+                for (var j = 1; j < lines.Length; j++) {
+                    output.Append(' ', max_width + 4);
+                    output.AppendLine(lines[j]);
+                }
             }
         }
     }

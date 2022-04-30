@@ -79,10 +79,11 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Verbose"] = ScriptingRuntimeHelpers.True;
                     break;
 
-                case 'I': // both -E and -s
+                case 'I': // also implies both -E and -s
                     ConsoleOptions.IgnoreEnvironmentVariables = true;
                     LanguageSetup.Options["IgnoreEnvironment"] = ScriptingRuntimeHelpers.True;
                     LanguageSetup.Options["NoUserSite"] = ScriptingRuntimeHelpers.True;
+                    LanguageSetup.Options["Isolated"] = ScriptingRuntimeHelpers.True;
                     break;
 
                 case 'S':

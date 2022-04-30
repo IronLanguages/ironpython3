@@ -64,6 +64,11 @@ namespace IronPython.Runtime {
         public bool IgnoreEnvironment { get; }
 
         /// <summary>
+        /// Run in isolated mode.
+        /// </summary>
+        public bool Isolated { get; }
+
+        /// <summary>
         /// Enables the verbose option which traces import statements.  This is ignored by IronPython
         /// except for setting sys.flags.
         /// </summary>
@@ -146,6 +151,7 @@ namespace IronPython.Runtime {
             NoDebug = GetOption(options, "NoDebug", (Regex)null);
             Quiet = GetOption(options, "Quiet", false);
             NoImportLib = GetOption(options, "NoImportLib", false);
+            Isolated = GetOption(options, "Isolated", false);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

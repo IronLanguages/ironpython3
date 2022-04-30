@@ -193,7 +193,9 @@ namespace IronPython.Hosting {
                 }
             }
 
-            PythonContext.InsertIntoPath(0, fullPath);
+            if (!PythonContext.PythonOptions.Isolated) {
+                PythonContext.InsertIntoPath(0, fullPath);
+            }
             PythonContext.MainThread = Thread.CurrentThread;
         }
 

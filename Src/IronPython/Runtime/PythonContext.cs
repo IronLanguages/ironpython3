@@ -728,6 +728,7 @@ namespace IronPython.Runtime {
                 _ => (int)PythonOptions.BytesWarning
             };
             flags.quiet = PythonOptions.Quiet ? 1 : 0;
+            flags.isolated = PythonOptions.Isolated ? 1 : 0;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {

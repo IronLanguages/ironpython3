@@ -8,7 +8,7 @@
     Install IronPython 3 for .NET 6 from an official zip file distributable.
 
 .DESCRIPTION
-    This script facilitates installation of IronPython on .NET 6 binaries from a zip file. The zip file is assumed to have content as published on the IronPython's downolad page. The zip file is produced by IronPython's "package" build target.
+    This script facilitates installation of IronPython on .NET 6 binaries from a zip file. The zip file is assumed to have content as published on the IronPython's download page. The zip file is produced by IronPython's "package" build target.
 
 .EXAMPLE
     PS>./make
@@ -32,7 +32,7 @@ Param(
     [Parameter(Position=0, Mandatory)]
     [string] $Path,
 
-    # The path to the downoladed zip file with IronPython binaries. If empty, the script will try to grab the package directly produced by the local build.
+    # The path to the downloaded zip file with IronPython binaries. If empty, the script will try to grab the package directly produced by the local build.
     [string] $ZipFile,
 
     # If the target path exists, it will be wiped clean beforehand.
@@ -42,11 +42,11 @@ Param(
 $ErrorActionPreference = "Stop"
 
 $defaultVersion = "3.4.0-beta1"
-$projectRoot = $PSScriptRoot | Split-Path | Split-Path
 
 if (-not $ZipFile) {
     # If zipfile path not given, assume that the script is in the standard location within the source tree
     # and locate the zip archive in the standard location of the package target.
+    $projectRoot = $PSScriptRoot | Split-Path | Split-Path
     $ZipFile = Join-Path $projectRoot "Package/Release/Packages/IronPython-$defaultVersion/IronPython.$defaultVersion.zip"
 }
 
@@ -61,13 +61,18 @@ if (Test-Path $Path) {
     }
 }
 
+# Unzip archive and move files into place
 $unzipDir = Join-Path $Path "zip"
 
 Expand-Archive -Path $ZipFile -DestinationPath $unzipDir
 Move-Item -Path (Join-Path $unzipDir "Lib") -Destination $Path
 Move-Item -Path (Join-Path $unzipDir "net6.0/*") -Destination $Path -Exclude "*.xml","*.dll.config"
-Remove-Item -Recurse -Path $unzipDir
+Remove-Item -Path $unzipDir -Recurse
 
+# Remove garbage files
+Remove-Item -Path (Join-Path $Path "Lib/__pycache__") -Recurse
+
+# Create a startup script
 $ipyPath = Join-Path $Path "ipy.ps1"
 Set-Content -Path $ipyPath -Value @'
 #!/usr/bin/env pwsh
@@ -75,4 +80,25 @@ dotnet (Join-Path $PSScriptRoot ipy.dll) @args
 '@
 if ($IsMacOS -or $IsLinux) {
     chmod +x $ipyPath
+}
+
+# Add items that are missing in the zip file, directly from the bin directory
+if ($projectRoot) {
+    $binPath = Join-Path $projectRoot "bin/Release/net6.0"
+    Copy-Item (Join-Path $binPath "ipy") $Path
+    if ($IsMacOS -or $IsLinux) {
+        Copy-Item (Join-Path $binPath "Newtonsoft.Json.dll") $Path
+        Copy-Item (Join-Path $binPath "Mono.Unix.dll") $Path
+        $arch = uname -m
+        switch ($arch) {
+            "x86_64" { $arch = "x64" }
+        }
+        if ($IsMacOS) {
+            $os = "osx"
+        } else {
+            $os = "linux"
+        }
+        $libs = Join-Path $binPath "runtimes" "$os-$arch" "native/*" -Resolve
+        Copy-Item $libs $Path
+    }
 }

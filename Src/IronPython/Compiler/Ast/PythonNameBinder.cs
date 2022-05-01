@@ -333,6 +333,11 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // AnnAssignStatement
+        public override bool Walk(AnnAssignStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // AssertStatement
         public override bool Walk(AssertStatement node) {
             node.Parent = _currentScope;

@@ -31,7 +31,7 @@ def get_ast(assembly, roots):
         if node.IsAbstract: continue
 
         for root in roots:
-            if inherits(node, root) and node.IsPublic: 
+            if inherits(node, root) and node.IsPublic:
                 sets[root].add(node.Name)
                 break
 
@@ -40,7 +40,7 @@ def get_ast(assembly, roots):
         result.extend(sorted(list(sets[root])))
 
     return result
-    
+
 def gen_walker(cw, nodes, method, value):
     space = 0
     for node in nodes:

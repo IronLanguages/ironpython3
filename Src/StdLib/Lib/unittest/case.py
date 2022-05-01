@@ -222,6 +222,9 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
                      expected_regex.pattern, str(exc_value)))
         return True
 
+if sys.implementation.name == "ironpython":
+    import System
+    _AssertRaisesContext._base_type = (_AssertRaisesContext._base_type, System.Exception)
 
 class _AssertWarnsContext(_AssertRaisesBaseContext):
     """A context manager used to implement TestCase.assertWarns* methods."""

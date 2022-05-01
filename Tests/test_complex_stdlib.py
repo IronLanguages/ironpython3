@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test, is_netcoreapp, is_netcoreapp21
+from iptest import run_test
 
 import test.test_complex
 
@@ -20,6 +20,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_complex.ComplexTest('test_boolcontext'))
         suite.addTest(test.test_complex.ComplexTest('test_conjugate'))
         suite.addTest(test.test_complex.ComplexTest('test_constructor'))
+        suite.addTest(test.test_complex.ComplexTest('test_constructor_special_numbers'))
         suite.addTest(test.test_complex.ComplexTest('test_divmod'))
         suite.addTest(test.test_complex.ComplexTest('test_file'))
         suite.addTest(test.test_complex.ComplexTest('test_floordiv'))
@@ -38,6 +39,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_complex.ComplexTest('test_richcompare'))
         suite.addTest(test.test_complex.ComplexTest('test_richcompare_boundaries'))
         suite.addTest(test.test_complex.ComplexTest('test_truediv'))
+        suite.addTest(test.test_complex.ComplexTest('test_underscores'))
         return suite
 
     else:

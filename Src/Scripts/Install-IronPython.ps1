@@ -70,7 +70,7 @@ Move-Item -Path (Join-Path $unzipDir "net6.0/*") -Destination $Path -Exclude "*.
 Remove-Item -Path $unzipDir -Recurse
 
 # Remove garbage files
-Remove-Item -Path (Join-Path $Path "Lib/__pycache__") -Recurse
+Remove-Item -Path (Join-Path $Path "Lib/__pycache__") -Recurse -ErrorAction Ignore
 
 # Create a startup script
 $ipyPath = Join-Path $Path "ipy.ps1"

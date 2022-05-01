@@ -9,8 +9,8 @@ Unit tests are in test_collections.
 from abc import ABCMeta, abstractmethod
 import sys
 
-__all__ = ["Awaitable", "Coroutine",
-           "AsyncIterable", "AsyncIterator", "AsyncGenerator",
+__all__ = ["Awaitable",
+           # "Coroutine", "AsyncIterable", "AsyncIterator", "AsyncGenerator", # https://github.com/IronLanguages/ironpython3/issues/1428
            "Hashable", "Iterable", "Iterator", "Generator", "Reversible",
            "Sized", "Container", "Callable", "Collection",
            "Set", "MutableSet",
@@ -54,17 +54,18 @@ dict_items = type({}.items())
 ## misc ##
 mappingproxy = type(type.__dict__)
 generator = type((lambda: (yield))())
-## coroutine ##
-async def _coro(): pass
-_coro = _coro()
-coroutine = type(_coro)
-_coro.close()  # Prevent ResourceWarning
-del _coro
-## asynchronous generator ##
-async def _ag(): yield
-_ag = _ag()
-async_generator = type(_ag)
-del _ag
+# https://github.com/IronLanguages/ironpython3/issues/1428
+# ## coroutine ##
+# async def _coro(): pass
+# _coro = _coro()
+# coroutine = type(_coro)
+# _coro.close()  # Prevent ResourceWarning
+# del _coro
+# ## asynchronous generator ##
+# async def _ag(): yield
+# _ag = _ag()
+# async_generator = type(_ag)
+# del _ag
 
 
 ### ONE-TRICK PONIES ###
@@ -111,133 +112,134 @@ class Awaitable(metaclass=ABCMeta):
         return NotImplemented
 
 
-class Coroutine(Awaitable):
-
-    __slots__ = ()
-
-    @abstractmethod
-    def send(self, value):
-        """Send a value into the coroutine.
-        Return next yielded value or raise StopIteration.
-        """
-        raise StopIteration
-
-    @abstractmethod
-    def throw(self, typ, val=None, tb=None):
-        """Raise an exception in the coroutine.
-        Return next yielded value or raise StopIteration.
-        """
-        if val is None:
-            if tb is None:
-                raise typ
-            val = typ()
-        if tb is not None:
-            val = val.with_traceback(tb)
-        raise val
-
-    def close(self):
-        """Raise GeneratorExit inside coroutine.
-        """
-        try:
-            self.throw(GeneratorExit)
-        except (GeneratorExit, StopIteration):
-            pass
-        else:
-            raise RuntimeError("coroutine ignored GeneratorExit")
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is Coroutine:
-            return _check_methods(C, '__await__', 'send', 'throw', 'close')
-        return NotImplemented
-
-
-Coroutine.register(coroutine)
-
-
-class AsyncIterable(metaclass=ABCMeta):
-
-    __slots__ = ()
-
-    @abstractmethod
-    def __aiter__(self):
-        return AsyncIterator()
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncIterable:
-            return _check_methods(C, "__aiter__")
-        return NotImplemented
-
-
-class AsyncIterator(AsyncIterable):
-
-    __slots__ = ()
-
-    @abstractmethod
-    async def __anext__(self):
-        """Return the next item or raise StopAsyncIteration when exhausted."""
-        raise StopAsyncIteration
-
-    def __aiter__(self):
-        return self
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncIterator:
-            return _check_methods(C, "__anext__", "__aiter__")
-        return NotImplemented
-
-
-class AsyncGenerator(AsyncIterator):
-
-    __slots__ = ()
-
-    async def __anext__(self):
-        """Return the next item from the asynchronous generator.
-        When exhausted, raise StopAsyncIteration.
-        """
-        return await self.asend(None)
-
-    @abstractmethod
-    async def asend(self, value):
-        """Send a value into the asynchronous generator.
-        Return next yielded value or raise StopAsyncIteration.
-        """
-        raise StopAsyncIteration
-
-    @abstractmethod
-    async def athrow(self, typ, val=None, tb=None):
-        """Raise an exception in the asynchronous generator.
-        Return next yielded value or raise StopAsyncIteration.
-        """
-        if val is None:
-            if tb is None:
-                raise typ
-            val = typ()
-        if tb is not None:
-            val = val.with_traceback(tb)
-        raise val
-
-    async def aclose(self):
-        """Raise GeneratorExit inside coroutine.
-        """
-        try:
-            await self.athrow(GeneratorExit)
-        except (GeneratorExit, StopAsyncIteration):
-            pass
-        else:
-            raise RuntimeError("asynchronous generator ignored GeneratorExit")
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncGenerator:
-            return _check_methods(C, '__aiter__', '__anext__',
-                                  'asend', 'athrow', 'aclose')
-        return NotImplemented
-
-
-AsyncGenerator.register(async_generator)
+# https://github.com/IronLanguages/ironpython3/issues/1428
+# class Coroutine(Awaitable):
+#
+#     __slots__ = ()
+#
+#     @abstractmethod
+#     def send(self, value):
+#         """Send a value into the coroutine.
+#         Return next yielded value or raise StopIteration.
+#         """
+#         raise StopIteration
+#
+#     @abstractmethod
+#     def throw(self, typ, val=None, tb=None):
+#         """Raise an exception in the coroutine.
+#         Return next yielded value or raise StopIteration.
+#         """
+#         if val is None:
+#             if tb is None:
+#                 raise typ
+#             val = typ()
+#         if tb is not None:
+#             val = val.with_traceback(tb)
+#         raise val
+#
+#     def close(self):
+#         """Raise GeneratorExit inside coroutine.
+#         """
+#         try:
+#             self.throw(GeneratorExit)
+#         except (GeneratorExit, StopIteration):
+#             pass
+#         else:
+#             raise RuntimeError("coroutine ignored GeneratorExit")
+#
+#     @classmethod
+#     def __subclasshook__(cls, C):
+#         if cls is Coroutine:
+#             return _check_methods(C, '__await__', 'send', 'throw', 'close')
+#         return NotImplemented
+#
+#
+# Coroutine.register(coroutine)
+#
+#
+# class AsyncIterable(metaclass=ABCMeta):
+#
+#     __slots__ = ()
+#
+#     @abstractmethod
+#     def __aiter__(self):
+#         return AsyncIterator()
+#
+#     @classmethod
+#     def __subclasshook__(cls, C):
+#         if cls is AsyncIterable:
+#             return _check_methods(C, "__aiter__")
+#         return NotImplemented
+#
+#
+# class AsyncIterator(AsyncIterable):
+#
+#     __slots__ = ()
+#
+#     @abstractmethod
+#     async def __anext__(self):
+#         """Return the next item or raise StopAsyncIteration when exhausted."""
+#         raise StopAsyncIteration
+#
+#     def __aiter__(self):
+#         return self
+#
+#     @classmethod
+#     def __subclasshook__(cls, C):
+#         if cls is AsyncIterator:
+#             return _check_methods(C, "__anext__", "__aiter__")
+#         return NotImplemented
+#
+#
+# class AsyncGenerator(AsyncIterator):
+#
+#     __slots__ = ()
+#
+#     async def __anext__(self):
+#         """Return the next item from the asynchronous generator.
+#         When exhausted, raise StopAsyncIteration.
+#         """
+#         return await self.asend(None)
+#
+#     @abstractmethod
+#     async def asend(self, value):
+#         """Send a value into the asynchronous generator.
+#         Return next yielded value or raise StopAsyncIteration.
+#         """
+#         raise StopAsyncIteration
+#
+#     @abstractmethod
+#     async def athrow(self, typ, val=None, tb=None):
+#         """Raise an exception in the asynchronous generator.
+#         Return next yielded value or raise StopAsyncIteration.
+#         """
+#         if val is None:
+#             if tb is None:
+#                 raise typ
+#             val = typ()
+#         if tb is not None:
+#             val = val.with_traceback(tb)
+#         raise val
+#
+#     async def aclose(self):
+#         """Raise GeneratorExit inside coroutine.
+#         """
+#         try:
+#             await self.athrow(GeneratorExit)
+#         except (GeneratorExit, StopAsyncIteration):
+#             pass
+#         else:
+#             raise RuntimeError("asynchronous generator ignored GeneratorExit")
+#
+#     @classmethod
+#     def __subclasshook__(cls, C):
+#         if cls is AsyncGenerator:
+#             return _check_methods(C, '__aiter__', '__anext__',
+#                                   'asend', 'athrow', 'aclose')
+#         return NotImplemented
+#
+#
+# AsyncGenerator.register(async_generator)
 
 
 class Iterable(metaclass=ABCMeta):

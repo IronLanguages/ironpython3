@@ -30,7 +30,6 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
 using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 #if FEATURE_PIPES

@@ -681,7 +681,7 @@ namespace IronPython.Modules {
         public static ScandirIterator scandir(CodeContext context, string? path = null)
             => new ScandirIterator(ScandirHelper(context, path), asBytes: false);
 
-        public static ScandirIterator scandir(CodeContext context, [NotNull] IBufferProtocol path)
+        public static ScandirIterator scandir(CodeContext context, [NotNone] IBufferProtocol path)
             => new ScandirIterator(ScandirHelper(context, ConvertToFsString(context, path, nameof(path))), asBytes: true);
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {

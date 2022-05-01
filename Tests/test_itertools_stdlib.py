@@ -18,6 +18,9 @@ def load_tests(loader, standard_tests, pattern):
         suite = unittest.TestSuite()
         suite.addTest(test.test_itertools.LengthTransparency('test_repeat'))
         suite.addTest(test.test_itertools.LengthTransparency('test_repeat_with_negative_times'))
+        suite.addTest(test.test_itertools.RegressionTests('test_issue30347_1'))
+        suite.addTest(test.test_itertools.RegressionTests('test_issue30347_2'))
+        suite.addTest(test.test_itertools.RegressionTests('test_long_chain_of_empty_iterables'))
         suite.addTest(test.test_itertools.RegressionTests('test_sf_793826'))
         suite.addTest(test.test_itertools.RegressionTests('test_sf_950057'))
         suite.addTest(test.test_itertools.SizeofTest('test_combinations_sizeof'))
@@ -31,6 +34,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_chain'))
         suite.addTest(test.test_itertools.TestBasicOps('test_chain_from_iterable'))
         suite.addTest(test.test_itertools.TestBasicOps('test_chain_reducible'))
+        suite.addTest(test.test_itertools.TestBasicOps('test_chain_setstate'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_combinations'))) # pickling
         suite.addTest(test.test_itertools.TestBasicOps('test_combinations_overflow'))
         suite.addTest(test.test_itertools.TestBasicOps('test_combinations_tuple_reuse'))
@@ -42,6 +46,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_count'))
         suite.addTest(test.test_itertools.TestBasicOps('test_count_with_stride'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_cycle'))) # pickling
+        suite.addTest(test.test_itertools.TestBasicOps('test_cycle_setstate'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_dropwhile'))) # pickling
         suite.addTest(test.test_itertools.TestBasicOps('test_filter'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_filterfalse'))) # pickling
@@ -69,6 +74,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_ziplongest'))
         suite.addTest(test.test_itertools.TestExamples('test_accumulate'))
         suite.addTest(test.test_itertools.TestExamples('test_accumulate_reducible'))
+        suite.addTest(test.test_itertools.TestExamples('test_accumulate_reducible_none'))
         suite.addTest(test.test_itertools.TestExamples('test_chain'))
         suite.addTest(test.test_itertools.TestExamples('test_chain_from_iterable'))
         suite.addTest(test.test_itertools.TestExamples('test_combinations'))
@@ -111,6 +117,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestGC('test_takewhile'))
         suite.addTest(test.test_itertools.TestGC('test_zip'))
         suite.addTest(test.test_itertools.TestGC('test_zip_longest'))
+        suite.addTest(test.test_itertools.TestPurePythonRoughEquivalents('test_islice_recipe'))
         suite.addTest(test.test_itertools.TestVariousIteratorArgs('test_accumulate'))
         suite.addTest(test.test_itertools.TestVariousIteratorArgs('test_chain'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestVariousIteratorArgs('test_compress')))

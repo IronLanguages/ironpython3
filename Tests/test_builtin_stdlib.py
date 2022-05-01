@@ -23,6 +23,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_builtin.BuiltinTest('test_any'))
         suite.addTest(test.test_builtin.BuiltinTest('test_ascii'))
         suite.addTest(test.test_builtin.BuiltinTest('test_bin'))
+        suite.addTest(test.test_builtin.BuiltinTest('test_bug_27936'))
         suite.addTest(test.test_builtin.BuiltinTest('test_bytearray_translate'))
         suite.addTest(test.test_builtin.BuiltinTest('test_callable'))
         suite.addTest(test.test_builtin.BuiltinTest('test_chr'))
@@ -78,9 +79,18 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_builtin.PtyTests('test_input_tty_non_ascii_unicode_errors')))
         if not is_netcoreapp:
             suite.addTest(test.test_builtin.ShutdownTest('test_cleanup'))
+        suite.addTest(test.test_builtin.TestSorted('test_bad_arguments'))
         suite.addTest(test.test_builtin.TestSorted('test_baddecorator'))
         suite.addTest(test.test_builtin.TestSorted('test_basic'))
         suite.addTest(test.test_builtin.TestSorted('test_inputtypes'))
+        suite.addTest(test.test_builtin.TestType('test_bad_args'))
+        suite.addTest(test.test_builtin.TestType('test_bad_slots'))
+        suite.addTest(test.test_builtin.TestType('test_namespace_order'))
+        suite.addTest(test.test_builtin.TestType('test_new_type'))
+        suite.addTest(test.test_builtin.TestType('test_type_doc'))
+        suite.addTest(test.test_builtin.TestType('test_type_name'))
+        suite.addTest(test.test_builtin.TestType('test_type_nokwargs'))
+        suite.addTest(test.test_builtin.TestType('test_type_qualname'))
         suite.addTest(doctest.DocTestSuite(builtins))
         return suite
 

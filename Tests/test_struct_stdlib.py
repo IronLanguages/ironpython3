@@ -37,6 +37,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_struct.StructTest('test_unpack_with_buffer'))
         suite.addTest(test.test_struct.UnpackIteratorTest('test_arbitrary_buffer'))
         suite.addTest(unittest.expectedFailure(test.test_struct.UnpackIteratorTest('test_construct'))) # TODO: figure out
+        suite.addTest(test.test_struct.UnpackIteratorTest('test_half_float'))
         suite.addTest(test.test_struct.UnpackIteratorTest('test_iterate'))
         suite.addTest(test.test_struct.UnpackIteratorTest('test_length_hint'))
         suite.addTest(test.test_struct.UnpackIteratorTest('test_module_func'))

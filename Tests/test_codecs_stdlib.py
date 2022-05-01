@@ -7,7 +7,6 @@
 ##
 
 import unittest
-import codecs
 import sys
 
 from iptest import run_test, is_mono, is_netcoreapp31, is_net50, is_net60
@@ -17,6 +16,11 @@ import test.test_codecs
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
+        suite.addTest(test.test_codecs.ASCIITest('test_decode'))
+        suite.addTest(test.test_codecs.ASCIITest('test_decode_error'))
+        suite.addTest(test.test_codecs.ASCIITest('test_encode'))
+        suite.addTest(test.test_codecs.ASCIITest('test_encode_error'))
+        suite.addTest(test.test_codecs.ASCIITest('test_encode_surrogateescape_error'))
         suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_bad_decode_args'))) # unknown encoding: big5
         suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_bad_encode_args'))) # unknown encoding: big5
         suite.addTest(unittest.expectedFailure(test.test_codecs.BasicUnicodeTest('test_basics'))) # unknown encoding: big5
@@ -47,6 +51,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp_utf7'))) # Unable to decode b'[+/]' from "cp65000"
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_incremental'))) # incremental codepage decoding not implemented yet
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_invalid_code_page'))) # SystemError raised iso OSError
+        suite.addTest(test.test_codecs.CodePageTest('test_large_input'))
+        suite.addTest(test.test_codecs.CodePageTest('test_mbcs_alias'))
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_multibyte_encoding'))) # .NET cp932 does not resynchronize cursor after '\x84' in '\x84\xe9\x80'
         suite.addTest(test.test_codecs.CodecsModuleTest('test_all'))
         suite.addTest(test.test_codecs.CodecsModuleTest('test_decode'))
@@ -65,6 +71,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_errors'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_escape'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_raw'))
+        suite.addTest(test.test_codecs.EscapeEncodeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_codec_lookup_failure_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_init_override_is_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_instance_attribute_is_not_wrapped'))
@@ -82,6 +89,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_decode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_incremental_encode'))
         suite.addTest(test.test_codecs.IDNACodecTest('test_stream'))
+        suite.addTest(test.test_codecs.Latin1Test('test_decode'))
+        suite.addTest(test.test_codecs.Latin1Test('test_encode'))
+        suite.addTest(test.test_codecs.Latin1Test('test_encode_errors'))
+        suite.addTest(test.test_codecs.Latin1Test('test_encode_surrogateescape_error'))
         if is_mono:
             suite.addTest(test.test_codecs.NameprepTest('test_nameprep'))
         else:
@@ -90,6 +101,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.PunycodeTest('test_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_decode_errors'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_empty'))
+        suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_escape_decode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_decode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_encode'))
@@ -205,6 +217,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1601501'))
+        suite.addTest(test.test_codecs.UTF8SigTest('test_decode_error'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_decoder_state'))
         if is_netcoreapp31 or is_net50 or is_net60:
             suite.addTest(test.test_codecs.UTF8SigTest('test_lone_surrogates'))
@@ -220,6 +233,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1175396'))
+        suite.addTest(test.test_codecs.UTF8Test('test_decode_error'))
         suite.addTest(test.test_codecs.UTF8Test('test_decoder_state'))
         if is_netcoreapp31 or is_net50 or is_net60:
             suite.addTest(test.test_codecs.UTF8Test('test_lone_surrogates'))
@@ -243,7 +257,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.WithStmtTest('test_encodedfile'))
         suite.addTest(test.test_codecs.WithStmtTest('test_streamreaderwriter'))
         return suite
-        
+
     else:
         return loader.loadTestsFromModule(test.test_codecs, pattern)
 

@@ -7,7 +7,6 @@
 ##
 
 import unittest
-import codecs
 import sys
 
 from iptest import run_test
@@ -26,13 +25,20 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompress4G'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompressChunks10'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompressUnusedData'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('testDecompressorChunksMaxsize'))
         suite.addTest(test.test_bz2.BZ2DecompressorTest('testEOFError'))
         suite.addTest(unittest.expectedFailure(test.test_bz2.BZ2DecompressorTest('testPickle'))) # AssertionError: TypeError not raised
         suite.addTest(test.test_bz2.BZ2DecompressorTest('test_Constructor'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('test_decompressor_inputbuf_1'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('test_decompressor_inputbuf_2'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('test_decompressor_inputbuf_3'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('test_failure'))
+        suite.addTest(test.test_bz2.BZ2DecompressorTest('test_refleaks_in___init__'))
         suite.addTest(test.test_bz2.BZ2FileTest('testAppend'))
         suite.addTest(test.test_bz2.BZ2FileTest('testBadArgs'))
         suite.addTest(test.test_bz2.BZ2FileTest('testClosedIteratorDeadlock'))
         suite.addTest(test.test_bz2.BZ2FileTest('testContextProtocol'))
+        suite.addTest(test.test_bz2.BZ2FileTest('testDecompressLimited'))
         suite.addTest(test.test_bz2.BZ2FileTest('testFileno'))
         suite.addTest(test.test_bz2.BZ2FileTest('testIterator'))
         suite.addTest(test.test_bz2.BZ2FileTest('testIteratorMultiStream'))
@@ -41,6 +47,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.BZ2FileTest('testOpenBytesFilename'))
         #suite.addTest(test.test_bz2.BZ2FileTest('testOpenDel')) # PermissionError: [WinError 32] The process cannot access the file because it is being used by another process
         suite.addTest(test.test_bz2.BZ2FileTest('testOpenNonexistent'))
+        suite.addTest(test.test_bz2.BZ2FileTest('testOpenPathLikeFilename'))
         suite.addTest(test.test_bz2.BZ2FileTest('testPeek'))
         suite.addTest(test.test_bz2.BZ2FileTest('testPeekBytesIO'))
         suite.addTest(test.test_bz2.BZ2FileTest('testRead'))
@@ -106,7 +113,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_bz2.OpenTest('test_text_modes'))
         suite.addTest(test.test_bz2.OpenTest('test_x_mode'))
         return suite
-        
+
     else:
         return loader.loadTestsFromModule(test.test_bz2, pattern)
 

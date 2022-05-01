@@ -55,10 +55,11 @@ More condensed:
 
 # This tuple and __get_builtin_constructor() must be modified if a new
 # always available algorithm is added.
-__always_supported = ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512',
-                      'blake2b', 'blake2s',
-                      'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
-                      'shake_128', 'shake_256')
+__always_supported = ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512')#,
+                      # https://github.com/IronLanguages/ironpython3/issues/1429
+                      #'blake2b', 'blake2s',
+                      #'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
+                      #'shake_128', 'shake_256')
 
 
 algorithms_guaranteed = set(__always_supported)
@@ -90,19 +91,20 @@ def __get_builtin_constructor(name):
             import _sha512
             cache['SHA384'] = cache['sha384'] = _sha512.sha384
             cache['SHA512'] = cache['sha512'] = _sha512.sha512
-        elif name in ('blake2b', 'blake2s'):
-            import _blake2
-            cache['blake2b'] = _blake2.blake2b
-            cache['blake2s'] = _blake2.blake2s
-        elif name in {'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
-                      'shake_128', 'shake_256'}:
-            import _sha3
-            cache['sha3_224'] = _sha3.sha3_224
-            cache['sha3_256'] = _sha3.sha3_256
-            cache['sha3_384'] = _sha3.sha3_384
-            cache['sha3_512'] = _sha3.sha3_512
-            cache['shake_128'] = _sha3.shake_128
-            cache['shake_256'] = _sha3.shake_256
+# https://github.com/IronLanguages/ironpython3/issues/1429
+#        elif name in ('blake2b', 'blake2s'):
+#            import _blake2
+#            cache['blake2b'] = _blake2.blake2b
+#            cache['blake2s'] = _blake2.blake2s
+#        elif name in {'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
+#                      'shake_128', 'shake_256'}:
+#            import _sha3
+#            cache['sha3_224'] = _sha3.sha3_224
+#            cache['sha3_256'] = _sha3.sha3_256
+#            cache['sha3_384'] = _sha3.sha3_384
+#            cache['sha3_512'] = _sha3.sha3_512
+#            cache['shake_128'] = _sha3.shake_128
+#            cache['shake_256'] = _sha3.shake_256
     except ImportError:
         pass  # no extension module, this hash is unsupported.
 

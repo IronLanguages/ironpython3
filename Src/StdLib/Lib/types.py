@@ -19,15 +19,16 @@ def _g():
     yield 1
 GeneratorType = type(_g())
 
-async def _c(): pass
-_c = _c()
-CoroutineType = type(_c)
-_c.close()  # Prevent ResourceWarning
-
-async def _ag():
-    yield
-_ag = _ag()
-AsyncGeneratorType = type(_ag)
+# https://github.com/IronLanguages/ironpython3/issues/1428
+# async def _c(): pass
+# _c = _c()
+# CoroutineType = type(_c)
+# _c.close()  # Prevent ResourceWarning
+#
+# async def _ag():
+#     yield
+# _ag = _ag()
+# AsyncGeneratorType = type(_ag)
 
 class _C:
     def _m(self): pass
@@ -50,8 +51,8 @@ except TypeError:
 GetSetDescriptorType = type(FunctionType.__code__)
 MemberDescriptorType = type(FunctionType.__globals__)
 
-del sys, _f, _g, _C, _c,                           # Not for export
-
+del sys, _f, _g, _C,                            # Not for export
+    #_c, # https://github.com/IronLanguages/ironpython3/issues/1428
 
 # Provide a PEP 3115 compliant mechanism for class creation
 def new_class(name, bases=(), kwds=None, exec_body=None):

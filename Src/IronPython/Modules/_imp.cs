@@ -77,6 +77,18 @@ namespace IronPython.Modules {
             return Importer.ImportBuiltin(context, name);
         }
 
+        // new in Python 3.5
+        public static object create_builtin(CodeContext/*!*/ context, object spec) {
+            // TODO: implement this properly - https://github.com/IronLanguages/ironpython3/issues/1430
+            var name = PythonOps.GetBoundAttr(context, spec, "name") as string;
+            return init_builtin(context, name);
+        }
+
+        // new in Python 3.5
+        public static void exec_builtin(CodeContext/*!*/ context, object mod) {
+            // TODO: implement this properly - https://github.com/IronLanguages/ironpython3/issues/1430
+        }
+
         public static object init_frozen(string name) {
             return null;
         }

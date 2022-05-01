@@ -1197,6 +1197,7 @@ namespace IronPython.Compiler {
                         // no parameter name, syntax error
                         return null;
                     }
+                    MaybeEat(TokenKind.Comma); // 3.6 allows trailing comma
                     Eat(terminator);
                     break;
                 }

@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -437,6 +438,23 @@ namespace IronPython.Modules {
             context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(status);
         }
 
+        public static object fspath(CodeContext context, [AllowNull] object path) {
+            if (path is string) return path;
+            if (path is Extensible<string>) return path;
+            if (path is Bytes) return path;
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, path, "__fspath__", out object res)) {
+                return res switch {
+                    string => res,
+                    Extensible<string> => res,
+                    Bytes => res,
+                    _ => throw PythonOps.TypeError("expected {0}.__fspath__() to return str or bytes, not {0}", PythonOps.GetPythonTypeName(path), PythonOps.GetPythonTypeName(res))
+                };
+            }
+
+            throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
+        }
+
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
@@ -601,13 +619,15 @@ namespace IronPython.Modules {
         [PythonType]
         public sealed class DirEntry {
             private readonly FileSystemInfo info;
+            private readonly bool asBytes;
 
-            internal DirEntry(FileSystemInfo info) {
+            internal DirEntry(FileSystemInfo info, bool asBytes) {
                 this.info = info;
+                this.asBytes = asBytes;
             }
 
-            public string path => info.FullName;
-            public string name => info.Name;
+            public object path => asBytes ? info.FullName.ToFsBytes() : info.FullName;
+            public object name => asBytes ? info.Name.ToFsBytes() : info.Name;
 
             [LightThrowing]
             public object? inode() {
@@ -623,21 +643,23 @@ namespace IronPython.Modules {
             public bool is_symlink() => throw new NotImplementedException();
 
             [LightThrowing]
-            public object? stat(bool follow_symlinks = true) => PythonNT.stat(path, new Dictionary<string, object>());
+            public object? stat(bool follow_symlinks = true) => PythonNT.stat(info.FullName, new Dictionary<string, object>());
 
-            public string __repr__() => $"<DirEntry '{name}'>";
+            public string __repr__(CodeContext context) => $"<DirEntry {PythonOps.Repr(context, name)}>";
         }
 
         [PythonType, PythonHidden]
         public sealed class ScandirIterator : IEnumerable<DirEntry>, IEnumerator<DirEntry> {
             private readonly IEnumerator<FileSystemInfo> enumerator;
+            private readonly bool asBytes;
 
-            internal ScandirIterator(IEnumerable<FileSystemInfo> list) {
+            internal ScandirIterator(IEnumerable<FileSystemInfo> list, bool asBytes) {
                 enumerator = list.GetEnumerator();
+                this.asBytes = asBytes;
             }
 
             [PythonHidden]
-            public DirEntry Current => new DirEntry(enumerator.Current);
+            public DirEntry Current => new DirEntry(enumerator.Current, asBytes);
 
             object IEnumerator.Current => Current;
 
@@ -656,7 +678,13 @@ namespace IronPython.Modules {
             public void Reset() => enumerator.Reset();
         }
 
-        public static ScandirIterator scandir(CodeContext context, string? path = null) {
+        public static ScandirIterator scandir(CodeContext context, string? path = null)
+            => new ScandirIterator(ScandirHelper(context, path), asBytes: false);
+
+        public static ScandirIterator scandir(CodeContext context, [NotNull] IBufferProtocol path)
+            => new ScandirIterator(ScandirHelper(context, ConvertToFsString(context, path, nameof(path))), asBytes: true);
+
+        private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {
                 path = getcwd(context);
             }
@@ -675,7 +703,7 @@ namespace IronPython.Modules {
 #endif
 
             try {
-                return new ScandirIterator(new DirectoryInfo(path).EnumerateFileSystemInfos());
+                return new DirectoryInfo(path).EnumerateFileSystemInfos();
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }

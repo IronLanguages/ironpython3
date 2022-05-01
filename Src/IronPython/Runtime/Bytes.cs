@@ -366,9 +366,9 @@ namespace IronPython.Runtime {
             return _bytes.IndexOfByte(@byte.ToByteChecked(), istart, iend);
         }
 
-        public static Bytes fromhex([NotNone] string @string) {
-            return new Bytes(IListOfByteOps.FromHex(@string));
-        }
+        [ClassMethod]
+        public static object fromhex(CodeContext context, [NotNone] PythonType cls, [NotNone] string @string)
+            => __new__(context, cls, IListOfByteOps.FromHex(@string));
 
         public string hex() => ToHex(_bytes.AsSpan()); // new in CPython 3.5
 
@@ -439,7 +439,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// return true if self is a titlecased string and there is at least one
         /// character in self; also, uppercase characters may only follow uncased
-        /// characters (e.g. whitespace) and lowercase characters only cased ones. 
+        /// characters (e.g. whitespace) and lowercase characters only cased ones.
         /// return false otherwise.
         /// </summary>
         public bool istitle() => _bytes.IsTitle();
@@ -447,8 +447,8 @@ namespace IronPython.Runtime {
         public bool isupper() => _bytes.IsUpper();
 
         /// <summary>
-        /// Return a string which is the concatenation of the strings 
-        /// in the sequence seq. The separator between elements is the 
+        /// Return a string which is the concatenation of the strings
+        /// in the sequence seq. The separator between elements is the
         /// string providing this method
         /// </summary>
         public Bytes join(object? sequence) {

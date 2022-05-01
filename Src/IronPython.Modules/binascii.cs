@@ -139,15 +139,17 @@ namespace IronPython.Modules {
         public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNone] string data)
             => a2b_base64(context, data.ToBytes());
 
-        public static Bytes b2a_base64([NotNone] IBufferProtocol data) {
+        public static Bytes b2a_base64([NotNone] IBufferProtocol data, bool newline = true) {
+            // TODO: newline should be a keyword only argument
             using var buffer = data.GetBuffer();
-            return b2a_base64_impl(buffer.AsReadOnlySpan());
+            return b2a_base64_impl(buffer.AsReadOnlySpan(), newline);
 
-            static Bytes b2a_base64_impl(ReadOnlySpan<byte> data) {
+            static Bytes b2a_base64_impl(ReadOnlySpan<byte> data, bool newline) {
                 if (data.Length == 0) return Bytes.Empty;
                 using var res = new MemoryStream();
                 res.EncodeData(data, (byte)'=', EncodeValue);
-                res.WriteByte((byte)'\n');
+                if (newline)
+                    res.WriteByte((byte)'\n');
                 return Bytes.Make(res.ToArray());
 
                 static byte EncodeValue(int val) {

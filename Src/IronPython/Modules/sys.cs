@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -156,6 +157,14 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             if (Environment.OSVersion.Platform == PlatformID.Unix)
                 return "utf-8";
             return "mbcs";
+        }
+
+        public static string getfilesystemencodeerrors() {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return "surrogatepass";
+            } else {
+                return "surrogateescape";
+            }
         }
 
         [PythonHidden]

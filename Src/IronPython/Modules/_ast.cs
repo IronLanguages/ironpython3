@@ -1203,6 +1203,29 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
+        public class Constant : expr {
+            public Constant() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(value), });
+            }
+
+            internal Constant(object value)
+                : this(value, null, null) { }
+
+            public Constant(object value, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.value = value;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal override AstExpression Revert() {
+                return new ConstantExpression(value);
+            }
+
+            public object value { get; set; }
+        }
+
+        [PythonType]
         public class Continue : stmt {
             internal static readonly Continue Instance = new Continue();
 

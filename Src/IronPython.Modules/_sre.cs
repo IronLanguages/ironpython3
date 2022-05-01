@@ -15,6 +15,7 @@ namespace IronPython.Modules {
         public const int MAGIC = 20031017;
         public const int CODESIZE = 2;
         public const int MAXREPEAT = 65535;
+        public const int MAXGROUPS = int.MaxValue;
 
         public static object getlower(CodeContext/*!*/ context, object val, object encoding) {
             int encInt = context.LanguageContext.ConvertToInt32(val);

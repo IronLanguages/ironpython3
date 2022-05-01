@@ -253,6 +253,10 @@ namespace IronPython.Runtime.Operations {
 
                     { "cskoi8r"                , "koi8_r"                 },
 
+                    { "kz_1048"                , "kz1048"                 },
+                    { "rk1048"                 , "kz1048"                 },
+                    { "strk1048_2002"          , "kz1048"                 },
+
                     { "8859"                   , "latin_1"                },
                     { "cp819"                  , "latin_1"                },
                     { "csisolatin1"            , "latin_1"                },

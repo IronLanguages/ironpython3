@@ -30,6 +30,7 @@
 Param(
     # Target directory to which IronPython is to be installed.
     [Parameter(Position=0, Mandatory)]
+    [SupportsWildcards()]
     [string] $Path,
 
     # The path to the downloaded zip file with IronPython binaries. If empty, the script will try to grab the package directly produced by the local build.
@@ -69,9 +70,6 @@ Move-Item -Path (Join-Path $unzipDir "Lib") -Destination $Path
 Move-Item -Path (Join-Path $unzipDir "net6.0/*") -Destination $Path -Exclude "*.xml","*.dll.config"
 Remove-Item -Path $unzipDir -Recurse
 
-# Remove garbage files
-Remove-Item -Path (Join-Path $Path "Lib/__pycache__") -Recurse -ErrorAction Ignore
-
 # Create a startup script
 $ipyPath = Join-Path $Path "ipy.ps1"
 Set-Content -Path $ipyPath -Value @'
@@ -87,7 +85,6 @@ if ($projectRoot) {
     $binPath = Join-Path $projectRoot "bin/Release/net6.0"
     Copy-Item (Join-Path $binPath "ipy") $Path
     if ($IsMacOS -or $IsLinux) {
-        Copy-Item (Join-Path $binPath "Newtonsoft.Json.dll") $Path
         Copy-Item (Join-Path $binPath "Mono.Unix.dll") $Path
         $arch = uname -m
         switch ($arch) {

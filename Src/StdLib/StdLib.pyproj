@@ -14,7 +14,7 @@
 
   <PropertyGroup>
     <ExcludedPackages>
-      $(StdLibPath)\*\__pycache__\**\*.*;
+      $(StdLibPath)\**\__pycache__\**\*.*;
       $(StdLibPath)\idlelib\**\*.*;
       $(StdLibPath)\tkinter\**\*.*;
       $(StdLibPath)\test\**\*.*;

@@ -77,6 +77,7 @@ def gen_python_name_binder(cw):
                   "DelStatement",
                   "ClassDefinition",
                   "FunctionDefinition",
+                  "AnnotatedAssignStatement",
                   "AugmentedAssignStatement",
                   "AssignmentStatement",
                   "RaiseStatement",

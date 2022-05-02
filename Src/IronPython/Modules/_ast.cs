@@ -214,7 +214,7 @@ namespace IronPython.Modules {
                 stmt ast = stmt switch {
                     FunctionDefinition s => new FunctionDef(s),
                     ReturnStatement s => new Return(s),
-                    AnnAssignStatement s => new AnnAssign(s),
+                    AnnotatedAssignStatement s => new AnnAssign(s),
                     AssignmentStatement s => new Assign(s),
                     AugmentedAssignStatement s => new AugAssign(s),
                     DelStatement s => new Delete(s),
@@ -728,7 +728,7 @@ namespace IronPython.Modules {
                 _col_offset = col_offset;
             }
 
-            internal AnnAssign(AnnAssignStatement stmt)
+            internal AnnAssign(AnnotatedAssignStatement stmt)
                 : this() {
                 target = Convert(stmt.Target, Store.Instance);
                 annotation = Convert(stmt.Annotation);
@@ -737,7 +737,7 @@ namespace IronPython.Modules {
             }
 
             internal override Statement Revert() {
-                return new AnnAssignStatement(expr.Revert(target), expr.Revert(annotation), expr.Revert(value), simple != 0);
+                return new AnnotatedAssignStatement(expr.Revert(target), expr.Revert(annotation), expr.Revert(value), simple != 0);
             }
 
             public expr target { get; set; }

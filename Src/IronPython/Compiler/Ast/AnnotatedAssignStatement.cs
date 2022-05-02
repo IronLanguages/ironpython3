@@ -10,8 +10,8 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
 
-    public class AnnAssignStatement : Statement {
-        public AnnAssignStatement(Expression target, Expression annotation, Expression? value, bool simple) {
+    public class AnnotatedAssignStatement : Statement {
+        public AnnotatedAssignStatement(Expression target, Expression annotation, Expression? value, bool simple) {
             Target = target;
             Annotation = annotation;
             Value = value;

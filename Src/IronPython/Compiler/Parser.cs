@@ -677,11 +677,11 @@ namespace IronPython.Compiler {
                 var annotation = ParseTest();
                 if (MaybeEat(TokenKind.Assign)) {
                     var right = ParseTest();
-                    var assign = new AnnAssignStatement(ret, annotation, right, ret is NameExpression);
+                    var assign = new AnnotatedAssignStatement(ret, annotation, right, ret is NameExpression);
                     assign.SetLoc(_globalParent, ret.StartIndex, right.EndIndex);
                     return assign;
                 } else {
-                    var assign = new AnnAssignStatement(ret, annotation, null, ret is NameExpression);
+                    var assign = new AnnotatedAssignStatement(ret, annotation, null, ret is NameExpression);
                     assign.SetLoc(_globalParent, ret.IndexSpan);
                     return assign;
                 }

@@ -189,6 +189,14 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
+        // AnnotatedAssignStatement
+        public override bool Walk(AnnotatedAssignStatement node) {
+            node.Parent = _currentScope;
+            node.Target.Walk(_define);
+            return true;
+        }
+
+        // AugmentedAssignStatement
         public override bool Walk(AugmentedAssignStatement node) {
             node.Parent = _currentScope;
             node.Left.Walk(_define);
@@ -330,11 +338,6 @@ namespace IronPython.Compiler.Ast {
 
         // AndExpression
         public override bool Walk(AndExpression node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-        // AnnAssignStatement
-        public override bool Walk(AnnAssignStatement node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
@@ -731,7 +734,6 @@ namespace IronPython.Compiler.Ast {
             node.Reference = Reference(node.Name);
             return true;
         }
-
 
         // NonlocalStatement
         public override bool Walk(NonlocalStatement node) {

@@ -438,22 +438,8 @@ namespace IronPython.Modules {
             context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(status);
         }
 
-        public static object fspath(CodeContext context, [AllowNull] object path) {
-            if (path is string) return path;
-            if (path is Extensible<string>) return path;
-            if (path is Bytes) return path;
-
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, path, "__fspath__", out object res)) {
-                return res switch {
-                    string => res,
-                    Extensible<string> => res,
-                    Bytes => res,
-                    _ => throw PythonOps.TypeError("expected {0}.__fspath__() to return str or bytes, not {0}", PythonOps.GetPythonTypeName(path), PythonOps.GetPythonTypeName(res))
-                };
-            }
-
-            throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
-        }
+        public static object fspath(CodeContext context, [AllowNull] object path)
+            => PythonOps.FsPath(path);
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {

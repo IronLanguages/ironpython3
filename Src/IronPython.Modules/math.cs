@@ -21,6 +21,11 @@ namespace IronPython.Modules {
     public static partial class PythonMath {
         public const string __doc__ = "Provides common mathematical functions.";
 
+#if NET
+        public const double tau = Math.Tau;
+#else
+        public const double tau = 2 * Math.PI;
+#endif
         public const double pi = Math.PI;
         public const double e = Math.E;
 

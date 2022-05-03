@@ -2791,16 +2791,16 @@ namespace IronPython.Modules {
             bool closefd=true,
             object opener=null
         ) {
-            int fd = -1;
-            string fname = file as string;
-            if (fname == null) {
-                if (file is Extensible<string>) {
-                    fname = ((Extensible<string>)file).Value;
-                } else if (file is Bytes b) {
-                    fname = b.decode(context, SysModule.getfilesystemencoding(), "strict");
-                } else {
-                    fd = GetInt(file, 0);
-                }
+            string fname = null;
+            if (!Converter.TryConvertToIndex(file, out int fd, false, false)) {
+                fd = -1;
+                var path = PythonOps.FsPath(file);
+                fname = path switch {
+                    string s => s,
+                    Extensible<string> es => es,
+                    Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),
+                    _ => throw new InvalidOperationException(),
+                };
             }
 
             HashSet<char> modes = MakeSet(mode);

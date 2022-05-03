@@ -100,7 +100,7 @@ function global:Exit-IronPythonEnvironment ([switch] $NonDestructive) {
 
     if (-not $NonDestructive) {
         Remove-Item Function:Exit-IronPythonEnvironment
-        Remove-Alias exipy -ErrorAction Ignore
+        Remove-Item Alias:exipy -ErrorAction Ignore
     }
 }
 
@@ -117,7 +117,7 @@ $global:IronPythonParentEnvironment = @{ "binpath" = $Env:PATH }
 if ($Isolated) {
     if (Test-Path Alias:ipy) {
         $IronPythonParentEnvironment["alias"] = Get-Item Alias:ipy
-        Remove-Alias ipy
+        Remove-Item Alias:ipy
     }
 
     if (Test-Path Function:ipy) {
@@ -137,7 +137,11 @@ Copy-Item Function:prompt Function:IronPythonParentPrompt
 # Set new stuff for the environment to be operational
 
 function global:prompt {
-    Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "«$IronPythonEnvironmentName» "
+    if ($PSEdition -eq "Core") {
+        Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "«$IronPythonEnvironmentName» "
+    } else {
+        Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "<<$IronPythonEnvironmentName>> "
+    }
     IronPythonParentPrompt
 }
 

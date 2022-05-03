@@ -1,5 +1,4 @@
-#!/usr/bin/env pwsh
-# Licensed to the .NET Foundation under one or more agreements.
+﻿# Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
@@ -137,11 +136,7 @@ Copy-Item Function:prompt Function:IronPythonParentPrompt
 # Set new stuff for the environment to be operational
 
 function global:prompt {
-    if ($PSEdition -eq "Core") {
-        Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "«$IronPythonEnvironmentName» "
-    } else {
-        Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "<<$IronPythonEnvironmentName>> "
-    }
+    Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "«$IronPythonEnvironmentName» "
     IronPythonParentPrompt
 }
 

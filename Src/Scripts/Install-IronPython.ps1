@@ -83,8 +83,11 @@ if ($IsMacOS -or $IsLinux) {
 # Add items that are missing in the zip file, directly from the bin directory
 if ($projectRoot) {
     $binPath = Join-Path $projectRoot "bin/Release/net6.0"
-    Copy-Item (Join-Path $binPath "ipy") $Path
-    if ($IsMacOS -or $IsLinux) {
+    Copy-Item (Join-Path $projectRoot "Src/Scripts/Enter-IronPythonEnvironment.ps1") $Path
+    if ($IsWindows){
+        Copy-Item (Join-Path $binPath "ipy.exe") $Path
+    } else {
+        Copy-Item (Join-Path $binPath "ipy") $Path
         Copy-Item (Join-Path $binPath "Mono.Unix.dll") $Path
         $arch = uname -m
         switch ($arch) {

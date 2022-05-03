@@ -29,11 +29,15 @@
 [CmdletBinding()]
 param (
     # Path to an IronPython environment to enter.
+    [Parameter(Position=0)]
     [SupportsWildcards()]
     [string] $Path,
 
     # On enter, unset Env:IRONPYTHONPATH, Alias:ipy, and Function:ipy. Restore on exit.
-    [switch] $Isolated
+    [switch] $Isolated,
+
+    # Color of the environment name printed on the prompt.
+    [ConsoleColor] $PromptColor = [ConsoleColor]::DarkGray
 )
 
 if (-not $Path) {
@@ -92,6 +96,8 @@ function global:Exit-IronPythonEnvironment ([switch] $NonDestructive) {
         Remove-Item Variable:IronPythonParentEnvironment
     }
 
+    Remove-Variable -Name IronPythonEnvironment* -Scope global
+
     if (-not $NonDestructive) {
         Remove-Item Function:Exit-IronPythonEnvironment
         Remove-Alias exipy -ErrorAction Ignore
@@ -102,6 +108,7 @@ Exit-IronPythonEnvironment -NonDestructive
 
 $global:IronPythonEnvironmentPath = Resolve-Path $Path
 $global:IronPythonEnvironmentName = Split-Path $IronPythonEnvironmentPath -Leaf
+$global:IronPythonEnvironmentColor = "$PromptColor"
 
 # Save stuff that already exists
 
@@ -130,7 +137,7 @@ Copy-Item Function:prompt Function:IronPythonParentPrompt
 # Set new stuff for the environment to be operational
 
 function global:prompt {
-    Write-Host -NoNewline -ForegroundColor DarkGray "«$IronPythonEnvironmentName» "
+    Write-Host -NoNewline -ForegroundColor $IronPythonEnvironmentColor "«$IronPythonEnvironmentName» "
     IronPythonParentPrompt
 }
 

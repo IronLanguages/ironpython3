@@ -140,6 +140,11 @@ function global:prompt {
     IronPythonParentPrompt
 }
 
-$env:PATH = $IronPythonEnvironmentPath, $env:PATH -join [IO.Path]::PathSeparator
+[string[]] $newEnvPaths = @($IronPythonEnvironmentPath)
+if ($IsWindows) {
+    $newEnvPaths += Join-Path $IronPythonEnvironmentPath "Scripts"
+}
+$newEnvPaths += $env:PATH
+$env:PATH = $newEnvPaths -join [IO.Path]::PathSeparator
 
 Set-Alias exipy Exit-IronPythonEnvironment -Scope global

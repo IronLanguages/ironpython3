@@ -909,6 +909,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is InterruptedException) return new PythonExceptions._OSError(PythonExceptions.InterruptedError);
             if (clrException is IsADirectoryException) return new PythonExceptions._OSError(PythonExceptions.IsADirectoryError);
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
+            if (clrException is ModuleNotFoundException) return new PythonExceptions._ImportError(PythonExceptions.ModuleNotFoundError);
             if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
@@ -927,7 +928,6 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ImportException) return new PythonExceptions._ImportError();
             if (clrException is KeyboardInterruptException) return new PythonExceptions.BaseException(PythonExceptions.KeyboardInterrupt);
             if (clrException is LookupException) return new PythonExceptions.BaseException(PythonExceptions.LookupError);
-            if (clrException is ModuleNotFoundException) return new PythonExceptions._ImportError(PythonExceptions.ModuleNotFoundError);
             if (clrException is OSException) return new PythonExceptions._OSError();
             if (clrException is PythonException) return new PythonExceptions.BaseException(PythonExceptions.Exception);
             if (clrException is ReferenceException) return new PythonExceptions.BaseException(PythonExceptions.ReferenceError);

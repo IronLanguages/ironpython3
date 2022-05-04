@@ -174,6 +174,7 @@ class BinASCIITest(unittest.TestCase):
         res = binascii.rledecode_hqx(b)
         self.assertEqual(res, self.rawdata)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: not implemented")
     def test_rle(self):
         # test repetition with a repetition longer than the limit of 255
         data = (b'a' * 100 + b'b' + b'c' * 300)

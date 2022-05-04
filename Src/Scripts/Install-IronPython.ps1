@@ -69,6 +69,10 @@ Expand-Archive -Path $ZipFile -DestinationPath $unzipDir
 Move-Item -Path (Join-Path $unzipDir "Lib") -Destination $Path
 Move-Item -Path (Join-Path $unzipDir "net6.0/*") -Destination $Path -Exclude "*.xml","*.dll.config"
 Remove-Item -Path $unzipDir -Recurse
+if ($IsMacOS -or $IsLinux) {
+    Rename-Item (Join-Path $Path "Lib") "lib-temp"
+    Rename-Item (Join-Path $Path "lib-temp") "lib"
+}
 
 # Create a startup script
 $ipyPath = Join-Path $Path "ipy.ps1"

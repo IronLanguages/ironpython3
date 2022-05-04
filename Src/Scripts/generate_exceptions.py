@@ -15,7 +15,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
               'ProcessLookupError', 'ConnectionError', 'ConnectionAbortedError', 'BrokenPipeError',
-              'ConnectionRefusedError', 'ConnectionResetError', 'RecursionError', 'StopAsyncIteration']
+              'ConnectionRefusedError', 'ConnectionResetError', 'RecursionError', 'StopAsyncIteration', 'ModuleNotFoundError']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, baseMapping=None, generate_class=False):
@@ -95,7 +95,10 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('AttributeError', 'IronPython.Runtime.Exceptions.AttributeErrorException', None, (), (), baseMapping = 'System.MissingMemberException'),
                 ExceptionInfo('BufferError', 'IronPython.Runtime.Exceptions.BufferException', None, (), ()),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
-                ExceptionInfo('ImportError', 'IronPython.Runtime.Exceptions.ImportException', None, ('name', 'path'), ()),
+                ExceptionInfo('ImportError', 'IronPython.Runtime.Exceptions.ImportException', None, ('name', 'path'), (
+                        ExceptionInfo('ModuleNotFoundError', 'IronPython.Runtime.Exceptions.ModuleNotFoundException', None, (), ()),
+                    ),
+                ),
                 ExceptionInfo('LookupError', 'IronPython.Runtime.Exceptions.LookupException', None, (), (
                         ExceptionInfo('IndexError', 'System.IndexOutOfRangeException', None, (), ()),
                         ExceptionInfo('KeyError', 'System.Collections.Generic.KeyNotFoundException', None, (), ()),

@@ -155,6 +155,10 @@ namespace IronPython.Runtime.Operations {
             return new StopAsyncIterationException(string.Format(format, args));
         }
 
+        public static Exception ModuleNotFoundError(string format, params object[] args) {
+            return new ModuleNotFoundException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

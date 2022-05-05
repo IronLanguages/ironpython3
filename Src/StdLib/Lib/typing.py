@@ -1975,30 +1975,30 @@ if hasattr(contextlib, 'AbstractAsyncContextManager'):
         __slots__ = ()
 
     __all__.append('AsyncContextManager')
-elif sys.version_info[:2] >= (3, 5):
-    exec("""
-class AsyncContextManager(Generic[T_co]):
-    __slots__ = ()
-
-    async def __aenter__(self):
-        return self
-
-    @abc.abstractmethod
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        return None
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncContextManager:
-            if sys.version_info[:2] >= (3, 6):
-                return _collections_abc._check_methods(C, "__aenter__", "__aexit__")
-            if (any("__aenter__" in B.__dict__ for B in C.__mro__) and
-                    any("__aexit__" in B.__dict__ for B in C.__mro__)):
-                return True
-        return NotImplemented
-
-__all__.append('AsyncContextManager')
-""")
+#elif sys.version_info[:2] >= (3, 5):
+#    exec("""
+#class AsyncContextManager(Generic[T_co]):
+#    __slots__ = ()
+#
+#    async def __aenter__(self):
+#        return self
+#
+#    @abc.abstractmethod
+#    async def __aexit__(self, exc_type, exc_value, traceback):
+#        return None
+#
+#    @classmethod
+#    def __subclasshook__(cls, C):
+#        if cls is AsyncContextManager:
+#            if sys.version_info[:2] >= (3, 6):
+#                return _collections_abc._check_methods(C, "__aenter__", "__aexit__")
+#            if (any("__aenter__" in B.__dict__ for B in C.__mro__) and
+#                    any("__aexit__" in B.__dict__ for B in C.__mro__)):
+#                return True
+#        return NotImplemented
+#
+#__all__.append('AsyncContextManager')
+#""")
 
 
 class Dict(dict, MutableMapping[KT, VT], extra=dict):

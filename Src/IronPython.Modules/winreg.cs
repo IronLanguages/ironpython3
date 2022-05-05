@@ -30,7 +30,7 @@ namespace IronPython.Modules {
 
         public static PythonType error = PythonExceptions.OSError;
 
-#region Constants
+        #region Constants
 
         public static BigInteger HKEY_CLASSES_ROOT = 0x80000000L;
         public static BigInteger HKEY_CURRENT_USER = 0x80000001L;
@@ -69,6 +69,7 @@ namespace IronPython.Modules {
         public const int REG_RESOURCE_LIST = 0X8;
         public const int REG_FULL_RESOURCE_DESCRIPTOR = 0X9;
         public const int REG_RESOURCE_REQUIREMENTS_LIST = 0XA;
+        public const int REG_QWORD = 0xB;
 
         public const int REG_NOTIFY_CHANGE_NAME = 0X1;
         public const int REG_NOTIFY_CHANGE_ATTRIBUTES = 0X2;
@@ -88,9 +89,9 @@ namespace IronPython.Modules {
         public const int REG_LEGAL_OPTION = 0XF;
         public const int REG_WHOLE_HIVE_VOLATILE = 0X1;
 
-#endregion
+        #endregion
 
-#region Module Methods
+        #region Module Methods
 
         public static void CloseKey(HKEYType key) {
             key.Close();
@@ -106,7 +107,7 @@ namespace IronPython.Modules {
             //if key is a system key and no subkey is specified return that.
             if (key is BigInteger && string.IsNullOrEmpty(sub_key))
                 return rootKey;
-            
+
             HKEYType subKey = new HKEYType(rootKey.GetKey().CreateSubKey(sub_key));
             return subKey;
         }
@@ -124,7 +125,7 @@ namespace IronPython.Modules {
 
             SafeRegistryHandle handle;
             int disposition;
-            
+
             int result = RegCreateKeyEx(
                 rootKey.GetKey().Handle,
                 sub_key,
@@ -233,7 +234,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void DeleteKeyEx(object key, string sub_key, int access=KEY_WOW64_64KEY, int reserved=0) {
+        public static void DeleteKeyEx(object key, string sub_key, int access = KEY_WOW64_64KEY, int reserved = 0) {
             HKEYType rootKey = GetRootKey(key);
 
             if (key is BigInteger && string.IsNullOrEmpty(sub_key))
@@ -365,10 +366,9 @@ namespace IronPython.Modules {
 
         }
 
-        public static string ExpandEnvironmentStrings(string value)
-        {
+        public static string ExpandEnvironmentStrings(string value) {
             if (value == null)
-                throw PythonExceptions.CreateThrowable(PythonExceptions.TypeError,  "must be unicode, not None");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.TypeError, "must be unicode, not None");
 
             return Environment.ExpandEnvironmentVariables(value);
         }
@@ -379,7 +379,7 @@ namespace IronPython.Modules {
             }
             char[] chars = new char[(end - start) / 2];
             for (int i = 0; i < chars.Length; i++) {
-                chars[i] = (char)((data[i*2 + start]) | (data[i*2 + start + 1] << 8));
+                chars[i] = (char)((data[i * 2 + start]) | (data[i * 2 + start + 1] << 8));
             }
             return new string(chars);
         }
@@ -393,7 +393,7 @@ namespace IronPython.Modules {
             return OpenKey(key, sub_key, 0, KEY_READ);
         }
 
-        public static HKEYType OpenKey(object key, string sub_key, int reserved=0, int access=KEY_READ) {
+        public static HKEYType OpenKey(object key, string sub_key, int reserved = 0, int access = KEY_READ) {
             HKEYType rootKey = GetRootKey(key);
             RegistryKey newKey = null;
 
@@ -409,19 +409,19 @@ namespace IronPython.Modules {
             try {
                 if ((access & KEY_SET_VALUE) == KEY_SET_VALUE ||
                     (access & KEY_CREATE_SUB_KEY) == KEY_CREATE_SUB_KEY) {
-                        if (reserved != 0) {
-                            newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.Default, (RegistryRights)reserved);
-                        } else {
-                            newKey = nativeRootKey.OpenSubKey(sub_key, true);
-                        }
+                    if (reserved != 0) {
+                        newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.Default, (RegistryRights)reserved);
+                    } else {
+                        newKey = nativeRootKey.OpenSubKey(sub_key, true);
+                    }
                 } else if ((access & KEY_QUERY_VALUE) == KEY_QUERY_VALUE ||
                            (access & KEY_ENUMERATE_SUB_KEYS) == KEY_ENUMERATE_SUB_KEYS ||
                            (access & KEY_NOTIFY) == KEY_NOTIFY) {
-                               if (reserved != 0) {
-                                   newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)reserved);
-                               } else {
-                                   newKey = nativeRootKey.OpenSubKey(sub_key, false);
-                               }
+                    if (reserved != 0) {
+                        newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)reserved);
+                    } else {
+                        newKey = nativeRootKey.OpenSubKey(sub_key, false);
+                    }
                 } else {
                     throw new Win32Exception("Unexpected mode");
                 }
@@ -437,7 +437,7 @@ namespace IronPython.Modules {
             return new HKEYType(newKey);
         }
 
-        public static HKEYType OpenKeyEx(object key, string sub_key, int reserved=0, int access=KEY_READ) {
+        public static HKEYType OpenKeyEx(object key, string sub_key, int reserved = 0, int access = KEY_READ) {
             return OpenKey(key, sub_key, reserved, access);
         }
 
@@ -540,12 +540,10 @@ namespace IronPython.Modules {
             try {
                 if (computer_name == string.Empty) {
                     newKey = RegistryKey.OpenBaseKey(MapSystemKey(key), RegistryView.Default);
-                }
-                else {
+                } else {
                     newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computer_name);
                 }
-            }
-            catch (IOException ioe) {
+            } catch (IOException ioe) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_BAD_NETPATH, ioe.Message, null, PythonExceptions._OSError.ERROR_BAD_NETPATH);
             } catch (Exception e) {
                 throw new ExternalException(e.Message);
@@ -583,7 +581,7 @@ namespace IronPython.Modules {
             HKEYType rootKey = GetRootKey(key);
             bool isDisabled;
 
-            if(!Environment.Is64BitOperatingSystem) {
+            if (!Environment.Is64BitOperatingSystem) {
                 throw new NotImplementedException("not implemented on this platform");
             }
 
@@ -594,9 +592,9 @@ namespace IronPython.Modules {
             return isDisabled;
         }
 
-#endregion
+        #endregion
 
-#region Helpers
+        #region Helpers
         private static HKEYType GetRootKey(object key) {
             HKEYType rootKey;
             rootKey = key as HKEYType;
@@ -630,7 +628,7 @@ namespace IronPython.Modules {
                 throw new ValueErrorException("Unknown system key");
         }
 
-#endregion
+        #endregion
 
 
         [PythonType]
@@ -694,13 +692,13 @@ namespace IronPython.Modules {
                 }
             }
 
-#region IDisposable Members
+            #region IDisposable Members
 
             void IDisposable.Dispose() {
                 Close();
             }
 
-#endregion
+            #endregion
         }
     }
 }

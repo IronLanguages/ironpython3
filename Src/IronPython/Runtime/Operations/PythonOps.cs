@@ -321,6 +321,23 @@ namespace IronPython.Runtime.Operations {
             return StringFormatter.Format(context, str, data);
         }
 
+        internal static object FsPath(object? path) {
+            if (path is string) return path;
+            if (path is Extensible<string>) return path;
+            if (path is Bytes) return path;
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, path, "__fspath__", out object res)) {
+                return res switch {
+                    string => res,
+                    Extensible<string> => res,
+                    Bytes => res,
+                    _ => throw PythonOps.TypeError("expected {0}.__fspath__() to return str or bytes, not {0}", PythonOps.GetPythonTypeName(path), PythonOps.GetPythonTypeName(res))
+                };
+            }
+
+            throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
+        }
+
         public static object Plus(object? o) {
             if (o is int) return o;
             else if (o is double) return o;

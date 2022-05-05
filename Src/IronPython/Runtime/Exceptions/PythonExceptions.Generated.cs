@@ -224,6 +224,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType ModuleNotFoundErrorStorage;
+        public static PythonType ModuleNotFoundError {
+            get {
+                if (ModuleNotFoundErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ModuleNotFoundErrorStorage, CreateSubType(ImportError, "ModuleNotFoundError", (msg, innerException) => new ModuleNotFoundException(msg, innerException)), null);
+                }
+                return ModuleNotFoundErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType LookupErrorStorage;
         public static PythonType LookupError {
             get {
@@ -898,6 +909,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is InterruptedException) return new PythonExceptions._OSError(PythonExceptions.InterruptedError);
             if (clrException is IsADirectoryException) return new PythonExceptions._OSError(PythonExceptions.IsADirectoryError);
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
+            if (clrException is ModuleNotFoundException) return new PythonExceptions._ImportError(PythonExceptions.ModuleNotFoundError);
             if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);

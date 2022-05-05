@@ -29,6 +29,7 @@ namespace IronPython.Modules {
         public static PythonType BufferError => PythonExceptions.BufferError;
         public static PythonType EOFError => PythonExceptions.EOFError;
         public static PythonType ImportError => PythonExceptions.ImportError;
+        public static PythonType ModuleNotFoundError => PythonExceptions.ModuleNotFoundError;
         public static PythonType LookupError => PythonExceptions.LookupError;
         public static PythonType IndexError => PythonExceptions.IndexError;
         public static PythonType KeyError => PythonExceptions.KeyError;

@@ -5,6 +5,8 @@ The module for testing variable annotations.
 Empty lines above are for good reason (testing for correct line numbers)
 """
 
+__annotations__ = {} # https://github.com/IronLanguages/ironpython3/issues/106
+
 from typing import Optional
 
 __annotations__[1] = 2

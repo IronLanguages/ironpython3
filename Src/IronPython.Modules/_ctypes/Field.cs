@@ -63,7 +63,7 @@ namespace IronPython.Modules {
                 }
             }
 
-#region Internal APIs
+            #region Internal APIs
 
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
@@ -134,9 +134,9 @@ namespace IronPython.Modules {
                 }
             }
 
-#endregion
+            #endregion
 
-#region ICodeFormattable Members
+            #region ICodeFormattable Members
 
             public string __repr__(CodeContext context) {
                 if (_bits == -1) {
@@ -145,32 +145,25 @@ namespace IronPython.Modules {
                 return String.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
             }
 
-#endregion
+            #endregion
 
-#region Private implementation
+            #region Private implementation
 
             /// <summary>
             /// Called for fields which have been limited to a range of bits.  Given the
             /// value for the full type this extracts the individual bits.
             /// </summary>
             private object ExtractBits(object value) {
-                if (value is int) {
-                    int validBits = ((1 << _bits) - 1);
+                Debug.Assert(_bits > 0);
+                Debug.Assert(_bits < (_fieldType.Size * 8)); // Avoid unspecified shifts: ECMA 335: III.3.58-59
+                Debug.Assert(value != null);
 
-                    int iVal = (int)value;
-                    iVal = (iVal >> _bitsOffset) & validBits;
-                    if (IsSignedType) {
-                        // need to sign extend if high bit is set
-                        if ((iVal & (1 << (_bits - 1))) != 0) {
-                            iVal |= (-1) ^ validBits;
-                        }
-                    }
+                if (value is int iVal) {
+                    iVal = ExtractBitsFromInt(iVal);
                     value = ScriptingRuntimeHelpers.Int32ToObject(iVal);
-                } else {
-                    Debug.Assert(value is BigInteger); // we only return ints or big ints from GetValue
+                } else if (value is BigInteger biVal) {
                     ulong validBits = (1UL << _bits) - 1;
 
-                    BigInteger biVal = (BigInteger)value;
                     ulong bits;
                     if (IsSignedType) {
                         bits = (ulong)(long)biVal;
@@ -189,8 +182,27 @@ namespace IronPython.Modules {
                     } else {
                         value = (BigInteger)bits;
                     }
+                } else if (value is bool bVal) {
+                    int ibVal = ExtractBitsFromInt(bVal ? 1 : 0);
+                    value = ScriptingRuntimeHelpers.BooleanToObject(ibVal != 0);
+                } else {
+                    throw new InvalidOperationException("we only return int, bigint, or bool from GetValue");
                 }
                 return value;
+
+                int ExtractBitsFromInt(int iVal) {
+                    int validBits = ((1 << _bits) - 1);
+
+                    iVal = (iVal >> _bitsOffset) & validBits;
+                    if (IsSignedType) {
+                        // need to sign extend if high bit is set
+                        if ((iVal & (1 << (_bits - 1))) != 0) {
+                            iVal |= (-1) ^ validBits;
+                        }
+                    }
+
+                    return iVal;
+                }
             }
 
             /// <summary>
@@ -199,6 +211,7 @@ namespace IronPython.Modules {
             /// </summary>
             private void SetBitsValue(MemoryHolder address, int baseOffset, object value) {
                 // get the value in the form of a ulong which can contain the biggest bitfield
+                value = PythonOps.Index(value);
                 ulong newBits;
                 if (value is int) {
                     newBits = (ulong)(int)value;
@@ -212,8 +225,10 @@ namespace IronPython.Modules {
                 int offset = checked(_offset + baseOffset);
                 object curValue = _fieldType.GetValue(address, null, offset, false);
                 ulong valueBits;
-                if (curValue is int) {
-                    valueBits = (ulong)(int)curValue;
+                if (curValue is int iCurVal) {
+                    valueBits = (ulong)iCurVal;
+                } else if (curValue is bool bCurVal) {
+                    valueBits = bCurVal ? 1ul : 0ul;
                 } else {
                     valueBits = (ulong)(long)(BigInteger)curValue;
                 }

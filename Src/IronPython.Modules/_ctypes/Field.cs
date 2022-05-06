@@ -213,12 +213,24 @@ namespace IronPython.Modules {
                 // get the value in the form of a ulong which can contain the biggest bitfield
                 value = PythonOps.Index(value);
                 ulong newBits;
-                if (value is int) {
-                    newBits = (ulong)(int)value;
-                } else if (value is BigInteger) {
-                    newBits = (ulong)(long)(BigInteger)value;
+                if (value is int iVal) {
+                    newBits = (ulong)iVal;
+                } else if (value is BigInteger biVal) {
+                    if (biVal.Sign >= 0) {
+                        if (biVal <= ulong.MaxValue) {
+                            newBits = (ulong)biVal;
+                        } else {
+                            newBits = (ulong)(biVal & ulong.MaxValue);
+                        }
+                    } else {
+                        if (biVal >= long.MinValue) {
+                            newBits = (ulong)(long)biVal;
+                        } else {
+                            newBits = (ulong)(biVal & ulong.MaxValue);
+                        }
+                    }
                 } else {
-                    throw PythonOps.TypeErrorForTypeMismatch("int or long", value);
+                    throw PythonOps.TypeErrorForTypeMismatch("int", value);
                 }
 
                 // do the same for the existing value

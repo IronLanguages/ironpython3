@@ -50,6 +50,10 @@ namespace IronPython.Modules {
                 INativeType nativeType = NativeType;
                 StructType st = (StructType)nativeType;
 
+                if (args is null) { // None passed as a sole argument
+                    args = new object[1];
+                }
+
                 st.SetValueInternal(MemHolder, 0, args);
             }
 

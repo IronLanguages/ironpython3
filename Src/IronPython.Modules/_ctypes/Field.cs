@@ -45,6 +45,9 @@ namespace IronPython.Modules {
                 if (bits != null) {
                     _bits = bits.Value;
                     _bitsOffset = bitOffset.Value;
+                    if (((SimpleType)_fieldType)._swap) {
+                        _bitsOffset = _fieldType.Size * 8 - _bitsOffset - _bits;
+                    }
                 }
             }
 

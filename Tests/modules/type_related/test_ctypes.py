@@ -11,7 +11,7 @@ from array import array
 import sys
 import gc
 
-from iptest import IronPythonTestCase, expectedFailureIf, is_cli, big, myint, run_test
+from iptest import IronPythonTestCase, is_cli, big, myint, run_test
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"

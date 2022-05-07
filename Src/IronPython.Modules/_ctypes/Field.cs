@@ -26,7 +26,7 @@ namespace IronPython.Modules {
         [PythonType, PythonHidden]
         public sealed class Field : PythonTypeDataSlot, ICodeFormattable {
             private readonly INativeType _fieldType;
-            private readonly int _offset, _index, _bits = -1, _bitsOffset;
+            private readonly int _offset, _index, _bits, _bitsOffset;
             private readonly string _fieldName;
 
             internal Field(string fieldName, INativeType fieldType, int offset, int index) {
@@ -42,33 +42,22 @@ namespace IronPython.Modules {
                 _index = index;
                 _fieldName = fieldName;
 
-                // if the number of bits is the full type width, we don't
-                // need to do any masking anywhere, we may want to revisit this
-                // if the __repr__ is an issue
-                if (bits != null && bits.Value != (_fieldType.Size * 8)) {
+                if (bits != null) {
                     _bits = bits.Value;
                     _bitsOffset = bitOffset.Value;
                 }
             }
 
-            public int offset {
-                get {
-                    return _offset;
-                }
-            }
+            public int offset => _offset;
 
-            public int size {
-                get {
-                    return _fieldType.Size;
-                }
-            }
+            public int size => _fieldType.Size;
 
             #region Internal APIs
 
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
                     CData inst = (CData)instance;
-                    if (_bits == -1) {
+                    if (!IsProperBitfield) {
                         value = _fieldType.GetValue(inst.MemHolder, inst, _offset, false);
                         return true;
                     } else {
@@ -82,11 +71,7 @@ namespace IronPython.Modules {
             }
 
 
-            internal override bool GetAlwaysSucceeds {
-                get {
-                    return true;
-                }
-            }
+            internal override bool GetAlwaysSucceeds => true;
 
             internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
                 if (instance != null) {
@@ -98,7 +83,7 @@ namespace IronPython.Modules {
             }
 
             internal void SetValue(MemoryHolder address, int baseOffset, object value) {
-                if (_bits == -1) {
+                if (!IsProperBitfield) {
                     object keepAlive = _fieldType.SetValue(address, baseOffset + _offset, value);
                     if (keepAlive != null) {
                         address.AddObject(_index.ToString(), keepAlive);
@@ -112,37 +97,21 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("cannot delete fields in ctypes structures/unions");
             }
 
-            internal INativeType NativeType {
-                get {
-                    return _fieldType;
-                }
-            }
+            internal INativeType NativeType => _fieldType;
 
-            internal int? BitCount {
-                get {
-                    if (_bits == -1) {
-                        return null;
-                    }
+            internal int? BitCount => _bits == 0 ? null : _bits;
 
-                    return _bits;
-                }
-            }
-
-            internal string FieldName {
-                get {
-                    return _fieldName;
-                }
-            }
+            internal string FieldName => _fieldName;
 
             #endregion
 
             #region ICodeFormattable Members
 
             public string __repr__(CodeContext context) {
-                if (_bits == -1) {
-                    return String.Format("<Field type={0}, ofs={1}, size={2}>", ((PythonType)_fieldType).Name, offset, size);
+                if (_bits == 0) {
+                    return string.Format("<Field type={0}, ofs={1}, size={2}>", ((PythonType)_fieldType).Name, offset, size);
                 }
-                return String.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
+                return string.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
             }
 
             #endregion
@@ -226,7 +195,7 @@ namespace IronPython.Modules {
                 if (IsBoolType) {
                     newBits = PythonOps.IsTrue(value) ? 1ul : 0ul;
                 } else {
-                    value = PythonOps.Index(value);
+                    value = PythonOps.Index(value); // since 3.8
                     if (value is int iVal) {
                         newBits = (ulong)iVal;
                     } else if (value is BigInteger biVal) {
@@ -302,6 +271,11 @@ namespace IronPython.Modules {
             }
 
             private bool IsBoolType => ((SimpleType)_fieldType)._type is SimpleTypeKind.Boolean;
+
+            /// <summary>
+            /// Returns true if the field is a bitfield that does not span the whole width of the underlying field type.
+            /// </summary>
+            private bool IsProperBitfield => 0 < _bits && _bits < _fieldType.Size * 8;
 
             #endregion
         }

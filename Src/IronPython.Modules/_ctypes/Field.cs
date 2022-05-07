@@ -50,7 +50,7 @@ namespace IronPython.Modules {
 
             public int offset => _offset;
 
-            public int size => _fieldType.Size;
+            public int size => _bits == 0 ? _fieldType.Size : (_bits << 16) + _bitsOffset;
 
             #region Internal APIs
 

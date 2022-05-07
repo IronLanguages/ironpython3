@@ -247,6 +247,7 @@ class SliceTest(unittest.TestCase):
         o = myobj()
         o.s = slice(o)
         w = weakref.ref(o)
+        del o # ironpython: for whatever reason setting to None is not enough on .NET Framework...
         o = None
         support.gc_collect()
         self.assertIsNone(w())

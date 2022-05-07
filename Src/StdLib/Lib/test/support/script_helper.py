@@ -39,6 +39,11 @@ def interpreter_requires_environment():
     """
     global __cached_interp_requires_environment
     if __cached_interp_requires_environment is None:
+        # https://github.com/IronLanguages/ironpython3/issues/1440
+        if sys.implementation.name == "ironpython":
+            __cached_interp_requires_environment = True
+            return True
+
         # If PYTHONHOME is set, assume that we need it
         if 'PYTHONHOME' in os.environ:
             __cached_interp_requires_environment = True

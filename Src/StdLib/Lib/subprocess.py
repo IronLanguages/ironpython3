@@ -1293,6 +1293,9 @@ class Popen(object):
 
         def terminate(self):
             """Terminates the process."""
+            # Don't terminate a process that we know has already died.
+            if self.returncode is not None:
+                return
             self._handle.Kill()
 
         kill = terminate

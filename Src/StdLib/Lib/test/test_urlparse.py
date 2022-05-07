@@ -1074,18 +1074,21 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertIn('\u2100', denorm_chars)
         self.assertIn('\uFF03', denorm_chars)
 
-        # bpo-36742: Verify port separators are ignored when they
-        # existed prior to decomposition
-        urllib.parse.urlsplit('http://\u30d5\u309a:80')
-        with self.assertRaises(ValueError):
-            urllib.parse.urlsplit('http://\u30d5\u309a\ufe1380')
-
         # https://github.com/IronLanguages/ironpython3/issues/614
         is_mono = False
         mono_issue_chars = ("\ufe13", "\ufe16", "\ufe5f")
         if sys.implementation.name == "ironpython":
             import clr
             is_mono = clr.IsMono
+
+        # bpo-36742: Verify port separators are ignored when they
+        # existed prior to decomposition
+        urllib.parse.urlsplit('http://\u30d5\u309a:80')
+        if is_mono:
+            urllib.parse.urlsplit('http://\u30d5\u309a\ufe1380')
+        else:
+            with self.assertRaises(ValueError):
+                urllib.parse.urlsplit('http://\u30d5\u309a\ufe1380')
 
         for scheme in ["http", "https", "ftp"]:
             for netloc in ["netloc{}false.netloc", "n{}user@netloc"]:

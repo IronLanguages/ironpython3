@@ -35,10 +35,10 @@
                 fileStream.CopyTo(fileStreamInZip);
             }
           }
-          return true;
+          Success = true;
         } catch (Exception ex) {
           Log.LogErrorFromException(ex);
-          return false;
+          Success = false;
         } finally {
           if (cwd != null) {
             Environment.CurrentDirectory = cwd;

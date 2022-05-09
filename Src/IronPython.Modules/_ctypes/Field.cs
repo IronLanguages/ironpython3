@@ -43,6 +43,8 @@ namespace IronPython.Modules {
                 _fieldName = fieldName;
 
                 if (bits != null) {
+                    Debug.Assert(bitOffset != null);
+                    Debug.Assert(_fieldType is SimpleType);
                     _bits = bits.Value;
                     _bitsOffset = bitOffset.Value;
                     if (((SimpleType)_fieldType)._swap) {
@@ -163,10 +165,6 @@ namespace IronPython.Modules {
                             value = (BigInteger)bits;
                         }
 
-                    } else if (value is bool bVal) {
-                        int ibVal = ExtractBitsFromInt(bVal ? 1 : 0);
-                        value = ScriptingRuntimeHelpers.BooleanToObject(ibVal != 0);
-
                     } else {
                         throw new InvalidOperationException("we only return int, bigint from GetValue");
                     }
@@ -216,7 +214,7 @@ namespace IronPython.Modules {
                             }
                         }
                     } else {
-                        throw PythonOps.TypeErrorForTypeMismatch("int", value);
+                        throw new InvalidOperationException("unreachable");
                     }
                 }
 

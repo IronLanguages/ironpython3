@@ -44,15 +44,11 @@ namespace IronPython.Modules {
                 MemHolder = new MemoryHolder(NativeType.Size);
             }
 
-            public void __init__(params object[] args) {
+            public void __init__([NotNone] params object[] args) {
                 CheckAbstract();
 
                 INativeType nativeType = NativeType;
                 StructType st = (StructType)nativeType;
-
-                if (args is null) { // None passed as a sole argument
-                    args = new object[1];
-                }
 
                 st.SetValueInternal(MemHolder, 0, args);
             }

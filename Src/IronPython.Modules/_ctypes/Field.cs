@@ -26,7 +26,7 @@ namespace IronPython.Modules {
         [PythonType, PythonHidden]
         public sealed class Field : PythonTypeDataSlot, ICodeFormattable {
             private readonly INativeType _fieldType;
-            private readonly int _offset, _index, _bits = -1, _bitsOffset;
+            private readonly int _offset, _index, _bits, _bitsOffset;
             private readonly string _fieldName;
 
             internal Field(string fieldName, INativeType fieldType, int offset, int index) {
@@ -42,39 +42,33 @@ namespace IronPython.Modules {
                 _index = index;
                 _fieldName = fieldName;
 
-                // if the number of bits is the full type width, we don't
-                // need to do any masking anywhere, we may want to revisit this
-                // if the __repr__ is an issue
-                if (bits != null && bits.Value != (_fieldType.Size * 8)) {
+                if (bits != null) {
+                    Debug.Assert(bitOffset != null);
+                    Debug.Assert(_fieldType is SimpleType);
                     _bits = bits.Value;
                     _bitsOffset = bitOffset.Value;
+                    if (((SimpleType)_fieldType)._swap) {
+                        _bitsOffset = _fieldType.Size * 8 - _bitsOffset - _bits;
+                    }
                 }
             }
 
-            public int offset {
-                get {
-                    return _offset;
-                }
-            }
+            public int offset => _offset;
 
-            public int size {
-                get {
-                    return _fieldType.Size;
-                }
-            }
+            public int size => _bits == 0 ? _fieldType.Size : (_bits << 16) + _bitsOffset;
 
-#region Internal APIs
+            #region Internal APIs
 
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
                     CData inst = (CData)instance;
-                    value = _fieldType.GetValue(inst.MemHolder, inst, _offset, false);
-                    if (_bits == -1) {
+                    if (!IsProperBitfield) {
+                        value = _fieldType.GetValue(inst.MemHolder, inst, _offset, false);
+                        return true;
+                    } else {
+                        value = ExtractBits(inst);
                         return true;
                     }
-
-                    value = ExtractBits(value);
-                    return true;
                 }
 
                 value = this;
@@ -82,11 +76,7 @@ namespace IronPython.Modules {
             }
 
 
-            internal override bool GetAlwaysSucceeds {
-                get {
-                    return true;
-                }
-            }
+            internal override bool GetAlwaysSucceeds => true;
 
             internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
                 if (instance != null) {
@@ -98,7 +88,7 @@ namespace IronPython.Modules {
             }
 
             internal void SetValue(MemoryHolder address, int baseOffset, object value) {
-                if (_bits == -1) {
+                if (!IsProperBitfield) {
                     object keepAlive = _fieldType.SetValue(address, baseOffset + _offset, value);
                     if (keepAlive != null) {
                         address.AddObject(_index.ToString(), keepAlive);
@@ -112,52 +102,78 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("cannot delete fields in ctypes structures/unions");
             }
 
-            internal INativeType NativeType {
-                get {
-                    return _fieldType;
-                }
-            }
+            internal INativeType NativeType => _fieldType;
 
-            internal int? BitCount {
-                get {
-                    if (_bits == -1) {
-                        return null;
-                    }
+            internal int? BitCount => _bits == 0 ? null : _bits;
 
-                    return _bits;
-                }
-            }
+            internal string FieldName => _fieldName;
 
-            internal string FieldName {
-                get {
-                    return _fieldName;
-                }
-            }
+            #endregion
 
-#endregion
-
-#region ICodeFormattable Members
+            #region ICodeFormattable Members
 
             public string __repr__(CodeContext context) {
-                if (_bits == -1) {
-                    return String.Format("<Field type={0}, ofs={1}, size={2}>", ((PythonType)_fieldType).Name, offset, size);
+                if (_bits == 0) {
+                    return string.Format("<Field type={0}, ofs={1}, size={2}>", ((PythonType)_fieldType).Name, offset, size);
                 }
-                return String.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
+                return string.Format("<Field type={0}, ofs={1}:{2}, bits={3}>", ((PythonType)_fieldType).Name, offset, _bitsOffset, _bits);
             }
 
-#endregion
+            #endregion
 
-#region Private implementation
+            #region Private implementation
 
             /// <summary>
             /// Called for fields which have been limited to a range of bits.  Given the
             /// value for the full type this extracts the individual bits.
             /// </summary>
-            private object ExtractBits(object value) {
-                if (value is int) {
+            private object ExtractBits(CData instance) {
+                Debug.Assert(_bits > 0);
+                Debug.Assert(_bits < sizeof(ulong) * 8); // Avoid unspecified shifts: ECMA 335: III.3.58-59
+                Debug.Assert(instance != null);
+
+                object value;
+                if (IsBoolType) {
+                    int valueBits = instance.MemHolder.ReadByte(offset);
+                    int ibVal = ExtractBitsFromInt(valueBits);
+                    value = ScriptingRuntimeHelpers.BooleanToObject(ibVal != 0);
+
+                } else {
+                    value = _fieldType.GetValue(instance.MemHolder, instance, _offset, false);
+                    if (value is int iVal) {
+                        iVal = ExtractBitsFromInt(iVal);
+                        value = ScriptingRuntimeHelpers.Int32ToObject(iVal);
+                    } else if (value is BigInteger biVal) {
+                        ulong validBits = (1UL << _bits) - 1;
+
+                        ulong bits;
+                        if (IsSignedType) {
+                            bits = (ulong)(long)biVal;
+                        } else {
+                            bits = (ulong)biVal;
+                        }
+
+                        bits = (bits >> _bitsOffset) & validBits;
+
+                        if (IsSignedType) {
+                            // need to sign extend if high bit is set
+                            if ((bits & (1UL << (_bits - 1))) != 0) {
+                                bits |= ulong.MaxValue ^ validBits;
+                            }
+                            value = (BigInteger)(long)bits;
+                        } else {
+                            value = (BigInteger)bits;
+                        }
+
+                    } else {
+                        throw new InvalidOperationException("we only return int, bigint from GetValue");
+                    }
+                }
+                return value;
+
+                int ExtractBitsFromInt(int iVal) {
                     int validBits = ((1 << _bits) - 1);
 
-                    int iVal = (int)value;
                     iVal = (iVal >> _bitsOffset) & validBits;
                     if (IsSignedType) {
                         // need to sign extend if high bit is set
@@ -165,57 +181,55 @@ namespace IronPython.Modules {
                             iVal |= (-1) ^ validBits;
                         }
                     }
-                    value = ScriptingRuntimeHelpers.Int32ToObject(iVal);
-                } else {
-                    Debug.Assert(value is BigInteger); // we only return ints or big ints from GetValue
-                    ulong validBits = (1UL << _bits) - 1;
 
-                    BigInteger biVal = (BigInteger)value;
-                    ulong bits;
-                    if (IsSignedType) {
-                        bits = (ulong)(long)biVal;
-                    } else {
-                        bits = (ulong)biVal;
-                    }
-
-                    bits = (bits >> _bitsOffset) & validBits;
-
-                    if (IsSignedType) {
-                        // need to sign extend if high bit is set
-                        if ((bits & (1UL << (_bits - 1))) != 0) {
-                            bits |= ulong.MaxValue ^ validBits;
-                        }
-                        value = (BigInteger)(long)bits;
-                    } else {
-                        value = (BigInteger)bits;
-                    }
+                    return iVal;
                 }
-                return value;
             }
 
             /// <summary>
-            /// Called for fields which have been limited to a range of bits.  Sets the 
+            /// Called for fields which have been limited to a range of bits.  Sets the
             /// specified value into the bits for the field.
             /// </summary>
             private void SetBitsValue(MemoryHolder address, int baseOffset, object value) {
                 // get the value in the form of a ulong which can contain the biggest bitfield
                 ulong newBits;
-                if (value is int) {
-                    newBits = (ulong)(int)value;
-                } else if (value is BigInteger) {
-                    newBits = (ulong)(long)(BigInteger)value;
+                if (IsBoolType) {
+                    newBits = PythonOps.IsTrue(value) ? 1ul : 0ul;
                 } else {
-                    throw PythonOps.TypeErrorForTypeMismatch("int or long", value);
+                    value = PythonOps.Index(value); // since 3.8
+                    if (value is int iVal) {
+                        newBits = (ulong)iVal;
+                    } else if (value is BigInteger biVal) {
+                        if (biVal.Sign >= 0) {
+                            if (biVal <= ulong.MaxValue) {
+                                newBits = (ulong)biVal;
+                            } else {
+                                newBits = (ulong)(biVal & ulong.MaxValue);
+                            }
+                        } else {
+                            if (biVal >= long.MinValue) {
+                                newBits = (ulong)(long)biVal;
+                            } else {
+                                newBits = (ulong)(biVal & ulong.MaxValue);
+                            }
+                        }
+                    } else {
+                        throw new InvalidOperationException("unreachable");
+                    }
                 }
 
                 // do the same for the existing value
                 int offset = checked(_offset + baseOffset);
-                object curValue = _fieldType.GetValue(address, null, offset, false);
                 ulong valueBits;
-                if (curValue is int) {
-                    valueBits = (ulong)(int)curValue;
+                if (IsBoolType) {
+                    valueBits = address.ReadByte(offset);
                 } else {
-                    valueBits = (ulong)(long)(BigInteger)curValue;
+                    object curValue = _fieldType.GetValue(address, null, offset, false);
+                    if (curValue is int iCurVal) {
+                        valueBits = (ulong)iCurVal;
+                    } else {
+                        valueBits = (ulong)(long)(BigInteger)curValue;
+                    }
                 }
 
                 // get a mask for the bits this field owns
@@ -225,8 +239,10 @@ namespace IronPython.Modules {
                 // or in the new bits provided by the user
                 valueBits |= (newBits << _bitsOffset) & targetBits;
 
-                // and set the value                    
-                if (IsSignedType) {
+                // and set the value
+                if (IsBoolType) {
+                    address.WriteByte(offset, (byte)valueBits);
+                } else if (IsSignedType) {
                     if (_fieldType.Size <= 4) {
                         _fieldType.SetValue(address, offset, (int)(long)valueBits);
                     } else {
@@ -255,7 +271,14 @@ namespace IronPython.Modules {
                 }
             }
 
-#endregion
+            private bool IsBoolType => ((SimpleType)_fieldType)._type is SimpleTypeKind.Boolean;
+
+            /// <summary>
+            /// Returns true if the field is a bitfield that does not span the whole width of the underlying field type.
+            /// </summary>
+            private bool IsProperBitfield => 0 < _bits && _bits < _fieldType.Size * 8;
+
+            #endregion
         }
     }
 }

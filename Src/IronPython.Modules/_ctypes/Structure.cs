@@ -44,7 +44,7 @@ namespace IronPython.Modules {
                 MemHolder = new MemoryHolder(NativeType.Size);
             }
 
-            public void __init__(params object[] args) {
+            public void __init__([NotNone] params object[] args) {
                 CheckAbstract();
 
                 INativeType nativeType = NativeType;

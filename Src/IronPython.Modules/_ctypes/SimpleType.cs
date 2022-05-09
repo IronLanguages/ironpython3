@@ -34,7 +34,7 @@ namespace IronPython.Modules {
             internal readonly SimpleTypeKind _type;
             private readonly char _charType;
             private readonly string _format;
-            private readonly bool _swap;
+            internal readonly bool _swap;
 
             public SimpleType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict) : base(context, name, bases, dict) {
                 string sVal;

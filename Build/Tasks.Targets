@@ -68,11 +68,11 @@
             buffer = replaceRegex.Replace(buffer, Replacement);
             File.WriteAllText(fileName, buffer);
           }
+          Success = true;
         } catch(Exception ex) {
           Log.LogErrorFromException(ex);
-          return false;
+          Success = false;
         }
-        return true;
         ]]>
       </Code>
     </Task>

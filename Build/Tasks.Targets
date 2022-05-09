@@ -37,8 +37,8 @@
           }
           Success = true;
         } catch (Exception ex) {
-          Log.LogErrorFromException(ex);
           Success = false;
+          Log.LogErrorFromException(ex);
         } finally {
           if (cwd != null) {
             Environment.CurrentDirectory = cwd;
@@ -70,8 +70,8 @@
           }
           Success = true;
         } catch(Exception ex) {
-          Log.LogErrorFromException(ex);
           Success = false;
+          Log.LogErrorFromException(ex);
         }
         ]]>
       </Code>

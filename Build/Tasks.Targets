@@ -35,10 +35,10 @@
                 fileStream.CopyTo(fileStreamInZip);
             }
           }
-          return true;
+          Success = true;
         } catch (Exception ex) {
+          Success = false;
           Log.LogErrorFromException(ex);
-          return false;
         } finally {
           if (cwd != null) {
             Environment.CurrentDirectory = cwd;
@@ -68,11 +68,11 @@
             buffer = replaceRegex.Replace(buffer, Replacement);
             File.WriteAllText(fileName, buffer);
           }
+          Success = true;
         } catch(Exception ex) {
+          Success = false;
           Log.LogErrorFromException(ex);
-          return false;
         }
-        return true;
         ]]>
       </Code>
     </Task>

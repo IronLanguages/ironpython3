@@ -560,19 +560,19 @@ class FunctionTest(IronPythonTestCase):
             return x
 
         self.assertEqual(foo('abc'), 'abc')
-        self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, big(2))
-        self.assertRaises(AssertionError, foo, 2.0)
-        self.assertRaises(AssertionError, foo, True)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected str)", foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected str)", foo, big(2))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got float, expected str)", foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got bool, expected str)", foo, True)
 
         @clr.accepts(str, bool)
         def foo(x, y):
             return x, y
 
         self.assertEqual(foo('abc', True), ('abc', True))
-        self.assertRaises(AssertionError, foo, ('abc',2))
-        self.assertRaises(AssertionError, foo, ('abc',big(2)))
-        self.assertRaises(AssertionError, foo, ('abc',2.0))
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected bool)", foo, 'abc', 2)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected bool)", foo, 'abc', big(2))
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got float, expected bool)", foo, 'abc', 2.0)
 
 
         class bar:
@@ -583,10 +583,10 @@ class FunctionTest(IronPythonTestCase):
 
         a = bar()
         self.assertEqual(a.foo('xyz'), 'xyz')
-        self.assertRaises(AssertionError, a.foo, 2)
-        self.assertRaises(AssertionError, a.foo, big(2))
-        self.assertRaises(AssertionError, a.foo, 2.0)
-        self.assertRaises(AssertionError, a.foo, True)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected str)", a.foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected str)", a.foo, big(2))
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got float, expected str)", a.foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got bool, expected str)", a.foo, True)
 
         @clr.returns(str)
         def foo(x):
@@ -594,10 +594,10 @@ class FunctionTest(IronPythonTestCase):
 
 
         self.assertEqual(foo('abc'), 'abc')
-        self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, big(2))
-        self.assertRaises(AssertionError, foo, 2.0)
-        self.assertRaises(AssertionError, foo, True)
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, 2)
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, big(2))
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got float)", foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got bool)", foo, True)
 
         @clr.accepts(bool)
         @clr.returns(str)
@@ -607,9 +607,9 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo(True), 'True')
 
-        self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, big(2))
-        self.assertRaises(AssertionError, foo, False)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected bool)", foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected bool)", foo, big(2))
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, False)
 
         @clr.returns(None)
         def foo(): pass

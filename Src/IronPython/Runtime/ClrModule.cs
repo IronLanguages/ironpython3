@@ -665,7 +665,9 @@ import Namespace.")]
 
                     PythonType expct = _expected[i] as PythonType;
                     if (dt != _expected[i] && !dt.IsSubclassOf(expct)) {
-                        throw PythonOps.AssertionError("argument {0} has bad value (got {1}, expected {2})", i, dt, _expected[i]);
+                        throw PythonOps.AssertionError(
+                            "argument {0} has bad value (got {1}, expected {2})",
+                            i, PythonOps.GetPythonTypeNameFromType(dt), expct.Name);
                     }
                 }
             }
@@ -758,7 +760,9 @@ import Namespace.")]
                     PythonType expct = _retType as PythonType;
 
                     if (!dt.IsSubclassOf(expct))
-                        throw PythonOps.AssertionError("bad return value returned (expected {0}, got {1})", _retType, dt);
+                        throw PythonOps.AssertionError(
+                            "bad return value returned (expected {0}, got {1})",
+                            expct.Name, PythonOps.GetPythonTypeNameFromType(dt));
                 }
             }
 

@@ -2,20 +2,23 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace IronPython.Runtime {
 
     public class ListGenericWrapper<T> : IList<T> {
-        private readonly IList<object> _value;
+        private readonly IList<object?> _value;
         // PEP 237: int/long unification (GH #52)
         private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
-        public ListGenericWrapper(IList<object> value) { _value = value; }
+        public ListGenericWrapper([NotNone] IList<object?> value) { _value = value; }
 
         #region IList<T> Members
 
@@ -40,11 +43,17 @@ namespace IronPython.Runtime {
 
         public T this[int index] {
             get {
-                object item = _value[index];
+                object? item = _value[index];
                 if (IsBigIntWrapper && item is int i32) {
                     item = new BigInteger(i32);
                 }
-                return (T)item;
+                try {
+                    return (T)item!;
+                } catch (NullReferenceException nex) {
+                    throw new InvalidCastException(string.Format("Error in ListGenericWrapper.this[]. Could not cast: from null to {0}", typeof(T).ToString()), nex);
+                } catch (InvalidCastException iex) {
+                    throw new InvalidCastException(string.Format("Error in ListGenericWrapper.this[]. Could not cast: from {1} to {0}", typeof(T).ToString(), item!.GetType().ToString()), iex);
+                }
             }
 
             set => _value[index] = value;
@@ -112,34 +121,38 @@ namespace IronPython.Runtime {
         #endregion
     }
 
+#if NETCOREAPP3_1  // In netcoreapp3.1, IDictionary<K, V> has constraint where K : notnull
+#nullable disable warnings
+#endif
+
     public class DictionaryGenericWrapper<K, V> : IDictionary<K, V> {
-        private readonly IDictionary<object, object> self;
+        private readonly IDictionary<object?, object?> self;
         // PEP 237: int/long unification (GH #52)
         private static readonly bool IsBigIntWrapperK = typeof(K) == typeof(BigInteger) || typeof(K) == typeof(BigInteger?);
         private static readonly bool IsBigIntWrapperV = typeof(V) == typeof(BigInteger) || typeof(V) == typeof(BigInteger?);
 
-        public DictionaryGenericWrapper(IDictionary<object, object> self) {
+        public DictionaryGenericWrapper([NotNone] IDictionary<object?, object?> self) {
             this.self = self;
         }
 
         #region IDictionary<K,V> Members
 
         public void Add(K key, V value) {
-            object okey = key;
-            if (IsValidKey32(key, out object i32) && self.ContainsKey(i32)) {
+            object? okey = key;
+            if (IsValidKey32(key, out object? i32) && self.ContainsKey(i32)) {
                 okey = i32;
             }
             self.Add(okey, value);
         }
 
         public bool ContainsKey(K key) {
-            return self.ContainsKey(key) || (IsValidKey32(key, out object i32) && self.ContainsKey(i32));
+            return self.ContainsKey(key) || (IsValidKey32(key, out object? i32) && self.ContainsKey(i32));
         }
 
         public ICollection<K> Keys {
             get {
                 List<K> res = new List<K>(Count);
-                foreach (object o in self.Keys) {
+                foreach (object? o in self.Keys) {
                     res.Add(CastKey(o));
                 }
                 return res;
@@ -147,26 +160,26 @@ namespace IronPython.Runtime {
         }
 
         public bool Remove(K key) {
-            return self.Remove(key) || (IsValidKey32(key, out object i32) && self.Remove(i32));
+            return self.Remove(key) || (IsValidKey32(key, out object? i32) && self.Remove(i32));
         }
 
         public bool TryGetValue(K key, out V value) {
-            if (self.TryGetValue(key, out object outValue)) {
+            if (self.TryGetValue(key, out object? outValue)) {
                 value = CastValue(outValue);
                 return true;
             }
-            if (IsValidKey32(key, out object i32) && self.TryGetValue(i32, out object outValue2)) {
+            if (IsValidKey32(key, out object? i32) && self.TryGetValue(i32, out object? outValue2)) {
                 value = CastValue(outValue2);
                 return true;
             }
-            value = default;
+            value = default(V)!;
             return false;
         }
 
         public ICollection<V> Values {
             get {
                 List<V> res = new List<V>();
-                foreach (object o in self.Values) {
+                foreach (object? o in self.Values) {
                     res.Add(CastValue(o));
                 }
                 return res;
@@ -191,11 +204,11 @@ namespace IronPython.Runtime {
         #region ICollection<KeyValuePair<K,V>> Members
 
         public void Add(KeyValuePair<K, V> item) {
-            object key = item.Key;
-            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+            object? key = item.Key;
+            if (IsValidKey32(item.Key, out object? i32) && self.ContainsKey(i32)) {
                 key = i32;
             }
-            self.Add(new KeyValuePair<object, object>(key, item.Value));
+            self.Add(new KeyValuePair<object?, object?>(key, item.Value));
         }
 
         public void Clear() {
@@ -203,11 +216,11 @@ namespace IronPython.Runtime {
         }
 
         public bool Contains(KeyValuePair<K, V> item) {
-            object key = item.Key;
-            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+            object? key = item.Key;
+            if (IsValidKey32(item.Key, out object? i32) && self.ContainsKey(i32)) {
                 key = i32;
             }
-            return self.Contains(new KeyValuePair<object, object>(key, item.Value));
+            return self.Contains(new KeyValuePair<object?, object?>(key, item.Value));
         }
 
         public void CopyTo(KeyValuePair<K, V>[] array, int arrayIndex) {
@@ -225,11 +238,11 @@ namespace IronPython.Runtime {
         }
 
         public bool Remove(KeyValuePair<K, V> item) {
-            object key = item.Key;
-            if (IsValidKey32(item.Key, out object i32) && self.ContainsKey(i32)) {
+            object? key = item.Key;
+            if (IsValidKey32(item.Key, out object? i32) && self.ContainsKey(i32)) {
                 key = i32;
             }
-            return self.Remove(new KeyValuePair<object, object>(key, item.Value));
+            return self.Remove(new KeyValuePair<object?, object?>(key, item.Value));
         }
 
         #endregion
@@ -237,7 +250,7 @@ namespace IronPython.Runtime {
         #region IEnumerable<KeyValuePair<K,V>> Members
 
         public IEnumerator<KeyValuePair<K, V>> GetEnumerator() {
-            foreach (KeyValuePair<object, object> kv in self) {
+            foreach (KeyValuePair<object?, object?> kv in self) {
                 yield return new KeyValuePair<K, V>(CastKey(kv.Key), CastValue(kv.Value));
             }
         }
@@ -252,21 +265,33 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        private static K CastKey(object key) {
+        private static K CastKey(object? key) {
             if (IsBigIntWrapperK && key is int i32) {
                 key = new BigInteger(i32);
             }
-            return (K)key;
+            try {
+                return (K)key!;
+            } catch (NullReferenceException nex) {
+                throw new InvalidCastException(string.Format("Error in DictionaryGenericWrapper.CastKey. Could not cast: from null to {0}", typeof(K).ToString()), nex);
+            } catch (InvalidCastException iex) {
+                throw new InvalidCastException(string.Format("Error in DictionaryGenericWrapper.CastKey. Could not cast: from {1} to {0}", typeof(K).ToString(), key!.GetType().ToString()), iex);
+            }
         }
 
-        private static V CastValue(object val) {
+        private static V CastValue(object? val) {
             if (IsBigIntWrapperV && val is int i32) {
                 val = new BigInteger(i32);
             }
-            return (V)val;
+            try {
+                return (V)val!;
+            } catch (NullReferenceException nex) {
+                throw new InvalidCastException(string.Format("Error in DictionaryGenericWrapper.CastValue. Could not cast: from null to {0}", typeof(V).ToString()), nex);
+            } catch (InvalidCastException iex) {
+                throw new InvalidCastException(string.Format("Error in DictionaryGenericWrapper.CastValue. Could not cast: from {1} to {0}", typeof(V).ToString(), val!.GetType().ToString()), iex);
+            }
         }
 
-        private static bool IsValidKey32(K key, out object key32) {
+        private static bool IsValidKey32(K key, [NotNullWhen(true)] out object? key32) {
             if (IsBigIntWrapperK && key is BigInteger bi && bi >= int.MinValue && bi <= int.MaxValue) {
                 key32 = (int)bi;
                 return true;
@@ -276,26 +301,33 @@ namespace IronPython.Runtime {
         }
     }
 
+#if NETCOREAPP3_1
+#nullable enable
+#endif
+
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
         private readonly IEnumerator enumerable;
         // PEP 237: int/long unification (GH #52)
         private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
-        public IEnumeratorOfTWrapper(IEnumerator enumerable) {
+        public IEnumeratorOfTWrapper([NotNone] IEnumerator enumerable) {
             this.enumerable = enumerable;
         }
 
         #region IEnumerator<T> Members
+
         public T Current {
             get {
+                object? current = enumerable.Current;
+                if (IsBigIntWrapper && current is int i32) {
+                    current = new BigInteger(i32);
+                }
                 try {
-                    object current = enumerable.Current;
-                    if (IsBigIntWrapper && current is int i32) {
-                        current = new BigInteger(i32);
-                    }
-                    return (T)current;
-                } catch (System.InvalidCastException iex) {
-                    throw new System.InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from {1} to {0}", typeof(T).ToString(), enumerable.Current.GetType().ToString()), iex);
+                    return (T)current!;
+                } catch (NullReferenceException nex) {
+                    throw new InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from null to {0}", typeof(T).ToString()), nex);    
+                } catch (InvalidCastException iex) {
+                    throw new InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from {1} to {0}", typeof(T).ToString(), current!.GetType().ToString()), iex);
                 }
             }
         }
@@ -311,7 +343,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
-        object IEnumerator.Current {
+        object? IEnumerator.Current {
             get { return enumerable.Current; }
         }
 
@@ -330,7 +362,7 @@ namespace IronPython.Runtime {
     public class IEnumerableOfTWrapper<T> : IEnumerable<T>, IEnumerable {
         private readonly IEnumerable enumerable;
 
-        public IEnumerableOfTWrapper(IEnumerable enumerable) {
+        public IEnumerableOfTWrapper([NotNone] IEnumerable enumerable) {
             this.enumerable = enumerable;
         }
 
@@ -350,8 +382,6 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
-#nullable enable
 
     public sealed class MemoryBufferWrapper : IPythonBuffer {
         private readonly ReadOnlyMemory<byte> _rom;
@@ -425,6 +455,4 @@ namespace IronPython.Runtime {
             return new MemoryBufferWrapper(_rom, flags);
         }
     }
-
-#nullable restore
 }

@@ -18,7 +18,9 @@ namespace IronPython.Runtime {
         // PEP 237: int/long unification (GH #52)
         private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
-        public ListGenericWrapper([NotNone] IList<object?> value) { _value = value; }
+        public ListGenericWrapper(IList<object?> value) {
+            _value = value ?? throw new ArgumentNullException(nameof(value));
+        }
 
         #region IList<T> Members
 
@@ -131,8 +133,8 @@ namespace IronPython.Runtime {
         private static readonly bool IsBigIntWrapperK = typeof(K) == typeof(BigInteger) || typeof(K) == typeof(BigInteger?);
         private static readonly bool IsBigIntWrapperV = typeof(V) == typeof(BigInteger) || typeof(V) == typeof(BigInteger?);
 
-        public DictionaryGenericWrapper([NotNone] IDictionary<object?, object?> self) {
-            this.self = self;
+        public DictionaryGenericWrapper(IDictionary<object?, object?> self) {
+            this.self = self ?? throw new ArgumentNullException(nameof(self));
         }
 
         #region IDictionary<K,V> Members
@@ -310,8 +312,8 @@ namespace IronPython.Runtime {
         // PEP 237: int/long unification (GH #52)
         private static readonly bool IsBigIntWrapper = typeof(T) == typeof(BigInteger) || typeof(T) == typeof(BigInteger?);
 
-        public IEnumeratorOfTWrapper([NotNone] IEnumerator enumerable) {
-            this.enumerable = enumerable;
+        public IEnumeratorOfTWrapper(IEnumerator enumerable) {
+            this.enumerable = enumerable ?? throw new ArgumentNullException(nameof(enumerable));
         }
 
         #region IEnumerator<T> Members
@@ -358,12 +360,11 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    [PythonType("enumerable_wrapper")]
     public class IEnumerableOfTWrapper<T> : IEnumerable<T>, IEnumerable {
         private readonly IEnumerable enumerable;
 
-        public IEnumerableOfTWrapper([NotNone] IEnumerable enumerable) {
-            this.enumerable = enumerable;
+        public IEnumerableOfTWrapper(IEnumerable enumerable) {
+            this.enumerable = enumerable ?? throw new ArgumentNullException(nameof(enumerable));
         }
 
         #region IEnumerable<T> Members

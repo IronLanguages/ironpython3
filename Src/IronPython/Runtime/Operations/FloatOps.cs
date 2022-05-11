@@ -115,9 +115,9 @@ namespace IronPython.Runtime.Operations {
 
         public static PythonTuple as_integer_ratio(double self) {
             if (Double.IsInfinity(self)) {
-                throw PythonOps.OverflowError("Cannot pass infinity to float.as_integer_ratio.");
+                throw PythonOps.OverflowError("cannot convert Infinity to integer ratio");
             } else if (Double.IsNaN(self)) {
-                throw PythonOps.ValueError("Cannot pass nan to float.as_integer_ratio.");
+                throw PythonOps.ValueError("cannot convert NaN to integer ratio");
             }
 
             BigInteger dem = 1;

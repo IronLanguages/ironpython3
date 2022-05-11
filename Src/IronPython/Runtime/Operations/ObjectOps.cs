@@ -136,7 +136,7 @@ namespace IronPython.Runtime.Operations {
         /// Runs the pickle protocol
         /// </summary>
         public static object? __reduce_ex__(CodeContext/*!*/ context, object self, object protocol) {
-            object objectReduce = PythonOps.GetBoundAttr(context, DynamicHelpers.GetPythonTypeFromType(typeof(object)), "__reduce__");
+            object objectReduce = PythonOps.GetBoundAttr(context, TypeCache.Object, "__reduce__");
             if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), "__reduce__", out object? myReduce)) {
                 if (!PythonOps.IsRetBool(myReduce, objectReduce)) {
                     // A derived class overrode __reduce__ but not __reduce_ex__, so call

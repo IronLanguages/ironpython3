@@ -93,7 +93,7 @@ namespace IronPython.Runtime.Types {
                 if (Getter != null && Getter.Length > 0) {
                     return DynamicHelpers.GetPythonTypeFromType(Getter[0].ReturnType);
                 }
-                return DynamicHelpers.GetPythonTypeFromType(typeof(object));
+                return TypeCache.Object;
             }
         }
 

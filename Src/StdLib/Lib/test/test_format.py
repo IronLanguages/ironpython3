@@ -323,12 +323,12 @@ class FormatTest(unittest.TestCase):
         testcommon(b"%s", memoryview(b"abc"), b"abc")
         # %a will give the equivalent of
         # repr(some_obj).encode('ascii', 'backslashreplace')
-        testcommon(b"%a", 3.14, b"3.14")
+        testcommon(b"%a", 3.14, b"3.1400000000000001") # https://github.com/IronLanguages/ironpython2/issues/102
         testcommon(b"%a", b"ghi", b"b'ghi'")
         testcommon(b"%a", "jkl", b"'jkl'")
         testcommon(b"%a", "\u0544", b"'\\u0544'")
         # %r is an alias for %a
-        testcommon(b"%r", 3.14, b"3.14")
+        testcommon(b"%r", 3.14, b"3.1400000000000001") # https://github.com/IronLanguages/ironpython2/issues/102
         testcommon(b"%r", b"ghi", b"b'ghi'")
         testcommon(b"%r", "jkl", b"'jkl'")
         testcommon(b"%r", "\u0544", b"'\\u0544'")

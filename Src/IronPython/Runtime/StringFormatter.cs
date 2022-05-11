@@ -333,7 +333,9 @@ namespace IronPython.Runtime {
                 // single character (int or single char str)
                 case 'c': AppendChar(); return;
                 // string (repr() version)
-                case 'r': AppendRepr(); return;
+                case 'r':
+                    if (_asBytes) goto case 'a';
+                    AppendRepr(); return;
                 // string (str() version)
                 case 's':
                     if (_asBytes) goto case 'b';
@@ -384,9 +386,8 @@ namespace IronPython.Runtime {
         }
 
         private object GetIntegerValue(out bool fPos, bool allowDouble = true) {
-            if (!allowDouble && _opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>) {
-                // TODO: this should fail in 3.5
-                PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
+            if (!allowDouble && (_opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>)) {
+                throw PythonOps.TypeError($"an integer is required, not {PythonOps.GetPythonTypeName(_opts.Value)}");
             }
 
             object val;
@@ -859,10 +860,12 @@ namespace IronPython.Runtime {
             Debug.Assert(_asBytes);
             if (_opts.Value is Bytes bytes || Bytes.TryInvokeBytesOperator(_context, _opts.Value, out bytes!)) {
                 AppendString(StringOps.Latin1Encoding.GetString(bytes.UnsafeByteArray));
-            } else if (_opts.Value is ByteArray byteArray) {
-                AppendString(StringOps.Latin1Encoding.GetString(byteArray.UnsafeByteList.AsByteSpan()));
+            } else if (_opts.Value is IBufferProtocol bufferProtocol) {
+                using var buffer = bufferProtocol.GetBuffer(BufferFlags.FullRO);
+                var span = buffer.IsCContiguous() ? buffer.AsReadOnlySpan() : buffer.ToArray();
+                AppendString(StringOps.Latin1Encoding.GetString(span));
             } else {
-                throw PythonOps.TypeError($"%b requires bytes, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
+                throw PythonOps.TypeError($"%b requires a bytes-like object, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
             }
         }
 

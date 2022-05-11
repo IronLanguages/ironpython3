@@ -665,7 +665,7 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(foo(True), True)
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected IConvertible, got int)", foo, big(1))
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected IConvertible, got Index)", foo, System.Index(1))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected IConvertible, got Guid)", foo, System.Guid.Empty)
 
     def test_error_message(self):
         try:

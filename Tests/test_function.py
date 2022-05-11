@@ -560,10 +560,10 @@ class FunctionTest(IronPythonTestCase):
             return x
 
         self.assertEqual(foo('abc'), 'abc')
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected str)", foo, 2)
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected str)", foo, big(2))
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got float, expected str)", foo, 2.0)
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got bool, expected str)", foo, True)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected str, got int)", foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected str, got int)", foo, big(2))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected str, got float)", foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected str, got bool)", foo, True)
 
         @clr.accepts(int)
         def foo(x):
@@ -572,17 +572,17 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(foo(1), 1)
         self.assertEqual(foo(big(1)), 1)
         self.assertEqual(foo(True), True)
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got str, expected int)", foo, 'abc')
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got float, expected int)", foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected int, got str)", foo, 'abc')
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected int, got float)", foo, 2.0)
 
         @clr.accepts(str, bool)
         def foo(x, y):
             return x, y
 
         self.assertEqual(foo('abc', True), ('abc', True))
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected bool)", foo, 'abc', 2)
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected bool)", foo, 'abc', big(2))
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got float, expected bool)", foo, 'abc', 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected bool, got int)", foo, 'abc', 2)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected bool, got int)", foo, 'abc', big(2))
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected bool, got float)", foo, 'abc', 2.0)
 
 
         class bar:
@@ -593,10 +593,10 @@ class FunctionTest(IronPythonTestCase):
 
         a = bar()
         self.assertEqual(a.foo('xyz'), 'xyz')
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected str)", a.foo, 2)
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got int, expected str)", a.foo, big(2))
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got float, expected str)", a.foo, 2.0)
-        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (got bool, expected str)", a.foo, True)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected str, got int)", a.foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected str, got int)", a.foo, big(2))
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected str, got float)", a.foo, 2.0)
+        self.assertRaisesMessage(AssertionError, "argument 1 has bad value (expected str, got bool)", a.foo, True)
 
         @clr.returns(str)
         def foo(x):
@@ -621,8 +621,8 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo(True), 'True')
 
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected bool)", foo, 2)
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected bool)", foo, big(2))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected bool, got int)", foo, 2)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected bool, got int)", foo, big(2))
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, False)
 
 
@@ -646,16 +646,16 @@ class FunctionTest(IronPythonTestCase):
             @clr.returns(0)
             def foo(): pass
 
+        import System
         for t in clr_int_types:
             @clr.accepts(t)
             def foo(x):
                 return x
 
-            self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (got int, expected {str(t).split("'")[1]})""", foo, big(0))
-            if str(t) != "<class 'Int32'>":
-                self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (got int, expected {str(t).split("'")[1]})""", foo, 0)
+            self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (expected {str(t).split("'")[1]}, got int)""", foo, big(0))
+            if t != System.Int32:
+                self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (expected {str(t).split("'")[1]}, got int)""", foo, 0)
 
-        import System
         @clr.accepts(System.IConvertible)
         @clr.returns(System.IConvertible)
         def foo(x):
@@ -664,8 +664,8 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(foo(1), 1)
         self.assertEqual(foo(True), True)
         self.assertEqual(foo('abc'), 'abc')
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected IConvertible)", foo, big(1))
-        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got Index, expected IConvertible)", foo, System.Index(1))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected IConvertible, got int)", foo, big(1))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected IConvertible, got Index)", foo, System.Index(1))
 
     def test_error_message(self):
         try:

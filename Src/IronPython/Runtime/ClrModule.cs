@@ -666,8 +666,8 @@ import Namespace.")]
                     PythonType expct = _expected[i];
                     if (!IsInstanceOf(arg, expct)) {
                         throw PythonOps.AssertionError(
-                            "argument {0} has bad value (got {1}, expected {2})",
-                            i, PythonOps.GetPythonTypeName(arg), expct.Name);
+                            "argument {0} has bad value (expected {1}, got {2})",
+                            i, expct.Name, PythonOps.GetPythonTypeName(arg));
                     }
                 }
             }

@@ -87,7 +87,7 @@ namespace IronPython.Runtime.Types {
 
         [StaticExtensionMethod]
         public static object? __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
-            if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(DynamicNull)))
+            if (cls == TypeCache.Null)
                 return null;
             throw PythonOps.TypeError("{0} is not a subtype of NoneType", cls.Name);
         }

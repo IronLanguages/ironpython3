@@ -1450,7 +1450,7 @@ namespace IronPython.Runtime.Operations {
                 }
                 // this makes sure that object is a base
                 if (bases.Count == 0) {
-                    bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                    bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
                 PythonDictionary vars = func(parentContext).Dict;
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
@@ -1479,7 +1479,7 @@ namespace IronPython.Runtime.Operations {
 
             // Ensure the class derives from `object`
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {
-                newType.BaseTypes.Add(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                newType.BaseTypes.Add(TypeCache.Object);
             }
 
             return obj;

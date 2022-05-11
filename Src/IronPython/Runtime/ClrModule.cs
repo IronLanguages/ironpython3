@@ -19,6 +19,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -592,7 +593,7 @@ import Namespace.")]
         /// </summary>
         /// <param name="types"></param>
         /// <returns></returns>
-        public static object accepts(params object[] types) {
+        public static object accepts([NotNone] params object[] types) {
             return new ArgChecker(types);
         }
 
@@ -615,10 +616,10 @@ import Namespace.")]
         /// Decorator for verifying the arguments to a function are of a specified type.
         /// </summary>
         public class ArgChecker {
-            private readonly object[] expected;
+            private readonly PythonType[] expected;
 
-            public ArgChecker(object[] prms) {
-                expected = prms;
+            public ArgChecker([NotNone] object[] types) {
+                expected = types.Select(t => t.ToPythonType()).ToArray();
             }
 
             #region ICallableWithCodeContext Members
@@ -638,16 +639,16 @@ import Namespace.")]
         /// then calls the original function.
         /// </summary>
         public class RuntimeArgChecker : PythonTypeSlot {
-            private readonly object[] _expected;
+            private readonly PythonType[] _expected;
             private readonly object _func;
             private readonly object _inst;
 
-            public RuntimeArgChecker(object function, object[] expectedArgs) {
+            public RuntimeArgChecker([NotNone] object function, [NotNone] PythonType[] expectedArgs) {
                 _expected = expectedArgs;
                 _func = function;
             }
 
-            public RuntimeArgChecker(object instance, object function, object[] expectedArgs)
+            public RuntimeArgChecker(object instance, [NotNone] object function, [NotNone] PythonType[] expectedArgs)
                 : this(function, expectedArgs) {
                 _inst = instance;
             }
@@ -661,13 +662,12 @@ import Namespace.")]
 
                 // no need to validate self... the method should handle it.
                 for (int i = start; i < args.Length + start; i++) {
-                    PythonType dt = DynamicHelpers.GetPythonType(args[i - start]);
-
-                    PythonType expct = _expected[i] as PythonType;
-                    if (dt != _expected[i] && !dt.IsSubclassOf(expct)) {
+                    object arg = args[i - start];
+                    PythonType expct = _expected[i];
+                    if (!IsInstanceOf(arg, expct)) {
                         throw PythonOps.AssertionError(
                             "argument {0} has bad value (got {1}, expected {2})",
-                            i, PythonOps.GetPythonTypeNameFromType(dt), expct.Name);
+                            i, PythonOps.GetPythonTypeName(arg), expct.Name);
                     }
                 }
             }
@@ -716,10 +716,10 @@ import Namespace.")]
         /// Decorator for verifying the return type of functions.
         /// </summary>
         public class ReturnChecker {
-            public object retType;
+            public PythonType retType;
 
             public ReturnChecker(object returnType) {
-                retType = returnType;
+                retType = returnType.ToPythonType();
             }
 
             #region ICallableWithCodeContext Members
@@ -737,32 +737,25 @@ import Namespace.")]
         /// validates the return type is of a specified type.
         /// </summary>
         public class RuntimeReturnChecker : PythonTypeSlot {
-            private readonly object _retType;
+            private readonly PythonType _retType;
             private readonly object _func;
             private readonly object _inst;
 
-            public RuntimeReturnChecker(object function, object expectedReturn) {
+            public RuntimeReturnChecker([NotNone] object function, [NotNone] PythonType expectedReturn) {
                 _retType = expectedReturn;
                 _func = function;
             }
 
-            public RuntimeReturnChecker(object instance, object function, object expectedReturn)
+            public RuntimeReturnChecker(object instance, [NotNone] object function, [NotNone] PythonType expectedReturn)
                 : this(function, expectedReturn) {
                 _inst = instance;
             }
 
             private void ValidateReturn(object ret) {
-                // we return void...
-                if (ret == null && _retType == null) return;
-
-                PythonType dt = DynamicHelpers.GetPythonType(ret);
-                if (dt != _retType) {
-                    PythonType expct = _retType as PythonType;
-
-                    if (!dt.IsSubclassOf(expct))
-                        throw PythonOps.AssertionError(
-                            "bad return value returned (expected {0}, got {1})",
-                            expct.Name, PythonOps.GetPythonTypeNameFromType(dt));
+                if (!IsInstanceOf(ret, _retType)) {
+                    throw PythonOps.AssertionError(
+                        "bad return value returned (expected {0}, got {1})",
+                        _retType.Name, PythonOps.GetPythonTypeName(ret));
                 }
             }
 
@@ -813,6 +806,32 @@ import Namespace.")]
             }
 
             #endregion
+        }
+
+        private static PythonType ToPythonType(this object obj) {
+            return obj switch {
+                PythonType pt => pt,
+                Type t => DynamicHelpers.GetPythonTypeFromType(t),
+                null => TypeCache.Null,
+                _ => throw PythonOps.TypeErrorForTypeMismatch("type", obj)
+            };
+        }
+
+        private static bool IsInstanceOf(object obj, PythonType pt) {
+            // See also PythonOps.IsInstance
+            var objType = DynamicHelpers.GetPythonType(obj);
+
+            if (objType == pt) {
+                return true;
+            }
+
+            // PEP 237: int/long unification
+            // https://github.com/IronLanguages/ironpython3/issues/52
+            if (pt == TypeCache.BigInteger && obj is int) {
+                return true;
+            }
+
+            return pt.__subclasscheck__(objType);
         }
 
         /// <summary>

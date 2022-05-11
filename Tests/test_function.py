@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, clr_int_types, run_test, skipUnlessIronPython
 from types import FunctionType, MethodType
 
 global init
@@ -565,6 +565,16 @@ class FunctionTest(IronPythonTestCase):
         self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got float, expected str)", foo, 2.0)
         self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got bool, expected str)", foo, True)
 
+        @clr.accepts(int)
+        def foo(x):
+            return x
+
+        self.assertEqual(foo(1), 1)
+        self.assertEqual(foo(big(1)), 1)
+        self.assertEqual(foo(True), True)
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got str, expected int)", foo, 'abc')
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got float, expected int)", foo, 2.0)
+
         @clr.accepts(str, bool)
         def foo(x, y):
             return x, y
@@ -592,12 +602,16 @@ class FunctionTest(IronPythonTestCase):
         def foo(x):
             return x
 
-
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, 2)
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, big(2))
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got float)", foo, 2.0)
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got bool)", foo, True)
+
+        with self.assertRaisesMessage(TypeError, "expected type, got int"):
+            @clr.accepts(0)
+            def foo(x): pass
+
 
         @clr.accepts(bool)
         @clr.returns(str)
@@ -611,10 +625,47 @@ class FunctionTest(IronPythonTestCase):
         self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected bool)", foo, big(2))
         self.assertRaisesMessage(AssertionError, "bad return value returned (expected str, got int)", foo, False)
 
+
         @clr.returns(None)
         def foo(): pass
 
         self.assertEqual(foo(), None)
+
+        @clr.returns(type(None))
+        def foo(): pass
+
+        self.assertEqual(foo(), None)
+
+        @clr.returns(None)
+        def foo():
+            return 1
+
+        self.assertRaisesMessage(AssertionError, "bad return value returned (expected NoneType, got int)", foo)
+
+        with self.assertRaisesMessage(TypeError, "expected type, got int"):
+            @clr.returns(0)
+            def foo(): pass
+
+        for t in clr_int_types:
+            @clr.accepts(t)
+            def foo(x):
+                return x
+
+            self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (got int, expected {str(t).split("'")[1]})""", foo, big(0))
+            if str(t) != "<class 'Int32'>":
+                self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (got int, expected {str(t).split("'")[1]})""", foo, 0)
+
+        import System
+        @clr.accepts(System.IConvertible)
+        @clr.returns(System.IConvertible)
+        def foo(x):
+            return x
+
+        self.assertEqual(foo(1), 1)
+        self.assertEqual(foo(True), True)
+        self.assertEqual(foo('abc'), 'abc')
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got int, expected IConvertible)", foo, big(1))
+        self.assertRaisesMessage(AssertionError, "argument 0 has bad value (got Index, expected IConvertible)", foo, System.Index(1))
 
     def test_error_message(self):
         try:

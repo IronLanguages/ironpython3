@@ -841,6 +841,33 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
+        public static PythonDictionary maketrans([NotNone] PythonDictionary x) {
+            var res = new PythonDictionary();
+            foreach (var p in x) {
+                object from = p.Key switch {
+                    bool b => ScriptingRuntimeHelpers.Int32ToObject(b ? 1 : 0),
+                    int i => ScriptingRuntimeHelpers.Int32ToObject(i),
+                    BigInteger bi => bi,
+                    Extensible<BigInteger> ebi => ebi.Value,
+                    string s => FromString(s),
+                    Extensible<string> es => FromString(es.Value),
+                    _ => throw PythonOps.TypeError("keys in translate table must be strings or integers"),
+                };
+                res[from] = p.Value;
+            }
+            return res;
+
+            static int FromString(string s) {
+                // TODO: revisit this once we implement https://github.com/IronLanguages/ironpython3/issues/252
+                if (s.Length == 1) {
+                    return s[0];
+                }
+
+                throw PythonOps.ValueError("string keys in translate table must be of length 1");
+            }
+        }
+
+        [StaticExtensionMethod]
         public static PythonDictionary maketrans([NotNone] string from, [NotNone] string to) {
             if (from.Length != to.Length) throw PythonOps.ValueError("maketrans arguments must have same length");
 

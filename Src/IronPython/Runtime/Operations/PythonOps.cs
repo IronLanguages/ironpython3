@@ -4012,7 +4012,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForBinaryOp(string opSymbol, object? x, object? y) {
-            throw PythonOps.TypeError("unsupported operand type(s) for {0}: '{1}' and '{2}'",
+            throw PythonOps.TypeError("'{0}' not supported between instances of '{1}' and '{2}'",
                                 opSymbol, GetPythonTypeName(x), GetPythonTypeName(y));
         }
 

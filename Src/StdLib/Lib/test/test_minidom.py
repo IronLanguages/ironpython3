@@ -2,7 +2,6 @@
 
 import copy
 import pickle
-import sys
 from test import support
 import unittest
 
@@ -1141,7 +1140,6 @@ class MinidomTest(unittest.TestCase):
                 "test NodeList.item()")
         doc.unlink()
 
-    @unittest.skipIf(sys.implementation.name == 'ironpython', 'https://github.com/IronLanguages/ironpython2/issues/464')
     def testEncodings(self):
         doc = parseString('<foo>&#x20ac;</foo>')
         self.assertEqual(doc.toxml(),

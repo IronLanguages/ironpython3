@@ -758,7 +758,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            throw PythonOps.TypeErrorForBinaryOp("power with modulus", x, y);
+            throw PythonOps.TypeError("unsupported operand type(s) for pow(): '{0}', '{1}', '{2}'", GetPythonTypeName(x), GetPythonTypeName(y), GetPythonTypeName(y));
         }
 
         public static long Id(object? o) {

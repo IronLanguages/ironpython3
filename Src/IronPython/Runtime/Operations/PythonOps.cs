@@ -896,10 +896,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryInvokeLengthHint(CodeContext context, object? sequence, out int hint) {
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out object len_obj) ||
-                PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out object len_obj)) {
                 if (!(len_obj is NotImplementedType)) {
                     hint = Converter.ConvertToInt32(len_obj);
+                    if (hint < 0) throw ValueError("__len__() should return >= 0");
+                    return true;
+                }
+            } else if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
+                if (!(len_obj is NotImplementedType)) {
+                    hint = Converter.ConvertToInt32(len_obj);
+                    if (hint < 0) throw ValueError("__length_hint__() should return >= 0");
                     return true;
                 }
             }

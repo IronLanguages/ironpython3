@@ -72,8 +72,7 @@ namespace IronPython.Modules {
 
             internal void InitializeFromBuffer(object? data, int offset, int size) {
                 var bp = data as IBufferProtocol
-                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
-                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+                    ?? throw PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
 
                 IPythonBuffer buffer = bp.GetBuffer(BufferFlags.FullRO);
                 if (buffer.IsReadOnly) {
@@ -97,8 +96,7 @@ namespace IronPython.Modules {
 
             internal void InitializeFromBufferCopy(object? data, int offset, int size) {
                 var bp = data as IBufferProtocol
-                    ?? throw PythonOps.TypeErrorForBadInstance("{0} object does not have the buffer interface", data);
-                    // Python 3.5: PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
+                    ?? throw PythonOps.TypeErrorForBytesLikeTypeMismatch(data);
 
                 using IPythonBuffer buffer = bp.GetBuffer();
                 var span = buffer.AsReadOnlySpan();

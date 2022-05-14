@@ -72,13 +72,13 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
-            if (Converter.IsNumeric(arg.LimitType)) {
-                if (Converter.IsFloatingPoint(arg.LimitType)) {
+            if (IsNumeric(arg.LimitType)) {
+                if (IsFloatingPoint(arg.LimitType)) {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {
                         if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
                             return Candidate.One;
                         } else if (level != PythonNarrowing.None) { // both params are floating point
-                            Candidate preferred = GetWiderCandidate(candidateOne, candidateTwo);
+                            Candidate preferred = SelectWiderNumericType(candidateOne.Type, candidateTwo.Type);
                             if (preferred != Candidate.Ambiguous) {
                                 return preferred;
                             }
@@ -91,7 +91,7 @@ namespace IronPython.Runtime.Binding {
                         if (!Converter.IsInteger(candidateTwo.Type)) {
                             return Candidate.One;
                         } else if (level != PythonNarrowing.None) { // both params are integer
-                            Candidate preferred = GetWiderCandidate(candidateOne, candidateTwo);
+                            Candidate preferred = SelectWiderNumericType(candidateOne.Type, candidateTwo.Type);
                             if (preferred != Candidate.Ambiguous) {
                                 return preferred;
                             }
@@ -205,9 +205,22 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        private static Candidate GetWiderCandidate(ParameterWrapper candidateOne, ParameterWrapper candidateTwo) {
-            if (GetUnmanagedNumericTypeWidth(candidateOne.Type) is not int candidateOneWidth) return Candidate.Ambiguous;
-            if (GetUnmanagedNumericTypeWidth(candidateTwo.Type) is not int candidateTwoWidth) return Candidate.Ambiguous;
+        private static bool IsNumeric(Type t) {
+            return Converter.IsNumeric(t)
+                || typeof(Extensible<BigInteger>).IsAssignableFrom(t)
+                || typeof(Extensible<double>).IsAssignableFrom(t)
+                || typeof(Extensible<Complex>).IsAssignableFrom(t);
+        }
+
+        private static bool IsFloatingPoint(Type t) {
+            return Converter.IsFloatingPoint(t)
+                || typeof(Extensible<double>).IsAssignableFrom(t)
+                || typeof(Extensible<Complex>).IsAssignableFrom(t);
+        }
+
+        private static Candidate SelectWiderNumericType(Type candidateOneType, Type candidateTwoType) {
+            if (GetUnmanagedNumericTypeWidth(candidateOneType) is not int candidateOneWidth) return Candidate.Ambiguous;
+            if (GetUnmanagedNumericTypeWidth(candidateTwoType) is not int candidateTwoWidth) return Candidate.Ambiguous;
 
             Candidate preferred = Comparer<int>.Default.Compare(candidateOneWidth, candidateTwoWidth) switch {
                  1 => Candidate.One,
@@ -216,9 +229,9 @@ namespace IronPython.Runtime.Binding {
                  _ => throw new InvalidOperationException()
             };
 
-            if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOne.Type) && !Converter.IsUnsignedInt(candidateTwo.Type)) {
+            if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOneType) && !Converter.IsUnsignedInt(candidateTwoType)) {
                 preferred = Candidate.Ambiguous;
-            } else if (preferred == Candidate.Two && Converter.IsUnsignedInt(candidateTwo.Type) && !Converter.IsUnsignedInt(candidateOne.Type)) {
+            } else if (preferred == Candidate.Two && Converter.IsUnsignedInt(candidateTwoType) && !Converter.IsUnsignedInt(candidateOneType)) {
                 preferred = Candidate.Ambiguous;
             }
             return preferred;

@@ -22,7 +22,7 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, [0, 1, 2, 3])
         self.assertEqual(b, 4)
         self.assertEqual(c, 5)
-    
+
     def test_unpack_into_exprlist_3(self):
         a, *b, c = range(6)
         self.assertEqual(a, 0)
@@ -46,7 +46,7 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(f, [1, 2, 3])
         self.assertEqual(g, 4)
         self.assertEqual(h, 5)
-        
+
     def test_unpack_into_list_1(self):
         [*a] = range(2)
         self.assertEqual(a, [0, 1])
@@ -75,7 +75,7 @@ class UnpackTest(unittest.TestCase):
             self.assertEqual(b, index)
             self.assertEqual(a, [index])
             index = index + 1
-    
+
     def test_unpack_into_for_target_3(self):
         index = 0
         expected_a = [1, 4]
@@ -120,11 +120,8 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError(body, "too many expressions in star-unpacking assignment")
 
     def test_assign_to_empty(self):
-        if sys.version_info >= (3,6):
-            exec("() = []") # TODO: remove exec once our baseline is >= 3.6
-        else:
-            self.assertRaisesSyntaxError('() = []', "can't assign to ()")
-        [] = () # OK
+        () = [] # new in 3.6
+        [] = ()
 
     def test_assign_trailing_comma_list_to_list(self):
         [a, *b,] = [1, 2, 3]

@@ -690,7 +690,6 @@ namespace IronPython.Runtime {
         public static Candidate PreferConvert(Type t1, Type t2) {
             if (t1 == typeof(bool) && t2 == typeof(int)) return Candidate.Two;
             if (t1 == typeof(decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
-            //if (t1 == typeof(int) && t2 == typeof(BigInteger)) return Candidate.Two;
 
             switch (t1.GetTypeCode()) {
                 case TypeCode.SByte:
@@ -732,35 +731,27 @@ namespace IronPython.Runtime {
         }
 
         private static bool HasNarrowingConversion(Type fromType, Type toType, NarrowingLevel allowNarrowing) {
-            if (allowNarrowing == PythonNarrowing.IndexOperator) {
-                if (toType == CharType && fromType == StringType) return true;
-                if (toType == StringType && fromType == CharType) return true;
-                //if (toType == Int32Type && fromType == BigIntegerType) return true;
-                //if (IsIntegral(fromType) && IsIntegral(toType)) return true;
 
-                //Check if there is an implicit convertor defined on fromType to toType
-                if (HasImplicitConversion(fromType, toType)) {
+            if (allowNarrowing >= PythonNarrowing.All) {
+                //__int__, __float__; __long__ is obsolete
+                if (IsNumeric(fromType) && IsNumeric(toType)) {
+                    if ((toType == Int32Type || toType == BigIntegerType) &&
+                        (fromType == DoubleType || typeof(Extensible<double>).IsAssignableFrom(fromType))) return false;
                     return true;
                 }
+                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
+                if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
+                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__int__")) return true;
             }
 
-            if (toType == DoubleType || toType == SingleType) {
-                if (IsNumeric(fromType) && fromType != ComplexType) return true;
-            }
-
-            if (toType.IsArray) {
-                return typeof(PythonTuple).IsAssignableFrom(fromType);
-            }
-
-            if (allowNarrowing == PythonNarrowing.IndexOperator) {
-                if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if (fromType != typeof(float) && fromType != typeof(double) && fromType != typeof(decimal) && fromType != typeof(Complex)) {
-                        return true;
-                    }
+            if (allowNarrowing >= PythonNarrowing.IndexOperator) {
+                if (IsNumeric(toType)) {
+                    if (IsInteger(fromType)) return true;
+                    if (fromType == BooleanType) return true; // bool is a subclass of int in Python
                 }
-                if (fromType == typeof(bool) && IsNumeric(toType)) return true;
 
                 if (toType == CharType && fromType == StringType) return true;
+                if (toType == StringType && fromType == CharType) return true;
                 if (toType == Int32Type && fromType == BooleanType) return true;
 
                 // Everything can convert to Boolean in Python
@@ -780,36 +771,42 @@ namespace IronPython.Runtime {
                         if (IsPythonType(fromType)) return true;
                     }
                 }
-            }
 
-            if (allowNarrowing == PythonNarrowing.All) {
-                //__int__, __float__; __long__ is obsolete
-                if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if ((toType == Int32Type || toType == BigIntegerType) &&
-                        (fromType == DoubleType || typeof(Extensible<double>).IsAssignableFrom(fromType))) return false;
+                //Check if there is an implicit convertor defined on fromType to toType
+                if (HasImplicitConversion(fromType, toType)) {
                     return true;
                 }
-                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
-                if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
-                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__int__")) return true;
             }
 
-            if (toType.IsGenericType) {
-                Type genTo = toType.GetGenericTypeDefinition();
-                if (genTo == IListOfTType) {
-                    return IListOfObjectType.IsAssignableFrom(fromType);
-                } else if (genTo == NullableOfTType) {
-                    if (fromType == typeof(DynamicNull) || CanConvertFrom(fromType, toType.GetGenericArguments()[0], allowNarrowing)) {
-                        return true;
+            if (allowNarrowing >= PythonNarrowing.BinaryOperator) {
+                if (toType.IsGenericType) {
+                    Type genTo = toType.GetGenericTypeDefinition();
+                    if (genTo == IListOfTType) {
+                        return IListOfObjectType.IsAssignableFrom(fromType);
+                    } else if (genTo == NullableOfTType) {
+                        if (fromType == typeof(DynamicNull) || CanConvertFrom(fromType, toType.GetGenericArguments()[0], allowNarrowing)) {
+                            return true;
+                        }
+                    } else if (genTo == IDictOfTType) {
+                        return IDictionaryOfObjectType.IsAssignableFrom(fromType);
                     }
-                } else if (genTo == IDictOfTType) {
-                    return IDictionaryOfObjectType.IsAssignableFrom(fromType);
+                }
+
+                if (toType.IsArray) {
+                    return typeof(PythonTuple).IsAssignableFrom(fromType);
                 }
             }
 
-            if (fromType == BigIntegerType && toType == Int64Type) return true;
-            if (fromType == BigIntegerType && toType == UInt64Type) return true;
-            if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
+            if (allowNarrowing >= PythonNarrowing.Minimal) {
+                if (fromType == BigIntegerType && toType == Int64Type) return true;
+                if (fromType == BigIntegerType && toType == UInt64Type) return true;
+
+                if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
+
+                if (toType == DoubleType || toType == SingleType) {
+                    if (IsNumeric(fromType) && fromType != ComplexType) return true;
+                }
+            }
 
             return false;
         }

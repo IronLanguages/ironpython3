@@ -24,7 +24,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_complex.ComplexTest('test_divmod'))
         suite.addTest(test.test_complex.ComplexTest('test_file'))
         suite.addTest(test.test_complex.ComplexTest('test_floordiv'))
-        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_format')))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_format'))) # https://github.com/IronLanguages/ironpython2/issues/102
         suite.addTest(test.test_complex.ComplexTest('test_getnewargs'))
         suite.addTest(test.test_complex.ComplexTest('test_hash'))
         suite.addTest(test.test_complex.ComplexTest('test_mod'))
@@ -39,7 +39,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_complex.ComplexTest('test_richcompare'))
         suite.addTest(test.test_complex.ComplexTest('test_richcompare_boundaries'))
         suite.addTest(test.test_complex.ComplexTest('test_truediv'))
-        suite.addTest(test.test_complex.ComplexTest('test_underscores'))
+        suite.addTest(unittest.expectedFailure(test.test_complex.ComplexTest('test_underscores'))) # https://github.com/IronLanguages/ironpython3/issues/105
         return suite
 
     else:

@@ -77,6 +77,11 @@ namespace IronPython.Runtime.Binding {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {
                         if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
                             return Candidate.One;
+                        } else if (level != PythonNarrowing.None) { // both params are floating point
+                            Candidate preferred = GetWiderCandidate(candidateOne, candidateTwo);
+                            if (preferred != Candidate.Ambiguous) {
+                                return preferred;
+                            }
                         }
                     } else if (Converter.IsFloatingPoint(candidateTwo.Type)) {
                         return Candidate.Two;
@@ -85,6 +90,11 @@ namespace IronPython.Runtime.Binding {
                     if (Converter.IsInteger(candidateOne.Type)) {
                         if (!Converter.IsInteger(candidateTwo.Type)) {
                             return Candidate.One;
+                        } else if (level != PythonNarrowing.None) { // both params are integer
+                            Candidate preferred = GetWiderCandidate(candidateOne, candidateTwo);
+                            if (preferred != Candidate.Ambiguous) {
+                                return preferred;
+                            }
                         }
                     } else if (Converter.IsInteger(candidateTwo.Type)) {
                         return Candidate.Two;
@@ -193,6 +203,41 @@ namespace IronPython.Runtime.Binding {
             }
 
             return res;
+        }
+
+        private static Candidate GetWiderCandidate(ParameterWrapper candidateOne, ParameterWrapper candidateTwo) {
+            if (GetUnmanagedNumericTypeWidth(candidateOne.Type) is not int candidateOneWidth) return Candidate.Ambiguous;
+            if (GetUnmanagedNumericTypeWidth(candidateTwo.Type) is not int candidateTwoWidth) return Candidate.Ambiguous;
+
+            Candidate preferred = Comparer<int>.Default.Compare(candidateOneWidth, candidateTwoWidth) switch {
+                 1 => Candidate.One,
+                 0 => Candidate.Equivalent,
+                -1 => Candidate.Two,
+                 _ => throw new InvalidOperationException()
+            };
+
+            if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOne.Type) && !Converter.IsUnsignedInt(candidateTwo.Type)) {
+                preferred = Candidate.Ambiguous;
+            } else if (preferred == Candidate.Two && Converter.IsUnsignedInt(candidateTwo.Type) && !Converter.IsUnsignedInt(candidateOne.Type)) {
+                preferred = Candidate.Ambiguous;
+            }
+            return preferred;
+        }
+
+        private static int? GetUnmanagedNumericTypeWidth(Type type) {
+            return type.GetTypeCode() switch {
+                TypeCode.SByte => sizeof(sbyte),
+                TypeCode.Int16 => sizeof(short),
+                TypeCode.Int32 => sizeof(int),
+                TypeCode.Int64 => sizeof(long),
+                TypeCode.Byte  => sizeof(byte),
+                TypeCode.UInt16 => sizeof(ushort),
+                TypeCode.UInt32 => sizeof(uint),
+                TypeCode.UInt64 => sizeof(ulong),
+                TypeCode.Single => sizeof(float),
+                TypeCode.Double => sizeof(double),
+                _ => null
+            };
         }
 
         private bool IsBytesLikeParameter(ParameterWrapper parameter) {

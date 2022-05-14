@@ -893,6 +893,20 @@ namespace IronPython.Runtime {
             return IsNumeric(t) && !IsFloatingPoint(t);
         }
 
+        internal static bool IsUnsignedInt(Type t) {
+            if (t.IsEnum) return false;
+
+            switch (t.GetTypeCode()) {
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+            }
+
+            return false;
+        }
+
         private static bool IsPythonType(Type t) {
             return t.FullName.StartsWith("IronPython.", StringComparison.Ordinal); //!!! this and the check below are hacks
         }

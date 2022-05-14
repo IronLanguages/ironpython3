@@ -113,9 +113,9 @@ class MethodBinder1Test(IronPythonTestCase):
     (       "UInt32Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, True,  True,  TypeE, True,  True,  ),
     (        "Int64Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
     (       "UInt64Max", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
-    (      "DecimalMax", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (       "SingleMax", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMax", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (      "DecimalMax", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (       "SingleMax", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, OverF, True,  ),
+    (        "floatMax", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, OverF, True,  ),
     ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (        "SByteMin", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
@@ -126,9 +126,9 @@ class MethodBinder1Test(IronPythonTestCase):
     (       "UInt32Min", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (        "Int64Min", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (       "UInt64Min", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (      "DecimalMin", OverF, OverF, True , True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, True , True,  ),
-    (       "SingleMin", OverF, OverF, True,  True,  True,  True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
-    (        "floatMin", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, OverF, OverF, OverF, True,  OverF, OverF, OverF, OverF, TypeE, OverF, True,  ),
+    (      "DecimalMin", TypeE, TypeE, True , TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True , True,  ),
+    (       "SingleMin", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, OverF, True,  ),
+    (        "floatMin", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, OverF, True,  ),
     ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (    "SBytePlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
@@ -140,10 +140,10 @@ class MethodBinder1Test(IronPythonTestCase):
     (   "UInt32PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (    "Int64PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
     (   "UInt64PlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (  "DecimalPlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE,  True,  True,  ),
-    (   "SinglePlusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (    "floatPlusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-    (          myfloat1, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+    (  "DecimalPlusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE,  True,  True,  ),
+    (   "SinglePlusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (    "floatPlusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (          myfloat1, TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
     ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (   "SByteMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
@@ -151,10 +151,10 @@ class MethodBinder1Test(IronPythonTestCase):
     (   "Int32MinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (            myint2, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
     (   "Int64MinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    ( "DecimalMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (  "SingleMinusOne", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (   "floatMinusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-    (          myfloat2, True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+    ( "DecimalMinusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (  "SingleMinusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (   "floatMinusOne", TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
+    (          myfloat2, TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ),
     ##################################################   pass in bool   #########################################################
     ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
@@ -186,10 +186,10 @@ class MethodBinder1Test(IronPythonTestCase):
         ####    single/double becomes Int32/BigInteger, but this does not apply to other primitive types
         ####                                                          M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
         ####                                                           int   int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-        matrix.append((System.Single.Parse("8.01", InvariantCulture), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ))
-        matrix.append((System.Single.Parse("-8.1", InvariantCulture), True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
-        matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ))
+        matrix.append((System.Single.Parse("8.01", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
+        matrix.append((System.Single.Parse("-8.1", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
+        matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
         matrix = tuple(matrix)
 
         for scenario in matrix:

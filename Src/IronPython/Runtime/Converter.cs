@@ -733,10 +733,8 @@ namespace IronPython.Runtime {
         private static bool HasNarrowingConversion(Type fromType, Type toType, NarrowingLevel allowNarrowing) {
 
             if (allowNarrowing >= PythonNarrowing.All) {
-                //__int__, __float__; __long__ is obsolete
-                if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if ((toType == Int32Type || toType == BigIntegerType) &&
-                        (fromType == DoubleType || typeof(Extensible<double>).IsAssignableFrom(fromType))) return false;
+                if (IsPythonNumeric(fromType) && IsPythonNumeric(toType)) {
+                    if (IsPythonFloatingPoint(fromType) && !IsPythonFloatingPoint(toType)) return false;
                     return true;
                 }
                 if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
@@ -908,6 +906,19 @@ namespace IronPython.Runtime {
             }
 
             return false;
+        }
+
+        internal static bool IsPythonNumeric(Type t) {
+            return Converter.IsNumeric(t)
+                || typeof(Extensible<BigInteger>).IsAssignableFrom(t)
+                || typeof(Extensible<double>).IsAssignableFrom(t)
+                || typeof(Extensible<Complex>).IsAssignableFrom(t);
+        }
+
+        internal static bool IsPythonFloatingPoint(Type t) {
+            return Converter.IsFloatingPoint(t)
+                || typeof(Extensible<double>).IsAssignableFrom(t)
+                || typeof(Extensible<Complex>).IsAssignableFrom(t);
         }
 
         private static bool IsPythonType(Type t) {

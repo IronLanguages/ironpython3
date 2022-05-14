@@ -72,8 +72,8 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
-            if (IsNumeric(arg.LimitType)) {
-                if (IsFloatingPoint(arg.LimitType)) {
+            if (Converter.IsPythonNumeric(arg.LimitType)) {
+                if (Converter.IsPythonFloatingPoint(arg.LimitType)) {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {
                         if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
                             return Candidate.One;
@@ -203,19 +203,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             return res;
-        }
-
-        private static bool IsNumeric(Type t) {
-            return Converter.IsNumeric(t)
-                || typeof(Extensible<BigInteger>).IsAssignableFrom(t)
-                || typeof(Extensible<double>).IsAssignableFrom(t)
-                || typeof(Extensible<Complex>).IsAssignableFrom(t);
-        }
-
-        private static bool IsFloatingPoint(Type t) {
-            return Converter.IsFloatingPoint(t)
-                || typeof(Extensible<double>).IsAssignableFrom(t)
-                || typeof(Extensible<Complex>).IsAssignableFrom(t);
         }
 
         private static Candidate SelectWiderNumericType(Type candidateOneType, Type candidateTwoType) {

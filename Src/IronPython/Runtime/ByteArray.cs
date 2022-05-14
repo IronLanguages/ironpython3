@@ -9,15 +9,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -56,6 +56,12 @@ namespace IronPython.Runtime {
             _bytes = new ArrayData<byte>(bytes);
         }
 
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> dict, [NotNone] params object[] args) {
+            if (cls == TypeCache.ByteArray) return new ByteArray();
+            return cls.CreateInstance(context);
+        }
+
         public void __init__() {
             lock (this) {
                 _bytes.Clear();
@@ -74,7 +80,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNone] IBufferProtocol source) {
-            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwTypeError: false)) {
                 __init__(size);
             } else {
                 lock (this) {
@@ -86,7 +92,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object? source) {
-            if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
+            if (Converter.TryConvertToIndex(source, out int size, throwTypeError: false)) {
                 __init__(size);
             } else if (source is IEnumerable<byte> en) {
                 lock (this) {
@@ -466,8 +472,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static ByteArray fromhex([NotNone] string @string) {
-            return new ByteArray(IListOfByteOps.FromHex(@string));
+        [ClassMethod]
+        public static object fromhex(CodeContext context, [NotNone] PythonType cls, [NotNone] string @string) {
+            var hex = IListOfByteOps.FromHex(@string);
+            if (cls == TypeCache.ByteArray) {
+                return new ByteArray(hex);
+            }
+            return PythonTypeOps.CallParams(context, cls, new Bytes(hex));
         }
 
         public string hex() => Bytes.ToHex(_bytes.AsByteSpan()); // new in CPython 3.5

@@ -335,28 +335,34 @@ namespace IronPython.Runtime {
         /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
         /// result in an OverflowError.
         ///
-        /// When throwNonInt is true, a TypeError will be thrown if __index__ returned a non-int.
+        /// When throwTypeError is true, a TypeError will be thrown if __index__ throw a TypeError or
+        /// returned a non-int.
         /// </summary>
-        internal static bool TryConvertToIndex(object? value, out int index, bool throwOverflowError = true, bool throwNonInt = true) {
+        internal static bool TryConvertToIndex(object? value, out int index, bool throwOverflowError = true, bool throwTypeError = true) {
             if (TryGetInt(value, out index, throwOverflowError, value)) {
                 return true;
             }
 
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object indexObj)) {
-                if (TryGetInt(indexObj, out index, throwOverflowError, value)) {
-                    return true;
-                }
+            if (throwTypeError) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object indexObj)) {
+                    if (TryGetInt(indexObj, out index, throwOverflowError, value)) {
+                        return true;
+                    }
 
-                if (throwNonInt) {
                     throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(indexObj));
                 }
+            } else {
+                try {
+                    return PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, value, "__index__", out object indexObj) &&
+                        TryGetInt(indexObj, out index, throwOverflowError, value);
+                } catch (Exceptions.TypeErrorException) { }
             }
 
             return false;
         }
 
         public static int ConvertToIndex(object? value, bool throwOverflowError = false) {
-            if (TryConvertToIndex(value, out int index, throwOverflowError: throwOverflowError, throwNonInt: true))
+            if (TryConvertToIndex(value, out int index, throwOverflowError: throwOverflowError))
                 return index;
 
             throw PythonOps.TypeError("expected integer value, got {0}", PythonOps.GetPythonTypeName(value));

@@ -61,7 +61,7 @@ namespace IronPython.Runtime {
                     return source;
                 } else if (TryInvokeBytesOperator(context, source, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(source, out int size, throwNonInt: false)) {
+                } else if (Converter.TryConvertToIndex(source, out int size, throwTypeError: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -79,7 +79,7 @@ namespace IronPython.Runtime {
                     return @object;
                 } else if (TryInvokeBytesOperator(context, @object, out Bytes? res)) {
                     return res;
-                } else if (Converter.TryConvertToIndex(@object, out int size, throwNonInt: false)) {
+                } else if (Converter.TryConvertToIndex(@object, out int size, throwTypeError: false)) {
                     if (size < 0) throw PythonOps.ValueError("negative count");
                     return new Bytes(new byte[size]);
                 } else {
@@ -367,8 +367,13 @@ namespace IronPython.Runtime {
         }
 
         [ClassMethod]
-        public static object fromhex(CodeContext context, [NotNone] PythonType cls, [NotNone] string @string)
-            => __new__(context, cls, IListOfByteOps.FromHex(@string));
+        public static object fromhex(CodeContext context, [NotNone] PythonType cls, [NotNone] string @string) {
+            var hex = IListOfByteOps.FromHex(@string);
+            if (cls == TypeCache.Bytes) {
+                return new Bytes(hex);
+            }
+            return PythonTypeOps.CallParams(context, cls, new Bytes(hex));
+        }
 
         public string hex() => ToHex(_bytes.AsSpan()); // new in CPython 3.5
 
@@ -1181,6 +1186,13 @@ namespace IronPython.Runtime {
 
         public bool __eq__(CodeContext context, [NotNone] Extensible<string> value) => __eq__(context, value.Value);
 
+        public bool __eq__(CodeContext context, [NotNone] int value) {
+            if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {
+                PythonOps.Warn(context, PythonExceptions.BytesWarning, "Comparison between bytes and int");
+            }
+            return false;
+        }
+
         [return: MaybeNotImplemented]
         public NotImplementedType __eq__(CodeContext context, object? value) => NotImplementedType.Value;
 
@@ -1189,6 +1201,8 @@ namespace IronPython.Runtime {
         public bool __ne__(CodeContext context, [NotNone] string value) => !__eq__(context, value);
 
         public bool __ne__(CodeContext context, [NotNone] Extensible<string> value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext context, [NotNone] int value) => !__eq__(context, value);
 
         [return: MaybeNotImplemented]
         public NotImplementedType __ne__(CodeContext context, object? value) => NotImplementedType.Value;

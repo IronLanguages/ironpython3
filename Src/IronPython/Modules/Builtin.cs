@@ -135,7 +135,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType bytes => DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
 
-        public static PythonType bytearray => DynamicHelpers.GetPythonTypeFromType(typeof(ByteArray));
+        public static PythonType bytearray => TypeCache.ByteArray;
 
         [Documentation("callable(object) -> bool\n\nReturn whether the object is callable (i.e., some kind of function).")]
         public static bool callable(CodeContext/*!*/ context, object? o) {

@@ -16,15 +16,16 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Underlying integer to enum
-        /// Numeric to floating point excluding Complex 
+        /// Numeric (excluding Complex) to floating point
+        /// BigInteger to Int64
         /// </summary>
         public const NarrowingLevel Minimal = NarrowingLevel.One;
 
         /// <summary>
-        /// Double/Single to Decimal
+        /// Double/Single to Decimal (?)
         /// PythonTuple to Array
         /// Generic conversions
-        /// BigInteger to Int64/UInt64 (?)
+        /// BigInteger to UInt64/Int32
         /// </summary>
         public const NarrowingLevel BinaryOperator = NarrowingLevel.Two;
 

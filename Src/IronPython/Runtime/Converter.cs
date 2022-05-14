@@ -779,6 +779,10 @@ namespace IronPython.Runtime {
             }
 
             if (allowNarrowing >= PythonNarrowing.BinaryOperator) {
+                if (fromType == BigIntegerType) {
+                    if (toType == UInt64Type || toType == Int32Type) return true;
+                }
+
                 if (toType.IsGenericType) {
                     Type genTo = toType.GetGenericTypeDefinition();
                     if (genTo == IListOfTType) {
@@ -799,11 +803,10 @@ namespace IronPython.Runtime {
 
             if (allowNarrowing >= PythonNarrowing.Minimal) {
                 if (fromType == BigIntegerType && toType == Int64Type) return true;
-                if (fromType == BigIntegerType && toType == UInt64Type) return true;
 
                 if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
 
-                if (toType == DoubleType || toType == SingleType) {
+                if (IsFloatingPoint(toType)) {
                     if (IsNumeric(fromType) && fromType != ComplexType) return true;
                 }
             }

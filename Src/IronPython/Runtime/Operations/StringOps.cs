@@ -2367,7 +2367,14 @@ namespace IronPython.Runtime.Operations {
                 private int _index;
 
                 public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
-                    return false;
+                    var val = char.ConvertToUtf32(charUnknownHigh, charUnknownLow);
+                    _buffer.Add('\\');
+                    _buffer.Add('U');
+                    AddCharacter(val >> 24);
+                    AddCharacter((val >> 16) & 0xFF);
+                    AddCharacter((val >> 8) & 0xFF);
+                    AddCharacter(val & 0xFF);
+                    return true;
                 }
 
                 public override bool Fallback(char charUnknown, int index) {

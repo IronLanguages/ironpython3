@@ -168,9 +168,23 @@ namespace IronPython.Modules {
             }
 
             public void __setstate__(PythonTuple state) {
-                // TODO: error handling?
-                ie = state[0] as IEnumerator;
-                inner = (state.Count > 1) ? state[1] as IEnumerator : null;
+                IEnumerator iter;
+                IEnumerator innerIter;
+                switch (state.Count) {
+                    case 0: throw PythonOps.TypeError("function takes at least 1 argument (0 given)");
+                    case 1:
+                        iter = state[0] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        innerIter = null;
+                        break;
+                    case 2:
+                        iter = state[0] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        innerIter = state[1] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        break;
+                    default:
+                        throw PythonOps.TypeError("function takes at most 2 argument ({0} given)", state.Count);
+                }
+                ie = iter;
+                inner = innerIter;
                 InnerEnumerator = LazyYielder();
             }
 
@@ -515,11 +529,14 @@ namespace IronPython.Modules {
             private IEnumerator<object> Yielder(IEnumerator iter) {
                 object curKey = _starterKey;
                 if (MoveNextHelper(iter)) {
+                    curKey = GetKey(iter.Current);
+                    yield return PythonTuple.MakeTuple(curKey, Grouper(iter, curKey));
+
                     while (!_fFinished) {
                         while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
-                            if (!MoveNextHelper(iter)) { 
-                                _fFinished = true; 
-                                yield break; 
+                            if (!MoveNextHelper(iter)) {
+                                _fFinished = true;
+                                yield break;
                             }
                         }
                         curKey = GetKey(iter.Current);

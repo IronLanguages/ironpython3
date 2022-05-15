@@ -758,7 +758,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            throw PythonOps.TypeErrorForBinaryOp("power with modulus", x, y);
+            throw PythonOps.TypeError("unsupported operand type(s) for pow(): '{0}', '{1}', '{2}'", GetPythonTypeName(x), GetPythonTypeName(y), GetPythonTypeName(y));
         }
 
         public static long Id(object? o) {
@@ -896,10 +896,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool TryInvokeLengthHint(CodeContext context, object? sequence, out int hint) {
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out object len_obj) ||
-                PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out object len_obj)) {
                 if (!(len_obj is NotImplementedType)) {
                     hint = Converter.ConvertToInt32(len_obj);
+                    if (hint < 0) throw ValueError("__len__() should return >= 0");
+                    return true;
+                }
+            } else if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
+                if (!(len_obj is NotImplementedType)) {
+                    hint = Converter.ConvertToInt32(len_obj);
+                    if (hint < 0) throw ValueError("__length_hint__() should return >= 0");
                     return true;
                 }
             }
@@ -4012,7 +4018,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForBinaryOp(string opSymbol, object? x, object? y) {
-            throw PythonOps.TypeError("unsupported operand type(s) for {0}: '{1}' and '{2}'",
+            throw PythonOps.TypeError("'{0}' not supported between instances of '{1}' and '{2}'",
                                 opSymbol, GetPythonTypeName(x), GetPythonTypeName(y));
         }
 

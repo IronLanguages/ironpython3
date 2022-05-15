@@ -101,27 +101,21 @@ namespace IronPython.Modules {
             GCHandle typeHandle = GCHandle.FromIntPtr(type);
             try {
                 CData cdata = objHandle.Target as CData;
-                PythonType pt = (PythonType)typeHandle.Target;
+                PythonType pt = typeHandle.Target as PythonType;
+
+                if (!IsPointer(pt)) throw PythonOps.TypeError("cast() argument 2 must be a pointer type, not {0}", PythonOps.GetPythonTypeName(typeHandle.Target));
 
                 CData res = (CData)pt.CreateInstance(pt.Context.SharedContext);
-                if (IsPointer(pt)) {
-                    res.MemHolder = new MemoryHolder(IntPtr.Size);
-                    if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
-                        res.MemHolder.WriteIntPtr(0, cdata.MemHolder.ReadIntPtr(0));
-                    } else {
-                        res.MemHolder.WriteIntPtr(0, data);
-                    }
-
-                    if (cdata != null) {
-                        res.MemHolder.Objects = cdata.MemHolder.Objects;
-                        res.MemHolder.AddObject(IdDispenser.GetId(cdata), cdata);
-                    }
+                res.MemHolder = new MemoryHolder(IntPtr.Size);
+                if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
+                    res.MemHolder.WriteIntPtr(0, cdata.MemHolder.ReadIntPtr(0));
                 } else {
-                    if (cdata != null) {
-                        res.MemHolder = new MemoryHolder(data, ((INativeType)pt).Size, cdata.MemHolder);
-                    } else {
-                        res.MemHolder = new MemoryHolder(data, ((INativeType)pt).Size);
-                    }
+                    res.MemHolder.WriteIntPtr(0, data);
+                }
+
+                if (cdata != null) {
+                    res.MemHolder.Objects = cdata.MemHolder.Objects;
+                    res.MemHolder.AddObject(IdDispenser.GetId(cdata), cdata);
                 }
 
                 return GCHandle.ToIntPtr(GCHandle.Alloc(res));

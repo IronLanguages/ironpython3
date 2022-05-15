@@ -924,10 +924,9 @@ namespace IronPython.Runtime.Operations {
             var val = new BigInteger(bytesArr);
 #endif
 
-            // prevents a TypeError: int.__new__(bool) is not safe
-            if (type == TypeCache.Boolean) return val == 0 ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
+            if (type == TypeCache.BigInteger) return val;
 
-            return __new__(context, type, val);
+            return PythonTypeOps.CallParams(context, type, val);
         }
 
         #endregion

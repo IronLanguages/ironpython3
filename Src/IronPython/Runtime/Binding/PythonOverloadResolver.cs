@@ -72,32 +72,51 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
+            if (level >= PythonNarrowing.IndexOperator && Converter.IsPythonBigInt(arg.LimitType)) {
+                // Work around the choice made in Converter.PreferConvert
+                // This cannot be done using NarrowingLevel rules because it would confuse rules for selecting custom operators
+                TypeCode c1tc = candidateOne.Type.GetTypeCode();
+                TypeCode c2tc = candidateTwo.Type.GetTypeCode();
+                if (c1tc is TypeCode.UInt32 && c2tc is TypeCode.Int32) return Candidate.Two;
+                if (c1tc is TypeCode.Int32 && c2tc is TypeCode.UInt32) return Candidate.One;
+                if (c1tc is TypeCode.UInt64 && c2tc is TypeCode.Int64) return Candidate.Two;
+                if (c1tc is TypeCode.Int64 && c2tc is TypeCode.UInt64) return Candidate.One;
+            }
+
             if (Converter.IsPythonNumeric(arg.LimitType)) {
                 if (Converter.IsPythonFloatingPoint(arg.LimitType)) {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {
                         if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
-                            return Candidate.One;
-                        } else if (level != PythonNarrowing.None) { // both params are floating point
+                            if (!Converter.IsExtensibleNumeric(arg.LimitType)) { // TODO: write tests for selection between Extensible<double> and Boolean
+                                return Candidate.One;
+                            }
+                        } else if (level > PythonNarrowing.None) { // both params are floating point
                             Candidate preferred = SelectWiderNumericType(candidateOne.Type, candidateTwo.Type);
                             if (preferred != Candidate.Ambiguous) {
                                 return preferred;
                             }
                         }
                     } else if (Converter.IsFloatingPoint(candidateTwo.Type)) {
-                        return Candidate.Two;
+                        if (!Converter.IsExtensibleNumeric(arg.LimitType)) { // TODO: write tests for selection between Extensible<double> and Boolean
+                            return Candidate.Two;
+                        }
                     }
                 } else { // arg is integer
                     if (Converter.IsInteger(candidateOne.Type)) {
                         if (!Converter.IsInteger(candidateTwo.Type)) {
-                            return Candidate.One;
-                        } else if (level != PythonNarrowing.None) { // both params are integer
+                            if (!Converter.IsExtensibleNumeric(arg.LimitType) || (Converter.IsBoolean(candidateTwo.Type) && level > PythonNarrowing.None)) {
+                                return Candidate.One;
+                            }
+                        } else if (level > PythonNarrowing.None) { // both params are integer
                             Candidate preferred = SelectWiderNumericType(candidateOne.Type, candidateTwo.Type);
                             if (preferred != Candidate.Ambiguous) {
                                 return preferred;
                             }
                         }
                     } else if (Converter.IsInteger(candidateTwo.Type)) {
-                        return Candidate.Two;
+                        if (!Converter.IsExtensibleNumeric(arg.LimitType) || (Converter.IsBoolean(candidateOne.Type) && level > PythonNarrowing.None)) {
+                            return Candidate.Two;
+                        }
                     }
                 }
             }
@@ -189,15 +208,15 @@ namespace IronPython.Runtime.Binding {
 
         public override Expression GetDynamicConversion(Expression value, Type type) {
             return DynamicExpression.Dynamic(
-                Binder.Context.Convert(type, ConversionResultKind.ExplicitCast), 
-                type, 
+                Binder.Context.Convert(type, ConversionResultKind.ExplicitCast),
+                type,
                 value);
         }
 
-        public override Type GetGenericInferenceType(DynamicMetaObject dynamicObject) {            
+        public override Type GetGenericInferenceType(DynamicMetaObject dynamicObject) {
             Type res = PythonTypeOps.GetFinalSystemType(dynamicObject.LimitType);
             if (res == typeof(ExtensibleString) ||
-                res == typeof(ExtensibleComplex) || 
+                res == typeof(ExtensibleComplex) ||
                 (res.IsGenericType && res.GetGenericTypeDefinition() == typeof(Extensible<>))) {
                 return typeof(object);
             }
@@ -210,10 +229,10 @@ namespace IronPython.Runtime.Binding {
             if (GetUnmanagedNumericTypeWidth(candidateTwoType) is not int candidateTwoWidth) return Candidate.Ambiguous;
 
             Candidate preferred = Comparer<int>.Default.Compare(candidateOneWidth, candidateTwoWidth) switch {
-                 1 => Candidate.One,
-                 0 => Candidate.Equivalent,
+                1 => Candidate.One,
+                0 => Candidate.Equivalent,
                 -1 => Candidate.Two,
-                 _ => throw new InvalidOperationException()
+                _ => throw new InvalidOperationException()
             };
 
             if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOneType) && !Converter.IsUnsignedInt(candidateTwoType)) {
@@ -230,7 +249,7 @@ namespace IronPython.Runtime.Binding {
                 TypeCode.Int16 => sizeof(short),
                 TypeCode.Int32 => sizeof(int),
                 TypeCode.Int64 => sizeof(long),
-                TypeCode.Byte  => sizeof(byte),
+                TypeCode.Byte => sizeof(byte),
                 TypeCode.UInt16 => sizeof(ushort),
                 TypeCode.UInt32 => sizeof(uint),
                 TypeCode.UInt64 => sizeof(ulong),

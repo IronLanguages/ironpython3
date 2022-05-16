@@ -415,6 +415,9 @@ namespace IronPython.Runtime {
         private static readonly Type BooleanType = typeof(bool);
         private static readonly Type BigIntegerType = typeof(BigInteger);
         private static readonly Type ComplexType = typeof(Complex);
+        private static readonly Type ExtensibleBigIntegerType = typeof(Extensible<BigInteger>);
+        private static readonly Type ExtensibleDoubleType = typeof(Extensible<double>);
+        private static readonly Type ExtensibleComplexType = typeof(Extensible<Complex>);
         private static readonly Type DelegateType = typeof(Delegate);
         private static readonly Type IEnumerableType = typeof(IEnumerable);
         private static readonly Type TypeType = typeof(Type);
@@ -770,15 +773,15 @@ namespace IronPython.Runtime {
                     }
                 }
 
-                //Check if there is an implicit convertor defined on fromType to toType
+                // Check if there is an implicit converter defined on fromType to toType
                 if (HasImplicitConversion(fromType, toType)) {
                     return true;
                 }
             }
 
             if (allowNarrowing >= PythonNarrowing.BinaryOperator) {
-                if (fromType == BigIntegerType) {
-                    if (toType == UInt64Type || toType == Int32Type) return true;
+                if (toType == SingleType) {
+                    if (IsNumeric(fromType) && fromType != ComplexType) return true;
                 }
 
                 if (toType.IsGenericType) {
@@ -800,11 +803,9 @@ namespace IronPython.Runtime {
             }
 
             if (allowNarrowing >= PythonNarrowing.Minimal) {
-                if (fromType == BigIntegerType && toType == Int64Type) return true;
-
                 if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
 
-                if (IsFloatingPoint(toType)) {
+                if (IsFloatingPoint(toType) && toType != SingleType) {
                     if (IsNumeric(fromType) && fromType != ComplexType) return true;
                 }
             }
@@ -908,18 +909,26 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static bool IsPythonNumeric(Type t) {
-            return Converter.IsNumeric(t)
-                || typeof(Extensible<BigInteger>).IsAssignableFrom(t)
-                || typeof(Extensible<double>).IsAssignableFrom(t)
-                || typeof(Extensible<Complex>).IsAssignableFrom(t);
+        internal static bool IsBoolean(Type t)
+            => t == BooleanType;
+
+        internal static bool IsExtensibleNumeric(Type t) {
+            return ExtensibleBigIntegerType.IsAssignableFrom(t)
+                || ExtensibleDoubleType.IsAssignableFrom(t)
+                || ExtensibleComplexType.IsAssignableFrom(t);
         }
 
+        internal static bool IsPythonNumeric(Type t)
+            => IsNumeric(t) || IsExtensibleNumeric(t);
+
         internal static bool IsPythonFloatingPoint(Type t) {
-            return Converter.IsFloatingPoint(t)
-                || typeof(Extensible<double>).IsAssignableFrom(t)
-                || typeof(Extensible<Complex>).IsAssignableFrom(t);
+            return IsFloatingPoint(t)
+                || ExtensibleDoubleType.IsAssignableFrom(t)
+                || ExtensibleComplexType.IsAssignableFrom(t);
         }
+
+        internal static bool IsPythonBigInt(Type t)
+            => t == BigIntegerType || ExtensibleBigIntegerType.IsAssignableFrom(t);
 
         private static bool IsPythonType(Type t) {
             return t.FullName.StartsWith("IronPython.", StringComparison.Ordinal); //!!! this and the check below are hacks

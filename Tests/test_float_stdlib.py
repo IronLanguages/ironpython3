@@ -33,7 +33,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_float.GeneralFloatCases('test_floatconversion'))
         suite.addTest(test.test_float.GeneralFloatCases('test_is_integer'))
         suite.addTest(test.test_float.GeneralFloatCases('test_non_numeric_input_types'))
-        suite.addTest(test.test_float.GeneralFloatCases('test_underscores'))
+        suite.addTest(unittest.expectedFailure(test.test_float.GeneralFloatCases('test_underscores'))) # https://github.com/IronLanguages/ironpython3/issues/105
         suite.addTest(test.test_float.HexFloatTestCase('test_ends'))
         suite.addTest(test.test_float.HexFloatTestCase('test_from_hex'))
         suite.addTest(test.test_float.HexFloatTestCase('test_invalid_inputs'))

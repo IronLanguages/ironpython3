@@ -72,9 +72,9 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
+            // Work around the choice made in Converter.PreferConvert
+            // This cannot be done using NarrowingLevel rules because it would confuse rules for selecting custom operators
             if (level >= PythonNarrowing.IndexOperator && Converter.IsPythonBigInt(arg.LimitType)) {
-                // Work around the choice made in Converter.PreferConvert
-                // This cannot be done using NarrowingLevel rules because it would confuse rules for selecting custom operators
                 TypeCode c1tc = candidateOne.Type.GetTypeCode();
                 TypeCode c2tc = candidateTwo.Type.GetTypeCode();
                 if (c1tc is TypeCode.UInt32 && c2tc is TypeCode.Int32) return Candidate.Two;
@@ -83,11 +83,24 @@ namespace IronPython.Runtime.Binding {
                 if (c1tc is TypeCode.Int64 && c2tc is TypeCode.UInt64) return Candidate.One;
             }
 
+            // This block codifies the following set of rules for Python numerics (i.e. numeric types and any derived types):
+            // 1. Prefer the parameter that is of the matching kind to the argument type (i.e. floating-point to floating-point, or integer to integer).
+            // 2. If both parameters are of the matching kind, break the tie by prefering the one that is wider, if any (so the chance of overflow is lower).
+            //    "Wider" here means being able to represent all values of the narrower type; e.g. in this sense UInt64 is not wider than SByte.
+            // There are the following exceptions to these rules:
+            // * Rule 1 is not applied to user-defined subtypes (i.e. subclasses of Extensible<T>). This is to allow such types to bind to parameters
+            //   of type object or an interface on Extensible<T> (rule from the DLR). It is because a user-defined type may have user-defined operators
+            //   that may need to be inspected by the overload and provide additional functionality above a simple numeric value.
+            // * Rule 2 is not applied on narrowing level None, so in a case of a widening cast or a perfect type match, the most efficient (narrowest)
+            //   type is selected (rule from the DLR).
+            // * If one of the parameters is Boolean and the other is numeric, the Boolean parameter is treated as a 1-bit-wide numeric (thus becomes a case for Rule 2).
+            //   This makes the preference for numeric types over Boolean consistent with the one encoded using narrowing levels and conversion sequence.
+            // TODO: Increase test coverage for cases involving Complex, Decimal, BigInteger
             if (Converter.IsPythonNumeric(arg.LimitType)) {
                 if (Converter.IsPythonFloatingPoint(arg.LimitType)) {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {
                         if (!Converter.IsFloatingPoint(candidateTwo.Type)) {
-                            if (!Converter.IsExtensibleNumeric(arg.LimitType)) { // TODO: write tests for selection between Extensible<double> and Boolean
+                            if (!Converter.IsExtensibleNumeric(arg.LimitType)) {
                                 return Candidate.One;
                             }
                         } else if (level > PythonNarrowing.None) { // both params are floating point
@@ -97,7 +110,7 @@ namespace IronPython.Runtime.Binding {
                             }
                         }
                     } else if (Converter.IsFloatingPoint(candidateTwo.Type)) {
-                        if (!Converter.IsExtensibleNumeric(arg.LimitType)) { // TODO: write tests for selection between Extensible<double> and Boolean
+                        if (!Converter.IsExtensibleNumeric(arg.LimitType)) {
                             return Candidate.Two;
                         }
                     }
@@ -229,10 +242,10 @@ namespace IronPython.Runtime.Binding {
             if (GetUnmanagedNumericTypeWidth(candidateTwoType) is not int candidateTwoWidth) return Candidate.Ambiguous;
 
             Candidate preferred = Comparer<int>.Default.Compare(candidateOneWidth, candidateTwoWidth) switch {
-                1 => Candidate.One,
-                0 => Candidate.Equivalent,
+                 1 => Candidate.One,
+                 0 => Candidate.Equivalent,
                 -1 => Candidate.Two,
-                _ => throw new InvalidOperationException()
+                 _ => throw new InvalidOperationException()
             };
 
             if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOneType) && !Converter.IsUnsignedInt(candidateTwoType)) {

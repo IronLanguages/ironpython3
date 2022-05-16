@@ -8,7 +8,7 @@
 
 from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
 if is_cli:
-    from iptest.type_util import array_int, array_byte, array_object, myint, mystr, types
+    from iptest.type_util import array_int, array_byte, array_object, myint, mystr, myfloat, types
 
 class PT_int_old:
     def __int__(self): return 200
@@ -416,6 +416,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _merge(_first('M100 '), _second('M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), '', '', ),
             (    Int16m20, _merge(_first('M100 '), _second('M102 M104 M106 M108 M109 M110 M111 M112 ')), '', 'M101 M103 M105 M107 ', ),
             (       12.34, _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 '), _second('M109 M110 M111 M112 ')), '', '', ),
+            (myfloat(7.3), _merge(_first('M100 M101 M102 M103 M104 M105 M106 M107 M108 '), _second('M109 M110 M111 M112 ')), '', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
@@ -439,6 +440,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _merge(_first('M100 M101 M102 '), _second('M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 ')), '', '', ),
             (    Int16m20, _merge(_first(''), _second('M104 M106 M108 M109 M110 M111 M112 ')), '', 'M100 M101 M102 M103 M105 M107 ', ),
             (       12.34, _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
+            (myfloat(7.3), _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
@@ -461,6 +463,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             (    Int16m20, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             (       12.34, _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
+            (myfloat(7.3), _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
@@ -483,6 +486,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M105 ')), '', '', ),
             (    Int16m20, _merge(_first('M100 M101 M102 M103 M104 M106 M107 M108 M109 M110 M111 M112 '), _second('M105 ')), '', '', ),
             (       12.34, _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
+            (myfloat(7.3), _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
@@ -505,6 +509,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M108 M109 M110 M111 M112 '), _second('M105 M107 ')), '', '', ),
             (    Int16m20, _merge(_first('M100 M101 M102 M103 M104 M106 M108 M109 M110 M111 M112 '), _second('M105 M107 ')), '', '', ),
             (       12.34, _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
+            (myfloat(7.3), _merge(_first(''), _second('M100 M109 M110 M111 M112 ')), 'M101 M102 M103 M104 M105 M106 M107 M108 ', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
@@ -527,6 +532,7 @@ class MethodBinder2Test(IronPythonTestCase):
             (     Int1610, _merge(_first('M100 M101 M102 M103 M104 M106 M108 M112 '), _second('M105 M107 M109 M111 ')), 'M110 ', '', ),
             (    Int16m20, _merge(_first('M100 M101 M102 M103 M104 M106 M108 M112 '), _second('M105 M107 M109 M111 ')), 'M110 ', '', ),
             (       12.34, _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
+            (myfloat(7.3), _first('M100 M101 M102 M103 M104 M105 M106 M107 M108 M109 M110 M111 M112 '), '', '', ),
             ]:
             with self.subTest(arg=arg):
                 self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)

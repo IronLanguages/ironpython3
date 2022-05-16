@@ -534,8 +534,7 @@ class MathTest(IronPythonTestCase):
         opSymbol  = ['+',       '-',       '**',      '*',       '/',       '//',           '/',           '%']
 
         types = []
-        #for baseType in [(int, (100,2)), (int, (big(100), big(2))), (float, (100.0, 2.0))]:
-        for baseType in [(int, (100,2))]:
+        for baseType in [(int, (100,2)), (int, (big(100), big(2))), (float, (100.0, 2.0))]:
         # (complex, (100+0j, 2+0j)) - cpython doesn't call reverse ops for complex ?
             class prototype(baseType[0]):
                 for op in operators:

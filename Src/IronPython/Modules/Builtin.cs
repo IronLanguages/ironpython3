@@ -1295,7 +1295,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object repr(CodeContext/*!*/ context, object? o)
-            => PythonOps.Repr(context, o);
+            => PythonOps.GetReprObject(context, o);
 
         public static PythonType reversed => DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
 

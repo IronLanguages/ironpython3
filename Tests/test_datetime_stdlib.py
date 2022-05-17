@@ -16,9 +16,9 @@ import test.datetimetester
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        suite.addTest(test.datetimetester.IranTest('test_folds'))
-        suite.addTest(test.datetimetester.IranTest('test_gaps'))
-        suite.addTest(test.datetimetester.IranTest('test_system_transitions'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.IranTest('test_folds'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.IranTest('test_gaps'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.IranTest('test_system_transitions'))) # AttributeError: 'module' object has no attribute 'tzset'
         suite.addTest(unittest.expectedFailure(test.datetimetester.Oddballs('test_bug_1028306'))) # AssertionError: False != True
         suite.addTest(unittest.expectedFailure(test.datetimetester.Oddballs('test_check_arg_types'))) # TypeError: an integer is required
         suite.addTest(test.datetimetester.Oddballs('test_extra_attributes'))
@@ -384,9 +384,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimezoneConversions('test_easy'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimezoneConversions('test_fromutc')))
         suite.addTest(test.datetimetester.TestTimezoneConversions('test_tricky'))
-        suite.addTest(test.datetimetester.ZoneInfoTest('test_folds'))
-        suite.addTest(test.datetimetester.ZoneInfoTest('test_gaps'))
-        suite.addTest(test.datetimetester.ZoneInfoTest('test_system_transitions'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.ZoneInfoTest('test_folds'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.ZoneInfoTest('test_gaps'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.ZoneInfoTest('test_system_transitions'))) # AttributeError: 'module' object has no attribute 'tzset'
         return suite
 
     else:

@@ -985,7 +985,7 @@ class DatetimeTest(IronPythonTestCase):
         #bool
         self.assertTrue(datetime.time(0, 0, 0, 1))
         #CodePlex Work Item 5139
-        self.assertTrue(not (datetime.time(0, 0, 0, 0)))
+        self.assertFalse(not (datetime.time(0, 0, 0, 0))) # __bool__ removed in 3.5
 
         #replace
         x = datetime.time(1, 2, 33, 444)

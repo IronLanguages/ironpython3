@@ -1301,15 +1301,6 @@ namespace IronPython.Modules {
                 );
             }
 
-            // TODO: get rid of __bool__ in 3.5
-            public bool __bool__() {
-                return this.UtcTime.TimeSpan.Ticks != 0 || this.UtcTime.LostMicroseconds != 0;
-            }
-
-            public static explicit operator bool(time time) {
-                return time.__bool__();
-            }
-
             // instance methods
             public object replace() {
                 return this;

@@ -19,15 +19,15 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.IranTest('test_folds'))
         suite.addTest(test.datetimetester.IranTest('test_gaps'))
         suite.addTest(test.datetimetester.IranTest('test_system_transitions'))
-        suite.addTest(unittest.expectedFailure(test.datetimetester.Oddballs('test_bug_1028306')))
-        suite.addTest(test.datetimetester.Oddballs('test_check_arg_types'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.Oddballs('test_bug_1028306'))) # AssertionError: False != True
+        suite.addTest(unittest.expectedFailure(test.datetimetester.Oddballs('test_check_arg_types'))) # TypeError: an integer is required
         suite.addTest(test.datetimetester.Oddballs('test_extra_attributes'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDate('test_backdoor_resistance')))
         suite.addTest(test.datetimetester.TestDate('test_bad_constructor_arguments'))
         suite.addTest(test.datetimetester.TestDate('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestDate('test_bool'))
         suite.addTest(test.datetimetester.TestDate('test_compare'))
-        suite.addTest(test.datetimetester.TestDate('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDate('test_compat_unpickle'))) # TypeError: date() takes exactly 3 arguments (1 given)
         suite.addTest(test.datetimetester.TestDate('test_computations'))
         suite.addTest(test.datetimetester.TestDate('test_ctime'))
         suite.addTest(test.datetimetester.TestDate('test_extreme_ordinals'))
@@ -52,20 +52,20 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDate('test_strftime'))
         suite.addTest(test.datetimetester.TestDate('test_strftime_y2k'))
         suite.addTest(test.datetimetester.TestDate('test_subclass_date'))
-        suite.addTest(test.datetimetester.TestDate('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDate('test_subclass_replace'))) # TypeError: replace() got an unexpected keyword argument 'year'
         suite.addTest(test.datetimetester.TestDate('test_timetuple'))
         suite.addTest(test.datetimetester.TestDate('test_today'))
         suite.addTest(test.datetimetester.TestDate('test_weekday'))
         suite.addTest(test.datetimetester.TestDateOnly('test_delta_non_days_ignored'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_astimezone'))) # https://github.com/IronLanguages/ironpython3/issues/1136
-        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_backdoor_resistance')))
-        suite.addTest(test.datetimetester.TestDateTime('test_bad_constructor_arguments'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_backdoor_resistance'))) # AssertionError: "^bad tzinfo state arg$" does not match "function takes at least 3 arguments (2 given)"
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_bad_constructor_arguments'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestDateTime('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestDateTime('test_basic_attributes_nonzero'))
         suite.addTest(test.datetimetester.TestDateTime('test_bool'))
-        suite.addTest(test.datetimetester.TestDateTime('test_combine'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_combine'))) # TypeError: combine() takes exactly 2 arguments (3 given)
         suite.addTest(test.datetimetester.TestDateTime('test_compare'))
-        suite.addTest(test.datetimetester.TestDateTime('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_compat_unpickle'))) # TypeError: function takes at least 3 arguments (1 given)
         suite.addTest(test.datetimetester.TestDateTime('test_computations'))
         suite.addTest(test.datetimetester.TestDateTime('test_ctime'))
         suite.addTest(test.datetimetester.TestDateTime('test_extract'))
@@ -80,7 +80,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_insane_utcfromtimestamp')))
         suite.addTest(test.datetimetester.TestDateTime('test_iso_long_years'))
         suite.addTest(test.datetimetester.TestDateTime('test_isocalendar'))
-        suite.addTest(test.datetimetester.TestDateTime('test_isoformat'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_isoformat'))) # TypeError: isoformat() got an unexpected keyword argument 'timespec'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_microsecond_rounding')))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_mixed_compare')))
         suite.addTest(test.datetimetester.TestDateTime('test_more_compare'))
@@ -104,9 +104,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_strptime')))
         suite.addTest(test.datetimetester.TestDateTime('test_subclass_date'))
         suite.addTest(test.datetimetester.TestDateTime('test_subclass_datetime'))
-        suite.addTest(test.datetimetester.TestDateTime('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_subclass_replace'))) # TypeError: replace() got an unexpected keyword argument 'year'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_timestamp_aware'))) # AttributeError: 'datetime' object has no attribute 'timestamp'
-        suite.addTest(test.datetimetester.TestDateTime('test_timestamp_limits'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTime('test_timestamp_limits'))) # AttributeError: 'datetime' object has no attribute 'timestamp'
         suite.addTest(test.datetimetester.TestDateTime('test_timestamp_naive'))
         suite.addTest(test.datetimetester.TestDateTime('test_timetuple'))
         suite.addTest(test.datetimetester.TestDateTime('test_today'))
@@ -122,14 +122,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_aware_compare'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_aware_subtract'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_backdoor_resistance')))
-        suite.addTest(test.datetimetester.TestDateTimeTZ('test_bad_constructor_arguments'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_bad_constructor_arguments'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_bad_tzinfo_classes'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_basic_attributes_nonzero'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_bool'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_combine'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_compare'))
-        suite.addTest(test.datetimetester.TestDateTimeTZ('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_compat_unpickle'))) # TypeError: function takes at least 3 arguments (2 given)
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_computations'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_ctime'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_even_more_compare')))
@@ -146,7 +146,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_insane_utcfromtimestamp')))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_iso_long_years'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_isocalendar'))
-        suite.addTest(test.datetimetester.TestDateTimeTZ('test_isoformat'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_isoformat'))) # TypeError: isoformat() got an unexpected keyword argument 'timespec'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_microsecond_rounding')))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_mixed_compare')))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_more_astimezone'))
@@ -172,9 +172,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_subclass_date'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_subclass_datetime'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_subclass_datetimetz'))
-        suite.addTest(test.datetimetester.TestDateTimeTZ('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_subclass_replace'))) # TypeError: replace() got an unexpected keyword argument 'year'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_timestamp_aware'))) # AttributeError: 'datetime' object has no attribute 'timestamp'
-        suite.addTest(test.datetimetester.TestDateTimeTZ('test_timestamp_limits'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestDateTimeTZ('test_timestamp_limits'))) # AttributeError: 'datetime' object has no attribute 'timestamp'
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_timestamp_naive'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_timetuple'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_today'))
@@ -195,39 +195,39 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_weekday'))
         suite.addTest(test.datetimetester.TestDateTimeTZ('test_zones'))
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_astimezone'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_comparison'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_constructors'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_dst'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_comparison'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_constructors'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_dst'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_fromtimestamp'))
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_fromtimestamp_lord_howe'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_fromtimestamp_low_fold_detection'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_fromutc'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_hash'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_hash_aware'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_member'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_mixed_compare_fold'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_mixed_compare_gap'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_fromtimestamp_low_fold_detection'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_fromutc'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_hash'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_hash_aware'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_member'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_mixed_compare_fold'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_mixed_compare_gap'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_mixed_compare_regular'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_pickle_fold'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_replace'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_repr'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_pickle_fold'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_replace'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_repr'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_timestamp'))
         suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_timestamp_lord_howe'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_utcoffset'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_vilnius_1941_fromutc'))
-        suite.addTest(test.datetimetester.TestLocalTimeDisambiguation('test_vilnius_1941_toutc'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_utcoffset'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_vilnius_1941_fromutc'))) # https://github.com/IronLanguages/ironpython3/issues/1459
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestLocalTimeDisambiguation('test_vilnius_1941_toutc'))) # AssertionError: '06/23/41 19:59:59 ' != 'Mon Jun 23 19:59:59 1941 UTC'
         suite.addTest(test.datetimetester.TestModule('test_constants'))
-        suite.addTest(test.datetimetester.TestModule('test_divide_and_round'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestModule('test_divide_and_round'))) # AttributeError: 'module' object has no attribute '_divide_and_round'
         suite.addTest(test.datetimetester.TestModule('test_name_cleanup'))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_astimezone'))) # https://github.com/IronLanguages/ironpython3/issues/1136
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_backdoor_resistance')))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_bad_constructor_arguments'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_bad_constructor_arguments'))) # https://github.com/IronLanguages/ironpython3/issues/1459
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_basic_attributes_nonzero'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_bool'))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_combine'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_combine'))) # TypeError: combine() takes exactly 2 arguments (3 given)
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_compare'))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_compat_unpickle'))) # TypeError: function takes at least 3 arguments (1 given)
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_computations'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_ctime'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_extract'))
@@ -242,7 +242,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_insane_utcfromtimestamp')))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_iso_long_years'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_isocalendar'))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_isoformat'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_isoformat'))) # TypeError: isoformat() got an unexpected keyword argument 'timespec'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_microsecond_rounding')))
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_mixed_compare')))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_more_compare'))
@@ -266,9 +266,9 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_strptime')))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_subclass_date'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_subclass_datetime'))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_subclass_replace'))) # TypeError: replace() got an unexpected keyword argument 'year'
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_timestamp_aware')))
-        suite.addTest(test.datetimetester.TestSubclassDateTime('test_timestamp_limits'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestSubclassDateTime('test_timestamp_limits'))) # AttributeError: 'datetime' object has no attribute 'timestamp'
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_timestamp_naive'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_timetuple'))
         suite.addTest(test.datetimetester.TestSubclassDateTime('test_today'))
@@ -284,18 +284,18 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTZInfo('test_refcnt_crash_bug_22044'))
         suite.addTest(test.datetimetester.TestTZInfo('test_subclass_must_override'))
         suite.addTest(test.datetimetester.TestTime('test_1653736'))
-        suite.addTest(test.datetimetester.TestTime('test_backdoor_resistance'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTime('test_backdoor_resistance'))) # AssertionError: "^bad tzinfo state arg$" does not match "expected Int32, got bytes"
         suite.addTest(test.datetimetester.TestTime('test_bad_constructor_arguments'))
         suite.addTest(test.datetimetester.TestTime('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestTime('test_basic_attributes_nonzero'))
         suite.addTest(test.datetimetester.TestTime('test_bool'))
         suite.addTest(test.datetimetester.TestTime('test_comparing'))
-        suite.addTest(test.datetimetester.TestTime('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTime('test_compat_unpickle'))) # TypeError: expected Int32, got str
         suite.addTest(test.datetimetester.TestTime('test_format'))
         suite.addTest(test.datetimetester.TestTime('test_harmful_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTime('test_harmless_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTime('test_hash_equality'))
-        suite.addTest(test.datetimetester.TestTime('test_isoformat'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTime('test_isoformat'))) # TypeError: isoformat() takes no arguments (1 given)
         suite.addTest(test.datetimetester.TestTime('test_pickling'))
         suite.addTest(test.datetimetester.TestTime('test_pickling_subclass_time'))
         suite.addTest(test.datetimetester.TestTime('test_replace'))
@@ -304,7 +304,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTime('test_roundtrip'))
         suite.addTest(test.datetimetester.TestTime('test_str'))
         suite.addTest(test.datetimetester.TestTime('test_strftime'))
-        suite.addTest(test.datetimetester.TestTime('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTime('test_subclass_replace'))) # AssertionError: <class '_datetime.time'> is not <class 'test.datetimetester.TimeSubclass'>
         suite.addTest(test.datetimetester.TestTime('test_subclass_time'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_bool'))
@@ -319,7 +319,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimeDelta('test_harmful_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_harmless_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_hash_equality'))
-        suite.addTest(test.datetimetester.TestTimeDelta('test_issue31293'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeDelta('test_issue31293'))) # ZeroDivisionError: Attempted to divide by zero.
         suite.addTest(test.datetimetester.TestTimeDelta('test_issue31752'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_massive_normalization'))
         suite.addTest(test.datetimetester.TestTimeDelta('test_microsecond_rounding'))
@@ -335,21 +335,21 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimeTZ('test_1653736'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_argument_passing'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_aware_compare'))
-        suite.addTest(test.datetimetester.TestTimeTZ('test_backdoor_resistance'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_backdoor_resistance'))) # AssertionError: "^bad tzinfo state arg$" does not match "expected Int32, got bytes"
         suite.addTest(test.datetimetester.TestTimeTZ('test_bad_constructor_arguments'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_bad_tzinfo_classes'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_basic_attributes'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_basic_attributes_nonzero'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_bool'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_comparing'))
-        suite.addTest(test.datetimetester.TestTimeTZ('test_compat_unpickle'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_compat_unpickle'))) # TypeError: expected Int32, got str
         suite.addTest(test.datetimetester.TestTimeTZ('test_empty'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_format'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_harmful_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_harmless_mixed_comparison'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_hash_edge_cases'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_hash_equality'))
-        suite.addTest(test.datetimetester.TestTimeTZ('test_isoformat'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_isoformat'))) # TypeError: isoformat() takes no arguments (1 given)
         suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_mixed_compare')))
         suite.addTest(test.datetimetester.TestTimeTZ('test_more_bool'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_pickling'))
@@ -360,7 +360,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.datetimetester.TestTimeTZ('test_roundtrip'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_str'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_strftime'))
-        suite.addTest(test.datetimetester.TestTimeTZ('test_subclass_replace'))
+        suite.addTest(unittest.expectedFailure(test.datetimetester.TestTimeTZ('test_subclass_replace'))) # AssertionError: <class '_datetime.time'> is not <class 'test.datetimetester.TimeSubclass'>
         suite.addTest(test.datetimetester.TestTimeTZ('test_subclass_time'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_subclass_timetz'))
         suite.addTest(test.datetimetester.TestTimeTZ('test_tzinfo_classes'))

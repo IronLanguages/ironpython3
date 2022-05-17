@@ -32,7 +32,7 @@ namespace IronPython.Runtime {
         /// Boolean conversions
         /// Delegate conversions
         /// Enumeration conversions
-        /// Impplicit conversion operators
+        /// Implicit conversion operators
         /// </summary>
         public const NarrowingLevel IndexOperator = NarrowingLevel.Three;
 

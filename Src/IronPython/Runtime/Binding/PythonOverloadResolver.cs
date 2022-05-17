@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Binding {
             //   type is selected (rule from the DLR).
             // * If one of the parameters is Boolean and the other is numeric, the Boolean parameter is treated as a 1-bit-wide numeric (thus becomes a case for Rule 2).
             //   This makes the preference for numeric types over Boolean consistent with the one encoded using narrowing levels and conversion sequence.
-            // TODO: Increase test coverage for cases involving Complex, Decimal
+            // TODO: Increase test coverage for cases involving Complex, Decimal, Half
             if (Converter.IsPythonNumeric(arg.LimitType)) {
                 if (Converter.IsPythonFloatingPoint(arg.LimitType)) {
                     if (Converter.IsFloatingPoint(candidateOne.Type)) {

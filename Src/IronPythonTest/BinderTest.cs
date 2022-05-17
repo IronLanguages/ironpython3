@@ -790,6 +790,89 @@ namespace IronPythonTest.BinderTest {
 
         #endregion
     }
+    public class COverloads_Int64 {
+        public void M100(Int64 arg) { Flag.Value = 100; }
+        public void M100(Boolean arg) { Flag.Value = 200; }
+
+        public void M101(Int64 arg) { Flag.Value = 101; }
+        public void M101(Char arg) { Flag.Value = 201; }
+
+        public void M102(Int64 arg) { Flag.Value = 102; }
+        public void M102(Byte arg) { Flag.Value = 202; }
+
+        public void M103(Int64 arg) { Flag.Value = 103; }
+        public void M103(SByte arg) { Flag.Value = 203; }
+
+        public void M104(Int64 arg) { Flag.Value = 104; }
+        public void M104(UInt16 arg) { Flag.Value = 204; }
+
+        public void M105(Int64 arg) { Flag.Value = 105; }
+        public void M105(Int16 arg) { Flag.Value = 205; }
+
+        public void M106(Int64 arg) { Flag.Value = 106; }
+        public void M106(UInt32 arg) { Flag.Value = 206; }
+
+        public void M107(Int64 arg) { Flag.Value = 107; }
+        public void M107(Int32 arg) { Flag.Value = 207; }
+
+        public void M108(Int64 arg) { Flag.Value = 108; }
+        public void M108(UInt64 arg) { Flag.Value = 208; }
+
+        public void M109(Int64 arg) { Flag.Value = 109; }
+        public void M109(Decimal arg) { Flag.Value = 209; }
+
+        public void M110(Int64 arg) { Flag.Value = 110; }
+        public void M110(Single arg) { Flag.Value = 210; }
+
+        public void M111(Int64 arg) { Flag.Value = 111; }
+        public void M111(Double arg) { Flag.Value = 211; }
+
+        public void M112(Int64 arg) { Flag.Value = 112; }
+        public void M112(Object arg) { Flag.Value = 212; }
+    }
+    public class COverloads_BigInteger {
+        public void M100(BigInteger arg) { Flag.Value = 100; }
+        public void M100(Boolean arg) { Flag.Value = 200; }
+
+        public void M101(BigInteger arg) { Flag.Value = 101; }
+        public void M101(Char arg) { Flag.Value = 201; }
+
+        public void M102(BigInteger arg) { Flag.Value = 102; }
+        public void M102(Byte arg) { Flag.Value = 202; }
+
+        public void M103(BigInteger arg) { Flag.Value = 103; }
+        public void M103(SByte arg) { Flag.Value = 203; }
+
+        public void M104(BigInteger arg) { Flag.Value = 104; }
+        public void M104(UInt16 arg) { Flag.Value = 204; }
+
+        public void M105(BigInteger arg) { Flag.Value = 105; }
+        public void M105(Int16 arg) { Flag.Value = 205; }
+
+        public void M106(BigInteger arg) { Flag.Value = 106; }
+        public void M106(UInt32 arg) { Flag.Value = 206; }
+
+        public void M107(BigInteger arg) { Flag.Value = 107; }
+        public void M107(Int32 arg) { Flag.Value = 207; }
+
+        public void M108(BigInteger arg) { Flag.Value = 108; }
+        public void M108(UInt64 arg) { Flag.Value = 208; }
+
+        public void M109(BigInteger arg) { Flag.Value = 109; }
+        public void M109(Int64 arg) { Flag.Value = 209; }
+
+        public void M110(BigInteger arg) { Flag.Value = 110; }
+        public void M110(Decimal arg) { Flag.Value = 210; }
+
+        public void M111(BigInteger arg) { Flag.Value = 111; }
+        public void M111(Single arg) { Flag.Value = 211; }
+
+        public void M112(BigInteger arg) { Flag.Value = 112; }
+        public void M112(Double arg) { Flag.Value = 212; }
+
+        public void M113(BigInteger arg) { Flag.Value = 113; }
+        public void M113(Object arg) { Flag.Value = 213; }
+    }
     public class COverloads_Double {
         #region generated codes
         public void M100(Double arg) { Flag.Value = 100; }

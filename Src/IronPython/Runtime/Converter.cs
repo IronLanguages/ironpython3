@@ -415,6 +415,9 @@ namespace IronPython.Runtime {
         private static readonly Type BooleanType = typeof(bool);
         private static readonly Type BigIntegerType = typeof(BigInteger);
         private static readonly Type ComplexType = typeof(Complex);
+        private static readonly Type ExtensibleBigIntegerType = typeof(Extensible<BigInteger>);
+        private static readonly Type ExtensibleDoubleType = typeof(Extensible<double>);
+        private static readonly Type ExtensibleComplexType = typeof(Extensible<Complex>);
         private static readonly Type DelegateType = typeof(Delegate);
         private static readonly Type IEnumerableType = typeof(IEnumerable);
         private static readonly Type TypeType = typeof(Type);
@@ -690,7 +693,6 @@ namespace IronPython.Runtime {
         public static Candidate PreferConvert(Type t1, Type t2) {
             if (t1 == typeof(bool) && t2 == typeof(int)) return Candidate.Two;
             if (t1 == typeof(decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
-            //if (t1 == typeof(int) && t2 == typeof(BigInteger)) return Candidate.Two;
 
             switch (t1.GetTypeCode()) {
                 case TypeCode.SByte:
@@ -732,35 +734,25 @@ namespace IronPython.Runtime {
         }
 
         private static bool HasNarrowingConversion(Type fromType, Type toType, NarrowingLevel allowNarrowing) {
-            if (allowNarrowing == PythonNarrowing.IndexOperator) {
-                if (toType == CharType && fromType == StringType) return true;
-                if (toType == StringType && fromType == CharType) return true;
-                //if (toType == Int32Type && fromType == BigIntegerType) return true;
-                //if (IsIntegral(fromType) && IsIntegral(toType)) return true;
 
-                //Check if there is an implicit convertor defined on fromType to toType
-                if (HasImplicitConversion(fromType, toType)) {
+            if (allowNarrowing >= PythonNarrowing.All) {
+                if (IsPythonNumeric(fromType) && IsPythonNumeric(toType)) {
+                    if (IsPythonFloatingPoint(fromType) && !IsPythonFloatingPoint(toType)) return false;
                     return true;
                 }
+                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
+                if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
+                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__int__")) return true;
             }
 
-            if (toType == DoubleType || toType == SingleType) {
-                if (IsNumeric(fromType) && fromType != ComplexType) return true;
-            }
-
-            if (toType.IsArray) {
-                return typeof(PythonTuple).IsAssignableFrom(fromType);
-            }
-
-            if (allowNarrowing == PythonNarrowing.IndexOperator) {
-                if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if (fromType != typeof(float) && fromType != typeof(double) && fromType != typeof(decimal) && fromType != typeof(Complex)) {
-                        return true;
-                    }
+            if (allowNarrowing >= PythonNarrowing.IndexOperator) {
+                if (IsNumeric(toType)) {
+                    if (IsInteger(fromType)) return true;
+                    if (fromType == BooleanType) return true; // bool is a subclass of int in Python
                 }
-                if (fromType == typeof(bool) && IsNumeric(toType)) return true;
 
                 if (toType == CharType && fromType == StringType) return true;
+                if (toType == StringType && fromType == CharType) return true;
                 if (toType == Int32Type && fromType == BooleanType) return true;
 
                 // Everything can convert to Boolean in Python
@@ -780,36 +772,43 @@ namespace IronPython.Runtime {
                         if (IsPythonType(fromType)) return true;
                     }
                 }
-            }
 
-            if (allowNarrowing == PythonNarrowing.All) {
-                //__int__, __float__; __long__ is obsolete
-                if (IsNumeric(fromType) && IsNumeric(toType)) {
-                    if ((toType == Int32Type || toType == BigIntegerType) &&
-                        (fromType == DoubleType || typeof(Extensible<double>).IsAssignableFrom(fromType))) return false;
+                // Check if there is an implicit converter defined on fromType to toType
+                if (HasImplicitConversion(fromType, toType)) {
                     return true;
                 }
-                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
-                if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
-                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__int__")) return true;
             }
 
-            if (toType.IsGenericType) {
-                Type genTo = toType.GetGenericTypeDefinition();
-                if (genTo == IListOfTType) {
-                    return IListOfObjectType.IsAssignableFrom(fromType);
-                } else if (genTo == NullableOfTType) {
-                    if (fromType == typeof(DynamicNull) || CanConvertFrom(fromType, toType.GetGenericArguments()[0], allowNarrowing)) {
-                        return true;
+            if (allowNarrowing >= PythonNarrowing.BinaryOperator) {
+                if (toType == SingleType) {
+                    if (IsNumeric(fromType) && fromType != ComplexType) return true;
+                }
+
+                if (toType.IsGenericType) {
+                    Type genTo = toType.GetGenericTypeDefinition();
+                    if (genTo == IListOfTType) {
+                        return IListOfObjectType.IsAssignableFrom(fromType);
+                    } else if (genTo == NullableOfTType) {
+                        if (fromType == typeof(DynamicNull) || CanConvertFrom(fromType, toType.GetGenericArguments()[0], allowNarrowing)) {
+                            return true;
+                        }
+                    } else if (genTo == IDictOfTType) {
+                        return IDictionaryOfObjectType.IsAssignableFrom(fromType);
                     }
-                } else if (genTo == IDictOfTType) {
-                    return IDictionaryOfObjectType.IsAssignableFrom(fromType);
+                }
+
+                if (toType.IsArray) {
+                    return typeof(PythonTuple).IsAssignableFrom(fromType);
                 }
             }
 
-            if (fromType == BigIntegerType && toType == Int64Type) return true;
-            if (fromType == BigIntegerType && toType == UInt64Type) return true;
-            if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
+            if (allowNarrowing >= PythonNarrowing.Minimal) {
+                if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
+
+                if (IsFloatingPoint(toType) && toType != SingleType) {
+                    if (IsNumeric(fromType) && fromType != ComplexType) return true;
+                }
+            }
 
             return false;
         }
@@ -895,6 +894,41 @@ namespace IronPython.Runtime {
         internal static bool IsInteger(Type t) {
             return IsNumeric(t) && !IsFloatingPoint(t);
         }
+
+        internal static bool IsUnsignedInt(Type t) {
+            if (t.IsEnum) return false;
+
+            switch (t.GetTypeCode()) {
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static bool IsBoolean(Type t)
+            => t == BooleanType;
+
+        internal static bool IsExtensibleNumeric(Type t) {
+            return ExtensibleBigIntegerType.IsAssignableFrom(t)
+                || ExtensibleDoubleType.IsAssignableFrom(t)
+                || ExtensibleComplexType.IsAssignableFrom(t);
+        }
+
+        internal static bool IsPythonNumeric(Type t)
+            => IsNumeric(t) || IsExtensibleNumeric(t);
+
+        internal static bool IsPythonFloatingPoint(Type t) {
+            return IsFloatingPoint(t)
+                || ExtensibleDoubleType.IsAssignableFrom(t)
+                || ExtensibleComplexType.IsAssignableFrom(t);
+        }
+
+        internal static bool IsPythonBigInt(Type t)
+            => t == BigIntegerType || ExtensibleBigIntegerType.IsAssignableFrom(t);
 
         private static bool IsPythonType(Type t) {
             return t.FullName.StartsWith("IronPython.", StringComparison.Ordinal); //!!! this and the check below are hacks

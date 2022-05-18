@@ -7,7 +7,7 @@ import os
 import sys
 import warnings
 
-from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, big, mystr, run_test, skipUnlessIronPython
 
 class Indexable:
     def __init__(self, value):
@@ -297,6 +297,18 @@ class StrTest(IronPythonTestCase):
         self.assertEqual(o + 'abc', 23)
         self.assertEqual(len(o), 2300)
         self.assertEqual('a' in o, False)
+
+    def test_repr_mystr(self):
+        class A:
+            def __repr__(self) -> str:
+                return mystr("__repr__ called")
+            def __str__(self) -> str:
+                return mystr("__str__ called")
+
+        self.assertIs(type(repr(A())), mystr)
+        self.assertIs(type(str(A())), mystr)
+        self.assertEquals(repr(A()), "__repr__ called")
+        self.assertEquals(str(A()), "__str__ called")
 
     @skipUnlessIronPython()
     def test_str_char_hash(self):

@@ -265,7 +265,10 @@ namespace IronPython.Runtime {
             => buffer.ItemCount * buffer.ItemSize;
 
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
-            => new BufferBytesEnumerator(buffer);
+            => new BufferBytesEnumerator(buffer, itemSize: 1);
+
+        public static BufferBytesEnumerator EnumerateItems(this IPythonBuffer buffer)
+            => new BufferBytesEnumerator(buffer, itemSize: buffer.ItemSize);
 
         /// <summary>
         /// Checks if the data in buffer uses a contiguous memory block. If the buffer uses more than one dimension,
@@ -328,21 +331,25 @@ namespace IronPython.Runtime {
         private readonly ReadOnlySpan<byte> _span;
         private readonly IEnumerator<int> _offsets;
 
-        public BufferBytesEnumerator(IPythonBuffer buffer) {
+        public BufferBytesEnumerator(IPythonBuffer buffer, int itemSize) {
             if (buffer.SubOffsets != null)
                 throw new NotImplementedException("buffers with suboffsets are not supported");
 
             _span = buffer.AsReadOnlySpan();
-            _offsets = EnumerateDimension(buffer, buffer.Offset, 0).GetEnumerator();
+            _offsets = EnumerateDimension(buffer, buffer.Offset, itemSize, 0).GetEnumerator();
         }
 
         public byte Current => _span[_offsets.Current];
 
+        public ReadOnlySpan<byte> CurrentItemBytes => _span.Slice(_offsets.Current);
+
         public bool MoveNext() => _offsets.MoveNext();
+
+        public void Dispose() => _offsets.Dispose();
 
         public BufferBytesEnumerator GetEnumerator() => this;
 
-        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int dim) {
+        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int step, int dim) {
             IReadOnlyList<int>? shape = buffer.Shape;
             IReadOnlyList<int>? strides = buffer.Strides;
 
@@ -350,18 +357,18 @@ namespace IronPython.Runtime {
                 // simple C-contiguous case
                 Debug.Assert(buffer.Offset == 0);
                 int len = buffer.NumBytes();
-                for (int i = 0; i < len; i++) {
+                for (int i = 0; i < len; i += step) {
                     yield return i;
                 }
             } else if (dim >= shape.Count) {
                 // iterate individual element (scalar)
-                for (int i = 0; i < buffer.ItemSize; i++) {
+                for (int i = 0; i < buffer.ItemSize; i += step) {
                     yield return ofs + i;
                 }
             } else {
                 for (int i = 0; i < shape[dim]; i++) {
                     // iterate all bytes from a subdimension
-                    foreach (int j in EnumerateDimension(buffer, ofs, dim + 1)) {
+                    foreach (int j in EnumerateDimension(buffer, ofs, step, dim + 1)) {
                         yield return j;
                     }
                     ofs += strides[dim];

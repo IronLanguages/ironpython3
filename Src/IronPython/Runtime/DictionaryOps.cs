@@ -51,7 +51,12 @@ namespace IronPython.Runtime {
                         buf.Append(PythonOps.Repr(context, kv.Key));
                     buf.Append(": ");
 
-                    buf.Append(PythonOps.Repr(context, kv.Value));
+                    try {
+                        PythonOps.FunctionPushFrame(context.LanguageContext);
+                        buf.Append(PythonOps.Repr(context, kv.Value));
+                    } finally {
+                        PythonOps.FunctionPopFrame();
+                    }
                 }
                 buf.Append("}");
                 return buf.ToString();

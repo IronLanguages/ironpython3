@@ -25,7 +25,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_sys.SizeofTest('test_slots'))
         #suite.addTest(test.test_sys.SysModuleTest('test_43581')) # TODO: figure out - failing in CI
         suite.addTest(test.test_sys.SysModuleTest('test_attributes'))
-        suite.addTest(test.test_sys.SysModuleTest('test_c_locale_surrogateescape'))
+        suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_c_locale_surrogateescape'))) # AssertionError
         suite.addTest(test.test_sys.SysModuleTest('test_call_tracing'))
         suite.addTest(test.test_sys.SysModuleTest('test_clear_type_cache'))
         #suite.addTest(test.test_sys.SysModuleTest('test_current_frames')) # TODO: slow and fails
@@ -45,7 +45,7 @@ def load_tests(loader, standard_tests, pattern):
             suite.addTest(test.test_sys.SysModuleTest('test_intern'))
         #suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_ioencoding'))) # AssertionError: b'\x9b' != b'J\r%'
         #suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_ioencoding_nonascii'))) # AssertionError: b'\x91' != b'\xe6'
-        suite.addTest(test.test_sys.SysModuleTest('test_is_finalizing'))
+        suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_is_finalizing'))) # AttributeError: 'module' object has no attribute 'is_finalizing'
         suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_lost_displayhook'))) # TypeError: NoneType is not callable
         suite.addTest(test.test_sys.SysModuleTest('test_original_displayhook'))
         suite.addTest(test.test_sys.SysModuleTest('test_original_excepthook'))
@@ -59,7 +59,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_sys.SysModuleTest('test_sys_flags'))
         suite.addTest(test.test_sys.SysModuleTest('test_sys_flags_no_instantiation'))
         suite.addTest(test.test_sys.SysModuleTest('test_sys_getwindowsversion_no_instantiation'))
-        suite.addTest(test.test_sys.SysModuleTest('test_sys_tracebacklimit'))
+        suite.addTest(unittest.expectedFailure(test.test_sys.SysModuleTest('test_sys_tracebacklimit'))) # AssertionError
         suite.addTest(test.test_sys.SysModuleTest('test_sys_version_info_no_instantiation'))
         suite.addTest(test.test_sys.SysModuleTest('test_thread_info'))
         return suite

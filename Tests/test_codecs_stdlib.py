@@ -17,7 +17,7 @@ def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
         suite.addTest(test.test_codecs.ASCIITest('test_decode'))
-        suite.addTest(test.test_codecs.ASCIITest('test_decode_error'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.ASCIITest('test_decode_error'))) # https://github.com/IronLanguages/ironpython3/issues/1452
         suite.addTest(test.test_codecs.ASCIITest('test_encode'))
         suite.addTest(test.test_codecs.ASCIITest('test_encode_error'))
         suite.addTest(test.test_codecs.ASCIITest('test_encode_surrogateescape_error'))
@@ -39,12 +39,12 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.CP65001Test('test_encode'))
         suite.addTest(test.test_codecs.CP65001Test('test_lone_surrogates'))
         suite.addTest(test.test_codecs.CP65001Test('test_mixed_readline_and_read'))
-        suite.addTest(test.test_codecs.CP65001Test('test_readline'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CP65001Test('test_readline'))) # code_page_decode issue - e.g. codecs.code_page_decode(65001, b'\xe3\x81')
         suite.addTest(test.test_codecs.CP65001Test('test_readlinequeue'))
         suite.addTest(test.test_codecs.CP65001Test('test_surrogatepass_handler'))
-        suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2int_map'))
-        suite.addTest(test.test_codecs.CharmapTest('test_decode_with_int2str_map'))
-        suite.addTest(test.test_codecs.CharmapTest('test_decode_with_string_map'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CharmapTest('test_decode_with_int2int_map'))) # https://github.com/IronLanguages/ironpython3/issues/1452
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CharmapTest('test_decode_with_int2str_map'))) # https://github.com/IronLanguages/ironpython3/issues/1452
+        suite.addTest(unittest.expectedFailure(test.test_codecs.CharmapTest('test_decode_with_string_map'))) # https://github.com/IronLanguages/ironpython3/issues/1452
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_code_page_name'))) # "CP_UTF8" does not match "'cp65001'""
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp1252'))) # b'?' != b'L' for "Ł" with 'replace'
         suite.addTest(unittest.expectedFailure(test.test_codecs.CodePageTest('test_cp932'))) # b'[?]' != b'[y]' for "ÿ" with 'replace'
@@ -69,7 +69,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.EncodedFileTest('test_basic'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_empty'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_errors'))
-        suite.addTest(test.test_codecs.EscapeDecodeTest('test_escape'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.EscapeDecodeTest('test_escape'))) # AssertionError: DeprecationWarning not triggered
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_raw'))
         suite.addTest(test.test_codecs.EscapeEncodeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_codec_lookup_failure_not_wrapped'))
@@ -122,18 +122,18 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_custom_hex_error_is_wrapped'))) # "^decoding with 'hex_codec' codec failed" does not match "Odd-length string"
         suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_custom_zlib_error_is_wrapped'))) # "^decoding with 'zlib_codec' codec failed" does not match "Error -3 while decompressing data: incorrect header check"
         suite.addTest(test.test_codecs.TransformCodecTest('test_quopri_stateless'))
-        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_read'))) # TypeError: expected str, got bytes
-        suite.addTest(unittest.expectedFailure(test.test_codecs.TransformCodecTest('test_readline'))) # Exception: BZ_DATA_ERROR
+        suite.addTest(test.test_codecs.TransformCodecTest('test_read'))
+        suite.addTest(test.test_codecs.TransformCodecTest('test_readline'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_text_to_binary_blacklists_binary_transforms'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_text_to_binary_blacklists_text_transforms'))
         suite.addTest(test.test_codecs.TransformCodecTest('test_uu_invalid'))
         suite.addTest(test.test_codecs.TypesTest('test_decode_unicode'))
-        suite.addTest(test.test_codecs.TypesTest('test_unicode_escape'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.TypesTest('test_unicode_escape'))) # https://github.com/IronLanguages/ironpython3/issues/1452
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF16BETest('test_errors'))
-        suite.addTest(test.test_codecs.UTF16BETest('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF16BETest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF16BETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16BETest('test_nonbmp'))
         suite.addTest(test.test_codecs.UTF16BETest('test_partial'))
@@ -145,7 +145,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF16LETest('test_errors'))
-        suite.addTest(test.test_codecs.UTF16LETest('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF16LETest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF16LETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16LETest('test_nonbmp'))
         suite.addTest(test.test_codecs.UTF16LETest('test_partial'))
@@ -159,7 +159,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16Test('test_decoder_state'))
         suite.addTest(test.test_codecs.UTF16Test('test_errors'))
         suite.addTest(test.test_codecs.UTF16Test('test_handlers'))
-        suite.addTest(test.test_codecs.UTF16Test('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF16Test('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF16Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16Test('test_only_one_bom'))
         suite.addTest(test.test_codecs.UTF16Test('test_partial'))
@@ -170,7 +170,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32BETest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF32BETest('test_errors'))
         suite.addTest(test.test_codecs.UTF32BETest('test_issue8941'))
-        suite.addTest(test.test_codecs.UTF32BETest('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF32BETest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF32BETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF32BETest('test_partial'))
         suite.addTest(test.test_codecs.UTF32BETest('test_readline'))
@@ -181,7 +181,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32LETest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF32LETest('test_errors'))
         suite.addTest(test.test_codecs.UTF32LETest('test_issue8941'))
-        suite.addTest(test.test_codecs.UTF32LETest('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF32LETest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF32LETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF32LETest('test_partial'))
         suite.addTest(test.test_codecs.UTF32LETest('test_readline'))
@@ -195,7 +195,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32Test('test_errors'))
         suite.addTest(test.test_codecs.UTF32Test('test_handlers'))
         suite.addTest(test.test_codecs.UTF32Test('test_issue8941'))
-        suite.addTest(test.test_codecs.UTF32Test('test_lone_surrogates'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF32Test('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF32Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF32Test('test_only_one_bom'))
         suite.addTest(test.test_codecs.UTF32Test('test_partial'))
@@ -217,36 +217,30 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1175396'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1601501'))
-        suite.addTest(test.test_codecs.UTF8SigTest('test_decode_error'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_decode_error'))) # https://github.com/IronLanguages/ironpython3/issues/1452
         suite.addTest(test.test_codecs.UTF8SigTest('test_decoder_state'))
-        if is_netcoreapp31 or is_net50 or is_net60:
-            suite.addTest(test.test_codecs.UTF8SigTest('test_lone_surrogates'))
-        else:
-            suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF8SigTest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_partial'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_readline'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_stream_bare'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_stream_bom'))
-        suite.addTest(test.test_codecs.UTF8SigTest('test_surrogatepass_handler'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8SigTest('test_surrogatepass_handler'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF8Test('test_bug1175396'))
-        suite.addTest(test.test_codecs.UTF8Test('test_decode_error'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_decode_error'))) # https://github.com/IronLanguages/ironpython3/issues/1452
         suite.addTest(test.test_codecs.UTF8Test('test_decoder_state'))
-        if is_netcoreapp31 or is_net50 or is_net60:
-            suite.addTest(test.test_codecs.UTF8Test('test_lone_surrogates'))
-        else:
-            suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_lone_surrogates'))) # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_lone_surrogates'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UTF8Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF8Test('test_partial'))
         suite.addTest(test.test_codecs.UTF8Test('test_readline'))
         suite.addTest(test.test_codecs.UTF8Test('test_readlinequeue'))
-        suite.addTest(test.test_codecs.UTF8Test('test_surrogatepass_handler'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UTF8Test('test_surrogatepass_handler'))) # https://github.com/IronLanguages/ironpython3/issues/252
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_decode_errors'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_empty'))
-        suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_decode'))
+        suite.addTest(unittest.expectedFailure(test.test_codecs.UnicodeEscapeTest('test_escape_decode'))) # AssertionError: DeprecationWarning not triggered
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_raw_decode'))
         suite.addTest(test.test_codecs.UnicodeEscapeTest('test_raw_encode'))

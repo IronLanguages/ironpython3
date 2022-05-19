@@ -135,14 +135,19 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                Socket? socket;
+                Socket? socket = null;
                 if (fileno is socket sock) {
                     socket = sock._socket;
                     _hostName = sock._hostName;
                     // we now own the lifetime of the socket
                     GC.SuppressFinalize(sock);
-                } else if (fileno != null && (socket = HandleToSocket((long)fileno)) != null) {
-                    // nothing to do here
+                } else if (fileno != null) {
+                    if (Converter.TryConvertToInt64(fileno, out long l)) {
+                        socket = HandleToSocket(l);
+                    }
+                    if (socket is null) {
+                        throw PythonOps.OSError("Bad file descriptor");
+                    }
                 } else {
                     try {
                         socket = new Socket(addressFamily, socketType, protocolType);

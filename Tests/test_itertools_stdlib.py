@@ -46,7 +46,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_count'))
         suite.addTest(test.test_itertools.TestBasicOps('test_count_with_stride'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_cycle'))) # pickling
-        suite.addTest(test.test_itertools.TestBasicOps('test_cycle_setstate'))
+        suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_cycle_setstate'))) # __setstate__ not implemented
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_dropwhile'))) # pickling
         suite.addTest(test.test_itertools.TestBasicOps('test_filter'))
         suite.addTest(unittest.expectedFailure(test.test_itertools.TestBasicOps('test_filterfalse'))) # pickling
@@ -74,7 +74,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_itertools.TestBasicOps('test_ziplongest'))
         suite.addTest(test.test_itertools.TestExamples('test_accumulate'))
         suite.addTest(test.test_itertools.TestExamples('test_accumulate_reducible'))
-        suite.addTest(test.test_itertools.TestExamples('test_accumulate_reducible_none'))
+        suite.addTest(unittest.expectedFailure(test.test_itertools.TestExamples('test_accumulate_reducible_none'))) # pickling
         suite.addTest(test.test_itertools.TestExamples('test_chain'))
         suite.addTest(test.test_itertools.TestExamples('test_chain_from_iterable'))
         suite.addTest(test.test_itertools.TestExamples('test_combinations'))

@@ -265,10 +265,10 @@ namespace IronPython.Runtime {
             => buffer.ItemCount * buffer.ItemSize;
 
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
-            => new BufferBytesEnumerator(buffer, itemSize: 1);
+            => new BufferBytesEnumerator(buffer);
 
-        public static BufferBytesEnumerator EnumerateItems(this IPythonBuffer buffer)
-            => new BufferBytesEnumerator(buffer, itemSize: buffer.ItemSize);
+        public static BufferEnumerator EnumerateItemData(this IPythonBuffer buffer)
+            => new BufferEnumerator(buffer, chunkSize: buffer.ItemSize);
 
         /// <summary>
         /// Checks if the data in buffer uses a contiguous memory block. If the buffer uses more than one dimension,
@@ -328,26 +328,37 @@ namespace IronPython.Runtime {
     }
 
     public ref struct BufferBytesEnumerator {
+        private readonly BufferEnumerator _enumerator;
+
+        public BufferBytesEnumerator(IPythonBuffer buffer)
+            => _enumerator = new BufferEnumerator(buffer, chunkSize: 1);
+
+        public byte Current => _enumerator.Current[0];
+        public bool MoveNext() => _enumerator.MoveNext();
+        public void Dispose() => _enumerator.Dispose();
+
+        public BufferBytesEnumerator GetEnumerator() => this;
+    }
+
+    public ref struct BufferEnumerator {
+        private readonly int _chunksize;
         private readonly ReadOnlySpan<byte> _span;
         private readonly IEnumerator<int> _offsets;
 
-        public BufferBytesEnumerator(IPythonBuffer buffer, int itemSize) {
+        public BufferEnumerator(IPythonBuffer buffer, int chunkSize) {
             if (buffer.SubOffsets != null)
                 throw new NotImplementedException("buffers with suboffsets are not supported");
 
+            _chunksize = chunkSize;
             _span = buffer.AsReadOnlySpan();
-            _offsets = EnumerateDimension(buffer, buffer.Offset, itemSize, 0).GetEnumerator();
+            _offsets = EnumerateDimension(buffer, buffer.Offset, chunkSize, 0).GetEnumerator();
         }
 
-        public byte Current => _span[_offsets.Current];
-
-        public ReadOnlySpan<byte> CurrentItemBytes => _span.Slice(_offsets.Current);
-
+        public ReadOnlySpan<byte> Current => _span.Slice(_offsets.Current, _chunksize);
         public bool MoveNext() => _offsets.MoveNext();
-
         public void Dispose() => _offsets.Dispose();
 
-        public BufferBytesEnumerator GetEnumerator() => this;
+        public BufferEnumerator GetEnumerator() => this;
 
         private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int step, int dim) {
             IReadOnlyList<int>? shape = buffer.Shape;

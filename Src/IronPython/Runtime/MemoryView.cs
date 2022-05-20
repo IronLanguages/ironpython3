@@ -898,11 +898,11 @@ namespace IronPython.Runtime {
             // compare item by item
             TypecodeOps.DecomposeTypecode(value._format, out char theirByteorder, out char theirTypecode);
 
-            using var us = this.EnumerateItems();
-            using var them = value.EnumerateItems();
+            using var us = this.EnumerateItemData();
+            using var them = value.EnumerateItemData();
             while (us.MoveNext() && them.MoveNext()) {
-                _ = TypecodeOps.TryGetFromBytes(ourTypecode, us.CurrentItemBytes, out object? x);
-                _ = TypecodeOps.TryGetFromBytes(theirTypecode, them.CurrentItemBytes, out object? y);
+                _ = TypecodeOps.TryGetFromBytes(ourTypecode, us.Current, out object? x);
+                _ = TypecodeOps.TryGetFromBytes(theirTypecode, them.Current, out object? y);
 
                 if (!PythonOps.EqualRetBool(x, y)) return false;
             }

@@ -7,6 +7,7 @@ import itertools
 import gc
 import sys
 import unittest
+import warnings
 
 from iptest import run_test, is_mono, is_cli, is_64
 
@@ -157,8 +158,128 @@ class MemoryViewTests(unittest.TestCase):
         for x, y in itertools.product((a, mv), repeat=2):
             self.assertFalse(x != y, "{!r} {!r}".format(x, y))
 
+    def test_equality_structural(self):
         # check strided memoryview
         self.assertTrue(memoryview(b'axc')[::2] == memoryview(b'ayc')[::2])
+
+        # check shape differences
+        mv = memoryview(b"x")
+        self.assertEqual(mv.format, "B")
+        self.assertFalse(mv.cast('B', ()) == mv)
+        self.assertTrue(mv.cast('B', (1,)) == mv)
+        self.assertFalse(mv.cast('B', (1,1)) == mv)
+
+        b = bytes(range(8))
+        mv = memoryview(b)
+        self.assertEqual(mv.format, 'B')
+
+        # check different typecodes
+        mv_b = mv.cast('b')
+        self.assertTrue(mv_b == mv)
+
+        # 'b' to 'B' equivalence does not hold for values out of range
+        mv_B = memoryview(b'\x80\x81')
+        mv_b1 = mv_b.cast('b')
+        self.assertFalse(mv_B == mv_b1)
+
+        mv_H = mv.cast('H')
+        self.assertFalse(mv_H == mv)
+        mv_h = mv.cast('h')
+        self.assertTrue(mv_H == mv_h)
+
+        mv_i = mv.cast('i')
+        self.assertFalse(mv_i == mv)
+        self.assertFalse(mv_i == mv_h)
+        mv_L = mv.cast('L')
+        self.assertTrue(mv_i == mv_L)
+        mv_f = mv.cast('f')
+        self.assertFalse(mv_i == mv_f)
+
+        mv_q = mv.cast('q')
+        self.assertFalse(mv_q == mv)
+        self.assertFalse(mv_q == mv_i)
+        mv_Q = mv.cast('Q')
+        self.assertTrue(mv_q == mv_Q)
+        mv_d = mv.cast('d')
+        self.assertFalse(mv_d == mv_q)
+        self.assertFalse(mv_d == mv_f)
+
+        mv_P = mv.cast('P')
+        self.assertFalse(mv_P == mv_i)
+        self.assertFalse(mv_P == mv_L)
+        self.assertTrue(mv_P == mv_q)
+        self.assertTrue(mv_P == mv_Q)
+
+        # Comparing different formats works if the values are the same
+        b = bytes(range(8))
+        mv = memoryview(b)
+        self.assertEqual(mv.format, 'B')
+
+        mv_h = memoryview(array.array('h', [0,1,2,3,4,5,6,7]))
+        self.assertEqual(mv_h.format, 'h')
+        self.assertTrue(mv == mv_h)
+
+        mv_L = memoryview(array.array('L', [0,1,2,3,4,5,6,7]))
+        self.assertEqual(mv_L.format, 'L')
+        self.assertTrue(mv == mv_L)
+        self.assertTrue(mv_h == mv_L)
+
+        mv_d = memoryview(array.array('d', [0,1,2,3,4,5,6,7]))
+        self.assertEqual(mv_d.format, 'd')
+        self.assertTrue(mv == mv_d)
+        self.assertTrue(mv_h == mv_d)
+        self.assertTrue(mv_L == mv_d)
+        self.assertTrue(mv_L[::2] == mv_d[::2])
+
+        # check released memoryview
+        ba = bytearray(b)
+        mv1 = memoryview(b)
+        mv2 = memoryview(ba)
+        self.assertTrue(mv1 == mv2)
+        mv2.release()
+        self.assertFalse(mv1 == mv2)
+        mv1.release()
+        self.assertFalse(mv1 == mv2)
+        self.assertTrue(mv1 == mv1)
+
+        # check nans
+        z = array.array('f', [float('nan')])
+        mv = memoryview(z)
+        self.assertFalse(mv == mv)
+        mv.release()
+        self.assertTrue(mv == mv)
+
+    @unittest.skipUnless(sys.flags.bytes_warning, "Run Python with the '-b' flag on command line for this test")
+    def test_equality_warnings(self):
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            b = bytes(range(8))
+            mv = memoryview(b)
+            self.assertEqual(mv.format, 'B')
+
+            mv_b = mv.cast('b')
+            self.assertTrue(mv_b == mv)
+            mv_i = mv.cast('i')
+            self.assertFalse(mv_b == mv_i)
+
+            mv_c = mv.cast('c')
+            if sys.version_info >= (3, 5):
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv_c == mv)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv_c == mv_b)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv == mv_c)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv == mv_c)
+            else:
+                self.assertFalse(mv_c == mv)
+                self.assertFalse(mv_c == mv_b)
+                self.assertFalse(mv == mv_c)
+                self.assertFalse(mv == mv_c)
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
 
     def test_overflow(self):
         def setitem(m, value):

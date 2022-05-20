@@ -12,7 +12,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Linq;
 
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -484,9 +483,9 @@ namespace IronPython.Runtime {
                     "memoryview: destination format must be a native single character format prefixed with an optional '@'");
             }
 
-            if (!TypecodeOps.IsByteOrCharCode(typecode)) {
+            if (!TypecodeOps.IsByteCode(typecode)) {
                 TypecodeOps.DecomposeTypecode(_format, out _, out char thisTypecode);
-                if (!TypecodeOps.IsByteOrCharCode(thisTypecode)) {
+                if (!TypecodeOps.IsByteCode(thisTypecode)) {
                     throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
                 }
             }
@@ -852,7 +851,7 @@ namespace IronPython.Runtime {
             }
 
             TypecodeOps.DecomposeTypecode(_format, out _, out char typecode);
-            if (!TypecodeOps.IsByteOrCharCode(typecode)) {
+            if (!TypecodeOps.IsByteCode(typecode)) {
                 throw PythonOps.ValueError("memoryview: hashing is restricted to formats 'B', 'b' or 'c'");
             }
 
@@ -898,13 +897,6 @@ namespace IronPython.Runtime {
 
             // compare item by item
             TypecodeOps.DecomposeTypecode(value._format, out char theirByteorder, out char theirTypecode);
-
-            if ((ourTypecode is 'c') && TypecodeOps.IsByteCode(theirTypecode) ||
-                (theirTypecode is 'c') && TypecodeOps.IsByteCode(ourTypecode)) {
-                if (context.LanguageContext.PythonOptions.BytesWarning != Microsoft.Scripting.Severity.Ignore) {
-                    PythonOps.Warn(context, PythonExceptions.BytesWarning, "Comparison between bytes and int");
-                }
-            }
 
             using var us = this.EnumerateItemData();
             using var them = value.EnumerateItemData();

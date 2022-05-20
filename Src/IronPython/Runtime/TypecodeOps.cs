@@ -43,9 +43,6 @@ namespace IronPython.Runtime {
         }
 
         public static bool IsByteCode(char typecode)
-            => typecode == 'B' || typecode == 'b';
-
-        public static bool IsByteOrCharCode(char typecode)
             => typecode == 'B' || typecode == 'b' || typecode == 'c';
 
         public static bool IsFloatCode(char typecode)

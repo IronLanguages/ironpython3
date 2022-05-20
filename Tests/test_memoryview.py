@@ -264,7 +264,7 @@ class MemoryViewTests(unittest.TestCase):
             self.assertFalse(mv_b == mv_i)
 
             mv_c = mv.cast('c')
-            if is_cli or sys.version_info >= (3, 5):
+            if sys.version_info >= (3, 5):
                 with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
                     self.assertFalse(mv_c == mv)
                 with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):

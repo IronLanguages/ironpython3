@@ -869,14 +869,17 @@ namespace IronPython.Runtime {
         }
 
         public bool __eq__(CodeContext/*!*/ context, [NotNone] MemoryView value) {
-            if (ReferenceEquals(this, value)) return true;
-
-            if (_buffer == null) return false;
+            if (_buffer == null) return ReferenceEquals(this, value);
             if (value._buffer == null) return false;
             if (!EquivalentShape(value)) return false;
 
+            TypecodeOps.DecomposeTypecode(_format, out char ourByteorder, out char ourTypecode);
+            // TODO: Support non-native byteorder
+
             // fast tracks if item formats match
-            if (_format == value._format) {
+            if (_format == value._format && !TypecodeOps.IsFloatCode(ourTypecode)) {
+                if (ReferenceEquals(this, value)) return true;
+
                 if (_isCContig && value._isCContig) {
                     // compare blobs
                     return ((IPythonBuffer)this).AsReadOnlySpan().SequenceEqual(((IPythonBuffer)value).AsReadOnlySpan());
@@ -893,9 +896,7 @@ namespace IronPython.Runtime {
             }
 
             // compare item by item
-            TypecodeOps.DecomposeTypecode(_format, out char ourByteorder, out char ourTypecode);
             TypecodeOps.DecomposeTypecode(value._format, out char theirByteorder, out char theirTypecode);
-            // TODO: Support non-native byteorder
 
             using var us = this.EnumerateItems();
             using var them = value.EnumerateItems();

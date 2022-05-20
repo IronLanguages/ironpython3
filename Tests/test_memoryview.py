@@ -179,7 +179,7 @@ class MemoryViewTests(unittest.TestCase):
         self.assertFalse(mv_c == mv) #  with a warning (Python 3.5)
 
         # 'b' to 'B' equivalence does not hold for values out of range
-        mv_B = memoryview(b'0x800x81')
+        mv_B = memoryview(b'\x80\x81')
         mv_b1 = mv_b.cast('b')
         self.assertFalse(mv_B == mv_b1)
 
@@ -242,6 +242,13 @@ class MemoryViewTests(unittest.TestCase):
         mv1.release()
         self.assertFalse(mv1 == mv2)
         self.assertTrue(mv1 == mv1)
+
+        # check nans
+        z = array.array('f', [float('nan')])
+        mv = memoryview(z)
+        self.assertFalse(mv == mv)
+        mv.release()
+        self.assertTrue(mv == mv)
 
     def test_overflow(self):
         def setitem(m, value):

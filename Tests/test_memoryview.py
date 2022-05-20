@@ -7,6 +7,7 @@ import itertools
 import gc
 import sys
 import unittest
+import warnings
 
 from iptest import run_test, is_mono, is_cli, is_64
 
@@ -175,8 +176,6 @@ class MemoryViewTests(unittest.TestCase):
         # check different typecodes
         mv_b = mv.cast('b')
         self.assertTrue(mv_b == mv)
-        mv_c = mv.cast('c')
-        self.assertFalse(mv_c == mv) #  with a warning (Python 3.5)
 
         # 'b' to 'B' equivalence does not hold for values out of range
         mv_B = memoryview(b'\x80\x81')
@@ -249,6 +248,38 @@ class MemoryViewTests(unittest.TestCase):
         self.assertFalse(mv == mv)
         mv.release()
         self.assertTrue(mv == mv)
+
+    @unittest.skipUnless(sys.flags.bytes_warning, "Run Python with the '-b' flag on command line for this test")
+    def test_equality_warnings(self):
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            b = bytes(range(8))
+            mv = memoryview(b)
+            self.assertEqual(mv.format, 'B')
+
+            mv_b = mv.cast('b')
+            self.assertTrue(mv_b == mv)
+            mv_i = mv.cast('i')
+            self.assertFalse(mv_b == mv_i)
+
+            mv_c = mv.cast('c')
+            if is_cli or sys.version_info >= (3, 5):
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv_c == mv)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv_c == mv_b)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv == mv_c)
+                with self.assertWarnsRegex(BytesWarning, r"^Comparison between bytes and int$"):
+                    self.assertFalse(mv == mv_c)
+            else:
+                self.assertFalse(mv_c == mv)
+                self.assertFalse(mv_c == mv_b)
+                self.assertFalse(mv == mv_c)
+                self.assertFalse(mv == mv_c)
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
 
     def test_overflow(self):
         def setitem(m, value):

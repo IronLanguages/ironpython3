@@ -1084,9 +1084,9 @@ namespace IronPython.Modules {
                                                 if (nameIndex != 0) {
                                                     // error in 3.11
                                                     if (userPattern.Length > 20) {
-                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? string.Empty : "b")}{PythonOps.Repr(context, userPattern.Substring(0, 20))} (truncated)");
+                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? "b" : string.Empty)}{PythonOps.Repr(context, userPattern.Substring(0, 20))} (truncated)");
                                                     } else {
-                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? string.Empty : "b")}{PythonOps.Repr(context, userPattern)}");
+                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? "b" : string.Empty)}{PythonOps.Repr(context, userPattern)}");
                                                     }
                                                 }
                                                 if (flags.HasFlag(ReFlags.VERBOSE) && !verbose) return PreParseRegex(context, userPattern, verbose: true, isBytes: isBytes, out options);

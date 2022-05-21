@@ -74,26 +74,21 @@ namespace IronPython.Modules {
         public const int A = (int)ReFlags.ASCII;
 
         // long forms
-        public const int TEMPLATE   = (int)ReFlags.TEMPLATE;
+        public const int TEMPLATE = (int)ReFlags.TEMPLATE;
         public const int IGNORECASE = (int)ReFlags.IGNORECASE;
-        public const int LOCALE     = (int)ReFlags.LOCALE;
-        public const int MULTILINE  = (int)ReFlags.MULTILINE;
-        public const int DOTALL     = (int)ReFlags.DOTALL;
-        public const int UNICODE    = (int)ReFlags.UNICODE;
-        public const int VERBOSE    = (int)ReFlags.VERBOSE;
-        public const int ASCII      = (int)ReFlags.ASCII;
+        public const int LOCALE = (int)ReFlags.LOCALE;
+        public const int MULTILINE = (int)ReFlags.MULTILINE;
+        public const int DOTALL = (int)ReFlags.DOTALL;
+        public const int UNICODE = (int)ReFlags.UNICODE;
+        public const int VERBOSE = (int)ReFlags.VERBOSE;
+        public const int ASCII = (int)ReFlags.ASCII;
 
         #endregion
 
         #region Public API Surface
 
-        public static Pattern compile(CodeContext/*!*/ context, object? pattern, int flags = 0) {
-            try {
-                return GetPattern(context, pattern, flags, true);
-            } catch (ArgumentException e) {
-                throw PythonExceptions.CreateThrowable(error(context), e.Message);
-            }
-        }
+        public static Pattern compile(CodeContext/*!*/ context, object? pattern, int flags = 0)
+            => GetPattern(context, pattern, flags, true);
 
         public const string engine = "cli reg ex";
 
@@ -170,8 +165,10 @@ namespace IronPython.Modules {
             private WeakRefTracker? _weakRefTracker;
 
             internal Pattern(CodeContext/*!*/ context, object pattern, ReFlags flags = 0, bool compiled = false) {
-                _prePattern = PreParseRegex(context, PatternAsString(pattern, ref flags), (flags & ReFlags.VERBOSE) != 0, out ReFlags options);
+                _prePattern = PreParseRegex(context, PatternAsString(pattern, ref flags), verbose: flags.HasFlag(ReFlags.VERBOSE), isBytes: !flags.HasFlag(ReFlags.UNICODE), out ReFlags options);
                 flags |= options;
+                if (flags.HasFlag(ReFlags.UNICODE | ReFlags.LOCALE)) throw PythonOps.ValueError("cannot use LOCALE flag with a str pattern");
+                if (flags.HasFlag(ReFlags.ASCII | ReFlags.LOCALE)) throw PythonOps.ValueError("ASCII and LOCALE flags are incompatible");
                 _re = GenRegex(context, _prePattern, flags, compiled, false);
                 this.pattern = pattern;
                 this.flags = (int)flags;
@@ -425,7 +422,7 @@ namespace IronPython.Modules {
                         };
                         prevEnd = match.Index + match.Length;
 
-                        if (replacement != null) return UnescapeGroups(match, replacement);
+                        if (replacement != null) return UnescapeGroups(context, match, replacement);
                         return ValidateString(PythonCalls.Call(context, repl, Match.Make(match, this, input)));
                     },
                     count));
@@ -453,7 +450,7 @@ namespace IronPython.Modules {
                         prevEnd = match.Index + match.Length;
 
                         totalCount++;
-                        if (replacement != null) return UnescapeGroups(match, replacement);
+                        if (replacement != null) return UnescapeGroups(context, match, replacement);
 
                         return ValidateString(PythonCalls.Call(context, repl, Match.Make(match, this, input)));
                     },
@@ -464,7 +461,7 @@ namespace IronPython.Modules {
 
             public int flags { get; }
 
-            public PythonDictionary groupindex {
+            public MappingProxy groupindex {
                 get {
                     if (_groups == null) {
                         PythonDictionary d = new PythonDictionary();
@@ -480,7 +477,7 @@ namespace IronPython.Modules {
                         }
                         _groups = d;
                     }
-                    return _groups;
+                    return new MappingProxy(_groups);
                 }
             }
 
@@ -489,7 +486,7 @@ namespace IronPython.Modules {
             public object pattern { get; }
 
             public override bool Equals(object? obj)
-                => obj is Pattern other && other.pattern == pattern && other.flags == flags;
+                => obj is Pattern other && PythonOps.IsOrEqualsRetBool(other.pattern, pattern) && other.flags == flags;
 
             public override int GetHashCode() => pattern.GetHashCode() ^ flags;
 
@@ -645,6 +642,8 @@ namespace IronPython.Modules {
             #endregion
 
             #region Public API Surface
+
+            public object? this[object? index] => group(index);
 
             public string __repr__(CodeContext context)
                 => $"<re.Match object; span=({start()}, {end()}), match={PythonOps.Repr(context, group(0))}>";
@@ -851,7 +850,7 @@ namespace IronPython.Modules {
 
                 int GetGroupIndex(object? group) {
                     int grpIndex;
-                    if (!Converter.TryConvertToInt32(group, out grpIndex)) {
+                    if (!Converter.TryConvertToIndex(group, out grpIndex, throwOverflowError: false, throwTypeError: false)) {
                         if (group is string s) {
                             grpIndex = re._re.GroupNumberFromName(s);
                         } else if (group is ExtensibleString es) {
@@ -924,7 +923,7 @@ namespace IronPython.Modules {
         /// Preparses a regular expression text returning a ParsedRegex class
         /// that can be used for further regular expressions.
         /// </summary>
-        private static string PreParseRegex(CodeContext/*!*/ context, string pattern, bool verbose, out ReFlags options) {
+        private static string PreParseRegex(CodeContext/*!*/ context, string pattern, bool verbose, bool isBytes, out ReFlags options) {
             var userPattern = pattern;
             options = default;
             if (verbose) options |= ReFlags.VERBOSE;
@@ -1074,39 +1073,37 @@ namespace IronPython.Modules {
 
                                             break;
                                         case 'a':
-                                            options |= ReFlags.ASCII;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 'i':
-                                            options |= ReFlags.IGNORECASE;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 'L':
-                                            options |= ReFlags.LOCALE;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 'm':
-                                            options |= ReFlags.MULTILINE;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 's':
-                                            options |= ReFlags.DOTALL;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 'u':
-                                            options |= ReFlags.UNICODE;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
                                         case 'x':
-                                            if (!verbose) return PreParseRegex(context, userPattern, true, out options);
-                                            options |= ReFlags.VERBOSE;
-                                            RemoveOption(ref pattern, ref nameIndex);
-                                            break;
+                                            if (MaybeParseFlags(pattern.AsSpan().Slice(nameIndex), out int consumed, out ReFlags flags)) {
+                                                nameIndex -= 2;
+                                                if (nameIndex != 0) {
+                                                    // error in 3.11
+                                                    if (userPattern.Length > 20) {
+                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? string.Empty : "b")}{PythonOps.Repr(context, userPattern.Substring(0, 20))} (truncated)");
+                                                    } else {
+                                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"Flags not at the start of the expression {(isBytes ? string.Empty : "b")}{PythonOps.Repr(context, userPattern)}");
+                                                    }
+                                                }
+                                                if (flags.HasFlag(ReFlags.VERBOSE) && !verbose) return PreParseRegex(context, userPattern, verbose: true, isBytes: isBytes, out options);
+                                                options |= flags;
+                                                pattern = pattern.Remove(nameIndex, consumed + 3);
+                                                break;
+                                            }
+                                            if (pattern[nameIndex + consumed] != ':') {
+                                                throw PythonExceptions.CreateThrowable(error(context), "Unrecognized flag " + pattern[nameIndex + consumed]);
+                                            }
+                                            break; // grouping construct
                                         case ':': break; // non-capturing
                                         case '=': break; // look ahead assertion
                                         case '<': break; // positive look behind assertion
                                         case '!': break; // negative look ahead assertion
                                         case '#': break; // inline comment
+                                        case '-': break; // grouping construct
                                         case '(':
                                             // conditional match alternation (?(id/name)yes-pattern|no-pattern)
                                             // move past ?( so we don't preparse the name.
@@ -1182,9 +1179,7 @@ namespace IronPython.Modules {
                             case System.Globalization.UnicodeCategory.LetterNumber:
                             case System.Globalization.UnicodeCategory.OtherNumber:
                             case System.Globalization.UnicodeCategory.ConnectorPunctuation:
-                                pattern = pattern.Remove(nameIndex - 1, 1);
-                                cur--;
-                                break;
+                                throw PythonExceptions.CreateThrowable(error(context), "bad escape \\" + curChar);
                             case System.Globalization.UnicodeCategory.DecimalDigitNumber:
                                 //  actually don't want to unescape '\1', '\2' etc. which are references to groups
                                 break;
@@ -1197,21 +1192,50 @@ namespace IronPython.Modules {
             }
 
             return pattern;
-        }
 
-        private static void RemoveOption(ref string pattern, ref int nameIndex) {
-            if (pattern[nameIndex - 1] == '?' && nameIndex < (pattern.Length - 1) && pattern[nameIndex + 1] == ')') {
-                pattern = pattern.Remove(nameIndex - 2, 4);
-                nameIndex -= 2;
-            } else {
-                pattern = pattern.Remove(nameIndex, 1);
-                nameIndex -= 2;
+            bool MaybeParseFlags(ReadOnlySpan<char> pattern, out int consumed, out ReFlags flags) {
+                consumed = default;
+                flags = default;
+                foreach (char c in pattern) {
+                    switch (c) {
+                        case 'a':
+                            flags |= ReFlags.ASCII;
+                            break;
+                        case 'i':
+                            flags |= ReFlags.IGNORECASE;
+                            break;
+                        case 'L':
+                            flags |= ReFlags.LOCALE;
+                            break;
+                        case 'm':
+                            flags |= ReFlags.MULTILINE;
+                            break;
+                        case 's':
+                            flags |= ReFlags.DOTALL;
+                            break;
+                        case 'u':
+                            flags |= ReFlags.UNICODE;
+                            break;
+                        case 'x':
+                            flags |= ReFlags.VERBOSE;
+                            break;
+                        case ')':
+                            return true;
+                        case ':':
+                            return false;
+                        default:
+                            return false;
+                    }
+                    consumed++;
+                }
+                consumed = 0;
+                return false;
             }
         }
 
         private static string GetRandomString() => r.Next(int.MaxValue / 2, int.MaxValue).ToString();
 
-        private static string UnescapeGroups(RegExpMatch m, string text) {
+        private static string UnescapeGroups(CodeContext context, RegExpMatch m, string text) {
             for (int i = 0; i < text.Length; i++) {
                 if (text[i] == '\\') {
                     StringBuilder sb = new StringBuilder(text, 0, i, text.Length);
@@ -1219,7 +1243,9 @@ namespace IronPython.Modules {
                     do {
                         if (text[i] == '\\') {
                             i++;
-                            if (i == text.Length) { sb.Append('\\'); break; }
+                            if (i == text.Length) {
+                                throw PythonExceptions.CreateThrowable(error(context), $"bad escape (end of pattern) at position {i - 1}");
+                            }
 
                             switch (text[i]) {
                                 case 'n': sb.Append('\n'); break;
@@ -1280,6 +1306,7 @@ namespace IronPython.Modules {
                                             sb.Append((char)val);
                                         }
                                     } else {
+                                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"bad escape \\{text[i]}"); // error in 3.7
                                         sb.Append('\\');
                                         sb.Append((char)text[i]);
                                     }

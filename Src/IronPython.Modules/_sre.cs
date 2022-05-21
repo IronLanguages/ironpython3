@@ -12,7 +12,7 @@ namespace IronPython.Modules {
     public static class PythonSRegEx {
         public const string __doc__ = "non-functional _sre module.  Included only for completeness.";
 
-        public const int MAGIC = 20031017;
+        public const int MAGIC = 20140917;
         public const int CODESIZE = 2;
         public const int MAXREPEAT = 65535;
         public const int MAXGROUPS = int.MaxValue;

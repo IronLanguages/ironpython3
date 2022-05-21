@@ -12,6 +12,7 @@ using Microsoft.Scripting.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -55,9 +56,9 @@ namespace IronPython.Runtime {
         public PythonEncoding(Encoding encoding, PythonEncoderFallback encoderFallback, PythonDecoderFallback decoderFallback)
             : base(0, encoderFallback, decoderFallback) {
 
-            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
-            if (encoderFallback == null) throw new ArgumentNullException(nameof(encoderFallback));
-            if (decoderFallback == null) throw new ArgumentNullException(nameof(decoderFallback));
+            if (encoding is null) throw new ArgumentNullException(nameof(encoding));
+            if (encoderFallback is null) throw new ArgumentNullException(nameof(encoderFallback));
+            if (decoderFallback is null) throw new ArgumentNullException(nameof(decoderFallback));
 
             try {
                 unsafe {
@@ -91,16 +92,18 @@ namespace IronPython.Runtime {
             Pass2Encoding.DecoderFallback = decoderFallback;
         }
 
+        [MemberNotNull(nameof(_residentEncoder))]
         private void PrepareResidentEncoder() {
-            if (_residentEncoder == null) {
+            if (_residentEncoder is null) {
                 _residentEncoder = new PythonEncoder(this);
             } else {
                 _residentEncoder.Reset();
             }
         }
 
+        [MemberNotNull(nameof(_residentDecoder))]
         private void PrepareResidentDecoder() {
-            if (_residentDecoder == null) {
+            if (_residentDecoder is null) {
                 _residentDecoder = new PythonDecoder(this);
             } else {
                 _residentDecoder.Reset();
@@ -110,61 +113,61 @@ namespace IronPython.Runtime {
         // mandatory override
         public override int GetByteCount(char[] chars, int index, int count) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetByteCount(chars, index, count, flush: true);
+            return _residentEncoder.GetByteCount(chars, index, count, flush: true);
         }
 
         // NLS workhorse
         public override unsafe int GetByteCount(char* chars, int count) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetByteCount(chars, count, flush: true);
+            return _residentEncoder.GetByteCount(chars, count, flush: true);
         }
 
         // used by IronPython
         public override int GetByteCount(string s) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetByteCount(s, flush: true);
+            return _residentEncoder.GetByteCount(s, flush: true);
         }
 
         // mandatory override
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
+            return _residentEncoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
         }
 
         // NLS workhorse
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetBytes(chars, charCount, bytes, byteCount, flush: true);
+            return _residentEncoder.GetBytes(chars, charCount, bytes, byteCount, flush: true);
         }
 
         // used by IronPython
         public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) {
             PrepareResidentEncoder();
-            return _residentEncoder!.GetBytes(s, charIndex, charCount, bytes, byteIndex, flush: true);
+            return _residentEncoder.GetBytes(s, charIndex, charCount, bytes, byteIndex, flush: true);
         }
 
         // mandatory override
         public override int GetCharCount(byte[] bytes, int index, int count) {
             PrepareResidentDecoder();
-            return _residentDecoder!.GetCharCount(bytes, index, count, flush: true);
+            return _residentDecoder.GetCharCount(bytes, index, count, flush: true);
         }
 
         // NLS workhorse
         public override unsafe int GetCharCount(byte* bytes, int count) {
             PrepareResidentDecoder();
-            return _residentDecoder!.GetCharCount(bytes, count, flush: true);
+            return _residentDecoder.GetCharCount(bytes, count, flush: true);
         }
 
         // mandatory override
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
             PrepareResidentDecoder();
-            return _residentDecoder!.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
+            return _residentDecoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
         }
 
         // used by IronPython
         public string GetString(IPythonBuffer input, int index, int count) {
             PrepareResidentDecoder();
-            return _residentDecoder!.GetString(input, index, count);
+            return _residentDecoder.GetString(input, index, count);
         }
 
         public override int GetMaxByteCount(int charCount)
@@ -289,7 +292,7 @@ namespace IronPython.Runtime {
             private static Encoder GetEncoder(Encoding encoding) {
                 Encoder encoder = encoding.GetEncoder();
 
-                if (!(encoder.Fallback is PythonEncoderFallback) && encoding.EncoderFallback is PythonEncoderFallback) {
+                if (encoder.Fallback is not PythonEncoderFallback && encoding.EncoderFallback is PythonEncoderFallback) {
                     // Non-conformant Encoder implementation, the challenge is to get to the fallback buffer used by such encoder.
 
                     // Possibility 1: _pass1encoder is EncoderNLS (or its subclass).
@@ -297,7 +300,7 @@ namespace IronPython.Runtime {
                     // it redefines them as new properties and uses them instead.
                     // Although the new FallbackBuffer is public, it is not easilly accessible because the EncoderNLS class is internal.
                     // One way of accessing it is by reflection. This will be handled by GetPythonEncoderFallbackBuffer()
-                    for (Type? et = encoder.GetType(); et != null && et.FullName != "System.Text.Encoder"; et = et.BaseType) {
+                    for (Type? et = encoder.GetType(); et is not null && et.FullName != "System.Text.Encoder"; et = et.BaseType) {
                         if (et.FullName == "System.Text.EncoderNLS") return encoder;
                     }
 
@@ -315,7 +318,7 @@ namespace IronPython.Runtime {
             }
 
             private static PythonEncoderFallbackBuffer? GetPythonEncoderFallbackBuffer(Encoder? enc) {
-                if (enc == null) return null;
+                if (enc is null) return null;
 
                 // This should be as simple as enc.FallbackBuffer as PythonEncoderFallbackBuffer
                 // but it requires a workaround for a design oddity in System.Text.EncoderNLS on .NET Core
@@ -328,7 +331,7 @@ namespace IronPython.Runtime {
 
             // mandatory override of an abstract method
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
-                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (chars is null) throw new ArgumentNullException(nameof(chars));
                 if (index < 0 || count < 0) throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
                 if (chars.Length - index < count) throw new ArgumentOutOfRangeException(nameof(chars));
 
@@ -337,7 +340,7 @@ namespace IronPython.Runtime {
 
             // optional override of a virtual method but preferable to the one from the base class
             public override unsafe int GetByteCount(char* chars, int count, bool flush) {
-                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (chars is null) throw new ArgumentNullException(nameof(chars));
 
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
 
@@ -351,7 +354,7 @@ namespace IronPython.Runtime {
 
             // not declared in the base class nevertheless still useful in IronPython context, most efficient if input is a string
             public int GetByteCount(string s, bool flush) {
-                if (s == null) throw new ArgumentNullException(nameof(s));
+                if (s is null) throw new ArgumentNullException(nameof(s));
 
                 var fbuf1 = GetPythonEncoderFallbackBuffer(_pass1encoder);
 
@@ -365,8 +368,8 @@ namespace IronPython.Runtime {
 
             // mandatory override
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
-                if (chars == null) throw new ArgumentNullException(nameof(chars));
-                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (chars is null) throw new ArgumentNullException(nameof(chars));
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
                 if (charIndex < 0) throw new ArgumentOutOfRangeException(nameof(charIndex));
                 if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
                 if (chars.Length - charIndex < charCount) throw new ArgumentOutOfRangeException(nameof(chars));
@@ -378,8 +381,8 @@ namespace IronPython.Runtime {
 
             // NLS workhorse
             public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush) {
-                if (chars == null) throw new ArgumentNullException(nameof(chars));
-                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (chars is null) throw new ArgumentNullException(nameof(chars));
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
                 if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
                 if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount));
 
@@ -389,8 +392,8 @@ namespace IronPython.Runtime {
 
             // used by IronPython
             public int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
-                if (s == null) throw new ArgumentNullException(nameof(s));
-                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+                if (s is null) throw new ArgumentNullException(nameof(s));
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
                 if (charIndex < 0) throw new ArgumentOutOfRangeException(nameof(charIndex));
                 if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
                 if (s.Length - charIndex < charCount) throw new ArgumentOutOfRangeException(nameof(s));
@@ -412,14 +415,14 @@ namespace IronPython.Runtime {
                 int written = _pass1encoder.GetBytes(chars, bytes, flush);
 
                 // If the final increment and there were no more fallback bytes, the job is done
-                if (fbuf1 == null || flush && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
+                if (fbuf1 is null || flush && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
                     fbuf1?.Reset();
                     fbuf2?.Reset();
                     return written;
                 }
 
                 // Lazy creation of _pass2encoder
-                if (_pass2encoder == null) {
+                if (_pass2encoder is null) {
                     _pass2encoder = GetEncoder(_parentEncoding.Pass2Encoding);
                     fbuf2 = GetPythonEncoderFallbackBuffer(_pass2encoder);
                 }
@@ -556,7 +559,7 @@ namespace IronPython.Runtime {
                     }
                     // use fallback bytes
                     if (EncodingMode) {
-                        if (_allFallbackBytes != null) { // pass 2
+                        if (_allFallbackBytes is not null) { // pass 2
                             foreach (byte b in newFallbackBytes.Span) {
                                 _allFallbackBytes.Enqueue(b);
                             }
@@ -682,10 +685,10 @@ namespace IronPython.Runtime {
             private static Decoder GetDecoder(Encoding encoding) {
                 Decoder decoder = encoding.GetDecoder();
 
-                if (!(decoder.Fallback is PythonDecoderFallback) && encoding.DecoderFallback is PythonDecoderFallback) {
+                if (decoder.Fallback is not PythonDecoderFallback && encoding.DecoderFallback is PythonDecoderFallback) {
                     // Non-conformant Decoder implementation, the challenge is to get to the fallback buffer used by such decoder.
                     // See notes at PythonEncoder.GetEncoder(...)
-                    for (Type? dt = decoder.GetType(); dt != null && dt.FullName != "System.Text.Decoder"; dt = dt.BaseType) {
+                    for (Type? dt = decoder.GetType(); dt is not null && dt.FullName != "System.Text.Decoder"; dt = dt.BaseType) {
                         if (dt.FullName == "System.Text.DecoderNLS") return decoder;
                     }
 
@@ -695,7 +698,7 @@ namespace IronPython.Runtime {
             }
 
             private static PythonDecoderFallbackBuffer? GetPythonDecoderFallbackBuffer(Decoder? dec) {
-                if (dec == null) return null;
+                if (dec is null) return null;
 
                 // see also PythonEncoder.GetPythonEncoderFallbackBuffer(...)
                 var fbuf = dec.FallbackBuffer as PythonDecoderFallbackBuffer;
@@ -733,8 +736,8 @@ namespace IronPython.Runtime {
 
             // NLS workhorse
             public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush) {
-                if (bytes == null) throw new ArgumentNullException(nameof(bytes));
-                if (chars == null) throw new ArgumentNullException(nameof(chars));
+                if (bytes is null) throw new ArgumentNullException(nameof(bytes));
+                if (chars is null) throw new ArgumentNullException(nameof(chars));
                 if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount));
                 if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount));
 
@@ -755,12 +758,12 @@ namespace IronPython.Runtime {
                 int written = _pass1decoder.GetChars(bytes, chars, flush);
 
                 // If the final increment and there were no fallback characters, the job is done
-                if (fbuf1 == null || flush && fbuf1.FallbackCharCount == surIdxStart && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
+                if (fbuf1 is null || flush && fbuf1.FallbackCharCount == surIdxStart && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
                     return written;
                 }
 
                 // Lazy creation of _pass2decoder
-                if (_pass2decoder == null) {
+                if (_pass2decoder is null) {
                     _pass2decoder = GetDecoder(_parentEncoding.Pass2Encoding);
                     fbuf2 = GetPythonDecoderFallbackBuffer(_pass2decoder);
                 }
@@ -790,7 +793,7 @@ namespace IronPython.Runtime {
                 var fbuf1 = GetPythonDecoderFallbackBuffer(_pass1decoder);
 
                 // This allows for UnicodeDecodeError, if occurred, to contain the whole input
-                if (fbuf1 != null) fbuf1.Data = Tuple.Create(input, index);
+                if (fbuf1 is not null) fbuf1.Data = Tuple.Create(input, index);
 
                 var span = input.AsReadOnlySpan().Slice(index, count);
                 int len = _pass1decoder.GetCharCount(span, flush: true);
@@ -863,7 +866,7 @@ namespace IronPython.Runtime {
                 } else {
                     _safeFallbackChars = default;
                     _fbkCnt += _fbkNumChars;
-                    if (_fallbackChars != null) {
+                    if (_fallbackChars is not null) {
                         var chars = newFallbackChars.Span;
                         for (int i = 0; i < _fbkNumChars; i++) {
                             _fallbackChars.Enqueue(chars[i]);
@@ -1129,7 +1132,7 @@ namespace IronPython.Runtime {
                 }
 
                 public void Save() {
-                    if (_savebuf != null) {
+                    if (_savebuf is not null) {
                         Array.Copy(_buffer, _savebuf, _buflen);
                     } else {
                         _savebuf = (byte[])_buffer.Clone();
@@ -1139,7 +1142,7 @@ namespace IronPython.Runtime {
                 }
 
                 public void Restore() {
-                    if (_savebuf != null) {
+                    if (_savebuf is not null) {
                         Array.Copy(_savebuf, _buffer, _savelen);
                     }
                     _buflen = _savelen;
@@ -1162,7 +1165,7 @@ namespace IronPython.Runtime {
 
                 switch (this.CodePage) {
                     case 65001: // UTF-8
-                        if (_buffer == null) _buffer = new ByteBuffer(bytesPerChar);
+                        if (_buffer is null) _buffer = new ByteBuffer(bytesPerChar);
                         if (index != _buffer.EndIndex) {
                             // new fallback sequence
                             if (_buffer.Length != 0) {
@@ -1222,7 +1225,7 @@ namespace IronPython.Runtime {
                         throw new DecoderFallbackException($"'surrogatepass' error handler does not support this encoding (cp{this.CodePage})", bytesUnknown, index);
                 }
 
-                if (fallbackChars == null) {
+                if (fallbackChars is null) {
                     if (fallbackChar < SurrogateRangeStart || SurrogateRangeEnd < fallbackChar) {
                         Throw(bytesUnknown, index);
                     }
@@ -1243,7 +1246,7 @@ namespace IronPython.Runtime {
             }
 
             public override void FinalizeIncrement(int endIndex, bool flush) {
-                if (_buffer != null) {
+                if (_buffer is not null) {
                     if (_buffer.Length != 0 && (_buffer.EndIndex != endIndex || flush)) {
                         // leftover bytes not consumed
                         Throw(_buffer.TrimmedBytes(), _buffer.Index);
@@ -1293,7 +1296,7 @@ namespace IronPython.Runtime {
             }
 
             public override Tuple<ReadOnlyMemory<char>, ReadOnlyMemory<byte>> GetFallbackCharsOrBytes(int runeUnknown, int index) {
-                if (_handler == null) {
+                if (_handler is null) {
                     _handler = LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(_encoding._context, _encoding._errors));
                 }
 
@@ -1337,7 +1340,7 @@ namespace IronPython.Runtime {
             }
 
             public override void FinalizeIncrement(int endIndex, bool flush) {
-                if (Data != null && Data.Length > 0 && EncodingMode) _lastSeenChar <<= Data[0];
+                if (Data is not null && Data.Length > 0 && EncodingMode) _lastSeenChar <<= Data[0];
                 base.FinalizeIncrement(endIndex, flush);
             }
         }
@@ -1372,8 +1375,8 @@ namespace IronPython.Runtime {
                     // prepare the data object and error position for UnicodeDecodeError
                     object bytesObj;
                     int pos;
-                    if (_bytesData == null) {
-                        if (Data != null) {
+                    if (_bytesData is null) {
+                        if (Data is not null) {
                             IPythonBuffer buf = Data.Item1;
                             int dataOffset = Data.Item2;
                             if (index < 0) {
@@ -1443,8 +1446,8 @@ namespace IronPython.Runtime {
                     if (DecodingMode) {
                         if (flush) {
                             _previousDataLen = 0;
-                        } else if (Data != null) {
-                            IPythonBuffer buf = Data!.Item1;
+                        } else if (Data is not null) {
+                            IPythonBuffer buf = Data.Item1;
                             int dataOffset = Data.Item2;
                             var span = buf.AsReadOnlySpan().Slice(dataOffset);
                             int retain = _previousData.Length - span.Length;

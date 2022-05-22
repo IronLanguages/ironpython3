@@ -164,12 +164,23 @@ namespace IronPython.Modules {
             throw new NotImplementedException("CopyComPointer");
         }
 
+#nullable enable
+
         public static string FormatError() {
             return FormatError(get_last_error());
         }
 
         public static string FormatError(int errorCode) {
             return new Win32Exception(errorCode).Message;
+        }
+
+        private static string FormatError(int errorCode, string? fileName) {
+            string msg = FormatError(errorCode);
+            // error codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+            if (errorCode is not (< 0 or >= 8200 or 34 or 106 or 317 or 718)) {
+                msg = msg.Replace("%1", $"'{fileName}'");
+            }
+            return msg;
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
@@ -187,13 +198,17 @@ namespace IronPython.Modules {
             NativeFunctions.FreeLibrary(handle);
         }
 
-#nullable enable
-
         private static object LoadDLL(string? library, int mode) {
             if (library is not null && library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
-                throw PythonOps.OSError($"cannot load library {library}");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    int code = NativeFunctions.GetLastError();
+                    string msg = FormatError(code, library);
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 0, msg, null, code);
+                }
+
+                throw PythonOps.OSError("cannot load library '{0}'", library);
             }
 
             return res.ToPython();

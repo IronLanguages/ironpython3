@@ -82,8 +82,7 @@ class Template(metaclass=_TemplateMetaclass):
     # but without ASCII flag.  We can't add re.ASCII to flags because of
     # backward compatibility.  So we use local -i flag and [a-zA-Z] pattern.
     # See https://bugs.python.org/issue31672
-    #idpattern = r'(?-i:[_a-zA-Z][_a-zA-Z0-9]*)'
-    idpattern = r'[_a-z][_a-z0-9]*' # https://github.com/IronLanguages/ironpython3/issues/1419
+    idpattern = r'(?-i:[_a-zA-Z][_a-zA-Z0-9]*)'
     flags = _re.IGNORECASE
 
     def __init__(self, template):

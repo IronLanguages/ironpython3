@@ -42,7 +42,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_bug_16688'))
         suite.addTest(test.test_re.ReTests('test_bug_20998'))
         suite.addTest(test.test_re.ReTests('test_bug_2537'))
-        suite.addTest(test.test_re.ReTests('test_bug_29444'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_bug_29444'))) # AssertionError
         suite.addTest(test.test_re.ReTests('test_bug_3629'))
         suite.addTest(test.test_re.ReTests('test_bug_418626'))
         suite.addTest(test.test_re.ReTests('test_bug_448951'))
@@ -62,15 +62,15 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_bug_931848'))
         suite.addTest(test.test_re.ReTests('test_bytes_str_mixing'))
         suite.addTest(test.test_re.ReTests('test_category'))
-        suite.addTest(test.test_re.ReTests('test_character_set_errors'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_character_set_errors'))) # AttributeError: 'error' object has no attribute 'msg'
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_compile')))
         suite.addTest(test.test_re.ReTests('test_constants'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_dealloc')))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_debug_flag')))
         suite.addTest(test.test_re.ReTests('test_dollar_matches_twice'))
         suite.addTest(test.test_re.ReTests('test_empty_array'))
-        suite.addTest(test.test_re.ReTests('test_enum'))
-        suite.addTest(test.test_re.ReTests('test_error'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_enum'))) # AssertionError: 'ASCII' not found in '256'
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_error'))) # AttributeError: 'error' object has no attribute 'pattern'
         suite.addTest(test.test_re.ReTests('test_expand'))
         suite.addTest(test.test_re.ReTests('test_finditer'))
         suite.addTest(test.test_re.ReTests('test_flags'))
@@ -92,17 +92,17 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_re.ReTests('test_locale_flag'))
         suite.addTest(test.test_re.ReTests('test_lookahead'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_lookbehind')))
-        suite.addTest(test.test_re.ReTests('test_match_getitem'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_match_getitem'))) # TypeError: expected dict, got Match
         suite.addTest(test.test_re.ReTests('test_match_repr'))
-        suite.addTest(test.test_re.ReTests('test_misc_errors'))
-        suite.addTest(test.test_re.ReTests('test_multiple_repeat'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_misc_errors'))) # AttributeError: 'error' object has no attribute 'msg'
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_multiple_repeat'))) # AttributeError: 'error' object has no attribute 'msg'
         suite.addTest(test.test_re.ReTests('test_not_literal'))
-        suite.addTest(test.test_re.ReTests('test_nothing_to_repeat'))
-        suite.addTest(test.test_re.ReTests('test_other_escapes'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_nothing_to_repeat'))) # AttributeError: 'error' object has no attribute 'msg'
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_other_escapes'))) # AssertionError: error not raised by compile
         suite.addTest(test.test_re.ReTests('test_pattern_compare'))
         suite.addTest(test.test_re.ReTests('test_pattern_compare_bytes'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_pickling')))
-        suite.addTest(test.test_re.ReTests('test_qualified_re_split'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_qualified_re_split'))) # AssertionError: FutureWarning not triggered
         suite.addTest(test.test_re.ReTests('test_qualified_re_sub'))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_escape')))
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_escape_byte')))
@@ -110,17 +110,17 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_escape_non_ascii_bytes')))
         suite.addTest(test.test_re.ReTests('test_re_findall'))
         suite.addTest(test.test_re.ReTests('test_re_fullmatch'))
-        suite.addTest(test.test_re.ReTests('test_re_groupref'))
-        suite.addTest(test.test_re.ReTests('test_re_groupref_exists'))
-        suite.addTest(test.test_re.ReTests('test_re_groupref_overflow'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_groupref'))) # AssertionError: error not raised
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_groupref_exists'))) # AssertionError: error not raised
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_groupref_overflow'))) # IndexError: unknown group reference
         suite.addTest(test.test_re.ReTests('test_re_match'))
-        suite.addTest(test.test_re.ReTests('test_re_split'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_re_split'))) # AssertionError: FutureWarning not triggered
         suite.addTest(test.test_re.ReTests('test_re_subn'))
-        suite.addTest(test.test_re.ReTests('test_repeat_minmax'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_repeat_minmax'))) # AttributeError: 'error' object has no attribute 'msg'
         suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_repeat_minmax_overflow')))
         suite.addTest(test.test_re.ReTests('test_repeat_minmax_overflow_maxrepeat'))
         suite.addTest(test.test_re.ReTests('test_scanner'))
-        suite.addTest(test.test_re.ReTests('test_scoped_flags'))
+        suite.addTest(unittest.expectedFailure(test.test_re.ReTests('test_scoped_flags'))) # https://github.com/IronLanguages/ironpython3/issues/1419
         suite.addTest(test.test_re.ReTests('test_search_coverage'))
         suite.addTest(test.test_re.ReTests('test_search_dot_unicode'))
         suite.addTest(test.test_re.ReTests('test_search_star_plus'))

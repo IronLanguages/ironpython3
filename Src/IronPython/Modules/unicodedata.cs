@@ -154,7 +154,61 @@ namespace IronPython.Modules {
             public string unidata_version { get; private set; }
 
             public string lookup(string name) {
-                return char.ConvertFromUtf32(nameLookup[name]);
+                if (TryLookup(name, out int code))
+                    return char.ConvertFromUtf32(code);
+                throw PythonOps.KeyError("undefined character name");
+            }
+
+            private static bool IsUnifiedIdeograph(int code) {
+                return (0x3400 <= code && code <= 0x4DB5) || // CJK Ideograph Extension A
+                    (0x4E00 <= code && code <= 0x9FEF) || // CJK Ideograph
+                    (0x20000 <= code && code <= 0x2A6D6) || // CJK Ideograph Extension B
+                    (0x2A700 <= code && code <= 0x2B734) || // CJK Ideograph Extension C - 5.2
+                    (0x2B740 <= code && code <= 0x2B81D) || // CJK Ideograph Extension D - 6.0
+                    (0x2B820 <= code && code <= 0x2CEA1) || // CJK Ideograph Extension E - 8.0
+                    (0x2CEB0 <= code && code <= 0x2EBEF) || // CJK Ideograph Extension F - 10.0
+                    (0x30000 <= code && code <= 0x3134A);   // CJK Ideograph Extension G - 13.0
+            }
+
+            private bool TryLookup(string name, out int code) {
+                code = 0;
+
+                if (name.StartsWith("CJK UNIFIED IDEOGRAPH-", StringComparison.Ordinal)) {
+                    var val = name.AsSpan(22);
+                    if (val.Length != 4 && val.Length != 5) return false;
+                    foreach (var c in val) {
+                        code *= 16;
+                        switch (c) {
+                            case '0':
+                            case '1':
+                            case '2':
+                            case '3':
+                            case '4':
+                            case '5':
+                            case '6':
+                            case '7':
+                            case '8':
+                            case '9':
+                                code += c - '0';
+                                break;
+                            case 'A':
+                            case 'B':
+                            case 'C':
+                            case 'D':
+                            case 'E':
+                            case 'F':
+                                code += c - 'A' + 10;
+                                break;
+                            default:
+                                code = 0;
+                                return false;
+                        }
+                    }
+                    return IsUnifiedIdeograph(code);
+
+                }
+
+                return nameLookup.TryGetValue(name, out code);
             }
 
 #nullable enable
@@ -166,6 +220,10 @@ namespace IronPython.Modules {
                 => TryGetName(GetRune(unichr), out var name) ? name : @default;
 
             internal bool TryGetName(int rune, [NotNullWhen(true)] out string? name) {
+                if (IsUnifiedIdeograph(rune)) {
+                    name = $"CJK UNIFIED IDEOGRAPH-{rune:X}";
+                    return true;
+                }
                 if (TryGetInfo(rune, out CharInfo info, excludeRanges: true)) {
                     name = info.Name;
                     return true;

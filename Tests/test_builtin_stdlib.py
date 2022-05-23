@@ -79,18 +79,18 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_builtin.PtyTests('test_input_tty_non_ascii_unicode_errors')))
         if not is_netcoreapp:
             suite.addTest(test.test_builtin.ShutdownTest('test_cleanup'))
-        suite.addTest(test.test_builtin.TestSorted('test_bad_arguments'))
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestSorted('test_bad_arguments'))) # AssertionError: TypeError not raised
         suite.addTest(test.test_builtin.TestSorted('test_baddecorator'))
         suite.addTest(test.test_builtin.TestSorted('test_basic'))
         suite.addTest(test.test_builtin.TestSorted('test_inputtypes'))
-        suite.addTest(test.test_builtin.TestType('test_bad_args'))
-        suite.addTest(test.test_builtin.TestType('test_bad_slots'))
-        suite.addTest(test.test_builtin.TestType('test_namespace_order'))
-        suite.addTest(test.test_builtin.TestType('test_new_type'))
-        suite.addTest(test.test_builtin.TestType('test_type_doc'))
-        suite.addTest(test.test_builtin.TestType('test_type_name'))
-        suite.addTest(test.test_builtin.TestType('test_type_nokwargs'))
-        suite.addTest(test.test_builtin.TestType('test_type_qualname'))
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_bad_args'))) # AssertionError: TypeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_bad_slots'))) # AssertionError: TypeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_namespace_order'))) # https://github.com/IronLanguages/ironpython3/issues/1468
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_new_type'))) # AssertionError: <class 'test.test_builtin.B'> is not <class 'int'>
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_type_doc'))) # AssertionError: UnicodeEncodeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_type_name'))) # AssertionError: ValueError not raised
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_type_nokwargs'))) # AssertionError: TypeError not raised
+        suite.addTest(unittest.expectedFailure(test.test_builtin.TestType('test_type_qualname'))) # https://github.com/IronLanguages/ironpython3/issues/30
         suite.addTest(doctest.DocTestSuite(builtins))
         return suite
 

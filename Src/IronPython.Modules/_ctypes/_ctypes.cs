@@ -166,21 +166,14 @@ namespace IronPython.Modules {
 
 #nullable enable
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static string FormatError() {
             return FormatError(get_last_error());
         }
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static string FormatError(int errorCode) {
             return new Win32Exception(errorCode).Message;
-        }
-
-        private static string FormatError(int errorCode, string? fileName) {
-            string msg = FormatError(errorCode);
-            // error codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
-            if (errorCode is not (< 0 or >= 8200 or 34 or 106 or 317 or 718)) {
-                msg = msg.Replace("%1", $"'{fileName}'");
-            }
-            return msg;
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
@@ -203,9 +196,7 @@ namespace IronPython.Modules {
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    int code = NativeFunctions.GetLastError();
-                    string msg = FormatError(code, library);
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 0, msg, null, code);
+                    throw PythonNT.GetLastWin32Error(library);
                 }
 
                 throw PythonOps.OSError("cannot load library '{0}'", library);
@@ -430,6 +421,7 @@ namespace IronPython.Modules {
             return 0;
         }
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static int get_last_error() {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 return NativeFunctions.GetLastError();

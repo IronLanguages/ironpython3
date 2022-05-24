@@ -228,7 +228,10 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(cm.exception.errno, 8)
         self.assertEqual(cm.exception.winerror, 193)
         self.assertIn(" is not a valid Win32 application", cm.exception.strerror)
-        self.assertIsNone(cm.exception.filename)
+        if is_cli:
+            self.assertEqual(cm.exception.filename, __file__)
+        else:
+            self.assertIsNone(cm.exception.filename)
         self.assertIsNone(cm.exception.filename2)
 
 run_test(__name__)

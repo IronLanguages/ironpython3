@@ -2055,7 +2055,7 @@ the 'status' value."),
                 return PythonOps.OSError(errorCode, message, filename, errorCode);
             }
 
-            return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
+            return PythonOps.OSError(errorCode, message, filename);
         }
 
         private static Exception? IOExceptionToPythonException(IOException? ioe, int error, string? filename) {
@@ -2214,29 +2214,22 @@ the 'status' value."),
             return PythonOps.OSError(error, msg, filename, null, filename2);
         }
 
-        [DllImport("kernel32.dll", EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = true)]
-        private static extern int FormatMessage(int dwFlags, IntPtr lpSource,
-                    int dwMessageId, int dwLanguageId, [Out] StringBuilder lpBuffer,
-                    int nSize, IntPtr arguments);
+#endif
 
-        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-        private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+#if FEATURE_NATIVE || FEATURE_CTYPES
 
         // Gets an error message for a Win32 error code.
         internal static string GetMessage(int errorCode) {
-            var buf = new StringBuilder(256);
-            int msgLen = 0;
-            int lastError = ERROR_INSUFFICIENT_BUFFER;
-            while (msgLen == 0 && lastError == ERROR_INSUFFICIENT_BUFFER) {
-                msgLen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, IntPtr.Zero, errorCode, 0, buf, buf.Capacity, IntPtr.Zero);
-                if (msgLen == 0) {
-                    lastError = Marshal.GetLastWin32Error();
-                    if (lastError == ERROR_INSUFFICIENT_BUFFER)
-                        buf.Capacity *= 2;
-                }
+            string msg = new Win32Exception(errorCode).Message;
+            // error codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+            if (errorCode is not (< 0 or >= 8200 or 34 or 106 or 317 or 718)) {
+                msg = msg.IndexOf('%') switch {
+                    0 => "The file specified" + msg.Substring(2),
+                    > 0 => msg.Replace("%1", "the file specified"),
+                    _ => msg
+                };
             }
-            return buf.ToString().TrimEnd('\r', '\n', '.');
+            return msg.TrimEnd('\r', '\n', '.');
         }
 
         internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)

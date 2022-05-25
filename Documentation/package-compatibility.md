@@ -38,3 +38,17 @@ To install:
 ```
 ipy -m pip install requests==2.21.0
 ```
+
+## sympy (1.4)
+
+To install:
+```
+ipy -m pip install sympy==1.4
+```
+
+The above will also automatically install `mpmath` 1.2.1 if not yet installed.
+
+`sympy` comes with an interactive console, which can be started with:
+```
+ipy -m isympy
+```

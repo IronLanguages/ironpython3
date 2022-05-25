@@ -143,6 +143,8 @@ function global:prompt {
 [string[]] $newEnvPaths = @($IronPythonEnvironmentPath)
 if ($IsWindows) {
     $newEnvPaths += Join-Path $IronPythonEnvironmentPath "Scripts"
+} else {
+    $newEnvPaths += Join-Path $IronPythonEnvironmentPath "bin"
 }
 $newEnvPaths += $env:PATH
 $env:PATH = $newEnvPaths -join [IO.Path]::PathSeparator

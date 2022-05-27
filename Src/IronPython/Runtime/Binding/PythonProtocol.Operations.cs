@@ -753,14 +753,14 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised
+            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised (https://github.com/IronLanguages/ironpython3/issues/1479)
             if (fParent != null && (rbinder.Success || rSlot != null) && rParent != fParent && rParent.IsSubclassOf(fParent)) {
                 // Python says if x + subx and subx defines __r*__ we should call r*.
                 fbinder = SlotOrFunction.Empty;
                 fSlot = null;
             }
 
-            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised
+            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised (https://github.com/IronLanguages/ironpython3/issues/560)
             if (oper == PythonOperationKind.Add && fParent != null && (rbinder.Success || rSlot != null) && rParent != fParent && isSequence) {
                 // if the left operand is a sequence and the right operand defines __radd__, we should call __radd__.
                 fbinder = SlotOrFunction.Empty;

@@ -705,8 +705,10 @@ namespace IronPython.Runtime.Binding {
             rSlot = null;
             PythonType fParent, rParent;
 
+            bool isSequence = IsSequence(types[0]);
+
             if (oper == PythonOperationKind.Multiply &&
-                IsSequence(types[0]) &&
+                isSequence &&
                 !PythonOps.IsNonExtensibleNumericType(types[1].GetLimitType())) {
                 // class M:
                 //      def __rmul__(self, other):
@@ -751,8 +753,16 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
+            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised
             if (fParent != null && (rbinder.Success || rSlot != null) && rParent != fParent && rParent.IsSubclassOf(fParent)) {
                 // Python says if x + subx and subx defines __r*__ we should call r*.
+                fbinder = SlotOrFunction.Empty;
+                fSlot = null;
+            }
+
+            // TODO: this is incorrect - if the rslot returns NotImplemented then fslot is never called and a TypeError will be raised
+            if (oper == PythonOperationKind.Add && fParent != null && (rbinder.Success || rSlot != null) && rParent != fParent && isSequence) {
+                // if the left operand is a sequence and the right operand defines __radd__, we should call __radd__.
                 fbinder = SlotOrFunction.Empty;
                 fSlot = null;
             }

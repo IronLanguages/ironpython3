@@ -342,6 +342,15 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
         }
 
+        internal static string FsPathDecoded(CodeContext context, object? path) {
+            return PythonOps.FsPath(path) switch {
+                string s => s,
+                Extensible<string> es => es,
+                Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
         public static object Plus(object? o) {
             if (o is int) return o;
             else if (o is double) return o;

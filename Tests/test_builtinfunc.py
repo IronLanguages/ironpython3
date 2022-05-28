@@ -671,9 +671,11 @@ class BuiltinsTest2(IronPythonTestCase):
         f()
 
     def test_compile(self):
-        for x in ['exec', 'eval', 'single']:
-            c = compile('2', 'foo', x)
-            self.assertEqual(c.co_filename, 'foo')
+        for mode in ['exec', 'eval', 'single']:
+            for filename in ['foo', b'foo']:
+                for source in ['2', b'2']:
+                    c = compile(source, filename, mode)
+                    self.assertEqual(c.co_filename, 'foo')
 
         class mystdout(object):
             def __init__(self):

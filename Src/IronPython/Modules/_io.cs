@@ -2794,13 +2794,7 @@ namespace IronPython.Modules {
             string fname = null;
             if (!Converter.TryConvertToIndex(file, out int fd, false, false)) {
                 fd = -1;
-                var path = PythonOps.FsPath(file);
-                fname = path switch {
-                    string s => s,
-                    Extensible<string> es => es,
-                    Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),
-                    _ => throw new InvalidOperationException(),
-                };
+                fname = PythonOps.FsPathDecoded(context, file);
             }
 
             HashSet<char> modes = MakeSet(mode);

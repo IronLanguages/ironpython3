@@ -162,9 +162,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "eval compiles the code as if were an expression\n" +
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
-        public static object compile(CodeContext/*!*/ context, [NotNone] _ast.AST source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] _ast.AST source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             ValidateCompileMode(mode);
 
             bool astOnly = flags != null && (Converter.ConvertToInt32(flags) & _ast.PyCF_ONLY_AST) != 0;
@@ -172,7 +173,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (astOnly) {
                 return source;
             } else {
-                PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
+                PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, sfilename);
                 ast.Bind();
                 ScriptCode code = ast.ToScriptCode();
                 return ((RunnableScriptCode)code).GetFunctionCode(true);
@@ -180,29 +181,32 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNone] IBufferProtocol source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] IBufferProtocol source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
+
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             var sourceCodeKind = ValidateCompileMode(mode);
 
             using var buffer = source.GetBuffer();
             byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
-            var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, filename);
-            var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, filename, sourceCodeKind);
+            var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, sfilename);
+            var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, sfilename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNone] string source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] string source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             var sourceCodeKind = ValidateCompileMode(mode);
 
             if (source.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            var sourceUnit = context.LanguageContext.CreateSnippet(source, filename, sourceCodeKind);
+            var sourceUnit = context.LanguageContext.CreateSnippet(source, sfilename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }

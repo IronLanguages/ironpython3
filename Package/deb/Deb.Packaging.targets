@@ -12,8 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ApplicationFiles Include="$(StageDir)/net46/*.exe" />
-      <ApplicationFiles Include="$(StageDir)/net46/**/*.dll" Exclude="IronPythonTest.dll" />
+      <ApplicationFiles Include="$(StageDir)/net462/*.exe" />
+      <ApplicationFiles Include="$(StageDir)/net462/**/*.dll" Exclude="IronPythonTest.dll" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <!-- Build the application deb -->
-    <Exec Command="chmod 777 $(StageDir)/net46/*.exe" />
+    <Exec Command="chmod 777 $(StageDir)/net462/*.exe" />
     <Exec Command="rm -rf $(PackageTempFolder)" />
     <Exec Command="mkdir -p $(PackageTempFolder)/DEBIAN" />
     <Exec Command="cp $(PackageDebFolder)/DEBIAN/* $(PackageTempFolder)/DEBIAN"/>
@@ -41,8 +41,8 @@
     <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(PackageTempFolder)/usr/lib/ironpython3.4/%(StdLibFiles.RecursiveDir)"/>
 
     <Exec Command="fakeroot dpkg-deb -v --build $(PackageTempFolder)"/>
-    <Copy 
-      SourceFiles="$(PackageDebFolder)/$(TempFolder).deb" 
+    <Copy
+      SourceFiles="$(PackageDebFolder)/$(TempFolder).deb"
       DestinationFiles="$(PackageDir)/ironpython_$(PackageVersion).deb"/>
     <Delete Files="$(PackageDebFolder)/$(TempFolder).deb"/>
 

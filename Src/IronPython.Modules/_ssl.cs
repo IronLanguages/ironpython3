@@ -199,7 +199,7 @@ namespace IronPython.Modules {
             public void load_cert_chain(CodeContext context, string certfile, string keyfile = null, object password = null) {
                 if (keyfile is not null) throw new NotImplementedException(nameof(keyfile));
                 if (password is not null) throw new NotImplementedException(nameof(password));
-#if NET5_0_OR_GREATER
+#if NET
                 _cert = X509Certificate2.CreateFromPemFile(certfile, keyfile);
 #else
                 _cert = ReadCertificate(context, certfile, readKey: true);
@@ -224,7 +224,7 @@ namespace IronPython.Modules {
                     } else {
                         throw PythonOps.TypeError("cafile should be a valid filesystem path");
                     }
-#if NET5_0_OR_GREATER
+#if NET
                     _cert_store.ImportFromPemFile(_cafile);
 #else
                     _cert_store.Add(ReadCertificate(context, _cafile));
@@ -239,7 +239,7 @@ namespace IronPython.Modules {
                     if (cadata is string s) {
                         if (!StringOps.TryEncodeAscii(s, out Bytes ascii))
                             throw PythonOps.ValueError("cadata should be an ASCII string or a bytes-like object");
-#if NET5_0_OR_GREATER
+#if NET
                         _cert_store.ImportFromPem(s);
 #else
                         string line;
@@ -254,7 +254,7 @@ namespace IronPython.Modules {
                         using IPythonBuffer buf = cabuf.GetBuffer();
                         var contents = buf.AsReadOnlySpan();
                         while (contents.Length > 0) {
-#if NET5_0_OR_GREATER
+#if NET
                             var cert = new X509Certificate2(contents);
 #else
                             var cert = new X509Certificate2(contents.ToArray());
@@ -949,7 +949,7 @@ Returns the number of bytes written.")]
         }
 
         private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
-#if NET5_0_OR_GREATER
+#if NET
             if (readKey) {
                 return X509Certificate2.CreateFromPemFile(filename);
             }

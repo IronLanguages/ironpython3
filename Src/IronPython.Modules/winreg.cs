@@ -4,9 +4,8 @@
 
 #if FEATURE_REGISTRY
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -21,6 +20,9 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
+
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 [assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
@@ -70,6 +72,7 @@ namespace IronPython.Modules {
         public const int REG_FULL_RESOURCE_DESCRIPTOR = 0X9;
         public const int REG_RESOURCE_REQUIREMENTS_LIST = 0XA;
         public const int REG_QWORD = 0xB;
+        public const int REG_QWORD_LITTLE_ENDIAN = 0XB;
 
         public const int REG_NOTIFY_CHANGE_NAME = 0X1;
         public const int REG_NOTIFY_CHANGE_ATTRIBUTES = 0X2;
@@ -346,19 +349,22 @@ namespace IronPython.Modules {
                     break;
                 case REG_EXPAND_SZ:
                 case REG_SZ:
-                    if (length >= 2 && data[length - 1] == 0 && data[length - 2] == 0) {
-                        value = ExtractString(data, 0, (int)length - 2);
-                    } else {
-                        value = ExtractString(data, 0, (int)length);
-                    }
+                    var span = MemoryMarshal.Cast<byte, char>(data.AsSpan());
+                    var len = span.IndexOf((char)0);
+                    if (len != -1) span = span.Slice(0, len);
+                    value = span.ToString();
                     break;
                 case REG_DWORD:
-                    if (BitConverter.IsLittleEndian) {
-                        value = (uint)((data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0]);
-                    } else {
-                        value = (uint)((data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]);
-                    }
+                    var dval = BitConverter.ToUInt32(data, 0);
+                    if (!BitConverter.IsLittleEndian) dval = BinaryPrimitives.ReverseEndianness(dval);
+                    value = dval > int.MaxValue ? (BigInteger)dval : unchecked((int)dval);
                     break;
+                case REG_QWORD:
+                    var qval = BitConverter.ToUInt64(data, 0);
+                    if (!BitConverter.IsLittleEndian) qval = BinaryPrimitives.ReverseEndianness(qval);
+                    value = (BigInteger)qval;
+                    break;
+
                 default:
                     value = null;
                     break;

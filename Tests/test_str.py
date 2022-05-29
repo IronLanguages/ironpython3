@@ -487,7 +487,7 @@ class StrTest(IronPythonTestCase):
         for t in (dict, indexable):
             self.assertEqual(u"abcd".translate(t({})), u"abcd")
             self.assertEqual(u"abcd".translate(t({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"})) , "AcXY")
-            self.assertRaisesMessage(TypeError, "character mapping must be in range(0x10000)", lambda: 'a'.translate(t({ord('a') : 65536})))
+            self.assertRaisesMessage(ValueError, "character mapping must be in range(0x10000)", lambda: 'a'.translate(t({ord('a') : sys.maxunicode + 1})))
             self.assertRaisesMessage(TypeError, "character mapping must return integer, None or str", lambda: 'a'.translate(t({ord('a') : 2.0})))
 
         class ThrowingIndexable:

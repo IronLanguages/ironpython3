@@ -27,10 +27,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.x'
-    - name: Setup .NET 5.0
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '5.0.x'
     - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v1
       with:
@@ -57,9 +53,6 @@ jobs:
       shell: pwsh
     - name: Test (netcoreapp3.1)
       run: ./make.ps1 -frameworks netcoreapp3.1 test-all
-      shell: pwsh
-    - name: Test (net5.0)
-      run: ./make.ps1 -frameworks net5.0 test-all
       shell: pwsh
     - name: Test (net6.0)
       run: ./make.ps1 -frameworks net6.0 test-all

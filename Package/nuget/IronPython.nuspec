@@ -38,9 +38,9 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp2.1\**\*;net5.0*\**\*" />
-    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp2.1\**\*;net5.0*\**\*" />
-    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp2.1\**\*;net5.0*\**\*" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp2.1\**\*;net7.0*\**\*" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp2.1\**\*;net7.0*\**\*" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp2.1\**\*;net7.0*\**\*" />
     <file src="LICENSE;README.md" />
   </files>
 </package>

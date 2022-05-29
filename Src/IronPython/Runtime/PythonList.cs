@@ -225,6 +225,11 @@ namespace IronPython.Runtime {
             }
         }
 
+        public static PythonList operator +([NotNone] PythonList self, object? other) {
+            if (other is PythonList l) return self + l;
+            throw PythonOps.TypeError($"can only concatenate list (not \"{PythonOps.GetPythonTypeName(other)}\") to list");
+        }
+
         /// <summary>
         /// Gets a reasonable size for the addition of two arrays.  We round
         /// to a power of two so that we usually have some extra space if

@@ -682,7 +682,7 @@ zulu_time:
       int rc = 1;
       int n;
       double r = 0;
-      StringBuilder z = new StringBuilder( zMod.ToLower() );
+      StringBuilder z = new StringBuilder( zMod.ToLowerInvariant() );
       zdtBuf.Length = 0;
       //z = zdtBuf;
       //for(n=0; n<ArraySize(zdtBuf)-1 && zMod[n]; n++){

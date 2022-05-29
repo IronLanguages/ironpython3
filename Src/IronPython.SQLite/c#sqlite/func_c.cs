@@ -470,7 +470,7 @@ namespace Community.CsharpSqlite
         //{
         //(char)sqlite3Toupper( z1[i] );
         //}
-        sqlite3_result_text( context, z2.Length == 0 ? "" : z2.Substring( 0, n ).ToUpper(), -1, null ); //sqlite3_free );
+        sqlite3_result_text( context, z2.Length == 0 ? "" : z2.Substring( 0, n ).ToUpperInvariant(), -1, null ); //sqlite3_free );
         // }
       }
     }
@@ -499,7 +499,7 @@ namespace Community.CsharpSqlite
         //  {
         //    z1[i] = (char)sqlite3Tolower( z1[i] );
         //  }
-        sqlite3_result_text( context, z2.Length == 0 ? "" : z2.Substring( 0, n ).ToLower(), -1, null );//sqlite3_free );
+        sqlite3_result_text( context, z2.Length == 0 ? "" : z2.Substring( 0, n ).ToLowerInvariant(), -1, null );//sqlite3_free );
         //}
       }
     }

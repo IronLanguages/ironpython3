@@ -1232,7 +1232,7 @@ namespace IronPython.Modules {
             + "Raises socket.error if no protocol number can be found."
             )]
         public static object getprotobyname(CodeContext/*!*/ context, [NotNone] string protocolName) {
-            switch (protocolName.ToLower()) {
+            switch (protocolName.ToLowerInvariant()) {
                 case "ah": return IPPROTO_AH;
                 case "esp": return IPPROTO_ESP;
                 case "dstopts": return IPPROTO_DSTOPTS;
@@ -1266,7 +1266,7 @@ namespace IronPython.Modules {
         [Documentation("")]
         public static int getservbyname(CodeContext/*!*/ context, [NotNone] string serviceName, [NotNone] string protocolName) {
             if (protocolName != null) {
-                protocolName = protocolName.ToLower();
+                protocolName = protocolName.ToLowerInvariant();
                 if (protocolName != "udp" && protocolName != "tcp")
                     throw PythonExceptions.CreateThrowable(error, "service/proto not found");
             }
@@ -1277,7 +1277,7 @@ namespace IronPython.Modules {
             } catch { }
 
 
-            switch (serviceName.ToLower()) {
+            switch (serviceName.ToLowerInvariant()) {
                 case "echo": return 7;
                 case "daytime": return 13;
                 case "ftp-data": return 20;
@@ -1327,7 +1327,7 @@ namespace IronPython.Modules {
                 throw PythonOps.OverflowError("getservbyport: port must be 0-65535.");
 
             if (protocolName != null) {
-                protocolName = protocolName.ToLower();
+                protocolName = protocolName.ToLowerInvariant();
                 if (protocolName != "udp" && protocolName != "tcp")
                     throw PythonExceptions.CreateThrowable(error, "port/proto not found");
             }

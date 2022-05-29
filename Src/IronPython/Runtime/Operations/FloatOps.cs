@@ -315,7 +315,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static double? TryParseSpecialFloat(string self) {
-            switch (self.ToLower()) {
+            switch (self.ToLowerInvariant()) {
                 case "inf":
                 case "+inf":
                 case "infinity":

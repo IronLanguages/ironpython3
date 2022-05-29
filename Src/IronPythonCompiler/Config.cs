@@ -271,7 +271,7 @@ namespace IronPythonCompiler {
                             ConsoleOps.Warning($"Already parsed response file '{arg.Substring(1)}'");
                         }
                     } else {
-                        if (arg.ToLower().EndsWith(".dll", StringComparison.Ordinal)) {
+                        if (arg.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) {
                             DLLs.Add(arg);
                         } else {
                             Files.Add(arg);

@@ -1472,7 +1472,7 @@ namespace IronPython.Modules {
                 string ltzname = tzname() as string;
                 if (ltzname != null) {
                     // TODO: calling __repr__?
-                    sb.AppendFormat(", tzinfo={0}", ltzname.ToLower());
+                    sb.AppendFormat(", tzinfo={0}", ltzname.ToLowerInvariant());
                 }
 
                 sb.AppendFormat(")");

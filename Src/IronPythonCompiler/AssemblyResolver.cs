@@ -248,7 +248,7 @@ namespace IronPythonCompiler {
             try {
                 FileInfo fi = new FileInfo(path);
                 if (fi.DirectoryName == null) {
-                    return path.Length > 1 && path[1] == ':' ? path.ToUpper() : path;
+                    return path.Length > 1 && path[1] == ':' ? path.ToUpperInvariant() : path;
                 }
                 string dir = CanonicalizePath(fi.DirectoryName);
                 string name = fi.Name;

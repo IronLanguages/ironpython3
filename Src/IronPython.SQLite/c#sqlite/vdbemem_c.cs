@@ -305,7 +305,7 @@ return SQLITE_OK;
         else if ( Double.IsPositiveInfinity( pMem.r ) )
           pMem.z = "+Inf";
         else if ( pMem.r.ToString( CultureInfo.InvariantCulture ).Contains( "." ) )
-          pMem.z = pMem.r.ToString( CultureInfo.InvariantCulture ).ToLower();//sqlite3_snprintf(nByte, pMem.z, "%!.15g", pMem->r);
+          pMem.z = pMem.r.ToString( CultureInfo.InvariantCulture ).ToLowerInvariant();//sqlite3_snprintf(nByte, pMem.z, "%!.15g", pMem->r);
         else
           pMem.z = pMem.r.ToString( CultureInfo.InvariantCulture) + ".0";
       }

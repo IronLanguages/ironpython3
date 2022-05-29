@@ -188,7 +188,7 @@ namespace IronPythonTest.BinderTest {
         public int M704(Byte[] inp, ref Byte[] arg) { arg = inp; Flag.Value = 704; return 42; }
 
         // keywords 
-        public void M800(Int32 arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpper(); }
+        public void M800(Int32 arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpperInvariant(); }
 
         // more ref/out 
         public void M850(ref S1 arg) { arg = new S1(); }

@@ -2621,8 +2621,8 @@ int isTemp = 0;
 
       // /* Convert the filename to the system encoding. */
       zConverted = zUtf8Name;// convertUtf8Filename( zUtf8Name );
-      if ( zConverted.StartsWith( "/", StringComparison.Ordinal ) && !zConverted.StartsWith( "//", StringComparison.Ordinal ) )
-        zConverted = zConverted.Substring( 1 );
+      //if ( zConverted.StartsWith( "/", StringComparison.Ordinal ) && !zConverted.StartsWith( "//", StringComparison.Ordinal ) )
+      //  zConverted = zConverted.Substring( 1 );
       //if ( String.IsNullOrEmpty( zConverted ) )
       //{
       //  return SQLITE_NOMEM;
@@ -3179,7 +3179,7 @@ return SQLITE_OK;
       /* If this path name begins with "/X:", where "X" is any alphabetic
       ** character, discard the initial "/" from the pathname.
       */
-      if( zRelative[0]=='/' && Char.IsLetter(zRelative[1]) && zRelative[2]==':' ){
+      if( zRelative.Length >= 3 && zRelative[0]=='/' && Char.IsLetter(zRelative[1]) && zRelative[2]==':' ){
         zRelative = zRelative.Substring(1);
       }
 
@@ -3210,7 +3210,16 @@ return SQLITE_OK;
 #if WINDOWS_PHONE || SQLITE_SILVERLIGHT  || SQLITE_WINRT
             zOut = zRelative;
 #else
-          zOut = Path.GetFullPath( zRelative ); // was unicodeToUtf8(zTemp);
+          if (Environment.OSVersion.Platform == PlatformID.Unix
+            && zRelative.Length > 2 && zRelative[0] == '~' && (zRelative[1] == '/' || zRelative[1] == '\\'))
+          {
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            zOut = Path.GetFullPath(home + zRelative.Substring(1));
+          }
+          else
+          {
+            zOut = Path.GetFullPath( zRelative ); // was unicodeToUtf8(zTemp);
+          }
 #endif
         }
         catch ( Exception  e )

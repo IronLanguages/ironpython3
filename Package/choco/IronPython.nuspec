@@ -19,8 +19,8 @@
     <mailingListUrl>https://ironpython.groups.io/g/users</mailingListUrl>
   </metadata>
   <files>
-    <file src="$STAGEDIR$\net46\*.dll;$STAGEDIR$\net46\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
-    <file src="$STAGEDIR$\net46\DLLs\**" target="DLLs" exclude="**\*.xml" />
+    <file src="$STAGEDIR$\net462\*.dll;$STAGEDIR$\net462\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
+    <file src="$STAGEDIR$\net462\DLLs\**" target="DLLs" exclude="**\*.xml" />
     <file src="$STAGEDIR$\Lib\**" target="Lib" />
     <file src="$STAGEDIR$\LICENSE;$STAGEDIR$\README.md" />
     <file src="tools\*" target="tools" />

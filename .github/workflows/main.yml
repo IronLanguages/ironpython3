@@ -45,8 +45,8 @@ jobs:
       with:
         name: packages
         path: Package/Release/Packages
-    - name: Test (net46)
-      run: ./make.ps1 -frameworks net46 test-all
+    - name: Test (net462)
+      run: ./make.ps1 -frameworks net462 test-all
       shell: pwsh
     - name: Test (netcoreapp2.1)
       run: ./make.ps1 -frameworks netcoreapp2.1 test-all

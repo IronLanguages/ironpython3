@@ -1469,7 +1469,7 @@ namespace IronPython.Runtime.Types {
                 Type[] allInterfaces = t.GetInterfaces();
                 List<Type> res = new List<Type>();
                 foreach (Type intf in allInterfaces) {
-#if NET46
+#if NETFRAMEWORK
                     // causes failures on Mono: https://github.com/mono/mono/issues/14712
                     if (intf == typeof(System.Runtime.InteropServices._Type) || intf == typeof(System.Runtime.InteropServices._MethodInfo)) {
                         continue;

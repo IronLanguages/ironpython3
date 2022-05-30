@@ -225,7 +225,7 @@ static int sqlite3_os_type = 0;
       //  sqlite3_os_type = sInfo.dwPlatformId == VER_PLATFORM_WIN32_NT ? 2 : 1;
       //}
       //return sqlite3_os_type == 2;
-      return Environment.OSVersion.Platform == PlatformID.Win32NT;
+      return Environment.OSVersion.Platform == PlatformID.Win32NT || Environment.OSVersion.Platform == PlatformID.Unix;
     }
 #endif // * SQLITE_OS_WINCE */
 
@@ -381,7 +381,7 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
     //                       (LPWSTR) &zTempWide,
     //                       0,
     //                       0);
-        zBuf = Marshal.GetLastWin32Error().ToString();//new Win32Exception( Marshal.GetLastWin32Error() ).Message;
+        zBuf = HelperMethods.GetLastError().ToString();//new Win32Exception( Marshal.GetLastWin32Error() ).Message;
 
     //if( dwLen > 0 ){
     //  /* allocate a buffer and convert to UTF8 */
@@ -458,7 +458,7 @@ static int winLogErrorAtLine(
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
   iErrno = (int)ERROR_NOT_SUPPORTED;
 #else
-  iErrno = (u32)Marshal.GetLastWin32Error();
+  iErrno = (u32)HelperMethods.GetLastError();
 #endif
 
   //zMsg[0] = 0;
@@ -851,7 +851,7 @@ return FALSE;
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
           pFile.lastErrno = 1;
 #else
-        pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+        pFile.lastErrno = (u32)HelperMethods.GetLastError();
 #endif
         winLogError(SQLITE_IOERR_SEEK, "seekWinFile", pFile.zPath);
         return 1;
@@ -967,7 +967,7 @@ free(pFile.zDeleteOnClose);
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
           pFile.lastErrno = 1;
 #else
-        pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+        pFile.lastErrno = (u32)HelperMethods.GetLastError();
 #endif
         return winLogError(SQLITE_IOERR_READ, "winRead", pFile.zPath);
       }
@@ -1047,7 +1047,7 @@ free(pFile.zDeleteOnClose);
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
           id.lastErrno  = 1;
 #else
-        id.lastErrno = (u32)Marshal.GetLastWin32Error();
+        id.lastErrno = (u32)HelperMethods.GetLastError();
 #endif
         if (( id.lastErrno == ERROR_HANDLE_DISK_FULL )
         || ( id.lastErrno == ERROR_DISK_FULL ))
@@ -1119,7 +1119,7 @@ free(pFile.zDeleteOnClose);
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
           id.lastErrno  = 1;
 #else
-        id.lastErrno = (u32)Marshal.GetLastWin32Error();
+        id.lastErrno = (u32)HelperMethods.GetLastError();
 #endif
         rc = winLogError(SQLITE_IOERR_TRUNCATE, "winTruncate2", pFile.zPath);
       }
@@ -1250,9 +1250,6 @@ return SQLITE_OK;
       int res = 0;
       if ( isNT() )
       {
-#if FEATURE_RUNTIMEINFORMATION
-        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-#endif
         res = lockingStrategy.SharedLockFile( pFile, SHARED_FIRST, SHARED_SIZE );
       }
       /* isNT() is 1 if SQLITE_OS_WINCE==1, so this else is never executed.
@@ -1267,7 +1264,7 @@ return SQLITE_OK;
 #endif
       //}
         if (res == 0) {
-            pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+            pFile.lastErrno = (u32)HelperMethods.GetLastError();
         }
         /* No need to log a failure to lock */
       return res;
@@ -1299,7 +1296,7 @@ return SQLITE_OK;
       }
 #endif
         if (res == 0) {
-            pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+            pFile.lastErrno = (u32)HelperMethods.GetLastError();
 
             winLogError(SQLITE_IOERR_UNLOCK, "unlockReadLock", pFile.zPath);
         }
@@ -1403,7 +1400,7 @@ return SQLITE_OK;
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
             error = 1;
 #else
-          error = (u32)Marshal.GetLastWin32Error();
+          error = (u32)HelperMethods.GetLastError();
 #endif
         }
       }
@@ -1423,7 +1420,7 @@ return SQLITE_OK;
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
             error = 1;
 #else
-          error = (u32)Marshal.GetLastWin32Error();
+          error = (u32)HelperMethods.GetLastError();
 #endif
         }
       }
@@ -1445,7 +1442,7 @@ return SQLITE_OK;
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
           error = 1;
 #else
-          error = (u32)Marshal.GetLastWin32Error();
+          error = (u32)HelperMethods.GetLastError();
 #endif
         }
         if ( res != 0 )
@@ -1457,7 +1454,7 @@ return SQLITE_OK;
 #if SQLITE_SILVERLIGHT
 error = 1;
 #else
-          error = (u32)Marshal.GetLastWin32Error();
+          error = (u32)HelperMethods.GetLastError();
 #endif
         }
       }
@@ -1499,7 +1496,7 @@ error = 1;
 #if SQLITE_SILVERLIGHT || SQLITE_WINRT
             error = 1;
 #else
-          error = (u32)Marshal.GetLastWin32Error();
+          error = (u32)HelperMethods.GetLastError();
 #endif
 #if SQLITE_DEBUG
           OSTRACE( "error-code = %d\n", error );
@@ -2804,7 +2801,7 @@ dwFlagsAndAttributes |= FileOptions.RandomAccess; // FILE_FLAG_RANDOM_ACCESS;
           pFile.lastErrno = 1;
 #else
         //      pFile.lastErrno = GetLastError();
-        pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+        pFile.lastErrno = (u32)HelperMethods.GetLastError();
 #endif
       winLogError(SQLITE_CANTOPEN, "winOpen", zUtf8Name);
         //        free(zConverted);
@@ -2982,7 +2979,7 @@ pFile.zDeleteOnClose = zConverted;
       if ( rc == SQLITE_OK )
         return rc;
 
-      error = Marshal.GetLastWin32Error();
+      error = HelperMethods.GetLastError();
 
       return ( ( rc == INVALID_FILE_ATTRIBUTES )
         && ( error == ERROR_FILE_NOT_FOUND ) ) ? SQLITE_OK :
@@ -3723,12 +3720,12 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 #pragma warning restore CA1416 // Validate platform compatibility
         }
 
-#if FEATURE_OSPLATFORMATTRIBUTE
-      [SupportedOSPlatform("windows")]
-#endif
       public virtual int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
+#if FEATURE_RUNTIMEINFORMATION
+        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
         Debug.Assert( length == SHARED_SIZE );
         Debug.Assert( offset == SHARED_FIRST );
         NativeOverlapped ovlp = new NativeOverlapped();
@@ -3758,9 +3755,6 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
     /// </summary>
     private class MediumTrustLockingStrategy : LockingStrategy
     {
-#if FEATURE_OSPLATFORMATTRIBUTE
-      [SupportedOSPlatform("windows")]
-#endif
       public override int SharedLockFile( sqlite3_file pFile, long offset, long length )
         {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
@@ -3768,7 +3762,9 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
         Debug.Assert( offset == SHARED_FIRST );
         try
         {
+#pragma warning disable CA1416 // Validate platform compatibility
           pFile.fs.Lock( offset + pFile.sharedLockByte, 1 );
+#pragma warning restore CA1416 // Validate platform compatibility
         }
         catch ( IOException )
         {
@@ -3785,7 +3781,7 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
           // placeholder method
           // this is where it needs to check if it's running in an ASP.Net MediumTrust or lower environment
           // in order to pick the appropriate locking strategy
-          return false;
+          return Environment.OSVersion.Platform == PlatformID.Unix;
       }
 
 #if SQLITE_WINRT
@@ -3806,5 +3802,10 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
         return exists;
     }
 #endif
+
+    public static int GetLastError()
+    {
+      return Marshal.GetLastWin32Error();
+    }
   }
 }

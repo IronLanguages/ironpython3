@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import is_linux, run_test
+from iptest import is_linux, is_netcoreapp21, run_test
 
 import sqlite3.test.dbapi
 import sqlite3.test.dump
@@ -23,6 +23,7 @@ import sqlite3.test.userfunctions
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
+        if is_netcoreapp21: return suite # no IronPython.SQLite.dll with .NET Core 2.1
         suite.addTest(sqlite3.test.dbapi.ModuleTests('CheckAPILevel'))
         suite.addTest(sqlite3.test.dbapi.ModuleTests('CheckDataError'))
         suite.addTest(sqlite3.test.dbapi.ModuleTests('CheckDatabaseError'))

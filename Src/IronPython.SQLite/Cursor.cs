@@ -8,6 +8,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Community.CsharpSqlite;
@@ -44,7 +45,7 @@ namespace IronPython.SQLite
                 get { return null; } 
             }
 
-            public long? lastrowid { get; private set; }
+            public BigInteger? lastrowid { get; private set; }
 
             public object row_factory { get; set; }
 
@@ -337,7 +338,7 @@ namespace IronPython.SQLite
                             case Sqlite3.SQLITE_INTEGER:
                                 long l = Sqlite3.sqlite3_column_int64(this.statement.st, i);
                                 if(l < int.MinValue || l > int.MaxValue)
-                                    converted = l;
+                                    converted = (BigInteger)l;
                                 else
                                     converted = (int)l;
 

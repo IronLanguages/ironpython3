@@ -333,7 +333,9 @@ namespace IronPython.Runtime {
                 // single character (int or single char str)
                 case 'c': AppendChar(); return;
                 // string (repr() version)
-                case 'r': AppendRepr(); return;
+                case 'r':
+                    if (_asBytes) goto case 'a';
+                    AppendRepr(); return;
                 // string (str() version)
                 case 's':
                     if (_asBytes) goto case 'b';

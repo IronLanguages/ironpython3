@@ -165,7 +165,7 @@ class NumberTest(IronPythonTestCase):
     @skipUnlessIronPython()
     def test_conversions(self):
         """implicit conversions (conversion defined on Derived)"""
-        from IronPythonTest import Base, Base2, ConversionStorage, Derived, Derived2, EnumByte, EnumInt, EnumLong, EnumSByte, EnumShort, EnumTest, EnumUShort, EnumUInt, EnumULong
+        from IronPythonTest import Base, Base2, ConversionStorage, Derived, Derived2
         a = ConversionStorage()
         b = Base(5)
         d = Derived(23)
@@ -245,55 +245,6 @@ class NumberTest(IronPythonTestCase):
         a = None
         if a: self.assertEqual(False, True)
 
-        # Enum conversions
-
-        class EnumRec:
-            def __init__(self, code, min, max, enum, test):
-                self.code = code
-                self.min = min
-                self.max = max
-                self.enum = enum
-                self.test = test
-
-        enum_types = [
-            EnumRec("SByte", -128, 127, EnumSByte, EnumTest.TestEnumSByte),
-            EnumRec("Byte", 0, 255, EnumByte, EnumTest.TestEnumByte),
-            EnumRec("Short", -32768, 32767, EnumShort, EnumTest.TestEnumShort),
-            EnumRec("UShort", 0, 65535, EnumUShort, EnumTest.TestEnumUShort),
-            EnumRec("Int", -2147483648, 2147483647, EnumInt, EnumTest.TestEnumInt),
-            EnumRec("UInt", 0, 4294967295, EnumUInt, EnumTest.TestEnumUInt),
-            EnumRec("Long", -9223372036854775808, 9223372036854775807, EnumLong, EnumTest.TestEnumLong),
-            EnumRec("ULong", 0, 18446744073709551615, EnumULong, EnumTest.TestEnumULong),
-        ]
-
-        value_names = ["Zero"]
-        value_values = {"Zero" : 0}
-        for e in enum_types:
-            value_names.append("Min" + e.code)
-            value_names.append("Max" + e.code)
-            value_values["Min" + e.code] = e.min
-            value_values["Max" + e.code] = e.max
-
-        """
-        These tests are changed or obsoleted by new enum coercion rules
-        for enum in enum_types:
-            for name in value_names:
-                val = value_values[name]
-                if hasattr(enum.enum, name):
-                    for test in enum_types:
-                        func = test.test
-                        ev = getattr(enum.enum, name)
-                        if test.min <= val and val <= test.max:
-                            func(ev)
-                        else:
-                            try:
-                                func(ev)
-                            except:
-                                pass
-                            else:
-                                self.assertTrue(False)
-                        EnumTest.TestEnumBoolean(ev)
-        """
 
         self.assertEqual(int(Single.Parse("3.14159")), 3)
 

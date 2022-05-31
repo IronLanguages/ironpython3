@@ -172,83 +172,33 @@ namespace IronPythonTest {
         MaxSByte = SByte.MaxValue,
     }
     public enum EnumByte : byte {
-        Zero = 0,
-        MaxSByte = (byte)SByte.MaxValue,
         MinByte = Byte.MinValue,
         MaxByte = Byte.MaxValue,
     }
     public enum EnumShort : short {
         Zero = 0,
-        MinSByte = SByte.MinValue,
-        MaxSByte = SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
         MinShort = Int16.MinValue,
         MaxShort = Int16.MaxValue,
     }
     public enum EnumUShort : ushort {
-        Zero = 0,
-        MaxSByte = (ushort)SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
-        MaxShort = (ushort)Int16.MaxValue,
         MinUShort = UInt16.MinValue,
         MaxUShort = UInt16.MaxValue,
     }
     public enum EnumInt : int {
         Zero = 0,
-        MinSByte = SByte.MinValue,
-        MaxSByte = SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
-        MinShort = Int16.MinValue,
-        MaxShort = Int16.MaxValue,
-        MinUShort = UInt16.MinValue,
-        MaxUShort = UInt16.MaxValue,
         MinInt = Int32.MinValue,
         MaxInt = Int32.MaxValue,
     }
     public enum EnumUInt : uint {
-        Zero = 0,
-        MaxSByte = (uint)SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
-        MaxShort = (uint)Int16.MaxValue,
-        MinUShort = UInt16.MinValue,
-        MaxUShort = UInt16.MaxValue,
-        MaxInt = Int32.MaxValue,
         MinUInt = UInt32.MinValue,
         MaxUInt = UInt32.MaxValue,
     }
     public enum EnumLong : long {
         Zero = 0,
-        MinSByte = SByte.MinValue,
-        MaxSByte = SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
-        MinShort = Int16.MinValue,
-        MaxShort = Int16.MaxValue,
-        MinUShort = UInt16.MinValue,
-        MaxUShort = UInt16.MaxValue,
-        MinInt = Int32.MinValue,
-        MaxInt = Int32.MaxValue,
-        MinUInt = UInt32.MinValue,
-        MaxUInt = UInt32.MaxValue,
         MinLong = Int64.MinValue,
         MaxLong = Int64.MaxValue,
     }
     public enum EnumULong : ulong {
-        Zero = 0,
-        MaxSByte = (ulong)SByte.MaxValue,
-        MinByte = Byte.MinValue,
-        MaxByte = Byte.MaxValue,
-        MaxShort = (ulong)Int16.MaxValue,
-        MinUShort = UInt16.MinValue,
-        MaxUShort = UInt16.MaxValue,
-        MaxInt = Int32.MaxValue,
-        MinUInt = UInt32.MinValue,
-        MaxUInt = UInt32.MaxValue,
-        MaxLong = Int64.MaxValue,
         MinULong = UInt64.MinValue,
         MaxULong = UInt64.MaxValue,
     }

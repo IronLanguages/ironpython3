@@ -95,7 +95,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_unicode.UnicodeTest('test_literals'))
         suite.addTest(test.test_unicode.UnicodeTest('test_ljust'))
         suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_lower')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_maketrans_translate')))
+        suite.addTest(test.test_unicode.UnicodeTest('test_maketrans_translate'))
         suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_mul')))
         suite.addTest(test.test_unicode.UnicodeTest('test_none_arguments'))
         suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_partition')))

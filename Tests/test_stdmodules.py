@@ -38,7 +38,7 @@ class StdModulesTest(IronPythonTestCase):
 
         for i in range(5):
             try:
-                temp_url = urllib.request.urlopen("http://www.microsoft.com")
+                temp_url = urllib.request.urlopen("https://www.python.org")
                 break
             except Exception as e:
                 err = e
@@ -48,7 +48,7 @@ class StdModulesTest(IronPythonTestCase):
         if temp_url is None: raise err
 
         try:
-            self.assertTrue(temp_url.url.startswith("http://www.microsoft.com"))
+            self.assertTrue(temp_url.url.startswith("https://www.python.org"))
         finally:
             temp_url.close()
 

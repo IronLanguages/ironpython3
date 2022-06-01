@@ -1103,12 +1103,7 @@ class C:
 
         import unicodedata
 
-        if is_cli:
-            with self.assertRaises(ValueError):
-                unicodedata.name(u'\u4e2d')
-        else:
-            self.assertEqual(unicodedata.name(u'\u4e2d'), 'CJK UNIFIED IDEOGRAPH-4E2D')
-
+        self.assertEqual(unicodedata.name(u'\u4e2d'), 'CJK UNIFIED IDEOGRAPH-4E2D')
         self.assertRaises(ValueError, unicodedata.decimal, u'\u4e2d')
         self.assertEqual(unicodedata.decimal(u'\u4e2d', 0), 0)
         self.assertRaises(ValueError, unicodedata.digit, u'\u4e2d')

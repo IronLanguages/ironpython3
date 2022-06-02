@@ -625,7 +625,7 @@ namespace IronPython.Modules {
 
             public bool is_file(bool follow_symlinks = true) => !is_dir();
 
-            public bool is_symlink() => throw new NotImplementedException();
+            public bool is_symlink() => info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
 
             [LightThrowing]
             public object? stat(bool follow_symlinks = true) => PythonNT.stat(info.FullName, new Dictionary<string, object>());

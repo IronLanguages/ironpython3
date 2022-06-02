@@ -1202,7 +1202,7 @@ begin_table_error:
     {
       //u32 h = 0;
       //char aff = SQLITE_AFF_NUMERIC;
-      zIn = zIn.ToLower();
+      zIn = zIn.ToLowerInvariant();
       if ( zIn.Contains( "char" ) || zIn.Contains( "clob" ) || zIn.Contains( "text" ) )
         return SQLITE_AFF_TEXT;
       if ( zIn.Contains( "blob" ) )

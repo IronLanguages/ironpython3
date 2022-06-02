@@ -4,7 +4,7 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "build",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net46','netcoreapp2.1','netcoreapp3.1','net5.0','net6.0'),
+    [String[]] $frameworks=@('net462','netcoreapp2.1','netcoreapp3.1','net6.0'),
     [String] $platform = "x64",
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount
@@ -69,7 +69,7 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
 
 #   <RunSettings>
 #     <TestRunParameters>
-#       <Parameter name="FRAMEWORK" value="net46" />
+#       <Parameter name="FRAMEWORK" value="net462" />
 #     </TestRunParameters>
 #   </RunSettings>
 
@@ -239,7 +239,7 @@ switch -wildcard ($target) {
     # utility targets
     "ngen"          {
         if(!$global:isUnix) {
-            $imagePath = [System.IO.Path]::Combine($_BASEDIR, "bin\$configuration\net46\ipy.exe")
+            $imagePath = [System.IO.Path]::Combine($_BASEDIR, "bin\$configuration\net462\ipy.exe")
             & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath
         }
     }

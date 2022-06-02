@@ -117,7 +117,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="Microsoft.Scripting.Runtime.NotNullAttribute" Alias="NotNoneAttribute" />
+    <Using Include="Microsoft.Scripting.Runtime.NotNullAttribute" Alias="NotNone" />
   </ItemGroup>
 
   <!-- Release -->

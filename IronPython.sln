@@ -34,9 +34,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB-40C6-41A6-83DA-3203A4DCEC19}"
 	ProjectSection(SolutionItems) = preProject
 		Build\After.targets = Build\After.targets
-		Build\net46.props = Build\net46.props
-		Build\net5.0-windows.props = Build\net5.0-windows.props
-		Build\net5.0.props = Build\net5.0.props
+		Build\net462.props = Build\net462.props
+		Build\net6.0-windows.props = Build\net6.0-windows.props
+		Build\net6.0.props = Build\net6.0.props
 		Build\netcoreapp2.1.props = Build\netcoreapp2.1.props
 		Build\netcoreapp3.1.props = Build\netcoreapp3.1.props
 		Build\netstandard2.0.props = Build\netstandard2.0.props

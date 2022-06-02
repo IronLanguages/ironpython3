@@ -86,4 +86,4 @@ Binaries of IronPython 3 can be downloaded from the [release page](https://githu
 See the [building document](Documentation/building.md). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
 
 ## Supported Platforms
-IronPython 3 targets .NET Framework 4.6, .NET Standard 2.0, .NET Core 3.1 and .NET 5.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).
+IronPython 3 targets .NET Framework 4.6, .NET Standard 2.0, .NET Core 3.1 and .NET 6.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).

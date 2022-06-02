@@ -15,10 +15,15 @@ namespace IronPython.Runtime {
         public const NarrowingLevel None = NarrowingLevel.None;
 
         /// <summary>
-        /// Double/Single to Decimal
+        /// Underlying integer to enum
+        /// Numeric (except Complex) to floating point (except Simple)
+        /// </summary>
+        public const NarrowingLevel Minimal = NarrowingLevel.One;
+
+        /// <summary>
         /// PythonTuple to Array
         /// Generic conversions
-        /// BigInteger to Int64
+        /// Numeric (except Complex) to Simple
         /// </summary>
         public const NarrowingLevel BinaryOperator = NarrowingLevel.Two;
 
@@ -27,6 +32,7 @@ namespace IronPython.Runtime {
         /// Boolean conversions
         /// Delegate conversions
         /// Enumeration conversions
+        /// Implicit conversion operators
         /// </summary>
         public const NarrowingLevel IndexOperator = NarrowingLevel.Three;
 

@@ -131,9 +131,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static PythonType @bool => DynamicHelpers.GetPythonTypeFromType(typeof(bool));
+        public static PythonType @bool => TypeCache.Boolean;
 
-        public static PythonType bytes => DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
+        public static PythonType bytes => TypeCache.Bytes;
 
         public static PythonType bytearray => TypeCache.ByteArray;
 
@@ -162,9 +162,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "eval compiles the code as if were an expression\n" +
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
-        public static object compile(CodeContext/*!*/ context, [NotNone] _ast.AST source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] _ast.AST source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             ValidateCompileMode(mode);
 
             bool astOnly = flags != null && (Converter.ConvertToInt32(flags) & _ast.PyCF_ONLY_AST) != 0;
@@ -172,7 +173,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (astOnly) {
                 return source;
             } else {
-                PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
+                PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, sfilename);
                 ast.Bind();
                 ScriptCode code = ast.ToScriptCode();
                 return ((RunnableScriptCode)code).GetFunctionCode(true);
@@ -180,29 +181,32 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNone] IBufferProtocol source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] IBufferProtocol source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
+
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             var sourceCodeKind = ValidateCompileMode(mode);
 
             using var buffer = source.GetBuffer();
             byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
-            var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, filename);
-            var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, filename, sourceCodeKind);
+            var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, sfilename);
+            var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, sfilename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [NotNone] string source, [NotNone] string filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
+        public static object compile(CodeContext/*!*/ context, [NotNone] string source, [NotNone] object filename, [NotNone] string mode, object? flags = null, bool dont_inherit = false, int optimize = -1) {
             // TODO: implement optimize
 
+            string sfilename = PythonOps.FsPathDecoded(context, filename);
             var sourceCodeKind = ValidateCompileMode(mode);
 
             if (source.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            var sourceUnit = context.LanguageContext.CreateSnippet(source, filename, sourceCodeKind);
+            var sourceUnit = context.LanguageContext.CreateSnippet(source, sfilename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
         }
@@ -237,13 +241,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 (object)_ast.BuildAst(context, sourceUnit, opts, mode);
         }
 
-        public static PythonType complex => DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
+        public static PythonType complex => TypeCache.Complex;
 
         public static void delattr(CodeContext/*!*/ context, object? o, [NotNone] string name) {
             PythonOps.DeleteAttr(context, o, name);
         }
 
-        public static PythonType dict => DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary));
+        public static PythonType dict => TypeCache.Dict;
 
         public static PythonList dir(CodeContext/*!*/ context) {
             PythonList res = new PythonList(context.Dict.Keys);
@@ -263,7 +267,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.DivMod(x, y);
         }
 
-        public static PythonType enumerate => DynamicHelpers.GetPythonTypeFromType(typeof(Enumerate));
+        public static PythonType enumerate => TypeCache.Enumerate;
 
         internal static PythonDictionary? GetAttrLocals(CodeContext/*!*/ context, object? locals) {
             PythonDictionary? attrLocals = null;
@@ -380,12 +384,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType filter => DynamicHelpers.GetPythonTypeFromType(typeof(Filter));
 
-        public static PythonType @float => DynamicHelpers.GetPythonTypeFromType(typeof(double));
+        public static PythonType @float => TypeCache.Double;
 
         public static string format(CodeContext/*!*/ context, object? argValue, [NotNone] string formatSpec = "")
             => PythonOps.Format(context, argValue, formatSpec);
 
-        public static PythonType frozenset => DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
+        public static PythonType frozenset => TypeCache.FrozenSet;
 
         public static object? getattr(CodeContext/*!*/ context, object? o, [NotNone] string name) {
             return PythonOps.GetBoundAttr(context, o, name);
@@ -633,7 +637,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return (BigInteger)res;
         }
 
-        public static PythonType @int => DynamicHelpers.GetPythonTypeFromType(typeof(BigInteger));
+        public static PythonType @int => TypeCache.BigInteger;
 
         public static bool isinstance(object? o, [NotNone] PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);
@@ -742,9 +746,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.Length(o, out int res, out BigInteger bigRes) ? (object)res : bigRes;
         }
 
-        public static PythonType set => DynamicHelpers.GetPythonTypeFromType(typeof(SetCollection));
+        public static PythonType set => TypeCache.Set;
 
-        public static PythonType list => DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
+        public static PythonType list => TypeCache.PythonList;
 
         public static object locals(CodeContext/*!*/ context) {
             PythonDictionary dict = context.Dict;
@@ -1075,7 +1079,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static PythonType @object => DynamicHelpers.GetPythonTypeFromType(typeof(object));
+        public static PythonType @object => TypeCache.Object;
 
         public static string oct(object? number) {
             object index = PythonOps.Index(number);
@@ -1295,7 +1299,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object repr(CodeContext/*!*/ context, object? o)
-            => PythonOps.Repr(context, o);
+            => PythonOps.GetReprObject(context, o);
 
         public static PythonType reversed => DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
 
@@ -1564,13 +1568,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         #endregion
 
-        public static PythonType super => DynamicHelpers.GetPythonTypeFromType(typeof(Super));
+        public static PythonType super => TypeCache.Super;
 
-        public static PythonType str => DynamicHelpers.GetPythonTypeFromType(typeof(string));
+        public static PythonType str => TypeCache.String;
 
-        public static PythonType tuple => DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple));
+        public static PythonType tuple => TypeCache.PythonTuple;
 
-        public static PythonType type => DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
+        public static PythonType type => TypeCache.PythonType;
 
         [Documentation("vars([object]) -> dictionary\n\nWithout arguments, equivalent to locals().\nWith an argument, equivalent to object.__dict__.")]
         public static object vars(CodeContext/*!*/ context) {
@@ -1587,7 +1591,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType zip => DynamicHelpers.GetPythonTypeFromType(typeof(Zip));
 
-        public static PythonType BaseException => DynamicHelpers.GetPythonTypeFromType(typeof(PythonExceptions.BaseException));
+        public static PythonType BaseException => TypeCache.BaseException;
 
         // OSError aliases
         public static PythonType EnvironmentError => PythonExceptions.OSError;

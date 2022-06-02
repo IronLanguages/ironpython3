@@ -82,7 +82,7 @@ namespace IronPythonTest.Cases {
 
         private static void AddSearchPaths(ScriptEngine engine) {
             var paths = new List<string>(engine.GetSearchPaths());
-            if (!paths.Any(x => x.ToLower().Contains("stdlib"))) {
+            if (!paths.Any(x => x.ToLowerInvariant().Contains("stdlib"))) {
                 var root = FindRoot();
                 if (!string.IsNullOrEmpty(root)) {
                     paths.Insert(0, Path.Combine(root, "Src", "StdLib", "Lib"));

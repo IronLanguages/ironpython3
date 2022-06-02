@@ -267,6 +267,9 @@ namespace IronPython.Runtime {
         public static BufferBytesEnumerator EnumerateBytes(this IPythonBuffer buffer)
             => new BufferBytesEnumerator(buffer);
 
+        public static BufferEnumerator EnumerateItemData(this IPythonBuffer buffer)
+            => new BufferEnumerator(buffer, chunkSize: buffer.ItemSize);
+
         /// <summary>
         /// Checks if the data in buffer uses a contiguous memory block. If the buffer uses more than one dimension,
         /// the data is organized according to the C multi-dimensional array layout.
@@ -325,24 +328,39 @@ namespace IronPython.Runtime {
     }
 
     public ref struct BufferBytesEnumerator {
+        private readonly BufferEnumerator _enumerator;
+
+        public BufferBytesEnumerator(IPythonBuffer buffer)
+            => _enumerator = new BufferEnumerator(buffer, chunkSize: 1);
+
+        public byte Current => _enumerator.Current[0];
+        public bool MoveNext() => _enumerator.MoveNext();
+        public void Dispose() => _enumerator.Dispose();
+
+        public BufferBytesEnumerator GetEnumerator() => this;
+    }
+
+    public ref struct BufferEnumerator {
+        private readonly int _chunksize;
         private readonly ReadOnlySpan<byte> _span;
         private readonly IEnumerator<int> _offsets;
 
-        public BufferBytesEnumerator(IPythonBuffer buffer) {
+        public BufferEnumerator(IPythonBuffer buffer, int chunkSize) {
             if (buffer.SubOffsets != null)
                 throw new NotImplementedException("buffers with suboffsets are not supported");
 
+            _chunksize = chunkSize;
             _span = buffer.AsReadOnlySpan();
-            _offsets = EnumerateDimension(buffer, buffer.Offset, 0).GetEnumerator();
+            _offsets = EnumerateDimension(buffer, buffer.Offset, chunkSize, 0).GetEnumerator();
         }
 
-        public byte Current => _span[_offsets.Current];
-
+        public ReadOnlySpan<byte> Current => _span.Slice(_offsets.Current, _chunksize);
         public bool MoveNext() => _offsets.MoveNext();
+        public void Dispose() => _offsets.Dispose();
 
-        public BufferBytesEnumerator GetEnumerator() => this;
+        public BufferEnumerator GetEnumerator() => this;
 
-        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int dim) {
+        private static IEnumerable<int> EnumerateDimension(IPythonBuffer buffer, int ofs, int step, int dim) {
             IReadOnlyList<int>? shape = buffer.Shape;
             IReadOnlyList<int>? strides = buffer.Strides;
 
@@ -350,18 +368,18 @@ namespace IronPython.Runtime {
                 // simple C-contiguous case
                 Debug.Assert(buffer.Offset == 0);
                 int len = buffer.NumBytes();
-                for (int i = 0; i < len; i++) {
+                for (int i = 0; i < len; i += step) {
                     yield return i;
                 }
             } else if (dim >= shape.Count) {
                 // iterate individual element (scalar)
-                for (int i = 0; i < buffer.ItemSize; i++) {
+                for (int i = 0; i < buffer.ItemSize; i += step) {
                     yield return ofs + i;
                 }
             } else {
                 for (int i = 0; i < shape[dim]; i++) {
                     // iterate all bytes from a subdimension
-                    foreach (int j in EnumerateDimension(buffer, ofs, dim + 1)) {
+                    foreach (int j in EnumerateDimension(buffer, ofs, step, dim + 1)) {
                         yield return j;
                     }
                     ofs += strides[dim];

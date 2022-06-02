@@ -5023,10 +5023,10 @@ memcpy(&pPager.zWal[nPathname], "-wal", 4);
 
       /* Open the pager file.
       */
-      if ( !String.IsNullOrEmpty( zFilename ) )
+      if ( !String.IsNullOrEmpty( pPager.zFilename ) )
       {
         int fout = 0;                    /* VFS flags returned by xOpen() */
-        rc = sqlite3OsOpen( pVfs, zFilename, pPager.fd, vfsFlags, ref fout );
+        rc = sqlite3OsOpen( pVfs, pPager.zFilename, pPager.fd, vfsFlags, ref fout );
         Debug.Assert( 0 == memDb );
         readOnly = ( fout & SQLITE_OPEN_READONLY ) != 0;
 

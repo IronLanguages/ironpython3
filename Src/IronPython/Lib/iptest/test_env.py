@@ -19,8 +19,8 @@ is_posix      =  is_linux or is_osx
 is_netcoreapp =  False
 is_netcoreapp21 = False
 is_netcoreapp31 = False
-is_net50 = False
 is_net60 = False
+is_net70 = False
 is_mono = False
 is_netstandard = False
 if is_ironpython:
@@ -28,8 +28,8 @@ if is_ironpython:
     is_netcoreapp = clr.IsNetCoreApp
     is_netcoreapp21 = clr.FrameworkDescription.startswith(".NET Core 2.x")
     is_netcoreapp31 = clr.FrameworkDescription.startswith(".NET Core 3.1")
-    is_net50 = clr.FrameworkDescription.startswith(".NET 5.0")
     is_net60 = clr.FrameworkDescription.startswith(".NET 6.0")
+    is_net70 = clr.FrameworkDescription.startswith(".NET 7.0")
     is_mono = clr.IsMono
     is_netstandard = clr.TargetFramework.startswith(".NETStandard")
 
@@ -43,7 +43,7 @@ is_32, is_64 = is_cli32, is_cli64
 if not is_ironpython:
     import struct
     ptr_size = struct.calcsize('P')
-    is_32, is_64 = (ptr_size == 4), (ptr_size == 8)    
+    is_32, is_64 = (ptr_size == 4), (ptr_size == 8)
 
 #--CLR version we're running on (if any)
 
@@ -57,7 +57,7 @@ if is_cli:
     is_net40 = version.Major == 4
     is_net45 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision < 42000
     is_net45Or46 = is_net40 and version.Minor == 0 and version.Build == 30319
-    is_net46 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision == 42000 
+    is_net46 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision == 42000
 
 #--Newlines
 if is_ironpython:
@@ -73,11 +73,11 @@ if is_cli:
 #--Are we using peverify to check that all IL generated is valid?
 is_peverify_run = False
 if is_cli:
-    is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine    
+    is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine
 
 #--We only run certain time consuming test cases in the stress lab
 is_stress = False
-# if get_env_var("THISISSTRESS")!=None: 
+# if get_env_var("THISISSTRESS")!=None:
 #     is_stress = True
 
 #------------------------------------------------------------------------------

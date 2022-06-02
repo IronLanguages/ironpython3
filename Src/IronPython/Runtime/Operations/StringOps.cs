@@ -1337,6 +1337,7 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         #region operators
+
         [SpecialName]
         public static string Add([NotNone] string self, [NotNone] string other) {
             return self + other;
@@ -1350,6 +1351,13 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static string Add(char self, [NotNone] string other) {
             return self + other;
+        }
+
+        [SpecialName]
+        public static string Add([NotNone] string self, object? other) {
+            if (other is string s) return Add(self, s);
+            if (other is char c) return Add(self, c);
+            throw PythonOps.TypeError($"can only concatenate str (not \"{PythonOps.GetPythonTypeName(other)}\") to str");
         }
 
         [SpecialName]

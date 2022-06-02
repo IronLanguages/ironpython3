@@ -1646,7 +1646,7 @@ namespace IronPython.Runtime {
         public override Encoding DefaultEncoding { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         public string GetDefaultEncodingName()
-            => DefaultEncoding.WebName.ToLower().Replace('-', '_');
+            => DefaultEncoding.WebName.ToLowerInvariant().Replace('-', '_');
 
         /// <summary>
         /// Dictionary from name to type of all known built-in module names.

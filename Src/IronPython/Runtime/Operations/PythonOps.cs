@@ -225,12 +225,13 @@ namespace IronPython.Runtime.Operations {
             return StringOps.AsciiEncode(Repr(context, o));
         }
 
-        public static string Repr(CodeContext/*!*/ context, object? o) {
+        internal static object GetReprObject(CodeContext/*!*/ context, object? o) {
             if (o == null) return "None";
 
+            // Fast tracks
             if (o is string s) return StringOps.__repr__(s);
-            if (o is int) return Int32Ops.__repr__((int)o);
-            if (o is long) return ((long)o).ToString();
+            if (o is int i32) return Int32Ops.__repr__(i32);
+            if (o is BigInteger bi) return BigIntegerOps.__repr__(bi);
 
             // could be a container object, we need to detect recursion, but only
             // for our own built-in types that we're aware of.  The user can setup
@@ -266,6 +267,9 @@ namespace IronPython.Runtime.Operations {
 
             throw PythonOps.TypeError("__repr__ returned non-string (got '{0}' from type '{1}')", PythonOps.GetPythonTypeName(repr), PythonOps.GetPythonTypeName(o));
         }
+
+        public static string Repr(CodeContext/*!*/ context, object? o)
+            => GetReprObject(context, o).ToString() ?? "<unknown>";
 
         public static string Format(CodeContext/*!*/ context, object? argValue, string formatSpec) {
             object? res;
@@ -336,6 +340,15 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
+        }
+
+        internal static string FsPathDecoded(CodeContext context, object? path) {
+            return PythonOps.FsPath(path) switch {
+                string s => s,
+                Extensible<string> es => es,
+                Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public static object Plus(object? o) {
@@ -1456,7 +1469,7 @@ namespace IronPython.Runtime.Operations {
                 }
                 // this makes sure that object is a base
                 if (bases.Count == 0) {
-                    bases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                    bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
                 PythonDictionary vars = func(parentContext).Dict;
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
@@ -1485,7 +1498,7 @@ namespace IronPython.Runtime.Operations {
 
             // Ensure the class derives from `object`
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {
-                newType.BaseTypes.Add(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                newType.BaseTypes.Add(TypeCache.Object);
             }
 
             return obj;

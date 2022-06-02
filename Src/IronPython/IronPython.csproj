@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;netcoreapp3.1;netstandard2.0;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp3.1;netstandard2.0;net6.0</TargetFrameworks>
     <BaseAddress>879755264</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -57,7 +57,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
+  <ItemGroup Condition=" $(TargetFrameworkIdentifier) != '.NETFramework' ">
     <ProjectReference Include="..\..\IronPythonAnalyzer\IronPythonAnalyzer\IronPythonAnalyzer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>

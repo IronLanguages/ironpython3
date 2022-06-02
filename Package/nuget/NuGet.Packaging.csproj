@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets/3.3.0">
 
   <PropertyGroup>
-    <TargetFramework>net46</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <NuspecBasePath>$(StageDir)</NuspecBasePath>
     <NuspecProperties>version=$(PackageVersion)</NuspecProperties>
     <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -14,12 +14,12 @@ import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
 
-SSL_URL      = "www.microsoft.com"
-SSL_ISSUER   = "CN=Microsoft RSA TLS CA 01, O=Microsoft Corporation, C=US"
-SSL_SERVER   = "www.microsoft.com"
+SSL_URL      = "www.python.org"
+SSL_ISSUER   = "CN=GlobalSign Atlas R3 DV TLS CA H2 2021, O=GlobalSign nv-sa, C=BE"
+SSL_SERVER   = "www.python.org"
 SSL_PORT     = 443
-SSL_REQUEST  = b"GET /en-us HTTP/1.0\r\nHost: www.microsoft.com\r\n\r\n"
-SSL_RESPONSE = b"Microsoft"
+SSL_REQUEST  = b"GET /en-us HTTP/1.0\r\nHost: www.python.org\r\n\r\n"
+SSL_RESPONSE = b"Python Programming Language"
 
 CERTFILE = os.path.join(os.path.dirname(__file__), "keycert.pem")
 

@@ -987,7 +987,7 @@ namespace IronPython.Runtime {
 
         public static Complex ParseComplex(string s) {
             // remove no-meaning spaces and convert to lowercase
-            string text = s.Trim().ToLower();
+            string text = s.Trim().ToLowerInvariant();
 
             // remove 1 layer of parens
             if (text.StartsWith("(", StringComparison.Ordinal) && text.EndsWith(")", StringComparison.Ordinal)) {

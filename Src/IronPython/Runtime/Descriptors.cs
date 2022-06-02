@@ -99,7 +99,7 @@ namespace IronPython.Runtime {
 
                 if (instance is int) {
                     // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
-                    owner = DynamicHelpers.GetPythonTypeFromType(typeof(System.Numerics.BigInteger));
+                    owner = TypeCache.BigInteger;
                 } else {
                     owner = DynamicHelpers.GetPythonType(instance);
                 }

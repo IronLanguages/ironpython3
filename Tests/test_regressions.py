@@ -1662,5 +1662,25 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         for code in ['b', 'B', 'h', 'H', 'i', 'I', 'l', 'L', 'q', 'Q', 'n', 'N', 'P']:
             self.assertEqual(_struct.Struct(code).pack(x(42))[idx], 42)
 
+    def test_ipy3_gh1475(self):
+        # The following test is adapted from https://github.com/IronLanguages/ironpython3/issues/560 and
+        # covers the issue described in https://github.com/IronLanguages/ironpython3/issues/1475
+
+        class M:
+            def __rmul__(self, other):
+                return 23
+            def __radd__(self, other):
+                return 64
+
+        m = M()
+        for seq in ([], (), "", b"", bytearray()):
+            with self.assertRaises(TypeError):
+                seq.__add__(m)
+
+            with self.assertRaises(TypeError):
+                seq.__mul__(m)
+
+            self.assertEqual(seq * m, 23)
+            self.assertEqual(seq + m, 64)
 
 run_test(__name__)

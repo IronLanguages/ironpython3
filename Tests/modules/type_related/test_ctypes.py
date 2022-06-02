@@ -10,8 +10,9 @@ from ctypes import *
 from array import array
 import sys
 import gc
+import unittest
 
-from iptest import IronPythonTestCase, is_cli, big, myint, run_test
+from iptest import IronPythonTestCase, is_posix, is_cli, big, myint, run_test
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"
@@ -218,5 +219,19 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(TestU((1 << 64) - 1).x, 0x7fffffffffffffff)
         self.assertEqual(TestU(-(1 << 64)).x, 0)
         self.assertEqual(TestU(-(1 << 64) - 1).x, 0x7fffffffffffffff)
+
+    @unittest.skipIf(is_posix, 'Windows specific test')
+    def test_loadlibrary_error(self):
+        with self.assertRaises(OSError) as cm:
+            windll.LoadLibrary(__file__)
+
+        self.assertEqual(cm.exception.errno, 8)
+        self.assertEqual(cm.exception.winerror, 193)
+        self.assertIn(" is not a valid Win32 application", cm.exception.strerror)
+        if is_cli:
+            self.assertEqual(cm.exception.filename, __file__)
+        else:
+            self.assertIsNone(cm.exception.filename)
+        self.assertIsNone(cm.exception.filename2)
 
 run_test(__name__)

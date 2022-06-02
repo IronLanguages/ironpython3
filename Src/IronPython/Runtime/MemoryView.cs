@@ -76,8 +76,8 @@ namespace IronPython.Runtime {
             // for convenience _shape and _strides are never null, even if _numDims == 0 or _flags indicate no _shape or _strides
             _shape = _buffer.Shape ?? (_numDims > 0 ? new int[] { _buffer.ItemCount } : Array.Empty<int>());
 
-            if (_shape.Count == 0) {
-                _strides = _shape; // TODO: use a static singleton
+            if (_numDims == 0) {
+                _strides = Array.Empty<int>();
                 _isCContig = true;
             } else if (_buffer.Strides != null) {
                 _strides = _buffer.Strides;
@@ -859,12 +859,55 @@ namespace IronPython.Runtime {
             return _storedHash.Value;
         }
 
-        public bool __eq__(CodeContext/*!*/ context, [NotNone] MemoryView value) {
-            if (_buffer == null) {
-                return value._buffer == null;
+        private bool EquivalentShape(MemoryView mv) {
+            if (_numDims != mv._numDims) return false;
+            for (int i = 0; i < _numDims; i++) {
+                if (_shape[i] != mv._shape[i]) return false;
+                if (_shape[i] == 0) break;
             }
-            // TODO: comparing flat bytes is oversimplification; besides, no data copyimg
-            return tobytes().Equals(value.tobytes());
+            return true;
+        }
+
+        public bool __eq__(CodeContext/*!*/ context, [NotNone] MemoryView value) {
+            if (_buffer == null) return ReferenceEquals(this, value);
+            if (value._buffer == null) return false;
+            if (!EquivalentShape(value)) return false;
+
+            TypecodeOps.DecomposeTypecode(_format, out char ourByteorder, out char ourTypecode);
+            // TODO: Support non-native byteorder
+
+            // fast tracks if item formats match
+            if (_format == value._format && !TypecodeOps.IsFloatCode(ourTypecode)) {
+                if (ReferenceEquals(this, value)) return true;
+
+                if (_isCContig && value._isCContig) {
+                    // compare blobs
+                    return ((IPythonBuffer)this).AsReadOnlySpan().SequenceEqual(((IPythonBuffer)value).AsReadOnlySpan());
+                }
+
+                // compare byte by byte
+                using var ourBytes = this.EnumerateBytes();
+                using var theirBytes = value.EnumerateBytes();
+                while (ourBytes.MoveNext() && theirBytes.MoveNext()) {
+                    if (ourBytes.Current != theirBytes.Current) return false;
+                }
+
+                return true;
+            }
+
+            // compare item by item
+            TypecodeOps.DecomposeTypecode(value._format, out char theirByteorder, out char theirTypecode);
+
+            using var us = this.EnumerateItemData();
+            using var them = value.EnumerateItemData();
+            while (us.MoveNext() && them.MoveNext()) {
+                _ = TypecodeOps.TryGetFromBytes(ourTypecode, us.Current, out object? x);
+                _ = TypecodeOps.TryGetFromBytes(theirTypecode, them.Current, out object? y);
+
+                if (!PythonOps.EqualRetBool(x, y)) return false;
+            }
+
+            return true;
         }
 
         public bool __eq__(CodeContext/*!*/ context, [NotNone] IBufferProtocol value) => __eq__(context, new MemoryView(value));

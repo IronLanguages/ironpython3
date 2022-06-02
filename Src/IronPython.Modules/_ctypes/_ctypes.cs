@@ -158,10 +158,14 @@ namespace IronPython.Modules {
             throw new NotImplementedException("CopyComPointer");
         }
 
+#nullable enable
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static string FormatError() {
             return FormatError(get_last_error());
         }
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static string FormatError(int errorCode) {
             return new Win32Exception(errorCode).Message;
         }
@@ -181,13 +185,15 @@ namespace IronPython.Modules {
             NativeFunctions.FreeLibrary(handle);
         }
 
-#nullable enable
-
         private static object LoadDLL(string? library, int mode) {
             if (library is not null && library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
-                throw PythonOps.OSError($"cannot load library {library}");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    throw PythonNT.GetLastWin32Error(library);
+                }
+
+                throw PythonOps.OSError("cannot load library '{0}'", library);
             }
 
             return res.ToPython();
@@ -409,6 +415,7 @@ namespace IronPython.Modules {
             return 0;
         }
 
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static int get_last_error() {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 return NativeFunctions.GetLastError();

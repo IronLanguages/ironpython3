@@ -3,10 +3,10 @@
 <!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
-    <id>ironpython3</id>
+    <id>ironpython</id>
     <version>3.4.0</version>
     <packageSourceUrl>https://github.com/IronLanguages/ironpython3/tree/master/Package/choco</packageSourceUrl>
-    <title>IronPython3</title>
+    <title>IronPython</title>
     <authors>IronPython Contributors,Microsoft</authors>
     <owners>IronPython Community</owners>
     <projectUrl>https://ironpython.net</projectUrl>
@@ -19,8 +19,8 @@
     <mailingListUrl>https://ironpython.groups.io/g/users</mailingListUrl>
   </metadata>
   <files>
-    <file src="$STAGEDIR$\net46\*.dll;$STAGEDIR$\net46\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
-    <file src="$STAGEDIR$\net46\DLLs\**" target="DLLs" exclude="**\*.xml" />
+    <file src="$STAGEDIR$\net462\*.dll;$STAGEDIR$\net462\*.exe" exclude="**\rowantest*.dll;**\IronPythonTest.dll" />
+    <file src="$STAGEDIR$\net462\DLLs\**" target="DLLs" exclude="**\*.xml" />
     <file src="$STAGEDIR$\Lib\**" target="Lib" />
     <file src="$STAGEDIR$\LICENSE;$STAGEDIR$\README.md" />
     <file src="tools\*" target="tools" />

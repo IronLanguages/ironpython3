@@ -15,15 +15,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ApplicationFiles Include="$(StageDir)/net46/*.exe" />
-      <ApplicationFiles Include="$(StageDir)/net46/*.dll" Exclude="IronPythonTest.dll" />
+      <ApplicationFiles Include="$(StageDir)/net462/*.exe" />
+      <ApplicationFiles Include="$(StageDir)/net462/*.dll" Exclude="IronPythonTest.dll" />
     </ItemGroup>
 
     <ItemGroup>
-      <DLLFiles Include="$(StageDir)/net46/DLLs/*.dll" />
+      <DLLFiles Include="$(StageDir)/net462/DLLs/*.dll" />
     </ItemGroup>
 
-    <Exec Command="chmod 777 $(StageDir)/net46/*.exe" />
+    <Exec Command="chmod 777 $(StageDir)/net462/*.exe" />
     <Exec Command="rm -rf $(PackageTempFolder)" />
     <Exec Command="mkdir -p $(PackageTempFolder)" />
 

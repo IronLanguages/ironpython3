@@ -99,6 +99,13 @@ public static class PythonResourceModule {
         => OSVersion.Platform == PlatformID.MacOSX ?
             (int)(macos__rlimit_resource.RLIM_NLIMITS) : (int)(linux__rlimit_resource.RLIM_NLIMITS);
 
+    public static int RUSAGE_SELF => 0;
+
+    public static int RUSAGE_CHILDREN => -1;
+
+    [PythonHidden(PlatformID.MacOSX)]
+    public static int RUSAGE_THREAD => 1;
+
     #endregion
 
     public static PythonTuple getrlimit(int resource) {
@@ -151,13 +158,13 @@ public static class PythonResourceModule {
         static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
     }
 
+    public static BigInteger getpagesize() {
+        return Mono.Unix.Native.Syscall.sysconf(Mono.Unix.Native.SysconfName._SC_PAGESIZE);
+    }
+
     private static void ThrowIfError(int err) {
         if (err != 0) {
-#if NET60_OR_GREATER
-            int errno = Marshal.GetLastPInvokeError();
-#else
-            int errno = Marshal.GetLastWin32Error();
-#endif
+            int errno = Marshal.GetLastWin32Error(); // despite its name, on Posix it retrieves errno set by the last p/Invoke call
             throw PythonOps.OSError(errno, PythonNT.strerror(errno));
         }
     }

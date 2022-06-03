@@ -80,10 +80,9 @@ class ResourceTest(IronPythonTestCase):
                 else:
                     self.assertEqual(resource.getrlimit(r), (-(1<<63), rlim_max) )
 
-                resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max-1)) # lower
-                # resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max)) # TODO: expected ValueError, got OSError
+                self.assertRaises(ValueError, resource.setrlimit, r, (rlim_max, rlim_max-1))
             finally:
-                resource.setrlimit(r, (rlim_cur, rlim_max-1))
+                resource.setrlimit(r, lims)
 
     @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_setrlimit_error(self):
@@ -96,6 +95,21 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.setrlimit, 0, (0, 0, 0))
         self.assertRaises(ValueError, resource.setrlimit, 0, (2.3, 0, 0))
         self.assertRaises(TypeError, resource.setrlimit, 0, None)
+
+    @unittest.skipUnless(is_posix, "Posix-specific test")
+    def test_prlimit(self):
+        r = resource.RLIMIT_CORE
+        lims = resource.getrlimit(r)
+        self.assertEqual(resource.prlimit(0, r), lims)
+        rlim_cur = lims[0]
+        rlim_max = lims[1]
+        # usually max core size is unlimited so a good resource limit to test setting
+        if (rlim_max == resource.RLIM_INFINITY):
+            try:
+                resource.prlimit(0, r, (1024, rlim_max))
+                self.assertEqual(resource.getrlimit(r), (1024, rlim_max) )
+            finally:
+                resource.prlimit(0, r, lims)
 
     @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_pagesize(self):

@@ -4,23 +4,32 @@
 
 # tests fro module 'resource' (Posix only)
 
-import os
-import sys
 import unittest
-import resource
 
-from iptest import IronPythonTestCase, is_cli, is_linux, is_osx, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_posix, is_linux, is_osx, run_test, skipUnlessIronPython
+
+if is_posix:
+    import resource
+else:
+    try:
+        import resource
+    except ImportError:
+        pass
+    else:
+        raise AssertionError("There should be no module resource on Windows")
 
 class ResourceTest(IronPythonTestCase):
     def setUp(self):
         self.RLIM_NLIMITS = 16 if is_linux else 9
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_infinity(self):
         if is_osx:
             self.assertEqual(resource.RLIM_INFINITY, (1<<63)-1)
         else:
             self.assertEqual(resource.RLIM_INFINITY, -1)
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_getrlimit(self):
         for r in range(self.RLIM_NLIMITS):
             lims = resource.getrlimit(r)
@@ -35,6 +44,7 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.getrlimit, -1)
         self.assertRaises(ValueError, resource.getrlimit, self.RLIM_NLIMITS)
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_setrlimit(self):
         r = resource.RLIMIT_CORE
         lims = resource.getrlimit(r)
@@ -71,10 +81,11 @@ class ResourceTest(IronPythonTestCase):
                     self.assertEqual(resource.getrlimit(r), (-(1<<63), rlim_max) )
 
                 resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max-1)) # lower
-                # resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max)) # TODO: expeced ValueError, got OSError
+                # resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max)) # TODO: expected ValueError, got OSError
             finally:
                 resource.setrlimit(r, (rlim_cur, rlim_max-1))
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_setrlimit_error(self):
         self.assertRaises(TypeError, resource.setrlimit, None, (0, 0))
         self.assertRaises(TypeError, resource.setrlimit, "abc", (0, 0))
@@ -86,12 +97,14 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.setrlimit, 0, (2.3, 0, 0))
         self.assertRaises(TypeError, resource.setrlimit, 0, None)
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_pagesize(self):
         ps = resource.getpagesize()
         self.assertIsInstance(ps, int)
         self.assertTrue(ps > 0)
         self.assertTrue((ps & (ps-1) == 0)) # ps is power of 2
 
+    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_getrusage(self):
         self.assertEqual(resource.struct_rusage.n_fields, 16)
         self.assertEqual(resource.struct_rusage.n_sequence_fields, 16)

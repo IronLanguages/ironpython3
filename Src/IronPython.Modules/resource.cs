@@ -141,6 +141,7 @@ public static class PythonResourceModule {
         data.rlim_cur = GetLimitValue(cursor);
         data.rlim_max = GetLimitValue(cursor);
         if (cursor.MoveNext()) ThrowValueError();
+        if ((ulong)data.rlim_cur > (ulong)data.rlim_max) throw PythonOps.ValueError("current limit exceed maximum limit");
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
@@ -149,6 +150,64 @@ public static class PythonResourceModule {
             ThrowIfError(err);
         } finally {
             Marshal.FreeHGlobal(ptr);
+        }
+
+        static long GetLimitValue(System.Collections.IEnumerator cursor) {
+            if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
+                ThrowValueError();
+
+            long rlim = checked((long)lim);
+            if (rlim < 0 && OSVersion.Platform == PlatformID.MacOSX)
+                rlim -= long.MinValue;
+            return rlim;
+        }
+
+        static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
+    }
+
+    public static PythonTuple prlimit(int pid, int resource) {
+        if (resource < 0 || resource >= RLIM_NLIMITS) {
+            throw PythonOps.ValueError("invalid resource specified");
+        }
+
+        IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
+        try {
+            int err = prlimit_linux(pid, resource, IntPtr.Zero, ptr);
+            ThrowIfError(err);
+            rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
+
+            return PythonTuple.MakeTuple(res.rlim_cur.ToPythonInt(), res.rlim_max.ToPythonInt());
+        } finally {
+            Marshal.FreeHGlobal(ptr);
+        }
+    }
+
+    public static PythonTuple prlimit(int pid, int resource, [NotNone] object limits) {
+        if (resource < 0 || resource >= RLIM_NLIMITS) {
+            throw PythonOps.ValueError("invalid resource specified");
+        }
+
+        rlimit data;
+        var cursor = PythonOps.GetEnumerator(limits);
+        data.rlim_cur = GetLimitValue(cursor);
+        data.rlim_max = GetLimitValue(cursor);
+        if (cursor.MoveNext()) ThrowValueError();
+        if ((ulong)data.rlim_cur > (ulong)data.rlim_max) throw PythonOps.ValueError("current limit exceed maximum limit");
+
+        IntPtr ptr_new = IntPtr.Zero;
+        IntPtr ptr_old = IntPtr.Zero;
+        try {
+            ptr_new = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
+            ptr_old = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
+            Marshal.StructureToPtr(data, ptr_new, fDeleteOld: false);
+            int err = prlimit_linux(pid, resource, ptr_new, ptr_old);
+            ThrowIfError(err);
+            rlimit res = Marshal.PtrToStructure<rlimit>(ptr_old);
+
+            return PythonTuple.MakeTuple(res.rlim_cur.ToPythonInt(), res.rlim_max.ToPythonInt());
+        } finally {
+            if (ptr_new != IntPtr.Zero) Marshal.FreeHGlobal(ptr_new);
+            if (ptr_old != IntPtr.Zero) Marshal.FreeHGlobal(ptr_old);
         }
 
         static long GetLimitValue(System.Collections.IEnumerator cursor) {
@@ -306,13 +365,17 @@ public static class PythonResourceModule {
 #pragma warning restore CS0649
 
     [DllImport("libc", SetLastError = true, EntryPoint = "getrlimit")]
-    private static extern int getrlimit_linux(int __resource, IntPtr __rlimits);
+    private static extern int getrlimit_linux(int resource, /*rlimit*/ IntPtr rlimits);
 
     [DllImport("libc", SetLastError = true, EntryPoint = "setrlimit")]
-    private static extern int setrlimit_linux(int __resource, IntPtr __rlimits);
+    private static extern int setrlimit_linux(int resource, /*const rlimit*/ IntPtr rlimits);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "prlimit")]
+    private static extern int prlimit_linux(int pid, int resource, /*const rlimit*/ IntPtr new_limit, /*rlimit*/ IntPtr old_limit);
 
     [DllImport("libc", SetLastError = true, EntryPoint = "getrusage")]
-    private static extern int getrusage_linux(int __who, IntPtr __usage);
+    private static extern int getrusage_linux(int who, /*rusage*/ IntPtr usage);
+
 
     private enum macos__rlimit_resource {
         RLIMIT_CPU = 0,

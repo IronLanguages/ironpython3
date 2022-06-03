@@ -2,20 +2,26 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+// TODO: use LightThrowing
+// TODO: use RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+// TODO: Port to maxOS
+
 #nullable enable
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.Numerics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using static System.Environment;
+using static System.Environment; // TODO: remove
 
-using Microsoft.Scripting.Runtime;
+using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 
 [assembly: PythonModule("resource", typeof(IronPython.Modules.PythonResourceModule), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules;
@@ -125,13 +131,13 @@ public static class PythonResourceModule {
         }
     }
 
-    public static void setrlimit(int resource, [NotNone] IEnumerable limits) {
+    public static void setrlimit(int resource, [NotNone] object limits) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
             throw PythonOps.ValueError("invalid resource specified");
         }
 
         rlimit data;
-        var cursor = limits.GetEnumerator();
+        var cursor = PythonOps.GetEnumerator(limits);
         data.rlim_cur = GetLimitValue(cursor);
         data.rlim_max = GetLimitValue(cursor);
         if (cursor.MoveNext()) ThrowValueError();
@@ -145,7 +151,7 @@ public static class PythonResourceModule {
             Marshal.FreeHGlobal(ptr);
         }
 
-        static long GetLimitValue(IEnumerator cursor) {
+        static long GetLimitValue(System.Collections.IEnumerator cursor) {
             if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
                 ThrowValueError();
 
@@ -158,8 +164,107 @@ public static class PythonResourceModule {
         static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
     }
 
-    public static BigInteger getpagesize() {
-        return Mono.Unix.Native.Syscall.sysconf(Mono.Unix.Native.SysconfName._SC_PAGESIZE);
+    public static object getrusage(int who) {
+        int maxWho = OSVersion.Platform == PlatformID.MacOSX ? 0 : 1;
+        if (who < -1 || who > maxWho) throw PythonOps.ValueError("invalid who parameter");
+
+        IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rusage>());
+        try {
+            int err = getrusage_linux(who, ptr);
+            ThrowIfError(err);
+            rusage res = Marshal.PtrToStructure<rusage>(ptr);
+
+            return new struct_rusage(res);
+        } finally {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        throw new NotImplementedException();
+    }
+
+    public static object getpagesize() {
+        return Mono.Unix.Native.Syscall.sysconf(Mono.Unix.Native.SysconfName._SC_PAGESIZE).ToPythonInt();
+    }
+
+    [PythonType]
+    public sealed class struct_rusage : PythonTuple {
+        public const int n_fields = 16;
+        public const int n_sequence_fields = 16;
+        public const int n_unnamed_fields = 0;
+
+        private struct_rusage(object?[] sequence) : base(sequence) {
+            if (__len__() != n_sequence_fields)
+                throw PythonOps.TypeError("resource.struct_rusage() takes a {0}-sequence ({1}-sequence given)", n_sequence_fields, __len__());
+        }
+
+        private struct_rusage(object o) : base(o) {
+            if (__len__() != n_sequence_fields)
+                throw PythonOps.TypeError("resource.struct_rusage() takes a {0}-sequence ({1}-sequence given)", n_sequence_fields, __len__());
+        }
+
+        internal struct_rusage(rusage data)
+            : this(
+                new object[n_sequence_fields] {
+                    data.ru_utime.tv_sec + data.ru_utime.tv_usec * 1e-6,
+                    data.ru_stime.tv_sec + data.ru_stime.tv_usec * 1e-6,
+                    data.ru_maxrss.ToPythonInt(),
+                    data.ru_ixrss.ToPythonInt(),
+                    data.ru_idrss.ToPythonInt(),
+                    data.ru_isrss.ToPythonInt(),
+                    data.ru_minflt.ToPythonInt(),
+                    data.ru_majflt.ToPythonInt(),
+                    data.ru_nswap.ToPythonInt(),
+                    data.ru_inblock.ToPythonInt(),
+                    data.ru_oublock.ToPythonInt(),
+                    data.ru_msgsnd.ToPythonInt(),
+                    data.ru_msgrcv.ToPythonInt(),
+                    data.ru_nsignals.ToPythonInt(),
+                    data.ru_nvcsw.ToPythonInt(),
+                    data.ru_nivcsw.ToPythonInt(),
+                }
+            ) { }
+
+        public static struct_rusage __new__([NotNone] PythonType cls, [NotNone] object sequence, PythonDictionary? dict = null)
+            => new struct_rusage(sequence);
+
+        public object? ru_utime => this[0];
+        public object? ru_stime => this[1];
+        public object? ru_maxrss => this[2];
+        public object? ru_ixrss => this[3];
+        public object? ru_idrss => this[4];
+        public object? ru_isrss => this[5];
+        public object? ru_minflt => this[6];
+        public object? ru_majflt => this[7];
+        public object? ru_nswap => this[8];
+        public object? ru_inblock => this[9];
+        public object? ru_oublock => this[10];
+        public object? ru_msgsnd => this[11];
+        public object? ru_msgrcv => this[12];
+        public object? ru_nsignals => this[13];
+        public object? ru_nvcsw => this[14];
+        public object? ru_nivcsw => this[15];
+
+        public override string __repr__(CodeContext/*!*/ context) {
+            return string.Format("resource.struct_rusage("
+                + "ru_utime={0}, "
+                + "ru_stime={1}, "
+                + "ru_maxrss={2}, "
+                + "ru_ixrss={3}, "
+                + "ru_idrss={4}, "
+                + "ru_isrss={5}, "
+                + "ru_minflt={6}, "
+                + "ru_majflt={7}, "
+                + "ru_nswap={8}, "
+                + "ru_inblock={9}, "
+                + "ru_oublock={10}, "
+                + "ru_msgsnd={11}, "
+                + "ru_msgrcv={12}, "
+                + "ru_nsignals={13}, "
+                + "ru_nvcsw={14}, "
+                + "ru_nivcsw={15})",
+                this.Select(v => PythonOps.Repr(context, v)).ToArray());
+        }
+
     }
 
     private static void ThrowIfError(int err) {
@@ -173,9 +278,32 @@ public static class PythonResourceModule {
         => value is <= int.MaxValue and >= int.MinValue ? (int)value : (BigInteger)value;
 
     private struct rlimit {
+        // /usr/include/x86_64-linux-gnu/bits/resource.h
         public long rlim_cur;
         public long rlim_max;
     }
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+    internal struct rusage {
+        // /usr/include/x86_64-linux-gnu/bits/types/struct_rusage.h
+        public Mono.Unix.Native.Timeval ru_utime;  /* user CPU time used */
+        public Mono.Unix.Native.Timeval ru_stime;  /* system CPU time used */
+        public long   ru_maxrss;                   /* maximum resident set size */
+        public long   ru_ixrss;                    /* integral shared memory size */
+        public long   ru_idrss;                    /* integral unshared data size */
+        public long   ru_isrss;                    /* integral unshared stack size */
+        public long   ru_minflt;                   /* page reclaims (soft page faults) */
+        public long   ru_majflt;                   /* page faults (hard page faults) */
+        public long   ru_nswap;                    /* swaps */
+        public long   ru_inblock;                  /* block input operations */
+        public long   ru_oublock;                  /* block output operations */
+        public long   ru_msgsnd;                   /* IPC messages sent */
+        public long   ru_msgrcv;                   /* IPC messages received */
+        public long   ru_nsignals;                 /* signals received */
+        public long   ru_nvcsw;                    /* voluntary context switches */
+        public long   ru_nivcsw;                   /* involuntary context switches */
+    }
+#pragma warning restore CS0649
 
     [DllImport("libc", SetLastError = true, EntryPoint = "getrlimit")]
     private static extern int getrlimit_linux(int __resource, IntPtr __rlimits);
@@ -183,7 +311,10 @@ public static class PythonResourceModule {
     [DllImport("libc", SetLastError = true, EntryPoint = "setrlimit")]
     private static extern int setrlimit_linux(int __resource, IntPtr __rlimits);
 
-    enum macos__rlimit_resource {
+    [DllImport("libc", SetLastError = true, EntryPoint = "getrusage")]
+    private static extern int getrusage_linux(int __who, IntPtr __usage);
+
+    private enum macos__rlimit_resource {
         RLIMIT_CPU = 0,
         RLIMIT_FSIZE = 1,
         RLIMIT_DATA = 2,
@@ -198,8 +329,8 @@ public static class PythonResourceModule {
         RLIM_NLIMITS
     }
 
-    enum linux__rlimit_resource {
-        // /usr/include/x86_64-linux-gnu/sys/resource.h 
+    private enum linux__rlimit_resource {
+        // /usr/include/x86_64-linux-gnu/sys/resource.h
 
         RLIMIT_CPU = 0, // Per-process CPU limit
         RLIMIT_FSIZE = 1,  // Maximum filesize

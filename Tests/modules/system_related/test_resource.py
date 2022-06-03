@@ -38,6 +38,7 @@ class ResourceTest(IronPythonTestCase):
     def test_setrlimit(self):
         r = resource.RLIMIT_CORE
         lims = resource.getrlimit(r)
+        rlim_cur = lims[0]
         rlim_max = lims[1]
         # usually max core size is unlimited so a good resource limit to test setting
         if (rlim_max == resource.RLIM_INFINITY):
@@ -69,8 +70,10 @@ class ResourceTest(IronPythonTestCase):
                 else:
                     self.assertEqual(resource.getrlimit(r), (-(1<<63), rlim_max) )
 
+                resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max-1)) # lower
+                # resource.setrlimit(resource.RLIMIT_CORE, (0, rlim_max)) # TODO: expeced ValueError, got OSError
             finally:
-                resource.setrlimit(r, lims)
+                resource.setrlimit(r, (rlim_cur, rlim_max-1))
 
     def test_setrlimit_error(self):
         self.assertRaises(TypeError, resource.setrlimit, None, (0, 0))
@@ -82,5 +85,43 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.setrlimit, 0, (0, 0, 0))
         self.assertRaises(ValueError, resource.setrlimit, 0, (2.3, 0, 0))
         self.assertRaises(TypeError, resource.setrlimit, 0, None)
+
+    def test_pagesize(self):
+        ps = resource.getpagesize()
+        self.assertIsInstance(ps, int)
+        self.assertTrue(ps > 0)
+        self.assertTrue((ps & (ps-1) == 0)) # ps is power of 2
+
+    def test_getrusage(self):
+        self.assertEqual(resource.struct_rusage.n_fields, 16)
+        self.assertEqual(resource.struct_rusage.n_sequence_fields, 16)
+        self.assertEqual(resource.struct_rusage.n_unnamed_fields, 0)
+
+        ru = resource.getrusage(resource.RUSAGE_SELF)
+        self.assertIsInstance(ru, resource.struct_rusage)
+        self.assertEqual(len(ru), resource.struct_rusage.n_fields)
+        self.assertIsInstance(ru[0], float)
+        self.assertIsInstance(ru[1], float)
+        for i in range(2, resource.struct_rusage.n_fields):
+            self.assertIsInstance(ru[i], int)
+
+        ru2 = resource.struct_rusage(ru)
+        self.assertEqual(ru, ru2)
+
+        ru2 = resource.struct_rusage(ru, {})
+        self.assertEqual(ru, ru2)
+
+        ru2 = resource.struct_rusage(ru, {'ru_utime': 0.0, 'foo': 'bar'}) # dict is ignored
+        self.assertEqual(ru, ru2)
+
+        self.assertRaises(TypeError, resource.struct_rusage)
+        self.assertRaises(TypeError, resource.struct_rusage, 0)
+        self.assertRaises(TypeError, resource.struct_rusage, range(15))
+        self.assertRaises(TypeError, resource.struct_rusage, range(17))
+        self.assertRaises(TypeError, resource.struct_rusage, range(16), 0)
+
+        ru2 = resource.struct_rusage(range(resource.struct_rusage.n_sequence_fields))
+        self.assertEqual(ru2[15], 15)
+        self.assertEqual(ru2.ru_nivcsw, 15)
 
 run_test(__name__)

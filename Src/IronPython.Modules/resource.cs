@@ -5,9 +5,11 @@
 #nullable enable
 
 using System;
+using System.Collections;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static System.Environment;
 
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
@@ -28,46 +30,48 @@ public static class PythonResourceModule {
 
     #region Constants
 
-    public static BigInteger RLIM_INFINITY = ulong.MaxValue; // CPython/macOS convention and consistent with values returned by this implementation
+    public static BigInteger RLIM_INFINITY
+        => OSVersion.Platform == PlatformID.MacOSX ?
+            (BigInteger)long.MaxValue : BigInteger.MinusOne;
 
     public static int RLIMIT_CPU
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_CPU : (int)linux__rlimit_resource.RLIMIT_CPU;
 
     public static int RLIMIT_FSIZE
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_FSIZE : (int)linux__rlimit_resource.RLIMIT_FSIZE;
 
     public static int RLIMIT_DATA
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_DATA : (int)linux__rlimit_resource.RLIMIT_DATA;
 
     public static int RLIMIT_STACK
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_STACK : (int)linux__rlimit_resource.RLIMIT_STACK;
 
     public static int RLIMIT_CORE
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_CORE : (int)linux__rlimit_resource.RLIMIT_CORE;
 
     public static int RLIMIT_RSS
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_RSS : (int)linux__rlimit_resource.RLIMIT_RSS;
 
     public static int RLIMIT_AS
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_AS : (int)linux__rlimit_resource.RLIMIT_AS;
 
     public static int RLIMIT_MEMLOCK
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_MEMLOCK : (int)linux__rlimit_resource.RLIMIT_MEMLOCK;
 
     public static int RLIMIT_NPROC
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_NPROC : (int)linux__rlimit_resource.RLIMIT_NPROC;
 
     public static int RLIMIT_NOFILE
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)macos__rlimit_resource.RLIMIT_NOFILE : (int)linux__rlimit_resource.RLIMIT_NOFILE;
 
     [PythonHidden(PlatformID.MacOSX)]
@@ -92,7 +96,7 @@ public static class PythonResourceModule {
     public static int RLIMIT_RTTIME => (int)linux__rlimit_resource.RLIMIT_RTTIME;
 
     private static int RLIM_NLIMITS
-        => Environment.OSVersion.Platform == PlatformID.MacOSX ?
+        => OSVersion.Platform == PlatformID.MacOSX ?
             (int)(macos__rlimit_resource.RLIM_NLIMITS) : (int)(linux__rlimit_resource.RLIM_NLIMITS);
 
     #endregion
@@ -114,6 +118,39 @@ public static class PythonResourceModule {
         }
     }
 
+    public static void setrlimit(int resource, [NotNone] IEnumerable limits) {
+        if (resource < 0 || resource >= RLIM_NLIMITS) {
+            throw PythonOps.ValueError("invalid resource specified");
+        }
+
+        rlimit data;
+        var cursor = limits.GetEnumerator();
+        data.rlim_cur = GetLimitValue(cursor);
+        data.rlim_max = GetLimitValue(cursor);
+        if (cursor.MoveNext()) ThrowValueError();
+
+        IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
+        try {
+            Marshal.StructureToPtr(data, ptr, fDeleteOld: false);
+            int err = setrlimit_linux(resource, ptr);
+            ThrowIfError(err);
+        } finally {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        static long GetLimitValue(IEnumerator cursor) {
+            if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
+                ThrowValueError();
+
+            long rlim = checked((long)lim);
+            if (rlim < 0 && OSVersion.Platform == PlatformID.MacOSX)
+                rlim -= long.MinValue;
+            return rlim;
+        }
+
+        static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
+    }
+
     private static void ThrowIfError(int err) {
         if (err != 0) {
 #if NET60_OR_GREATER
@@ -125,19 +162,19 @@ public static class PythonResourceModule {
         }
     }
 
-    private static object ToPythonInt(this ulong value)
-        => value <= (ulong)int.MaxValue ? (int)value : (BigInteger)value;
+    private static object ToPythonInt(this long value)
+        => value is <= int.MaxValue and >= int.MinValue ? (int)value : (BigInteger)value;
 
-
-#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private struct rlimit {
-        public ulong rlim_cur;
-        public ulong rlim_max;
+        public long rlim_cur;
+        public long rlim_max;
     }
-#pragma warning restore CS0649
 
     [DllImport("libc", SetLastError = true, EntryPoint = "getrlimit")]
     private static extern int getrlimit_linux(int __resource, IntPtr __rlimits);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "setrlimit")]
+    private static extern int setrlimit_linux(int __resource, IntPtr __rlimits);
 
     enum macos__rlimit_resource {
         RLIMIT_CPU = 0,

@@ -1490,6 +1490,18 @@ namespace IronPython.Modules {
             => stat(path.ToFsBytes(context), dict);
 
         [LightThrowing, Documentation("")]
+        public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    return stat(context, i);
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            return stat(PythonOps.FsPathDecoded(context, path), dict);
+        }
+
+        [LightThrowing, Documentation("")]
         public static object stat(CodeContext context, int fd)
             => fstat(context, fd);
 

@@ -3,20 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 // TODO: use LightThrowing
-// TODO: use RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
 // TODO: Port to maxOS
 
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using static System.Environment; // TODO: remove
 
-using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -37,47 +33,47 @@ public static class PythonResourceModule {
     #region Constants
 
     public static BigInteger RLIM_INFINITY
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (BigInteger)long.MaxValue : BigInteger.MinusOne;
 
     public static int RLIMIT_CPU
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_CPU : (int)linux__rlimit_resource.RLIMIT_CPU;
 
     public static int RLIMIT_FSIZE
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_FSIZE : (int)linux__rlimit_resource.RLIMIT_FSIZE;
 
     public static int RLIMIT_DATA
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_DATA : (int)linux__rlimit_resource.RLIMIT_DATA;
 
     public static int RLIMIT_STACK
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_STACK : (int)linux__rlimit_resource.RLIMIT_STACK;
 
     public static int RLIMIT_CORE
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_CORE : (int)linux__rlimit_resource.RLIMIT_CORE;
 
     public static int RLIMIT_RSS
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_RSS : (int)linux__rlimit_resource.RLIMIT_RSS;
 
     public static int RLIMIT_AS
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_AS : (int)linux__rlimit_resource.RLIMIT_AS;
 
     public static int RLIMIT_MEMLOCK
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_MEMLOCK : (int)linux__rlimit_resource.RLIMIT_MEMLOCK;
 
     public static int RLIMIT_NPROC
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_NPROC : (int)linux__rlimit_resource.RLIMIT_NPROC;
 
     public static int RLIMIT_NOFILE
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)macos__rlimit_resource.RLIMIT_NOFILE : (int)linux__rlimit_resource.RLIMIT_NOFILE;
 
     [PythonHidden(PlatformID.MacOSX)]
@@ -102,7 +98,7 @@ public static class PythonResourceModule {
     public static int RLIMIT_RTTIME => (int)linux__rlimit_resource.RLIMIT_RTTIME;
 
     private static int RLIM_NLIMITS
-        => OSVersion.Platform == PlatformID.MacOSX ?
+        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
             (int)(macos__rlimit_resource.RLIM_NLIMITS) : (int)(linux__rlimit_resource.RLIM_NLIMITS);
 
     public static int RUSAGE_SELF => 0;
@@ -157,7 +153,7 @@ public static class PythonResourceModule {
                 ThrowValueError();
 
             long rlim = checked((long)lim);
-            if (rlim < 0 && OSVersion.Platform == PlatformID.MacOSX)
+            if (rlim < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 rlim -= long.MinValue;
             return rlim;
         }
@@ -215,7 +211,7 @@ public static class PythonResourceModule {
                 ThrowValueError();
 
             long rlim = checked((long)lim);
-            if (rlim < 0 && OSVersion.Platform == PlatformID.MacOSX)
+            if (rlim < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 rlim -= long.MinValue;
             return rlim;
         }
@@ -224,7 +220,7 @@ public static class PythonResourceModule {
     }
 
     public static object getrusage(int who) {
-        int maxWho = OSVersion.Platform == PlatformID.MacOSX ? 0 : 1;
+        int maxWho = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0 : 1;
         if (who < -1 || who > maxWho) throw PythonOps.ValueError("invalid who parameter");
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rusage>());

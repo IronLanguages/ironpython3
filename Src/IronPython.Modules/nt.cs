@@ -201,6 +201,24 @@ namespace IronPython.Modules {
         public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
             => _getfullpathname(context, path.ToFsString()).ToFsBytes();
 
+        public static object _getfullpathname(CodeContext/*!*/ context, object? path) {
+            if (path is IBufferProtocol bp) {
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", nameof(_getfullpathname), nameof(path), PythonOps.GetPythonTypeName(path));
+                return _getfullpathname(context, new Bytes(bp));
+            }
+
+            if (PythonOps.TryToFsPath(context, path, out var res)) {
+                switch (res) {
+                    case string s: return _getfullpathname(context, s);
+                    case Extensible<string> es: return _getfullpathname(context, es.Value);
+                    case Bytes b: return _getfullpathname(context, b);
+                    default: throw new InvalidOperationException();
+                }
+            }
+
+            throw PythonOps.TypeError("{0}: {1} should be string, bytes or os.PathLike, not {2}", nameof(_getfullpathname), nameof(path), PythonOps.GetPythonTypeName(path));
+        }
+
 #if FEATURE_PROCESS
         public static void abort() {
             System.Environment.FailFast("IronPython os.abort");
@@ -267,8 +285,8 @@ namespace IronPython.Modules {
             => access(context, path.ToFsString(), mode, kwargs);
 
         [Documentation("")]
-        public static bool access(CodeContext context, [NotNone] IBufferProtocol path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => access(context, path.ToFsBytes(context), mode, kwargs);
+        public static bool access(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => access(context, ConvertToFsString(context, path, nameof(path)), mode, kwargs);
 
 #if FEATURE_FILESYSTEM
 
@@ -287,8 +305,8 @@ namespace IronPython.Modules {
         public static void chdir([NotNone] Bytes path)
             => chdir(path.ToFsString());
 
-        public static void chdir(CodeContext context, [NotNone] IBufferProtocol path)
-            => chdir(path.ToFsBytes(context));
+        public static void chdir(CodeContext context, object? path)
+            => chdir(ConvertToFsString(context, path, nameof(path)));
 
         // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
         private static void chmodUnix(string path, int mode) {
@@ -332,8 +350,8 @@ namespace IronPython.Modules {
             => chmod(path.ToFsString(), mode, kwargs);
 
         [Documentation("")]
-        public static void chmod(CodeContext context, [NotNone] IBufferProtocol path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => chmod(path.ToFsBytes(context), mode, kwargs);
+        public static void chmod(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => chmod(ConvertToFsString(context, path, nameof(path)), mode, kwargs);
 
 #endif
 
@@ -438,7 +456,7 @@ namespace IronPython.Modules {
         }
 
         public static object fspath(CodeContext context, [AllowNull] object path)
-            => PythonOps.FsPath(path);
+            => PythonOps.FsPath(context, path);
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
@@ -571,8 +589,8 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static PythonList listdir(CodeContext context, [NotNone] IBufferProtocol path)
-            => listdir(context, path.ToFsBytes(context));
+        public static PythonList listdir(CodeContext context, [NotNone] object path)
+            => listdir(context, ConvertToFsString(context, path, nameof(path), orType: "None"));
 
         public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
             var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
@@ -596,10 +614,9 @@ namespace IronPython.Modules {
         public static object lstat([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
             => lstat(path.ToFsString(), kwargs);
 
-
         [LightThrowing, Documentation("")]
-        public static object lstat(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => lstat(path.ToFsBytes(context), kwargs);
+        public static object lstat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => lstat(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         [PythonType]
         public sealed class DirEntry {
@@ -666,8 +683,8 @@ namespace IronPython.Modules {
         public static ScandirIterator scandir(CodeContext context, string? path = null)
             => new ScandirIterator(ScandirHelper(context, path), asBytes: false);
 
-        public static ScandirIterator scandir(CodeContext context, [NotNone] IBufferProtocol path)
-            => new ScandirIterator(ScandirHelper(context, ConvertToFsString(context, path, nameof(path))), asBytes: true);
+        public static ScandirIterator scandir(CodeContext context, [NotNone] object path)
+            => new ScandirIterator(ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {
@@ -815,8 +832,8 @@ namespace IronPython.Modules {
             => mkdir(path.ToFsString(), kwargs, args);
 
         [Documentation("")]
-        public static void mkdir(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => mkdir(path.ToFsBytes(context), kwargs, args);
+        public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
         private const int DefaultBufferSize = 4096;
 
@@ -880,8 +897,8 @@ namespace IronPython.Modules {
             => open(context, filename.ToFsString(), flags, kwargs, args);
 
         [Documentation("")]
-        public static object open(CodeContext context, [NotNone] IBufferProtocol filename, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => open(context, filename.ToFsBytes(context), flags, kwargs, args);
+        public static object open(CodeContext context, object? path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => open(context, ConvertToFsString(context, path, nameof(path)), flags, kwargs, args);
 
 
         private static FileOptions FileOptionsFromFlags(int flag) {
@@ -1056,8 +1073,8 @@ namespace IronPython.Modules {
             => rmdir(path.ToFsString(), kwargs);
 
         [Documentation("")]
-        public static void rmdir(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => rmdir(path.ToFsBytes(context), kwargs);
+        public static void rmdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => rmdir(ConvertToFsString(context, path, nameof(path)), kwargs);
 
 #if FEATURE_PROCESS
 
@@ -1078,8 +1095,8 @@ namespace IronPython.Modules {
         public static object spawnv(CodeContext context, int mode, [NotNone] Bytes path, object? args)
             => spawnv(context, mode, path.ToFsString(), args);
 
-        public static object spawnv(CodeContext context, int mode, [NotNone] IBufferProtocol path, object? args)
-            => spawnv(context, mode, path.ToFsBytes(context), args);
+        public static object spawnv(CodeContext context, int mode, object? path, object? args)
+            => spawnv(context, mode, ConvertToFsString(context, path, nameof(path)), args);
 
         /// <summary>
         /// spawns a new process.
@@ -1101,8 +1118,8 @@ namespace IronPython.Modules {
         public static object spawnve(CodeContext context, int mode, [NotNone] Bytes path, object? args, object? env)
             => spawnve(context, mode, path.ToFsString(), args, env);
 
-        public static object spawnve(CodeContext context, int mode, [NotNone] IBufferProtocol path, object? args, object? env)
-            => spawnve(context, mode, path.ToFsBytes(context), args, env);
+        public static object spawnve(CodeContext context, int mode, object? path, object? args, object? env)
+            => spawnve(context, mode, ConvertToFsString(context, path, nameof(path)), args, env);
 
         private static Process MakeProcess() {
             try {
@@ -1212,25 +1229,25 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile([NotNone] string filename, string operation = "open") {
+        public static void startfile([NotNone] string filepath, string operation = "open") {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = filename;
+            process.StartInfo.FileName = filepath;
             process.StartInfo.UseShellExecute = true;
             process.StartInfo.Verb = operation;
             try {
                 process.Start();
             } catch (Exception e) {
-                throw ToPythonException(e, filename);
+                throw ToPythonException(e, filepath);
             }
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile([NotNone] Bytes filename, string operation = "open")
-            => startfile(filename.ToFsString(), operation);
+        public static void startfile([NotNone] Bytes filepath, string operation = "open")
+            => startfile(filepath.ToFsString(), operation);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile(CodeContext context, [NotNone] IBufferProtocol filename, string operation = "open")
-            => startfile(filename.ToFsBytes(context), operation);
+        public static void startfile(CodeContext context, object? filepath, string operation = "open")
+            => startfile(ConvertToFsString(context, filepath, nameof(filepath)), operation);
 
 #endif
 
@@ -1486,10 +1503,6 @@ namespace IronPython.Modules {
             => stat(path.ToFsString(), dict);
 
         [LightThrowing, Documentation("")]
-        public static object stat(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> dict)
-            => stat(path.ToFsBytes(context), dict);
-
-        [LightThrowing, Documentation("")]
         public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
             if (PythonOps.TryToIndex(path, out BigInteger bi)) {
                 if (bi.AsInt32(out int i)) {
@@ -1498,7 +1511,7 @@ namespace IronPython.Modules {
                 throw PythonOps.OverflowError("fd is greater than maximum");
             }
 
-            return stat(PythonOps.FsPathDecoded(context, path), dict);
+            return stat(ConvertToFsString(context, path, nameof(path), orType: "integer"), dict);
         }
 
         [LightThrowing, Documentation("")]
@@ -1618,9 +1631,16 @@ namespace IronPython.Modules {
             => truncate(context, path.ToFsString(), length);
 
         [Documentation("")]
-        public static void truncate(CodeContext context, [NotNone] IBufferProtocol path, BigInteger length) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string or bytes, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
-            truncate(context, path.ToFsBytes(context), length);
+        public static void truncate(CodeContext context, object? path, BigInteger length) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    truncate(context, i, length);
+                    return;
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            truncate(context, ConvertToFsString(context, path, nameof(path), orType: "integer"), length);
         }
 
         public static void truncate(CodeContext context, int fd, BigInteger length)
@@ -1659,8 +1679,8 @@ namespace IronPython.Modules {
             => remove(path.ToFsString(), kwargs);
 
         [Documentation("")]
-        public static void remove(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => remove(path.ToFsBytes(context), kwargs);
+        public static void remove(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => remove(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         [Documentation("unlink(path, *, dir_fd=None)")]
         public static void unlink([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1671,8 +1691,8 @@ namespace IronPython.Modules {
             => unlink(path.ToFsString(), kwargs);
 
         [Documentation("")]
-        public static void unlink(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => unlink(path.ToFsBytes(context), kwargs);
+        public static void unlink(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => unlink(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         private static void UnlinkWorker(string path) {
             if (path == null) {
@@ -1824,8 +1844,8 @@ namespace IronPython.Modules {
             => utime(path.ToFsString(), kwargs, args);
 
         [Documentation("")]
-        public static void utime(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => utime(path.ToFsBytes(context), kwargs, args);
+        public static void utime(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => utime(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
 #endif
 
@@ -2256,21 +2276,23 @@ the 'status' value."),
 
         private static Bytes ToFsBytes(this string s) => Bytes.Make(_filesystemEncoding.GetBytes(s));
 
-        private static Bytes ToFsBytes(this IBufferProtocol bp, CodeContext context) {
-            // TODO: Python 3.6: "path should be string, bytes or os.PathLike"
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonOps.GetPythonTypeName(bp));
-            return new Bytes(bp); // accepts FULL_RO buffers in CPython
-        }
+        private static string ConvertToFsString(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null) {
+            if (o is IBufferProtocol bp) {
+                if (orType is null)
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+                else
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
+                o = new Bytes(bp); // accepts FULL_RO buffers in CPython
+            }
 
-        private static string ConvertToFsString(CodeContext context, [NotNull] object? o, string argname, [CallerMemberName] string? methodname = null)
-            => o switch {
-                string s            => s,
-                ExtensibleString es => es.Value,
-                Bytes b             => b.ToFsString(),
-                IBufferProtocol bp  => bp.ToFsBytes(context).ToFsString(),
-                // TODO: Python 3.6: os.PathLike
-                _ => throw PythonOps.TypeError("{0}: {1} should be string or bytes, not '{2}'", methodname, argname, PythonOps.GetPythonTypeName(o))
-            };
+            if (PythonOps.TryToFsPathDecoded(context, o, out var res))
+                return res;
+
+            if (orType is null)
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+            else
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
+        }
 
         private static void CheckOptionalArgsCount(int numRegParms, int numOptPosParms, int numKwParms, int numOptPosArgs, int numKwArgs, [CallerMemberName] string? methodname = null) {
             if (numOptPosArgs > numOptPosParms)

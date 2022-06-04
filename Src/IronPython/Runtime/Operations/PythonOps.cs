@@ -325,25 +325,40 @@ namespace IronPython.Runtime.Operations {
             return StringFormatter.Format(context, str, data);
         }
 
-        internal static object FsPath(object? path) {
-            if (path is string) return path;
-            if (path is Extensible<string>) return path;
-            if (path is Bytes) return path;
-
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, path, "__fspath__", out object res)) {
-                return res switch {
-                    string => res,
-                    Extensible<string> => res,
-                    Bytes => res,
-                    _ => throw PythonOps.TypeError("expected {0}.__fspath__() to return str or bytes, not {0}", PythonOps.GetPythonTypeName(path), PythonOps.GetPythonTypeName(res))
-                };
-            }
+        internal static object FsPath(CodeContext context, object? path) {
+            if (TryToFsPath(context, path, out var res))
+                return res;
 
             throw PythonOps.TypeError("expected str, bytes or os.PathLike object, not {0}", PythonOps.GetPythonTypeName(path));
         }
 
-        internal static string FsPathDecoded(CodeContext context, object? path) {
-            return PythonOps.FsPath(path) switch {
+        internal static bool TryToFsPath(CodeContext context, object? path, [NotNullWhen(true)] out object? res) {
+            res = path;
+            if (res is string || res is Extensible<string> || res is Bytes) return true;
+
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, path, "__fspath__", out res)) {
+                if (res is string || res is Extensible<string> || res is Bytes) return true;
+                throw PythonOps.TypeError("expected {0}.__fspath__() to return str or bytes, not {1}", PythonOps.GetPythonTypeName(path), PythonOps.GetPythonTypeName(res));
+            }
+
+            return false;
+        }
+
+        internal static string FsPathDecoded(CodeContext context, object? path)
+            => DecodeFsPath(context, FsPath(context, path));
+
+        internal static bool TryToFsPathDecoded(CodeContext context, object? path, [NotNullWhen(true)] out string? res) {
+            if (PythonOps.TryToFsPath(context, path, out object? obj)) {
+                res = DecodeFsPath(context, obj);
+                return true;
+            }
+
+            res = null;
+            return false;
+        }
+
+        private static string DecodeFsPath(CodeContext context, object obj) {
+            return obj switch {
                 string s => s,
                 Extensible<string> es => es,
                 Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),

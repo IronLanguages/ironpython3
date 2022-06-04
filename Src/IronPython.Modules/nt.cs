@@ -2277,7 +2277,7 @@ the 'status' value."),
         private static Bytes ToFsBytes(this string s) => Bytes.Make(_filesystemEncoding.GetBytes(s));
 
         private static string ConvertToFsString(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null) {
-            if (o is IBufferProtocol bp) {
+            if (o is not Bytes && o is IBufferProtocol bp) {
                 if (orType is null)
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
                 else

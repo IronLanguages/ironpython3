@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-// TODO: use LightThrowing
 // TODO: Port to maxOS
 
 #nullable enable
@@ -13,14 +12,15 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-
 [assembly: PythonModule("resource", typeof(IronPython.Modules.PythonResourceModule), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules;
+
 
 [SupportedOSPlatform("linux")]
 [SupportedOSPlatform("macos")]
@@ -110,85 +110,86 @@ public static class PythonResourceModule {
 
     #endregion
 
-    public static PythonTuple getrlimit(int resource) {
+    [LightThrowing]
+    public static object getrlimit(int resource) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
-            throw PythonOps.ValueError("invalid resource specified");
+            return LightExceptions.Throw(PythonOps.ValueError("invalid resource specified"));
         }
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
-            int err = getrlimit_linux(resource, ptr);
-            ThrowIfError(err);
-            rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
+            int retval = getrlimit_linux(resource, ptr);
+            if (retval != 0) return GetPInvokeError();
 
+            rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
             return PythonTuple.MakeTuple(res.rlim_cur.ToPythonInt(), res.rlim_max.ToPythonInt());
         } finally {
             Marshal.FreeHGlobal(ptr);
         }
     }
 
-    public static void setrlimit(int resource, [NotNone] object limits) {
+    [LightThrowing]
+    public static object? setrlimit(int resource, [NotNone] object limits) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
-            throw PythonOps.ValueError("invalid resource specified");
+            return LightExceptions.Throw(PythonOps.ValueError("invalid resource specified"));
         }
 
         rlimit data;
         var cursor = PythonOps.GetEnumerator(limits);
-        data.rlim_cur = GetLimitValue(cursor);
-        data.rlim_max = GetLimitValue(cursor);
-        if (cursor.MoveNext()) ThrowValueError();
-        if ((ulong)data.rlim_cur > (ulong)data.rlim_max) throw PythonOps.ValueError("current limit exceed maximum limit");
+        if (GetLimitValue(cursor) is not long rlim_cur) return LimitsArgError();
+        data.rlim_cur = unchecked((ulong)rlim_cur);
+
+        if (GetLimitValue(cursor) is not long rlim_max) return LimitsArgError();
+        data.rlim_max = unchecked((ulong)rlim_max);
+
+        if (cursor.MoveNext()) return LimitsArgError();
+        if (data.rlim_cur > data.rlim_max) return LightExceptions.Throw(PythonOps.ValueError("current limit exceed maximum limit"));
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
             Marshal.StructureToPtr(data, ptr, fDeleteOld: false);
-            int err = setrlimit_linux(resource, ptr);
-            ThrowIfError(err);
+            int retval = setrlimit_linux(resource, ptr);
+            if (retval != 0) return GetPInvokeError();
         } finally {
             Marshal.FreeHGlobal(ptr);
         }
-
-        static long GetLimitValue(System.Collections.IEnumerator cursor) {
-            if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
-                ThrowValueError();
-
-            long rlim = checked((long)lim);
-            if (rlim < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                rlim -= long.MinValue;
-            return rlim;
-        }
-
-        static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
+        return null;
     }
 
-    public static PythonTuple prlimit(int pid, int resource) {
+    [LightThrowing]
+    public static object prlimit(int pid, int resource) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
-            throw PythonOps.ValueError("invalid resource specified");
+            return LightExceptions.Throw(PythonOps.ValueError("invalid resource specified"));
         }
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
-            int err = prlimit_linux(pid, resource, IntPtr.Zero, ptr);
-            ThrowIfError(err);
-            rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
+            int retval = prlimit_linux(pid, resource, IntPtr.Zero, ptr);
+            if (retval != 0) return GetPInvokeError();
 
+            rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
             return PythonTuple.MakeTuple(res.rlim_cur.ToPythonInt(), res.rlim_max.ToPythonInt());
         } finally {
             Marshal.FreeHGlobal(ptr);
         }
     }
 
-    public static PythonTuple prlimit(int pid, int resource, [NotNone] object limits) {
+    [LightThrowing]
+    public static object prlimit(int pid, int resource, [NotNone] object limits) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
-            throw PythonOps.ValueError("invalid resource specified");
+            return LightExceptions.Throw(PythonOps.ValueError("invalid resource specified"));
         }
 
         rlimit data;
         var cursor = PythonOps.GetEnumerator(limits);
-        data.rlim_cur = GetLimitValue(cursor);
-        data.rlim_max = GetLimitValue(cursor);
-        if (cursor.MoveNext()) ThrowValueError();
-        if ((ulong)data.rlim_cur > (ulong)data.rlim_max) throw PythonOps.ValueError("current limit exceed maximum limit");
+        if (GetLimitValue(cursor) is not long rlim_cur) return LimitsArgError();
+        data.rlim_cur = unchecked((ulong)rlim_cur);
+
+        if (GetLimitValue(cursor) is not long rlim_max) return LimitsArgError();
+        data.rlim_max = unchecked((ulong)rlim_max);
+
+        if (cursor.MoveNext()) return LimitsArgError();
+        if (data.rlim_cur > data.rlim_max) return LightExceptions.Throw(PythonOps.ValueError("current limit exceed maximum limit"));
 
         IntPtr ptr_new = IntPtr.Zero;
         IntPtr ptr_old = IntPtr.Zero;
@@ -196,45 +197,32 @@ public static class PythonResourceModule {
             ptr_new = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
             ptr_old = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
             Marshal.StructureToPtr(data, ptr_new, fDeleteOld: false);
-            int err = prlimit_linux(pid, resource, ptr_new, ptr_old);
-            ThrowIfError(err);
-            rlimit res = Marshal.PtrToStructure<rlimit>(ptr_old);
+            int retval = prlimit_linux(pid, resource, ptr_new, ptr_old);
+            if (retval != 0) return GetPInvokeError();
 
+            rlimit res = Marshal.PtrToStructure<rlimit>(ptr_old);
             return PythonTuple.MakeTuple(res.rlim_cur.ToPythonInt(), res.rlim_max.ToPythonInt());
         } finally {
             if (ptr_new != IntPtr.Zero) Marshal.FreeHGlobal(ptr_new);
             if (ptr_old != IntPtr.Zero) Marshal.FreeHGlobal(ptr_old);
         }
-
-        static long GetLimitValue(System.Collections.IEnumerator cursor) {
-            if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
-                ThrowValueError();
-
-            long rlim = checked((long)lim);
-            if (rlim < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                rlim -= long.MinValue;
-            return rlim;
-        }
-
-        static void ThrowValueError() => throw PythonOps.ValueError("expected a tuple of 2 integers");
     }
 
+    [LightThrowing]
     public static object getrusage(int who) {
         int maxWho = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0 : 1;
-        if (who < -1 || who > maxWho) throw PythonOps.ValueError("invalid who parameter");
+        if (who < -1 || who > maxWho) return LightExceptions.Throw(PythonOps.ValueError("invalid who parameter"));
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rusage>());
         try {
-            int err = getrusage_linux(who, ptr);
-            ThrowIfError(err);
-            rusage res = Marshal.PtrToStructure<rusage>(ptr);
+            int retval = getrusage_linux(who, ptr);
+            if (retval != 0) return GetPInvokeError();
 
+            rusage res = Marshal.PtrToStructure<rusage>(ptr);
             return new struct_rusage(res);
         } finally {
             Marshal.FreeHGlobal(ptr);
         }
-
-        throw new NotImplementedException();
     }
 
     public static object getpagesize() {
@@ -322,41 +310,55 @@ public static class PythonResourceModule {
 
     }
 
-    private static void ThrowIfError(int err) {
-        if (err != 0) {
-            int errno = Marshal.GetLastWin32Error(); // despite its name, on Posix it retrieves errno set by the last p/Invoke call
-            throw PythonOps.OSError(errno, PythonNT.strerror(errno));
-        }
+    private static long? GetLimitValue(System.Collections.IEnumerator cursor) {
+        if (!cursor.MoveNext() || !PythonOps.TryToIndex(cursor.Current, out BigInteger lim))
+            return null;
+
+        long rlim = checked((long)lim);
+        if (rlim < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            rlim -= long.MinValue;
+        return rlim;
     }
+
+    private static object LimitsArgError()
+        => LightExceptions.Throw(PythonOps.ValueError("expected a tuple of 2 integers"));
+
+    private static object GetPInvokeError() {
+        int errno = Marshal.GetLastWin32Error(); // despite its name, on Posix it retrieves errno set by the last p/Invoke call
+        return LightExceptions.Throw(PythonOps.OSError(errno, PythonNT.strerror(errno)));
+    }
+
+    private static object ToPythonInt(this ulong value)
+        => unchecked((long)value).ToPythonInt();
 
     private static object ToPythonInt(this long value)
         => value is <= int.MaxValue and >= int.MinValue ? (int)value : (BigInteger)value;
 
     private struct rlimit {
         // /usr/include/x86_64-linux-gnu/bits/resource.h
-        public long rlim_cur;
-        public long rlim_max;
+        public ulong rlim_cur;
+        public ulong rlim_max;
     }
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     internal struct rusage {
         // /usr/include/x86_64-linux-gnu/bits/types/struct_rusage.h
-        public Mono.Unix.Native.Timeval ru_utime;  /* user CPU time used */
-        public Mono.Unix.Native.Timeval ru_stime;  /* system CPU time used */
-        public long   ru_maxrss;                   /* maximum resident set size */
-        public long   ru_ixrss;                    /* integral shared memory size */
-        public long   ru_idrss;                    /* integral unshared data size */
-        public long   ru_isrss;                    /* integral unshared stack size */
-        public long   ru_minflt;                   /* page reclaims (soft page faults) */
-        public long   ru_majflt;                   /* page faults (hard page faults) */
-        public long   ru_nswap;                    /* swaps */
-        public long   ru_inblock;                  /* block input operations */
-        public long   ru_oublock;                  /* block output operations */
-        public long   ru_msgsnd;                   /* IPC messages sent */
-        public long   ru_msgrcv;                   /* IPC messages received */
-        public long   ru_nsignals;                 /* signals received */
-        public long   ru_nvcsw;                    /* voluntary context switches */
-        public long   ru_nivcsw;                   /* involuntary context switches */
+        public Mono.Unix.Native.Timeval ru_utime;  // user CPU time used
+        public Mono.Unix.Native.Timeval ru_stime;  // system CPU time used
+        public long   ru_maxrss;                   // maximum resident set size
+        public long   ru_ixrss;                    // integral shared memory size
+        public long   ru_idrss;                    // integral unshared data size
+        public long   ru_isrss;                    // integral unshared stack size
+        public long   ru_minflt;                   // page reclaims (soft page faults)
+        public long   ru_majflt;                   // page faults (hard page faults)
+        public long   ru_nswap;                    // swaps
+        public long   ru_inblock;                  // block input operations
+        public long   ru_oublock;                  // block output operations
+        public long   ru_msgsnd;                   // IPC messages sent
+        public long   ru_msgrcv;                   // IPC messages received
+        public long   ru_nsignals;                 // signals received
+        public long   ru_nvcsw;                    // voluntary context switches
+        public long   ru_nivcsw;                   // involuntary context switches
     }
 #pragma warning restore CS0649
 
@@ -373,6 +375,29 @@ public static class PythonResourceModule {
     private static extern int getrusage_linux(int who, /*rusage*/ IntPtr usage);
 
 
+    private enum linux__rlimit_resource {
+        // /usr/include/x86_64-linux-gnu/sys/resource.h
+
+        RLIMIT_CPU = 0,          // Per-process CPU limit
+        RLIMIT_FSIZE = 1,        // Maximum filesize
+        RLIMIT_DATA = 2,         // Maximum size of data segment
+        RLIMIT_STACK = 3,        // Maximum size of stack segment
+        RLIMIT_CORE = 4,         // Maximum size of core file
+        RLIMIT_RSS = 5,          // Largest resident set size
+        RLIMIT_NPROC = 6,        // Maximum number of processes
+        RLIMIT_NOFILE = 7,       // Maximum number of open files
+        RLIMIT_MEMLOCK = 8,      // Maximum locked-in-memory address space
+        RLIMIT_AS = 9,           // Address space limit
+        RLIMIT_LOCKS = 10,       // Maximum number of file locks
+        RLIMIT_SIGPENDING = 11,  // Maximum number of pending signals
+        RLIMIT_MSGQUEUE = 12,    // Maximum bytes in POSIX message queues
+        RLIMIT_NICE = 13,        // Maximum nice prio allowed to raise to (20 added to get a non-negative number)
+        RLIMIT_RTPRIO = 14,      // Maximum realtime priority
+        RLIMIT_RTTIME = 15,      // Time slice in us
+
+        RLIM_NLIMITS
+    };
+
     private enum macos__rlimit_resource {
         RLIMIT_CPU = 0,
         RLIMIT_FSIZE = 1,
@@ -387,27 +412,4 @@ public static class PythonResourceModule {
 
         RLIM_NLIMITS
     }
-
-    private enum linux__rlimit_resource {
-        // /usr/include/x86_64-linux-gnu/sys/resource.h
-
-        RLIMIT_CPU = 0, // Per-process CPU limit
-        RLIMIT_FSIZE = 1,  // Maximum filesize
-        RLIMIT_DATA = 2,  // Maximum size of data segment
-        RLIMIT_STACK = 3,  // Maximum size of stack segment
-        RLIMIT_CORE = 4,  // Maximum size of core file
-        RLIMIT_RSS = 5,  // Largest resident set size
-        RLIMIT_NPROC = 6,  // Maximum number of processes
-        RLIMIT_NOFILE = 7, // Maximum number of open files
-        RLIMIT_MEMLOCK = 8,  // Maximum locked-in-memory address space
-        RLIMIT_AS = 9,  // Address space limit
-        RLIMIT_LOCKS = 10,  // Maximum number of file locks
-        RLIMIT_SIGPENDING = 11,  // Maximum number of pending signals
-        RLIMIT_MSGQUEUE = 12,  // Maximum bytes in POSIX message queues
-        RLIMIT_NICE = 13,  // Maximum nice prio allowed to raise to (20 added to get a non-negative number)
-        RLIMIT_RTPRIO = 14,  // Maximum realtime priority
-        RLIMIT_RTTIME = 15,  // Time slice in us
-
-        RLIM_NLIMITS
-    };
 }

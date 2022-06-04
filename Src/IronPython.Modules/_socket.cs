@@ -417,7 +417,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(buffer, bufsize, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -453,7 +453,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(byteBuffer, nbytes, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -490,7 +490,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(buffer, bufsize, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -523,7 +523,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(byteBuffer, nbytes, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -552,18 +552,6 @@ namespace IronPython.Modules {
                     int remainder = nbytes % itemSize;
                     return Math.Min(remainder == 0 ? nbytes : nbytes + itemSize - remainder,
                         bufLength * itemSize);
-                }
-            }
-
-            private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
-                if (e is ObjectDisposedException) return MakeException(_context, e);
-
-                // on the socket recv throw a special socket error code when SendTimeout is zero
-                if (_socket.SendTimeout == 0) {
-                    var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, (int)errorCode, s.Message);
-                } else {
-                    return MakeException(_context, e);
                 }
             }
 
@@ -734,8 +722,9 @@ namespace IronPython.Modules {
                         _socket.SendTimeout = (int)(seconds * MillisecondsPerSecond);
                         _timeout = (int)(seconds * MillisecondsPerSecond);
                     }
-                } finally {
                     _socket.ReceiveTimeout = _socket.SendTimeout;
+                } catch (ObjectDisposedException ex) {
+                    throw MakeException(_context, ex);
                 }
             }
 

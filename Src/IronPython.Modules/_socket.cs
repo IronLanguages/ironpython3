@@ -1584,7 +1584,6 @@ namespace IronPython.Modules {
         public const int EAI_SERVICE = (int)SocketError.TypeNotFound;
         public const int EAI_SOCKTYPE = (int)SocketError.SocketNotSupported;
         public const int EAI_SYSTEM = (int)SocketError.SocketError; // TODO: not on windows?
-        public const int EBADF = (int)0x9; // TODO: not in _socket in CPython, can we remove it?
         public const int INADDR_ALLHOSTS_GROUP = unchecked((int)0xe0000001);
         public const int INADDR_ANY = (int)0x00000000;
         public const int INADDR_BROADCAST = unchecked((int)0xFFFFFFFF);
@@ -1706,17 +1705,19 @@ namespace IronPython.Modules {
         /// </summary>
         internal static Exception MakeException(CodeContext/*!*/ context, Exception exception) {
             // !!! this shouldn't just blindly set the type to error (see summary)
-            if (exception is SocketException) {
-                SocketException se = (SocketException)exception;
+            if (exception is SocketException se) {
                 switch (se.SocketErrorCode) {
                     case SocketError.NotConnected:  // CPython times out when the socket isn't connected.
                     case SocketError.TimedOut:
                         return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
+                    case SocketError.WouldBlock:
+                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, se.Message);
                     default:
                         return PythonExceptions.CreateThrowable(error, (int)se.SocketErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error, (int)EBADF, "the socket is closed");
+                const int EBADF = 0x9;
+                return PythonExceptions.CreateThrowable(error, EBADF, "the socket is closed");
             } else if (exception is InvalidOperationException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {

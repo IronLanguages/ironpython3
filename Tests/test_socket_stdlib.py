@@ -183,10 +183,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_socket.NonBlockingTCPTests('testConnect'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testInheritFlags'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testInitNonBlocking'))
-        if is_posix:
-            suite.addTest(unittest.expectedFailure(test.test_socket.NonBlockingTCPTests('testRecv'))) # TODO: figure out
-        else:
-            suite.addTest(test.test_socket.NonBlockingTCPTests('testRecv'))
+        suite.addTest(test.test_socket.NonBlockingTCPTests('testRecv'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testSetBlocking'))
         suite.addTest(test.test_socket.NonBlockingTCPTests('testSetBlocking_overflow'))
         suite.addTest(test.test_socket.NonblockConstantTest('test_SOCK_NONBLOCK'))

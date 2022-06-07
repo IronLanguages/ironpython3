@@ -417,7 +417,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(buffer, bufsize, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -453,7 +453,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(byteBuffer, nbytes, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -490,7 +490,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(buffer, bufsize, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -523,7 +523,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(byteBuffer, nbytes, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -552,18 +552,6 @@ namespace IronPython.Modules {
                     int remainder = nbytes % itemSize;
                     return Math.Min(remainder == 0 ? nbytes : nbytes + itemSize - remainder,
                         bufLength * itemSize);
-                }
-            }
-
-            private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
-                if (e is ObjectDisposedException) return MakeException(_context, e);
-
-                // on the socket recv throw a special socket error code when SendTimeout is zero
-                if (_socket.SendTimeout == 0) {
-                    var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, (int)errorCode, s.Message);
-                } else {
-                    return MakeException(_context, e);
                 }
             }
 
@@ -734,8 +722,9 @@ namespace IronPython.Modules {
                         _socket.SendTimeout = (int)(seconds * MillisecondsPerSecond);
                         _timeout = (int)(seconds * MillisecondsPerSecond);
                     }
-                } finally {
                     _socket.ReceiveTimeout = _socket.SendTimeout;
+                } catch (ObjectDisposedException ex) {
+                    throw MakeException(_context, ex);
                 }
             }
 
@@ -1595,7 +1584,6 @@ namespace IronPython.Modules {
         public const int EAI_SERVICE = (int)SocketError.TypeNotFound;
         public const int EAI_SOCKTYPE = (int)SocketError.SocketNotSupported;
         public const int EAI_SYSTEM = (int)SocketError.SocketError; // TODO: not on windows?
-        public const int EBADF = (int)0x9; // TODO: not in _socket in CPython, can we remove it?
         public const int INADDR_ALLHOSTS_GROUP = unchecked((int)0xe0000001);
         public const int INADDR_ANY = (int)0x00000000;
         public const int INADDR_BROADCAST = unchecked((int)0xFFFFFFFF);
@@ -1717,17 +1705,19 @@ namespace IronPython.Modules {
         /// </summary>
         internal static Exception MakeException(CodeContext/*!*/ context, Exception exception) {
             // !!! this shouldn't just blindly set the type to error (see summary)
-            if (exception is SocketException) {
-                SocketException se = (SocketException)exception;
+            if (exception is SocketException se) {
                 switch (se.SocketErrorCode) {
                     case SocketError.NotConnected:  // CPython times out when the socket isn't connected.
                     case SocketError.TimedOut:
                         return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
+                    case SocketError.WouldBlock:
+                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, se.Message);
                     default:
                         return PythonExceptions.CreateThrowable(error, (int)se.SocketErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error, (int)EBADF, "the socket is closed");
+                const int EBADF = 0x9;
+                return PythonExceptions.CreateThrowable(error, EBADF, "the socket is closed");
             } else if (exception is InvalidOperationException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {

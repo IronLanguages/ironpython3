@@ -8,7 +8,7 @@ TODO: until we can send signals to other processes consistently (e.g., os.kill),
       will have to do.
 '''
 
-import signal
+import _signal as signal
 import sys
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -53,10 +53,7 @@ class SignalTest(IronPythonTestCase):
         self.assertEqual(signal.SIG_IGN, 1)
 
     def test_doc(self):
-        if sys.version_info >= (3,5):
-            self.assertIsNone(signal.__doc__)
-        else:
-            self.assertTrue("get the signal action for a given signal" in signal.__doc__)
+        self.assertTrue("get the signal action for a given signal" in signal.__doc__)
         self.assertTrue("The default handler for SIGINT installed by Python" in signal.default_int_handler.__doc__)
         self.assertTrue("Return the current action for the given signal" in signal.getsignal.__doc__)
         self.assertTrue("Set the action for the given signal" in signal.signal.__doc__)

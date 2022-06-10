@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
     public class PlatformsAttribute : Attribute {
@@ -16,7 +17,12 @@ namespace IronPython.Runtime {
 
         public PlatformID[] ValidPlatforms { get; protected set; }
 
-        public bool IsPlatformValid => ValidPlatforms == null || ValidPlatforms.Length == 0 || Array.IndexOf(ValidPlatforms, Environment.OSVersion.Platform) >= 0;
+        public bool IsPlatformValid => ValidPlatforms == null || ValidPlatforms.Length == 0 || Array.IndexOf(ValidPlatforms, ActualPlatform) >= 0;
+
+        private static PlatformID ActualPlatform
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PlatformID.Unix :
+               RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? PlatformID.MacOSX :
+               Environment.OSVersion.Platform;
 
         protected void SetValidPlatforms(PlatformFamily validPlatformFamily) {
             switch (validPlatformFamily) {

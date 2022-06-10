@@ -97,6 +97,7 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(TypeError, resource.setrlimit, 0, None)
 
     @unittest.skipUnless(is_posix, "Posix-specific test")
+    @unittest.skipUnless(not is_osx, "prlimit not available on macOS")
     def test_prlimit(self):
         r = resource.RLIMIT_CORE
         lims = resource.getrlimit(r)

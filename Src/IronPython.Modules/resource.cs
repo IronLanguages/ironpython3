@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-// TODO: Port to maxOS
-
 #nullable enable
 
 using System;
@@ -13,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -118,7 +117,7 @@ public static class PythonResourceModule {
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
-            int retval = getrlimit_linux(resource, ptr);
+            int retval = getrlimit(resource, ptr);
             if (retval != 0) return GetPInvokeError();
 
             rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
@@ -148,7 +147,8 @@ public static class PythonResourceModule {
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
             Marshal.StructureToPtr(data, ptr, fDeleteOld: false);
-            int retval = setrlimit_linux(resource, ptr);
+            int retval = setrlimit(resource, ptr);
+            // TODO: for full CPython compliance, return ValueError iso OSError if non-superuser tries to raise max limit
             if (retval != 0) return GetPInvokeError();
         } finally {
             Marshal.FreeHGlobal(ptr);
@@ -156,6 +156,8 @@ public static class PythonResourceModule {
         return null;
     }
 
+    [PythonHidden(PlatformID.MacOSX)]
+    [SupportedOSPlatform("linux")]
     [LightThrowing]
     public static object prlimit(int pid, int resource) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
@@ -164,7 +166,7 @@ public static class PythonResourceModule {
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
         try {
-            int retval = prlimit_linux(pid, resource, IntPtr.Zero, ptr);
+            int retval = prlimit(pid, resource, IntPtr.Zero, ptr);
             if (retval != 0) return GetPInvokeError();
 
             rlimit res = Marshal.PtrToStructure<rlimit>(ptr);
@@ -174,6 +176,8 @@ public static class PythonResourceModule {
         }
     }
 
+    [PythonHidden(PlatformID.MacOSX)]
+    [SupportedOSPlatform("linux")]
     [LightThrowing]
     public static object prlimit(int pid, int resource, [NotNone] object limits) {
         if (resource < 0 || resource >= RLIM_NLIMITS) {
@@ -197,7 +201,8 @@ public static class PythonResourceModule {
             ptr_new = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
             ptr_old = Marshal.AllocHGlobal(Marshal.SizeOf<rlimit>());
             Marshal.StructureToPtr(data, ptr_new, fDeleteOld: false);
-            int retval = prlimit_linux(pid, resource, ptr_new, ptr_old);
+            int retval = prlimit(pid, resource, ptr_new, ptr_old);
+            // TODO: for full CPython compliance, return ValueError iso OSError if non-superuser tries to raise max limit
             if (retval != 0) return GetPInvokeError();
 
             rlimit res = Marshal.PtrToStructure<rlimit>(ptr_old);
@@ -215,7 +220,7 @@ public static class PythonResourceModule {
 
         IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<rusage>());
         try {
-            int retval = getrusage_linux(who, ptr);
+            int retval = getrusage(who, ptr);
             if (retval != 0) return GetPInvokeError();
 
             rusage res = Marshal.PtrToStructure<rusage>(ptr);
@@ -336,6 +341,8 @@ public static class PythonResourceModule {
 
     private struct rlimit {
         // /usr/include/x86_64-linux-gnu/bits/resource.h
+        // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h
+
         public ulong rlim_cur;
         public ulong rlim_max;
     }
@@ -343,6 +350,8 @@ public static class PythonResourceModule {
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     internal struct rusage {
         // /usr/include/x86_64-linux-gnu/bits/types/struct_rusage.h
+        // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h
+
         public Mono.Unix.Native.Timeval ru_utime;  // user CPU time used
         public Mono.Unix.Native.Timeval ru_stime;  // system CPU time used
         public long   ru_maxrss;                   // maximum resident set size
@@ -362,17 +371,18 @@ public static class PythonResourceModule {
     }
 #pragma warning restore CS0649
 
-    [DllImport("libc", SetLastError = true, EntryPoint = "getrlimit")]
-    private static extern int getrlimit_linux(int resource, /*rlimit*/ IntPtr rlimits);
+    [DllImport("libc", SetLastError = true)]
+    private static extern int getrlimit(int resource, /*rlimit*/ IntPtr rlimits);
 
-    [DllImport("libc", SetLastError = true, EntryPoint = "setrlimit")]
-    private static extern int setrlimit_linux(int resource, /*const rlimit*/ IntPtr rlimits);
+    [DllImport("libc", SetLastError = true)]
+    private static extern int setrlimit(int resource, /*const rlimit*/ IntPtr rlimits);
 
-    [DllImport("libc", SetLastError = true, EntryPoint = "prlimit")]
-    private static extern int prlimit_linux(int pid, int resource, /*const rlimit*/ IntPtr new_limit, /*rlimit*/ IntPtr old_limit);
+    [DllImport("libc", SetLastError = true)]
+    [SupportedOSPlatform("linux")]
+    private static extern int prlimit(int pid, int resource, /*const rlimit*/ IntPtr new_limit, /*rlimit*/ IntPtr old_limit);
 
-    [DllImport("libc", SetLastError = true, EntryPoint = "getrusage")]
-    private static extern int getrusage_linux(int who, /*rusage*/ IntPtr usage);
+    [DllImport("libc", SetLastError = true)]
+    private static extern int getrusage(int who, /*rusage*/ IntPtr usage);
 
 
     private enum linux__rlimit_resource {
@@ -399,6 +409,8 @@ public static class PythonResourceModule {
     };
 
     private enum macos__rlimit_resource {
+        // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h
+
         RLIMIT_CPU = 0,
         RLIMIT_FSIZE = 1,
         RLIMIT_DATA = 2,

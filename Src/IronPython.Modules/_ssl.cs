@@ -119,7 +119,8 @@ namespace IronPython.Modules {
 
             public _SSLContext(CodeContext context, int protocol) {
                 if (protocol != PROTOCOL_SSLv2 && protocol != PROTOCOL_SSLv23 && protocol != PROTOCOL_SSLv3 &&
-                    protocol != PROTOCOL_TLSv1 && protocol != PROTOCOL_TLSv1_1 && protocol != PROTOCOL_TLSv1_2) {
+                    protocol != PROTOCOL_TLSv1 && protocol != PROTOCOL_TLSv1_1 && protocol != PROTOCOL_TLSv1_2 &&
+                    protocol != PROTOCOL_TLS_CLIENT && protocol != PROTOCOL_TLS_SERVER) {
                     throw PythonOps.ValueError("invalid protocol version");
                 }
 
@@ -130,8 +131,8 @@ namespace IronPython.Modules {
                 if (protocol != PROTOCOL_SSLv3)
                     options |= OP_NO_SSLv3;
 
-                verify_mode = SSL_VERIFY_NONE;
-                check_hostname = false;
+                verify_mode = protocol == PROTOCOL_TLS_CLIENT ? CERT_REQUIRED : SSL_VERIFY_NONE;
+                check_hostname = protocol == PROTOCOL_TLS_CLIENT;
             }
 
             public void set_ciphers(CodeContext context, string ciphers) {
@@ -722,6 +723,17 @@ Returns the number of bytes written.")]
 
 #nullable restore
 
+        [PythonType]
+        public class SSLSession {
+            public object has_ticket { get; }
+            public object id { get; }
+            public object ticket_lifetime_hint { get; }
+            public object time { get; }
+            public object timeout { get; }
+
+            private SSLSession() { }
+        }
+
         public static object txt2obj(CodeContext context, string txt, bool name = false) {
             Asn1Object obj = null;
             if (name) {
@@ -1195,16 +1207,19 @@ Returns the number of bytes written.")]
         public const int PROTOCOL_TLSv1 = 3;
         public const int PROTOCOL_TLSv1_1 = 4;
         public const int PROTOCOL_TLSv1_2 = 5;
+        public const int PROTOCOL_TLS_CLIENT = 16;
+        public const int PROTOCOL_TLS_SERVER = 17;
 
         public const int OP_ALL = unchecked((int)0x800003FF);
-        public const int OP_CIPHER_SERVER_PREFERENCE = 0x400000;
-        public const int OP_SINGLE_DH_USE = 0x100000;
-        public const int OP_SINGLE_ECDH_USE = 0x80000;
+        public const int OP_CIPHER_SERVER_PREFERENCE = 0; // 0x400000;
+        public const int OP_SINGLE_DH_USE = 0; // 0x100000;
+        public const int OP_SINGLE_ECDH_USE = 0; // 0x80000;
         public const int OP_NO_SSLv2 = 0x01000000;
         public const int OP_NO_SSLv3 = 0x02000000;
         public const int OP_NO_TLSv1 = 0x04000000;
         public const int OP_NO_TLSv1_1 = 0x10000000;
         public const int OP_NO_TLSv1_2 = 0x08000000;
+        public const int OP_NO_TLSv1_3 = 0; // 0x20000000;
 
         internal const int OP_NO_COMPRESSION = 0x20000;
         internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2 | OP_NO_COMPRESSION;
@@ -1230,6 +1245,7 @@ Returns the number of bytes written.")]
         public const bool HAS_NPN = false;
         public const bool HAS_ALPN = false;
         public const bool HAS_TLS_UNIQUE = false;
+        public const bool HAS_TLSv1_3 = false;
 
         private const int SSL_VERIFY_NONE = 0x00;
         private const int SSL_VERIFY_PEER = 0x01;

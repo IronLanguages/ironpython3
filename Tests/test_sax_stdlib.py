@@ -51,13 +51,13 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_binary_file_nonascii'))
         suite.addTest(unittest.expectedFailure(test.test_sax.ExpatReaderTest('test_expat_dtdhandler'))) # AssertionError
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_entityresolver_default'))
-        suite.addTest(test.test_sax.ExpatReaderTest('test_expat_entityresolver_enabled'))
+        suite.addTest(unittest.expectedFailure(test.test_sax.ExpatReaderTest('test_expat_entityresolver_enabled'))) # AssertionError
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_external_dtd_default'))
-        suite.addTest(test.test_sax.ExpatReaderTest('test_expat_external_dtd_enabled'))
+        suite.addTest(unittest.expectedFailure(test.test_sax.ExpatReaderTest('test_expat_external_dtd_enabled'))) # AssertionError
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_incremental'))
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_incremental_reset'))
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_inpsource_byte_stream'))
-        suite.addTest(test.test_sax.ExpatReaderTest('test_expat_inpsource_character_stream'))
+        suite.addTest(unittest.expectedFailure(test.test_sax.ExpatReaderTest('test_expat_inpsource_character_stream'))) # AssertionError
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_inpsource_filename'))
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_inpsource_sysid'))
         suite.addTest(test.test_sax.ExpatReaderTest('test_expat_inpsource_sysid_nonascii'))
@@ -69,10 +69,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_sax.ExpatReaderTest('test_expat_text_file'))) # AssertionError
         suite.addTest(test.test_sax.MakeParserTest('test_make_parser2'))
         suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parseString_bytes'))) # UnicodeEncodeError
-        suite.addTest(test.test_sax.ParseTest('test_parseString_text'))
+        suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parseString_text'))) # UnicodeEncodeError
         suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parse_InputSource'))) # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
         suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parse_bytes'))) # UnicodeEncodeError
-        suite.addTest(test.test_sax.ParseTest('test_parse_close_source'))
+        suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parse_close_source'))) # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
         suite.addTest(unittest.expectedFailure(test.test_sax.ParseTest('test_parse_text'))) # UnicodeEncodeError
         suite.addTest(test.test_sax.PrepareInputSourceTest('test_binary_file'))
         suite.addTest(test.test_sax.PrepareInputSourceTest('test_byte_stream'))

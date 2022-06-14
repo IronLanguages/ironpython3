@@ -21,7 +21,7 @@ using Microsoft.Scripting.Utils;
 
 #if FEATURE_PROCESS
 
-[assembly: PythonModule("signal", typeof(IronPython.Modules.PythonSignal))]
+[assembly: PythonModule("_signal", typeof(IronPython.Modules.PythonSignal))]
 namespace IronPython.Modules {
     public static partial class PythonSignal {
         public const string __doc__ = @"This module provides mechanisms to use signal handlers in Python.

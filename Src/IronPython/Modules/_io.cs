@@ -3121,7 +3121,14 @@ namespace IronPython.Modules {
         }
 
         private static int GetInt(object i, int defaultValue) {
-            return GetInt(i, defaultValue, null, null);
+            if (i is null) {
+                return defaultValue;
+            }
+            if (Converter.TryConvertToIndex(i, out int index, throwOverflowError: true)) {
+                return index;
+            }
+
+            throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(i));
         }
 
         private static int GetInt(object i, string msg, params object[] args) {
@@ -3137,14 +3144,6 @@ namespace IronPython.Modules {
             }
             
             throw PythonOps.TypeError(msg, args);
-        }
-
-        private static int GetInt(object i, int defaultValue, string msg, params object[] args) {
-            if (i == null) {
-                return defaultValue;
-            }
-
-            return GetInt(i, msg, args);
         }
 
         private static bool TryGetInt(object i, out int value) {

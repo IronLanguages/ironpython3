@@ -397,7 +397,7 @@ class InheritanceTest(IronPythonTestCase):
         from IronPythonTest import BaseClass, MoreOverridding
         class Test(BaseClass):
                 def __new__(cls):
-                    return super(cls, Test).__new__(cls, Width=20, Height=30)
+                    return super(Test, cls).__new__(cls, Width=20, Height=30)
 
         a = Test()
         self.assertEqual(a.Width, 20)
@@ -1361,7 +1361,7 @@ class InheritanceTest(IronPythonTestCase):
 
         class C(object):
             def __new__(cls):
-                x = super(cls, C)
+                x = super(C, cls)
                 check("<super" in str(x))
                 return x.__new__(cls)
 

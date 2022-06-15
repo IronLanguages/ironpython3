@@ -2,11 +2,11 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-# tests fro module 'resource' (Posix only)
+# tests for module 'resource' (Posix only)
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_posix, is_linux, is_osx, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_posix, is_linux, is_osx, run_test
 
 if is_posix:
     import resource
@@ -18,18 +18,17 @@ else:
     else:
         raise AssertionError("There should be no module resource on Windows")
 
+@unittest.skipUnless(is_posix, "Posix-specific test")
 class ResourceTest(IronPythonTestCase):
     def setUp(self):
         self.RLIM_NLIMITS = 16 if is_linux else 9
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_infinity(self):
         if is_osx:
             self.assertEqual(resource.RLIM_INFINITY, (1<<63)-1)
         else:
             self.assertEqual(resource.RLIM_INFINITY, -1)
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_getrlimit(self):
         for r in range(self.RLIM_NLIMITS):
             lims = resource.getrlimit(r)
@@ -44,7 +43,6 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.getrlimit, -1)
         self.assertRaises(ValueError, resource.getrlimit, self.RLIM_NLIMITS)
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_setrlimit(self):
         r = resource.RLIMIT_CORE
         lims = resource.getrlimit(r)
@@ -84,7 +82,6 @@ class ResourceTest(IronPythonTestCase):
             finally:
                 resource.setrlimit(r, lims)
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_setrlimit_error(self):
         self.assertRaises(TypeError, resource.setrlimit, None, (0, 0))
         self.assertRaises(TypeError, resource.setrlimit, "abc", (0, 0))
@@ -96,7 +93,6 @@ class ResourceTest(IronPythonTestCase):
         self.assertRaises(ValueError, resource.setrlimit, 0, (2.3, 0, 0))
         self.assertRaises(TypeError, resource.setrlimit, 0, None)
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     @unittest.skipUnless(not is_osx, "prlimit not available on macOS")
     def test_prlimit(self):
         r = resource.RLIMIT_CORE
@@ -112,14 +108,12 @@ class ResourceTest(IronPythonTestCase):
             finally:
                 resource.prlimit(0, r, lims)
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_pagesize(self):
         ps = resource.getpagesize()
         self.assertIsInstance(ps, int)
         self.assertTrue(ps > 0)
         self.assertTrue((ps & (ps-1) == 0)) # ps is power of 2
 
-    @unittest.skipUnless(is_posix, "Posix-specific test")
     def test_getrusage(self):
         self.assertEqual(resource.struct_rusage.n_fields, 16)
         self.assertEqual(resource.struct_rusage.n_sequence_fields, 16)

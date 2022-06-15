@@ -230,8 +230,8 @@ public static class PythonResourceModule {
         }
     }
 
-    public static object getpagesize() {
-        return Mono.Unix.Native.Syscall.sysconf(Mono.Unix.Native.SysconfName._SC_PAGESIZE).ToPythonInt();
+    public static int getpagesize() {
+        return Environment.SystemPageSize;
     }
 
     [PythonType]
@@ -253,8 +253,8 @@ public static class PythonResourceModule {
         internal struct_rusage(rusage data)
             : this(
                 new object[n_sequence_fields] {
-                    data.ru_utime.tv_sec + data.ru_utime.tv_usec * 1e-6,
-                    data.ru_stime.tv_sec + data.ru_stime.tv_usec * 1e-6,
+                    data.ru_utime.GetTime(),
+                    data.ru_stime.GetTime(),
                     data.ru_maxrss.ToPythonInt(),
                     data.ru_ixrss.ToPythonInt(),
                     data.ru_idrss.ToPythonInt(),
@@ -348,26 +348,39 @@ public static class PythonResourceModule {
     }
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+    internal struct timeval {
+        // /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h, .../bits/types.h
+        // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_timeval.h, .../i386/_types.h, .../arm64/_types.h
+
+        public long tv_sec;
+        public long tv_usec;    // long on Linux but int on Darwin
+
+        public double GetTime()
+            => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
+                tv_sec + (tv_usec & 0xFFFF_FFFF) * 1e-6 :
+                tv_sec + tv_usec * 1e-6;
+    }
+
     internal struct rusage {
         // /usr/include/x86_64-linux-gnu/bits/types/struct_rusage.h
         // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/resource.h
 
-        public Mono.Unix.Native.Timeval ru_utime;  // user CPU time used
-        public Mono.Unix.Native.Timeval ru_stime;  // system CPU time used
-        public long   ru_maxrss;                   // maximum resident set size
-        public long   ru_ixrss;                    // integral shared memory size
-        public long   ru_idrss;                    // integral unshared data size
-        public long   ru_isrss;                    // integral unshared stack size
-        public long   ru_minflt;                   // page reclaims (soft page faults)
-        public long   ru_majflt;                   // page faults (hard page faults)
-        public long   ru_nswap;                    // swaps
-        public long   ru_inblock;                  // block input operations
-        public long   ru_oublock;                  // block output operations
-        public long   ru_msgsnd;                   // IPC messages sent
-        public long   ru_msgrcv;                   // IPC messages received
-        public long   ru_nsignals;                 // signals received
-        public long   ru_nvcsw;                    // voluntary context switches
-        public long   ru_nivcsw;                   // involuntary context switches
+        public timeval ru_utime;        // user CPU time used
+        public timeval ru_stime;        // system CPU time used
+        public long    ru_maxrss;       // maximum resident set size
+        public long    ru_ixrss;        // integral shared memory size
+        public long    ru_idrss;        // integral unshared data size
+        public long    ru_isrss;        // integral unshared stack size
+        public long    ru_minflt;       // page reclaims (soft page faults)
+        public long    ru_majflt;       // page faults (hard page faults)
+        public long    ru_nswap;        // swaps
+        public long    ru_inblock;      // block input operations
+        public long    ru_oublock;      // block output operations
+        public long    ru_msgsnd;       // IPC messages sent
+        public long    ru_msgrcv;       // IPC messages received
+        public long    ru_nsignals;     // signals received
+        public long    ru_nvcsw;        // voluntary context switches
+        public long    ru_nivcsw;       // involuntary context switches
     }
 #pragma warning restore CS0649
 

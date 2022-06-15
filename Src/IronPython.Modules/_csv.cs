@@ -119,23 +119,18 @@ dialect = csv.register_dialect(name, dialect)")]
 
         [Documentation(@"Delete the name/dialect mapping associated with a string name.\n
     csv.unregister_dialect(name)")]
-        public static void unregister_dialect(CodeContext/*!*/ context,
-            string name) {
+        public static void unregister_dialect(CodeContext/*!*/ context, string name) {
             DialectRegistry dialects = GetDialects(context);
-            if (name == null || !dialects.ContainsKey(name))
-                throw MakeError("unknown dialect");
-
-            if (dialects.ContainsKey(name))
-                dialects.Remove(name);
+            if (name is not null && dialects.Remove(name)) return;
+            throw MakeError("unknown dialect");
         }
 
         [Documentation(@"Return the dialect instance associated with name.
     dialect = csv.get_dialect(name)")]
         public static object get_dialect(CodeContext/*!*/ context, string name) {
             DialectRegistry dialects = GetDialects(context);
-            if (name == null || !dialects.ContainsKey(name))
-                throw MakeError("unknown dialect");
-            return dialects[name];
+            if (name is not null && dialects.TryGetValue(name, out var value)) return value;
+            throw MakeError("unknown dialect");
         }
 
         [Documentation(@"Return a list of all know dialect names

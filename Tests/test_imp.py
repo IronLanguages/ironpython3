@@ -331,13 +331,13 @@ else:
             self.assertIn('cmath', sys.modules)
 
             sys.path = [None]
-            self.assertNotIn('_bisect', sys.modules)
+            self.assertNotIn('xxsubtype', sys.modules)
             import array
             import cmath
-            import _bisect
+            import xxsubtype
             self.assertIn('array', sys.modules)
             self.assertIn('cmath', sys.modules)
-            self.assertIn('_bisect', sys.modules)
+            self.assertIn('xxsubtype', sys.modules)
 
         finally:
             sys.path = prevPath

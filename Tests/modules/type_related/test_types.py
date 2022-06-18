@@ -16,4 +16,8 @@ class TypesTest(unittest.TestCase):
         m = types.ModuleType('m')
         self.assertEqual(m.__doc__, None)
 
+    def test_ipy3_gh1496(self):
+        self.assertEqual(repr(types.MemberDescriptorType), "<class 'member_descriptor'>")
+        self.assertEqual(repr(types.GetSetDescriptorType), "<class 'getset_descriptor'>")
+
 run_test(__name__)

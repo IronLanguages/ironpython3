@@ -50,7 +50,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_pickle'))
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_repr'))) # AssertionError
+        suite.addTest(test.test_functools.TestPartialC('test_repr'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_setstate_refcount'))) # AttributeError: 'partial' object has no attribute '__setstate__'
         suite.addTest(test.test_functools.TestPartialC('test_weakref'))
         suite.addTest(test.test_functools.TestPartialC('test_with_bound_and_unbound_methods'))

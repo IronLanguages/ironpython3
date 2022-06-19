@@ -888,7 +888,9 @@ namespace IronPython.Runtime.Operations {
                 return true;
             }
 
-            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, $"object of type '{GetPythonTypeName(o)}' has no len()");
+            if (!PythonContext.TryInvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, out object len)) {
+                throw TypeError("object of type '{0}' has no len()", GetPythonTypeName(o));
+            }
 
             var indexObj = Index(len);
 

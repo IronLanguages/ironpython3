@@ -38,7 +38,7 @@ except TypeError:
 
 # For Jython, the following two types are identical
 GetSetDescriptorType = type(FunctionType.__code__)
-MemberDescriptorType = type(FunctionType.__globals__)
+MemberDescriptorType = type(ModuleType.__dict__["__dict__"]) # ironpython: type(FunctionType.__globals__) is getset_descriptor
 
 del sys, _f, _g, _C,                              # Not for export
 

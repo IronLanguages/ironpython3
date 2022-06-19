@@ -317,6 +317,10 @@ namespace IronPython.Runtime.Operations {
                         throw PythonOps.ValueError("Sign not allowed with integer format specifier 'c'");
                     }
 
+                    if (spec.AlternateForm) {
+                        throw PythonOps.ValueError("Alternate form(#) not allowed with integer format specifier 'c'");
+                    }
+
                     if (self < 0 || self > 0x10ffff) {
                         throw PythonOps.OverflowError("%c arg not in range(0x110000)");
                     }

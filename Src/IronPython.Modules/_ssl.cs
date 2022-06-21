@@ -200,11 +200,7 @@ namespace IronPython.Modules {
             public void load_cert_chain(CodeContext context, string certfile, string keyfile = null, object password = null) {
                 if (keyfile is not null) throw new NotImplementedException(nameof(keyfile));
                 if (password is not null) throw new NotImplementedException(nameof(password));
-#if NET
-                _cert = X509Certificate2.CreateFromPemFile(certfile, keyfile);
-#else
                 _cert = ReadCertificate(context, certfile, readKey: true);
-#endif
             }
 
             public PythonList get_ca_certs(CodeContext context, bool binary_form = false) {
@@ -963,7 +959,11 @@ Returns the number of bytes written.")]
         private static X509Certificate2 ReadCertificate(CodeContext context, string filename, bool readKey = false) {
 #if NET
             if (readKey) {
-                return X509Certificate2.CreateFromPemFile(filename);
+                try {
+                    return X509Certificate2.CreateFromPemFile(filename);
+                } catch (Exception e) {
+                    throw ErrorDecoding(context, filename, e);
+                }
             }
 #endif
 

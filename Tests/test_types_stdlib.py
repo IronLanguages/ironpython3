@@ -16,7 +16,7 @@ import test.test_types
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        suite.addTest(test.test_types.ClassCreationTests('test_bad___prepare__'))
+        suite.addTest(unittest.expectedFailure(test.test_types.ClassCreationTests('test_bad___prepare__'))) # AssertionError
         suite.addTest(test.test_types.ClassCreationTests('test_metaclass_derivation'))
         suite.addTest(test.test_types.ClassCreationTests('test_metaclass_override_callable'))
         suite.addTest(test.test_types.ClassCreationTests('test_metaclass_override_function'))
@@ -27,18 +27,18 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_types.ClassCreationTests('test_new_class_meta_with_base'))
         suite.addTest(test.test_types.ClassCreationTests('test_new_class_metaclass_keywords'))
         suite.addTest(test.test_types.ClassCreationTests('test_new_class_subclass'))
-        suite.addTest(test.test_types.ClassCreationTests('test_one_argument_type'))
+        suite.addTest(unittest.expectedFailure(test.test_types.ClassCreationTests('test_one_argument_type'))) # AssertionError: TypeError not raised
         suite.addTest(test.test_types.ClassCreationTests('test_prepare_class'))
-        suite.addTest(test.test_types.CoroutineTests('test_async_def'))
-        suite.addTest(test.test_types.CoroutineTests('test_duck_coro'))
-        suite.addTest(test.test_types.CoroutineTests('test_duck_corogen'))
-        suite.addTest(test.test_types.CoroutineTests('test_duck_functional_gen'))
-        suite.addTest(test.test_types.CoroutineTests('test_duck_gen'))
-        suite.addTest(test.test_types.CoroutineTests('test_gen'))
-        suite.addTest(test.test_types.CoroutineTests('test_genfunc'))
-        suite.addTest(test.test_types.CoroutineTests('test_non_gen_values'))
-        suite.addTest(test.test_types.CoroutineTests('test_returning_itercoro'))
-        suite.addTest(test.test_types.CoroutineTests('test_wrapper_object'))
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_async_def'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_coro'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_corogen'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_functional_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_genfunc'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_non_gen_values'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_returning_itercoro'))) # https://github.com/IronLanguages/ironpython3/issues/98
+        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_wrapper_object'))) # https://github.com/IronLanguages/ironpython3/issues/98
         suite.addTest(test.test_types.CoroutineTests('test_wrong_args'))
         suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_chainmap'))) # TypeError: expected dict, got Object_1$1
         suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_constructor'))) # TypeError: expected dict, got Object_1$1

@@ -2498,7 +2498,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             lock (_subtypesLock) {
-                _subtypes.RemoveAll(x => !x.TryGetTarget(out _)); // remove dead entries
+                if (_subtypes.Count == _subtypes.Capacity) {
+                    _subtypes.RemoveAll(x => !x.TryGetTarget(out _)); // remove dead entries
+                }
                 _subtypes.Add(new WeakReference<PythonType>(subtype));
             }
         }

@@ -31,16 +31,17 @@ namespace IronPython.Runtime {
     internal class StringFormatSpec {
         internal readonly char? Fill, Alignment, Sign, Type;
         internal readonly int? Width, Precision;
-        internal readonly bool AlternateForm, ThousandsComma;
+        internal readonly bool AlternateForm, ThousandsComma, ThousandsUnderscore;
         internal readonly bool IsEmpty;
         internal readonly bool AlignmentIsZeroPad;
 
-        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool alternateForm, bool isEmpty, bool alignmentIsZeroPad) {
+        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, bool thousandsUnderscore, int? precision, char? type, bool alternateForm, bool isEmpty, bool alignmentIsZeroPad) {
             Fill = fill;
             Alignment = alignment;
             Sign = sign;
             Width = width;
             ThousandsComma = thousandsComma;
+            ThousandsUnderscore = thousandsUnderscore;
             Precision = precision;
             Type = type;
             AlternateForm = alternateForm;
@@ -59,6 +60,7 @@ namespace IronPython.Runtime {
             char? fill = null, sign = null, align = null, type = null;
             int? width = null, precision = null;
             bool alternateForm = false, thousandsComma = false;
+            bool thousandsUnderscore = false;
             bool isEmpty = formatSpec.Length == 0;
             bool alignmentIsZeroPad = false;
 
@@ -125,9 +127,11 @@ namespace IronPython.Runtime {
             // read optional comma
             if (curOffset != formatSpec.Length &&
                 formatSpec[curOffset] == ',') {
-                curOffset++;
                 thousandsComma = true;
+                curOffset++;
             }
+
+            // TODO: read optional underscore (new in 3.6)
 
             // read precision
             if (curOffset != formatSpec.Length &&
@@ -152,13 +156,41 @@ namespace IronPython.Runtime {
 
                 if (thousandsComma) {
                     switch (type) {
-                        case 'b':
-                        case 'c':
-                        case 'n':
+                        // integer types
+                        case 'd':
+                            break;
+                        // floating point types
+                        case 'e':
+                        case 'E':
+                        case 'f':
+                        case 'F':
+                        case 'g':
+                        case 'G':
+                        case '%':
+                            break;
+                        default:
+                            throw PythonOps.ValueError("Cannot specify ',' with '{0}'", type);
+                    }
+                } else if (thousandsUnderscore) {
+                    switch (type) {
+                        // integer types
+                        case 'd':
                         case 'o':
                         case 'x':
                         case 'X':
-                            throw PythonOps.ValueError("Cannot specify ',' with '{0}'", type);
+                            break;
+                        // floating point types
+                        case 'e':
+                        case 'E':
+                        case 'f':
+                        case 'F':
+                        case 'g':
+                        case 'G':
+                        case '%':
+                            break;
+                        default:
+                            throw PythonOps.ValueError("Cannot specify '_' with '{0}'", type);
+
                     }
                 }
             }
@@ -169,6 +201,7 @@ namespace IronPython.Runtime {
                 sign,
                 width,
                 thousandsComma,
+                thousandsUnderscore,
                 precision,
                 type,
                 alternateForm,

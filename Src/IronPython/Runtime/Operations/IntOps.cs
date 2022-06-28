@@ -212,7 +212,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             string digits;
-            int width = 0;
+            int width;
 
             switch (spec.Type) {
                 case 'n':
@@ -236,69 +236,30 @@ namespace IronPython.Runtime.Operations {
                     break;
                 case null:
                 case 'd':
-                    if (spec.ThousandsComma) {
+                    if (spec.ThousandsComma || spec.ThousandsUnderscore) {
+                        var numberFormat = spec.ThousandsUnderscore ? FormattingHelper.InvariantUnderscoreNumberInfo : CultureInfo.InvariantCulture.NumberFormat;
                         width = spec.Width ?? 0;
 
                         // If we're inserting commas, and we're padding with leading zeros.
                         // AlignNumericText won't know where to place the commas,
                         // so use FormattingHelper.ToCultureString for that support.
                         if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
-                            digits = FormattingHelper.ToCultureString(self, FormattingHelper.InvariantCommaNumberInfo, spec);
+                            digits = FormattingHelper.ToCultureString(self, numberFormat, spec);
                         } else {
-                            digits = self.ToString("#,0", CultureInfo.InvariantCulture);
+                            digits = self.ToString("#,0", numberFormat);
                         }
                     } else {
                         digits = self.ToString("D", CultureInfo.InvariantCulture);
                     }
                     break;
                 case '%':
-                    if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0.000000%", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = self.ToString("0.000000%", CultureInfo.InvariantCulture);
-                    }
-                    break;
                 case 'e':
-                    if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0.000000e+00", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = self.ToString("0.000000e+00", CultureInfo.InvariantCulture);
-                    }
-                    break;
                 case 'E':
-                    if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0.000000E+00", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = self.ToString("0.000000E+00", CultureInfo.InvariantCulture);
-                    }
-                    break;
                 case 'f':
                 case 'F':
-                    if (spec.ThousandsComma) {
-                        digits = self.ToString("#,########0.000000", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture);
-                    }
-                    break;
                 case 'g':
-                    if (self >= 1000000 || self <= -1000000) {
-                        digits = self.ToString("0.#####e+00", CultureInfo.InvariantCulture);
-                    } else if (spec.ThousandsComma) {
-                        // Handle the common case in 'd'.
-                        goto case 'd';
-                    } else {
-                        digits = self.ToString(CultureInfo.InvariantCulture);
-                    }
-                    break;
                 case 'G':
-                    if (self >= 1000000 || self <= -1000000) {
-                        digits = self.ToString("0.#####E+00", CultureInfo.InvariantCulture);
-                    } else if (spec.ThousandsComma) {
-                        // Handle the common case in 'd'.
-                        goto case 'd';
-                    } else {
-                        digits = self.ToString(CultureInfo.InvariantCulture);
-                    }
+                    digits = DoubleOps.DoubleToFormatString(context, self, spec);
                     break;
                 case 'X':
                     digits = ToHex(self, false);

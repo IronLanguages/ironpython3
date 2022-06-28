@@ -24,28 +24,28 @@ namespace IronPython.Runtime
 {
     internal static class FormattingHelper
     {
-        private static NumberFormatInfo _invariantCommaSeperatorInfo;
+        private static NumberFormatInfo _invariantUnderscoreSeperatorInfo;
 
         /// <summary>
         /// Helper NumberFormatInfo for use by int/BigInteger __format__ routines
-        /// for width specified leading zero support that contains ','s every 3 digits.
+        /// for width specified leading zero support that contains '_'s every 3 digits.
         /// i.e. For use by d/g/G format specifiers. NOT for use by n format specifiers.
         /// </summary>
-        public static NumberFormatInfo InvariantCommaNumberInfo {
+        public static NumberFormatInfo InvariantUnderscoreNumberInfo {
             get {
-                if (_invariantCommaSeperatorInfo == null) {
+                if (_invariantUnderscoreSeperatorInfo == null) {
                     Interlocked.CompareExchange(
-                        ref _invariantCommaSeperatorInfo,
+                        ref _invariantUnderscoreSeperatorInfo,
                         new NumberFormatInfo()
                         {
-                            NumberGroupSeparator = ",",
+                            NumberGroupSeparator = "_",
                             NumberDecimalSeparator = ".",
                             NumberGroupSizes = new int[] {3}
                         },
                         null
                     );
                 }
-                return _invariantCommaSeperatorInfo;
+                return _invariantUnderscoreSeperatorInfo;
             }
         }
 

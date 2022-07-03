@@ -1503,7 +1503,7 @@ namespace IronPython.Modules {
 
             int result = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
                 Interop.Ucrtbase.strerror(code, buffer) :
-                Mono.Unix.Native.Syscall.strerror_r(Mono.Unix.Native.NativeConvert.ToErrno(code), buffer);
+                strerror_r(code, buffer);
 
             if (result == 0) {
                 var msg = buffer.ToString();
@@ -1514,6 +1514,12 @@ namespace IronPython.Modules {
 #endif
             return "Unknown error " + code;
         }
+
+#if FEATURE_NATIVE
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
+        private static int strerror_r(int code, StringBuilder buffer)
+            => Mono.Unix.Native.Syscall.strerror_r(Mono.Unix.Native.NativeConvert.ToErrno(code), buffer);
+#endif
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]

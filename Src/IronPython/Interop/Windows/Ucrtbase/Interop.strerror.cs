@@ -11,7 +11,7 @@ internal static partial class Interop {
     internal static partial class Ucrtbase {
         [DllImport(Libraries.Ucrtbase, SetLastError = false, CharSet = CharSet.Ansi, ExactSpelling = true)]
         [SupportedOSPlatform("windows")]
-        internal static extern int strerror_s([Out] StringBuilder buffer, nuint sizeInBytes, int errnum);
+        private static extern int strerror_s([Out] StringBuilder buffer, nuint sizeInBytes, int errnum);
 
         [SupportedOSPlatform("windows")]
         internal static int strerror(int errnum, StringBuilder buf) {

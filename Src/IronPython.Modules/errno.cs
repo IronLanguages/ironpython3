@@ -39,10 +39,10 @@ namespace IronPython.Modules {
 
         public static int ECHILD => 10;
 
-        public static int EAGAIN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 11 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
+        public static int EWOULDBLOCK => 11;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EDEADLK => 11;
+        public static int EAGAIN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 11 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
 
         public static int ENOMEM => 12;
 
@@ -90,6 +90,9 @@ namespace IronPython.Modules {
         public static int EDOM => 33;
 
         public static int ERANGE => 34;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EDEADLK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : 35;
 
         [PythonHidden(PlatformID.MacOSX)]
         public static int EDEADLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 36 : 35;
@@ -290,6 +293,8 @@ namespace IronPython.Modules {
 
         public static int ENOTSUP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 129 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 45 : 95;
 
+        public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 102 : 95;
+
         public static int EPFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10046 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 46 : 96;
 
         public static int EAFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10047 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 47 : 97;
@@ -303,9 +308,6 @@ namespace IronPython.Modules {
         public static int ENETUNREACH => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10051 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 51 : 101;
 
         public static int ENETRESET => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10052 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 52 : 102;
-
-        [PythonHidden(PlatformID.Unix)]
-        public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : 102;
 
         public static int ECONNABORTED => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10053 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 53 : 103;
 

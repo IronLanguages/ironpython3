@@ -19,6 +19,14 @@ namespace IronPython.Runtime {
             SetValidPlatforms(hiddenPlatformFamily);
         }
 
+        public PythonHiddenAttribute(PlatformsAttribute.PlatformFamily hiddenPlatformFamily, params PlatformID[] hiddenPlatforms)
+            : this(hiddenPlatformFamily) {
+            var allHiddenPlatforms = new PlatformID[ValidPlatforms.Length + hiddenPlatforms.Length];
+            Array.Copy(ValidPlatforms, allHiddenPlatforms, ValidPlatforms.Length);
+            Array.Copy(hiddenPlatforms, 0, allHiddenPlatforms, ValidPlatforms.Length, hiddenPlatforms.Length);
+            ValidPlatforms = allHiddenPlatforms;
+        }
+
         public static bool IsHidden(MemberInfo m, bool inherit = false) {
             var hasHiddenAttribute = m.IsDefined(typeof(PythonHiddenAttribute), inherit);
             if (hasHiddenAttribute) {

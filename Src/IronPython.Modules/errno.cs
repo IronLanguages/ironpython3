@@ -39,10 +39,10 @@ namespace IronPython.Modules {
 
         public static int ECHILD => 10;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        public static int EWOULDBLOCK => 11;
-
         public static int EAGAIN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 11 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EWOULDBLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
 
         public static int ENOMEM => 12;
 
@@ -91,11 +91,11 @@ namespace IronPython.Modules {
 
         public static int ERANGE => 34;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EDEADLK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : 35;
-
         [PythonHidden(PlatformID.MacOSX)]
         public static int EDEADLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 36 : 35;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EDEADLK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : 35;
 
         public static int ENAMETOOLONG => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 38 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 63 : 36;
 
@@ -291,9 +291,9 @@ namespace IronPython.Modules {
 
         public static int ESOCKTNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10044 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 44 : 94;
 
-        public static int ENOTSUP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 129 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 45 : 95;
-
         public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 102 : 95;
+
+        public static int ENOTSUP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 129 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 45 : 95;
 
         public static int EPFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10046 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 46 : 96;
 

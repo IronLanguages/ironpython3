@@ -102,8 +102,7 @@ namespace IronPython.Modules {
 
         public static int ENOTEMPTY => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 41 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 66 : 39;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ELOOP => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 62 : 40;
+        public static int ELOOP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10062 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 62 : 40;
 
         public static int ENOMSG => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 122 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 91 : 42;
 
@@ -168,13 +167,12 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         public static int ENOPKG => 65;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EREMOTE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 71 : 66;
+        public static int EREMOTE => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10071 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 71 : 66;
 
         public static int ENOLINK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 121 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 97 : 67;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EPROCLIM => 67;
+        [PythonHidden(PlatformID.Unix)]
+        public static int EPROCLIM => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10067 : 67;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         public static int EADV => 68;
@@ -265,109 +263,80 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
         public static int EBADARCH => 86;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EUSERS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 68 : 87;
+        public static int EUSERS => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10068 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 68 : 87;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
         public static int ESHLIBVERS => 87;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENOTSOCK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 38 : 88;
+        public static int ENOTSOCK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10038 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 38 : 88;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
         public static int EBADMACHO => 88;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EDESTADDRREQ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 39 : 89;
+        public static int EDESTADDRREQ => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10039 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 39 : 89;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EMSGSIZE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 40 : 90;
+        public static int EMSGSIZE => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10040 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 40 : 90;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EPROTOTYPE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 41 : 91;
+        public static int EPROTOTYPE => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10041 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 41 : 91;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENOPROTOOPT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 42 : 92;
+        public static int ENOPROTOOPT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10042 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 42 : 92;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EPROTONOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 43 : 93;
+        public static int EPROTONOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10043 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 43 : 93;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
         public static int ENOATTR => 93;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ESOCKTNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 44 : 94;
+        public static int ESOCKTNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10044 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 44 : 94;
 
         public static int ENOTSUP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 129 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 45 : 95;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EPFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 46 : 96;
+        public static int EPFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10046 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 46 : 96;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EAFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 47 : 97;
+        public static int EAFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10047 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 47 : 97;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EADDRINUSE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 48 : 98;
+        public static int EADDRINUSE => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10048 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 48 : 98;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EADDRNOTAVAIL => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 49 : 99;
+        public static int EADDRNOTAVAIL => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10049 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 49 : 99;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENETDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 50 : 100;
+        public static int ENETDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10050 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 50 : 100;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENETUNREACH => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 51 : 101;
+        public static int ENETUNREACH => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10051 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 51 : 101;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENETRESET => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 52 : 102;
+        public static int ENETRESET => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10052 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 52 : 102;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EOPNOTSUPP => 102;
+        [PythonHidden(PlatformID.Unix)]
+        public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : 102;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ECONNABORTED => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 53 : 103;
+        public static int ECONNABORTED => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10053 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 53 : 103;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
         public static int ENOPOLICY => 103;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ECONNRESET => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 54 : 104;
+        public static int ECONNRESET => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10054 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 54 : 104;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENOBUFS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 55 : 105;
+        public static int ENOBUFS => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10055 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 55 : 105;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EISCONN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 56 : 106;
+        public static int EISCONN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10056 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 56 : 106;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ENOTCONN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 57 : 107;
+        public static int ENOTCONN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10057 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 57 : 107;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ESHUTDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 58 : 108;
+        public static int ESHUTDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10058 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 58 : 108;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ETOOMANYREFS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 59 : 109;
+        public static int ETOOMANYREFS => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10059 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 59 : 109;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ETIMEDOUT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 60 : 110;
+        public static int ETIMEDOUT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10060 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 60 : 110;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ECONNREFUSED => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 61 : 111;
+        public static int ECONNREFUSED => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10061 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 61 : 111;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EHOSTDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 64 : 112;
+        public static int EHOSTDOWN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10064 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 64 : 112;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EHOSTUNREACH => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 65 : 113;
+        public static int EHOSTUNREACH => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10065 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 65 : 113;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EALREADY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 37 : 114;
+        public static int EALREADY => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10037 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 37 : 114;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EINPROGRESS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 36 : 115;
+        public static int EINPROGRESS => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10036 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 36 : 115;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int ESTALE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 70 : 116;
+        public static int ESTALE => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10070 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 70 : 116;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         public static int EUCLEAN => 117;
@@ -384,8 +353,7 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         public static int EREMOTEIO => 121;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EDQUOT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 69 : 122;
+        public static int EDQUOT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10069 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 69 : 122;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         public static int ENOMEDIUM => 123;
@@ -661,7 +629,7 @@ namespace IronPython.Modules {
                 errorcode[ETOOMANYREFS] = "ETOOMANYREFS";
                 errorcode[EUSERS] = "EUSERS";
             }
-            // names defined on Linux only
+            // names defined on Linux
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 errorcode[EADV] = "EADV";
                 errorcode[EBADE] = "EBADE";
@@ -708,7 +676,7 @@ namespace IronPython.Modules {
                 errorcode[EUNATCH] = "EUNATCH";
                 errorcode[EXFULL] = "EXFULL";
             }
-            // names defined on macOS only
+            // names defined on macOS
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 errorcode[EAUTH] = "EAUTH";
                 errorcode[EBADARCH] = "EBADARCH";
@@ -730,9 +698,43 @@ namespace IronPython.Modules {
                 errorcode[ERPCMISMATCH] = "ERPCMISMATCH";
                 errorcode[ESHLIBVERS] = "ESHLIBVERS";
             }
-            // names defined on Windows only
+            // names defined on Windows
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                errorcode[EADDRINUSE] = "EADDRINUSE";
+                errorcode[EADDRNOTAVAIL] = "EADDRNOTAVAIL";
+                errorcode[EAFNOSUPPORT] = "EAFNOSUPPORT";
+                errorcode[EALREADY] = "EALREADY";
+                errorcode[ECONNABORTED] = "ECONNABORTED";
+                errorcode[ECONNREFUSED] = "ECONNREFUSED";
+                errorcode[ECONNRESET] = "ECONNRESET";
                 errorcode[EDEADLOCK] = "EDEADLOCK";
+                errorcode[EDESTADDRREQ] = "EDESTADDRREQ";
+                errorcode[EDQUOT] = "EDQUOT";
+                errorcode[EHOSTDOWN] = "EHOSTDOWN";
+                errorcode[EHOSTUNREACH] = "EHOSTUNREACH";
+                errorcode[EINPROGRESS] = "EINPROGRESS";
+                errorcode[EISCONN] = "EISCONN";
+                errorcode[ELOOP] = "ELOOP";
+                errorcode[EMSGSIZE] = "EMSGSIZE";
+                errorcode[ENETDOWN] = "ENETDOWN";
+                errorcode[ENETRESET] = "ENETRESET";
+                errorcode[ENETUNREACH] = "ENETUNREACH";
+                errorcode[ENOBUFS] = "ENOBUFS";
+                errorcode[ENOPROTOOPT] = "ENOPROTOOPT";
+                errorcode[ENOTCONN] = "ENOTCONN";
+                errorcode[ENOTSOCK] = "ENOTSOCK";
+                errorcode[EOPNOTSUPP] = "EOPNOTSUPP";
+                errorcode[EPFNOSUPPORT] = "EPFNOSUPPORT";
+                errorcode[EPROCLIM] = "EPROCLIM";
+                errorcode[EPROTONOSUPPORT] = "EPROTONOSUPPORT";
+                errorcode[EPROTOTYPE] = "EPROTOTYPE";
+                errorcode[EREMOTE] = "EREMOTE";
+                errorcode[ESHUTDOWN] = "ESHUTDOWN";
+                errorcode[ESOCKTNOSUPPORT] = "ESOCKTNOSUPPORT";
+                errorcode[ESTALE] = "ESTALE";
+                errorcode[ETIMEDOUT] = "ETIMEDOUT";
+                errorcode[ETOOMANYREFS] = "ETOOMANYREFS";
+                errorcode[EUSERS] = "EUSERS";
                 errorcode[WSABASEERR] = "WSABASEERR";
                 errorcode[WSAEACCES] = "WSAEACCES";
                 errorcode[WSAEADDRINUSE] = "WSAEADDRINUSE";

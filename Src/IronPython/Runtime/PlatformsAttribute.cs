@@ -6,6 +6,14 @@ using System;
 using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
+    /// <summary>
+    /// Marks a member as platform-specific.
+    /// </summary>
+    /// <remarks>
+    /// PlatformFamily.Unix means Linux and Darwin
+    /// but PlatformID.Unix means Linux only
+    /// while PlatformID.MacOSX means Darwin only.
+    /// </remarks>
     public class PlatformsAttribute : Attribute {
         public enum PlatformFamily {
             Windows,

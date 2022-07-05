@@ -26,17 +26,23 @@ def collect_errornames():
     for code in errorcode_windows.keys():
         set_value(errorval, errorcode_windows[code], code, windows_idx)
 
+    # WSA-codes are also available as E-codes if such code name is in use on Posix systems.
+    for symbol in errorcode_windows.values():
+        esymbol = symbol[3:]
+        if symbol.startswith("WSAE") and esymbol in errorval.keys() and not errorval[esymbol][windows_idx]:
+            errorval[esymbol][windows_idx] = errorval[symbol][windows_idx]
+
     return errorval
 
-errorval = collect_errornames()
+errorvalues = collect_errornames()
 
 def generate_errno_codes(cw):
     def priority(codes, idx):
         return codes[idx] + idx / 10 if codes[idx] is not None else None
 
-    names = sorted(errorval, key = lambda x: priority(errorval[x], linux_idx) or priority(errorval[x], macosx_idx) or priority(errorval[x], windows_idx))
+    names = sorted(errorvalues, key = lambda x: priority(errorvalues[x], linux_idx) or priority(errorvalues[x], macosx_idx) or priority(errorvalues[x], windows_idx))
     for name in names:
-        codes = errorval[name]
+        codes = errorvalues[name]
         hidden_on = []
         cw.writeline()
         if not codes[windows_idx]:
@@ -78,36 +84,37 @@ def linux_code_expr(codes):
 
 def generate_errno_names(cw):
     cw.write("// names defined on all platforms")
-    common_names = sorted(name for name in errorval if all(errorval[name]))
+    common_names = sorted(name for name in errorvalues if all(errorvalues[name]) and ("WSA" + name not in errorvalues or errorvalues["WSA" + name][windows_idx] != errorvalues[name][windows_idx]))
     for name in common_names:
         cw.write(f'errorcode[{name}] = "{name}";')
 
     cw.write("// names defined on Posix platforms")
-    posix_names = sorted(name for name in errorval if errorval[name][linux_idx] and errorval[name][macosx_idx] and name not in common_names)
+    posix_names = sorted(name for name in errorvalues if errorvalues[name][linux_idx] and errorvalues[name][macosx_idx] and name not in common_names)
     cw.enter_block("if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))")
     for name in posix_names:
         cw.write(f'errorcode[{name}] = "{name}";')
     cw.exit_block()
 
-    cw.write("// names defined on Linux only")
-    linux_names = sorted(name for name in errorval if errorval[name][linux_idx] and name not in common_names + posix_names)
+    cw.write("// names defined on Linux")
+    linux_names = sorted(name for name in errorvalues if errorvalues[name][linux_idx] and name not in common_names + posix_names)
     cw.enter_block("if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))")
     for name in linux_names:
         cw.write(f'errorcode[{name}] = "{name}";')
     cw.exit_block()
 
-    cw.write("// names defined on macOS only")
-    macosx_names = sorted(name for name in errorval if errorval[name][macosx_idx] and name not in common_names + posix_names)
+    cw.write("// names defined on macOS")
+    macosx_names = sorted(name for name in errorvalues if errorvalues[name][macosx_idx] and name not in common_names + posix_names)
     cw.enter_block("if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))")
     for name in macosx_names:
         cw.write(f'errorcode[{name}] = "{name}";')
     cw.exit_block()
 
-    cw.write("// names defined on Windows only")
-    windows_names = sorted(name for name in errorval if errorval[name][windows_idx] and name not in common_names)
+    cw.write("// names defined on Windows")
+    windows_names = sorted(name for name in errorvalues if errorvalues[name][windows_idx] and name not in common_names)
     cw.enter_block("if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))")
     for name in windows_names:
-        cw.write(f'errorcode[{name}] = "{name}";')
+        #if name.startswith("WSA") or "WSA" + name not in windows_names:
+            cw.write(f'errorcode[{name}] = "{name}";')
     cw.exit_block()
 
 def main():

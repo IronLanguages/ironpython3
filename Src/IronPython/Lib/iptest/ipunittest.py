@@ -53,6 +53,15 @@ def skipUnlessIronPython():
     """Skips the test unless currently running on IronPython"""
     return unittest.skipUnless(is_cli, 'IronPython specific test')
 
+def expectedFailureIf(condition):
+    """The test is marked as an expectedFailure if the condition is satisfied."""
+    def wrapper(func):
+        if condition:
+            return unittest.expectedFailure(func)
+        else:
+            return func
+    return wrapper
+
 MAX_FAILURE_RETRY = 3
 def retryOnFailure(f, times=MAX_FAILURE_RETRY, *args, **kwargs):
     '''

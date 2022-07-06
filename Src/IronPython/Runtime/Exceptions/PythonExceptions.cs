@@ -129,7 +129,7 @@ namespace IronPython.Runtime.Exceptions {
                             errno = WinErrorToErrno(winerror);
                         }
                     }
-                    cls = ErrnoToPythonType((Error)errno);
+                    cls = ErrnoToPythonType(ErrnoToErrorEnum(errno));
                 }
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
@@ -183,25 +183,26 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             private enum Error {
+                UNSPECIFIED = -1,
                 EPERM = 1,
                 ENOENT = 2,
                 ESRCH = 3,
                 EINTR = 4,
                 ECHILD = 10,
-                EAGAIN = 11,
+                EAGAIN = 11, // 35 on OSX
                 EACCES = 13,
                 EEXIST = 17,
                 ENOTDIR = 20,
                 EISDIR = 21,
                 EPIPE = 32,
                 // Linux
-                ECONNABORTED = 103,
-                ECONNRESET = 104,
-                ESHUTDOWN = 108,
-                ETIMEDOUT = 110,
-                ECONNREFUSED = 111,
-                EALREADY = 114,
-                EINPROGRESS = 115,
+                ECONNABORTED = 103, // 53 on OSX
+                ECONNRESET = 104, // 54 on OSX
+                ESHUTDOWN = 108, // 58 on OSX
+                ETIMEDOUT = 110, // 60 on OSX
+                ECONNREFUSED = 111, // 61 on OSX
+                EALREADY = 114, // 37 on OSX
+                EINPROGRESS = 115, // 36 on OSX
                 // Windows
                 WSAEWOULDBLOCK = 10035,
                 WSAEINPROGRESS = 10036,
@@ -211,6 +212,14 @@ namespace IronPython.Runtime.Exceptions {
                 WSAESHUTDOWN = 10058,
                 WSAETIMEDOUT = 10060,
                 WSAECONNREFUSED = 10061,
+            }
+
+            private static Error ErrnoToErrorEnum(int errno) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (errno == 11) return Error.UNSPECIFIED; // EAGAIN on Linux/Windows but EDEADLK on OSX, which is not being remapped
+                    if (errno >= 35) errno += 10000; // add WSABASEERR to map to Windows error range
+                }
+                return (Error)errno;
             }
 
             private static PythonType ErrnoToPythonType(Error errno) {
@@ -229,10 +238,10 @@ namespace IronPython.Runtime.Exceptions {
                     Error.EPIPE => BrokenPipeError,
                     _ => null
                 };
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     res ??= errno switch
                     {
-                        // Windows
+                        // Windows or remapped OSX
                         Error.WSAEWOULDBLOCK => BlockingIOError,
                         Error.WSAEINPROGRESS => BlockingIOError,
                         Error.WSAEALREADY => BlockingIOError,
@@ -243,8 +252,7 @@ namespace IronPython.Runtime.Exceptions {
                         Error.WSAECONNREFUSED => ConnectionRefusedError,
                         _ => null
                     };
-                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    // TODO: verify that these are the same on OSX
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                     res ??= errno switch
                     {
                         // Linux

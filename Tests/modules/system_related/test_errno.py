@@ -21,7 +21,7 @@ class ErrnoTest(IronPythonTestCase):
             self.assertEqual(getattr(errno, symbol), expected[symbol])
 
     @unittest.skipUnless(is_windows, "Windows specific test")
-    def test_errno_codes_osx(self):
+    def test_errno_codes_windows(self):
         # CPython 3.10 on Windows 11
 
         # python3 -c 'import errno;print(errno.errorcode)'

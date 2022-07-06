@@ -14,6 +14,7 @@ errorcode_darwin  = {1: 'EPERM', 2: 'ENOENT', 3: 'ESRCH', 4: 'EINTR', 5: 'EIO', 
 errorcode_windows = {1: 'EPERM', 2: 'ENOENT', 3: 'ESRCH', 4: 'EINTR', 5: 'EIO', 6: 'ENXIO', 7: 'E2BIG', 8: 'ENOEXEC', 9: 'EBADF', 10: 'ECHILD', 11: 'EAGAIN', 12: 'ENOMEM', 13: 'EACCES', 14: 'EFAULT', 16: 'EBUSY', 17: 'EEXIST', 18: 'EXDEV', 19: 'ENODEV', 20: 'ENOTDIR', 21: 'EISDIR', 22: 'EINVAL', 23: 'ENFILE', 24: 'EMFILE', 25: 'ENOTTY', 27: 'EFBIG', 28: 'ENOSPC', 29: 'ESPIPE', 30: 'EROFS', 31: 'EMLINK', 32: 'EPIPE', 33: 'EDOM', 34: 'ERANGE', 36: 'EDEADLOCK', 38: 'ENAMETOOLONG', 39: 'ENOLCK', 40: 'ENOSYS', 41: 'ENOTEMPTY', 42: 'EILSEQ', 104: 'EBADMSG', 105: 'ECANCELED', 111: 'EIDRM', 120: 'ENODATA', 121: 'ENOLINK', 122: 'ENOMSG', 124: 'ENOSR', 125: 'ENOSTR', 127: 'ENOTRECOVERABLE', 129: 'ENOTSUP', 132: 'EOVERFLOW', 133: 'EOWNERDEAD', 134: 'EPROTO', 137: 'ETIME', 139: 'ETXTBSY', 10000: 'WSABASEERR', 10004: 'WSAEINTR', 10009: 'WSAEBADF', 10013: 'WSAEACCES', 10014: 'WSAEFAULT', 10022: 'WSAEINVAL', 10024: 'WSAEMFILE', 10035: 'WSAEWOULDBLOCK', 10036: 'WSAEINPROGRESS', 10037: 'WSAEALREADY', 10038: 'WSAENOTSOCK', 10039: 'WSAEDESTADDRREQ', 10040: 'WSAEMSGSIZE', 10041: 'WSAEPROTOTYPE', 10042: 'WSAENOPROTOOPT', 10043: 'WSAEPROTONOSUPPORT', 10044: 'WSAESOCKTNOSUPPORT', 10045: 'WSAEOPNOTSUPP', 10046: 'WSAEPFNOSUPPORT', 10047: 'WSAEAFNOSUPPORT', 10048: 'WSAEADDRINUSE', 10049: 'WSAEADDRNOTAVAIL', 10050: 'WSAENETDOWN', 10051: 'WSAENETUNREACH', 10052: 'WSAENETRESET', 10053: 'WSAECONNABORTED', 10054: 'WSAECONNRESET', 10055: 'WSAENOBUFS', 10056: 'WSAEISCONN', 10057: 'WSAENOTCONN', 10058: 'WSAESHUTDOWN', 10059: 'WSAETOOMANYREFS', 10060: 'WSAETIMEDOUT', 10061: 'WSAECONNREFUSED', 10062: 'WSAELOOP', 10063: 'WSAENAMETOOLONG', 10064: 'WSAEHOSTDOWN', 10065: 'WSAEHOSTUNREACH', 10066: 'WSAENOTEMPTY', 10067: 'WSAEPROCLIM', 10068: 'WSAEUSERS', 10069: 'WSAEDQUOT', 10070: 'WSAESTALE', 10071: 'WSAEREMOTE', 10091: 'WSASYSNOTREADY', 10092: 'WSAVERNOTSUPPORTED', 10093: 'WSANOTINITIALISED', 10101: 'WSAEDISCON'}
 linux_aliases = {'EOPNOTSUPP' : 'ENOTSUP', 'EDEADLK': 'EDEADLOCK', 'EWOULDBLOCK': 'EAGAIN'}
 darwin_aliases = {'EWOULDBLOCK': 'EAGAIN'}
+aliases = {**linux_aliases, **darwin_aliases}
 
 def set_value(errorval, name, value, index):
     if name not in errorval:
@@ -30,16 +31,17 @@ def collect_errornames():
         set_value(errorval, errorcode_windows[code], code, windows_idx)
 
     # WSA-codes are also available as E-codes if such code name is in use on Posix systems.
+    known_symbols = set(errorval) | set(aliases)
     for symbol in errorcode_windows.values():
         esymbol = symbol[3:]
-        if symbol.startswith("WSAE") and esymbol in errorval.keys() and not errorval[esymbol][windows_idx]:
-            errorval[esymbol][windows_idx] = errorval[symbol][windows_idx]
+        if symbol.startswith("WSAE") and esymbol in known_symbols and (esymbol not in errorval or not errorval[esymbol][windows_idx]):
+            set_value(errorval, esymbol, errorval[symbol][windows_idx], windows_idx)
 
-    for alias, target in linux_aliases.items():
-        set_value(errorval, alias, errorval[target][linux_idx], linux_idx)
-
-    for alias, target in darwin_aliases.items():
-        set_value(errorval, alias, errorval[target][darwin_idx], darwin_idx)
+    # set aliases
+    for alias, target in aliases.items():
+        for idx in range(num_systems):
+            if errorval[target][idx] and not errorval[alias][idx]:
+                errorval[alias][idx] = errorval[target][idx]
 
     return errorval
 
@@ -96,13 +98,13 @@ def generate_errno_names(cw):
         return "WSA" + name in errorvalues and name in errorvalues and errorvalues["WSA" + name][windows_idx] == errorvalues[name][windows_idx]
 
     cw.write("// names defined on all platforms")
-    exclusions = set(linux_aliases) | set(darwin_aliases)
+    exclusions = set(aliases)
     common_names = sorted(name for name in errorvalues if all(errorvalues[name]) and not is_windows_alias(name) and name not in exclusions)
     for name in common_names:
         cw.write(f'errorcode[{name}] = "{name}";')
 
     cw.write("// names defined on Posix platforms")
-    exclusions =  set(common_names) | set(linux_aliases) | set(darwin_aliases)
+    exclusions =  set(common_names) | set(aliases)
     posix_names = sorted(name for name in errorvalues if errorvalues[name][linux_idx] and errorvalues[name][darwin_idx] and name not in exclusions)
     cw.enter_block("if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))")
     for name in posix_names:

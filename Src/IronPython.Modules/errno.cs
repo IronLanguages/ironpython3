@@ -41,8 +41,7 @@ namespace IronPython.Modules {
 
         public static int EAGAIN => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 11 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EWOULDBLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
+        public static int EWOULDBLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10035 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 35 : 11;
 
         public static int ENOMEM => 12;
 
@@ -94,8 +93,7 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformID.MacOSX)]
         public static int EDEADLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 36 : 35;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EDEADLK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : 35;
+        public static int EDEADLK => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 36 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : 35;
 
         public static int ENAMETOOLONG => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 38 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 63 : 36;
 
@@ -709,6 +707,7 @@ namespace IronPython.Modules {
                 errorcode[ECONNABORTED] = "ECONNABORTED";
                 errorcode[ECONNREFUSED] = "ECONNREFUSED";
                 errorcode[ECONNRESET] = "ECONNRESET";
+                errorcode[EDEADLK] = "EDEADLK";
                 errorcode[EDEADLOCK] = "EDEADLOCK";
                 errorcode[EDESTADDRREQ] = "EDESTADDRREQ";
                 errorcode[EDQUOT] = "EDQUOT";
@@ -737,6 +736,7 @@ namespace IronPython.Modules {
                 errorcode[ETIMEDOUT] = "ETIMEDOUT";
                 errorcode[ETOOMANYREFS] = "ETOOMANYREFS";
                 errorcode[EUSERS] = "EUSERS";
+                errorcode[EWOULDBLOCK] = "EWOULDBLOCK";
                 errorcode[WSABASEERR] = "WSABASEERR";
                 errorcode[WSAEACCES] = "WSAEACCES";
                 errorcode[WSAEADDRINUSE] = "WSAEADDRINUSE";

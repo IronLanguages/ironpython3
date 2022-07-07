@@ -214,6 +214,36 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
     RunTestTasks $tasks
 }
 
+function Purge() {
+    Main "Clean" "Release"
+    Main "Clean" "Debug"
+
+    Write-Verbose "Deleting ""obj"" directories..."
+    Get-ChildItem -Name "obj" -Directory -Path "$_BASEDIR" -Recurse | Remove-Item -Force -Recurse
+
+    Write-Verbose "Deleting ""bin"" directories..."
+    foreach ($dir in @("", (Join-Path "IronPythonAnalyzer" "IronPythonAnalyzer"))) {
+        if (Test-Path (Join-Path $_BASEDIR $dir "bin" -OutVariable targetPath)) {
+            Remove-Item -Path $targetPath -Force -Recurse
+        }
+    }
+
+    Write-Verbose "Deleting "".binlog"" files..."
+    Remove-Item -Path (Join-Path $_BASEDIR "*.binlog")
+
+    Write-Verbose "Deleting packaging artifacts..."
+    foreach ($dir in @("Release", "Debug")) {
+        if (Test-Path (Join-Path $_BASEDIR "Package" $dir -OutVariable targetPath)) {
+            Remove-Item -Path $targetPath -Force -Recurse
+        }
+    }
+
+    Write-Verbose "Deleting test run settings..."
+    Remove-Item -Path (Join-Path $_BASEDIR "Src" "IronPythonTest" "runsettings.*.xml")
+
+    Write-Information "Done. Consider restoring dependencies." -InformationAction Continue
+}
+
 switch -wildcard ($target) {
     # debug targets
     "restore-debug" { Main "RestoreReferences" "Debug" }
@@ -243,6 +273,7 @@ switch -wildcard ($target) {
             & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath
         }
     }
+    "purge"         { Purge }
 
     default { Write-Error "No target '$target'" ; Exit -1 }
 }

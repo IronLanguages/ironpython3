@@ -289,9 +289,9 @@ namespace IronPython.Modules {
 
         public static int ESOCKTNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10044 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 44 : 94;
 
-        public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 102 : 95;
-
         public static int ENOTSUP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 129 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 45 : 95;
+
+        public static int EOPNOTSUPP => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10045 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 102 : 95;
 
         public static int EPFNOSUPPORT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 10046 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 46 : 96;
 

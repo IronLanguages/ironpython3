@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-from errno import errorcode
 from generate import generate
 
 num_systems = 3
@@ -23,11 +22,11 @@ def set_value(errorval, name, value, index):
 
 def collect_errornames():
     errorval = {}
-    for code in errorcode_linux.keys():
+    for code in errorcode_linux:
         set_value(errorval, errorcode_linux[code], code,  linux_idx)
-    for code in errorcode_darwin.keys():
+    for code in errorcode_darwin:
         set_value(errorval, errorcode_darwin[code], code, darwin_idx)
-    for code in errorcode_windows.keys():
+    for code in errorcode_windows:
         set_value(errorval, errorcode_windows[code], code, windows_idx)
 
     # WSA-codes are also available as E-codes if such code name is in use on Posix systems.
@@ -48,10 +47,19 @@ def collect_errornames():
 errorvalues = collect_errornames()
 
 def generate_errno_codes(cw):
-    def priority(codes, idx):
-        return codes[idx] + idx / 10 if codes[idx] is not None else None
+    def priority(error):
+        codes = errorvalues[error]
+        shifts = 0
+        while codes[0] is None:
+            codes = codes[1:] + [0]
+            shifts += 1
+        res = 0
+        for code in codes:
+            res *= 100000
+            res += code if code else 0
+        return res + shifts * 100000 ** (num_systems - 1) // 10
 
-    names = sorted(errorvalues, key = lambda x: priority(errorvalues[x], linux_idx) or priority(errorvalues[x], darwin_idx) or priority(errorvalues[x], windows_idx))
+    names = sorted(errorvalues, key = priority)
     for name in names:
         codes = errorvalues[name]
         hidden_on = []

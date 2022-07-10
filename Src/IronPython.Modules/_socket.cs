@@ -193,7 +193,7 @@ namespace IronPython.Modules {
                             } else {
                                 // save the async result for later incase it completes
                                 _acceptResult = asyncResult;
-                                throw PythonExceptions.CreateThrowable(timeout(_context), 0, "timeout");
+                                throw PythonExceptions.CreateThrowable(timeout(_context), PythonErrorNumber.ETIMEDOUT, "timeout");
                             }
                         } else {
                             realRemoteSocket = _socket.Accept();
@@ -556,7 +556,7 @@ namespace IronPython.Modules {
                 // on the socket recv throw a special socket error code when SendTimeout is zero
                 if (_socket.SendTimeout == 0) {
                     var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, (int)errorCode, s.Message);
+                    return PythonExceptions.CreateThrowable(error, s.ErrorCode, s.Message);
                 } else {
                     return MakeException(_context, e);
                 }
@@ -949,7 +949,7 @@ namespace IronPython.Modules {
                 Bytes b => ParsePort(context, b.MakeString()),
                 string s => ParsePort(context, s),
                 ExtensibleString es => ParsePort(context, es.Value),
-                _ => throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed"),
+                _ => throw MakeGaiException(context, EAI_NONAME),
             };
 
             static int ParsePort(CodeContext context, string port) {
@@ -957,7 +957,7 @@ namespace IronPython.Modules {
                 try {
                     return getservbyname(context, port);
                 } catch {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), "getaddrinfo failed");
+                    throw MakeGaiException(context, EAI_NONAME);
                 }
             }
 
@@ -965,13 +965,13 @@ namespace IronPython.Modules {
                 // we just use this to validate; socketType isn't actually used
                 System.Net.Sockets.SocketType socketType = (System.Net.Sockets.SocketType)Enum.ToObject(typeof(System.Net.Sockets.SocketType), socktype);
                 if (socketType == System.Net.Sockets.SocketType.Unknown || !Enum.IsDefined(typeof(System.Net.Sockets.SocketType), socketType)) {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), PythonTuple.MakeTuple((int)SocketError.SocketNotSupported, "getaddrinfo failed"));
+                    throw MakeGaiException(context, EAI_BADHINTS);
                 }
             }
 
             AddressFamily addressFamily = (AddressFamily)Enum.ToObject(typeof(AddressFamily), family);
             if (!Enum.IsDefined(typeof(AddressFamily), addressFamily)) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), PythonTuple.MakeTuple((int)SocketError.AddressFamilyNotSupported, "getaddrinfo failed"));
+                throw MakeGaiException(context, EAI_FAMILY);
             }
 
             // Again, we just validate, but don't actually use protocolType
@@ -1070,14 +1070,14 @@ namespace IronPython.Modules {
                     aliases = new PythonList(0);
                     ips.append(host);
                 } else {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), (int)SocketError.HostNotFound, "no IPv4 addresses associated with host");
+                    throw MakeGaiException(context, EAI_NONAME);
                 }
             } else {
                 IPHostEntry hostEntry;
                 try {
                     hostEntry = Dns.GetHostEntry(host);
-                } catch (SocketException e) {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no IPv4 addresses associated with host");
+                } catch (SocketException ex) {
+                    throw MakeGaiException(context, ex);
                 }
                 hostname = hostEntry.HostName;
                 aliases = PythonOps.MakeList(hostEntry.Aliases);
@@ -1085,6 +1085,9 @@ namespace IronPython.Modules {
                     if (AddressFamily.InterNetwork == ip.AddressFamily) {
                         ips.append(ip.ToString());
                     }
+                }
+                if (ips.Count == 0) {
+                    throw MakeGaiException(context, EAI_NONAME);
                 }
             }
 
@@ -1168,13 +1171,8 @@ namespace IronPython.Modules {
             IList<IPAddress> addrs;
             try {
                 addrs = HostToAddresses(context, host, AddressFamily.InterNetwork);
-                if (addrs.Count < 1) {
-                    throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to zero addresses");
-                }
-            } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             } catch (IndexOutOfRangeException) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), "sockaddr resolved to zero addresses");
+                throw MakeGaiException(context, EAI_NODATA);
             }
 
             if (addrs.Count > 1) {
@@ -1192,14 +1190,14 @@ namespace IronPython.Modules {
             }
 
             if (addrs.Count < 1) {
-                throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to zero addresses");
+                throw MakeGaiException(context, EAI_NODATA);
             }
 
             IPHostEntry hostEntry;
             try {
                 hostEntry = Dns.GetHostEntry(addrs[0]);
-            } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
+            } catch (SocketException ex) {
+                throw MakeGaiException(context, ex);
             }
             if ((flags & (int)NI_NUMERICHOST) != 0) {
                 resultHost = addrs[0].ToString();
@@ -1580,17 +1578,47 @@ namespace IronPython.Modules {
         public const int AI_NUMERICSERV = (int)0x8;
         public const int AI_PASSIVE = (int)0x1;
         public const int AI_V4MAPPED = (int)0x800;
-        public const int EAI_AGAIN = (int)SocketError.TryAgain;
-        public const int EAI_BADFLAGS = (int)SocketError.InvalidArgument;
-        public const int EAI_FAIL = (int)SocketError.NoRecovery;
-        public const int EAI_FAMILY = (int)SocketError.AddressFamilyNotSupported;
-        public const int EAI_MEMORY = (int)SocketError.NoBufferSpaceAvailable;
-        public const int EAI_NODATA = (int)SocketError.HostNotFound; // not SocketError.NoData, like you would think
-        public const int EAI_NONAME = (int)SocketError.HostNotFound;
-        public const int EAI_SERVICE = (int)SocketError.TypeNotFound;
-        public const int EAI_SOCKTYPE = (int)SocketError.SocketNotSupported;
-        public const int EAI_SYSTEM = (int)SocketError.SocketError; // TODO: not on windows?
-        public const int EBADF = (int)0x9; // TODO: not in _socket in CPython, can we remove it?
+
+        // EAI_* values are error codes of gaierror.
+        // Linux: man 3 getaddrinfo
+        // Darwin: man 3 gai_strerror
+        // The specified network host does not have any network addresses in the requested address family.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EAI_ADDRFAMILY  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : -9;
+        // The name server returned a temporary failure indication. Try again later.
+        public static int EAI_AGAIN       => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 2 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -3 : (int)SocketError.TryAgain;
+        // hints.ai_flags contains invalid flags.
+        public static int EAI_BADFLAGS    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 3 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -1 : (int)SocketError.InvalidArgument;
+        // The name server returned a permanent failure indication.
+        public static int EAI_FAIL        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -4 : (int)SocketError.NoRecovery;
+        // The requested address family is not supported.
+        public static int EAI_FAMILY      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 5 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -6 : (int)SocketError.AddressFamilyNotSupported;
+        // Out of memory.
+        public static int EAI_MEMORY      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 6 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -10 : (int)SocketError.NoBufferSpaceAvailable;
+        // The specified network host exists, but does not have any network addresses defined.
+        public static int EAI_NODATA      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 7 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -5 : (int)SocketError.HostNotFound; // not SocketError.NoData, like you would think
+        // The node or service is not known; or eithrer node or service is NULL.
+        public static int EAI_NONAME      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 8 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -2 : (int)SocketError.HostNotFound;
+        // The requested service is not available for the requested QP type. It may be available through another QP type.
+        public static int EAI_SERVICE     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 9 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -8 : (int)SocketError.TypeNotFound;
+        // The requested socket type is not supported.
+        public static int EAI_SOCKTYPE    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 10 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -7 : (int)SocketError.SocketNotSupported;
+        // Other system error, check errno for details.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EAI_SYSTEM      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : -11;
+        // Invalid value for hints.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
+        public static int EAI_BADHINTS    => 12;
+        // Resolved protocol is unknown.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
+        public static int EAI_PROTOCOL    => 13;
+        // Argument buffer overflow.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int EAI_OVERFLOW    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 14 : -12;
+        // Maximum value of EAI_* erors plus one.
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
+        public static int EAI_MAX         => 15;
+
         public const int INADDR_ALLHOSTS_GROUP = unchecked((int)0xe0000001);
         public const int INADDR_ANY = (int)0x00000000;
         public const int INADDR_BROADCAST = unchecked((int)0xFFFFFFFF);
@@ -1706,27 +1734,87 @@ namespace IronPython.Modules {
 
         #region Private implementation
 
+        private const int HERROR_HOST_NOT_FOUND = 1;
+        private const int HERROR_TRY_AGAIN = 2;
+        private const int HERROR_NO_RECOVERY = 3;
+        private const int HERROR_NO_DATA = 4;
+
         /// <summary>
-        /// Return a standard socket exception (socket.error) whose message and error code come from a SocketException
-        /// This will eventually be enhanced to generate the correct error type (error, herror, gaierror) based on the error code.
+        /// Return a socket exception (socket.error, socket.timeout, socket.herror) based on the information in the existing exception.
         /// </summary>
+        /// <remarks>
+        /// This method cannot be used to create socket.gaierror because the mapping from SocketError to gaierror and herror codes is not unambiguous.
+        /// </remarks>
         internal static Exception MakeException(CodeContext/*!*/ context, Exception exception) {
-            // !!! this shouldn't just blindly set the type to error (see summary)
-            if (exception is SocketException) {
-                SocketException se = (SocketException)exception;
+            if (exception is SocketException se) {
                 switch (se.SocketErrorCode) {
-                    case SocketError.NotConnected:  // CPython times out when the socket isn't connected.
                     case SocketError.TimedOut:
-                        return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(timeout(context), se.Message);
+                    case SocketError.HostNotFound:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_HOST_NOT_FOUND, "Unknown host");
+                    case SocketError.NoData:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_NO_DATA, "No data available");
+                    case SocketError.TryAgain:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_TRY_AGAIN, "Try again");
+                    case SocketError.NoRecovery:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_NO_RECOVERY, "A nonrecoverable error occurred");
                     default:
-                        return PythonExceptions.CreateThrowable(error, (int)se.SocketErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error, (int)EBADF, "the socket is closed");
+                return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "the socket is closed");
             } else if (exception is InvalidOperationException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
                 return exception;
+            }
+        }
+
+        private static Exception MakeGaiException(CodeContext context, Exception exception) {
+            if (exception is SocketException se) {
+                string message = se.Message;
+                switch (se.SocketErrorCode) {
+                    case SocketError.TimedOut:
+                        return PythonExceptions.CreateThrowable(timeout(context), message);
+                    case SocketError.TryAgain:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_AGAIN, message);
+                    case SocketError.InvalidArgument:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADFLAGS, message);
+                    case SocketError.NoRecovery:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAIL, message);
+                    case SocketError.AddressFamilyNotSupported:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, message);
+                    case SocketError.NoBufferSpaceAvailable:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_MEMORY, message);
+                    case SocketError.HostNotFound:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, message);
+                    case SocketError.TypeNotFound:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SERVICE, message);
+                    case SocketError.SocketNotSupported:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SOCKTYPE, message);
+                    case SocketError.SocketError:
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SYSTEM, message);
+                    default:
+                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, message);
+                }
+            } else {
+                return exception;
+            }
+        }
+
+        private static Exception MakeGaiException(CodeContext context, int eaiCode) {
+            // gai messages are from Darwin; messages are different on Linux (but with the same meaning)
+            if (eaiCode == EAI_NONAME) {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, "nodename nor servname provided, or not known");
+            } else if (eaiCode == EAI_NODATA) {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NODATA, "no addresses of the specified family associated with host");
+            } else if (eaiCode == EAI_BADHINTS) {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADHINTS, "bad hints");
+            } else if (eaiCode == EAI_FAMILY) {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, "address family not supported by protocol family");
+            // TODO: other defined codes (currently unused)
+            } else {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_SYSTEM, "socket error");
             }
         }
 
@@ -1850,10 +1938,13 @@ namespace IronPython.Modules {
                         }
                     }
                     if (addrs.Count > 0) return addrs.ToArray();
+                    if (addrs.Count == 0) {
+                        throw MakeGaiException(context, EAI_NODATA);
+                    }
                 }
                 throw new SocketException((int)SocketError.HostNotFound);
-            } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no addresses of the specified family associated with host");
+            } catch  (SocketException ex) {
+                throw MakeGaiException(context, ex);
             }
         }
 

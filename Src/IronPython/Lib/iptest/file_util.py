@@ -18,7 +18,7 @@ class FileUtil(object):
             return False
         else:
             full_path = full_path[0]
-        
+
         for path in [os.getcwd()] + full_path.split(os.pathsep):
             path = path.strip()
             if self.file_exists(os.path.join(path, file)):
@@ -27,7 +27,7 @@ class FileUtil(object):
         return False
 
     def fullpath(self, path):
-        if sys.platform == 'win32' and colon not in path:
+        if sys.implementation.name == 'cpython' or sys.platform == 'win32' and colon not in path:
             return os.path.join(os.getcwd(), path)
         elif sys.platform != 'win32':
             from System.IO.Path import GetFullPath

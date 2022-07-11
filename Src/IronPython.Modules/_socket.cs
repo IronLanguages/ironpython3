@@ -193,7 +193,7 @@ namespace IronPython.Modules {
                             } else {
                                 // save the async result for later incase it completes
                                 _acceptResult = asyncResult;
-                                throw PythonExceptions.CreateThrowable(timeout(_context), PythonErrorNumber.ETIMEDOUT, "timeout");
+                                throw new SocketException((int)SocketError.TimedOut);
                             }
                         } else {
                             realRemoteSocket = _socket.Accept();
@@ -1070,7 +1070,7 @@ namespace IronPython.Modules {
                     aliases = new PythonList(0);
                     ips.append(host);
                 } else {
-                    throw MakeGaiException(context, EAI_NONAME);
+                    throw MakeGaiException(context, EAI_ADDRFAMILY);
                 }
             } else {
                 IPHostEntry hostEntry;
@@ -1597,9 +1597,9 @@ namespace IronPython.Modules {
         public static int EAI_MEMORY      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 6 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -10 : (int)SocketError.NoBufferSpaceAvailable;
         // The specified network host exists, but does not have any network addresses defined.
         public static int EAI_NODATA      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 7 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -5 : (int)SocketError.HostNotFound; // not SocketError.NoData, like you would think
-        // The node or service is not known; or eithrer node or service is NULL.
+        // The node or service is not known.
         public static int EAI_NONAME      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 8 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -2 : (int)SocketError.HostNotFound;
-        // The requested service is not available for the requested QP type. It may be available through another QP type.
+        // The requested service is not available for the requested socket type.
         public static int EAI_SERVICE     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 9 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -8 : (int)SocketError.TypeNotFound;
         // The requested socket type is not supported.
         public static int EAI_SOCKTYPE    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 10 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -7 : (int)SocketError.SocketNotSupported;
@@ -1734,35 +1734,52 @@ namespace IronPython.Modules {
 
         #region Private implementation
 
-        private const int HERROR_HOST_NOT_FOUND = 1;
-        private const int HERROR_TRY_AGAIN = 2;
-        private const int HERROR_NO_RECOVERY = 3;
-        private const int HERROR_NO_DATA = 4;
+        private static int HERROR_HOST_NOT_FOUND = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.HostNotFound : 1;
+        private static int HERROR_TRY_AGAIN      = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.TryAgain     : 2;
+        private static int HERROR_NO_RECOVERY    = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoRecovery   : 3;
+        private static int HERROR_NO_DATA        = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoData       : 4;
 
         /// <summary>
         /// Return a socket exception (socket.error, socket.timeout, socket.herror) based on the information in the existing exception.
         /// </summary>
-        /// <remarks>
-        /// This method cannot be used to create socket.gaierror because the mapping from SocketError to gaierror and herror codes is not unambiguous.
-        /// </remarks>
         internal static Exception MakeException(CodeContext/*!*/ context, Exception exception) {
             if (exception is SocketException se) {
                 switch (se.SocketErrorCode) {
                     case SocketError.TimedOut:
-                        return PythonExceptions.CreateThrowable(timeout(context), se.Message);
+                        return PythonExceptions.CreateThrowable(timeout(context), se.Message); // no error code used
+
+                    // The following SockerErrors have no mapping to errno, but can be represented by herror
                     case SocketError.HostNotFound:
                         return PythonExceptions.CreateThrowable(herror(context), HERROR_HOST_NOT_FOUND, "Unknown host");
-                    case SocketError.NoData:
-                        return PythonExceptions.CreateThrowable(herror(context), HERROR_NO_DATA, "No data available");
-                    case SocketError.TryAgain:
-                        return PythonExceptions.CreateThrowable(herror(context), HERROR_TRY_AGAIN, "Try again");
                     case SocketError.NoRecovery:
                         return PythonExceptions.CreateThrowable(herror(context), HERROR_NO_RECOVERY, "A nonrecoverable error occurred");
+
+                    // The mapping to errno exists but is not perfect; therefore herror is used
+                    case SocketError.NoData:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_NO_DATA, "No host data available"); // ENODATA
+                    case SocketError.TryAgain:
+                        return PythonExceptions.CreateThrowable(herror(context), HERROR_TRY_AGAIN, "Try again"); // EAGAIN
+
+                    // The following SocketErrors have no mapping to errno, so a generic errno is used
+                    case SocketError.NotInitialized:
+                    case SocketError.ProcessLimit:
+                    case SocketError.SystemNotReady:
+                    case SocketError.VersionNotSupported:
+                    case SocketError.TypeNotFound:
+                        return PythonExceptions.CreateThrowable(error, PythonErrorNumber.ENOTSUP, $"Socket error: {se.SocketErrorCode}");
+                    case SocketError.SocketError:
+                        return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EIO, $"Unknown socket error");
+
+                    // For the rest, NativeErrorCode provides the errno (except on Mono)
                     default:
-                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, se.Message);
+                        if (ClrModule.IsMono) {
+                            // On Mono, NativeErrorCode is simply (int)SocketErrorCode, so of no use.
+                            return PythonExceptions.CreateThrowable(error, MapMonoSocketErrorToErrno(se.SocketErrorCode), se.Message);
+                        }
+                        return PythonExceptions.CreateThrowable(error, se.NativeErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "the socket is closed");
+                return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "Socket is closed");
             } else if (exception is InvalidOperationException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
@@ -1772,49 +1789,111 @@ namespace IronPython.Modules {
 
         private static Exception MakeGaiException(CodeContext context, Exception exception) {
             if (exception is SocketException se) {
-                string message = se.Message;
                 switch (se.SocketErrorCode) {
-                    case SocketError.TimedOut:
-                        return PythonExceptions.CreateThrowable(timeout(context), message);
                     case SocketError.TryAgain:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_AGAIN, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_AGAIN, se.Message);
                     case SocketError.InvalidArgument:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADFLAGS, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADFLAGS, se.Message);
                     case SocketError.NoRecovery:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAIL, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAIL, se.Message);
                     case SocketError.AddressFamilyNotSupported:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, se.Message);
                     case SocketError.NoBufferSpaceAvailable:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_MEMORY, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_MEMORY, se.Message);
                     case SocketError.HostNotFound:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, se.Message);
                     case SocketError.TypeNotFound:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SERVICE, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SERVICE, se.Message);
                     case SocketError.SocketNotSupported:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SOCKTYPE, message);
+                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SOCKTYPE, se.Message);
                     case SocketError.SocketError:
-                        return PythonExceptions.CreateThrowable(gaierror(context), EAI_SYSTEM, message);
+                        return MakeGaiException(context, EAI_SYSTEM);
                     default:
-                        return PythonExceptions.CreateThrowable(error, se.ErrorCode, message);
+                        break; // fall through to MakeException
                 }
-            } else {
-                return exception;
             }
+            return MakeException(context, exception);
         }
 
         private static Exception MakeGaiException(CodeContext context, int eaiCode) {
-            // gai messages are from Darwin; messages are different on Linux (but with the same meaning)
+            // gai messages here are a mix from Linux/Darwin; messages are different on Linux, Darwin and Windows (but with the same meaning)
             if (eaiCode == EAI_NONAME) {
-                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, "nodename nor servname provided, or not known");
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NONAME, "Name or service not known");
             } else if (eaiCode == EAI_NODATA) {
-                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NODATA, "no addresses of the specified family associated with host");
-            } else if (eaiCode == EAI_BADHINTS) {
-                return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADHINTS, "bad hints");
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_NODATA, "No addresses of the specified family associated with host");
+            } else if (eaiCode == EAI_SERVICE) {
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_SERVICE, "Service not available for socket type");
             } else if (eaiCode == EAI_FAMILY) {
-                return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, "address family not supported by protocol family");
-            // TODO: other defined codes (currently unused)
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAMILY, "Address family not supported by protocol family");
+            } else if (eaiCode == EAI_ADDRFAMILY) { // Posix only
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    return MakeGaiException(context, EAI_NONAME);
+                }
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_ADDRFAMILY, "Address family for hostname not supported");
+            } else if (eaiCode == EAI_BADHINTS) { // OSX only
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADHINTS, "Bad hints");
+                }
+                return MakeGaiException(context, EAI_SERVICE);
+            // TODO: Handle other defined codes (currently unused). Remap codes that are not available on a specific system.
             } else {
-                return PythonExceptions.CreateThrowable(gaierror(context), EAI_SYSTEM, "socket error");
+                // fallback to generic error
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    return PythonExceptions.CreateThrowable(gaierror(context), EAI_FAIL, "Unknown socket error");
+                }
+                return PythonExceptions.CreateThrowable(gaierror(context), EAI_SYSTEM, "Socket error; check errno for mode information"); // Posix only
+            }
+        }
+
+        private static int MapMonoSocketErrorToErrno(SocketError serror) {
+            // Approximate mapping
+            switch (serror) {
+                case SocketError.AccessDenied:
+                    return PythonErrorNumber.EACCES;
+                case SocketError.Fault:
+                    return PythonErrorNumber.EFAULT;
+                case SocketError.InvalidArgument:
+                    return PythonErrorNumber.EINVAL;
+                case SocketError.MessageSize:
+                    return PythonErrorNumber.EMSGSIZE;
+                case SocketError.NetworkDown:
+                    return PythonErrorNumber.ENETDOWN;
+                case SocketError.NetworkUnreachable:
+                    return PythonErrorNumber.ENETUNREACH;
+                case SocketError.NoData:
+                    return PythonErrorNumber.ENODATA;
+                case SocketError.NotConnected:
+                    return PythonErrorNumber.ENOTCONN;
+                case SocketError.HostNotFound:
+                    return PythonErrorNumber.ENOENT;
+                case SocketError.NotSocket:
+                    return PythonErrorNumber.ENOTSOCK;
+                case SocketError.OperationAborted:
+                    return PythonErrorNumber.ENOTCONN;
+                case SocketError.OperationNotSupported:
+                    return PythonErrorNumber.EOPNOTSUPP;
+                case SocketError.ProcessLimit:
+                    return PythonErrorNumber.EPROCLIM;
+                case SocketError.ProtocolNotSupported:
+                    return PythonErrorNumber.EPROTONOSUPPORT;
+                case SocketError.ProtocolOption:
+                    return PythonErrorNumber.ENOPROTOOPT;
+                case SocketError.Shutdown:
+                    return PythonErrorNumber.ESHUTDOWN;
+                case SocketError.SocketError:
+                    return PythonErrorNumber.EIO;
+                case SocketError.SocketNotSupported:
+                    return PythonErrorNumber.ESOCKTNOSUPPORT;
+                case SocketError.TimedOut:
+                    return PythonErrorNumber.ETIMEDOUT;
+                case SocketError.TryAgain:
+                    return PythonErrorNumber.EAGAIN;
+                case SocketError.TypeNotFound:
+                    return PythonErrorNumber.EPROTONOSUPPORT;
+                case SocketError.VersionNotSupported:
+                    return PythonErrorNumber.EPROTONOSUPPORT;
+                default:
+                    return (int)serror;
             }
         }
 
@@ -1928,7 +2007,7 @@ namespace IronPython.Modules {
                             return new IPAddress[] { addr };
                         }
                     }
-                    // Incorrect family will raise exception below
+                    // Incorrect family will raise EAI_NODATA exception below
                 } else {
                     IPHostEntry hostEntry = Dns.GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
@@ -1938,11 +2017,8 @@ namespace IronPython.Modules {
                         }
                     }
                     if (addrs.Count > 0) return addrs.ToArray();
-                    if (addrs.Count == 0) {
-                        throw MakeGaiException(context, EAI_NODATA);
-                    }
                 }
-                throw new SocketException((int)SocketError.HostNotFound);
+                throw MakeGaiException(context, EAI_NODATA);
             } catch  (SocketException ex) {
                 throw MakeGaiException(context, ex);
             }

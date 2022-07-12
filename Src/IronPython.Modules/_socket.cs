@@ -297,7 +297,7 @@ namespace IronPython.Modules {
                 } catch (SocketException ex) {
                     return !ClrModule.IsMono ? ex.NativeErrorCode : MapMonoSocketErrorToErrno(ex.SocketErrorCode);
                 }
-                return 0;
+                return PythonErrorNumber.ENOERROR;
             }
 
             public long detach() {
@@ -1761,9 +1761,12 @@ namespace IronPython.Modules {
                     case SocketError.TryAgain:
                         return PythonExceptions.CreateThrowable(herror(context), HERROR_TRY_AGAIN, "Try again"); // EAGAIN
 
-                    // The following SocketErrors have no mapping to errno, so a generic errno is used
-                    case SocketError.NotInitialized:
+                    // The following SocketErrors have no defined mapping to errno, so a generic errno is used instead
                     case SocketError.ProcessLimit:
+                        return PythonExceptions.CreateThrowable(error,
+                            !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrorNumber.EPROCLIM : PythonErrorNumber.ENOTSUP,
+                            "Too many processes");
+                    case SocketError.NotInitialized:
                     case SocketError.SystemNotReady:
                     case SocketError.VersionNotSupported:
                     case SocketError.TypeNotFound:
@@ -1847,9 +1850,8 @@ namespace IronPython.Modules {
         }
 
         private static int MapMonoSocketErrorToErrno(SocketError serror) {
-            monoSocketErrorToNativeError ??= new Dictionary<SocketError, int>(41)
+            monoSocketErrorToNativeError ??= new Dictionary<SocketError, int>(45)
             {
-                { SocketError.Success, 0 },
                 { SocketError.AccessDenied, PythonErrorNumber.EACCES}, // could also have been EPERM
                 { SocketError.AddressAlreadyInUse, PythonErrorNumber.EADDRINUSE  },
                 { SocketError.AddressNotAvailable, PythonErrorNumber.EADDRNOTAVAIL },
@@ -1876,19 +1878,25 @@ namespace IronPython.Modules {
                 { SocketError.NoBufferSpaceAvailable, PythonErrorNumber.ENOBUFS },
                 { SocketError.NoData, PythonErrorNumber.ENODATA },
                 { SocketError.NotConnected, PythonErrorNumber.ENOTCONN },
+                { SocketError.NotInitialized, PythonErrorNumber.ENOTSUP },
                 { SocketError.NotSocket, PythonErrorNumber.ENOTSOCK },
                 { SocketError.OperationAborted, PythonErrorNumber.ECANCELED },
                 { SocketError.OperationNotSupported, PythonErrorNumber.ENOTSUP },
+                { SocketError.ProcessLimit, !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrorNumber.EPROCLIM : PythonErrorNumber.ENOTSUP },
                 { SocketError.ProtocolFamilyNotSupported, PythonErrorNumber.EPFNOSUPPORT },
                 { SocketError.ProtocolNotSupported, PythonErrorNumber.EPROTONOSUPPORT },
                 { SocketError.ProtocolOption, PythonErrorNumber.ENOPROTOOPT },
                 { SocketError.ProtocolType, PythonErrorNumber.EPROTOTYPE },
                 { SocketError.Shutdown, PythonErrorNumber.EPIPE },
                 { SocketError.SocketNotSupported, PythonErrorNumber.ESOCKTNOSUPPORT },
+                { SocketError.Success, PythonErrorNumber.ENOERROR },
+                { SocketError.SystemNotReady, PythonErrorNumber.ENOTSUP }, // or EAGAIN
                 { SocketError.TimedOut, PythonErrorNumber.ETIMEDOUT },
                 { SocketError.TooManyOpenSockets, PythonErrorNumber.ENFILE }, // could also have been EMFILE
                 { SocketError.TryAgain, PythonErrorNumber.EAGAIN }, // not a perfect mapping, but better than nothing
-                { SocketError.WouldBlock, PythonErrorNumber.EAGAIN  },
+                { SocketError.TypeNotFound, PythonErrorNumber.ENOTSOCK },
+                { SocketError.VersionNotSupported, PythonErrorNumber.EPROTONOSUPPORT },
+                { SocketError.WouldBlock, PythonErrorNumber.EWOULDBLOCK }, // on Linux/OSX, same as EAGAIN
             };
             if (monoSocketErrorToNativeError.TryGetValue(serror, out int errno)) {
                 return errno;

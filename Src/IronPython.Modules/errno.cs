@@ -13,6 +13,8 @@ namespace IronPython.Modules {
     public static class PythonErrorNumber {
         public const string __doc__ = "Provides a list of common error numbers.  These numbers are frequently reported in various exceptions.";
 
+        internal const int ENOERROR = 0;
+
         #region Generated Errno Codes
 
         // *** BEGIN GENERATED CODE ***

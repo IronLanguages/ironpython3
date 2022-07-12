@@ -10,6 +10,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -293,10 +294,10 @@ namespace IronPython.Modules {
                 IPEndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     _socket.Connect(remoteEP);
-                } catch (SocketException e) {
-                    return (int)e.SocketErrorCode;
+                } catch (SocketException ex) {
+                    return !ClrModule.IsMono ? ex.NativeErrorCode : MapMonoSocketErrorToErrno(ex.SocketErrorCode);
                 }
-                return (int)SocketError.Success;
+                return 0;
             }
 
             public long detach() {
@@ -1846,56 +1847,58 @@ namespace IronPython.Modules {
         }
 
         private static int MapMonoSocketErrorToErrno(SocketError serror) {
-            // Approximate mapping
-            switch (serror) {
-                case SocketError.AccessDenied:
-                    return PythonErrorNumber.EACCES;
-                case SocketError.Fault:
-                    return PythonErrorNumber.EFAULT;
-                case SocketError.InvalidArgument:
-                    return PythonErrorNumber.EINVAL;
-                case SocketError.MessageSize:
-                    return PythonErrorNumber.EMSGSIZE;
-                case SocketError.NetworkDown:
-                    return PythonErrorNumber.ENETDOWN;
-                case SocketError.NetworkUnreachable:
-                    return PythonErrorNumber.ENETUNREACH;
-                case SocketError.NoData:
-                    return PythonErrorNumber.ENODATA;
-                case SocketError.NotConnected:
-                    return PythonErrorNumber.ENOTCONN;
-                case SocketError.HostNotFound:
-                    return PythonErrorNumber.ENOENT;
-                case SocketError.NotSocket:
-                    return PythonErrorNumber.ENOTSOCK;
-                case SocketError.OperationAborted:
-                    return PythonErrorNumber.ENOTCONN;
-                case SocketError.OperationNotSupported:
-                    return PythonErrorNumber.EOPNOTSUPP;
-                case SocketError.ProcessLimit:
-                    return PythonErrorNumber.EPROCLIM;
-                case SocketError.ProtocolNotSupported:
-                    return PythonErrorNumber.EPROTONOSUPPORT;
-                case SocketError.ProtocolOption:
-                    return PythonErrorNumber.ENOPROTOOPT;
-                case SocketError.Shutdown:
-                    return PythonErrorNumber.ESHUTDOWN;
-                case SocketError.SocketError:
-                    return PythonErrorNumber.EIO;
-                case SocketError.SocketNotSupported:
-                    return PythonErrorNumber.ESOCKTNOSUPPORT;
-                case SocketError.TimedOut:
-                    return PythonErrorNumber.ETIMEDOUT;
-                case SocketError.TryAgain:
-                    return PythonErrorNumber.EAGAIN;
-                case SocketError.TypeNotFound:
-                    return PythonErrorNumber.EPROTONOSUPPORT;
-                case SocketError.VersionNotSupported:
-                    return PythonErrorNumber.EPROTONOSUPPORT;
-                default:
-                    return (int)serror;
+            monoSocketErrorToNativeError ??= new Dictionary<SocketError, int>(41)
+            {
+                { SocketError.Success, 0 },
+                { SocketError.AccessDenied, PythonErrorNumber.EACCES}, // could also have been EPERM
+                { SocketError.AddressAlreadyInUse, PythonErrorNumber.EADDRINUSE  },
+                { SocketError.AddressNotAvailable, PythonErrorNumber.EADDRNOTAVAIL },
+                { SocketError.AddressFamilyNotSupported, PythonErrorNumber.EAFNOSUPPORT  },
+                { SocketError.AlreadyInProgress, PythonErrorNumber.EALREADY },
+                { SocketError.ConnectionAborted, PythonErrorNumber.ECONNABORTED },
+                { SocketError.ConnectionRefused, PythonErrorNumber.ECONNREFUSED },
+                { SocketError.ConnectionReset, PythonErrorNumber.ECONNRESET },
+                { SocketError.DestinationAddressRequired, PythonErrorNumber.EDESTADDRREQ },
+                { SocketError.Disconnecting, PythonErrorNumber.ESHUTDOWN },
+                { SocketError.Fault, PythonErrorNumber.EFAULT },
+                { SocketError.HostDown, PythonErrorNumber.EHOSTDOWN },
+                { SocketError.HostNotFound, PythonErrorNumber.ENOENT },
+                { SocketError.HostUnreachable, PythonErrorNumber.EHOSTUNREACH },
+                { SocketError.InProgress, PythonErrorNumber.EINPROGRESS },
+                { SocketError.Interrupted, PythonErrorNumber.EINTR },
+                { SocketError.InvalidArgument, PythonErrorNumber.EINVAL },
+                { SocketError.IOPending, PythonErrorNumber.EINPROGRESS },
+                { SocketError.IsConnected, PythonErrorNumber.EISCONN },
+                { SocketError.MessageSize, PythonErrorNumber.EMSGSIZE },
+                { SocketError.NetworkDown, PythonErrorNumber.ENETDOWN },
+                { SocketError.NetworkReset, PythonErrorNumber.ENETRESET },
+                { SocketError.NetworkUnreachable, PythonErrorNumber.ENETUNREACH },
+                { SocketError.NoBufferSpaceAvailable, PythonErrorNumber.ENOBUFS },
+                { SocketError.NoData, PythonErrorNumber.ENODATA },
+                { SocketError.NotConnected, PythonErrorNumber.ENOTCONN },
+                { SocketError.NotSocket, PythonErrorNumber.ENOTSOCK },
+                { SocketError.OperationAborted, PythonErrorNumber.ECANCELED },
+                { SocketError.OperationNotSupported, PythonErrorNumber.ENOTSUP },
+                { SocketError.ProtocolFamilyNotSupported, PythonErrorNumber.EPFNOSUPPORT },
+                { SocketError.ProtocolNotSupported, PythonErrorNumber.EPROTONOSUPPORT },
+                { SocketError.ProtocolOption, PythonErrorNumber.ENOPROTOOPT },
+                { SocketError.ProtocolType, PythonErrorNumber.EPROTOTYPE },
+                { SocketError.Shutdown, PythonErrorNumber.EPIPE },
+                { SocketError.SocketNotSupported, PythonErrorNumber.ESOCKTNOSUPPORT },
+                { SocketError.TimedOut, PythonErrorNumber.ETIMEDOUT },
+                { SocketError.TooManyOpenSockets, PythonErrorNumber.ENFILE }, // could also have been EMFILE
+                { SocketError.TryAgain, PythonErrorNumber.EAGAIN }, // not a perfect mapping, but better than nothing
+                { SocketError.WouldBlock, PythonErrorNumber.EAGAIN  },
+            };
+            if (monoSocketErrorToNativeError.TryGetValue(serror, out int errno)) {
+                return errno;
+            } else {
+                return PythonErrorNumber.EIO;
             }
         }
+
+        [DisallowNull]
+        private static Dictionary<SocketError, int>? monoSocketErrorToNativeError;
 
         /// <summary>
         /// Convert an IPv6 address byte array to a string in standard colon-hex notation.

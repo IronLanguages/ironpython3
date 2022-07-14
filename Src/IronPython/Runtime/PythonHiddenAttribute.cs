@@ -9,6 +9,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Marks a member as being hidden from Python code.
     /// </summary>
+    /// <inheritdoc />
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class PythonHiddenAttribute : PlatformsAttribute {
         public PythonHiddenAttribute(params PlatformID[] hiddenPlatforms) {
@@ -17,6 +18,14 @@ namespace IronPython.Runtime {
 
         public PythonHiddenAttribute(PlatformsAttribute.PlatformFamily hiddenPlatformFamily) {
             SetValidPlatforms(hiddenPlatformFamily);
+        }
+
+        public PythonHiddenAttribute(PlatformsAttribute.PlatformFamily hiddenPlatformFamily, params PlatformID[] hiddenPlatforms)
+            : this(hiddenPlatformFamily) {
+            var allHiddenPlatforms = new PlatformID[ValidPlatforms.Length + hiddenPlatforms.Length];
+            Array.Copy(ValidPlatforms, allHiddenPlatforms, ValidPlatforms.Length);
+            Array.Copy(hiddenPlatforms, 0, allHiddenPlatforms, ValidPlatforms.Length, hiddenPlatforms.Length);
+            ValidPlatforms = allHiddenPlatforms;
         }
 
         public static bool IsHidden(MemberInfo m, bool inherit = false) {

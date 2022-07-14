@@ -789,16 +789,16 @@ namespace IronPython.Runtime.Operations {
                     digits = DoubleOps.DoubleToFormatString(context, ToDouble(val), spec);
                     break;
                 case 'X':
-                    digits = AbsToHex(val, false);
+                    digits = AbsToHex(val, lowercase: false);
                     break;
                 case 'x':
-                    digits = AbsToHex(val, true);
+                    digits = AbsToHex(val, lowercase: true);
                     break;
                 case 'o': // octal
-                    digits = ToOctal(val, true);
+                    digits = ToOctal(val, lowercase: true);
                     break;
                 case 'b': // binary
-                    digits = ToBinary(val, false, true);
+                    digits = ToBinary(val, includeType: false, lowercase: true);
                     break;
                 case 'c': // single char
                     int iVal;

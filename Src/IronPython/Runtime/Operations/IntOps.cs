@@ -262,16 +262,16 @@ namespace IronPython.Runtime.Operations {
                     digits = DoubleOps.DoubleToFormatString(context, self, spec);
                     break;
                 case 'X':
-                    digits = ToHex(self, false);
+                    digits = ToHex(self, lowercase: false);
                     break;
                 case 'x':
-                    digits = ToHex(self, true);
+                    digits = ToHex(self, lowercase: true);
                     break;
                 case 'o': // octal
-                    digits = ToOctal(self, true);
+                    digits = ToOctal(self, lowercase: true);
                     break;
                 case 'b': // binary
-                    digits = ToBinary(self, false);
+                    digits = ToBinary(self, includeType: false);
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {

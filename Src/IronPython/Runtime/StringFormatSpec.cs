@@ -174,6 +174,7 @@ namespace IronPython.Runtime {
                 } else if (thousandsUnderscore) {
                     switch (type) {
                         // integer types
+                        case 'b':
                         case 'd':
                         case 'o':
                         case 'x':

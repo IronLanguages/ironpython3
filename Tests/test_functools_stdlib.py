@@ -82,7 +82,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_keyword'))
         suite.addTest(test.test_functools.TestPartialC('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialC('test_kwargs_copy'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_manually_adding_non_string_keyword'))) # AssertionError: '1234' not found in '<CPartialSubclass object at 0x00000000000000AA>'
+        suite.addTest(test.test_functools.TestPartialC('test_manually_adding_non_string_keyword'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_nested_optimization'))) # AssertionError: Tuples differ: (<partial object at 0x0000000000000066>, (), {'bar': True}, {}) != (<function signature at 0x0000000000000051>, ('asdf',), {'bar': True}, {})
         suite.addTest(test.test_functools.TestPartialC('test_nested_partial_with_attribute'))
         suite.addTest(test.test_functools.TestPartialC('test_no_side_effects'))
@@ -90,8 +90,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialC('test_recursive_pickle')) # StackOverflowException
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_recursive_repr'))) # AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_repr'))) # AssertionError
+        #suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_recursive_repr'))) # StackOverflowException, was: AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
+        suite.addTest(test.test_functools.TestPartialC('test_repr'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_setstate'))) # AssertionError: Tuples differ: (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {'attr': []}) != (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {})
         suite.addTest(test.test_functools.TestPartialC('test_setstate_errors'))
         suite.addTest(test.test_functools.TestPartialC('test_setstate_refcount'))
@@ -110,14 +110,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_keyword'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_kw_combinations'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_kwargs_copy'))
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_manually_adding_non_string_keyword'))) # AssertionError: '1234' not found in '<CPartialSubclass object at 0x00000000000000AA>'
+        suite.addTest(test.test_functools.TestPartialCSubclass('test_manually_adding_non_string_keyword'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_nested_partial_with_attribute'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_no_side_effects'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_pickle'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_recursive_pickle')) # StackOverflowException
-        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_recursive_repr'))) # AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
+        #suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_recursive_repr'))) # StackOverflowException, was: AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_repr'))) # AssertionError
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_setstate'))) # AssertionError: Tuples differ: (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {'attr': []}) != (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {})
         suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_errors'))

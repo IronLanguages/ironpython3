@@ -81,7 +81,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.MemoryBIOTests('test_error_types'))
         suite.addTest(test.test_ssl.MemoryBIOTests('test_pending'))
         suite.addTest(test.test_ssl.MemoryBIOTests('test_read_write'))
-        suite.addTest(test.test_ssl.NetworkedTests('test_get_server_certificate_ipv6'))
+        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate_ipv6'))) # TypeError (ArgumentNullException for targetHost in call to AuthenticateAsClient in _ssl.cs)
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'

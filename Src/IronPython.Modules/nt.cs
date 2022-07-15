@@ -1264,12 +1264,14 @@ namespace IronPython.Modules {
             internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
             internal stat_result(Mono.Unix.Native.Stat stat)
-                : this(new object[16] {(int)stat.st_mode, ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size), ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
+                : this(new object[16] {Mono.Unix.Native.NativeConvert.FromFilePermissions(stat.st_mode), ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size),
+                      ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
                       stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
                       ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec), ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec), ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec) }, null) { }
 
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
-                : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size), ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),
+                : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size),
+                      ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),
                       st_atime_ns / (double)nanosecondsPerSeconds, st_mtime_ns / (double)nanosecondsPerSeconds, st_ctime_ns / (double)nanosecondsPerSeconds,
                       ToInt(st_atime_ns), ToInt(st_mtime_ns), ToInt(st_ctime_ns) }, null) { }
 
@@ -1519,53 +1521,29 @@ namespace IronPython.Modules {
             => fstat(context, fd);
 
         public static string strerror(int code) {
-            switch (code) {
-                case 0: return "No error";
-                case PythonErrorNumber.E2BIG: return "Arg list too long";
-                case PythonErrorNumber.EACCES: return "Permission denied";
-                case PythonErrorNumber.EAGAIN: return "Resource temporarily unavailable";
-                case PythonErrorNumber.EBADF: return "Bad file descriptor";
-                case PythonErrorNumber.EBUSY: return "Resource device";
-                case PythonErrorNumber.ECHILD: return "No child processes";
-                case PythonErrorNumber.EDEADLK: return "Resource deadlock avoided";
-                case PythonErrorNumber.EDOM: return "Domain error";
-                case PythonErrorNumber.EDQUOT: return "Unknown error";
-                case PythonErrorNumber.EEXIST: return "File exists";
-                case PythonErrorNumber.EFAULT: return "Bad address";
-                case PythonErrorNumber.EFBIG: return "File too large";
-                case PythonErrorNumber.EILSEQ: return "Illegal byte sequence";
-                case PythonErrorNumber.EINTR: return "Interrupted function call";
-                case PythonErrorNumber.EINVAL: return "Invalid argument";
-                case PythonErrorNumber.EIO: return "Input/output error";
-                case PythonErrorNumber.EISCONN: return "Unknown error";
-                case PythonErrorNumber.EISDIR: return "Is a directory";
-                case PythonErrorNumber.EMFILE: return "Too many open files";
-                case PythonErrorNumber.EMLINK: return "Too many links";
-                case PythonErrorNumber.ENAMETOOLONG: return "Filename too long";
-                case PythonErrorNumber.ENFILE: return "Too many open files in system";
-                case PythonErrorNumber.ENODEV: return "No such device";
-                case PythonErrorNumber.ENOENT: return "No such file or directory";
-                case PythonErrorNumber.ENOEXEC: return "Exec format error";
-                case PythonErrorNumber.ENOLCK: return "No locks available";
-                case PythonErrorNumber.ENOMEM: return "Not enough space";
-                case PythonErrorNumber.ENOSPC: return "No space left on device";
-                case PythonErrorNumber.ENOSYS: return "Function not implemented";
-                case PythonErrorNumber.ENOTDIR: return "Not a directory";
-                case PythonErrorNumber.ENOTEMPTY: return "Directory not empty";
-                case PythonErrorNumber.ENOTSOCK: return "Unknown error";
-                case PythonErrorNumber.ENOTTY: return "Inappropriate I/O control operation";
-                case PythonErrorNumber.ENXIO: return "No such device or address";
-                case PythonErrorNumber.EPERM: return "Operation not permitted";
-                case PythonErrorNumber.EPIPE: return "Broken pipe";
-                case PythonErrorNumber.ERANGE: return "Result too large";
-                case PythonErrorNumber.EROFS: return "Read-only file system";
-                case PythonErrorNumber.ESPIPE: return "Invalid seek";
-                case PythonErrorNumber.ESRCH: return "No such process";
-                case PythonErrorNumber.EXDEV: return "Improper link";
-                default:
-                    return "Unknown error " + code;
+#if FEATURE_NATIVE
+            const int bufsize = 0x1FF;
+            var buffer = new StringBuilder(bufsize);
+
+            int result = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                Interop.Ucrtbase.strerror(code, buffer) :
+                strerror_r(code, buffer);
+
+            if (result == 0) {
+                var msg = buffer.ToString();
+                if (msg.Length > 0) {
+                    return msg;
+                }
             }
+#endif
+            return "Unknown error " + code;
         }
+
+#if FEATURE_NATIVE
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
+        private static int strerror_r(int code, StringBuilder buffer)
+            => Mono.Unix.Native.Syscall.strerror_r(Mono.Unix.Native.NativeConvert.ToErrno(code), buffer);
+#endif
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
@@ -1854,7 +1832,7 @@ namespace IronPython.Modules {
             Process? process;
             lock (_processToIdMapping) {
                 if (!_processToIdMapping.TryGetValue(pid, out process)) {
-                    throw PythonOps.OSError(PythonErrorNumber.ECHILD, "No child processes");
+                    throw GetOsError(PythonErrorNumber.ECHILD);
                 }
             }
 
@@ -2238,14 +2216,12 @@ the 'status' value."),
 #if FEATURE_NATIVE
 
         private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
-            => GetUnixError((int)Mono.Unix.Native.Syscall.GetLastError(), filename, filename2);
-
-        private static Exception GetUnixError(int error, string? filename = null, string? filename2 = null) {
-            var msg = Mono.Unix.Native.Stdlib.strerror((Mono.Unix.Native.Errno)error);
-            return PythonOps.OSError(error, msg, filename, null, filename2);
-        }
+            => GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(Mono.Unix.Native.Syscall.GetLastError()), filename, filename2);
 
 #endif
+
+        private static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
+            => PythonOps.OSError(error, strerror(error), filename, null, filename2);
 
 #if FEATURE_NATIVE || FEATURE_CTYPES
 

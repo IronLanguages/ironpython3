@@ -13,7 +13,7 @@ import _thread
 import time
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_osx, is_linux, is_windows, is_cpython, run_test
 
 AF_DICT = {"AF_APPLETALK" : 5,
            "AF_DECnet" : 12,
@@ -51,6 +51,7 @@ IPPROTO_DICT = { "IPPROTO_AH" : 51,
                  "IPPROTO_UDP" : 17,
 }
 
+# Linux-specific values
 OTHER_GLOBALS = {"AI_ADDRCONFIG" : 32,
                  "AI_ALL" : 16,
                  "AI_CANONNAME" : 2,
@@ -69,6 +70,7 @@ OTHER_GLOBALS = {"AI_ADDRCONFIG" : 32,
                  "EAI_SERVICE" : -8,
                  "EAI_SOCKTYPE" : -7,
                  "EAI_SYSTEM" : -11,
+                 "EAI_OVERFLOW" : -12,
 
                  "INADDR_ALLHOSTS_GROUP" : -536870911,
                  "INADDR_ANY" : 0,
@@ -180,7 +182,33 @@ OTHER_GLOBALS = {"AI_ADDRCONFIG" : 32,
                  "TCP_SYNCNT" : 7,
                  "TCP_WINDOW_CLAMP" : 10}
 
+# CPython: {s: getattr(_socket, s) for s in dir(_socket) if s.startswith("EAI_")}
+EAI_DARWIN = {'EAI_ADDRFAMILY': 1, 'EAI_AGAIN': 2, 'EAI_BADFLAGS': 3, 'EAI_BADHINTS': 12, 'EAI_FAIL': 4, 'EAI_FAMILY': 5, 'EAI_MAX': 15, 'EAI_MEMORY': 6, 'EAI_NODATA': 7, 'EAI_NONAME': 8, 'EAI_OVERFLOW': 14, 'EAI_PROTOCOL': 13, 'EAI_SERVICE': 9, 'EAI_SOCKTYPE': 10, 'EAI_SYSTEM': 11}
+EAI_WINDOWS = {'EAI_SERVICE': 10109, 'EAI_NONAME': 11001, 'EAI_MEMORY': 8, 'EAI_BADFLAGS': 10022, 'EAI_FAMILY': 10047, 'EAI_AGAIN': 11002, 'EAI_NODATA': 11001, 'EAI_SOCKTYPE': 10044, 'EAI_FAIL': 11003}
+
 class SocketTest(IronPythonTestCase):
+
+    @unittest.skipUnless(is_osx, "OSX-specific test")
+    def test_eai_codes_darwin(self):
+        '''Tests EAI_* codes on OSX'''
+        for k, v in EAI_DARWIN.items():
+            self.assertEqual(getattr(_socket, k), v)
+
+    @unittest.skipUnless(is_linux, "Linux-specific test")
+    def test_eai_codes_linux(self):
+        '''Tests EAI_* codes on Linux'''
+        for k, v in OTHER_GLOBALS.items():
+            if k.startswith('EAI_'):
+                self.assertEqual(getattr(_socket, k), v)
+
+    @unittest.skipUnless(is_windows, "Windows-specific test")
+    def test_eai_codes_windows(self):
+        '''Tests EAI_* codes on Windows'''
+        for k, v in EAI_WINDOWS.items():
+            if k == 'EAI_MEMORY' and v == 8 and is_cli:
+                # CPython anomaly
+                v = 10055 # SocketError.NoBufferSpaceAvailable
+            self.assertEqual(getattr(_socket, k), v)
 
     def test_getprotobyname(self):
         '''Tests _socket.getprotobyname'''
@@ -228,6 +256,7 @@ class SocketTest(IronPythonTestCase):
         for name in bad_list:
             self.assertRaises(_socket.error, _socket.getprotobyname, name)
 
+    @unittest.skipIf(is_cpython and not is_windows, "TODO: figure out why this is different with CPython on Posix")
     def test_getaddrinfo(self):
         '''Tests _socket.getaddrinfo'''
         joe = { ("127.0.0.1", 0) : "[(2, 0, 0, '', ('127.0.0.1', 0))]",
@@ -239,15 +268,27 @@ class SocketTest(IronPythonTestCase):
                 ("127.0.0.1", 0, 0, 0, 0, 0) : "[(2, 0, 0, '', ('127.0.0.1', 0))]",
                 ("127.0.0.1", 0, 0, 0, 0, 1) : "[(2, 0, 0, '', ('127.0.0.1', 0))]",
         }
+        # TODO: On Darwin with CPython 3.7: value:  [(2, 2, 17, '', ('127.0.0.1', 1)), (2, 1, 6, '', ('127.0.0.1', 1))]
+        # TODO: On Linux with CPython 3.8: value:   [(2, 1, 6, '', ('127.0.0.1', 0)), (2, 2, 17, '', ('127.0.0.1', 0)), (2, 3, 0, '', ('127.0.0.1', 0))]
 
-        tmp = _socket.getaddrinfo("127.0.0.1", 0, 0, 0, -100000, 0)
-        tmp = _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 100000, 0)
+        if is_windows:
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, -100000, 0)
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 100000, 0)
+        elif is_linux:
+            # TODO: socket.gaierror: [Errno -8] Servname not supported for ai_socktype
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, -100000, 0)
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 100000, 0)
+        elif is_osx:
+            # TODO: Darwin: socket.gaierror: [Errno 12] Bad hints
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, -100000, 0)
+            _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 100000, 0)
         tmp = _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 0, 0)
 
         #just try them as-is
         for params,value in joe.items():
-            addrinfo = _socket.getaddrinfo(*params)
-            self.assertEqual(repr(addrinfo), value)
+            with self.subTest(params=params, value=value):
+                addrinfo = _socket.getaddrinfo(*params)
+                self.assertEqual(repr(addrinfo), value)
 
         #change the address family
         for addr_fam in ["AF_INET", "AF_UNSPEC"]:
@@ -299,10 +340,6 @@ class SocketTest(IronPythonTestCase):
         self.assertRaises(_socket.error, _socket.getaddrinfo, "127.0.0.1", 0, -1, 0, 0, 0)
         self.assertRaises(_socket.error, _socket.getaddrinfo, "127.0.0.1", 0, 0, -1, 0, 0)
 
-        _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 1000000, 0)
-        _socket.getaddrinfo("127.0.0.1", 0, 0, 0, -1000000, 0)
-        _socket.getaddrinfo("127.0.0.1", 0, 0, 0, 0, 0)
-
     def test_getnameinfo(self):
         '''Tests _socket.getnameinfo()'''
         #sanity
@@ -334,7 +371,9 @@ class SocketTest(IronPythonTestCase):
         self.assertEqual(_socket.gethostbyname("<broadcast>"), "255.255.255.255")
 
         #negative
-        self.assertRaises(_socket.gaierror, _socket.gethostbyname, "should never work")
+        with self.assertRaises(_socket.gaierror) as cm:
+            _socket.gethostbyname("should never work")
+        self.assertEqual(cm.exception.errno, _socket.EAI_NONAME)
 
     def test_gethostbyname_ex(self):
         '''Tests _socket.gethostbyname_ex'''
@@ -345,7 +384,13 @@ class SocketTest(IronPythonTestCase):
         self.assertIn("127.0.0.1", joe)
 
         #negative
-        self.assertRaises(_socket.gaierror, _socket.gethostbyname_ex, "should never work")
+        with self.assertRaises(_socket.gaierror) as cm:
+            _socket.gethostbyname_ex("should never work")
+        self.assertEqual(cm.exception.errno, _socket.EAI_NONAME)
+
+        with self.assertRaises(_socket.gaierror) as cm:
+            _socket.gethostbyname_ex("ipv6.google.com") # has only ipv6 addresses
+        self.assertEqual(cm.exception.errno, _socket.EAI_NONAME)
 
     def test_getservbyport(self):
         self.assertEqual(_socket.getservbyport(80), "http")
@@ -475,7 +520,7 @@ finally:
         if is_cli:
             self.assertEqual(addr[0], "0.0.0.0")
         else:
-            self.assertEqual(addr[0], 0)
+            self.assertTrue(addr is None or addr[0] == 0)
 
 import socket
 

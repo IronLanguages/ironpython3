@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 
 using IronPython.Runtime;
@@ -189,6 +190,24 @@ namespace IronPython.Modules {
                 } else {
                     throw PythonOps.TypeError("invalid partial state");
                 }
+            }
+
+            public string __repr__(CodeContext context) {
+                var builder = new StringBuilder();
+                builder.Append("functools.partial(");
+                builder.Append(PythonOps.Repr(context, func));
+                foreach (var x in _args) {
+                    builder.Append(", ");
+                    builder.Append(PythonOps.Repr(context, x));
+                }
+                foreach (var p in _keywordArgs) {
+                    builder.Append(", ");
+                    builder.Append(p.Key);
+                    builder.Append('=');
+                    builder.Append(PythonOps.Repr(context, p.Value));
+                }
+                builder.Append(')');
+                return builder.ToString();
             }
 
             #endregion

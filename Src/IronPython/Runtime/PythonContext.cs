@@ -2138,14 +2138,8 @@ namespace IronPython.Runtime {
             return symbol;
         }
 
-        internal static object InvokeUnaryOperator(CodeContext/*!*/ context, UnaryOperators oper, object target, string errorMsg) {
-            object res;
-            if (context.LanguageContext.InvokeOperatorWorker(context, oper, target, out res)) {
-                return res;
-            }
-
-            throw PythonOps.TypeError(errorMsg);
-        }
+        internal static bool TryInvokeUnaryOperator(CodeContext/*!*/ context, UnaryOperators oper, object target, out object res)
+            => context.LanguageContext.InvokeOperatorWorker(context, oper, target, out res);
 
         internal static object InvokeUnaryOperator(CodeContext/*!*/ context, UnaryOperators oper, object target) {
             object res;

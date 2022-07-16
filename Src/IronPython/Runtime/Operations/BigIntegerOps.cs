@@ -742,10 +742,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ValueError("Precision not allowed in integer format specifier");
             }
 
-            BigInteger val = self;
-            if (self < 0) {
-                val = -self;
-            }
+            BigInteger val = self.Abs();
 
             string digits;
 
@@ -759,19 +756,23 @@ namespace IronPython.Runtime.Operations {
                         goto case 'd';
                     }
 
-                    digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec);
+                    if (spec.Fill == '0' && spec.Width > 1) {
+                        digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec, (spec.Sign != null && spec.Sign != '-' || self < 0) ? spec.Width - 1 : null);
+                    }
+                    else {
+                        digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec);
+                    }
                     break;
                 case null:
                 case 'd':
                     if (spec.ThousandsComma || spec.ThousandsUnderscore) {
                         var numberFormat = spec.ThousandsUnderscore ? FormattingHelper.InvariantUnderscoreNumberInfo : CultureInfo.InvariantCulture.NumberFormat;
-                        var width = spec.Width ?? 0;
 
                         // If we're inserting commas, and we're padding with leading zeros.
                         // AlignNumericText won't know where to place the commas,
-                        // so force .Net to help us out here.
-                        if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
-                            digits = FormattingHelper.ToCultureString(val, numberFormat, spec);
+                        // so use FormattingHelper.ToCultureString for that support.
+                        if (spec.Fill == '0' && spec.Width > 1) {
+                            digits = FormattingHelper.ToCultureString(val, numberFormat, spec, (spec.Sign != null && spec.Sign != '-' || self < 0) ? spec.Width - 1 : null);
                         } else {
                             digits = val.ToString("#,0", numberFormat);
                         }

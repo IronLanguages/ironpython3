@@ -123,7 +123,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_errors'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_refcount'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_setstate_subclasses'))) # AssertionError: <class 'test.test_functools.MyDict'> is not <class 'dict'>
-        suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
+        if not is_mono:
+            suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialMethod('test_abstract'))
         suite.addTest(test.test_functools.TestPartialMethod('test_arg_combinations'))

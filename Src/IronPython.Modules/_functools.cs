@@ -193,21 +193,33 @@ namespace IronPython.Modules {
             }
 
             public string __repr__(CodeContext context) {
-                var builder = new StringBuilder();
-                builder.Append("functools.partial(");
-                builder.Append(PythonOps.Repr(context, func));
-                foreach (var x in _args) {
-                    builder.Append(", ");
-                    builder.Append(PythonOps.Repr(context, x));
+                var infinite = PythonOps.GetAndCheckInfinite(this);
+                if (infinite == null) {
+                    return "...";
                 }
-                foreach (var p in _keywordArgs) {
-                    builder.Append(", ");
-                    builder.Append(p.Key);
-                    builder.Append('=');
-                    builder.Append(PythonOps.Repr(context, p.Value));
+
+                int infiniteIndex = infinite.Count;
+                infinite.Add(this);
+                try {
+                    var builder = new StringBuilder();
+                    builder.Append("functools.partial(");
+                    builder.Append(PythonOps.Repr(context, func));
+                    foreach (var x in _args) {
+                        builder.Append(", ");
+                        builder.Append(PythonOps.Repr(context, x));
+                    }
+                    foreach (var p in _keywordArgs) {
+                        builder.Append(", ");
+                        builder.Append(p.Key);
+                        builder.Append('=');
+                        builder.Append(PythonOps.Repr(context, p.Value));
+                    }
+                    builder.Append(')');
+                    return builder.ToString();
+                } finally {
+                    System.Diagnostics.Debug.Assert(infiniteIndex == infinite.Count - 1);
+                    infinite.RemoveAt(infiniteIndex);
                 }
-                builder.Append(')');
-                return builder.ToString();
             }
 
             #endregion

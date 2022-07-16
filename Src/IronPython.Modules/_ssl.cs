@@ -401,7 +401,11 @@ namespace IronPython.Modules {
             }
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
-                Debug.Assert(chain.ChainStatus.Length > 0);
+                if (chain.ChainStatus.Length == 0) {
+                    ValidationError(sslPolicyErrors);
+                    return;
+                }
+
                 foreach (var elem in chain.ChainStatus) {
                     if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
                         bool isOk = false;

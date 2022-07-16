@@ -25,6 +25,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_resource.ResourceTest('test_linux_constants'))
         suite.addTest(test.test_resource.ResourceTest('test_pagesize'))
         suite.addTest(test.test_resource.ResourceTest('test_prlimit'))
+        suite.addTest(test.test_resource.ResourceTest('test_prlimit_refcount'))
         suite.addTest(test.test_resource.ResourceTest('test_setrusage_refcount'))
         return suite
 

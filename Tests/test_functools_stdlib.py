@@ -90,7 +90,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialC('test_positional'))
         suite.addTest(test.test_functools.TestPartialC('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialC('test_recursive_pickle')) # StackOverflowException
-        #suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_recursive_repr'))) # StackOverflowException, was: AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
+        suite.addTest(test.test_functools.TestPartialC('test_recursive_repr'))
         suite.addTest(test.test_functools.TestPartialC('test_repr'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialC('test_setstate'))) # AssertionError: Tuples differ: (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {'attr': []}) != (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {})
         suite.addTest(test.test_functools.TestPartialC('test_setstate_errors'))
@@ -117,13 +117,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_functools.TestPartialCSubclass('test_positional'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_protection_of_callers_dict_argument'))
         #suite.addTest(test.test_functools.TestPartialCSubclass('test_recursive_pickle')) # StackOverflowException
-        #suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_recursive_repr'))) # StackOverflowException, was: AssertionError: '<CPartialSubclass object at 0x00000000000000C0>' != 'CPartialSubclass(...)'
+        suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_recursive_repr'))) # AssertionError: 'functools.partial(...)' != 'CPartialSubclass(...)'
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_repr'))) # AssertionError
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_setstate'))) # AssertionError: Tuples differ: (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {'attr': []}) != (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {})
         suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_errors'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_setstate_refcount'))
         suite.addTest(unittest.expectedFailure(test.test_functools.TestPartialCSubclass('test_setstate_subclasses'))) # AssertionError: <class 'test.test_functools.MyDict'> is not <class 'dict'>
-        suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
+        if not is_mono:
+            suite.addTest(test.test_functools.TestPartialCSubclass('test_weakref'))
         suite.addTest(test.test_functools.TestPartialCSubclass('test_with_bound_and_unbound_methods'))
         suite.addTest(test.test_functools.TestPartialMethod('test_abstract'))
         suite.addTest(test.test_functools.TestPartialMethod('test_arg_combinations'))

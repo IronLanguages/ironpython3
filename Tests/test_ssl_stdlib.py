@@ -81,11 +81,11 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.MemoryBIOTests('test_error_types'))
         suite.addTest(test.test_ssl.MemoryBIOTests('test_pending'))
         suite.addTest(test.test_ssl.MemoryBIOTests('test_read_write'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate_ipv6'))) # TypeError (ArgumentNullException for targetHost in call to AuthenticateAsClient in _ssl.cs)
+        suite.addTest(test.test_ssl.NetworkedTests('test_get_server_certificate_ipv6'))
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # TypeError: Value cannot be null.
+        #suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # hangs indefinitely: wrapped SSLSocket resets timeout to None
         #suite.addTest(test.test_ssl.SimpleBackgroundTests('test_bio_handshake'))
         #suite.addTest(test.test_ssl.SimpleBackgroundTests('test_bio_read_write_data'))
         #suite.addTest(test.test_ssl.SimpleBackgroundTests('test_ciphers'))
@@ -123,7 +123,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_ssl.ThreadedTests('test_echo'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert')) # blocking
         suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert_enotconn'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_handshake_timeout'))) # TypeError: Value cannot be null.
+        #suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_handshake_timeout'))) # hangs indefinitely: wrapped SSLSocket resets timeout to None
         #suite.addTest(test.test_ssl.ThreadedTests('test_no_shared_ciphers'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_nonblocking_send'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_npn_protocols'))
@@ -136,7 +136,7 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_ssl.ThreadedTests('test_read_write_after_close_raises_valuerror')) # blocking
         #suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_recv_send'))) # NotImplementedError: keyfile
         #suite.addTest(test.test_ssl.ThreadedTests('test_recv_zero'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_rude_shutdown'))) # TypeError: Value cannot be null.
+        suite.addTest(test.test_ssl.ThreadedTests('test_rude_shutdown'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_selected_alpn_protocol'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_selected_alpn_protocol_if_server_uses_alpn'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_selected_npn_protocol'))

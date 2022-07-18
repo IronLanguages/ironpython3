@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython, expectedFailureIf
 
 class CP35300_Derived(EnvironmentError):
     def __init__(self, *args, **kwargs):
@@ -828,7 +828,7 @@ finally:
         with self.assertRaises(TypeError): # TypeError: exceptions must derive from BaseException
             raise MyException('abc')
 
-    @unittest.expectedFailure # https://github.com/IronLanguages/ironpython3/issues/876
+    @expectedFailureIf(is_cli) # https://github.com/IronLanguages/ironpython3/issues/876
     def test_oserror_init(self):
         x = OSError()
         self.assertEqual(x.errno, None)
@@ -1024,6 +1024,39 @@ finally:
 
         # winerror code is mapped to Python error code
         self.assertEqual(OSError('foo', 'bar', 'baz', 10).errno, 7)
+
+    def test_os_error_mapping(self):
+        import errno
+        import itertools
+
+        error_map = {
+            errno.EPERM : PermissionError,
+            errno.ENOENT : FileNotFoundError,
+            errno.ESRCH : ProcessLookupError,
+            errno.EINTR : InterruptedError,
+            errno.ECHILD : ChildProcessError,
+            errno.EAGAIN : BlockingIOError,
+            errno.EACCES : PermissionError,
+            errno.EEXIST : FileExistsError,
+            errno.ENOTDIR : NotADirectoryError,
+            errno.EISDIR : IsADirectoryError,
+            errno.EPIPE : BrokenPipeError,
+            errno.EWOULDBLOCK : BlockingIOError,
+            errno.ECONNABORTED : ConnectionAbortedError,
+            errno.ECONNRESET : ConnectionResetError,
+            errno.ESHUTDOWN : BrokenPipeError,
+            errno.ETIMEDOUT : TimeoutError,
+            errno.ECONNREFUSED : ConnectionRefusedError,
+            errno.EALREADY : BlockingIOError,
+            errno.EINPROGRESS : BlockingIOError,
+        }
+
+        for errno, exc in error_map.items():
+            self.assertIsInstance(OSError(errno, ''), exc)
+
+        for errno in itertools.chain(range(200), range(10000, 10200)):
+            if errno not in error_map:
+                self.assertIsInstance(OSError(errno, ''), OSError)
 
     def test_derived_keyword_args(self):
         class ED(Exception):

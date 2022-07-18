@@ -813,7 +813,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Returns the digits for the format spec, no sign is included.
         /// </summary>
-        private static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec) {
+        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec) {
             self = Math.Abs(self);
             const int DefaultPrecision = 6;
             int precision = spec.Precision ?? DefaultPrecision;

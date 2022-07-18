@@ -148,15 +148,15 @@ namespace IronPythonTest.Cases {
             return string.Empty;
         }
 
-        private string ReplaceVariables(string input, IDictionary<string, string> replacements) {
+        private string ReplaceVariables(string input, Dictionary<string, string> replacements) {
             Regex variableRegex = new Regex(@"\$\(([^}]+)\)", RegexOptions.Compiled);
 
             var result = input;
             var match = variableRegex.Match(input);
             while (match.Success) {
                 var variable = match.Groups[1].Value;
-                if (replacements.ContainsKey(variable)) {
-                    result = result.Replace(match.Groups[0].Value, replacements[variable]);
+                if (replacements.TryGetValue(variable, out var replacement)) {
+                    result = result.Replace(match.Groups[0].Value, replacement);
                 }
                 match = match.NextMatch();
             }

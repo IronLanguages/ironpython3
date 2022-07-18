@@ -285,10 +285,9 @@ The Dialect type records CSV parsing and generation options.")]
                 kwArgs.TryGetValue("strict", out strict);
 
                 if (dialect != null) {
-                    if (dialect is string) {
-                        string dialectName = (string)dialect;
-                        if (dialects.ContainsKey(dialectName))
-                            dialect = dialects[dialectName];
+                    if (dialect is string dialectName) {
+                        if (dialects.TryGetValue(dialectName, out var value))
+                            dialect = value;
                         else
                             throw MakeError("unknown dialect");
                     }

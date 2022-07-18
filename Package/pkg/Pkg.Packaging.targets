@@ -11,7 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <StdLibFiles Include="$(StageDir)/Lib/**/*.*" />
+      <StdLibFiles Include="$(StageDir)/$(StdLibDirName)/**/*.*" />
     </ItemGroup>
 
     <ItemGroup>
@@ -28,7 +28,7 @@
     <Exec Command="mkdir -p $(PackageTempFolder)" />
 
     <ItemGroup>
-      <StdLibOutputFiles Include="$(StageDir)/Lib/**/*.py" />
+      <StdLibOutputFiles Include="$(StageDir)/$(StdLibDirName)/**/*.py" />
     </ItemGroup>
 
     <!-- Change line endings of the .py files -->

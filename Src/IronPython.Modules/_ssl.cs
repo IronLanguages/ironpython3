@@ -401,7 +401,11 @@ namespace IronPython.Modules {
             }
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
-                Debug.Assert(chain.ChainStatus.Length > 0);
+                if (chain.ChainStatus.Length == 0) {
+                    ValidationError(sslPolicyErrors);
+                    return;
+                }
+
                 foreach (var elem in chain.ChainStatus) {
                     if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
                         bool isOk = false;
@@ -448,7 +452,12 @@ namespace IronPython.Modules {
                         }
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, enabledSslProtocols, false);
                     } else {
-                        _sslStream.AuthenticateAsClient(server_hostname ?? _socket._hostName, context._cert_store, enabledSslProtocols, false);
+                        string hostname = server_hostname ?? _socket._hostName ?? _socket._socket.RemoteEndPoint switch {
+                            System.Net.IPEndPoint ipEP => ipEP.Address.ToString(),
+                            System.Net.DnsEndPoint dnsEP => dnsEP.Host,
+                            _ => string.Empty,
+                        };
+                        _sslStream.AuthenticateAsClient(hostname, context._cert_store, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();

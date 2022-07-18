@@ -1,62 +1,46 @@
-﻿/* ****************************************************************************
- *
- * Copyright (c) Microsoft Corporation.
- *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A
- * copy of the license can be found in the License.html file at the root of this distribution. If
- * you cannot locate the  Apache License, Version 2.0, please send an email to
- * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
- * by the terms of the Apache License, Version 2.0.
- *
- * You must not remove this notice, or any other, from this software.
- *
- *
- * ***************************************************************************/
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace IronPython.Runtime
-{
-    internal static class FormattingHelper
-    {
-        private static NumberFormatInfo _invariantCommaSeperatorInfo;
+namespace IronPython.Runtime {
+    internal static class FormattingHelper {
+        private static NumberFormatInfo _invariantUnderscoreSeperatorInfo;
 
         /// <summary>
         /// Helper NumberFormatInfo for use by int/BigInteger __format__ routines
-        /// for width specified leading zero support that contains ','s every 3 digits.
+        /// for width specified leading zero support that contains '_'s every 3 digits.
         /// i.e. For use by d/g/G format specifiers. NOT for use by n format specifiers.
         /// </summary>
-        public static NumberFormatInfo InvariantCommaNumberInfo {
+        public static NumberFormatInfo InvariantUnderscoreNumberInfo {
             get {
-                if (_invariantCommaSeperatorInfo == null) {
+                if (_invariantUnderscoreSeperatorInfo == null) {
                     Interlocked.CompareExchange(
-                        ref _invariantCommaSeperatorInfo,
-                        new NumberFormatInfo()
-                        {
-                            NumberGroupSeparator = ",",
+                        ref _invariantUnderscoreSeperatorInfo,
+                        new NumberFormatInfo() {
+                            NumberGroupSeparator = "_",
                             NumberDecimalSeparator = ".",
-                            NumberGroupSizes = new int[] {3}
+                            NumberGroupSizes = new int[] { 3 }
                         },
                         null
                     );
                 }
-                return _invariantCommaSeperatorInfo;
+                return _invariantUnderscoreSeperatorInfo;
             }
         }
 
-        public static string/*!*/ ToCultureString<T>(T/*!*/ val, NumberFormatInfo/*!*/ nfi, StringFormatSpec spec) {
+        public static string/*!*/ ToCultureString<T>(T/*!*/ val, NumberFormatInfo/*!*/ nfi, StringFormatSpec spec, int? overrideWidth = null) {
             string separator = nfi.NumberGroupSeparator;
             int[] separatorLocations = nfi.NumberGroupSizes;
             string digits = val.ToString();
 
             // If we're adding leading zeros, we need to know how
             // many we need.
-            int width = spec.Width ?? 0;
+            int width = overrideWidth ?? spec.Width ?? 0;
             int fillerLength = Math.Max(width - digits.Length, 0);
             bool addLeadingZeros = (spec.Fill ?? '\0') == '0' && width > digits.Length;
             int beginningOfDigits = fillerLength;
@@ -127,12 +111,10 @@ namespace IronPython.Runtime
                                     break;
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             res.Remove(0, beginningOfMaximumWidth);
                         }
-                    }
-                    else {
+                    } else {
                         // If we ran out of remainingWidth just formatting
                         // the actual digits, then remove any extra leading zeros
                         // we added.

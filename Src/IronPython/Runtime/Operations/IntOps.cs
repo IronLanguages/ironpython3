@@ -262,16 +262,28 @@ namespace IronPython.Runtime.Operations {
                     digits = DoubleOps.DoubleToFormatString(context, val, spec);
                     break;
                 case 'X':
-                    digits = ToHex(val, lowercase: false);
+                    digits = ToHexDigits(val, lowercase: false);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self < 0);
+                    }
                     break;
                 case 'x':
-                    digits = ToHex(val, lowercase: true);
+                    digits = ToHexDigits(val, lowercase: true);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self < 0);
+                    }
                     break;
                 case 'o': // octal
-                    digits = ToOctal(val, lowercase: true);
+                    digits = ToOctalDigits(val);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self < 0);
+                    }
                     break;
                 case 'b': // binary
-                    digits = ToBinary(val, includeType: false);
+                    digits = ToBinaryDigits(val) ;
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self < 0);
+                    }
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {
@@ -306,86 +318,47 @@ namespace IronPython.Runtime.Operations {
 
         #region Helpers
 
-        private static string ToHex(int self, bool lowercase) {
-            string digits;
-            if (self != Int32.MinValue) {
-                int val = self;
-                if (self < 0) {
-                    val = -self;
-                }
-                digits = val.ToString(lowercase ? "x" : "X", CultureInfo.InvariantCulture);
-            } else {
-                digits = "80000000";
-            }
-
-            return digits;
+        private static string ToHexDigits(int val, bool lowercase) {
+            Debug.Assert(val >= 0);
+            return val.ToString(lowercase ? "x" : "X", CultureInfo.InvariantCulture);
         }
 
-        private static string ToOctal(int self, bool lowercase) {
-            string digits;
-            if (self == 0) {
-                digits = "0";
-            } else if (self != Int32.MinValue) {
-                int val = self;
-                if (self < 0) {
-                    val = -self;
-                }
+        private static string ToOctalDigits(int val) {
+            Debug.Assert(val >= 0);
+            if (val == 0) return "0";
 
-                StringBuilder sbo = new StringBuilder();
-                for (int i = 30; i >= 0; i -= 3) {
-                    char value = (char)('0' + (val >> i & 0x07));
-                    if (value != '0' || sbo.Length > 0) {
-                        sbo.Append(value);
-                    }
+            StringBuilder sb = new StringBuilder();
+            for (int i = 30; i >= 0; i -= 3) {
+                char value = (char)('0' + (val >> i & 0x07));
+                if (value != '0' || sb.Length > 0) {
+                    sb.Append(value);
                 }
-                digits = sbo.ToString();
-            } else {
-                digits = "20000000000";
             }
-
-            return digits;
+            return sb.ToString();
         }
 
-        internal static string ToBinary(int self) {
-            if (self == Int32.MinValue) {
+        private static string ToBinaryDigits(int val) {
+            Debug.Assert(val >= 0);
+            if (val == 0) return "0";
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 31; i >= 0; i--) {
+                if ((val & (1 << i)) != 0) {
+                    sb.Append('1');
+                } else if (sb.Length != 0) {
+                    sb.Append('0');
+                }
+            }
+            return sb.ToString();
+        }
+
+        internal static string ToBinary(int val) {
+            if (val == int.MinValue) {
                 return "-0b10000000000000000000000000000000";
             }
 
-            string res = ToBinary(self, true);
-            if (self < 0) {
-                res = "-" + res;
-            }
-            return res;
-        }
-
-        private static string ToBinary(int self, bool includeType) {
-            string digits;
-            if (self == 0) {
-                digits = "0";
-            } else if (self != Int32.MinValue) {
-                StringBuilder sbb = new StringBuilder();
-
-                int val = self;
-                if (self < 0) {
-                    val = -self;
-                }
-
-                for (int i = 31; i >= 0; i--) {
-                    if ((val & (1 << i)) != 0) {
-                        sbb.Append('1');
-                    } else if (sbb.Length != 0) {
-                        sbb.Append('0');
-                    }
-                }
-                digits = sbb.ToString();
-            } else {
-                digits = "10000000000000000000000000000000";
-            }
-
-            if (includeType) {
-                digits = "0b" + digits;
-            }
-            return digits;
+            var digits = ToBinaryDigits(Math.Abs(val));
+            return ((val < 0) ? "-0b" : "0b") + digits;
         }
 
         #endregion

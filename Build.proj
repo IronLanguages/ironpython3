@@ -24,7 +24,6 @@
     <StageDir>$(RootDir)Package\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
     <PackageDir>$(RootDir)Package\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
     <StdLibDirName>lib</StdLibDirName>
-    <StdLibDirName Condition=" '$(OS)' == 'Windows_NT' ">Lib</StdLibDirName>
   </PropertyGroup>
 
   <PropertyGroup>

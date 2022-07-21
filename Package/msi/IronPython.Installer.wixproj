@@ -35,7 +35,7 @@
       <Value>$(BuildDir)</Value>
     </WixConstant>
     <WixConstant Include="StdLibDir">
-      <Value>$(BindInputPaths)\Lib</Value>
+      <Value>$(BindInputPaths)\lib</Value>
     </WixConstant>
     <WixConstant Include="PlatformDir">
       <Value>$(BindInputPaths)\net462</Value>

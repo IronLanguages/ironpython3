@@ -724,7 +724,7 @@ namespace IronPython.Modules {
                         _timeout = (int)(seconds * MillisecondsPerSecond);
                     }
                     _socket.ReceiveTimeout = _socket.SendTimeout;
-                } catch (ObjectDisposedException ex) {
+                } catch (Exception ex) {
                     throw MakeException(_context, ex);
                 }
             }
@@ -1778,7 +1778,7 @@ namespace IronPython.Modules {
                 }
             } else if (exception is ObjectDisposedException) {
                 return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "Socket is closed");
-            } else if (exception is InvalidOperationException) {
+            } else if (exception is InvalidOperationException or ArgumentException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
                 return exception;

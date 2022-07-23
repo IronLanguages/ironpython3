@@ -296,8 +296,8 @@ namespace IronPython.Hosting {
                 }
 
                 prefix = pyvenv_prefix ?? prefix;
-                // Make sure there an IronPython Lib directory, and if not keep looking up
-                while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
+                // Make sure there an IronPython lib directory, and if not keep looking up
+                while (prefix != null && !File.Exists(Path.Combine(prefix, "lib", "os.py"))) {
                     prefix = Path.GetDirectoryName(prefix);
                 }
             }

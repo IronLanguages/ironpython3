@@ -66,7 +66,7 @@ if (Test-Path $Path) {
 $unzipDir = Join-Path $Path "zip"
 
 Expand-Archive -Path $ZipFile -DestinationPath $unzipDir
-Move-Item -Path (Join-Path $unzipDir "Lib") -Destination $Path
+Move-Item -Path (Join-Path $unzipDir "lib") -Destination $Path
 Move-Item -Path (Join-Path $unzipDir "net6.0/*") -Destination $Path -Exclude "*.xml","*.dll.config"
 Remove-Item -Path $unzipDir -Recurse
 
@@ -78,6 +78,7 @@ dotnet (Join-Path $PSScriptRoot ipy.dll) @args
 '@
 if ($IsMacOS -or $IsLinux) {
     chmod +x $ipyPath
+    chmod +x (Join-Path $Path "ipy.sh")
 }
 
 # Add items that are missing in the zip file, directly from the bin directory

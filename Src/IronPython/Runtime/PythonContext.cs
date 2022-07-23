@@ -220,7 +220,7 @@ namespace IronPython.Runtime {
                 // Can be null if called from unmanaged code (VS integration scenario)
                 // or in self-contained single file scenarios
                 if (entry != null) {
-                    string lib = Path.Combine(entry, "Lib");
+                    string lib = Path.Combine(entry, "lib");
                     path.append(lib);
 
                     // add DLLs directory for user-defined extention modules
@@ -1767,7 +1767,7 @@ namespace IronPython.Runtime {
             _initialExecutable = executable ?? "";
             InitialPrefix = prefix;
 
-            AddToPath(Path.Combine(prefix, "Lib"), 0);
+            AddToPath(Path.Combine(prefix, "lib"), 0);
 
             SetHostVariables(SystemState.__dict__);
         }

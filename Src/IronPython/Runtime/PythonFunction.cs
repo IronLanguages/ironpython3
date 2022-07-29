@@ -286,9 +286,9 @@ namespace IronPython.Runtime {
 
         internal bool NeedsCodeTest {
             get {
-                return NormalArgumentCount >= 0x3ff
-                    || Defaults.Length >= 0x3ff
-                    || KeywordOnlyArgumentCount >= 0x1ff;
+                return NormalArgumentCount > 0x3ff
+                    || Defaults.Length > 0x3ff
+                    || KeywordOnlyArgumentCount > 0x1ff;
             }
         }
 

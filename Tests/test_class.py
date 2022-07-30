@@ -2689,7 +2689,26 @@ class ClassTest(IronPythonTestCase):
         with warnings.catch_warnings(record=True) as ws:
             warnings.simplefilter("always")
 
-            with self.assertWarnsRegex(DeprecationWarning, r"^__class__ not set defining 'bar' as <class '__main__.*\.gez'>\. Was __classcell__ propagated to type\.__new__\?$"):
+            with self.assertWarnsRegex(DeprecationWarning, r"^__class__ not set defining 'MyClass' as <class '.*\.MyClass'>\. Was __classcell__ propagated to type\.__new__\?$"):
+                class MyDict(dict):
+                    def __setitem__(self, key, value):
+                        pass
+
+                class MetaClass(type):
+                    @classmethod
+                    def __prepare__(metacls, name, bases):
+                        return MyDict()
+
+                class MyClass(metaclass=MetaClass):
+                    def test(self):
+                        return __class__
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
+
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(DeprecationWarning, r"^__class__ not set defining 'bar' as <class '.*\.gez'>\. Was __classcell__ propagated to type\.__new__\?$"):
                 class gez: pass
 
                 def foo(*args):

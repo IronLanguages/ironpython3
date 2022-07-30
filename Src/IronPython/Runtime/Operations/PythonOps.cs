@@ -1471,12 +1471,13 @@ namespace IronPython.Runtime.Operations {
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
             }
 
+            CodeContext classContext = func(parentContext);
+            // If __classcell__ is defined, verify later that it makes all the way to type.__new__
+            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
+
             // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, func(parentContext).Dict);
-
-            // If __classcell__ is defined, verify later that it makes all the way to type.__new__
-            var classCell = (ClosureCell?)(classdict as PythonDictionary)?.get("__classcell__");
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
 
             // Dispatch to the metaclass to do class creation and initialization
             // metaclass could be simply a callable, eg:

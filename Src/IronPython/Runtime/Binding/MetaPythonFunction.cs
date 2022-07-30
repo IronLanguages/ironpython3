@@ -365,11 +365,21 @@ namespace IronPython.Runtime.Binding {
             /// Makes the test for our rule.
             /// </summary>
             private BindingRestrictions/*!*/ GetRestrictions() {
-                if (!Signature.HasKeywordArgument()) {
-                    return GetSimpleRestriction();
+                if (_extractedDefault) {
+                    return BindingRestrictions.GetInstanceRestriction(_func.Expression, _func.Value);
+                } else if (_needCodeTest) {
+                    return GetSimpleRestriction().Merge(
+                        BindingRestrictions.GetInstanceRestriction(
+                            Expression.Property(
+                                GetFunctionParam(),
+                                "__code__"
+                            ),
+                            _func.Value.__code__
+                        )
+                    );
                 }
 
-                return GetComplexRestriction();
+                return GetSimpleRestriction();
             }
 
             /// <summary>
@@ -387,28 +397,6 @@ namespace IronPython.Runtime.Binding {
                 return BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
                     _func.Expression, typeof(PythonFunction)
                 );
-            }
-
-            /// <summary>
-            /// Makes the test when we have a keyword argument call or splatting.
-            /// </summary>
-            /// <returns></returns>
-            private BindingRestrictions/*!*/ GetComplexRestriction() {
-                if (_extractedDefault) {
-                    return BindingRestrictions.GetInstanceRestriction(_func.Expression, _func.Value);
-                } else if (_needCodeTest) {
-                    return GetSimpleRestriction().Merge(
-                        BindingRestrictions.GetInstanceRestriction(
-                            Expression.Property(
-                                GetFunctionParam(),
-                                "__code__"
-                            ),
-                            _func.Value.__code__
-                        )
-                    );
-                }
-
-                return GetSimpleRestriction();
             }
 
             /// <summary>
@@ -523,6 +511,8 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 var keywordOnlyArgumentCount = _func.Value.KeywordOnlyArgumentCount;
+
+                if (_func.Value.NeedsCodeTest) _needCodeTest = true;
 
                 for (int i = normalArgumentCount; i < normalArgumentCount + keywordOnlyArgumentCount; i++) {
                     var argName = _func.Value.ArgNames[i];

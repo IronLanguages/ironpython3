@@ -246,6 +246,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #region Public API
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict) {
+            if (name == null) {
+                throw PythonOps.TypeError("type() argument 1 must be string, not None");
+            }
+            if (bases == null) {
+                throw PythonOps.TypeError("type() argument 2 must be tuple, not None");
+            }
+            if (dict == null) {
+                throw PythonOps.TypeError("TypeError: type() argument 3 must be dict, not None");
+            }
+
             ClosureCell classCell = null;
 
             // copy the contents of dict to classdict, extracting __classcell__
@@ -262,16 +272,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return __new__(context, cls, name, bases, classDict, string.Empty, classCell);
         }
 
-        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict, string selfNames, ClosureCell/*?*/ classCell) {
-            if (name == null) {
-                throw PythonOps.TypeError("type() argument 1 must be string, not None");
-            }
-            if (bases == null) {
-                throw PythonOps.TypeError("type() argument 2 must be tuple, not None");
-            }
-            if (dict == null) {
-                throw PythonOps.TypeError("TypeError: type() argument 3 must be dict, not None");
-            }
+        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string/*!*/ name, PythonTuple/*!*/ bases, PythonDictionary/*!*/ dict, string selfNames, ClosureCell/*?*/ classCell) {
 
             EnsureModule(context, dict);
 

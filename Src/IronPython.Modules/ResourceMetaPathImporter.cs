@@ -88,8 +88,8 @@ module, or raises ResourceImportError if it wasn't found."
             )]
         public object load_module(CodeContext /*!*/ context, string fullname) {
             var modules = context.LanguageContext.SystemStateModules;
-            if (modules.ContainsKey(fullname))
-                return modules[fullname];
+            if (modules.TryGetValue(fullname, out var module))
+                return module;
 
             bool ispackage;
             string modpath;

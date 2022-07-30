@@ -9,8 +9,8 @@
     <Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
 
     <ItemGroup>
-      <StdLibFiles Include="$(StageDir)\Lib\**\*.*" />
+      <StdLibFiles Include="$(StageDir)\$(StdLibDirName)\**\*.*" />
     </ItemGroup>
-    <Zip Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
+    <Zip Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\$(StdLibDirName)"/>
   </Target>
 </Project>

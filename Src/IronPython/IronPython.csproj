@@ -35,10 +35,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Lib\**\*.py">
+    <None Include="Lib\**\*.py" Link="lib\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\StdLib\Lib\os.py" Link="Lib\os.py">
+    <None Include="..\StdLib\Lib\os.py" Link="lib\os.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

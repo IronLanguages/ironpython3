@@ -1061,8 +1061,8 @@ namespace IronPython.Modules {
                                                     if (tmpIndex == -1) throw PythonExceptions.CreateThrowable(error(context), "unexpected end of regex");
 
                                                     var namedGroup = pattern.Substring(nameIndex + 2, tmpIndex - (nameIndex + 2));
-                                                    if (namedGroups.ContainsKey(namedGroup)) {
-                                                        throw PythonExceptions.CreateThrowable(error(context), $"redefinition of group name '{namedGroup}' as group {groupCount}; was group {namedGroups[namedGroup]}");
+                                                    if (namedGroups.TryGetValue(namedGroup, out var value)) {
+                                                        throw PythonExceptions.CreateThrowable(error(context), $"redefinition of group name '{namedGroup}' as group {groupCount}; was group {value}");
                                                     }
 
                                                     namedGroups[namedGroup] = groupCount;

@@ -205,23 +205,24 @@ namespace IronPython.Hosting {
         }
 
         protected override void HandleImplementationSpecificOption(string arg, string val) {
+            object frames;
             switch (arg) {
                 case "NoFrames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.False) {
+                    if (LanguageSetup.Options.TryGetValue("Frames", out frames) && frames != ScriptingRuntimeHelpers.False) {
                         throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
                     }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.False;
                     break;
 
                 case "Frames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                    if (LanguageSetup.Options.TryGetValue("Frames", out frames) && frames != ScriptingRuntimeHelpers.True) {
                         throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
                     }
                     LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
                     break;
 
                 case "FullFrames":
-                    if (LanguageSetup.Options.ContainsKey("Frames") && LanguageSetup.Options["Frames"] != ScriptingRuntimeHelpers.True) {
+                    if (LanguageSetup.Options.TryGetValue("Frames", out frames) && frames != ScriptingRuntimeHelpers.True) {
                         throw new InvalidOptionException("Only one of -X [Full]Frames/NoFrames may be specified");
                     }
                     LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;

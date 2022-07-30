@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <StdLibFiles Include="$(StageDir)/Lib/**/*.*" />
+      <StdLibFiles Include="$(StageDir)/$(StdLibDirName)/**/*.*" />
     </ItemGroup>
 
     <ItemGroup>
@@ -31,7 +31,7 @@
           Replacement="$(PackageVersion)" />
 
     <ItemGroup>
-      <StdLibOutputFiles Include="$(StageDir)/Lib/**/*.py" />
+      <StdLibOutputFiles Include="$(StageDir)/$(StdLibDirName)/**/*.py" />
     </ItemGroup>
     <Exec Command="dos2unix %(StdLibOutputFiles.Identity)" />
     <Exec Command="dos2unix $(PackageTempFolder)/DEBIAN/control"/>

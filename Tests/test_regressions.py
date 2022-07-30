@@ -1683,4 +1683,22 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
             self.assertEqual(seq * m, 23)
             self.assertEqual(seq + m, 64)
 
+    def test_ipy3_gh1515(self):
+        # Because function compatibility for simple calls was defined as:
+        #   "number of args" + "number of defaults" << 8 + ...
+        # we got a conflict between 1 arg with default and 257 args.
+
+        # 1 arg with default
+        def d01(a=1): pass
+
+        d01(*(1,))
+
+        # 2.7 fails with 16385 args
+        # 3.4.0-beta fails with 257 args
+        for i in range(16):
+            size = (1<<i) + 1
+            d = {}
+            exec('def f(' + ','.join('a{0}'.format(i) for i in range(size)) + '): pass', d)
+            d["f"](*range(size)) # just make sure this runs successfully
+
 run_test(__name__)

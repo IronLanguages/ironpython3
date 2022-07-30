@@ -6,6 +6,7 @@
 import os
 import sys
 import unittest
+import warnings
 
 from iptest import IronPythonTestCase, is_cli, is_mono, myint, big, run_test, skipUnlessIronPython
 
@@ -1830,7 +1831,6 @@ class ClassTest(IronPythonTestCase):
                     if k == 'abc':
                         self.assertEqual(v, value)
 
-    @unittest.skip('Currently throws a StackOverflowException')
     def test_getattribute_getattr(self):
         # verify object.__getattribute__(name) will call __getattr__
         class Base(object):
@@ -1856,10 +1856,11 @@ class ClassTest(IronPythonTestCase):
         # verify __getattr__ gets called after __getattribute__ fails, not
         # during the base call to object.
         state = []
+        tc = self
         class Derived(object):
             def __getattr__(self, name):
                 if name == "bar":
-                    self.assertEqual(state, [])
+                    tc.assertEqual(state, [])
                     return 23
                 raise AttributeError(name)
             def __getattribute__(self, name):
@@ -1867,7 +1868,7 @@ class ClassTest(IronPythonTestCase):
                     state.append('getattribute')
                     return object.__getattribute__(self, name)
                 finally:
-                    self.assertEqual(state.pop(), 'getattribute')
+                    tc.assertEqual(state.pop(), 'getattribute')
 
         a = Derived()
         self.assertEqual(a.bar, 23)
@@ -2621,6 +2622,103 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(x.__bases__, (object, ))
         self.assertEqual(x.__name__, 'x')
 
+    def test_class_attribute(self):
+        class C:
+            def f(self):
+                return self.__class__
+            def g(self):
+                return __class__
+            def h():
+                return __class__
+            @staticmethod
+            def j():
+                return __class__
+            @classmethod
+            def k(cls):
+                return __class__
+
+        self.assertEqual(C().f(), C)
+        self.assertEqual(C().g(), C)
+        self.assertEqual(C.h(), C)
+        self.assertEqual(C.j(), C)
+        self.assertEqual(C.k(), C)
+        self.assertEqual(C().k(), C)
+
+        # Test that a metaclass implemented as a function sets __class__ at a proper moment
+        def makeclass(name, bases, attrs):
+            attrNames = set(attrs.keys())
+            self.assertRaisesMessage(NameError, "free variable '__class__' referenced before assignment in enclosing scope", attrs['getclass'], None)
+            if (is_cli or sys.version_info >= (3, 6)):
+                self.assertIn('__classcell__', attrNames)
+
+            t = type(name, bases, attrs)
+
+            if (is_cli or sys.version_info >= (3, 6)):
+                self.assertEqual(t.getclass(None), t) # __class__ is set right after the type is created
+            else: # CPython 3.5-
+                self.assertRaisesMessage(NameError, "free variable '__class__' referenced before assignment in enclosing scope", attrs['getclass'], None)
+            if not is_cli:
+                self.assertEqual(set(attrs.keys()), attrNames) # set of attrs is not modified by type creation
+            else:
+                # TODO: prevent modification of attrs in IronPython
+                self.assertEqual(set(attrs.keys()) | {'__classcell__'}, attrNames | {'__class__'})
+
+            return t
+
+        class A(metaclass=makeclass):
+            def getclass(self):
+                return __class__
+
+        self.assertEquals(A.getclass(None), A)
+        self.assertEquals(A().getclass(), A)
+
+        dirA = dir(A)
+        self.assertIn('getclass', dirA)
+        self.assertIn('getclass', A.__dict__)
+        self.assertIn('__class__', dirA)
+        self.assertNotIn('__class__', A.__dict__)
+        if not is_cli:
+            self.assertNotIn('__classcell__', dirA)
+            self.assertNotIn('__classcell__', A.__dict__)
+        else:
+            # TODO: filter out __classcell__ in IronPython
+            self.assertIn('__classcell__', dirA)
+            self.assertIn('__classcell__', A.__dict__)
+
+    def test_classcell_propagation(self):
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(DeprecationWarning, r"^__class__ not set defining 'MyClass' as <class '.*\.MyClass'>\. Was __classcell__ propagated to type\.__new__\?$"):
+                class MyDict(dict):
+                    def __setitem__(self, key, value):
+                        pass
+
+                class MetaClass(type):
+                    @classmethod
+                    def __prepare__(metacls, name, bases):
+                        return MyDict()
+
+                class MyClass(metaclass=MetaClass):
+                    def test(self):
+                        return __class__
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
+
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+
+            with self.assertWarnsRegex(DeprecationWarning, r"^__class__ not set defining 'bar' as <class '.*\.gez'>\. Was __classcell__ propagated to type\.__new__\?$"):
+                class gez: pass
+
+                def foo(*args):
+                    return gez
+
+                class bar(metaclass=foo):
+                    def barfun(self):
+                        return __class__
+
+        self.assertEqual(len(ws), 0) # no unchecked warnings
 
     def test_issubclass(self):
         # first argument doesn't need to be new-style or old-style class if it defines __bases__

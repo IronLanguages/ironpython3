@@ -1492,9 +1492,13 @@ namespace IronPython.Runtime.Operations {
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
             }
 
+            CodeContext classContext = func(parentContext);
+            // If __classcell__ is defined, verify later that it makes all the way to type.__new__
+            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
+
             // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, func(parentContext).Dict);
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
 
             // Dispatch to the metaclass to do class creation and initialization
             // metaclass could be simply a callable, eg:
@@ -1512,6 +1516,13 @@ namespace IronPython.Runtime.Operations {
                 classdict,
                 keywords ?? MakeEmptyDict()
             );
+
+            if (classCell is not null && classCell.Value == Uninitialized.Instance) {
+                // Python 3.8: RuntimeError
+                Warn(parentContext, PythonExceptions.DeprecationWarning,
+                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
+                classCell.Value = obj;
+            }
 
             // Ensure the class derives from `object`
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {

@@ -23,6 +23,7 @@
     <PackageVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</PackageVersion>
     <StageDir>$(RootDir)Package\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
     <PackageDir>$(RootDir)Package\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
+    <StdLibDirName>lib</StdLibDirName>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -105,7 +106,7 @@
 
   <Target Name="_CopyStdLib" DependsOnTargets="_MakeStageDir">
     <MSBuild Projects="$(RootDir)\Src\StdLib\StdLib.pyproj"
-             Properties="OutputPath=$(StageDir)"
+             Properties="OutputPath=$(StageDir);StdLibDirName=$(StdLibDirName)"
              Targets="Stage" />
   </Target>
 

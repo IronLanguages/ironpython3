@@ -10,6 +10,7 @@
     <Name>PyStdLib</Name>
     <RootNamespace>PyStdLib</RootNamespace>
     <StdLibPath>Lib</StdLibPath>
+    <StdLibDirName Condition=" '$(StdLibDirName)' == '' ">lib</StdLibDirName>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -25,12 +26,12 @@
 
   <ItemGroup>
     <Content Include="StdLib.License.txt" />
-    <Content Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
+    <StdLibFiles Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
   </ItemGroup>
 
   <Target Name="Stage">
     <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)\%(RelativeDir)" />
+    <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(OutputPath)\$(StdLibDirName)\%(RecursiveDir)" />
   </Target>
 
 </Project>
-

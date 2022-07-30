@@ -1831,7 +1831,6 @@ class ClassTest(IronPythonTestCase):
                     if k == 'abc':
                         self.assertEqual(v, value)
 
-    @unittest.skip('Currently throws a StackOverflowException')
     def test_getattribute_getattr(self):
         # verify object.__getattribute__(name) will call __getattr__
         class Base(object):
@@ -1857,10 +1856,11 @@ class ClassTest(IronPythonTestCase):
         # verify __getattr__ gets called after __getattribute__ fails, not
         # during the base call to object.
         state = []
+        tc = self
         class Derived(object):
             def __getattr__(self, name):
                 if name == "bar":
-                    self.assertEqual(state, [])
+                    tc.assertEqual(state, [])
                     return 23
                 raise AttributeError(name)
             def __getattribute__(self, name):
@@ -1868,7 +1868,7 @@ class ClassTest(IronPythonTestCase):
                     state.append('getattribute')
                     return object.__getattribute__(self, name)
                 finally:
-                    self.assertEqual(state.pop(), 'getattribute')
+                    tc.assertEqual(state.pop(), 'getattribute')
 
         a = Derived()
         self.assertEqual(a.bar, 23)

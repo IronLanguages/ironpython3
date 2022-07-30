@@ -33,6 +33,8 @@ namespace IronPython.Runtime {
         public readonly MutableTuple Closure;
 
         private object[]/*!*/ _defaults;                // the default parameters of the method
+        private PythonDictionary _kwdefaults;           // the keyword-only arguments defaults for the method
+
         internal PythonDictionary _dict;                // a dictionary to story arbitrary members on the function object
         private object _module;                         // the module name
 
@@ -89,7 +91,7 @@ namespace IronPython.Runtime {
 
             _context = context;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
-            __kwdefaults__ = kwdefaults;
+            _kwdefaults = kwdefaults;
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
@@ -145,8 +147,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        // TODO: update CalculatedCachedCompat?
-        public PythonDictionary __kwdefaults__ { get; set; }
+        public PythonDictionary __kwdefaults__ {
+            get => _kwdefaults;
+            set {
+                _kwdefaults = value;
+                FunctionCompatibility = CalculatedCachedCompat();
+            }
+        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public object __closure__ {
@@ -277,6 +284,14 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int FunctionCompatibility { get; private set; }
 
+        internal bool NeedsCodeTest {
+            get {
+                return NormalArgumentCount > 0x3ff
+                    || Defaults.Length > 0x3ff
+                    || KeywordOnlyArgumentCount > 0x1ff;
+            }
+        }
+
         /// <summary>
         /// Calculates the _compat value which is used for call-compatibility checks
         /// for simple calls.  Whenver any of the dependent values are updated this
@@ -289,20 +304,20 @@ namespace IronPython.Runtime {
         ///     expand dict/list - based on nparams and flags, both read-only
         ///     
         /// Bits are allocated as:
-        ///     000000ff - Normal argument count
-        ///     0000ff00 - Default count
-        ///     007f0000 - Keyword-only argument count
-        ///     3f800000 - Keyword-only defaults count
+        ///     000003ff - Normal argument count
+        ///     000ffc00 - Default count
+        ///     1ff00000 - Keyword-only argument count
+        ///     20000000 - has keyword-only defaults
         ///     40000000 - expand list
         ///     80000000 - expand dict
         ///     
         /// Enforce recursion is added at runtime.
         /// </summary>
         private int CalculatedCachedCompat() {
-            return (NormalArgumentCount) |
-                (Defaults.Length << 8) |
-                (KeywordOnlyArgumentCount << 16) |
-                ((__kwdefaults__?.Count ?? 0) << 23) |
+            return NormalArgumentCount |
+                (Defaults.Length << 10) |
+                (KeywordOnlyArgumentCount << 20) |
+                (__kwdefaults__ is not null ? 0x20000000 : 0) |
                 ((ExpandListPosition != -1) ? 0x40000000 : 0) |
                 ((ExpandDictPosition != -1) ? unchecked((int)0x80000000) : 0);
         }

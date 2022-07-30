@@ -2657,11 +2657,9 @@ class ClassTest(IronPythonTestCase):
                 self.assertEqual(t.getclass(None), t) # __class__ is set right after the type is created
             else: # CPython 3.5-
                 self.assertRaisesMessage(NameError, "free variable '__class__' referenced before assignment in enclosing scope", attrs['getclass'], None)
-            if not is_cli:
-                self.assertEqual(set(attrs.keys()), attrNames) # set of attrs is not modified by type creation
-            else:
-                # TODO: prevent modification of attrs in IronPython
-                self.assertEqual(set(attrs.keys()) | {'__classcell__'}, attrNames | {'__class__'})
+
+            t.some_data = True
+            self.assertEqual(set(attrs.keys()), attrNames) # set of attrs is not modified by type creation
 
             return t
 
@@ -2669,21 +2667,16 @@ class ClassTest(IronPythonTestCase):
             def getclass(self):
                 return __class__
 
-        self.assertEquals(A.getclass(None), A)
-        self.assertEquals(A().getclass(), A)
+        self.assertEqual(A.getclass(None), A)
+        self.assertEqual(A().getclass(), A)
 
         dirA = dir(A)
         self.assertIn('getclass', dirA)
         self.assertIn('getclass', A.__dict__)
         self.assertIn('__class__', dirA)
         self.assertNotIn('__class__', A.__dict__)
-        if not is_cli:
-            self.assertNotIn('__classcell__', dirA)
-            self.assertNotIn('__classcell__', A.__dict__)
-        else:
-            # TODO: filter out __classcell__ in IronPython
-            self.assertIn('__classcell__', dirA)
-            self.assertIn('__classcell__', A.__dict__)
+        self.assertNotIn('__classcell__', dirA)
+        self.assertNotIn('__classcell__', A.__dict__)
 
     def test_classcell_propagation(self):
         with warnings.catch_warnings(record=True) as ws:

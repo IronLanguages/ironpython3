@@ -1458,6 +1458,14 @@ namespace IronPython.Runtime.Operations {
                 }
             } // else metaclass is expected to be a callable and overrides any inherited metaclass through any bases
 
+            // Call class body lambda
+            CodeContext classContext = func(parentContext);
+            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
+
+            // Prepare classdict
+            // TODO: prepared classdict should be used by `func` (PEP 3115)
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
+
             // Fasttrack for metaclass == `type`
             if (metaclass is null) {
                 if (keywords != null && keywords.Count > 0) {
@@ -1467,17 +1475,13 @@ namespace IronPython.Runtime.Operations {
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
-                PythonDictionary vars = func(parentContext).Dict;
-                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
+                
+                PythonDictionary vars = classContext.Dict;
+                if (classCell is not null) {
+                    vars.RemoveDirect("__classcell__");
+                }
+                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames, classCell);
             }
-
-            CodeContext classContext = func(parentContext);
-            // If __classcell__ is defined, verify later that it makes all the way to type.__new__
-            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
-
-            // Prepare classdict
-            // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
 
             // Dispatch to the metaclass to do class creation and initialization
             // metaclass could be simply a callable, eg:
@@ -1496,6 +1500,7 @@ namespace IronPython.Runtime.Operations {
                 keywords ?? MakeEmptyDict()
             );
 
+            // If __classcell__ is defined, verify that it made all the way to type.__new__
             if (classCell is not null && classCell.Value == Uninitialized.Instance) {
                 // Python 3.8: RuntimeError
                 Warn(parentContext, PythonExceptions.DeprecationWarning,
@@ -1526,8 +1531,10 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            static object? CallPrepare(CodeContext/*!*/ context, object meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
-                object? classdict = dict;
+            static object? CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
+                if (meta is null) return dict;
+
+                object? classdict = null;
 
                 object? prepareFunc = null;
                 // if available, call the __prepare__ method to get the classdict (PEP 3115)
@@ -1552,7 +1559,7 @@ namespace IronPython.Runtime.Operations {
                         context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
                 }
 
-                return classdict;
+                return classdict ?? new PythonDictionary(dict);
             }
         }
 

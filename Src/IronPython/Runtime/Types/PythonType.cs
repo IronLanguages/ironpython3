@@ -246,10 +246,23 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #region Public API
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict) {
-            return __new__(context, cls, name, bases, dict, string.Empty);
+            ClosureCell classCell = null;
+
+            // copy the contents of dict to classdict, extracting __classcell__
+            var storage = new CommonDictionaryStorage();
+            foreach (var pair in dict) {
+                if (pair.Key as string == "__classcell__") {
+                    classCell = pair.Value as ClosureCell;
+                } else {
+                    storage.AddNoLock(pair.Key, pair.Value);
+                }
+            }
+            PythonDictionary classDict = new PythonDictionary(storage);
+
+            return __new__(context, cls, name, bases, classDict, string.Empty, classCell);
         }
 
-        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict, string selfNames) {
+        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict, string selfNames, ClosureCell/*?*/ classCell) {
             if (name == null) {
                 throw PythonOps.TypeError("type() argument 1 must be string, not None");
             }
@@ -280,14 +293,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 // no custom user type for __new__
                 type = new PythonType(context, name, bases, dict, selfNames);
             }
-            object cell = dict.get("__classcell__");
-            if (cell is ClosureCell pycell)
-            {
-                pycell.Value = type;
-                dict.RemoveDirect("__classcell__");
-            }
-            return type;
 
+            if (classCell is not null) {
+                classCell.Value = type;
+            }
+
+            return type;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]

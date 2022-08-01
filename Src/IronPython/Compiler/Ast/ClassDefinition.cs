@@ -99,11 +99,9 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
-        private bool needClassCell { get; set; }
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
-                needClassCell = true;
                 ClassCellVariable = EnsureVariable("__classcell__");
                 ClassVariable = variable = EnsureVariable(reference.Name);
                 variable.AccessedInNestedScope = true;
@@ -261,18 +259,18 @@ namespace IronPython.Compiler.Ast {
 
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
 
-            // __doc__ = """..."""
-            MSAst.Expression? docStmt = null;
-            string doc = GetDocumentation(Body);
-            if (doc != null) {
-                docStmt = AssignValue(GetVariableExpression(DocVariable!), AstUtils.Constant(doc));
-            }
-
             // __module__ = __name__
             MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable!), GetVariableExpression(ModuleNameVariable!));
 
             // TODO: set __qualname__
-            
+
+            // __doc__ = """..."""
+            MSAst.Expression? docStmt = null;
+            string doc = GetDocumentation(Body);
+            if (doc is not null) {
+                docStmt = AssignValue(GetVariableExpression(DocVariable!), AstUtils.Constant(doc));
+            }
+
             // Create the body
             MSAst.Expression bodyStmt = Body;
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
@@ -282,17 +280,17 @@ namespace IronPython.Compiler.Ast {
 
             // __classcell__ == ClosureCell(__class__)
             MSAst.Expression? assignClassCellStmt = null;
-            if (needClassCell) {
+            if (ClassCellVariable is not null) {
                 var exp = (ClosureExpression)GetVariableExpression(ClassVariable!);
-                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
+                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable), exp.ClosureCell);
             }
 
             bodyStmt = WrapScopeStatements(
                 Ast.Block(
                     Ast.Block(init),
-                    docStmt is not null ? docStmt : AstUtils.Empty(),
                     modStmt,
                     // __qualname__
+                    docStmt is not null ? docStmt : AstUtils.Empty(),
                     bodyStmt,
                     assignClassCellStmt is not null ? assignClassCellStmt : AstUtils.Empty(),
                     LocalContext

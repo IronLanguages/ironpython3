@@ -2622,7 +2622,7 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(x.__bases__, (object, ))
         self.assertEqual(x.__name__, 'x')
 
-    def test_class_attribute(self):
+    def test_class_variable(self):
         class C:
             def f(self):
                 return self.__class__
@@ -2644,7 +2644,7 @@ class ClassTest(IronPythonTestCase):
         self.assertEqual(C.k(), C)
         self.assertEqual(C().k(), C)
 
-        # Test that a metaclass implemented as a function sets __class__ at a proper moment
+        # Test that a metaclass implemented as a function sets __class__ at a proper moment.
         def makeclass(name, bases, attrs):
             attrNames = set(attrs.keys())
             self.assertRaisesMessage(NameError, "free variable '__class__' referenced before assignment in enclosing scope", attrs['getclass'], None)
@@ -2678,7 +2678,64 @@ class ClassTest(IronPythonTestCase):
         self.assertNotIn('__classcell__', dirA)
         self.assertNotIn('__classcell__', A.__dict__)
 
+        # Variable __class__ can be deleted by a member method.
+        class CD:
+            def f(self):
+                return __class__
+            def d(self):
+                nonlocal __class__  # __class__ is local to class CD, so nonlocal here
+                __class__ = None
+                return __class__
+        cd = CD()
+        self.assertEqual(cd.f(), CD)
+        self.assertEqual(cd.d(), None)
+        self.assertEqual(cd.f(), None)
+        self.assertEqual(cd.__class__, CD) # atribute __class__ is not changed
+
+        # Variable __class__ cannot be deleted in the body of class lambda.
+        with self.assertRaisesMessage(NameError, "name '__class__' is not defined"):
+            class CDXX:
+                def f(self):
+                    return __class__
+                del __class__
+
+        # Variable __class__ can be deleted in the body of class lambda
+        # if it was first initialized, but it will be set again by type__.new__
+        class CDX:
+            def f(self):
+                return __class__
+            __class__ = None
+            del __class__
+        self.assertEqual(CDX().f(), CDX)
+
+        # __class__ is not local to a function
+        class CE:
+            def f(self):
+                return __class__
+            def e(self):
+                return eval('__class__')
+            def ecl(self):
+                return eval('__class__', globals(), CE.class_locals)
+            def l(self):
+                return locals()
+            class_locals = locals()
+            has_class_yet = '__class__' in class_locals # False, __class__ not set until type.__new__ is called
+
+        self.assertEqual(CE().f(), CE)
+        self.assertRaisesMessage(NameError, "name '__class__' is not defined", CE().e)
+        self.assertNotIn('__class__', CE().l())
+        self.assertFalse(CE.has_class_yet)
+        if (is_cli):
+            self.assertIn('__class__', CE.class_locals)
+            self.assertEqual(CE().ecl(), CE)
+        else:
+            self.assertNotIn('__class__', CE.class_locals)
+            self.assertRaisesMessage(NameError, "name '__class__' is not defined", CE().ecl)
+
     def test_classcell_propagation(self):
+        # If a class method uses __class__, the class namespace contains __classcell__ which has to reach type.__new__
+        # The test below uses MyDict for namespace, which discards all attributes, including __classcell__
+        # This triggers a warning in Python 3.6 and an error in Python 3.8
         with warnings.catch_warnings(record=True) as ws:
             warnings.simplefilter("always")
 
@@ -2698,6 +2755,7 @@ class ClassTest(IronPythonTestCase):
 
         self.assertEqual(len(ws), 0) # no unchecked warnings
 
+        # Here the warning is triggered because type.__new__ is not called at all.
         with warnings.catch_warnings(record=True) as ws:
             warnings.simplefilter("always")
 
@@ -2712,6 +2770,41 @@ class ClassTest(IronPythonTestCase):
                         return __class__
 
         self.assertEqual(len(ws), 0) # no unchecked warnings
+
+        # This class uses a __classcell__ set after the end of class lambda.
+        # It owerwrites the value assigned to __classcell__ in the body of the class lambda.
+        class COK:
+            def f(self):
+                return __class__
+            __classcell__ = None
+
+        self.assertEqual(COK().f(), COK)
+
+        # This class does not need a __classcell__ (because __class__ is not used) but defines it anyway in the body of the class lambda.
+        # __classcell__ gets propagated to type.__new__ but its value is of a wrong type.
+        with self.assertRaisesMessage(TypeError, "__classcell__ must be a nonlocal cell, not <class 'NoneType'>"):
+            class CXX:
+                __classcell__ = None
+
+        class MetaXX(type):
+            def __new__(cls, name, bases, attrs):
+                attrs['__classcell__'] = True
+                return super().__new__(cls, name, bases, attrs)
+
+        # This class uses a __classcell__ that gets clobbered by MetaXX
+        with self.assertRaisesMessage(TypeError, "__classcell__ must be a nonlocal cell, not <class 'bool'>"):
+            class CXX(metaclass=MetaXX):
+                def f(self):
+                    return __class__
+
+    def test_classcell_access(self):
+        # __classcell__, if used, should be defined only after the body of the class lambda
+        with self.assertRaisesMessage(NameError, "name '__classcell__' is not defined"):
+            class CXX:
+                def f(self):
+                    return __class__ # makes __classcell__ needed
+                del __classcell__    # it should fail here...
+            #CXX().f()               # ...not here
 
     def test_issubclass(self):
         # first argument doesn't need to be new-style or old-style class if it defines __bases__

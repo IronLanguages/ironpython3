@@ -245,39 +245,18 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #region Public API
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict) {
-            if (name == null) {
-                throw PythonOps.TypeError("type() argument 1 must be string, not None");
-            }
-            if (bases == null) {
-                throw PythonOps.TypeError("type() argument 2 must be tuple, not None");
-            }
-            if (dict == null) {
-                throw PythonOps.TypeError("TypeError: type() argument 3 must be dict, not None");
-            }
+#nullable enable
 
-            ClosureCell classCell = null;
-
-            // copy the contents of dict to classdict, extracting __classcell__
-            var storage = new CommonDictionaryStorage();
-            foreach (var pair in dict) {
-                if (pair.Key as string == "__classcell__") {
-                    classCell = pair.Value as ClosureCell;
-                } else {
-                    storage.AddNoLock(pair.Key, pair.Value);
-                }
-            }
-            PythonDictionary classDict = new PythonDictionary(storage);
-
-            return __new__(context, cls, name, bases, classDict, string.Empty, classCell);
+        public static object? __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] string name, [NotNone] PythonTuple bases, [NotNone] PythonDictionary dict) {
+            return __new__(context, cls, name, bases, dict, string.Empty);
         }
 
-        internal static object __new__(CodeContext/*!*/ context, PythonType cls, string/*!*/ name, PythonTuple/*!*/ bases, PythonDictionary/*!*/ dict, string selfNames, ClosureCell/*?*/ classCell) {
+        internal static object? __new__(CodeContext/*!*/ context, PythonType cls, string name, PythonTuple bases, PythonDictionary dict, string selfNames) {
 
             EnsureModule(context, dict);
 
             PythonType meta = FindMetaClass(cls, bases);
-            object type;
+            object? type;
 
             if (meta != TypeCache.PythonType) {
                 if (meta != cls // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass __new__
@@ -295,12 +274,18 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 type = new PythonType(context, name, bases, dict, selfNames);
             }
 
-            if (classCell is not null) {
+            // set class cell, if any
+            if (dict.TryGetValueNoMissing("__classcell__", out object? classCellObject)) {
+                if (classCellObject is not ClosureCell classCell) {
+                    throw PythonOps.TypeErrorForBadInstance("__classcell__ must be a nonlocal cell, not <class '{0}'>", classCellObject);
+                }
                 classCell.Value = type;
             }
 
             return type;
         }
+
+#nullable restore
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __init__(string name, PythonTuple bases, PythonDictionary dict, [ParamDictionary] IDictionary<object, object> kwargs) {
@@ -2108,6 +2093,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             List<string> slots = GetSlots(vars);
             if (slots != null) {
+                slots.Remove("__classcell__");
                 _slots = slots.ToArray();
                 
                 int index = _originalSlotCount;
@@ -2154,8 +2140,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             foreach (var kvp in vars) {
-                if (kvp.Key is string) {
-                    PopulateSlot((string)kvp.Key, kvp.Value);
+                if (kvp.Key is string skey && skey != "__classcell__") {
+                    PopulateSlot(skey, kvp.Value);
                 }
             }
 

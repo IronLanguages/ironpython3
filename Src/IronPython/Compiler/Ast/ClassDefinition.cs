@@ -260,44 +260,41 @@ namespace IronPython.Compiler.Ast {
             var createLocal = CreateLocalContext(_parentContextParam);
 
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
-            // __classcell__ == ClosureCell(__class__)
-            if (needClassCell) {
-                var exp = (ClosureExpression) GetVariableExpression(ClassVariable!);
-                MSAst.Expression assignClassCell = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
-                init.Add(assignClassCell);
+
+            // __doc__ = """..."""
+            MSAst.Expression? docStmt = null;
+            string doc = GetDocumentation(Body);
+            if (doc != null) {
+                docStmt = AssignValue(GetVariableExpression(DocVariable!), AstUtils.Constant(doc));
             }
-
-            List<MSAst.Expression> statements = new List<MSAst.Expression>();
-            // Create the body
-            MSAst.Expression bodyStmt = Body;
-
 
             // __module__ = __name__
             MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable!), GetVariableExpression(ModuleNameVariable!));
 
-            string doc = GetDocumentation(Body);
-            if (doc != null) {
-                statements.Add(
-                    AssignValue(
-                        GetVariableExpression(DocVariable!),
-                        AstUtils.Constant(doc)
-                    )
-                );
-            }
-
+            // TODO: set __qualname__
+            
+            // Create the body
+            MSAst.Expression bodyStmt = Body;
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
                 bodyStmt = AddFrame(LocalContext, FuncCodeExpr, bodyStmt);
                 locals.Add(FunctionStackVariable);
             }
 
+            // __classcell__ == ClosureCell(__class__)
+            MSAst.Expression? assignClassCellStmt = null;
+            if (needClassCell) {
+                var exp = (ClosureExpression)GetVariableExpression(ClassVariable!);
+                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
+            }
+
             bodyStmt = WrapScopeStatements(
                 Ast.Block(
                     Ast.Block(init),
-                    statements.Count == 0 ?
-                        EmptyBlock :
-                        Ast.Block(new ReadOnlyCollection<MSAst.Expression>(statements)),
+                    docStmt is not null ? docStmt : AstUtils.Empty(),
                     modStmt,
+                    // __qualname__
                     bodyStmt,
+                    assignClassCellStmt is not null ? assignClassCellStmt : AstUtils.Empty(),
                     LocalContext
                 ),
                 Body.CanThrow

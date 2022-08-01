@@ -1460,11 +1460,11 @@ namespace IronPython.Runtime.Operations {
 
             // Call class body lambda
             CodeContext classContext = func(parentContext);
-            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
+            PythonDictionary vars = classContext.Dict;
 
             // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, vars);
 
             // Fasttrack for metaclass == `type`
             if (metaclass is null) {
@@ -1476,11 +1476,7 @@ namespace IronPython.Runtime.Operations {
                     bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
                 
-                PythonDictionary vars = classContext.Dict;
-                if (classCell is not null) {
-                    vars.RemoveDirect("__classcell__");
-                }
-                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames, classCell);
+                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames)!;
             }
 
             // Dispatch to the metaclass to do class creation and initialization
@@ -1500,12 +1496,24 @@ namespace IronPython.Runtime.Operations {
                 keywords ?? MakeEmptyDict()
             );
 
-            // If __classcell__ is defined, verify that it made all the way to type.__new__
-            if (classCell is not null && classCell.Value == Uninitialized.Instance) {
-                // Python 3.8: RuntimeError
-                Warn(parentContext, PythonExceptions.DeprecationWarning,
-                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
-                classCell.Value = obj;
+            // If __class__ is used, verify that it has been set
+            if (vars._storage is RuntimeVariablesDictionaryStorage storage) {
+                int pos = Array.IndexOf(storage.Names, "__class__");
+                if (pos >= 0) {
+                    ClosureCell classCell = storage.GetCell(pos);
+                    if (!ReferenceEquals(classCell.Value, obj)) {
+                        if (classCell.Value == Uninitialized.Instance) {
+                            // Python 3.8: RuntimeError
+                            Warn(parentContext, PythonExceptions.DeprecationWarning,
+                                "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
+                            classCell.Value = obj; // Python 3.6: Fill in the cell, since type.__new__ didn't do it
+                        } else {
+                            // Python 3.8: RuntimeError
+                            Warn(parentContext, PythonExceptions.DeprecationWarning,
+                                "__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
+                        }
+                    }
+                }
             }
 
             // Ensure the class derives from `object`

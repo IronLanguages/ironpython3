@@ -1464,7 +1464,7 @@ namespace IronPython.Runtime.Operations {
 
             // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, vars);
+            object classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, vars);
 
             // Fasttrack for metaclass == `type`
             if (metaclass is null) {
@@ -1539,7 +1539,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            static object? CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
+            static object CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
                 if (meta is null) return dict;
 
                 object? classdict = null;

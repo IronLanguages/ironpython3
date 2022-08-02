@@ -16,7 +16,7 @@ import test.test_long
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        suite.addTest(unittest.expectedFailure(test.test_long.LongTest('test__format__'))) # https://github.com/IronLanguages/ironpython3/issues/105
+        suite.addTest(test.test_long.LongTest('test__format__'))
         suite.addTest(test.test_long.LongTest('test_access_to_nonexistent_digit_0'))
         suite.addTest(test.test_long.LongTest('test_bit_length'))
         suite.addTest(test.test_long.LongTest('test_bitop_identities'))

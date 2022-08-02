@@ -226,13 +226,13 @@ class StrFormatTest(IronPythonTestCase):
             def __format__(self, *args):
                 return 42
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ method did not return string", '{0}'.format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ method did not return string", '{0}'.format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ must return a str, not NoneType", '{0}'.format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ must return a str, not int", '{0}'.format, bad2())
 
         self.assertRaisesMessage(ValueError, "Unknown conversion specifier x", '{0!x}'.format, 'abc')
 
-        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ method did not return string", format, bad())
-        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ method did not return string", format, bad2())
+        self.assertRaisesMessage(TypeError, "bad.__format__ must return a str, not NoneType" if is_cli else "__format__ must return a str, not NoneType", format, bad())
+        self.assertRaisesMessage(TypeError, "bad2.__format__ must return a str, not int" if is_cli else "__format__ must return a str, not int", format, bad2())
 
     def test_object__format__(self):
         self.assertEqual(object.__format__("aaa", ""), "aaa")
@@ -278,8 +278,10 @@ class StrFormatTest(IronPythonTestCase):
         for char in allChars:
             if char != 's' and (char < '0' or char > '9'):
                 x = ord(char)
-                if char==',':
+                if char == ',':
                     errors.append(('10' + char, "Cannot specify ',' with 's'."))
+                elif char == '_':
+                    errors.append(('10' + char, "Cannot specify '_' with 's'."))
                 elif 0x20 < x < 0x80:
                     errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
                 else:
@@ -599,7 +601,7 @@ class StrFormatTest(IronPythonTestCase):
     def test_float___format___errors(self):
         errors = []
 
-        okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ','] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
+        okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ',', '_'] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
         # verify the okChars are actually ok
         for char in okChars:
             2.0.__format__('10' + char)
@@ -870,31 +872,54 @@ class StrFormatTest(IronPythonTestCase):
                 (1112345401, 'e',  '1.112345e+09'),
                 (1112345401, 'E',  '1.112345E+09'),
                 (111234540100, 'E',  '1.112345E+11'),
-
-                # thousands separator
-                (1000,      ',d',       '1,000'),
-                (1000,      '+,d',      '+1,000'),
-                (1000,      '-,d',      '1,000'),
-                (1000,      ' ,d',      ' 1,000'),
-                (-1000,     ',d',       '-1,000'),
-                (-1000,     '+,d',      '-1,000'),
-                (-1000,     '-,d',      '-1,000'),
-                (-1000,     ' ,d',      '-1,000'),
-
-                # thousands separator (zero padded)
-                (1000,      '08,d',    '0,001,000'),
-                (1000,      '+08,d',   '+001,000'),
-                (1000,      '-08,d',   '0,001,000'),
-                (1000,      ' 08,d',   ' 001,000'),
-                (-1000,     '08,d',    '-001,000'),
-                (-1000,     '+08,d',   '-001,000'),
-                (-1000,     '-08,d',   '-001,000'),
-                (-1000,     ' 08,d',   '-001,000'),
-                ]
+        ]
 
         for value, spec, result in tests:
             self.assertEqual(value.__format__(spec), result)
             self.assertEqual(big(value).__format__(spec), result)
+
+        tests_thousands = [
+                # thousands separator
+                (1000,      ',',       '1,000'),
+                (1000,      '+,',      '+1,000'),
+                (1000,      '-,',      '1,000'),
+                (1000,      ' ,',      ' 1,000'),
+                (-1000,     ',',       '-1,000'),
+                (-1000,     '+,',      '-1,000'),
+                (-1000,     '-,',      '-1,000'),
+                (-1000,     ' ,',      '-1,000'),
+                (1000,      '_',       '1_000'),
+                (1000,      '+_',      '+1_000'),
+                (1000,      '-_',      '1_000'),
+                (1000,      ' _',      ' 1_000'),
+                (-1000,     '_',       '-1_000'),
+                (-1000,     '+_',      '-1_000'),
+                (-1000,     '-_',      '-1_000'),
+                (-1000,     ' _',      '-1_000'),
+
+                # thousands separator (zero padded)
+                (1000,      '08,',    '0,001,000'),
+                (1000,      '+08,',   '+001,000'),
+                (1000,      '-08,',   '0,001,000'),
+                (1000,      ' 08,',   ' 001,000'),
+                (-1000,     '08,',    '-001,000'),
+                (-1000,     '+08,',   '-001,000'),
+                (-1000,     '-08,',   '-001,000'),
+                (-1000,     ' 08,',   '-001,000'),
+                (-1000,     '08_',    '-001_000'),
+                (-1000,     '+08_',   '-001_000'),
+                (-1000,     '-08_',   '-001_000'),
+                (-1000,     ' 08_',   '-001_000'),
+                ]
+
+        for value, spec, result in tests_thousands:
+            assert "d" not in spec
+            self.assertEqual(value.__format__(spec), result)
+            self.assertEqual(big(value).__format__(spec), result)
+
+            # also test with an explicit "d"
+            self.assertEqual(value.__format__(spec + "d"), result)
+            self.assertEqual(big(value).__format__(spec + "d"), result)
 
         locale_tests = [
             (1000,          'n',    '1000',         '1,000'),
@@ -942,7 +967,7 @@ class StrFormatTest(IronPythonTestCase):
         else:
             errors.append((OverflowError, sys.maxsize + 1, 'c', "Python int too large to convert to C long"))
 
-        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
+        okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ',', '_'] + [chr(x) for x in range(ord('0'), ord('9') + 1)])
 
         # verify the okChars are actually ok
         for char in okChars:

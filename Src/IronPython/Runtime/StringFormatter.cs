@@ -445,7 +445,7 @@ namespace IronPython.Runtime {
             if (!PythonOps.IsMappingType(DefaultContext.Default, _data)) {
                 if ((!(_data is PythonTuple) && _dataIndex != 1) ||
                     (_data is PythonTuple && _dataIndex != ((PythonTuple)_data).__len__())) {
-                    throw PythonOps.TypeError("not all arguments converted during string formatting");
+                    throw PythonOps.TypeError("not all arguments converted during {0} formatting", _asBytes ? "bytes" : "string");
                 }
             }
         }

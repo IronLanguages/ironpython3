@@ -836,4 +836,10 @@ class ReTest(IronPythonTestCase):
         for m2 in (p.finditer("a", -100), p.finditer("a", -100, 100), p.finditer("a", endpos=100)):
             self.assertEqual(m.span(), next(m2).span())
 
+    def test_ipy2_gh821(self):
+        # https://github.com/IronLanguages/ironpython2/issues/821
+        # don't include unnamed groups in groupdict
+        d = re.match('(?P<foo>.*)(.*)', 'bar').groupdict()
+        self.assertEqual(d, {'foo': 'bar'})
+
 run_test(__name__)

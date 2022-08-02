@@ -2797,6 +2797,20 @@ class ClassTest(IronPythonTestCase):
                 def f(self):
                     return __class__
 
+        # Pointing the cell reference at the wrong class is also prohibited
+        # See also StdLib 3.6: test_super.TestSuper.test___classcell___wrong_cell
+        class Meta(type):
+            def __new__(cls, name, bases, namespace):
+                cls = super().__new__(cls, name, bases, namespace)
+                B = type("B", (), namespace)
+                return cls
+
+        # CPython's message is slightly incorrect
+        with self.assertRaisesRegex(TypeError, r"^__class__ set to <class '.*'> defining 'A' as <class '.*\.A'>"):
+            class A(metaclass=Meta):
+                def f(self):
+                    return __class__
+
     def test_classcell_access(self):
         # __classcell__, if used, should be defined only after the body of the class lambda
         with self.assertRaisesMessage(NameError, "name '__classcell__' is not defined"):

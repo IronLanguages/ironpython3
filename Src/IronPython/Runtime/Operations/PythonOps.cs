@@ -1414,7 +1414,7 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
+        public static object? MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
             // Check and normalize bases
@@ -1486,7 +1486,7 @@ namespace IronPython.Runtime.Operations {
             // calls our function...
             PythonContext pc = parentContext.LanguageContext;
 
-            object obj = pc.MetaClassCallSite.Target(
+            object? obj = pc.MetaClassCallSite.Target(
                 pc.MetaClassCallSite,
                 parentContext,
                 metaclass,
@@ -1503,14 +1503,14 @@ namespace IronPython.Runtime.Operations {
                     ClosureCell classCell = storage.GetCell(pos);
                     if (!ReferenceEquals(classCell.Value, obj)) {
                         if (classCell.Value == Uninitialized.Instance) {
-                            // Python 3.8: RuntimeError
-                            Warn(parentContext, PythonExceptions.DeprecationWarning,
-                                "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
-                            classCell.Value = obj; // Python 3.6: Fill in the cell, since type.__new__ didn't do it
+                            if (obj is not null) {
+                                // Python 3.8: RuntimeError
+                                Warn(parentContext, PythonExceptions.DeprecationWarning,
+                                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
+                            }
+                            classCell.Value = obj; // Fill in the cell, since type.__new__ didn't do it
                         } else {
-                            // Python 3.8: RuntimeError
-                            Warn(parentContext, PythonExceptions.DeprecationWarning,
-                                "__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
+                            throw TypeError("__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
                         }
                     }
                 }

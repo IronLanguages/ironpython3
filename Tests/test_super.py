@@ -10,6 +10,8 @@
 ##
 
 import unittest
+import warnings
+from test.support import check_warnings
 
 from iptest import run_test
 
@@ -52,5 +54,29 @@ class SuperTest(unittest.TestCase):
     def test_instanceSupermethods(self):
         for cls in (A,B,C,D):
             self.assertEqual(cls().inst_getDoc(), cls.__doc__)
+
+    def test___class___delayed(self):
+        """Copy of Python 3.6: test_super.TestSuper.test___class___delayed"""
+        test_namespace = None
+
+        class Meta(type):
+            def __new__(cls, name, bases, namespace):
+                nonlocal test_namespace
+                test_namespace = namespace
+                return None
+
+        # This case shouldn't trigger the __classcell__ deprecation warning
+        with check_warnings() as w:
+            warnings.simplefilter("always", DeprecationWarning)
+            class A(metaclass=Meta):
+                @staticmethod
+                def f():
+                    return __class__
+        self.assertEqual(w.warnings, [])
+
+        self.assertIs(A, None)
+
+        B = type("B", (), test_namespace)
+        self.assertIs(B.f(), B)
 
 run_test(__name__)

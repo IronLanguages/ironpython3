@@ -748,23 +748,25 @@ namespace IronPython.Modules {
                 void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
             }
 
-            private static bool IsGroupNumber(string name) {
-                foreach (char c in name) {
-                    if (!char.IsNumber(c)) return false;
-                }
-                return true;
-            }
-
             [return: DictionaryTypeInfo(typeof(string), typeof(object))]
             public PythonDictionary groupdict(object? @default = null) {
                 string[] groupNames = this.re._re.GetGroupNames();
                 Debug.Assert(groupNames.Length == this._m.Groups.Count);
                 PythonDictionary d = new PythonDictionary();
                 for (int i = 0; i < groupNames.Length; i++) {
-                    if (IsGroupNumber(groupNames[i])) continue; // python doesn't report group numbers
-                    d[groupNames[i]] = re.GetGroupValue(_m.Groups[i], @default);
+                    var groupName = groupNames[i];
+                    if (IsGroupNumber(groupName)) continue; // python doesn't report group numbers
+                    if (groupName.StartsWith(_mangledNamedGroup, StringComparison.Ordinal)) continue; // don't include unnamed groups
+                    d[groupName] = re.GetGroupValue(_m.Groups[i], @default);
                 }
                 return d;
+
+                static bool IsGroupNumber(string name) {
+                    foreach (char c in name) {
+                        if (!char.IsNumber(c)) return false;
+                    }
+                    return true;
+                }
             }
 
             [return: SequenceTypeInfo(typeof(int))]

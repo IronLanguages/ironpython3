@@ -159,17 +159,17 @@ class ArrayTest(IronPythonTestCase):
     def test_constructor(self):
         array1 = System.Array[int](10)
         array2 = System.Array.CreateInstance(System.Int32, 10)
-        self.assertEquals(len(array1), len(array2))
+        self.assertEqual(len(array1), len(array2))
         for i in range(len(array1)):
-            self.assertEquals(array1[i], 0)
-            self.assertEquals(array1[i], array2[i])
+            self.assertEqual(array1[i], 0)
+            self.assertEqual(array1[i], array2[i])
 
         # 2-dimensional
         array3 = System.Array[System.Byte](3, 4)
-        self.assertEquals(array3.Rank, 2)
+        self.assertEqual(array3.Rank, 2)
         for x in range(array3.GetLength(0)):
             for y in range(array3.GetLength(1)):
-                self.assertEquals(array3[x, y], 0)
+                self.assertEqual(array3[x, y], 0)
 
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))

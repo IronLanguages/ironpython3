@@ -307,8 +307,8 @@ class StrTest(IronPythonTestCase):
 
         self.assertIs(type(repr(A())), mystr)
         self.assertIs(type(str(A())), mystr)
-        self.assertEquals(repr(A()), "__repr__ called")
-        self.assertEquals(str(A()), "__str__ called")
+        self.assertEqual(repr(A()), "__repr__ called")
+        self.assertEqual(str(A()), "__str__ called")
 
     @skipUnlessIronPython()
     def test_str_char_hash(self):

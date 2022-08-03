@@ -99,11 +99,9 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
-        private bool needClassCell { get; set; }
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
-                needClassCell = true;
                 ClassCellVariable = EnsureVariable("__classcell__");
                 ClassVariable = variable = EnsureVariable(reference.Name);
                 variable.AccessedInNestedScope = true;
@@ -260,44 +258,41 @@ namespace IronPython.Compiler.Ast {
             var createLocal = CreateLocalContext(_parentContextParam);
 
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
-            // __classcell__ == ClosureCell(__class__)
-            if (needClassCell) {
-                var exp = (ClosureExpression) GetVariableExpression(ClassVariable!);
-                MSAst.Expression assignClassCell = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
-                init.Add(assignClassCell);
-            }
-
-            List<MSAst.Expression> statements = new List<MSAst.Expression>();
-            // Create the body
-            MSAst.Expression bodyStmt = Body;
-
 
             // __module__ = __name__
             MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable!), GetVariableExpression(ModuleNameVariable!));
 
+            // TODO: set __qualname__
+
+            // __doc__ = """..."""
+            MSAst.Expression? docStmt = null;
             string doc = GetDocumentation(Body);
-            if (doc != null) {
-                statements.Add(
-                    AssignValue(
-                        GetVariableExpression(DocVariable!),
-                        AstUtils.Constant(doc)
-                    )
-                );
+            if (doc is not null) {
+                docStmt = AssignValue(GetVariableExpression(DocVariable!), AstUtils.Constant(doc));
             }
 
+            // Create the body
+            MSAst.Expression bodyStmt = Body;
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
                 bodyStmt = AddFrame(LocalContext, FuncCodeExpr, bodyStmt);
                 locals.Add(FunctionStackVariable);
             }
 
+            // __classcell__ == ClosureCell(__class__)
+            MSAst.Expression? assignClassCellStmt = null;
+            if (ClassCellVariable is not null) {
+                var exp = (ClosureExpression)GetVariableExpression(ClassVariable!);
+                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable), exp.ClosureCell);
+            }
+
             bodyStmt = WrapScopeStatements(
                 Ast.Block(
                     Ast.Block(init),
-                    statements.Count == 0 ?
-                        EmptyBlock :
-                        Ast.Block(new ReadOnlyCollection<MSAst.Expression>(statements)),
                     modStmt,
+                    // __qualname__
+                    docStmt is not null ? docStmt : AstUtils.Empty(),
                     bodyStmt,
+                    assignClassCellStmt is not null ? assignClassCellStmt : AstUtils.Empty(),
                     LocalContext
                 ),
                 Body.CanThrow

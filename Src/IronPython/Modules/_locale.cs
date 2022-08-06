@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using IronPython.Runtime;
@@ -40,11 +41,8 @@ namespace IronPython.Modules {
         public const int LC_NUMERIC = (int)LocaleCategories.Numeric;
         public const int LC_TIME = (int)LocaleCategories.Time;
 
-        internal static string PreferredEncoding {
-            get {
-                return "cp" + Encoding.GetEncoding(0).CodePage.ToString();
-            }
-        }
+        internal static string PreferredEncoding
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cp" + Encoding.GetEncoding(0).CodePage.ToString() : "UTF-8";
 
         [Documentation("gets the default locale tuple")]
         public static object _getdefaultlocale() {

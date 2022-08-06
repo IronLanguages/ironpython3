@@ -188,8 +188,15 @@ class _LocaleTest(unittest.TestCase):
         current_culture = System.Globalization.CultureInfo.CurrentCulture
         try:
             # https://github.com/IronLanguages/ironpython3/issues/1527
-            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo("en-DE")
-            self.assertNotEqual(_locale._getdefaultlocale()[1], "cp0")
+            for x in range(26):
+                for y in range(26):
+                    try:
+                        culture_info = System.Globalization.CultureInfo("en-{}{}".format(chr(x + ord('A')), chr(y + ord('A'))))
+                    except ValueError:
+                        self.assertTrue(is_mono)
+                    else:
+                        System.Globalization.CultureInfo.CurrentCulture = culture_info
+                        self.assertNotEqual(_locale._getdefaultlocale()[1], "cp0")
         finally:
             System.Globalization.CultureInfo.CurrentCulture = current_culture
 

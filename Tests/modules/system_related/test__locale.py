@@ -6,7 +6,7 @@ import _locale
 import _random
 import unittest
 
-from iptest import is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 class _LocaleTest(unittest.TestCase):
 

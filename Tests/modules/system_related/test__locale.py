@@ -6,7 +6,7 @@ import _locale
 import _random
 import unittest
 
-from iptest import is_cli, is_netcoreapp, is_posix, run_test
+from iptest import is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 class _LocaleTest(unittest.TestCase):
 
@@ -27,37 +27,37 @@ class _LocaleTest(unittest.TestCase):
         result1 = _locale._getdefaultlocale()
         result2 = _locale._getdefaultlocale()
         self.assertEqual(result1,result2)
-    
+
     def test_localeconv(self):
         result = _locale.localeconv()
         self.assertTrue(result != None, "The method does not return the correct value")
         self.assertTrue(len(result)>=14, "The elements in the sequence are not enough")
-    
+
     def test_strxfrm(self):
         str1 = "this is a test !"
         str2 = _locale.strxfrm(str1)
         str1.__eq__(str2)
-        
+
         str1 = "this is a test&^%%^$%$ !"
         str2 = _locale.strxfrm(str1)
         str1.__eq__(str2)
-        
+
         str1 = "this \" \"is a test&^%%^$%$ !"
         str2 = _locale.strxfrm(str1)
         str1.__eq__(str2)
-        
+
         str1 = "123456789"
         str2 = _locale.strxfrm(str1)
         str1.__eq__(str2)
-        
+
         #argument is int type
         i = 12
         self.assertRaises(TypeError,_locale.strxfrm,i)
-        
+
         #argument is random type
         obj = _random.Random()
         self.assertRaises(TypeError,_locale.strxfrm,obj)
-    
+
     def collate(self,str1,str2,result):
         if result ==0:
             self.assertTrue(_locale.strcoll(str1,str2)==0, "expected that collating \" %r \" and \" %r \" result should greater than zero" % (str1, str2))
@@ -72,48 +72,48 @@ class _LocaleTest(unittest.TestCase):
         str1 ="This is a test"
         str2 ="This is a test"
         self.collate(str1,str2,result)
-        
+
         str1 ="@$%$%+_)(*"
         str2 ="@$%$%+_)(*"
         self.collate(str1,str2,result)
-        
+
         str1 ="123This is a test"
         str2 ="123This is a test"
         self.collate(str1,str2,result)
-        
+
         # str1 is greater than str2
         result =1
         str1 = "this is a test"
         self.collate(str1,str2,result)
-        
+
         str1 = "234 this is a test"
         str2 = "123 this is a test"
         self.collate(str1,str2,result)
-        
+
         str2 = "@^@%^#& this is a test"
         str2 = "#^@%^#& this is a test"
         self.collate(str1,str2,result)
-        
+
         # str1 is less than  str2
         result = -1
         str1 = "this is a test"
         str2 = "This Is a Test"
         self.collate(str1,str2,result)
-            
+
         str1 = "This is a test123"
         str2 = "This is a test456"
         self.collate(str1,str2,result)
-        
+
         str1 = "#$%This is a test"
         str2 = "@#$This is a test"
         self.collate(str1,str2,result)
-        
+
         # an argument is int
         str2 = 3
         self.assertRaises(TypeError,_locale.strcoll,str1,str2)
         str2 = -1
         self.assertRaises(TypeError,_locale.strcoll,str1,str2)
-        
+
         # an argument is Random type
         str2 = _random.Random()
         self.assertRaises(TypeError,_locale.strcoll,str1,str2)
@@ -122,7 +122,7 @@ class _LocaleTest(unittest.TestCase):
     def test_strcoll(self):
         _locale.setlocale(_locale.LC_COLLATE,"English")
         self.validcollate()
-        
+
         _locale.setlocale(_locale.LC_COLLATE,"French")
         self.validcollate()
 
@@ -135,14 +135,13 @@ class _LocaleTest(unittest.TestCase):
                 _locale.LC_NUMERIC,
                 _locale.LC_TIME,
                 ]
-        
+
         for c in c_list:
             resultLocale = None
             _locale.setlocale(c,"English")
             resultLocale = _locale.setlocale(c)
             self.assertEqual(resultLocale,"English_United States.1252")
-                
-                        
+
         for c in c_list:
             resultLocale = None
             _locale.setlocale(c,"French")
@@ -155,13 +154,13 @@ class _LocaleTest(unittest.TestCase):
         c= _locale.LC_ALL
         locale =''
         _locale.setlocale(c,locale)
-        
+
         #the locale is None
         locale = _locale.setlocale(c)
         resultLocale =_locale.setlocale(c)
         self.assertEqual(locale,resultLocale)
-        
-        #set Numeric as a unknown locale,should thorw a _locale.Error
+
+        #set Numeric as a unknown locale,should throw a _locale.Error
         locale ="11-22"
         self.assertRaises(_locale.Error,_locale.setlocale,c,locale)
         locale ="@^#^&%"
@@ -182,5 +181,23 @@ class _LocaleTest(unittest.TestCase):
     def test_bad_category(self):
         self.assertRaises(TypeError, _locale.setlocale, 'LC_NUMERIC', 'en_US.UTF8')
         self.assertRaises(TypeError, _locale.setlocale, 'LC_NUMERIC', None)
+
+    @skipUnlessIronPython()
+    def test__getdefaultlocale(self):
+        import System
+        current_culture = System.Globalization.CultureInfo.CurrentCulture
+        try:
+            # https://github.com/IronLanguages/ironpython3/issues/1527
+            for x in range(26):
+                for y in range(26):
+                    try:
+                        culture_info = System.Globalization.CultureInfo("en-{}{}".format(chr(x + ord('A')), chr(y + ord('A'))))
+                    except ValueError:
+                        self.assertTrue(is_mono)
+                    else:
+                        System.Globalization.CultureInfo.CurrentCulture = culture_info
+                        self.assertNotEqual(_locale._getdefaultlocale()[1], "cp0")
+        finally:
+            System.Globalization.CultureInfo.CurrentCulture = current_culture
 
 run_test(__name__)

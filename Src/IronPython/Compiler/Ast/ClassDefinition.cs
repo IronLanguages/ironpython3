@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -97,13 +98,16 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override bool ExposesLocalVariable(PythonVariable variable) => true;
+        internal override bool ExposesLocalVariable(PythonVariable variable) {
+            Debug.Assert(variable.Name == "__class__");
+            return true;
+        }
 
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if (reference.Name == "__class__") {
+                ClassVariable = variable = EnsureClassVariable();
                 ClassCellVariable = EnsureVariable("__classcell__");
-                ClassVariable = variable = EnsureVariable(reference.Name);
                 variable.AccessedInNestedScope = true;
                 from.AddFreeVariable(variable, true);
                 for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
@@ -122,18 +126,19 @@ namespace IronPython.Compiler.Ast {
             // Python semantics: The variables bound local in the class
             // scope are accessed by name - the dictionary behavior of classes
             if (TryGetVariable(reference.Name, out variable)) {
-                // TODO: This results in doing a dictionary lookup to get/set the local,
-                // when it should probably be an uninitialized check / global lookup for gets
-                // and a direct set
-                if (variable.Kind == VariableKind.Global) {
+                if (variable.Kind is VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
-                } else if (variable.Kind == VariableKind.Local) {
+                } else if (variable.Kind is VariableKind.Local) {
+                    // TODO: This results in doing a dictionary lookup to get/set the local,
+                    // when it should probably be an uninitialized check / global lookup for gets
+                    // and a direct set
                     return null;
-                }
-
-                if (variable.Kind != VariableKind.Nonlocal) {
+                } else if (variable.Kind is VariableKind.Attribute) {
+                    return null; // fall back on LookupName/SetName in local context dict, which is faster than LookupGlobalVariable
+                } else if (variable.Kind is VariableKind.Parameter) {
                     return variable;
                 }
+                // else NonLocal: continue binding
             }
 
             // Try to bind in outer scopes, if we have an unqualified exec we need to leave the
@@ -146,6 +151,20 @@ namespace IronPython.Compiler.Ast {
             }
 
             return null;
+        }
+
+        internal override PythonVariable EnsureVariable(string name) {
+            if (TryGetVariable(name, out PythonVariable variable)) {
+                return variable;
+            }
+            return CreateVariable(name, VariableKind.Attribute);
+        }
+
+        internal PythonVariable EnsureClassVariable() {
+            if (TryGetVariable("$__class__", out PythonVariable variable)) {
+                return variable;
+            }
+            return CreateVariable("__class__", VariableKind.Local, "$__class__");
         }
 
         internal override Ast LookupVariableExpression(PythonVariable variable) {
@@ -240,6 +259,9 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        private MSAst.Expression SeLocalName(string name, MSAst.Expression expression)
+            => Ast.Call(AstMethods.SetName, LocalContext, Ast.Constant(name), expression);
+
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {
             // we always need to create a nested context for class defs            
 
@@ -260,7 +282,7 @@ namespace IronPython.Compiler.Ast {
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
 
             // __module__ = __name__
-            MSAst.Expression modStmt = AssignValue(GetVariableExpression(ModVariable!), GetVariableExpression(ModuleNameVariable!));
+            MSAst.Expression modStmt = SeLocalName("__module__", AstUtils.Convert(GetVariableExpression(ModuleNameVariable!), typeof(object)));
 
             // TODO: set __qualname__
 
@@ -268,7 +290,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression? docStmt = null;
             string doc = GetDocumentation(Body);
             if (doc is not null) {
-                docStmt = AssignValue(GetVariableExpression(DocVariable!), AstUtils.Constant(doc));
+                docStmt = SeLocalName("__doc__", Ast.Constant(doc, typeof(object)));
             }
 
             // Create the body
@@ -280,9 +302,9 @@ namespace IronPython.Compiler.Ast {
 
             // __classcell__ == ClosureCell(__class__)
             MSAst.Expression? assignClassCellStmt = null;
-            if (ClassCellVariable is not null) {
-                var exp = (ClosureExpression)GetVariableExpression(ClassVariable!);
-                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable), exp.ClosureCell);
+            if (ClassVariable is not null) {
+                var exp = (ClosureExpression)GetVariableExpression(ClassVariable);
+                assignClassCellStmt = AssignValue(GetVariableExpression(ClassCellVariable!), exp.ClosureCell);
             }
 
             bodyStmt = WrapScopeStatements(

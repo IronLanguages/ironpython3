@@ -35,6 +35,15 @@ namespace IronPython.Compiler.Ast {
         ///
         /// Provides a by-reference access to a local variable in an outer scope.
         /// </summary>
-        Nonlocal
+        Nonlocal,
+
+        /// <summary>
+        /// Attrribute variable.
+        ///
+        /// Like a local variable, but is stored directly in the context dictionary,
+        /// rather than a closure cell.
+        /// Should only appear in a class lambda.
+        /// </summary>
+        Attribute
     }
 }

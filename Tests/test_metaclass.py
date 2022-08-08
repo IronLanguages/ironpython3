@@ -323,7 +323,7 @@ class MetaclassTest(IronPythonTestCase):
 
         if is_cli:
             # TODO: Use MyDict as the namespace for the class body lambda
-            self.assertEqual(attributes, ['__doc__', '__module__', 'getclass', '__classcell__'])
+            self.assertEqual(set(attributes), {'__module__', '__doc__', 'getclass', '__classcell__'})
         else:
             self.assertEqual(attributes, ['__module__', '__qualname__', '__doc__', 'getclass', '__classcell__'])
 

@@ -306,4 +306,22 @@ class IteratorTest(IronPythonTestCase):
         with self.assertRaises(StopIteration):
             it.__next__()
 
+    def test_loop_over_iterable_bytes_subclass(self):
+        # part of https://github.com/IronLanguages/ironpython3/issues/1519
+
+        data = list(range(3))
+        class test(bytes):
+            def __iter__(self):
+                return iter(data)
+
+        # enumerate with for loop
+        res = []
+        for x in test():
+            res.append(x)
+
+        self.assertEqual(res, data)
+
+        # enumerate with list
+        self.assertEqual(list(test()), data)
+
 run_test(__name__)

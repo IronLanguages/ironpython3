@@ -2,13 +2,14 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 #
-# Copyright (c) Michael van der Kolff
+# Copyright (c) Michael van der Kolff and contributors
 #
 
 ##
 ## Test whether super() behaves as expected
 ##
 
+import sys
 import warnings
 from test.support import check_warnings
 

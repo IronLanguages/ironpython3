@@ -311,18 +311,9 @@ namespace IronPython.Compiler.Ast {
             throw new NotSupportedException();
         }
 
-        private bool TryGetAnyVariable(string name, out PythonVariable variable) {
+        internal bool TryGetVariable(string name, out PythonVariable variable) {
             if (Variables != null) {
                 return Variables.TryGetValue(name, out variable);
-            } else {
-                variable = null;
-                return false;
-            }
-        }
-
-        internal bool TryGetVariable(string name, out PythonVariable variable) {
-            if (TryGetAnyVariable(name, out variable)) {
-                return true;
             } else {
                 variable = null;
                 return false;
@@ -381,7 +372,7 @@ namespace IronPython.Compiler.Ast {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
                     if (!HasClosureVariable(closureVariables, variable) &&
-                        variable.Kind is not VariableKind.Global and not VariableKind.Nonlocal &&
+                        variable.Kind is VariableKind.Local or VariableKind.Parameter &&
                         (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
 
                         if (closureVariables == null) {
@@ -398,6 +389,8 @@ namespace IronPython.Compiler.Ast {
                         } else {
                             _variableMapping[variable] = Ast.Parameter(typeof(object), variable.Name);
                         }
+                    } else if (variable.Kind == VariableKind.Attribute) {
+                        _variableMapping[variable] = new LookupGlobalVariable(LocalContext, variable.Name, isLocal: true); // TODO: If no user-supplied dictionary is in place, optimize to use more efficient access, see CollectableCompilationMode
                     }
                 }
             }
@@ -461,15 +454,15 @@ namespace IronPython.Compiler.Ast {
             return _nonlocalVars?.TryGetValue(name, out node) ?? false;
         }
 
-        internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind) {
+        internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind, string key = null) {
             EnsureVariables();
-            Debug.Assert(!Variables.ContainsKey(name));
+            Debug.Assert(!Variables.ContainsKey(key ?? name));
             PythonVariable variable;
-            Variables[name] = variable = new PythonVariable(name, kind, this);
+            Variables[key ?? name] = variable = new PythonVariable(name, kind, this);
             return variable;
         }
 
-        internal PythonVariable/*!*/ EnsureVariable(string name) {
+        internal virtual PythonVariable/*!*/ EnsureVariable(string name) {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Local);

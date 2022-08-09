@@ -259,7 +259,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private MSAst.Expression SeLocalName(string name, MSAst.Expression expression)
+        private MSAst.Expression SetLocalName(string name, MSAst.Expression expression)
             => Ast.Call(AstMethods.SetName, LocalContext, Ast.Constant(name), expression);
 
         private Microsoft.Scripting.Ast.LightExpression<Func<CodeContext, CodeContext>> MakeClassBody() {
@@ -282,7 +282,7 @@ namespace IronPython.Compiler.Ast {
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
 
             // __module__ = __name__
-            MSAst.Expression modStmt = SeLocalName("__module__", AstUtils.Convert(GetVariableExpression(ModuleNameVariable!), typeof(object)));
+            MSAst.Expression modStmt = SetLocalName("__module__", AstUtils.Convert(GetVariableExpression(ModuleNameVariable!), typeof(object)));
 
             // TODO: set __qualname__
 
@@ -290,7 +290,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression? docStmt = null;
             string doc = GetDocumentation(Body);
             if (doc is not null) {
-                docStmt = SeLocalName("__doc__", Ast.Constant(doc, typeof(object)));
+                docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(object)));
             }
 
             // Create the body

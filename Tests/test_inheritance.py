@@ -1367,6 +1367,24 @@ class InheritanceTest(IronPythonTestCase):
 
         c = C()
 
+    def test_super_errors(self):
+        # Test that TyypeError is raised, rather than pass or SystemError: Object reference not set to an instance of an object.
+
+        with self.assertRaises(TypeError):
+            super(None)
+        with self.assertRaises(TypeError):
+            super(None, None)
+
+        x = super.__new__(super)
+        with self.assertRaises(TypeError):
+            x.__init__(None)
+        with self.assertRaises(TypeError):
+            x.__get__(None, None)
+        with self.assertRaises(TypeError):
+            x.__get__(int, None)
+        with self.assertRaises(TypeError):
+            x.__get__(1, None)
+
     @skipUnlessIronPython()
     def test_inherit_mixed_properties(self):
         from IronPythonTest import MixedPropertiesInherited, MixedProperties

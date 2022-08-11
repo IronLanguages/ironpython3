@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
@@ -15,9 +19,10 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType("super")]
     public class Super : PythonTypeSlot, ICodeFormattable {
-        private PythonType _thisClass;
-        private object _self;
-        private object _selfClass;
+        [DisallowNull]
+        private PythonType? _thisClass; // set during __init__
+        private object? _self;
+        private object? _selfClass;
 
         public Super() {
         }
@@ -28,12 +33,14 @@ namespace IronPython.Runtime {
             throw PythonOps.RuntimeError("super(): no arguments");
         }
 
-        public void __init__(PythonType type) {
+        public void __init__([NotNone] PythonType type) {
             __init__(type, null);
         }
 
-        public void __init__(PythonType type, object obj) {
-            if (obj != null) {
+        public void __init__([NotNone] PythonType type, object? obj) {
+            if (type is null) throw new ArgumentNullException(nameof(type));
+
+            if (obj is not null) {
                 if (PythonOps.IsInstance(obj, type)) {
                     _thisClass = type;
                     _self = obj;
@@ -52,22 +59,29 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonType __thisclass__ {
+        public PythonType? __thisclass__ {
             get { return _thisClass; }
         }
 
-        public object __self__ {
+        public object? __self__ {
             get { return _self; }
         }
 
-        public object __self_class__ {
+        public object? __self_class__ {
             get { return _selfClass; }
         }
 
-        public new object __get__(CodeContext/*!*/ context, object instance, object owner) {
+        public new object? __get__(CodeContext/*!*/ context, object? instance, object? owner = null) {
+            if (instance is null && owner is null) {
+                throw PythonOps.TypeError("__get__(None, None) is invalid");
+            }
+
             PythonType selfType = PythonType;
 
             if (selfType == TypeCache.Super) {
+                if (_thisClass is null) {
+                    throw PythonOps.TypeError("super(): __init__ not called");
+                }
                 Super res = new Super();
                 res.__init__(_thisClass, instance);
                 return res;
@@ -81,10 +95,10 @@ namespace IronPython.Runtime {
         #region Custom member access
 
         [SpecialName]
-        public object GetCustomMember(CodeContext context, string name) {
+        public object GetCustomMember(CodeContext context, [NotNone] string name) {
             // first find where we are in the mro...
-            object value;
-            if (_selfClass is PythonType mroType) { // can be null if the user does super.__new__
+            object? value;
+            if (_selfClass is PythonType mroType && _thisClass is not null) { // can be null if the user does super.__new__
                 IList<PythonType> mro = mroType.ResolutionOrder;
 
                 int lookupType;
@@ -105,7 +119,7 @@ namespace IronPython.Runtime {
                 }
 
                 // if we're super on a class then we have no self.
-                object self = _self == _selfClass ? null : _self;
+                object? self = _self == _selfClass ? null : _self;
 
                 // then skip our class, and lookup in everything
                 // above us until we get a hit.
@@ -127,16 +141,16 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public void SetMember(CodeContext context, string name, object value) {
+        public void SetMember(CodeContext context, [NotNone] string name, object? value) {
             PythonType.SetMember(context, this, name, value);
         }
 
         [SpecialName]
-        public void DeleteCustomMember(CodeContext context, string name) {
+        public void DeleteCustomMember(CodeContext context, [NotNone] string name) {
             PythonType.DeleteMember(context, this, name);
         }
 
-        private bool TryLookupInBase(CodeContext context, PythonType pt, string name, object self, out object value) {
+        private bool TryLookupInBase(CodeContext context, PythonType pt, string name, object? self, [NotNullWhen(true)] out object? value) {
             // new-style class, or reflected type, lookup slot
             if (pt.TryLookupSlot(context, name, out PythonTypeSlot dts) &&
                 dts.TryGetValue(context, self, DescriptorContext, out value)) {
@@ -146,7 +160,7 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        private PythonType DescriptorContext {
+        private PythonType? DescriptorContext {
             get {
                 if (!DynamicHelpers.GetPythonType(_self).IsSubclassOf(_thisClass)) {
                     if(_self == _selfClass) // Using @classmethod
@@ -164,8 +178,8 @@ namespace IronPython.Runtime {
                 if (GetType() == typeof(Super))
                     return TypeCache.Super;
 
-                IPythonObject sdo = this as IPythonObject;
-                Debug.Assert(sdo != null);
+                Debug.Assert(this is IPythonObject);
+                IPythonObject sdo = (IPythonObject)this;
 
                 return sdo.PythonType;
             }
@@ -173,7 +187,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
+        internal override bool TryGetValue(CodeContext context, object? instance, PythonType? owner, out object? value) {
             value = __get__(context, instance, owner);
             return true;
         }

@@ -29,8 +29,34 @@ namespace IronPython.Runtime {
 
         #region Python Public API Surface
 
-        public void __init__() {
-            throw PythonOps.RuntimeError("super(): no arguments");
+        public void __init__(CodeContext context) {
+            var vars = context.Dict._storage as RuntimeVariablesDictionaryStorage;
+
+            // Step 1: access arg[0]
+            if (vars is null || vars.NumPosArgs == 0) {
+                throw PythonOps.RuntimeError("super(): no arguments");
+            }
+
+            object? arg0 = vars.GetCell(vars.NumFreeVars).Value;
+            if (arg0 == Uninitialized.Instance) {
+                throw PythonOps.RuntimeError("super(): arg[0] deleted");
+            }
+
+            // Step 2: access __class__ cell
+            int idx = Array.IndexOf(vars.Names, "__class__");
+            if (idx < 0 || idx >= vars.NumFreeVars) {
+                throw PythonOps.RuntimeError("super(): __class__ cell not found");
+            }
+
+            object? cls = vars.GetCell(idx).Value;
+            if (cls == Uninitialized.Instance) {
+                throw PythonOps.RuntimeError("super(): empty __class__ cell");
+            }
+            if (cls is not PythonType type) {
+                throw PythonOps.RuntimeError("super(): __class__ is not a type ({0})", PythonOps.GetPythonTypeName(cls));
+            }
+
+            __init__(type, arg0);
         }
 
         public void __init__([NotNone] PythonType type) {

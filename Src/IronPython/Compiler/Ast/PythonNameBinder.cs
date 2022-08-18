@@ -851,10 +851,10 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(CallExpression node) {
             node.Parent = _currentScope;
 
-            if (node.Target is NameExpression nameExpr && nameExpr.Name == "super" && _currentScope is FunctionDefinition func) {
+            if (node.Target is NameExpression nameExpr && nameExpr.Name == "super" && _currentScope is not ClassDefinition) {
                 _currentScope.Reference("__class__");
-                if (node.Args.Count == 0 && node.Kwargs.Count == 0 && func.ParameterNames.Length > 0) {
-                    node.SetImplicitArgs(new NameExpression("__class__"), new NameExpression(func.ParameterNames[0]));
+                if (node.Args.Count == 0 && node.Kwargs.Count == 0) {
+                    _currentScope.ContainsSuperCall = true;
                 }
             }
             return base.Walk(node);

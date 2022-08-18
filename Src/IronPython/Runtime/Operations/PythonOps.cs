@@ -3622,10 +3622,10 @@ namespace IronPython.Runtime.Operations {
 
         #region Global Access
 
-        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args) {
+        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args, int numFreeVars, int numPosArgs) {
             return new CodeContext(
                 new PythonDictionary(
-                    new RuntimeVariablesDictionaryStorage(boxes, args)
+                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, numPosArgs)
                 ),
                 outerContext.ModuleContext
             );

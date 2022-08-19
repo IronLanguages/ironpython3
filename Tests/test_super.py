@@ -15,6 +15,19 @@ from test.support import check_warnings
 
 from iptest import IronPythonTestCase, is_cli, run_test
 
+def naked_super():
+    """super() call without an encompassing class in a parameterless function"""
+    super()
+
+def naked_super_w_arg(x):
+    """super() call without an encompassing class in a function with one positional parameter"""
+    super()
+
+def naked_super_w_del_arg(x):
+    """super() call without an encompassing class in a function with one positional parameter that gets deleted"""
+    del x
+    super()
+
 class A(object):
     """Doc string A"""
     @classmethod
@@ -402,5 +415,104 @@ class SuperTest(IronPythonTestCase):
             msg = "super(): __class__ cell not found"
         with self.assertRaisesMessage(RuntimeError, msg):
             C().f1()
+
+    def test_super_runtime_errors(self):
+        # Test that RuntimeError is raised, (rather than TypeError, NameError, UnboundLocalError, or SystemError)
+
+        # "no arguments" means no arguments to the encompasing function
+        # "no arguments" gets reported before "__class__ cell not found", if both are missing
+        with self.assertRaisesMessage(RuntimeError, "super(): no arguments"):
+            naked_super()
+
+        # Now that arg0 is provided, mising __class__ cell is reported
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ cell not found"):
+            naked_super_w_arg(None)
+
+        # The parameter must not be deleted
+        with self.assertRaisesMessage(RuntimeError, "super(): arg[0] deleted"):
+            naked_super_w_del_arg(None)
+
+        # Only the first **positional** parameter is used, *args are ignored
+        with self.assertRaisesMessage(RuntimeError, "super(): no arguments"):
+            def f(*args):
+                super()
+            f(1, 2, 3)
+
+        # Local __class__ variable is not enough
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ cell not found"):
+            def f(x):
+                __class__ = int
+                return super()
+            f(None)
+
+        # Nonlocal __class__ variable is sufficient, though it does not come from a class cell
+        def f():
+            __class__ = int
+            def g(x):
+                return super()
+            return g(None)
+        self.assertEqual(f().__thisclass__, int)
+
+        # Such nonlocal __class__ must be of type "type" though
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ is not a type (NoneType)"):
+            def f():
+                __class__ = None
+                def g(x):
+                    return super()
+                return g(None)
+            f()
+
+        # Even if a class cell is found, it must be initialized
+        with self.assertRaisesMessage(RuntimeError, "super(): empty __class__ cell"):
+            class X:
+                def f(x):
+                    nonlocal __class__
+                    del __class__
+                    super()
+            X().f()
+
+        # ... and of type "type"
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ is not a type (NoneType)"):
+            class X:
+                def f(x):
+                    nonlocal __class__
+                    __class__ = None
+                    super()
+            X().f()
+
+        # A local variable __class__ is not considered, but it shades the actual class cell from the class
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ cell not found"):
+            class X:
+                def f(self):
+                    __class__ = X
+                    super()
+            X().f()
+
+        # ...which makes super() different than super(__class__, self)
+        class X:
+            def f(self):
+                __class__ = X
+                return super(__class__, self)
+        self.assertEqual(X().f().__thisclass__, X)
+
+        # It also shades any nonlocal variable named __class__
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ cell not found"):
+            class X:
+                def f(self):
+                    __class__ = X
+                    def g(x):
+                        __class__ = X
+                        super()
+                    g(None)
+            X().f()
+
+        # This also applies to __class__ as a class atribute variable (not a class cell)
+        with self.assertRaisesMessage(RuntimeError, "super(): __class__ cell not found"):
+            class X:
+                __class__ = X
+                def f(self):
+                    __class__ = X
+                    super()
+            X().f()
 
 run_test(__name__)

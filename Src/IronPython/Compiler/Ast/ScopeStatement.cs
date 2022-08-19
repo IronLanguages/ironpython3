@@ -96,7 +96,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// True if this scope contains a parameterless call to super().
         ///
-        /// It is used to ensure that the first argument is accessible though a closure cell.
+        /// It is used to ensure that the first argument is accessible through a closure cell.
         /// </summary>
         internal bool ContainsSuperCall{ get; set; }
 

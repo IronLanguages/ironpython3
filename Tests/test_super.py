@@ -321,7 +321,7 @@ class SuperTest(IronPythonTestCase):
         self.assertEqual(C().f().__thisclass__, C)
         self.assertEqual(C().f().__self_class__, C)
 
-        # A class using suped in a parameterles method still has a classcell
+        # A class using super in a parameterles method still has a classcell
         class C(metaclass=AssertHasClasscell):
             def f():
                 return super()
@@ -370,7 +370,7 @@ class SuperTest(IronPythonTestCase):
         # Similarly, super() in a generator expression does trigger classcell generation
         class C(metaclass=AssertHasClasscell):
             test = (super() for _ in range(1))
-        # The class creation succeeds because the generator is nor evaluated yet
+        # The class creation succeeds because the generator is not evaluated yet
         # but the generator fails when it is evaluated
         msg = "super(type, obj): obj must be an instance or subtype of type"
         if is_cli:
@@ -387,7 +387,7 @@ class SuperTest(IronPythonTestCase):
         self.assertEqual(C().f().__thisclass__, C)
         self.assertEqual(C().f().__self_class__, C)
 
-        # Using super though an alias does not trigger classcell generation, although the alias works OK
+        # Using super through an alias does not trigger classcell generation, although the alias works OK
         s_p_r = super
         class C(metaclass=AssertHasNoClasscell):
             def f(self):

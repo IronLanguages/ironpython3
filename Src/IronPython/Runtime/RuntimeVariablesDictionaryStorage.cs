@@ -14,16 +14,16 @@ namespace IronPython.Runtime {
         private readonly MutableTuple _boxes;
         private readonly string[] _args;
         private readonly int _numFreeVars;
-        private readonly int _numPosArgs;
+        private readonly int _arg0Idx;
 
-        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string[] args, int numFreevars, int numPosArgs) {
-            Debug.Assert(numFreevars >= 0 && numPosArgs >= 0);
-            Debug.Assert(numFreevars + numPosArgs <= args.Length);
+        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx) {
+            Debug.Assert(0 <= numFreeVars && numFreeVars <= args.Length);
+            Debug.Assert(arg0Idx == -1 || numFreeVars <= arg0Idx && arg0Idx < args.Length);
 
             _boxes = boxes;
             _args = args;
-            _numFreeVars = numFreevars;
-            _numPosArgs = numPosArgs;
+            _numFreeVars = numFreeVars;
+            _arg0Idx = arg0Idx;
         }
 
         /// <summary>
@@ -44,17 +44,14 @@ namespace IronPython.Runtime {
         internal int NumFreeVars => _numFreeVars;
 
         /// <summary>
-        /// Number of positional parameter variables of the lambda.
-        /// Thus no keyword-only, *args, nor **kwargs.
-        /// If non-zero, cells for parameters are after the free variables in <see cref="Tuple"/>.
+        /// Index of the cell of the first positional parameter of the function call.
+        /// Value -1 means that information is not available.
         /// </summary>
         /// <remarks>
-        /// A zero value does not mean that the function doesn't have any positional arguments,
-        /// or that none of its argumets are lifted to a closure cell.
-        /// For performance reasons, NumPosArgs is only tracked when deemed necessary;
-        /// to ensure it is tracked in all cases, run IronPython with option FullFrames.
+        /// This information is intended to be consumed by a parameterless super() call.
+        /// For performance reasons, Arg0Idx is only tracked when deemed necessary to support super().
         /// </remarks>
-        internal int NumPosArgs => _numPosArgs;
+        internal int Arg0Idx => _arg0Idx;
 
         protected override IEnumerable<KeyValuePair<string, object>> GetExtraItems() {
             for (int i = 0; i < _args.Length; i++) {

@@ -33,11 +33,11 @@ namespace IronPython.Runtime {
             var vars = context.Dict._storage as RuntimeVariablesDictionaryStorage;
 
             // Step 1: access arg[0]
-            if (vars is null || vars.NumPosArgs == 0) {
+            if (vars is null || vars.Arg0Idx < 0) {
                 throw PythonOps.RuntimeError("super(): no arguments");
             }
 
-            object? arg0 = vars.GetCell(vars.NumFreeVars).Value;
+            object? arg0 = vars.GetCell(vars.Arg0Idx).Value;
             if (arg0 == Uninitialized.Instance) {
                 throw PythonOps.RuntimeError("super(): arg[0] deleted");
             }

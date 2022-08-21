@@ -60,8 +60,8 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable PythonVariable { get; set; }
 
-        internal MSAst.Expression FinishBind(bool needsClosureCell) {
-            if (PythonVariable.AccessedInNestedScope || needsClosureCell) {
+        internal MSAst.Expression FinishBind(bool forceClosureCell) {
+            if (PythonVariable.AccessedInNestedScope || forceClosureCell) {
                 ParameterExpression = Expression.Parameter(typeof(object), Name);
                 var cell = Ast.Parameter(typeof(ClosureCell), Name);
                 return new ClosureExpression(PythonVariable, cell, ParameterExpression);

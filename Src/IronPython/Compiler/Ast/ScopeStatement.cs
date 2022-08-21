@@ -377,18 +377,7 @@ namespace IronPython.Compiler.Ast {
 
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
-                    if (variable.Kind is VariableKind.Parameter &&
-                        (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
-
-                        Debug.Assert(!HasClosureVariable(closureVariables, variable));
-
-                        closureVariables ??= new List<ClosureInfo>();
-                        closureVariables.Add(new ClosureInfo(variable, true));
-                    }
-                }
-                
-                foreach (PythonVariable variable in Variables.Values) {
-                    if (variable.Kind is VariableKind.Local &&
+                    if (variable.Kind is VariableKind.Local or VariableKind.Parameter &&
                         (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
 
                         Debug.Assert(!HasClosureVariable(closureVariables, variable));
@@ -689,17 +678,27 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext) {
-            var closureVariables = _closureVariables;
-            if (_closureVariables == null) {
-                closureVariables = new ClosureInfo[0];
+            var closureVariables = _closureVariables ?? Array.Empty<ClosureInfo>();
+            
+            int numFreeVars = FreeVariables?.Count ?? 0;
+            int firstArgIdx = -1;
+            if (ContainsSuperCall && ArgCount > 0) {
+                for (int idx = numFreeVars; idx < closureVariables.Length; idx++) {
+                    if (closureVariables[idx].Variable.Kind == VariableKind.Parameter) {
+                        firstArgIdx = idx;
+                        break;
+                    }
+                }
             }
+            Debug.Assert(firstArgIdx == -1 || firstArgIdx >= (FreeVariables?.Count ?? 0));
+
             return Ast.Call(
                 AstMethods.CreateLocalContext,
                 parentContext,
                 MutableTuple.Create(ArrayUtils.ConvertAll(closureVariables, x => GetClosureCell(x))),
                 Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null)),
-                AstUtils.Constant(FreeVariables?.Count ?? 0),
-                AstUtils.Constant(NeedsLocalsDictionary || ContainsSuperCall ? ArgCount : 0)
+                AstUtils.Constant(numFreeVars),
+                AstUtils.Constant(firstArgIdx)
             );
         }
 

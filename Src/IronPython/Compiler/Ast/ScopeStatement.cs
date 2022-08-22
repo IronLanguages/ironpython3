@@ -437,12 +437,12 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal PythonReference Reference(string name) {
-            if (_references == null) {
-                _references = new Dictionary<string, PythonReference>(StringComparer.Ordinal);
-            }
-            PythonReference reference;
-            if (!_references.TryGetValue(name, out reference)) {
+            _references ??= new Dictionary<string, PythonReference>(StringComparer.Ordinal);
+            if (!_references.TryGetValue(name, out PythonReference reference)) {
                 _references[name] = reference = new PythonReference(name);
+                if (name == "super" && this is not ClassDefinition) {
+                    Reference("__class__");
+                }
             }
             return reference;
         }
@@ -682,7 +682,7 @@ namespace IronPython.Compiler.Ast {
             
             int numFreeVars = FreeVariables?.Count ?? 0;
             int firstArgIdx = -1;
-            if (ContainsSuperCall && ArgCount > 0) {
+            if ((NeedsLocalsDictionary || ContainsSuperCall) && ArgCount > 0) {
                 for (int idx = numFreeVars; idx < closureVariables.Length; idx++) {
                     if (closureVariables[idx].Variable.Kind == VariableKind.Parameter) {
                         firstArgIdx = idx;
@@ -690,7 +690,6 @@ namespace IronPython.Compiler.Ast {
                     }
                 }
             }
-            Debug.Assert(firstArgIdx == -1 || firstArgIdx >= (FreeVariables?.Count ?? 0));
 
             return Ast.Call(
                 AstMethods.CreateLocalContext,

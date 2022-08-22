@@ -416,6 +416,57 @@ class SuperTest(IronPythonTestCase):
         with self.assertRaisesMessage(RuntimeError, msg):
             C().f1()
 
+        # Another consequence of argument optimization is that the alias is not recognized to trigger arg[0] access
+        class C:
+            def f(self):
+                s_p_r = super # plain reference to super triggers classcell generation, but not arg[0] access
+                return s_p_r()
+        # This works in CPython:
+        if not is_cli:
+            C().f()
+        # but not in IronPython:
+        else:
+            self.assertRaisesMessage(RuntimeError, "super(): no arguments", C().f)
+
+        # Refering to super in any way triggers classcell generation
+        class C(metaclass=AssertHasClasscell):
+            def f(self):
+                return super
+        class C(metaclass=AssertHasClasscell):
+            def f(self):
+                super = None
+                return super
+
+        def f():
+            super = None
+            class C(metaclass=AssertHasClasscell):
+                def f(self):
+                    return super
+            self.assertEqual(C().f(), None)
+        f()
+
+        # ...but not if it is a local or global variable being assigned (in case of CPython)
+        # IronPython does nor make such a distinction.
+        if is_cli:
+            MetaAssert = AssertHasClasscell
+        else:
+            MetaAssert = AssertHasNoClasscell
+        class C(metaclass=MetaAssert):
+            def f(self):
+                super = None
+
+        class C(metaclass=MetaAssert):
+            def f(self):
+                global super
+                super = None
+
+        # Strangely, a nonlocal variable does trigger classcell generation, even in CPython
+        def f():
+            super = None
+            class C(metaclass=AssertHasClasscell):
+                def f(self):
+                    nonlocal super
+
     def test_super_runtime_errors(self):
         # Test that RuntimeError is raised, (rather than TypeError, NameError, UnboundLocalError, or SystemError)
 

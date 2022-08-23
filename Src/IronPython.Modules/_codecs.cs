@@ -227,6 +227,20 @@ namespace IronPython.Modules {
 
         #endregion
 
+        #region OEM Functions
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple oem_decode(CodeContext/*!*/ context, [NotNone] IBufferProtocol input, string? errors = null, bool final = false) {
+            using IPythonBuffer buffer = input.GetBuffer();
+            return DoDecode(context, "oem", StringOps.CodecsInfo.OemEncoding, buffer, errors).ToPythonTuple();
+        }
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static PythonTuple oem_encode(CodeContext/*!*/ context, [NotNone] string input, string? errors = null)
+            => DoEncode(context, "oem", StringOps.CodecsInfo.OemEncoding, input, errors).ToPythonTuple();
+
+        #endregion
+
         #region Code Page Functions
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]

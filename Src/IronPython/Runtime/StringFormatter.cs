@@ -314,12 +314,12 @@ namespace IronPython.Runtime {
                 case 'd':
                 case 'i': AppendInt(_curCh); return;
                 // unsigned octal
-                case 'o': AppendOctal(); return;
+                case 'o': AppendBase(_curCh, 8); return;
                 // unsigned decimal
                 case 'u': AppendInt(_curCh); return;
                 // unsigned hexadecimal
-                case 'x': AppendHex(_curCh); return;
-                case 'X': AppendHex(_curCh); return;
+                case 'x':
+                case 'X': AppendBase(_curCh, 16); return;
                 // floating point exponential format
                 case 'e':
                 // floating point decimal
@@ -865,14 +865,6 @@ namespace IronPython.Runtime {
             for (int i = res.Length - 1; i >= start; i--) {
                 str.Append(res[i]);
             }
-        }
-
-        private void AppendHex(char format) {
-            AppendBase(format, 16);
-        }
-
-        private void AppendOctal() {
-            AppendBase('o', 8);
         }
 
         private void AppendBytes() {

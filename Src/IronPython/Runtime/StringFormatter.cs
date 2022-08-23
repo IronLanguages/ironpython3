@@ -312,11 +312,11 @@ namespace IronPython.Runtime {
                 case 'a': AppendAscii(); return;
                 // signed integer decimal
                 case 'd':
-                case 'i': AppendInt(); return;
+                case 'i': AppendInt(_curCh); return;
                 // unsigned octal
                 case 'o': AppendOctal(); return;
                 // unsigned decimal
-                case 'u': AppendInt(); return;
+                case 'u': AppendInt(_curCh); return;
                 // unsigned hexadecimal
                 case 'x': AppendHex(_curCh); return;
                 case 'X': AppendHex(_curCh); return;
@@ -385,25 +385,43 @@ namespace IronPython.Runtime {
             throw PythonOps.KeyError(key);
         }
 
-        private object GetIntegerValue(out bool fPos, bool allowDouble = true) {
-            if (!allowDouble && _opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>) {
+        private object GetIntegerValue(char format, out bool fPos, bool allowDouble = true) {
+            if (!allowDouble && (_opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>)) {
                 // TODO: this should fail in 3.5
                 PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
             }
 
-            object val;
-            if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out int intVal)) {
-                val = intVal;
-                fPos = intVal >= 0;
-            } else {
-                if (Converter.TryConvertToBigInteger(_opts.Value, out BigInteger bigInt)) {
-                    val = bigInt;
-                    fPos = bigInt >= BigInteger.Zero;
-                } else {
-                    throw PythonOps.TypeError("int argument required");
-                }
+            switch (_opts.Value) {
+                case float:
+                case double:
+                case Extensible<double>:
+                    if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out int intVal)) {
+                        fPos = intVal >= 0;
+                        return intVal;
+                    }
+                    if (Converter.TryConvertToBigInteger(_opts.Value, out BigInteger bigInt)) {
+                        fPos = bigInt >= BigInteger.Zero;
+                        return bigInt;
+                    }
+                    break;
             }
-            return val;
+
+            try {
+                if (PythonOps.TryToIndex(_opts.Value, out object? index)) {
+                    fPos = index switch {
+                        int i => i >= 0,
+                        BigInteger bi => bi >= BigInteger.Zero,
+                        _ => throw new InvalidOperationException(), // unreachable
+                    };
+                    return index;
+                }
+            } catch (TypeErrorException) { }
+
+            if (allowDouble) {
+                throw PythonOps.TypeError("%{0} format: a number is required, not {1}", format, PythonOps.GetPythonTypeName(_opts.Value));
+            } else {
+                throw PythonOps.TypeError("%{0} format: an integer is required, not {1}", format, PythonOps.GetPythonTypeName(_opts.Value));
+            }
         }
 
         private void AppendChar() {
@@ -451,8 +469,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        private void AppendInt() {
-            object val = GetIntegerValue(out bool fPos);
+        private void AppendInt(char format) {
+            object val = GetIntegerValue(format, out bool fPos);
 
             if (_opts.LeftAdj) {
                 string str = ZeroPadInt(val, fPos, _opts.Precision);
@@ -730,7 +748,7 @@ namespace IronPython.Runtime {
         /// special forms for Python.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(out bool fPos, allowDouble: false));
+            var str = ProcessNumber(format, radix, ref _opts, GetIntegerValue(format, out bool fPos, allowDouble: false));
 
             if (!fPos) {
                 // if negative number, the leading space has no impact

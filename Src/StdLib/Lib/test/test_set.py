@@ -333,7 +333,6 @@ class TestJointOps:
             fo.close()
             support.unlink(support.TESTFN)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/848")
     def test_do_not_rehash_dict_keys(self):
         n = 10
         d = dict.fromkeys(map(HashCountingInt, range(n)))

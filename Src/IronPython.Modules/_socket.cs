@@ -716,22 +716,25 @@ namespace IronPython.Modules {
             // NOTE: The above IronPython specific timeout behavior is due to the underlying
             // .Net Socket.SendTimeout behavior and is outside of our control.
             public void settimeout(object? timeout) {
-                try {
-                    if (timeout == null) {
-                        _socket.Blocking = true;
-                        _socket.SendTimeout = 0;
-                    } else {
-                        double seconds;
-                        seconds = Converter.ConvertToDouble(timeout);
-                        if (seconds < 0) {
-                            throw PythonOps.ValueError("Timeout value out of range");
-                        }
-                        _socket.Blocking = seconds > 0; // 0 timeout means non-blocking mode
-                        _socket.SendTimeout = (int)(seconds * MillisecondsPerSecond);
-                        _timeout = (int)(seconds * MillisecondsPerSecond);
+                bool blocking = true;
+                int timeoutVal = 0;
+                if (timeout is not null) {
+                    double seconds;
+                    seconds = Converter.ConvertToDouble(timeout);
+                    if (seconds < 0) {
+                        throw PythonOps.ValueError("Timeout value out of range");
                     }
-                } finally {
+                    blocking = seconds > 0; // 0 timeout means non-blocking mode
+                    timeoutVal = (int)(seconds * MillisecondsPerSecond);
+                }
+
+                try {
+                    _socket.Blocking = blocking;
+                    _socket.SendTimeout = timeoutVal;
                     _socket.ReceiveTimeout = _socket.SendTimeout;
+                    _timeout = timeoutVal;
+                } catch (Exception ex) {
+                    throw MakeException(_context, ex);
                 }
             }
 

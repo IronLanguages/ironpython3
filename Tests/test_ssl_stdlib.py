@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import is_posix, run_test
+from iptest import is_mono, is_osx, is_posix, run_test
 
 import test.test_ssl
 
@@ -81,11 +81,11 @@ def load_tests(loader, standard_tests, pattern):
         else:
             suite.addTest(test.test_ssl.NetworkedTests('test_makefile_close'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_connect_ex'))) # OSError: [Errno -2146232800] The operation is not allowed on a non-blocking Socket.
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))) # TypeError: Value cannot be null.
+        suite.addTest(test.test_ssl.NetworkedTests('test_non_blocking_handshake'))
         suite.addTest(test.test_ssl.NetworkedTests('test_timeout_connect_ex'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_lib_reason'))) # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
         suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_str'))) # AssertionError: '[Errno 1] foo' != 'foo'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.SSLErrorTests('test_subclass'))) # TypeError: Value cannot be null.
+        #suite.addTest(test.test_ssl.SSLErrorTests('test_subclass')) # blocking
         #suite.addTest(test.test_ssl.ThreadedTests('test_asyncore_server')) # blocking
         #suite.addTest(test.test_ssl.ThreadedTests('test_check_hostname'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_compression'))
@@ -99,7 +99,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_empty_cert'))) # NotImplementedError: keyfile
         #suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert')) # blocking
         suite.addTest(test.test_ssl.ThreadedTests('test_getpeercert_enotconn'))
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_handshake_timeout'))) # TypeError: Value cannot be null.
+        #suite.addTest(test.test_ssl.ThreadedTests('test_handshake_timeout')) # blocking
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_malformed_cert'))) # NotImplementedError: keyfile
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_malformed_key'))) # NotImplementedError: keyfile
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_nonexisting_cert'))) # NotImplementedError: keyfile
@@ -112,7 +112,10 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_ssl.ThreadedTests('test_protocol_tlsv1_2'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_read_write_after_close_raises_valuerror')) # blocking
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_recv_send'))) # NotImplementedError: keyfile
-        suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_rude_shutdown'))) # TypeError: Value cannot be null.
+        if is_mono and is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_rude_shutdown'))) # ValueError: Value does not fall within the expected range.
+        else:
+            suite.addTest(test.test_ssl.ThreadedTests('test_rude_shutdown'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_selected_npn_protocol'))
         #suite.addTest(test.test_ssl.ThreadedTests('test_server_accept'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.ThreadedTests('test_sni_callback'))) # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'

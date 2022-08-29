@@ -1367,8 +1367,8 @@ class InheritanceTest(IronPythonTestCase):
 
         c = C()
 
-    def test_super_errors(self):
-        # Test that TyypeError is raised, rather than pass or SystemError: Object reference not set to an instance of an object.
+    def test_super_type_errors(self):
+        # Test that TypeError is raised, rather than pass or SystemError: Object reference not set to an instance of an object.
 
         with self.assertRaises(TypeError):
             super(None)

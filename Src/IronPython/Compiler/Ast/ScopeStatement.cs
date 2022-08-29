@@ -93,6 +93,13 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal bool NeedsLocalsDictionary { get; set; }
 
+        /// <summary>
+        /// True if this scope contains a parameterless call to super().
+        ///
+        /// It is used to ensure that the first argument is accessible through a closure cell.
+        /// </summary>
+        internal bool ContainsSuperCall{ get; set; }
+
         public virtual string Name {
             get {
                 return "<unknown>";
@@ -124,7 +131,7 @@ namespace IronPython.Compiler.Ast {
 
         internal bool NeedsLocalContext {
             get {
-                return NeedsLocalsDictionary || ContainsNestedFreeVariables;
+                return NeedsLocalsDictionary || ContainsNestedFreeVariables || ContainsSuperCall;
             }
         }
 
@@ -350,6 +357,7 @@ namespace IronPython.Compiler.Ast {
                 Debug.Assert(parentClosure != null);
 
                 foreach (var variable in FreeVariables) {
+                    Debug.Assert(!HasClosureVariable(closureVariables, variable));
                     for (int i = 0; i < parentClosure.Length; i++) {
                         if (parentClosure[i].Variable == variable) {
                             Ast prop = LocalParentTuple;
@@ -362,22 +370,19 @@ namespace IronPython.Compiler.Ast {
                     }
                     Debug.Assert(_variableMapping.ContainsKey(variable));
 
-                    if (closureVariables == null) {
-                        closureVariables = new List<ClosureInfo>();
-                    }
-                    closureVariables.Add(new ClosureInfo(variable, !(this is ClassDefinition)));
+                    closureVariables ??= new List<ClosureInfo>();
+                    closureVariables.Add(new ClosureInfo(variable, this is not ClassDefinition));
                 }
             }
 
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
-                    if (!HasClosureVariable(closureVariables, variable) &&
-                        variable.Kind is VariableKind.Local or VariableKind.Parameter &&
+                    if (variable.Kind is VariableKind.Local or VariableKind.Parameter &&
                         (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
 
-                        if (closureVariables == null) {
-                            closureVariables = new List<ClosureInfo>();
-                        }
+                        Debug.Assert(!HasClosureVariable(closureVariables, variable));
+
+                        closureVariables ??= new List<ClosureInfo>();
                         closureVariables.Add(new ClosureInfo(variable, true));
                     }
 
@@ -390,7 +395,9 @@ namespace IronPython.Compiler.Ast {
                             _variableMapping[variable] = Ast.Parameter(typeof(object), variable.Name);
                         }
                     } else if (variable.Kind == VariableKind.Attribute) {
-                        _variableMapping[variable] = new LookupGlobalVariable(LocalContext, variable.Name, isLocal: true); // TODO: If no user-supplied dictionary is in place, optimize to use more efficient access, see CollectableCompilationMode
+                        // If no user-supplied dictionary is in place, a more efficient access is possible, see CollectableCompilationMode
+                        // However, this would probably have a negligible effect in this case.
+                        _variableMapping[variable] = new LookupGlobalVariable(LocalContext, variable.Name, isLocal: true);
                     }
                 }
             }
@@ -430,12 +437,12 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal PythonReference Reference(string name) {
-            if (_references == null) {
-                _references = new Dictionary<string, PythonReference>(StringComparer.Ordinal);
-            }
-            PythonReference reference;
-            if (!_references.TryGetValue(name, out reference)) {
+            _references ??= new Dictionary<string, PythonReference>(StringComparer.Ordinal);
+            if (!_references.TryGetValue(name, out PythonReference reference)) {
                 _references[name] = reference = new PythonReference(name);
+                if (name == "super" && this is not ClassDefinition) {
+                    Reference("__class__");
+                }
             }
             return reference;
         }
@@ -671,15 +678,26 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext) {
-            var closureVariables = _closureVariables;
-            if (_closureVariables == null) {
-                closureVariables = new ClosureInfo[0];
+            var closureVariables = _closureVariables ?? Array.Empty<ClosureInfo>();
+            
+            int numFreeVars = FreeVariables?.Count ?? 0;
+            int firstArgIdx = -1;
+            if ((NeedsLocalsDictionary || ContainsSuperCall) && ArgCount > 0) {
+                for (int idx = numFreeVars; idx < closureVariables.Length; idx++) {
+                    if (closureVariables[idx].Variable.Kind == VariableKind.Parameter) {
+                        firstArgIdx = idx;
+                        break;
+                    }
+                }
             }
+
             return Ast.Call(
                 AstMethods.CreateLocalContext,
                 parentContext,
                 MutableTuple.Create(ArrayUtils.ConvertAll(closureVariables, x => GetClosureCell(x))),
-                Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null))
+                Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null)),
+                AstUtils.Constant(numFreeVars),
+                AstUtils.Constant(firstArgIdx)
             );
         }
 

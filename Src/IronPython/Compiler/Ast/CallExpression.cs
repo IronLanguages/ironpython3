@@ -24,7 +24,6 @@ namespace IronPython.Compiler.Ast {
     public class CallExpression : Expression, IInstructionProvider {
         private readonly Expression[] _args;
         private readonly Keyword[] _kwargs;
-        private Expression[]? _implicitArgs;
 
         public CallExpression(Expression target, IReadOnlyList<Expression>? args, IReadOnlyList<Keyword>? kwargs) {
             Target = target;
@@ -37,10 +36,6 @@ namespace IronPython.Compiler.Ast {
         public IReadOnlyList<Expression> Args => _args;
 
         public IReadOnlyList<Keyword> Kwargs => _kwargs;
-
-        internal void SetImplicitArgs(params Expression[] args) {
-            _implicitArgs = args;
-        }
 
         public bool NeedsLocalsDictionary() {
             if (!(Target is NameExpression nameExpr)) return false;
@@ -60,10 +55,6 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression Reduce() {
             ReadOnlySpan<Expression> args = _args;
             ReadOnlySpan<Keyword> kwargs = _kwargs;
-
-            if (args.Length == 0 && _implicitArgs != null) {
-                args = _implicitArgs;
-            }
 
             // count splatted list args and find the lowest index of a list argument, if any
             ScanArgs(args, out var numList, out int firstListPos);
@@ -188,9 +179,6 @@ namespace IronPython.Compiler.Ast {
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
             ReadOnlySpan<Expression> args = _args;
-            if (args.Length == 0 && _implicitArgs != null) {
-                args = _implicitArgs;
-            }
 
             if (Kwargs.Count > 0) {
                 compiler.Compile(Reduce());
@@ -430,11 +418,6 @@ namespace IronPython.Compiler.Ast {
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Target?.Walk(walker);
-                if (_implicitArgs is not null) {
-                    foreach (var arg in _implicitArgs) {
-                        arg.Walk(walker);
-                    }
-                }
                 foreach (var arg in _args) {
                     arg.Walk(walker);
                 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 namespace IronPython.Compiler.Ast {
     /// <summary>
     /// Represents a reference to a name.  A PythonReference is created for each name
@@ -14,6 +16,6 @@ namespace IronPython.Compiler.Ast {
 
         public string Name { get; }
 
-        internal PythonVariable PythonVariable { get; set; }
+        internal PythonVariable? PythonVariable { get; set; }
     }
 }

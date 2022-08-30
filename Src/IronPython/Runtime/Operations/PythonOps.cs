@@ -1458,9 +1458,22 @@ namespace IronPython.Runtime.Operations {
                 }
             } // else metaclass is expected to be a callable and overrides any inherited metaclass through any bases
 
+            // Prepare class context
+            // The class context is like the parent context but with its own attribute dict.
+            // Or another way: the class context is like the local context of the class lambda but without the __class__ variable.
+            CodeContext? classContext = null;
+            if (parentContext.Dict._storage is RuntimeVariablesDictionaryStorage parentStorage) {
+                classContext = new CodeContext(
+                    new PythonDictionary(
+                        new RuntimeVariablesDictionaryStorage(parentStorage, new())
+                    ),
+                    parentContext.ModuleContext
+                );
+            }
+
             // Call class body lambda
-            CodeContext classContext = func(parentContext);
-            PythonDictionary vars = classContext.Dict;
+            CodeContext localContext = func(classContext ?? parentContext);
+            PythonDictionary vars = localContext.Dict;
 
             // Prepare classdict
             // TODO: prepared classdict should be used by `func` (PEP 3115)

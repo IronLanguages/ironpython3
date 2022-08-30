@@ -1498,7 +1498,7 @@ namespace IronPython.Runtime.Operations {
 
             // If __class__ is used, verify that it has been set
             if (vars._storage is RuntimeVariablesDictionaryStorage storage) {
-                int pos = Array.IndexOf(storage.Names, "__class__");
+                int pos = Array.IndexOf(storage.Names, "__class__", storage.NumFreeVars, storage.Names.Length - storage.NumFreeVars);
                 if (pos >= 0) {
                     ClosureCell classCell = storage.GetCell(pos);
                     if (!ReferenceEquals(classCell.Value, obj)) {

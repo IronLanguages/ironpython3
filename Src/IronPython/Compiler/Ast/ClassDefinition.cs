@@ -128,6 +128,7 @@ namespace IronPython.Compiler.Ast {
             if (TryGetVariable(reference.Name, out variable)) {
                 if (variable.Kind is VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
+                    return variable;
                 } else if (variable.Kind is VariableKind.Local) {
                     // TODO: This results in doing a dictionary lookup to get/set the local,
                     // when it should probably be an uninitialized check / global lookup for gets

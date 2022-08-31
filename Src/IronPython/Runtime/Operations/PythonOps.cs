@@ -1461,18 +1461,19 @@ namespace IronPython.Runtime.Operations {
             // Prepare class context
             // The class context is like the parent context but with its own attribute dict.
             // Or another way: the class context is like the local context of the class lambda but without the __class__ variable.
-            CodeContext? classContext = null;
-            if (parentContext.Dict._storage is RuntimeVariablesDictionaryStorage parentStorage) {
-                classContext = new CodeContext(
-                    new PythonDictionary(
-                        new RuntimeVariablesDictionaryStorage(parentStorage, new())
-                    ),
-                    parentContext.ModuleContext
-                );
-            }
+            var attrStorage = new CommonDictionaryStorage();
+            PythonDictionary attrDict = parentContext.Dict._storage switch {
+                // If the parent context dict is backed by RuntimeVariablesDictionaryStorage,
+                // the class context dict also has to be backed by RuntimeVariablesDictionaryStorage so that the closure is preserved.
+                RuntimeVariablesDictionaryStorage parentStorage =>
+                    new PythonDictionary(new RuntimeVariablesDictionaryStorage(parentStorage, attrStorage)),
+                // Otherwise a standard dict suffices.
+                _ => new PythonDictionary(attrStorage),
+            };
+            CodeContext classContext = new CodeContext(attrDict, parentContext.ModuleContext);
 
             // Call class body lambda
-            CodeContext localContext = func(classContext ?? parentContext);
+            CodeContext localContext = func(classContext);
             PythonDictionary vars = localContext.Dict;
 
             // Prepare classdict
@@ -3635,10 +3636,19 @@ namespace IronPython.Runtime.Operations {
 
         #region Global Access
 
-        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx) {
+        public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, bool newAttribStorage) {
+            CommonDictionaryStorage? attribs = null;
+            if (!newAttribStorage) {
+                attribs = outerContext.Dict._storage switch {
+                    CustomDictionaryStorage vars => vars.Storage,
+                    CommonDictionaryStorage commonStorage => commonStorage,
+                    _ => new()
+                };
+            }
+
             return new CodeContext(
                 new PythonDictionary(
-                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx)
+                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx, attribs ?? new())
                 ),
                 outerContext.ModuleContext
             );

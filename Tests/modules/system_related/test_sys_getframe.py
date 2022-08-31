@@ -126,10 +126,7 @@ class SysGetFrameTest(IronPythonTestCase):
             abc = get_odd_code()
             defined = 42
 
-        if is_cli:
-            verify(x.abc, False)
-        else:
-            verify(x.abc, True)
+        verify(x.abc, True)
 
         class x(object):
             abc = get_odd_code()

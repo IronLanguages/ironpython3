@@ -677,7 +677,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext) {
+        internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext, bool newNamespace = true) {
             var closureVariables = _closureVariables ?? Array.Empty<ClosureInfo>();
             
             int numFreeVars = FreeVariables?.Count ?? 0;
@@ -697,7 +697,8 @@ namespace IronPython.Compiler.Ast {
                 MutableTuple.Create(ArrayUtils.ConvertAll(closureVariables, x => GetClosureCell(x))),
                 Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null)),
                 AstUtils.Constant(numFreeVars),
-                AstUtils.Constant(firstArgIdx)
+                AstUtils.Constant(firstArgIdx),
+                AstUtils.Constant(newNamespace)
             );
         }
 

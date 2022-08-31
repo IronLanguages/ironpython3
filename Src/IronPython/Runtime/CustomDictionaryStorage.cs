@@ -21,6 +21,8 @@ namespace IronPython.Runtime {
             _storage = storage;
         }
 
+        public CommonDictionaryStorage Storage => _storage;
+
         public override void Add(ref DictionaryStorage storage, object key, object value) {
             Add(key, value);
         }

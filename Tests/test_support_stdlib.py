@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_osx, run_test
 
 import test.test_support
 
@@ -24,7 +24,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_support.TestSupport('test_captured_stderr'))
         suite.addTest(test.test_support.TestSupport('test_captured_stdin'))
         suite.addTest(test.test_support.TestSupport('test_captured_stdout'))
-        suite.addTest(test.test_support.TestSupport('test_change_cwd'))
+        if is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_support.TestSupport('test_change_cwd'))) # https://github.com/IronLanguages/ironpython3/issues/1543
+        else:
+            suite.addTest(test.test_support.TestSupport('test_change_cwd'))
         suite.addTest(test.test_support.TestSupport('test_change_cwd__chdir_warning'))
         suite.addTest(test.test_support.TestSupport('test_change_cwd__non_existent_dir'))
         suite.addTest(test.test_support.TestSupport('test_change_cwd__non_existent_dir__quiet_true'))

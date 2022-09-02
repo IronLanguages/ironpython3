@@ -11,38 +11,38 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     internal abstract class CustomDictionaryStorage : DictionaryStorage {
-        private readonly CommonDictionaryStorage/*!*/ _storage;
+        private DictionaryStorage/*!*/ _storage;
 
         public CustomDictionaryStorage() {
-            _storage = new();
+            _storage = new CommonDictionaryStorage();
         }
 
-        protected CustomDictionaryStorage(CommonDictionaryStorage storage) {
+        protected CustomDictionaryStorage(DictionaryStorage storage) {
             _storage = storage;
         }
 
-        public CommonDictionaryStorage Storage => _storage;
+        public DictionaryStorage Storage => _storage;
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
             Add(key, value);
         }
 
         public override void AddNoLock(ref DictionaryStorage storage, object key, object value) {
-            if (key is string && TrySetExtraValue((string)key, value)) {
+            if (key is string skey && TrySetExtraValue(skey, value)) {
                 return;
             }
-            _storage.AddNoLock(ref storage, key, value);
+            _storage.AddNoLock(ref _storage, key, value);
         }
 
         public void Add(object key, object value) {
-            if (key is string && TrySetExtraValue((string)key, value)) {
+            if (key is string skey && TrySetExtraValue(skey, value)) {
                 return;
             }
-            _storage.Add(key, value);
+            _storage.Add(ref _storage, key, value);
         }
 
         public override bool Contains(object key) {
-            if (key is string && TryGetExtraValue((string)key, out object dummy)) {
+            if (key is string skey && TryGetExtraValue(skey, out object dummy)) {
                 return dummy != Uninitialized.Instance;
             }
 
@@ -54,15 +54,15 @@ namespace IronPython.Runtime {
         }
 
         public bool Remove(object key) {
-            if (key is string) {
-                return TryRemoveExtraValue((string)key) ?? _storage.Remove(key);
+            if (key is string skey) {
+                return TryRemoveExtraValue(skey) ?? _storage.Remove(ref _storage, key);
 
             }
-            return _storage.Remove(key);
+            return _storage.Remove(ref _storage, key);
         }
 
         public override bool TryGetValue(object key, out object value) {
-            if (key is string && TryGetExtraValue((string)key, out value)) {
+            if (key is string skey && TryGetExtraValue(skey, out value)) {
                 return value != Uninitialized.Instance;
             }
 
@@ -72,7 +72,7 @@ namespace IronPython.Runtime {
         public override int Count => _storage.Count + GetExtraItems().Count();
 
         public override void Clear(ref DictionaryStorage storage) {
-            _storage.Clear(ref storage);
+            _storage.Clear(ref _storage);
             foreach (var item in GetExtraItems()) {
                 TryRemoveExtraValue(item.Key);
             }

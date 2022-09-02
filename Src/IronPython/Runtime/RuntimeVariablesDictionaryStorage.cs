@@ -16,11 +16,11 @@ namespace IronPython.Runtime {
         private readonly int _numFreeVars;
         private readonly int _arg0Idx;
 
-        public RuntimeVariablesDictionaryStorage(RuntimeVariablesDictionaryStorage vars, CommonDictionaryStorage storage)
+        public RuntimeVariablesDictionaryStorage(RuntimeVariablesDictionaryStorage vars, DictionaryStorage storage)
             : this(vars._boxes, vars._args, vars._numFreeVars, vars._arg0Idx, storage) {
         }
 
-        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, CommonDictionaryStorage storage)
+        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, DictionaryStorage storage)
             : base(storage) {
 
             Debug.Assert(0 <= numFreeVars && numFreeVars <= args.Length);

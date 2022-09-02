@@ -35,8 +35,8 @@ namespace IronPython.Compiler.Ast {
 
         private static int _classId;
 
-        private static readonly MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
-        private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
+        private static readonly MSAst.ParameterExpression _outerContextParam = Ast.Parameter(typeof(CodeContext), "$outerContext");
+        private static readonly MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _outerContextParam);
 
         public ClassDefinition(string name, IReadOnlyList<Expression>? bases, IReadOnlyList<Keyword>? keywords, Statement? body = null) {
             _name = name;
@@ -128,6 +128,7 @@ namespace IronPython.Compiler.Ast {
             if (TryGetVariable(reference.Name, out variable)) {
                 if (variable.Kind is VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
+                    return variable;
                 } else if (variable.Kind is VariableKind.Local) {
                     // TODO: This results in doing a dictionary lookup to get/set the local,
                     // when it should probably be an uninitialized check / global lookup for gets
@@ -271,13 +272,13 @@ namespace IronPython.Compiler.Ast {
             locals.Add(LocalCodeContextVariable);
             locals.Add(PythonAst._globalContext);
 
-            init.Add(Ast.Assign(PythonAst._globalContext, new GetGlobalContextExpression(_parentContextParam)));
+            init.Add(Ast.Assign(PythonAst._globalContext, new GetGlobalContextExpression(_outerContextParam)));
 
             GlobalParent.PrepareScope(locals, init);
 
             CreateVariables(locals, init);
 
-            var createLocal = CreateLocalContext(_parentContextParam);
+            var createLocal = CreateLocalContext(_outerContextParam, newNamespace: false);
 
             init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
 
@@ -327,7 +328,7 @@ namespace IronPython.Compiler.Ast {
                     bodyStmt
                 ),
                 Name + "$" + Interlocked.Increment(ref _classId),
-                new[] { _parentContextParam }
+                new[] { _outerContextParam }
                 );
 
             return lambda;

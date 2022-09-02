@@ -145,7 +145,10 @@ namespace IronPython.Compiler.Ast {
         internal PythonVariable PythonVariable { get; set; }
 
         internal override bool ExposesLocalVariable(PythonVariable variable) {
-            return NeedsLocalsDictionary; 
+            return NeedsLocalsDictionary
+                || (ContainsSuperCall && variable.Kind is VariableKind.Parameter
+                        && _parameters is not null && _parameters.Length > 0
+                        && _parameters[0].PythonVariable == variable);
         }
 
         internal override FunctionAttributes Flags {
@@ -258,7 +261,7 @@ namespace IronPython.Compiler.Ast {
         
         internal override void FinishBind(PythonNameBinder binder) {
             foreach (var param in _parameters) {
-                _variableMapping[param.PythonVariable] = param.FinishBind(NeedsLocalsDictionary);
+                _variableMapping[param.PythonVariable] = param.FinishBind(forceClosureCell: ExposesLocalVariable(param.PythonVariable));
             }
             base.FinishBind(binder);
         }

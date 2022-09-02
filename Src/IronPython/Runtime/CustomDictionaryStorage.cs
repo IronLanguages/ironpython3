@@ -11,7 +11,17 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     internal abstract class CustomDictionaryStorage : DictionaryStorage {
-        private readonly CommonDictionaryStorage/*!*/ _storage = new CommonDictionaryStorage();
+        private readonly CommonDictionaryStorage/*!*/ _storage;
+
+        public CustomDictionaryStorage() {
+            _storage = new();
+        }
+
+        protected CustomDictionaryStorage(CommonDictionaryStorage storage) {
+            _storage = storage;
+        }
+
+        public CommonDictionaryStorage Storage => _storage;
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
             Add(key, value);

@@ -67,7 +67,7 @@ namespace IronPython.Runtime {
         public CommonDictionaryStorage() { }
 
         /// <summary>
-        /// Creates a new dictionary storage with no buckets
+        /// Creates a new dictionary storage with buckets
         /// </summary>
         public CommonDictionaryStorage(int count) {
             _buckets = new Bucket[(int)(count / Load + 2)];

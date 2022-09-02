@@ -6,12 +6,13 @@ using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_locale", typeof(IronPython.Modules.PythonLocale))]
 namespace IronPython.Modules {
@@ -40,16 +41,13 @@ namespace IronPython.Modules {
         public const int LC_NUMERIC = (int)LocaleCategories.Numeric;
         public const int LC_TIME = (int)LocaleCategories.Time;
 
-        internal static string PreferredEncoding {
-            get {
-                return "cp" + CultureInfo.CurrentCulture.TextInfo.ANSICodePage.ToString();
-            }
-        }
+        internal static string PreferredEncoding
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cp" + Encoding.GetEncoding(0).CodePage.ToString() : "UTF-8";
 
         [Documentation("gets the default locale tuple")]
-        public static object _getdefaultlocale() {            
+        public static object _getdefaultlocale() {
             return PythonTuple.MakeTuple(
-                GetDefaultLocale(), 
+                GetDefaultLocale(),
                 PreferredEncoding
             );
         }
@@ -73,12 +71,12 @@ LC_TIME:      sets the locale for time functions [unused]
 
 If locale is None then the current setting is returned.
 ")]
-        public static object setlocale(CodeContext/*!*/ context, int category, string locale=null) {
+        public static object setlocale(CodeContext/*!*/ context, int category, string locale = null) {
             LocaleInfo li = GetLocaleInfo(context);
             if (locale == null) {
                 return li.GetLocale(context, category);
             }
-            //  An empty string specifies the user’s default settings.
+            //  An empty string specifies the user's default settings.
             if (locale == "") {
                 locale = GetDefaultLocale();
             }
@@ -137,9 +135,9 @@ Note: Return value differs from CPython - it is not a string.")]
 
             public CultureInfo CType {
                 get { return _context.CTypeCulture; }
-                set { _context.CTypeCulture= value; }
+                set { _context.CTypeCulture = value; }
             }
-            
+
             public CultureInfo Time {
                 get { return _context.TimeCulture; }
                 set { _context.TimeCulture = value; }
@@ -149,7 +147,7 @@ Note: Return value differs from CPython - it is not a string.")]
                 get { return _context.MonetaryCulture; }
                 set { _context.MonetaryCulture = value; }
             }
-            
+
             public CultureInfo Numeric {
                 get { return _context.NumericCulture; }
                 set { _context.NumericCulture = value; }
@@ -176,9 +174,9 @@ Note: Return value differs from CPython - it is not a string.")]
                     case LocaleCategories.Collate:
                         return CultureToName(Collate = LocaleToCulture(context, locale));
                     case LocaleCategories.CType:
-                        return CultureToName(CType = LocaleToCulture(context, locale));                        
+                        return CultureToName(CType = LocaleToCulture(context, locale));
                     case LocaleCategories.Time:
-                        return CultureToName(Time = LocaleToCulture(context, locale));                        
+                        return CultureToName(Time = LocaleToCulture(context, locale));
                     case LocaleCategories.Monetary:
                         Monetary = LocaleToCulture(context, locale);
                         conv = null;
@@ -225,7 +223,7 @@ Note: Return value differs from CPython - it is not a string.")]
                 if (culture == PythonContext.CCulture) {
                     return "C";
                 }
-                
+
                 return culture.Name.Replace('-', '_');
             }
 
@@ -291,7 +289,7 @@ Note: Return value differs from CPython - it is not a string.")]
             EnsureLocaleInitialized(context.LanguageContext);
 
             return (LocaleInfo)context.LanguageContext.GetModuleState(_localeKey);
-        }        
+        }
 
         private static PythonType _localeerror(CodeContext/*!*/ context) {
             return (PythonType)context.LanguageContext.GetModuleState("_localeerror");

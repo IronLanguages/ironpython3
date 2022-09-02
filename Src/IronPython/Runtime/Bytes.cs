@@ -1168,6 +1168,10 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            // workaround for https://github.com/IronLanguages/ironpython3/issues/1519
+            if (GetType() != typeof(Bytes) && PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, this, "__iter__", out object? iter)) {
+                return new PythonEnumerator(iter);
+            }
             return _bytes.GetEnumerator();
         }
 

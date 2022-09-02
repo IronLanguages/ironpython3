@@ -299,11 +299,29 @@ class IteratorTest(IronPythonTestCase):
         list(it)
         with self.assertRaises(StopIteration):
             it.__next__()
-        self.assertEquals(it.__reduce__(), (iter, ((),)))
+        self.assertEqual(it.__reduce__(), (iter, ((),)))
         # Ensure that the iterator is discarded instead of being
         # reset by __setstate__()
         it.__setstate__(0)
         with self.assertRaises(StopIteration):
             it.__next__()
+
+    def test_loop_over_iterable_bytes_subclass(self):
+        # part of https://github.com/IronLanguages/ironpython3/issues/1519
+
+        data = list(range(3))
+        class test(bytes):
+            def __iter__(self):
+                return iter(data)
+
+        # enumerate with for loop
+        res = []
+        for x in test():
+            res.append(x)
+
+        self.assertEqual(res, data)
+
+        # enumerate with list
+        self.assertEqual(list(test()), data)
 
 run_test(__name__)

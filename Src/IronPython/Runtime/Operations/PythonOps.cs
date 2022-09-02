@@ -1435,7 +1435,7 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
-        public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
+        public static object? MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, PythonTuple bases, PythonDictionary? keywords, string selfNames) {
             Func<CodeContext, CodeContext> func = GetClassCode(parentContext, funcCode, body);
 
             // Check and normalize bases
@@ -1479,6 +1479,14 @@ namespace IronPython.Runtime.Operations {
                 }
             } // else metaclass is expected to be a callable and overrides any inherited metaclass through any bases
 
+            // Call class body lambda
+            CodeContext classContext = func(parentContext);
+            PythonDictionary vars = classContext.Dict;
+
+            // Prepare classdict
+            // TODO: prepared classdict should be used by `func` (PEP 3115)
+            object classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, vars);
+
             // Fasttrack for metaclass == `type`
             if (metaclass is null) {
                 if (keywords != null && keywords.Count > 0) {
@@ -1488,17 +1496,9 @@ namespace IronPython.Runtime.Operations {
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
-                PythonDictionary vars = func(parentContext).Dict;
-                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames);
+                
+                return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames)!;
             }
-
-            CodeContext classContext = func(parentContext);
-            // If __classcell__ is defined, verify later that it makes all the way to type.__new__
-            var classCell = (ClosureCell?)classContext.Dict.get("__classcell__");
-
-            // Prepare classdict
-            // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, classContext.Dict);
 
             // Dispatch to the metaclass to do class creation and initialization
             // metaclass could be simply a callable, eg:
@@ -1507,7 +1507,7 @@ namespace IronPython.Runtime.Operations {
             // calls our function...
             PythonContext pc = parentContext.LanguageContext;
 
-            object obj = pc.MetaClassCallSite.Target(
+            object? obj = pc.MetaClassCallSite.Target(
                 pc.MetaClassCallSite,
                 parentContext,
                 metaclass,
@@ -1517,11 +1517,24 @@ namespace IronPython.Runtime.Operations {
                 keywords ?? MakeEmptyDict()
             );
 
-            if (classCell is not null && classCell.Value == Uninitialized.Instance) {
-                // Python 3.8: RuntimeError
-                Warn(parentContext, PythonExceptions.DeprecationWarning,
-                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
-                classCell.Value = obj;
+            // If __class__ is used, verify that it has been set
+            if (vars._storage is RuntimeVariablesDictionaryStorage storage) {
+                int pos = Array.IndexOf(storage.Names, "__class__");
+                if (pos >= 0) {
+                    ClosureCell classCell = storage.GetCell(pos);
+                    if (!ReferenceEquals(classCell.Value, obj)) {
+                        if (classCell.Value == Uninitialized.Instance) {
+                            if (obj is not null) {
+                                // Python 3.8: RuntimeError
+                                Warn(parentContext, PythonExceptions.DeprecationWarning,
+                                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
+                            }
+                            classCell.Value = obj; // Fill in the cell, since type.__new__ didn't do it
+                        } else {
+                            throw TypeError("__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
+                        }
+                    }
+                }
             }
 
             // Ensure the class derives from `object`
@@ -1547,8 +1560,10 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            static object? CallPrepare(CodeContext/*!*/ context, object meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
-                object? classdict = dict;
+            static object CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
+                if (meta is null) return dict;
+
+                object? classdict = null;
 
                 object? prepareFunc = null;
                 // if available, call the __prepare__ method to get the classdict (PEP 3115)
@@ -1573,7 +1588,7 @@ namespace IronPython.Runtime.Operations {
                         context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
                 }
 
-                return classdict;
+                return classdict ?? new PythonDictionary(dict);
             }
         }
 

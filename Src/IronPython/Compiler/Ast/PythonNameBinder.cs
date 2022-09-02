@@ -118,20 +118,20 @@ namespace IronPython.Compiler.Ast {
             // Find all scopes and variables
             unboundAst.Walk(this);
 
-            // Bind
+            // Bind scopes
             foreach (ScopeStatement scope in _scopes) {
                 scope.Bind(this);
             }
 
-            // Finish the globals
+            // Bind globals
             unboundAst.Bind(this);
 
-            // Finish Binding w/ outer most scopes first.
+            // Finish binding w/ outer most scopes first.
             for (int i = _scopes.Count - 1; i >= 0; i--) {
                 _scopes[i].FinishBind(this);
             }
 
-            // Finish the globals
+            // Finish globals
             unboundAst.FinishBind(this);
 
             // Run flow checker

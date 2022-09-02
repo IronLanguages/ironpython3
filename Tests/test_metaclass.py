@@ -299,6 +299,34 @@ class MetaclassTest(IronPythonTestCase):
         class xyz: pass
         self.assertEqual(type(xyz), type(c))
 
+    def test_class_attribute_order(self):
+        import collections
+        attributes = []
+        class MyDict(collections.OrderedDict):
+            def __setitem__(self, key, value):
+                attributes.append(key)
+                super().__setitem__(key, value)
+            def __delitem__(self, key):
+                raise NotImplementedError
+            def __iter__(self):
+                return iter(attributes)
+
+        class MetaClass(type):
+            @classmethod
+            def __prepare__(metacls, name, bases):
+                return MyDict()
+
+        class MyClass(metaclass=MetaClass):
+            """DOCSTRING"""
+            def getclass(self):
+                return __class__
+
+        if is_cli:
+            # TODO: Use MyDict as the namespace for the class body lambda
+            self.assertEqual(set(attributes), {'__module__', '__doc__', 'getclass', '__classcell__'})
+        else:
+            self.assertEqual(attributes, ['__module__', '__qualname__', '__doc__', 'getclass', '__classcell__'])
+
     def test_arguments(self):
         class MetaType(type):
             def __init__(cls, name, bases, dict):

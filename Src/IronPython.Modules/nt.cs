@@ -817,7 +817,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            if (Directory.Exists(path)) throw DirectoryExists();
+            if (Directory.Exists(path)) throw DirectoryExistsError(path);
             // we ignore mode
 
             try {
@@ -2209,8 +2209,13 @@ the 'status' value."),
 
 #endif
 
-        private static Exception DirectoryExists() {
-            return PythonOps.OSError(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
+        private static Exception DirectoryExistsError(string? filename) {
+#if FEATURE_NATIVE
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return GetWin32Error(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
+            }
+#endif
+            return GetOsError(PythonErrorNumber.EEXIST, filename);
         }
 
 #if FEATURE_NATIVE

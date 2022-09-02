@@ -27,6 +27,7 @@ namespace IronPython.Runtime {
         void InsertRange(int index, int count, ArrayData value);
         void RemoveSlice(Slice slice);
         ArrayData Multiply(int count);
+        void InPlaceMultiply(int count);
         new bool Remove(object? item);
         void Reverse();
         Span<byte> AsByteSpan();

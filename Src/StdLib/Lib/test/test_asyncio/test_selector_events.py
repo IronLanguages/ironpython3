@@ -407,17 +407,17 @@ class BaseSelectorEventLoopTests(test_utils.TestCase):
     def test_sock_connect_resolve_using_socket_params(self, m_gai):
         addr = ('need-resolution.com', 8080)
         sock = test_utils.mock_nonblocking_socket()
-        m_gai.side_effect = (None, None, None, None, ('127.0.0.1', 0))
-        m_gai._is_coroutine = False
+
+        m_gai.side_effect = \
+            lambda *args: [(None, None, None, None, ('127.0.0.1', 0))]
+
         con = self.loop.create_task(self.loop.sock_connect(sock, addr))
-        while not m_gai.called:
-            self.loop._run_once()
+        self.loop.run_until_complete(con)
         m_gai.assert_called_with(
             addr[0], addr[1], sock.family, sock.type, sock.proto, 0)
 
-        con.cancel()
-        with self.assertRaises(asyncio.CancelledError):
-            self.loop.run_until_complete(con)
+        self.loop.run_until_complete(con)
+        sock.connect.assert_called_with(('127.0.0.1', 0))
 
     def test__sock_connect(self):
         f = asyncio.Future(loop=self.loop)

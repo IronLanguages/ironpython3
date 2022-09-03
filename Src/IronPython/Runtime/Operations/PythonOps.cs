@@ -1588,7 +1588,7 @@ namespace IronPython.Runtime.Operations {
         public static void RaiseAssertionError(CodeContext context) {
             PythonDictionary builtins = context.GetBuiltinsDict() ?? context.LanguageContext.BuiltinModuleDict;
 
-            if (builtins._storage.TryGetValue("AssertionError", out object obj)) {
+            if (builtins._storage.TryGetValue("AssertionError", out object? obj)) {
                 if (obj is PythonType type) {
                     throw PythonOps.CreateThrowable(type);
                 }
@@ -1606,7 +1606,7 @@ namespace IronPython.Runtime.Operations {
         public static void RaiseAssertionError(CodeContext context, object msg) {
             PythonDictionary builtins = context.GetBuiltinsDict() ?? context.LanguageContext.BuiltinModuleDict;
 
-            if (builtins._storage.TryGetValue("AssertionError", out object obj)) {
+            if (builtins._storage.TryGetValue("AssertionError", out object? obj)) {
                 if (obj is PythonType type) {
                     throw PythonOps.CreateThrowable(type, msg);
                 }
@@ -3757,7 +3757,7 @@ namespace IronPython.Runtime.Operations {
             throw NameError(name);
         }
 
-        public static PythonGlobal/*!*/[] GetGlobalArrayFromContext(CodeContext/*!*/ context) {
+        public static PythonGlobal/*!*/[]? GetGlobalArrayFromContext(CodeContext/*!*/ context) {
             return context.GetGlobalArray();
         }
 

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -24,13 +26,13 @@ namespace IronPython.Compiler {
     /// </summary>
     [DebuggerDisplay("{Display}")]
     public sealed class PythonGlobal {
-        private object _value;
-        private ModuleGlobalCache _global;
-        private string _name;
-        private CodeContext/*!*/ _context;
+        private object? _value;
+        private ModuleGlobalCache? _global;
+        private readonly string _name;
+        private readonly CodeContext/*!*/ _context;
 
-        internal static PropertyInfo/*!*/ CurrentValueProperty = typeof(PythonGlobal).GetProperty(nameof(CurrentValue));
-        internal static PropertyInfo/*!*/ RawValueProperty = typeof(PythonGlobal).GetProperty(nameof(RawValue));
+        internal static PropertyInfo/*!*/ CurrentValueProperty = typeof(PythonGlobal).GetProperty(nameof(CurrentValue))!;
+        internal static PropertyInfo/*!*/ RawValueProperty = typeof(PythonGlobal).GetProperty(nameof(RawValue))!;
 
         public PythonGlobal(CodeContext/*!*/ context, string name) {
             Assert.NotNull(context);
@@ -40,7 +42,7 @@ namespace IronPython.Compiler {
             _name = name;
         }
 
-        public object CurrentValue {
+        public object? CurrentValue {
             get {
                 if (_value != Uninitialized.Instance) {
                     return _value;
@@ -57,7 +59,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        public object CurrentValueLightThrow {
+        public object? CurrentValueLightThrow {
             get {
                 if (_value != Uninitialized.Instance) {
                     return _value;
@@ -67,21 +69,17 @@ namespace IronPython.Compiler {
             }
         }
 
-        public string Name { get { return _name; } }
+        public string Name => _name;
 
-        private object GetCachedValue(bool lightThrow) {
-            if (_global == null) {                
-                _global = ((PythonContext)_context.LanguageContext).GetModuleGlobalCache(_name);
-            }
+        private object? GetCachedValue(bool lightThrow) {
+            _global ??= _context.LanguageContext.GetModuleGlobalCache(_name);
 
             if (_global.IsCaching) {
                 if (_global.HasValue) {
                     return _global.Value;
                 }
             } else {
-                object value;
-
-                if (_context.TryLookupBuiltin(_name, out value)) {
+                if (_context.TryLookupBuiltin(_name, out object? value)) {
                     return value;
                 }
             }
@@ -93,7 +91,7 @@ namespace IronPython.Compiler {
             throw ex;
         }
 
-        public object RawValue {
+        public object? RawValue {
             get {
                 return _value;
             }
@@ -112,8 +110,8 @@ namespace IronPython.Compiler {
             }
         }
 
-        private static string GetStringDisplay(object val) {
-            return val == null ? "(null)" : val.ToString();
+        private static string GetStringDisplay(object? val) {
+            return val is null ? "(null)" : val.ToString() ?? "<no representation>";
         }
 
         public override string ToString() {

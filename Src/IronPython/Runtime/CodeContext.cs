@@ -141,7 +141,7 @@ namespace IronPython.Runtime {
         internal bool TryRemoveGlobalVariable(string name)
             => GlobalDict.Remove(name);
 
-        internal PythonGlobal/*!*/[] GetGlobalArray()
+        internal PythonGlobal/*!*/[]? GetGlobalArray()
             => ((GlobalDictionaryStorage)Dict._storage).Data;
 
         internal bool IsTopLevel
@@ -153,7 +153,7 @@ namespace IronPython.Runtime {
         /// the module's dictionary is returned.
         /// </summary>
         internal PythonDictionary? GetBuiltinsDict() {
-            if (GlobalDict._storage.TryGetBuiltins(out object builtins)) {
+            if (GlobalDict._storage.TryGetBuiltins(out object? builtins)) {
                 if (builtins is PythonModule builtinsScope) {
                     return builtinsScope.__dict__;
                 }

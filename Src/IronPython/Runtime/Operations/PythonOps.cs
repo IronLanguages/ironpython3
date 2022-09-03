@@ -3637,18 +3637,17 @@ namespace IronPython.Runtime.Operations {
         #region Global Access
 
         public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, bool newAttribStorage) {
-            CommonDictionaryStorage? attribs = null;
-            if (!newAttribStorage) {
-                attribs = outerContext.Dict._storage switch {
-                    CustomDictionaryStorage vars => vars.Storage,
-                    CommonDictionaryStorage commonStorage => commonStorage,
-                    _ => new()
-                };
+            DictionaryStorage attribs;
+            if (newAttribStorage) {
+                attribs = new CommonDictionaryStorage();
+            } else {
+                attribs = outerContext.Dict._storage is RuntimeVariablesDictionaryStorage vars ?
+                    vars.Storage : outerContext.Dict._storage;
             }
 
             return new CodeContext(
                 new PythonDictionary(
-                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx, attribs ?? new())
+                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx, attribs)
                 ),
                 outerContext.ModuleContext
             );

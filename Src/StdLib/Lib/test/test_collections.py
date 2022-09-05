@@ -19,8 +19,9 @@ from collections import namedtuple, Counter, OrderedDict, _count_elements
 from collections import UserDict, UserString, UserList
 from collections import ChainMap
 from collections import deque
-from collections.abc import Awaitable, Coroutine
-from collections.abc import AsyncIterator, AsyncIterable, AsyncGenerator
+# https://github.com/IronLanguages/ironpython3/issues/1428
+# from collections.abc import Awaitable, Coroutine
+# from collections.abc import AsyncIterator, AsyncIterable, AsyncGenerator
 from collections.abc import Hashable, Iterable, Iterator, Generator, Reversible
 from collections.abc import Sized, Container, Callable, Collection
 from collections.abc import Set, MutableSet
@@ -509,120 +510,121 @@ def _test_gen():
 
 class TestOneTrickPonyABCs(ABCTestCase):
 
-    def test_Awaitable(self):
-        def gen():
-            yield
-
-        @types.coroutine
-        def coro():
-            yield
-
-        async def new_coro():
-            pass
-
-        class Bar:
-            def __await__(self):
-                yield
-
-        class MinimalCoro(Coroutine):
-            def send(self, value):
-                return value
-            def throw(self, typ, val=None, tb=None):
-                super().throw(typ, val, tb)
-            def __await__(self):
-                yield
-
-        non_samples = [None, int(), gen(), object()]
-        for x in non_samples:
-            self.assertNotIsInstance(x, Awaitable)
-            self.assertFalse(issubclass(type(x), Awaitable), repr(type(x)))
-
-        samples = [Bar(), MinimalCoro()]
-        for x in samples:
-            self.assertIsInstance(x, Awaitable)
-            self.assertTrue(issubclass(type(x), Awaitable))
-
-        c = coro()
-        # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
-        # flag don't have '__await__' method, hence can't be instances
-        # of Awaitable. Use inspect.isawaitable to detect them.
-        self.assertNotIsInstance(c, Awaitable)
-
-        c = new_coro()
-        self.assertIsInstance(c, Awaitable)
-        c.close() # avoid RuntimeWarning that coro() was not awaited
-
-        class CoroLike: pass
-        Coroutine.register(CoroLike)
-        self.assertTrue(isinstance(CoroLike(), Awaitable))
-        self.assertTrue(issubclass(CoroLike, Awaitable))
-        CoroLike = None
-        support.gc_collect() # Kill CoroLike to clean-up ABCMeta cache
-
-    def test_Coroutine(self):
-        def gen():
-            yield
-
-        @types.coroutine
-        def coro():
-            yield
-
-        async def new_coro():
-            pass
-
-        class Bar:
-            def __await__(self):
-                yield
-
-        class MinimalCoro(Coroutine):
-            def send(self, value):
-                return value
-            def throw(self, typ, val=None, tb=None):
-                super().throw(typ, val, tb)
-            def __await__(self):
-                yield
-
-        non_samples = [None, int(), gen(), object(), Bar()]
-        for x in non_samples:
-            self.assertNotIsInstance(x, Coroutine)
-            self.assertFalse(issubclass(type(x), Coroutine), repr(type(x)))
-
-        samples = [MinimalCoro()]
-        for x in samples:
-            self.assertIsInstance(x, Awaitable)
-            self.assertTrue(issubclass(type(x), Awaitable))
-
-        c = coro()
-        # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
-        # flag don't have '__await__' method, hence can't be instances
-        # of Coroutine. Use inspect.isawaitable to detect them.
-        self.assertNotIsInstance(c, Coroutine)
-
-        c = new_coro()
-        self.assertIsInstance(c, Coroutine)
-        c.close() # avoid RuntimeWarning that coro() was not awaited
-
-        class CoroLike:
-            def send(self, value):
-                pass
-            def throw(self, typ, val=None, tb=None):
-                pass
-            def close(self):
-                pass
-            def __await__(self):
-                pass
-        self.assertTrue(isinstance(CoroLike(), Coroutine))
-        self.assertTrue(issubclass(CoroLike, Coroutine))
-
-        class CoroLike:
-            def send(self, value):
-                pass
-            def close(self):
-                pass
-            def __await__(self):
-                pass
-        self.assertFalse(isinstance(CoroLike(), Coroutine))
-        self.assertFalse(issubclass(CoroLike, Coroutine))
+# https://github.com/IronLanguages/ironpython3/issues/1428
+#     def test_Awaitable(self):
+#         def gen():
+#             yield
+#
+#         @types.coroutine
+#         def coro():
+#             yield
+#
+#         async def new_coro():
+#             pass
+#
+#         class Bar:
+#             def __await__(self):
+#                 yield
+#
+#         class MinimalCoro(Coroutine):
+#             def send(self, value):
+#                 return value
+#             def throw(self, typ, val=None, tb=None):
+#                 super().throw(typ, val, tb)
+#             def __await__(self):
+#                 yield
+#
+#         non_samples = [None, int(), gen(), object()]
+#         for x in non_samples:
+#             self.assertNotIsInstance(x, Awaitable)
+#             self.assertFalse(issubclass(type(x), Awaitable), repr(type(x)))
+#
+#         samples = [Bar(), MinimalCoro()]
+#         for x in samples:
+#             self.assertIsInstance(x, Awaitable)
+#             self.assertTrue(issubclass(type(x), Awaitable))
+#
+#         c = coro()
+#         # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
+#         # flag don't have '__await__' method, hence can't be instances
+#         # of Awaitable. Use inspect.isawaitable to detect them.
+#         self.assertNotIsInstance(c, Awaitable)
+#
+#         c = new_coro()
+#         self.assertIsInstance(c, Awaitable)
+#         c.close() # avoid RuntimeWarning that coro() was not awaited
+#
+#         class CoroLike: pass
+#         Coroutine.register(CoroLike)
+#         self.assertTrue(isinstance(CoroLike(), Awaitable))
+#         self.assertTrue(issubclass(CoroLike, Awaitable))
+#         CoroLike = None
+#         support.gc_collect() # Kill CoroLike to clean-up ABCMeta cache
+#
+#     def test_Coroutine(self):
+#         def gen():
+#             yield
+#
+#         @types.coroutine
+#         def coro():
+#             yield
+#
+#         async def new_coro():
+#             pass
+#
+#         class Bar:
+#             def __await__(self):
+#                 yield
+#
+#         class MinimalCoro(Coroutine):
+#             def send(self, value):
+#                 return value
+#             def throw(self, typ, val=None, tb=None):
+#                 super().throw(typ, val, tb)
+#             def __await__(self):
+#                 yield
+#
+#         non_samples = [None, int(), gen(), object(), Bar()]
+#         for x in non_samples:
+#             self.assertNotIsInstance(x, Coroutine)
+#             self.assertFalse(issubclass(type(x), Coroutine), repr(type(x)))
+#
+#         samples = [MinimalCoro()]
+#         for x in samples:
+#             self.assertIsInstance(x, Awaitable)
+#             self.assertTrue(issubclass(type(x), Awaitable))
+#
+#         c = coro()
+#         # Iterable coroutines (generators with CO_ITERABLE_COROUTINE
+#         # flag don't have '__await__' method, hence can't be instances
+#         # of Coroutine. Use inspect.isawaitable to detect them.
+#         self.assertNotIsInstance(c, Coroutine)
+#
+#         c = new_coro()
+#         self.assertIsInstance(c, Coroutine)
+#         c.close() # avoid RuntimeWarning that coro() was not awaited
+#
+#         class CoroLike:
+#             def send(self, value):
+#                 pass
+#             def throw(self, typ, val=None, tb=None):
+#                 pass
+#             def close(self):
+#                 pass
+#             def __await__(self):
+#                 pass
+#         self.assertTrue(isinstance(CoroLike(), Coroutine))
+#         self.assertTrue(issubclass(CoroLike, Coroutine))
+#
+#         class CoroLike:
+#             def send(self, value):
+#                 pass
+#             def close(self):
+#                 pass
+#             def __await__(self):
+#                 pass
+#         self.assertFalse(isinstance(CoroLike(), Coroutine))
+#         self.assertFalse(issubclass(CoroLike, Coroutine))
 
     def test_Hashable(self):
         # Check some non-hashables
@@ -650,39 +652,40 @@ class TestOneTrickPonyABCs(ABCTestCase):
         self.validate_abstract_methods(Hashable, '__hash__')
         self.validate_isinstance(Hashable, '__hash__')
 
-    def test_AsyncIterable(self):
-        class AI:
-            async def __aiter__(self):
-                return self
-        self.assertTrue(isinstance(AI(), AsyncIterable))
-        self.assertTrue(issubclass(AI, AsyncIterable))
-        # Check some non-iterables
-        non_samples = [None, object, []]
-        for x in non_samples:
-            self.assertNotIsInstance(x, AsyncIterable)
-            self.assertFalse(issubclass(type(x), AsyncIterable), repr(type(x)))
-        self.validate_abstract_methods(AsyncIterable, '__aiter__')
-        self.validate_isinstance(AsyncIterable, '__aiter__')
-
-    def test_AsyncIterator(self):
-        class AI:
-            async def __aiter__(self):
-                return self
-            async def __anext__(self):
-                raise StopAsyncIteration
-        self.assertTrue(isinstance(AI(), AsyncIterator))
-        self.assertTrue(issubclass(AI, AsyncIterator))
-        non_samples = [None, object, []]
-        # Check some non-iterables
-        for x in non_samples:
-            self.assertNotIsInstance(x, AsyncIterator)
-            self.assertFalse(issubclass(type(x), AsyncIterator), repr(type(x)))
-        # Similarly to regular iterators (see issue 10565)
-        class AnextOnly:
-            async def __anext__(self):
-                raise StopAsyncIteration
-        self.assertNotIsInstance(AnextOnly(), AsyncIterator)
-        self.validate_abstract_methods(AsyncIterator, '__anext__', '__aiter__')
+# https://github.com/IronLanguages/ironpython3/issues/1428
+#     def test_AsyncIterable(self):
+#         class AI:
+#             async def __aiter__(self):
+#                 return self
+#         self.assertTrue(isinstance(AI(), AsyncIterable))
+#         self.assertTrue(issubclass(AI, AsyncIterable))
+#         # Check some non-iterables
+#         non_samples = [None, object, []]
+#         for x in non_samples:
+#             self.assertNotIsInstance(x, AsyncIterable)
+#             self.assertFalse(issubclass(type(x), AsyncIterable), repr(type(x)))
+#         self.validate_abstract_methods(AsyncIterable, '__aiter__')
+#         self.validate_isinstance(AsyncIterable, '__aiter__')
+#
+#     def test_AsyncIterator(self):
+#         class AI:
+#             async def __aiter__(self):
+#                 return self
+#             async def __anext__(self):
+#                 raise StopAsyncIteration
+#         self.assertTrue(isinstance(AI(), AsyncIterator))
+#         self.assertTrue(issubclass(AI, AsyncIterator))
+#         non_samples = [None, object, []]
+#         # Check some non-iterables
+#         for x in non_samples:
+#             self.assertNotIsInstance(x, AsyncIterator)
+#             self.assertFalse(issubclass(type(x), AsyncIterator), repr(type(x)))
+#         # Similarly to regular iterators (see issue 10565)
+#         class AnextOnly:
+#             async def __anext__(self):
+#                 raise StopAsyncIteration
+#         self.assertNotIsInstance(AnextOnly(), AsyncIterator)
+#         self.validate_abstract_methods(AsyncIterator, '__anext__', '__aiter__')
 
     def test_Iterable(self):
         # Check some non-iterables
@@ -784,13 +787,13 @@ class TestOneTrickPonyABCs(ABCTestCase):
             self.assertFalse(issubclass(type(x), Collection), repr(type(x)))
         # Check some non-collection iterables
         non_col_iterables = [_test_gen(), iter(b''), iter(bytearray()),
-                             (x for x in []), dict().values()]
+                             (x for x in [])]
         for x in non_col_iterables:
             self.assertNotIsInstance(x, Collection)
             self.assertFalse(issubclass(type(x), Collection), repr(type(x)))
         # Check some collections
         samples = [set(), frozenset(), dict(), bytes(), str(), tuple(),
-                   list(), dict().keys(), dict().items()]
+                   list(), dict().keys(), dict().items(), dict().values()]
         for x in samples:
             self.assertIsInstance(x, Collection)
             self.assertTrue(issubclass(type(x), Collection), repr(type(x)))
@@ -960,86 +963,87 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         self.assertRaises(RuntimeError, IgnoreGeneratorExit().close)
 
-    def test_AsyncGenerator(self):
-        class NonAGen1:
-            def __aiter__(self): return self
-            def __anext__(self): return None
-            def aclose(self): pass
-            def athrow(self, typ, val=None, tb=None): pass
-
-        class NonAGen2:
-            def __aiter__(self): return self
-            def __anext__(self): return None
-            def aclose(self): pass
-            def asend(self, value): return value
-
-        class NonAGen3:
-            def aclose(self): pass
-            def asend(self, value): return value
-            def athrow(self, typ, val=None, tb=None): pass
-
-        non_samples = [
-            None, 42, 3.14, 1j, b"", "", (), [], {}, set(),
-            iter(()), iter([]), NonAGen1(), NonAGen2(), NonAGen3()]
-        for x in non_samples:
-            self.assertNotIsInstance(x, AsyncGenerator)
-            self.assertFalse(issubclass(type(x), AsyncGenerator), repr(type(x)))
-
-        class Gen:
-            def __aiter__(self): return self
-            async def __anext__(self): return None
-            async def aclose(self): pass
-            async def asend(self, value): return value
-            async def athrow(self, typ, val=None, tb=None): pass
-
-        class MinimalAGen(AsyncGenerator):
-            async def asend(self, value):
-                return value
-            async def athrow(self, typ, val=None, tb=None):
-                await super().athrow(typ, val, tb)
-
-        async def gen():
-            yield 1
-
-        samples = [gen(), Gen(), MinimalAGen()]
-        for x in samples:
-            self.assertIsInstance(x, AsyncIterator)
-            self.assertIsInstance(x, AsyncGenerator)
-            self.assertTrue(issubclass(type(x), AsyncGenerator), repr(type(x)))
-        self.validate_abstract_methods(AsyncGenerator, 'asend', 'athrow')
-
-        def run_async(coro):
-            result = None
-            while True:
-                try:
-                    coro.send(None)
-                except StopIteration as ex:
-                    result = ex.args[0] if ex.args else None
-                    break
-            return result
-
-        # mixin tests
-        mgen = MinimalAGen()
-        self.assertIs(mgen, mgen.__aiter__())
-        self.assertIs(run_async(mgen.asend(None)), run_async(mgen.__anext__()))
-        self.assertEqual(2, run_async(mgen.asend(2)))
-        self.assertIsNone(run_async(mgen.aclose()))
-        with self.assertRaises(ValueError):
-            run_async(mgen.athrow(ValueError))
-
-        class FailOnClose(AsyncGenerator):
-            async def asend(self, value): return value
-            async def athrow(self, *args): raise ValueError
-
-        with self.assertRaises(ValueError):
-            run_async(FailOnClose().aclose())
-
-        class IgnoreGeneratorExit(AsyncGenerator):
-            async def asend(self, value): return value
-            async def athrow(self, *args): pass
-
-        with self.assertRaises(RuntimeError):
-            run_async(IgnoreGeneratorExit().aclose())
+# https://github.com/IronLanguages/ironpython3/issues/1428
+#     def test_AsyncGenerator(self):
+#         class NonAGen1:
+#             def __aiter__(self): return self
+#             def __anext__(self): return None
+#             def aclose(self): pass
+#             def athrow(self, typ, val=None, tb=None): pass
+#
+#         class NonAGen2:
+#             def __aiter__(self): return self
+#             def __anext__(self): return None
+#             def aclose(self): pass
+#             def asend(self, value): return value
+#
+#         class NonAGen3:
+#             def aclose(self): pass
+#             def asend(self, value): return value
+#             def athrow(self, typ, val=None, tb=None): pass
+#
+#         non_samples = [
+#             None, 42, 3.14, 1j, b"", "", (), [], {}, set(),
+#             iter(()), iter([]), NonAGen1(), NonAGen2(), NonAGen3()]
+#         for x in non_samples:
+#             self.assertNotIsInstance(x, AsyncGenerator)
+#             self.assertFalse(issubclass(type(x), AsyncGenerator), repr(type(x)))
+#
+#         class Gen:
+#             def __aiter__(self): return self
+#             async def __anext__(self): return None
+#             async def aclose(self): pass
+#             async def asend(self, value): return value
+#             async def athrow(self, typ, val=None, tb=None): pass
+#
+#         class MinimalAGen(AsyncGenerator):
+#             async def asend(self, value):
+#                 return value
+#             async def athrow(self, typ, val=None, tb=None):
+#                 await super().athrow(typ, val, tb)
+#
+#         async def gen():
+#             yield 1
+#
+#         samples = [gen(), Gen(), MinimalAGen()]
+#         for x in samples:
+#             self.assertIsInstance(x, AsyncIterator)
+#             self.assertIsInstance(x, AsyncGenerator)
+#             self.assertTrue(issubclass(type(x), AsyncGenerator), repr(type(x)))
+#         self.validate_abstract_methods(AsyncGenerator, 'asend', 'athrow')
+#
+#         def run_async(coro):
+#             result = None
+#             while True:
+#                 try:
+#                     coro.send(None)
+#                 except StopIteration as ex:
+#                     result = ex.args[0] if ex.args else None
+#                     break
+#             return result
+#
+#         # mixin tests
+#         mgen = MinimalAGen()
+#         self.assertIs(mgen, mgen.__aiter__())
+#         self.assertIs(run_async(mgen.asend(None)), run_async(mgen.__anext__()))
+#         self.assertEqual(2, run_async(mgen.asend(2)))
+#         self.assertIsNone(run_async(mgen.aclose()))
+#         with self.assertRaises(ValueError):
+#             run_async(mgen.athrow(ValueError))
+#
+#         class FailOnClose(AsyncGenerator):
+#             async def asend(self, value): return value
+#             async def athrow(self, *args): raise ValueError
+#
+#         with self.assertRaises(ValueError):
+#             run_async(FailOnClose().aclose())
+#
+#         class IgnoreGeneratorExit(AsyncGenerator):
+#             async def asend(self, value): return value
+#             async def athrow(self, *args): pass
+#
+#         with self.assertRaises(RuntimeError):
+#             run_async(IgnoreGeneratorExit().aclose())
 
     def test_Sized(self):
         non_samples = [None, 42, 3.14, 1j,

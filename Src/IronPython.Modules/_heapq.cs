@@ -79,7 +79,7 @@ namespace IronPython.Modules {
         [Documentation("Find the n largest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable, reverse=True)[:n]\n"
             )]
-        public static PythonList nlargest(CodeContext/*!*/ context, int n, object iterable) {
+        public static PythonList _nlargest(CodeContext/*!*/ context, int n, object iterable) {
             if (n <= 0) {
                 return new PythonList();
             }
@@ -111,7 +111,7 @@ namespace IronPython.Modules {
         [Documentation("Find the n smallest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable)[:n]\n"
             )]
-        public static PythonList nsmallest(CodeContext/*!*/ context, int n, object iterable) {
+        public static PythonList _nsmallest(CodeContext/*!*/ context, int n, object iterable) {
             if (n <= 0) {
                 return new PythonList();
             }

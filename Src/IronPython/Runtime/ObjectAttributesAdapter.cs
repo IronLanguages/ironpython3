@@ -4,6 +4,7 @@
 
 #nullable enable
 
+using System.Collections;
 using System.Collections.Generic;
 using IronPython.Runtime.Operations;
 
@@ -40,6 +41,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object? key, out object? value) {
             try {
                 value = PythonOps.GetIndex(_context, _backing, key);
@@ -61,16 +64,17 @@ namespace IronPython.Runtime {
 
         public override List<KeyValuePair<object?, object?>> GetItems() {
             var res = new List<KeyValuePair<object?, object?>>();
-            foreach (object? o in Keys) {
-                TryGetValue(o, out object? val);
+            IEnumerator keys = KeysEnumerator;
+            while (keys.MoveNext()) {
+                object? key = keys.Current;
+                TryGetValue(key, out object? val);
 
-                res.Add(new KeyValuePair<object?, object?>(o, val));
+                res.Add(new KeyValuePair<object?, object?>(key, val));
             }
             return res;
         }
 
-        private ICollection<object?> Keys {
-            get { return (ICollection<object?>)Converter.Convert(PythonOps.Invoke(_context, _backing, "keys"), typeof(ICollection<object?>)); }
-        }
+        private IEnumerator KeysEnumerator
+            => PythonOps.GetEnumerator(_context, PythonOps.Invoke(_context, _backing, "keys"));
     }
 }

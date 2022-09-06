@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections.Generic;
 using IronPython.Runtime.Operations;
 
@@ -21,15 +23,15 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override void Add(ref DictionaryStorage storage, object key, object value) {
+        public override void Add(ref DictionaryStorage storage, object? key, object? value) {
             _context.LanguageContext.SetIndex(_backing, key, value);
         }
 
-        public override bool Contains(object key) {
+        public override bool Contains(object? key) {
             return TryGetValue(key, out _);
         }
 
-        public override bool Remove(ref DictionaryStorage storage, object key) {
+        public override bool Remove(ref DictionaryStorage storage, object? key) {
             try {
                 _context.LanguageContext.DelIndex(_backing, key);
                 return true;
@@ -38,7 +40,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override bool TryGetValue(object key, out object value) {
+        public override bool TryGetValue(object? key, out object? value) {
             try {
                 value = PythonOps.GetIndex(_context, _backing, key);
                 return true;
@@ -57,19 +59,18 @@ namespace IronPython.Runtime {
             PythonOps.Invoke(_context, _backing, "clear");
         }
 
-        public override List<KeyValuePair<object, object>> GetItems() {
-            List<KeyValuePair<object, object>> res = new List<KeyValuePair<object, object>>();
-            foreach (object o in Keys) {
-                object val;
-                TryGetValue(o, out val);
+        public override List<KeyValuePair<object?, object?>> GetItems() {
+            var res = new List<KeyValuePair<object?, object?>>();
+            foreach (object? o in Keys) {
+                TryGetValue(o, out object? val);
 
-                res.Add(new KeyValuePair<object, object>(o, val));            
+                res.Add(new KeyValuePair<object?, object?>(o, val));
             }
             return res;
         }
 
-        private ICollection<object> Keys {
-            get { return (ICollection<object>)Converter.Convert(PythonOps.Invoke(_context, _backing, "keys"), typeof(ICollection<object>)); }
+        private ICollection<object?> Keys {
+            get { return (ICollection<object?>)Converter.Convert(PythonOps.Invoke(_context, _backing, "keys"), typeof(ICollection<object?>)); }
         }
     }
 }

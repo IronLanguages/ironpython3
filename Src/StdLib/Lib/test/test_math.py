@@ -1178,9 +1178,9 @@ class MathTests(unittest.TestCase):
 
         # https://github.com/IronLanguages/ironpython3/issues/1550
         SKIP_ON_IRONPYTHON = set()
-        if sys.implementation.name == 'ironpython':
+        if sys.implementation.name == 'ironpython' and sys.platform == 'win32':
             import clr
-            if clr.TargetFramework.startswith('.NETFramework'):
+            if clr.FrameworkDescription.startswith('.NET Framework'):
                 SKIP_ON_IRONPYTHON.add('tan0064')
 
         fail_fmt = "{}: {}({!r}): {}"

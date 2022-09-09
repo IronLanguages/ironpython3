@@ -235,4 +235,17 @@ class PropertyTest(IronPythonTestCase):
         for attr in ['fdel', 'fget', 'fset']:
             self.assertRaisesMessage(AttributeError, "readonly attribute", lambda : setattr(x, attr, 'abc'))
 
+    def test_property_with_slots(self):
+        def getter(x): pass
+
+        class MyProperty(property):
+            __slots__ = ()
+            def __init__(self, getter, doc):
+                property.__init__(self, getter, doc=doc)
+
+        with self.assertRaises(AttributeError):
+            MyProperty(getter, None).__doc__
+
+        self.assertIs(MyProperty(getter, "anything").__doc__, None)
+
 run_test(__name__)

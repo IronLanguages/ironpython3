@@ -27,6 +27,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_class.ClassTests('testListAndDictOps'))
         suite.addTest(test.test_class.ClassTests('testMisc'))
         suite.addTest(test.test_class.ClassTests('testSFBug532646')) # requires MaxRecursion set
+        suite.addTest(test.test_class.ClassTests('testSetattrNonStringName'))
+        suite.addTest(test.test_class.ClassTests('testSetattrWrapperNameIntern'))
         suite.addTest(test.test_class.ClassTests('testUnaryOps'))
         return suite
 

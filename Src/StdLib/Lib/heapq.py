@@ -360,12 +360,14 @@ def merge(*iterables):
     _heappop, _heapreplace, _StopIteration = heappop, heapreplace, StopIteration
     _len = len
 
+    # ironpython: renamed next to next_ due to https://github.com/IronLanguages/ironpython3/issues/547
+
     h = []
     h_append = h.append
     for itnum, it in enumerate(map(iter, iterables)):
         try:
-            next = it.__next__
-            h_append([next(), itnum, next])
+            next_ = it.__next__
+            h_append([next_(), itnum, next_])
         except _StopIteration:
             pass
     heapify(h)
@@ -373,17 +375,17 @@ def merge(*iterables):
     while _len(h) > 1:
         try:
             while True:
-                v, itnum, next = s = h[0]
+                v, itnum, next_ = s = h[0]
                 yield v
-                s[0] = next()               # raises StopIteration when exhausted
+                s[0] = next_()              # raises StopIteration when exhausted
                 _heapreplace(h, s)          # restore heap condition
         except _StopIteration:
             _heappop(h)                     # remove empty iterator
     if h:
         # fast case when only a single iterator remains
-        v, itnum, next = h[0]
+        v, itnum, next_ = h[0]
         yield v
-        yield from next.__self__
+        yield from next_.__self__
 
 # Extend the implementations of nsmallest and nlargest to use a key= argument
 _nsmallest = nsmallest

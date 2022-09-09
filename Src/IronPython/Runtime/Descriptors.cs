@@ -122,14 +122,15 @@ namespace IronPython.Runtime {
 
         public void __init__(object fget = null, object fset = null, object fdel = null, object doc = null) {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;
-            if (GetType() != typeof(PythonProperty) && _fget is PythonFunction) {
+
+            if (doc is null && GetType() != typeof(PythonProperty) && _fget is PythonFunction pfget) {
                 // http://bugs.python.org/issue5890
                 PythonDictionary dict = UserTypeOps.GetDictionary((IPythonObject)this);
-                if (dict == null) {
-                    throw PythonOps.AttributeError("{0} object has no __doc__ attribute", PythonOps.GetPythonTypeName(this));
+                if (dict is null) {
+                    throw PythonOps.AttributeError("'{0}' object attribute '__doc__' is read-only", PythonOps.GetPythonTypeName(this));
                 }
 
-                dict["__doc__"] = ((PythonFunction)_fget).__doc__;
+                dict["__doc__"] = pfget.__doc__;
             }
         }
 

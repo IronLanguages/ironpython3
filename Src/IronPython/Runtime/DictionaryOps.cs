@@ -99,12 +99,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static PythonTuple popitem(IDictionary<object, object> self) {
-            IEnumerator<KeyValuePair<object, object>> ie = self.GetEnumerator();
+        public static PythonTuple popitem(PythonDictionary self) {
+            using IEnumerator<KeyValuePair<object, object>> ie = self.GetEnumerator();
             if (ie.MoveNext()) {
                 object key = ie.Current.Key;
                 object val = ie.Current.Value;
-                self.Remove(key);
+                self.RemoveDirect(key);
                 return PythonTuple.MakeTuple(key, val);
             }
             throw PythonOps.KeyError("dictionary is empty");

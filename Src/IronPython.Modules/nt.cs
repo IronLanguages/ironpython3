@@ -379,6 +379,8 @@ namespace IronPython.Modules {
             }
         }
 
+        public static object? cpu_count() => null; // TODO: implement me!
+
         private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO _)) {

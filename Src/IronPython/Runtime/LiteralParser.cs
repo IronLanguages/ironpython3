@@ -722,35 +722,41 @@ namespace IronPython.Runtime {
 
             Debug.Assert(!text.IsEmpty);
 
-            try {
-                int ret = 0;
-                foreach (var ch in text) {
-                    if (!HexValue(ch, out int digit) || !(digit < b)) {
-                        val = default;
-                        return false;
-                    }
+            long ret = 0;
+            BigInteger retBi = BigInteger.Zero;
 
-                    checked {
-                        // include sign here so that System.Int32.MinValue won't overflow
-                        ret = ret * b + sign * digit;
-                    }
+            bool isBigInteger = false;
+            foreach (var ch in text) {
+                if (!HexValue(ch, out int digit) || !(digit < b)) {
+                    val = default;
+                    return false;
                 }
 
-                val = ScriptingRuntimeHelpers.Int32ToObject(ret);
-                return true;
-            } catch (OverflowException) {
-                BigInteger ret = BigInteger.Zero;
-
-                foreach (var ch in text) {
-                    if (!HexValue(ch, out int digit) || !(digit < b)) {
-                        val = default;
-                        return false;
-                    }
-
+                if (isBigInteger) {
+                    retBi = retBi * b + digit;
+                } else {
                     ret = ret * b + digit;
-                 }
-
-                val = sign < 0 ? -ret : ret;
+                    if (ret > int.MaxValue) {
+                        isBigInteger = true;
+                        retBi = ret;
+                    }
+                }
+            }
+            if (isBigInteger) {
+                if (sign < 0) {
+                    if (retBi == (BigInteger)int.MaxValue + 1) {
+                        val = ScriptingRuntimeHelpers.Int32ToObject(int.MinValue);
+                        return true;
+                    }
+                    val = -retBi;
+                    return true;
+                }
+                val = retBi;
+                return true;
+            } else {
+                int res = unchecked((int)ret);
+                res = sign < 0 ? -res : res;
+                val = ScriptingRuntimeHelpers.Int32ToObject(res);
                 return true;
             }
         }
@@ -765,10 +771,8 @@ namespace IronPython.Runtime {
             var start = 0;
             var end = text.Length;
 
-            // skip whitespace
-            while (char.IsWhiteSpace(text[start])) {
-                if (++start >= end) return false;
-            }
+            // assumes a Trim has already been preformed
+            Debug.Assert(!char.IsWhiteSpace(text[start]));
 
             // sign?
             switch (text[start]) {

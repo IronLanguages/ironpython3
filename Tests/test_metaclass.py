@@ -314,18 +314,26 @@ class MetaclassTest(IronPythonTestCase):
         class MetaClass(type):
             @classmethod
             def __prepare__(metacls, name, bases):
-                return MyDict()
+                d = MyDict()
+                d['prepared'] = True
+                return d
+
+            def __new__(metacls, name, bases, attrdict):
+                attrdict['created'] = attrdict['executed']
+                t = type.__new__(metacls, name, bases, attrdict)
+                self.assertNotIn('__class__', attrdict)
+                return t
 
         class MyClass(metaclass=MetaClass):
             """DOCSTRING"""
             def getclass(self):
                 return __class__
+            executed = True
 
         if is_cli:
-            # TODO: Use MyDict as the namespace for the class body lambda
-            self.assertEqual(set(attributes), {'__module__', '__doc__', 'getclass', '__classcell__'})
+            self.assertEqual(attributes, ['prepared', '__module__', '__doc__', 'getclass', 'executed', '__classcell__', 'created'])
         else:
-            self.assertEqual(attributes, ['__module__', '__qualname__', '__doc__', 'getclass', '__classcell__'])
+            self.assertEqual(attributes, ['prepared', '__module__', '__qualname__', '__doc__', 'getclass', 'executed', '__classcell__', 'created'])
 
     def test_arguments(self):
         class MetaType(type):

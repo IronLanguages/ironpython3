@@ -335,6 +335,48 @@ class MetaclassTest(IronPythonTestCase):
         else:
             self.assertEqual(attributes, ['prepared', '__module__', '__qualname__', '__doc__', 'getclass', 'executed', '__classcell__', 'created'])
 
+    def test_prepare_mapping(self):
+        import collections.abc
+
+        def makeclass(name, bases, attrs):
+            return type(name, bases, dict(attrs))
+
+        class MyMutableMapping(collections.abc.MutableMapping):
+            """A non-dict subclass that does not allow deletions."""
+            def __init__(self):
+                self.dict = {}
+            def __getitem__(self, key):
+                return self.dict[key]
+            def __setitem__(self, key, item):
+                self.dict[key] = item
+            def __delitem__(self, key):
+                raise NotImplementedError
+            def __iter__(self):
+                return iter(self.dict)
+            def __len__(self):
+                return len(self.dict)
+
+        md = None
+        def my_prepare(*args, **kwargs):
+            nonlocal md
+            md = MyMutableMapping()
+            return md
+
+        makeclass.__prepare__ = my_prepare
+
+        class A(metaclass=makeclass):
+            """DOCSTRING"""
+            @staticmethod
+            def getclass():
+                return __class__
+
+        self.assertIn('__module__', md)
+        self.assertIn('__doc__', md)
+        self.assertIn('__classcell__', md)
+        self.assertNotIn('__class__', md)
+        self.assertIn('getclass', md)
+        self.assertEqual(A.getclass(), A)
+
     def test_arguments(self):
         class MetaType(type):
             def __init__(cls, name, bases, dict):

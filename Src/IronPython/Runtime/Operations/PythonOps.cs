@@ -3635,7 +3635,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object? LookupLocalName(CodeContext context, string name, object? defaultValue) {
-            return context.TryGetVariable(name, out object? value) ? value : defaultValue;
+            if (context.TryGetVariable(name, out object? value)) {
+                return value;
+            }
+            return LightExceptions.CheckAndThrow(defaultValue);
         }
 
         /// <summary>

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -168,13 +167,17 @@ namespace IronPython.Compiler.Ast {
             return CreateVariable("__class__", VariableKind.Local, "$__class__");
         }
 
-        internal override Ast LookupVariableExpression(PythonVariable variable) {
+        internal override MSAst.Expression LookupVariableExpression(PythonVariable variable) {
             // Emulates opcode LOAD_CLASSDEREF
+            MSAst.Expression defaultValue = GetVariableExpression(variable);
+            if (defaultValue is Microsoft.Scripting.Ast.ILightExceptionAwareExpression leaexp) {
+                defaultValue = leaexp.ReduceForLightExceptions();
+            }
             return Ast.Call(
                 AstMethods.LookupLocalName,
                 LocalContext,
                 Ast.Constant(variable.Name),
-                GetVariableExpression(variable)
+                defaultValue
             );
         }
 

@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Operations {
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
 
                 var text = buf.AsReadOnlySpan().MakeString();
-                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
+                if (!LiteralParser.TryParseIntegerSign(text.AsSpan(), @base, out value))
                     throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
             }
 

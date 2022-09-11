@@ -46,7 +46,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_call.FastCallTests('test_fastcall'))
         suite.addTest(test.test_call.FastCallTests('test_fastcall_dict'))
         suite.addTest(test.test_call.FastCallTests('test_fastcall_keywords'))
-        suite.addTest(unittest.expectedFailure(test.test_call.FunctionCalls('test_kwargs_order'))) # https://github.com/IronLanguages/ironpython3/issues/1460
+        # suite.addTest(test.test_call.FunctionCalls('test_kwargs_order')) # intermittent failures due to https://github.com/IronLanguages/ironpython3/issues/1460
         return suite
 
     else:

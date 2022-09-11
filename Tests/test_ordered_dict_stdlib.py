@@ -9,26 +9,27 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_net60, run_test
 
 import test.test_ordered_dict
 
 def load_tests(loader, standard_tests, pattern):
     if sys.implementation.name == 'ironpython':
         suite = unittest.TestSuite()
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_abc')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_clear')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem'))) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem_hash_collision')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_detect_deletion_during_iteration')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested_subclass')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_init'))) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_override_update')) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_popitem'))) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_reinsert'))) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_setitem'))) # https://github.com/IronLanguages/ironpython3/issues/1556
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonBuiltinDictTests('test_update'))) # https://github.com/IronLanguages/ironpython3/issues/1556
+        # https://github.com/IronLanguages/ironpython3/issues/1556
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_abc'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_clear'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem_hash_collision'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_detect_deletion_during_iteration'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested_subclass'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_init'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_override_update'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_popitem'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_reinsert'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_setitem'))
+        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_update'))
         suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_bool'))
         suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_constructor'))
         suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_get'))
@@ -61,7 +62,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_free_after_iterating'))) # AssertionError
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_fromkeys'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested_subclass'))
+        # suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_init'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_init_calls'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_issue24347'))
@@ -110,7 +111,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictTests('test_free_after_iterating'))) # AssertionError
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_fromkeys'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested_subclass'))
+        # suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_init'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_init_calls'))
         suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_issue24347'))
@@ -187,7 +188,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_free_after_iterating'))) # AssertionError
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_fromkeys'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass'))
+        # suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_init'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_init_calls'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_issue24347'))
@@ -233,7 +234,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictTests('test_free_after_iterating'))) # AssertionError
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_fromkeys'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested_subclass'))
+        # suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_init'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_init_calls'))
         suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_issue24347'))

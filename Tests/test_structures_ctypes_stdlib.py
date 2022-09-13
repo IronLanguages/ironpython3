@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_osx, run_test
 
 import ctypes.test.test_structures
 
@@ -33,7 +33,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(ctypes.test.test_structures.StructureTestCase('test_nested_initializers'))
         suite.addTest(ctypes.test.test_structures.StructureTestCase('test_packed'))
         suite.addTest(ctypes.test.test_structures.StructureTestCase('test_packed_c_limits'))
-        suite.addTest(ctypes.test.test_structures.StructureTestCase('test_pass_by_value'))
+        if is_osx:
+            suite.addTest(unittest.expectedFailure(ctypes.test.test_structures.StructureTestCase('test_pass_by_value')))
+        else:
+            suite.addTest(ctypes.test.test_structures.StructureTestCase('test_pass_by_value'))
         suite.addTest(unittest.expectedFailure(ctypes.test.test_structures.StructureTestCase('test_pass_by_value_in_register'))) # NotImplementedError: in dll
         suite.addTest(ctypes.test.test_structures.StructureTestCase('test_positional_args'))
         suite.addTest(ctypes.test.test_structures.StructureTestCase('test_simple_structs'))

@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_posix, run_test
 
 import test.test_base64
 
@@ -45,7 +45,10 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_base64.TestMain('test_decode'))
         suite.addTest(test.test_base64.TestMain('test_encode_decode'))
         suite.addTest(test.test_base64.TestMain('test_encode_file'))
-        suite.addTest(unittest.expectedFailure(test.test_base64.TestMain('test_encode_from_stdin'))) # https://github.com/IronLanguages/ironpython3/issues/1135
+        if is_posix:
+            suite.addTest(test.test_base64.TestMain('test_encode_from_stdin'))
+        else:
+            suite.addTest(unittest.expectedFailure(test.test_base64.TestMain('test_encode_from_stdin'))) # https://github.com/IronLanguages/ironpython3/issues/1135
         return suite
 
     else:

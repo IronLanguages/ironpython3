@@ -79,6 +79,7 @@ namespace IronPython.Runtime {
 
         public abstract int Count { get; }
 
+#if DEBUG
         public bool IsMutable {
             get {
                 try {
@@ -89,6 +90,7 @@ namespace IronPython.Runtime {
                 }
             }
         }
+#endif
 
         public virtual bool HasNonStringAttributes() {
             foreach (KeyValuePair<object?, object?> o in GetItems()) {

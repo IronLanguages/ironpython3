@@ -1571,7 +1571,9 @@ namespace IronPython.Runtime.Operations {
                             new ObjectAttributesAdapter(parentContext, backing)
                     };
                     attrdict = new PythonDictionary(new RuntimeVariablesDictionaryStorage(parentStorage, attrStorage));
+#if DEBUG
                     Debug.Assert(attrStorage.IsMutable);
+#endif
                 } else {
                     // Otherwise a standard dict suffices.
                     if (classdict is null) {
@@ -1582,7 +1584,9 @@ namespace IronPython.Runtime.Operations {
                     } else {
                         attrdict = PythonDictionary.MakeDictFromIAC(parentContext, classdict);
                     }
+#if DEBUG
                     Debug.Assert(attrdict._storage.IsMutable);
+#endif
                 };
                 return attrdict;
             }

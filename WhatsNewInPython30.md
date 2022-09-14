@@ -60,7 +60,7 @@ Changed Syntax
 - [x] `as` and `with` are now reserved words. (Since 2.6, actually.)
 - [x] `True`, `False`, and `None` are reserved words. (2.6 partially enforced the restrictions on `None` already.)
 - [x] Change from `except exc, var` to `except exc as var`. See [PEP 3110][]
-- [ ] [PEP 3115][]: New Metaclass Syntax
+- [x] [PEP 3115][]: New Metaclass Syntax
 - [x] List comprehensions no longer support the syntactic form `[... for var in item1, item2, ...]`. Use `[... for var in (item1, item2, ...)]` instead.
 - [x] The ellipsis (`...`) can be used as an atomic expression anywhere. (Previously it was only allowed in slices.) Also, it must now be spelled as `...`. (Previously it could also be spelled as `. . .`, by a mere accident of the grammar.)
 

@@ -317,6 +317,8 @@ namespace IronPython.Modules {
                     return GetStorage().Remove(ref storage, key);
                 }
 
+                public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
                 public override bool TryGetValue(object key, out object value) {
                     return GetStorage().TryGetValue(key, out value);
                 }

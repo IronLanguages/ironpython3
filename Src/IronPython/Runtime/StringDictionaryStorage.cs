@@ -87,6 +87,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object? key, out object? value) {
             if (_data is not null) {
                 lock (this) {

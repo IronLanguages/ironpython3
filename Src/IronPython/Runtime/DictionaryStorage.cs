@@ -41,6 +41,25 @@ namespace IronPython.Runtime {
 
             return false;
         }
+
+        /// <summary>
+        /// Convert the storage instance to a mutable type.
+        /// </summary>
+        /// <remarks>
+        /// It has the same effect on the storage as <see cref="Add(ref DictionaryStorage, object?, object?)"/>
+        /// or <see cref="Remove(ref DictionaryStorage, object?)"/> except that the contents of the storage
+        /// is not modified.
+        /// </remarks>
+        /// <param name="storage">
+        /// Reference to the variable holding the object on which this method is invoked.
+        /// </param>
+        /// <returns>
+        /// <c>this</c> object if it was alreday mutable. Otherwise a reference to a cloned
+        /// mutable instance, in which case <paramref name="storage"/> is also updated.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The storage is read-only.</exception>
+        public abstract DictionaryStorage AsMutable(ref DictionaryStorage storage);
+
         public abstract void Clear(ref DictionaryStorage storage);
 
         /// <summary>
@@ -59,6 +78,19 @@ namespace IronPython.Runtime {
         public abstract bool TryGetValue(object? key, out object? value);
 
         public abstract int Count { get; }
+
+#if DEBUG
+        public bool IsMutable {
+            get {
+                try {
+                    DictionaryStorage testing = this;
+                    return ReferenceEquals(this, testing.AsMutable(ref testing));
+                } catch (InvalidOperationException) {
+                    return false;
+                }
+            }
+        }
+#endif
 
         public virtual bool HasNonStringAttributes() {
             foreach (KeyValuePair<object?, object?> o in GetItems()) {

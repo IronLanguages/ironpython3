@@ -36,6 +36,10 @@ namespace IronPython.Runtime {
             throw CannotModifyNamespaceDict();
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) {
+            throw CannotModifyNamespaceDict();
+        }
+
         public override bool TryGetValue(object key, out object value) {
             if (key is string strKey) {
                 return _data.TryGetValue(strKey, out value);

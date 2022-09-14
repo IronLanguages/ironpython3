@@ -716,7 +716,7 @@ namespace IronPython.Compiler.Ast {
             return _variableMapping[variable.LimitVariable];
         }
 
-        internal virtual Ast LookupVariableExpression(PythonVariable variable)
+        internal virtual MSAst.Expression LookupVariableExpression(PythonVariable variable)
             => GetVariableExpression(variable);
 
         internal void CreateVariables(ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {

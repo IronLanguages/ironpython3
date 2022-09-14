@@ -63,6 +63,8 @@ namespace IronPython.Runtime {
             return _storage.Remove(ref _storage, key);
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object? key, out object? value) {
             if (key is string skey && TryGetExtraValue(skey, out value)) {
                 return value != Uninitialized.Instance;

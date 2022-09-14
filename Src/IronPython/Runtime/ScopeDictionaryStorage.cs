@@ -57,6 +57,8 @@ namespace IronPython.Runtime {
             return false;
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object key, out object value) {
             if (key is string strKey) {
                 return PythonOps.ScopeTryGetMember(_context.SharedContext, _scope, strKey, out value);

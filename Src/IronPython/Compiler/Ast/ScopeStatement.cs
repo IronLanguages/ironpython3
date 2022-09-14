@@ -66,18 +66,13 @@ namespace IronPython.Compiler.Ast {
         /// Gets the expression associated with the local CodeContext.  If the function
         /// doesn't have a local CodeContext then this is the global context.
         /// </summary>
-        internal virtual MSAst.Expression LocalContext {
-            get {
-                return LocalCodeContextVariable;
-            }
-        }
+        internal virtual MSAst.Expression LocalContext => LocalCodeContextVariable;
 
         /// <summary>
         /// True if this scope accesses a variable from an outer scope.
         /// </summary>
-        internal bool IsClosure {
-            get { return FreeVariables != null && FreeVariables.Count > 0; }
-        }
+        [MemberNotNullWhen(true, nameof(FreeVariables))]
+        internal bool IsClosure => FreeVariables is not null && FreeVariables.Count > 0;
 
         /// <summary>
         /// True if an inner scope is accessing a non-global variable defined in this or an outer scope.
@@ -287,7 +282,7 @@ namespace IronPython.Compiler.Ast {
         internal virtual void FinishBind(PythonNameBinder binder) {
             List<ClosureInfo>? closureVariables = null;
 
-            if (FreeVariables is not null && FreeVariables.Count > 0) {
+            if (IsClosure) {
                 Debug.Assert(FreeVariables.Count <= Parent.NumTupleCells);
 
                 Type tupleType = Parent.GetClosureTupleType()!; // not null because Parent.NumTupleCells > 0

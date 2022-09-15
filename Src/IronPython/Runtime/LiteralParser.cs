@@ -699,13 +699,6 @@ namespace IronPython.Runtime {
             return ScriptingRuntimeHelpers.Int32ToObject(iret);
         }
 
-        public static object ParseIntegerSign(string text, int b, int start = 0) {
-            if (TryParseIntegerSign(text.AsSpan(start), b, out object val))
-                return val;
-
-            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
-        }
-
         internal static bool TryParseIntegerSign(ReadOnlySpan<char> text, int b, out object val) {
             if (b < 0 || b == 1 || b > 36) {
                 throw new ValueErrorException("int() base must be >= 2 and <= 36, or 0");
@@ -723,42 +716,46 @@ namespace IronPython.Runtime {
             Debug.Assert(!text.IsEmpty);
 
             long ret = 0;
-            BigInteger retBi = BigInteger.Zero;
 
-            bool isBigInteger = false;
-            foreach (var ch in text) {
+            for (int i = 0; i < text.Length; i++) {
+                var ch = text[i];
                 if (!HexValue(ch, out int digit) || !(digit < b)) {
                     val = default;
                     return false;
                 }
 
-                if (isBigInteger) {
-                    retBi = retBi * b + digit;
-                } else {
-                    ret = ret * b + digit;
-                    if (ret > int.MaxValue) {
-                        isBigInteger = true;
-                        retBi = ret;
+                ret = ret * b + digit;
+
+                if (ret > int.MaxValue) {
+                    BigInteger retBi = ret;
+                    for (i++; i < text.Length; i++) {
+                        ch = text[i];
+                        if (!HexValue(ch, out digit) || !(digit < b)) {
+                            val = default;
+                            return false;
+                        }
+
+                        retBi = retBi * b + digit;
                     }
-                }
-            }
-            if (isBigInteger) {
-                if (sign < 0) {
-                    if (retBi == (BigInteger)int.MaxValue + 1) {
-                        val = ScriptingRuntimeHelpers.Int32ToObject(int.MinValue);
+
+                    if (sign < 0) {
+                        if (retBi == (BigInteger)int.MaxValue + 1) {
+                            val = ScriptingRuntimeHelpers.Int32ToObject(int.MinValue);
+                            return true;
+                        }
+                        val = -retBi;
                         return true;
                     }
-                    val = -retBi;
+
+                    val = retBi;
                     return true;
                 }
-                val = retBi;
-                return true;
-            } else {
-                int res = unchecked((int)ret);
-                res = sign < 0 ? -res : res;
-                val = ScriptingRuntimeHelpers.Int32ToObject(res);
-                return true;
             }
+
+            int res = unchecked((int)ret);
+            res = sign < 0 ? -res : res;
+            val = ScriptingRuntimeHelpers.Int32ToObject(res);
+            return true;
         }
 
         private static bool TryParseIntegerStart(ReadOnlySpan<char> text, ref int b, out int sign, out int consumed) {

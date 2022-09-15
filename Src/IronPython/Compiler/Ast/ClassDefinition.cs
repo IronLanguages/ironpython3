@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,8 +21,6 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
 using MSAst = System.Linq.Expressions;
-
-#nullable enable
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -103,7 +103,7 @@ namespace IronPython.Compiler.Ast {
         }
 
 
-        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
+        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, [NotNullWhen(true)] out PythonVariable? variable) {
             if (reference.Name == "__class__") {
                 ClassVariable = variable = EnsureClassVariable();
                 ClassCellVariable = EnsureVariable("__classcell__");
@@ -154,14 +154,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override PythonVariable EnsureVariable(string name) {
-            if (TryGetVariable(name, out PythonVariable variable)) {
+            if (TryGetVariable(name, out PythonVariable? variable)) {
                 return variable;
             }
             return CreateVariable(name, VariableKind.Attribute);
         }
 
         internal PythonVariable EnsureClassVariable() {
-            if (TryGetVariable("$__class__", out PythonVariable variable)) {
+            if (TryGetVariable("$__class__", out PythonVariable? variable)) {
                 return variable;
             }
             return CreateVariable("__class__", VariableKind.Local, "$__class__");
@@ -408,7 +408,7 @@ namespace IronPython.Compiler.Ast {
 
             private bool IsSelfReference(Expression expr) {
                 return expr is NameExpression ne
-                    && _function.TryGetVariable(ne.Name, out PythonVariable variable)
+                    && _function.TryGetVariable(ne.Name, out PythonVariable? variable)
                     && variable == _self.PythonVariable;
             }
 

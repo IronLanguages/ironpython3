@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 
 using MSAst = System.Linq.Expressions;
@@ -9,22 +11,14 @@ using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     public abstract class Statement : Node {
-        public virtual string Documentation {
-            get {
-                return null;
-            }
-        }
+        public virtual string? Documentation => null;
 
-        public override Type Type {
-            get {
-                return typeof(void);
-            }
-        }
+        public override Type Type => typeof(void);
     }
 
     internal class RewrittenBodyStatement : Statement {
         private readonly MSAst.Expression _body;
-        private readonly string _doc;
+        private readonly string? _doc;
         private readonly Statement _originalBody;
 
         public RewrittenBodyStatement(Statement originalBody, MSAst.Expression body) {
@@ -34,15 +28,9 @@ namespace IronPython.Compiler.Ast {
             SetLoc(originalBody.GlobalParent, originalBody.IndexSpan);
         }
 
-        public override MSAst.Expression Reduce() {
-            return _body;
-        }
+        public override MSAst.Expression Reduce() => _body;
 
-        public override string Documentation {
-            get {
-                return _doc;
-            }
-        }
+        public override string? Documentation => _doc;
 
         public override void Walk(PythonWalker walker) {
             _originalBody.Walk(walker);

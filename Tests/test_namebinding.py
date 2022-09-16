@@ -9,9 +9,23 @@ from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 glb = 0
 res = ''
 global_class_member = "wrong value for the global_class_member"
+implicit_global = "global" # never referred to in any `global` statement
+explicit_global = "global"
 
 def nop():
     pass
+
+class MetaPrep(type):
+    """Metaclass that prepares class namespace with given keywords."""
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwargs):
+        return kwargs
+
+    def __new__(metacls, name, bases, attrdict, **kwargs):
+        return type.__new__(metacls, name, bases, attrdict)
+
+    def __init__(cls, name, bases, attrdict, **kwargs):
+        type.__init__(cls, name, bases, attrdict)
 
 class gc:
     pass
@@ -1104,6 +1118,82 @@ class NameBindingTest(IronPythonTestCase):
 
         a = Y()
         self.assertEqual(a.outer_f()(), (42, 43))
+
+    def test_locals_implicit(self):
+        # Test if implicit locals take precedence over prepared names
+        prepared = "f-local"
+
+        # With no prepared class namespace, locals in outer scopes are resolved implicitly
+        class C(metaclass=MetaPrep):
+            executed = prepared   # reference to a local in the enclosing function
+        self.assertEqual(C.executed, "f-local")
+
+        # Names in the prepared namespace override lexical scoping
+        class C(metaclass=MetaPrep, prepared="meta"):
+            executed = prepared   # reference to variable in dict returned from MetaPrep.__prepare__
+        self.assertEqual(C.executed, "meta")
+
+    def test_locals_explicit(self):
+        # Test if explicit locals take precedence over prepared names
+        # It exposes a strange behaviour of CPython, see:
+        # https://github.com/IronLanguages/ironpython3/issues/1560
+        prepared = "f-local"
+
+        class C(metaclass=MetaPrep, prepared="meta"):
+            nonlocal prepared
+            executed = prepared   # expected reference to a local in the enclosing function...
+        self.assertEqual(C.executed, "meta")   # ...but was lookup in dictionary from MetaPrep.__prepare__
+
+        # CPython resolves nonlocals in class differently depending whether the reference is on lhs or rhs
+        prepared = "f-local"
+        class C(metaclass=MetaPrep, prepared="meta"):
+            nonlocal prepared
+            prepared = "C-set"   # lexical lookup to nonlocal prepared
+            executed = prepared  # namespace dictionary lookup, will not fetch "C-set"
+        self.assertEqual(C.executed, "meta")
+        self.assertEqual(prepared, "C-set")
+
+    def test_globals_implicit(self):
+        # Test if implicit globals take precedence over prepared names
+
+        # With no prepared class namespace, locals in global scope are resolved implicitly
+        class C(metaclass=MetaPrep):
+            executed = implicit_global   # reference to a local in the global scope
+        self.assertEqual(C.executed, "global")
+
+        # Names in the prepared namespace override lexical scoping
+        class C(metaclass=MetaPrep, implicit_global="meta"):
+            executed = implicit_global   # reference to variable in dict returned from MetaPrep.__prepare__
+        self.assertEqual(C.executed, "meta")
+
+    def test_globals_explicit_outer(self):
+        # Test if explicit globals defined in an outer scope take precedence over prepared names
+        global explicit_global
+
+        # With no prepared class namespace, globals are resolved implicitly
+        class C(metaclass=MetaPrep):
+            executed = explicit_global   # reference to a global
+        self.assertEqual(C.executed, "global")
+
+        # Names in the prepared namespace override lexical scoping
+        class C(metaclass=MetaPrep, explicit_global="meta"):
+            executed = explicit_global   # reference to variable in dict returned from MetaPrep.__prepare__
+        self.assertEqual(C.executed, "meta")
+
+    def test_globals_explicit_class(self):
+        # Test if explicitly defined globals in a class take precedence over prepared names
+
+        # With no prepared class namespace, globals are resolved implicitly
+        class C(metaclass=MetaPrep):
+            global explicit_global
+            executed = explicit_global   # reference to a global
+        self.assertEqual(C.executed, "global")
+
+        # Even is present in the prepared namespace, explicit globals are resolved lexically
+        class C(metaclass=MetaPrep, explict_global="meta"):
+            global explicit_global
+            executed = explicit_global   # reference to a global
+        self.assertEqual(C.executed, "global")
 
 run_test(__name__)
 

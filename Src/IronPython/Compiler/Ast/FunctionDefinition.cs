@@ -239,7 +239,10 @@ namespace IronPython.Compiler.Ast {
 
             // Try to bind in outer scopes
             bool stopAtGlobal = variable?.Kind == VariableKind.Nonlocal;
-            for (ScopeStatement parent = Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = parent.Parent) {
+            for (ScopeStatement parent = Parent;
+                parent != null && !(stopAtGlobal && parent.IsGlobal);
+                parent = !parent.IsGlobal ? parent.Parent : null) {
+
                 if (parent.TryBindOuter(this, reference, out variable)) {
                     return variable;
                 }

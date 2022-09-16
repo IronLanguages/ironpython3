@@ -138,7 +138,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Try to bind in outer scopes, except the global scope
-            for (ScopeStatement parent = Parent; parent is not null && !parent.IsGlobal; parent = parent.Parent) {
+            for (ScopeStatement? parent = Parent;
+                parent != null && !parent.IsGlobal;
+                parent = !parent.IsGlobal ? parent.Parent : null) {
+
                 if (parent.TryBindOuter(this, reference, out PythonVariable? outerVariable)) {
                     // for implicit globals, fall back on dictionary behaviour
                     if (outerVariable.Kind is VariableKind.Global) return null;
@@ -293,7 +296,7 @@ namespace IronPython.Compiler.Ast {
 
             // __doc__ = """..."""
             MSAst.Expression? docStmt = null;
-            string doc = GetDocumentation(Body);
+            string? doc = GetDocumentation(Body);
             if (doc is not null) {
                 docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(object)));
             }
@@ -301,7 +304,9 @@ namespace IronPython.Compiler.Ast {
             // Create the body
             MSAst.Expression bodyStmt = Body;
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
-                bodyStmt = AddFrame(LocalContext, FuncCodeExpr, bodyStmt);
+                // FuncCodeExpr is set by Reduce() before class body lambda is generated.
+                Assert.NotNull(FuncCodeExpr);
+                bodyStmt = AddFrame(LocalContext, FuncCodeExpr!, bodyStmt);
                 locals.Add(FunctionStackVariable);
             }
 
@@ -339,7 +344,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override LightLambdaExpression GetLambda() {
-            if (_dlrBody == null) {
+            if (_dlrBody is null) {
                 PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Creating FunctionBody");
                 _dlrBody = MakeClassBody();
             }
@@ -352,7 +357,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal override MSAst.Expression GetParentClosureTuple() => _tupleExpression;
 
-        internal override string ScopeDocumentation => GetDocumentation(Body);
+        internal override string? ScopeDocumentation => GetDocumentation(Body);
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

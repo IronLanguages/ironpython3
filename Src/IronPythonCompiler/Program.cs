@@ -5,20 +5,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
-using IronPython.Hosting;
-using IKVM.Reflection;
-using IKVM.Reflection.Emit;
 using System.Resources;
 
-using Type = IKVM.Reflection.Type;
+using IKVM.Reflection;
+using IKVM.Reflection.Emit;
 
-using Microsoft.Scripting.Runtime;
+using IronPython.Hosting;
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Hosting.Providers;
+using Microsoft.Scripting.Runtime;
+
+using Type = IKVM.Reflection.Type;
 
 namespace IronPythonCompiler {
 
@@ -62,9 +61,20 @@ namespace IronPythonCompiler {
                 ConsoleOps.Info("Generating stand alone executable");
                 config.Embed = true;
 
+                var embedAssemblies = new HashSet<string> {
+                    // DLR
+                    "Microsoft.Dynamic",
+                    "Microsoft.Scripting",
+                    // System.Memory
+                    "System.Buffers",
+                    "System.Memory",
+                    "System.Numerics.Vectors",
+                    "System.Runtime.CompilerServices.Unsafe",
+                };
+
                 foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies()) {
                     var n = new AssemblyName(a.FullName);
-                    if (!a.IsDynamic && a.EntryPoint == null && (n.Name.StartsWith("IronPython", StringComparison.Ordinal) || n.Name == "Microsoft.Dynamic" || n.Name == "Microsoft.Scripting")) {
+                    if (!a.IsDynamic && a.EntryPoint == null && (n.Name.StartsWith("IronPython", StringComparison.Ordinal) || embedAssemblies.Contains(n.Name))) {
                         ConsoleOps.Info($"\tEmbedded {n.Name} {n.Version}");
                         var f = new FileStream(a.Location, FileMode.Open, FileAccess.Read);
                         mb.DefineManifestResource("Dll." + n.Name, f, IKVM.Reflection.ResourceAttributes.Public);

@@ -89,12 +89,8 @@ namespace IronPython.Compiler.Ast {
         private PythonVariable? ClassVariable { get; set; }
 
         internal override bool HasLateBoundVariableSets {
-            get {
-                return base.HasLateBoundVariableSets || NeedsLocalsDictionary;
-            }
-            set {
-                base.HasLateBoundVariableSets = value;
-            }
+            get => true; // If a class or any of its bases uses a metaclass, __prepare__ may insert extra variables into the class namespace
+            set => base.HasLateBoundVariableSets = value;
         }
 
         internal override bool ExposesLocalVariable(PythonVariable variable) {
@@ -126,27 +122,28 @@ namespace IronPython.Compiler.Ast {
             // scope are accessed by name - the dictionary behavior of classes
             if (TryGetVariable(reference.Name, out variable)) {
                 if (variable.Kind is VariableKind.Global) {
+                    // Variable declared with `global` statement
                     AddReferencedGlobal(reference.Name);
                     return variable;
-                } else if (variable.Kind is VariableKind.Local) {
-                    // TODO: This results in doing a dictionary lookup to get/set the local,
-                    // when it should probably be an uninitialized check / global lookup for gets
-                    // and a direct set
+                } else if (variable.Kind is not VariableKind.Nonlocal) {
+                    // Fall back on LookupName/SetName in local context dict,
+                    // which is slightly faster than LookupGlobalVariable expression used by variables of Attribute kind.
                     return null;
-                } else if (variable.Kind is VariableKind.Attribute) {
-                    return null; // fall back on LookupName/SetName in local context dict, which is faster than LookupGlobalVariable
-                } else if (variable.Kind is VariableKind.Parameter) {
-                    return variable;
+                    // In practice, variable.Kind will always be Attribute here
+                    // as the only Local can be __class__ and it is never referenced directly from within the class body
+                    // and Parameter does not exist for a class.
                 }
-                // else NonLocal: continue binding
+
+                // else NonLocal (i.e. declared with `nonlocal`): continue binding
             }
 
-            // Try to bind in outer scopes, if we have an unqualified exec we need to leave the
-            // variables as free for the same reason that locals are accessed by name.
-            bool stopAtGlobal = variable?.Kind == VariableKind.Nonlocal;
-            for (ScopeStatement parent = Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = parent.Parent) {
-                if (parent.TryBindOuter(this, reference, out variable)) {
-                    return variable;
+            // Try to bind in outer scopes, except the global scope
+            for (ScopeStatement parent = Parent; parent is not null && !parent.IsGlobal; parent = parent.Parent) {
+                if (parent.TryBindOuter(this, reference, out PythonVariable? outerVariable)) {
+                    // for implicit globals, fall back on dictionary behaviour
+                    if (outerVariable.Kind is VariableKind.Global) return null;
+
+                    return outerVariable;
                 }
             }
 
@@ -168,16 +165,20 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression LookupVariableExpression(PythonVariable variable) {
+            if (variable.Kind is VariableKind.Global) {
+                // `global` declaration overrides class namespace lookup
+                return base.LookupVariableExpression(variable);
+            }
             // Emulates opcode LOAD_CLASSDEREF
-            MSAst.Expression defaultValue = GetVariableExpression(variable);
-            if (defaultValue is Microsoft.Scripting.Ast.ILightExceptionAwareExpression leaexp) {
-                defaultValue = leaexp.ReduceForLightExceptions();
+            MSAst.Expression fallbackValue = GetVariableExpression(variable);
+            if (fallbackValue is Microsoft.Scripting.Ast.ILightExceptionAwareExpression lightAware) {
+                fallbackValue = lightAware.ReduceForLightExceptions();
             }
             return Ast.Call(
                 AstMethods.LookupLocalName,
                 LocalContext,
                 Ast.Constant(variable.Name),
-                defaultValue
+                fallbackValue
             );
         }
 

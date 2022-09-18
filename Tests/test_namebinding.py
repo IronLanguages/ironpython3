@@ -1142,16 +1142,22 @@ class NameBindingTest(IronPythonTestCase):
         class C(metaclass=MetaPrep, prepared="meta"):
             nonlocal prepared
             executed = prepared   # expected reference to a local in the enclosing function...
-        self.assertEqual(C.executed, "meta")   # ...but was lookup in dictionary from MetaPrep.__prepare__
+        if not is_cli:
+            self.assertEqual(C.executed, "meta")      # ...but was lookup in dictionary from MetaPrep.__prepare__
+        else:
+            self.assertEqual(C.executed, "f-local")   # ...and got what expected
 
         # CPython resolves nonlocals in class differently depending whether the reference is on lhs or rhs
         prepared = "f-local"
         class C(metaclass=MetaPrep, prepared="meta"):
             nonlocal prepared
             prepared = "C-set"   # lexical lookup to nonlocal prepared
-            executed = prepared  # namespace dictionary lookup, will not fetch "C-set"
-        self.assertEqual(C.executed, "meta")
+            executed = prepared  # namespace dictionary lookup, will not fetch "C-set" in CPython
         self.assertEqual(prepared, "C-set")
+        if not is_cli:
+            self.assertEqual(C.executed, "meta")
+        else:
+            self.assertEqual(C.executed, "C-set")
 
     def test_globals_implicit(self):
         # Test if implicit globals take precedence over prepared names

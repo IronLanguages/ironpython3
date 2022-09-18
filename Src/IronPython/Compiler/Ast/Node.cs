@@ -52,17 +52,18 @@ namespace IronPython.Compiler.Ast {
         /// </remarks>
         public ScopeStatement Parent {
             get => _parent ?? throw new InvalidOperationException("Node.Parent is not defined before the start of namebinding.");
-            set => _parent = value ?? throw new ArgumentNullException(nameof(value));
+            set => _parent = value ?? throw new ArgumentNullException(nameof(Parent));
         }
 
         public void SetLoc(PythonAst globalParent, int start, int end) {
-            IndexSpan = new IndexSpan(start, end > start ? end - start : start);
-            Parent = globalParent;
+            SetLoc(globalParent, new IndexSpan(start, end > start ? end - start : start));
         }
 
         public void SetLoc(PythonAst globalParent, IndexSpan span) {
             IndexSpan = span;
-            Parent = globalParent;
+            if (!ReferenceEquals(_parent, globalParent)) {
+                Parent = globalParent;
+            }
         }
 
         public IndexSpan IndexSpan { get; set; }

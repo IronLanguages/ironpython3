@@ -266,6 +266,16 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
+        private protected bool TryBindOuterScopes(ScopeStatement from, PythonReference reference, [NotNullWhen(true)] out PythonVariable? variable, bool stopAtGlobal) {
+            for (ScopeStatement? parent = from.Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = !parent.IsGlobal ? parent.Parent : null) {
+                if (parent.TryBindOuter(from, reference, out variable)) {
+                    return true;
+                }
+            }
+            variable = null;
+            return false;
+        }
+
         internal abstract PythonVariable? BindReference(PythonNameBinder binder, PythonReference reference);
 
         internal virtual void Bind(PythonNameBinder binder) {

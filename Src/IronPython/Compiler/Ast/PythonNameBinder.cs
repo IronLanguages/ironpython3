@@ -778,6 +778,9 @@ namespace IronPython.Compiler.Ast {
 
         // PythonAst
         public override bool Walk(PythonAst node) {
+            Debug.Assert(_currentScope == node);
+            node.Parent = _currentScope;
+
             node.DocVariable = DefineName("__doc__");
             if (node.IsModule) {
                 node.NameVariable = DefineName("__name__");
@@ -797,7 +800,7 @@ namespace IronPython.Compiler.Ast {
             // Do not add the global suite to the list of processed nodes,
             // the publishing must be done after the class local binding.
             Debug.Assert(_currentScope == node);
-            _currentScope = _currentScope.Parent;
+            Debug.Assert(_currentScope == _currentScope.Parent);
             _finallyCount.RemoveAt(_finallyCount.Count - 1);
         }
 

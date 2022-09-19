@@ -95,6 +95,7 @@ namespace IronPython.Compiler.Ast {
 
             // We have else clause, must generate guard around it
             if (@else != null) {
+                Debug.Assert(lineUpdated != null);
                 Debug.Assert(runElse != null);
                 Debug.Assert(previousExceptionContext != null && exception != null && @catch != null);
 
@@ -112,7 +113,7 @@ namespace IronPython.Compiler.Ast {
                     Ast.Block(
                         Ast.Assign(runElse, AstUtils.Constant(true)),
                         // save existing line updated, we could choose to do this only for nested exception handlers.
-                        PushLineUpdated(false, lineUpdated),
+                        PushLineUpdated(false, lineUpdated!),
                         LightExceptions.RewriteExternal(
                             AstUtils.Try(
                                 Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(HeaderIndex))),
@@ -123,7 +124,7 @@ namespace IronPython.Compiler.Ast {
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
                                 @catch,
                                 // restore existing line updated after exception handler completes
-                                PopLineUpdated(lineUpdated),
+                                PopLineUpdated(lineUpdated!),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                                 AstUtils.Constant(null)
                             )
@@ -141,6 +142,7 @@ namespace IronPython.Compiler.Ast {
                 //      ... catch handling ...
                 //  }
                 //
+                Debug.Assert(lineUpdated != null);
                 Debug.Assert(previousExceptionContext != null && exception != null);
 
                 result =
@@ -148,14 +150,14 @@ namespace IronPython.Compiler.Ast {
                         AstUtils.Try(
                             GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(HeaderIndex))),
                             // save existing line updated
-                            PushLineUpdated(false, lineUpdated),
+                            PushLineUpdated(false, lineUpdated!),
                             Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
                             @catch,
                             // restore existing line updated after exception handler completes
-                            PopLineUpdated(lineUpdated),
+                            PopLineUpdated(lineUpdated!),
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                             AstUtils.Constant(null)
                         )

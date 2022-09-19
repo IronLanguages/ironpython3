@@ -290,10 +290,8 @@ namespace IronPython.Compiler.Ast {
             }
 
             // then try to bind in outer scopes
-            for (ScopeStatement parent = Parent; parent != null; parent = !parent.IsGlobal ? parent.Parent : null) {
-                if (parent.TryBindOuter(this, reference, out variable)) {
-                    return variable;
-                }
+            if (TryBindOuterScopes(this, reference, out variable, stopAtGlobal: false)) {
+                return variable;
             }
 
             return null;

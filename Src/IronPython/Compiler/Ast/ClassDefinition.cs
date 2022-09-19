@@ -138,16 +138,11 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Try to bind in outer scopes, except the global scope
-            for (ScopeStatement? parent = Parent;
-                parent != null && !parent.IsGlobal;
-                parent = !parent.IsGlobal ? parent.Parent : null) {
+            if (TryBindOuterScopes(this, reference, out variable, stopAtGlobal: true)) {
+                // for implicit globals, fall back on dictionary behaviour
+                if (variable.Kind is VariableKind.Global) return null;
 
-                if (parent.TryBindOuter(this, reference, out PythonVariable? outerVariable)) {
-                    // for implicit globals, fall back on dictionary behaviour
-                    if (outerVariable.Kind is VariableKind.Global) return null;
-
-                    return outerVariable;
-                }
+                return variable;
             }
 
             return null;

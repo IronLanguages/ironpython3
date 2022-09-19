@@ -169,6 +169,12 @@ namespace IronPython.Compiler.Ast {
                 // `global` declaration overrides class namespace lookup
                 return base.LookupVariableExpression(variable);
             }
+            if (TryGetNonlocalStatement(variable.Name, out _)) {
+                // In IronPython, `nonlocal` declaration overrides class namespace lookup
+                // https://github.com/IronLanguages/ironpython3/issues/1560
+                return base.LookupVariableExpression(variable);
+            }
+
             // Emulates opcode LOAD_CLASSDEREF
             MSAst.Expression fallbackValue = GetVariableExpression(variable);
             if (fallbackValue is Microsoft.Scripting.Ast.ILightExceptionAwareExpression lightAware) {

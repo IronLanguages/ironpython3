@@ -28,9 +28,10 @@ namespace IronPython.Compiler.Ast {
         public Expression Expression { get; }
 
         private static readonly Modules._ast.AST yieldFromAst = (Modules._ast.AST)Modules.Builtin.compile(Runtime.DefaultContext.Default, @"
-__yieldfromprefix_i = iter(__yieldfromprefix_EXPR)
+from builtins import iter as __yieldfromprefix_iter, next as __yieldfromprefix_next
+__yieldfromprefix_i = __yieldfromprefix_iter(__yieldfromprefix_EXPR)
 try:
-    __yieldfromprefix_y = next(__yieldfromprefix_i)
+    __yieldfromprefix_y = __yieldfromprefix_next(__yieldfromprefix_i)
 except StopIteration as __yieldfromprefix_e:
     __yieldfromprefix_r = __yieldfromprefix_e.value
 else:
@@ -46,8 +47,8 @@ else:
                 __yieldfromprefix_m()
             raise __yieldfromprefix_e
         except BaseException as __yieldfromprefix_e:
-            import sys
-            __yieldfromprefix_x = sys.exc_info()
+            from sys import exc_info as __yieldfromprefix_exc_info
+            __yieldfromprefix_x = __yieldfromprefix_exc_info()
             try:
                 __yieldfromprefix_m = __yieldfromprefix_i.throw
             except AttributeError:
@@ -61,7 +62,7 @@ else:
         else:
             try:
                 if __yieldfromprefix_s is None:
-                    __yieldfromprefix_y = next(__yieldfromprefix_i)
+                    __yieldfromprefix_y = __yieldfromprefix_next(__yieldfromprefix_i)
                 else:
                     __yieldfromprefix_y = __yieldfromprefix_i.send(__yieldfromprefix_s)
             except StopIteration as __yieldfromprefix_e:

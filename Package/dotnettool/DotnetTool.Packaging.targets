@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <ItemGroup>
+    <DotnetTool Include="IronPython.Console" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NuPkgOutputs>@(DotnetTool->'$(PackageDir)/%(Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
+  </PropertyGroup>
+
+  <Target Name="DotnetToolPackage" DependsOnTargets="Stage" AfterTargets="Package" Outputs="$(NuPkgOutputs)">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\IronPython.Console.csproj" Targets="Restore" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\IronPython.Console.csproj" Targets="Pack" Properties="$(BuildProperties)" />
+  </Target>
+</Project>

@@ -42,14 +42,16 @@ This package contains a standalone Python interpreter, invokable from the comman
 
   <ItemGroup>
     <ToolFiles Include="$(StageDir)\$(TargetFramework)\ipy.deps.json" />
-    <ToolFiles Include="$(StageDir)\$(TargetFramework)\**\*.dll" Exclude="$(StageDir)\$(TargetFramework)\IronPythonTest.dll" />
+    <ToolFiles Include="$(StageDir)\$(TargetFramework)\ipy.dll" />
+    <ToolFiles Include="$(StageDir)\$(TargetFramework)\IronPython*.dll" Exclude="$(StageDir)\$(TargetFramework)\IronPythonTest.dll" />
+    <ToolFiles Include="$(StageDir)\$(TargetFramework)\**\DLLs\*.dll" />
     <LibFiles Include="$(StageDir)\lib\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="$(StageDir)\LICENSE" Pack="true" PackagePath="\" />
     <None Include="$(StageDir)\README.md" Pack="true" PackagePath="\" />
-    <None Include="@(ToolFiles)" Pack="true" PackagePath="\tools\$(TargetFramework)\any" />
-    <None Include="@(LibFiles)" Pack="true" PackagePath="\tools\$(TargetFramework)\any\lib" />
+    <None Include="@(ToolFiles)" Pack="true" PackagePath="\tools\$(TargetFramework)\any\" />
+    <None Include="@(LibFiles)" Pack="true" PackagePath="\tools\$(TargetFramework)\any\lib\" />
   </ItemGroup>
 </Project>

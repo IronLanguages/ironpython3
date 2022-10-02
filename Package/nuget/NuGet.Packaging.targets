@@ -27,7 +27,7 @@
     <Copy SourceFiles="@(DLLsFiles)" CopiedFiles="@(CopiedFiles)" DestinationFolder="$([System.IO.Path]::GetFullPath('%(DLLsFiles.RecursiveDir)\..'))">
       <Output TaskParameter="CopiedFiles" ItemName="TempCopied" />
     </Copy>
-    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Restore" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Restore" Properties="$(BuildProperties);RestoreUseStaticGraphEvaluation=false" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Pack" Properties="$(BuildProperties);%(NuspecProperties);NuspecFile=%(Package.Identity).nuspec" />
     <!-- Delete the copied files -->
     <Delete Files="@(TempCopied)" />

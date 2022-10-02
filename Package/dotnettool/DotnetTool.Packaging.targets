@@ -9,12 +9,7 @@
   </PropertyGroup>
 
   <Target Name="DotnetToolPackage" DependsOnTargets="Stage" AfterTargets="Package" Outputs="$(NuPkgOutputs)">
-    <Message Text="*** Before restore ***" Importance="High" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\IronPython.Console.csproj" Targets="Restore" Properties="$(BuildProperties);RestoreUseStaticGraphEvaluation=false" />
-    <Message Text="*** Before pack ***" Importance="High" />
-    <Exec Command="sh -c 'ps ux'" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\IronPython.Console.csproj" Targets="Pack" Properties="$(BuildProperties)" />
-    <Message Text="*** After pack ***" Importance="High" />
-    <Exec Command="sh -c 'ps ux'" />
   </Target>
 </Project>

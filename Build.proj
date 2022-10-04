@@ -100,16 +100,6 @@
           DestinationFolder="$(StageDir)\%(RecursiveDir)" />
   </Target>
 
-  <Target Name="_CopyRuntimeConfigFiles" DependsOnTargets="_MakeStageDir">
-    <ItemGroup>
-      <RuntimeConfigFiles
-          Include="$(BinDir)\$(Configuration)\*\ipy.deps.json" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(RuntimeConfigFiles)"
-          DestinationFolder="$(StageDir)\%(RecursiveDir)" />
-  </Target>
-
   <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
     <Copy SourceFiles="@(MainStageFiles)" DestinationFolder="$(StageDir)" />
   </Target>
@@ -125,7 +115,6 @@
       _MakeStageDir;
       _PlatformStage;
       _CopyDlrMainReferences;
-      _CopyRuntimeConfigFiles;
       _CopyMainStageFiles;
       _CopyStdLib;
     </StageDependsOn>

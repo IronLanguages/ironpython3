@@ -10,7 +10,6 @@
     <license type="file">StdLib.License.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The Python Standard Library, for use with IronPython.</description>
-    <summary>The Python Standard Library, for use with IronPython.</summary>
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>

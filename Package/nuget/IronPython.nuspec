@@ -10,8 +10,9 @@
     <repository type="git" url="https://github.com/IronLanguages/ironpython3.git" />
     <license type="expression">Apache-2.0</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>IronPython is an open-source implementation of the Python programming language that is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.</description>
-    <summary>IronPython is an open-source implementation of the Python programming language that is tightly integrated with the .NET Framework.</summary>
+    <description>IronPython is an open-source implementation of the Python programming language that is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.
+
+This package contains the IronPython interpreter engine.</description>
     <readme>README.md</readme>
     <language>en-US</language>
     <tags>ironpython python dynamic dlr</tags>

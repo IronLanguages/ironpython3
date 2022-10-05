@@ -75,9 +75,17 @@ namespace IronPython.Runtime.Operations {
                             throw new InvalidOperationException(); // unreachable
                     }
                 case string s:
-                    return LiteralParser.ParseIntegerSign(s, @base, FindStart(s, @base));
+                    if (LiteralParser.TryParseIntegerSign(s.AsSpan(FindStart(s, @base)), @base, out result)) {
+                        return result;
+                    } else {
+                        throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, s)}");
+                    }
                 case Extensible<string> es:
-                    return TryInvokeInt(context, o, out result) ? result : LiteralParser.ParseIntegerSign(es.Value, @base, FindStart(es.Value, @base));
+                    if (TryInvokeInt(context, o, out result) || LiteralParser.TryParseIntegerSign(es.Value.AsSpan(FindStart(es.Value, @base)), @base, out result)) {
+                        return result;
+                    } else {
+                        throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, es)}");
+                    }
                 default:
                     break;
             }
@@ -168,7 +176,7 @@ namespace IronPython.Runtime.Operations {
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
 
                 var text = buf.AsReadOnlySpan().MakeString();
-                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
+                if (!LiteralParser.TryParseIntegerSign(text.AsSpan(FindStart(text, @base)), @base, out value))
                     throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
             }
 
@@ -203,6 +211,8 @@ namespace IronPython.Runtime.Operations {
             => cls == TypeCache.BigInteger ? value : cls.CreateInstance(context, value);
 
         private static int FindStart(string s, int radix) {
+            if (radix == 10) return 0;
+
             int i = 0;
 
             // skip whitespace

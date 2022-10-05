@@ -1,12 +1,12 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>IronPython.StdLib</id>
     <title>IronPython Standard Library</title>
     <version>3.4.0</version>
-    <authors>IronPython Contributors,Python Contributors</authors>
-    <owners>IronPython Community</owners>
-    <projectUrl>http://ironpython.net</projectUrl>
+    <authors>IronPython Contributors, Python Contributors</authors>
+    <copyright>© IronPython Contributors</copyright>
+    <projectUrl>https://ironpython.net</projectUrl>
     <license type="file">StdLib.License.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The Python Standard Library, for use with IronPython.</description>

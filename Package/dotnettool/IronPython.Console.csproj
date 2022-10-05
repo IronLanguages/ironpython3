@@ -23,6 +23,7 @@
     <Title>IronPython Command-line Interpreter</Title>
     <Version>$(PackageVersion)</Version>
     <Authors>IronPython Contributors, Microsoft</Authors>
+    <Copyright>© IronPython Contributors</Copyright>
     <PackageProjectUrl>https://ironpython.net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/IronLanguages/ironpython3.git</RepositoryUrl>

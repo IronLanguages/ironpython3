@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="Current">
   <UsingTask TaskName="Zip" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <ZipFileName ParameterType="System.String" Required="true" />
@@ -10,40 +10,51 @@
       <Using Namespace="System.IO.Compression" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-        string cwd = null;
-        try {
-          var di = new DirectoryInfo(WorkingDirectory);
-          if (!di.Exists) {
-            Log.LogError(string.Format("{0} doesn't exist", WorkingDirectory));
-            return false;
-          }
-          cwd = Environment.CurrentDirectory;
-          Environment.CurrentDirectory = di.FullName;
+            string cwd = null;
+            try {
+                var di = new DirectoryInfo(WorkingDirectory);
+                if (!di.Exists) {
+                    Log.LogError(string.Format("{0} doesn't exist", WorkingDirectory));
+                    return (Success = false);
+                }
+                cwd = Environment.CurrentDirectory;
+                Environment.CurrentDirectory = di.FullName;
+                //                     rw-r--r--   file       BSD
+                const int regAttr = (0b110100100 + 0x8000) << 16;
+                //                     rwxr-xr-x   file       BSD
+                const int exeAttr = (0b111101101 + 0x8000) << 16;
+                var propExternalAttributes = typeof(ZipArchiveEntry).GetProperty("ExternalAttributes");
 
-          using (Stream zipStream = new FileStream(Path.GetFullPath(ZipFileName), FileMode.Create, FileAccess.Write))
-          using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create)) {
-            foreach (ITaskItem fileItem in Files) {
-              var filename = fileItem.ItemSpec;
-              FileInfo fi = new FileInfo(filename);
-              if (!fi.FullName.StartsWith(di.FullName)) {
-                Log.LogError(string.Format("{0} not in {1}", filename, WorkingDirectory));
-                return false;
-              }
-              var archivename = fi.FullName.Substring(di.FullName.Length).Replace('\\', '/').TrimStart(new char [] { '/' });
-              using (Stream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
-              using (Stream fileStreamInZip = archive.CreateEntry(archivename).Open())
-                fileStream.CopyTo(fileStreamInZip);
+                using Stream zipStream = new FileStream(Path.GetFullPath(ZipFileName), FileMode.Create, FileAccess.Write);
+                using ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create);
+
+                foreach (ITaskItem fileItem in Files) {
+                    var filename = fileItem.ItemSpec;
+                    var fi = new FileInfo(filename);
+                    if (!fi.FullName.StartsWith(di.FullName)) {
+                        Log.LogError(string.Format("{0} not in {1}", filename, WorkingDirectory));
+                        return (Success = false);
+                    }
+                    var archivename = fi.FullName.Substring(di.FullName.Length).Replace('\\', '/').TrimStart(new char [] { '/' });
+                    bool isExe = archivename.EndsWith(".ps1") || archivename.EndsWith(".sh");
+
+                    ZipArchiveEntry entry = archive.CreateEntry(archivename);
+                    using Stream fileStreamInZip = entry.Open();
+                    using Stream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read);
+
+                    fileStream.CopyTo(fileStreamInZip);
+                    //entry.ExternalAttributes = isExe ? exeAttr : regAttr;
+                    propExternalAttributes.SetValue(entry, isExe ? exeAttr : regAttr);
+                }
+                Success = true;
+            } catch (Exception ex) {
+                Success = false;
+                Log.LogErrorFromException(ex);
+            } finally {
+                if (cwd != null) {
+                    Environment.CurrentDirectory = cwd;
+                }
             }
-          }
-          Success = true;
-        } catch (Exception ex) {
-          Success = false;
-          Log.LogErrorFromException(ex);
-        } finally {
-          if (cwd != null) {
-            Environment.CurrentDirectory = cwd;
-          }
-        }
         ]]>
       </Code>
     </Task>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Choose>
-    <When Condition=" '$(OutputType)' == 'Library' ">
+    <When Condition=" '$(OutputType)' == 'Library' AND '$(PreventStaging)' != 'true' ">
       <ItemGroup>
         <StageItem Include="$(TargetPath)" />
         <StageItem Include="$(DocumentationFile)" />
@@ -10,7 +10,7 @@
         <StageItem Include="$(TargetDir)$(TargetName).pdb" Condition=" Exists('$(TargetDir)$(TargetName).pdb') " />
       </ItemGroup>
     </When>
-    <When Condition=" '$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe' ">
+    <When Condition=" ('$(OutputType)' == 'Exe' OR '$(OutputType)' == 'WinExe') AND '$(PreventStaging)' != 'true' ">
       <ItemGroup>
         <StageItem Include="$(TargetPath)" />
         <StageItem Include="$(TargetPath).config" Condition=" Exists('$(TargetPath).config') " />
@@ -29,7 +29,7 @@
 
   <Target Name="_LateStage"
           DependsOnTargets="CoreBuild"
-          Condition=" '$(Staging)' == 'true' ">
+          Condition=" '$(Staging)' == 'true' AND '$(PreventStaging)' != 'true' ">
     <CreateItem Include="@(LateStageItem)">
         <Output TaskParameter="Include" ItemName="StageItem" />
     </CreateItem>
@@ -50,4 +50,3 @@
 
   <Target Name="Stage" DependsOnTargets="_LateStage;_MainStage;_StoreInDLLs" />
 </Project>
-

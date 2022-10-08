@@ -13,7 +13,7 @@
 
     <ItemGroup>
       <ApplicationFiles Include="$(StageDir)/net462/*.exe" />
-      <ApplicationFiles Include="$(StageDir)/net462/**/*.dll" Exclude="IronPythonTest.dll" />
+      <ApplicationFiles Include="$(StageDir)/net462/**/*.dll" />
     </ItemGroup>
 
     <ItemGroup>

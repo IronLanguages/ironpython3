@@ -26,4 +26,4 @@ While compatibility with CPython is one of our main goals with IronPython 3, the
 
 ## Package compatibility
 
-See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/package-compatibility.md) document for information on compatibility with popular packages. Note that to run most packages, IronPython Standard Library must be present.
+See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/package-compatibility.md) document for information on compatibility with popular Python packages. Note that to run most packages, IronPython Standard Library must be present.

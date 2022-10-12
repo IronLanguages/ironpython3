@@ -29,18 +29,22 @@
                 using ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create);
 
                 foreach (ITaskItem fileItem in Files) {
-                    var filename = fileItem.ItemSpec;
-                    var fi = new FileInfo(filename);
+                    string evaluatedInclude = fileItem.ItemSpec;
+                    var fi = new FileInfo(evaluatedInclude);
                     if (!fi.FullName.StartsWith(di.FullName)) {
-                        Log.LogError(string.Format("{0} not in {1}", filename, WorkingDirectory));
+                        Log.LogError(string.Format("{0} not in {1}", evaluatedInclude, WorkingDirectory));
                         return (Success = false);
+                    }
+                    string filename = fileItem.GetMetadata("Link");
+                    if (string.IsNullOrEmpty(filename)) {
+                        filename = fi.FullName;
                     }
                     var archivename = fi.FullName.Substring(di.FullName.Length).Replace('\\', '/').TrimStart(new char [] { '/' });
                     bool isExe = archivename.EndsWith(".ps1") || archivename.EndsWith(".sh");
 
                     ZipArchiveEntry entry = archive.CreateEntry(archivename);
                     using Stream fileStreamInZip = entry.Open();
-                    using Stream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read);
+                    using Stream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
 
                     fileStream.CopyTo(fileStreamInZip);
                     //entry.ExternalAttributes = isExe ? exeAttr : regAttr;

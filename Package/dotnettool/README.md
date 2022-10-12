@@ -7,9 +7,10 @@ This package contains a standalone Python interpreter, invokable from the comman
 
 The current target is Python 3.4, although features and behaviors from later versions may be included. Refer to the [source code repository](https://github.com/IronLanguages/ironpython3) for list of features from each version of CPython that have been implemented.
 
-
 ## Differences with CPython
+
 While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/differences-from-c-python.md) for details.
 
 ## Package compatibility
+
 See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/package-compatibility.md) document for information on compatibility with popular Python packages.

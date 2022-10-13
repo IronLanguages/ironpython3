@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
-    <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
+    <LateStageItem Include="$(TargetDir)\%2A%2A\ipy.runtimeconfig.json" />
     <LateStageItem Include="$(TargetDir)\%2A%2A\ipy.deps.json" />
   </ItemGroup>
 

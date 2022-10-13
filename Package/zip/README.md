@@ -13,6 +13,14 @@ After unpacking the archive, move or copy one of the `net` directories matching 
 
 If access to the Python Standard Library is desired from IronPython, move or copy the whole `lib` directory **into** the moved/copied directory from the previous step. The `lib` directory has to be in the same directory as `IronPython.dll`.
 
+The `scripts` subdirectory contains an installation script that facilitates the installation. Example:
+
+```powershell
+PS> ./scripts/Install-IronPython.ps1 ~/.local/share/ironpython
+```
+
+Run `help ./scripts/Install-IronPython` in PowerShell for more information about supported options.
+
 ## Command-line Usage
 
 To start a command-line interpreter on Windows run `ipy.exe` (for .NET Framework) or `ipy.bat` (for .NET). On Posix systems, run `ipy.sh`. `ipy.sh` may be renamed to simply `ipy` for convenience.

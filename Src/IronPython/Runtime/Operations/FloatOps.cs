@@ -162,7 +162,7 @@ namespace IronPython.Runtime.Operations {
 
             BigInteger intVal;
             if (integer.Success) {
-                intVal = LiteralParser.ParseBigInteger(integer.Value, 16);
+                intVal = BigInteger.Parse(integer.Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             } else {
                 intVal = BigInteger.Zero;
             }

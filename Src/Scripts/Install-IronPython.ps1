@@ -114,6 +114,15 @@ dotnet (Join-Path $PSScriptRoot ipy.dll) @args
         Move-Item -Path (Join-Path $Path "ipy.sh") -Destination (Join-Path $Path "ipy")
         Remove-Item -Path (Join-Path $Path "ipy.bat")
     }
+} elseif ($IsMacOS -or $IsLinux) { # Mono
+    $ipyPath = Join-Path $Path "ipy"
+    Set-Content -Path $ipyPath -Value @'
+#!/bin/sh
+BASEDIR=$(dirname "$0")
+ABS_PATH=$(cd "$BASEDIR"; pwd)
+mono "$ABS_PATH/ipy.exe" "$@"
+'@
+    chmod +x $ipyPath
 }
 
 # Install additional scripts

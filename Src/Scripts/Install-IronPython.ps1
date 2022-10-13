@@ -57,7 +57,10 @@ $ErrorActionPreference = "Stop"
 if (-not $ZipFile) {
     # If zipfile path not given, try to locate it
     $splitPSScriptRoot = $PSScriptRoot -split "\$([IO.Path]::DirectorySeparatorChar)"
-    if ($splitPSScriptRoot[-2] -eq "Src" -and $splitPSScriptRoot[-1] -eq "Scripts") {
+    if ($splitPSScriptRoot[-1] -eq "scripts" -and (Test-Path (Join-Path (Split-Path $PSScriptRoot) "lib"))) {
+        # Script run from within already expanded zip file
+        $unzipDir = $PSScriptRoot | Split-Path
+    } elseif ($splitPSScriptRoot[-2] -eq "Src" -and $splitPSScriptRoot[-1] -eq "Scripts") {
         # Script run from within a checked out code base
         # Locate the zip archive in the standard location of the package target
         $projectRoot = $PSScriptRoot | Split-Path | Split-Path
@@ -67,9 +70,6 @@ if (-not $ZipFile) {
         } elseif ($ZipFile.Count -lt 1) {
             Write-Error "Missing zip file. Have you run './make package'?"
         }
-    } elseif ($splitPSScriptRoot[-1] -eq "scripts") {
-        # Script run from within already expanded zip file
-        $unzipDir = $PSScriptRoot | Split-Path
     } else {
         Write-Error "Cannot locate implicit zip file. Provide path to the zip file using '-ZipFile <path>'."
     }

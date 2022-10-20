@@ -38,8 +38,9 @@ This package contains a standalone Python interpreter, invokable from the comman
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DynamicLanguageRuntime" Version="1.3.2" />
     <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
+    <!-- must match PackageReferences for the DLR -->
+    <PackageReference Include="System.CodeDom" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +48,9 @@ This package contains a standalone Python interpreter, invokable from the comman
     <ToolFiles Include="$(StageDir)\$(TargetFramework)\ipy.dll" />
     <ToolFiles Include="$(StageDir)\$(TargetFramework)\IronPython*.dll" />
     <ToolFiles Include="$(StageDir)\$(TargetFramework)\**\DLLs\*.dll" />
+    <!-- we don't need Microsoft.Scripting.Metadata.dll since it's not actually used by IronPython -->
+    <ToolFiles Include="$(StageDir)\$(TargetFramework)\Microsoft.Scripting.dll" />
+    <ToolFiles Include="$(StageDir)\$(TargetFramework)\Microsoft.Dynamic.dll" />
   </ItemGroup>
 
   <ItemGroup>

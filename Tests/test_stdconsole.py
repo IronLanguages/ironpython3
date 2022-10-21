@@ -312,7 +312,7 @@ class StdConsoleTest(IronPythonTestCase):
     @skipUnlessIronPython()
     def test_X_MaxRecursion(self):
         """Test -X:MaxRecursion"""
-        self.TestCommandLine(("-X:MaxRecursion", "45", "-c", "2+2"), "") # TODO: this is high because of importlib
+        self.TestCommandLine(("-X:MaxRecursion", "60", "-c", "2+2"), "") # TODO: this is high because of importlib
         self.TestCommandLine(("-X:MaxRecursion", "3.14159265", "-c", "2+2"), "The argument for the -X MaxRecursion option must be an integer >= 10.\n", 1)
         self.TestCommandLine(("-X:MaxRecursion",), "Argument expected for the -X:MaxRecursion option.\n", 1)
         self.TestCommandLine(("-X:MaxRecursion", "2"), "The argument for the -X MaxRecursion option must be an integer >= 10.\n", 1)

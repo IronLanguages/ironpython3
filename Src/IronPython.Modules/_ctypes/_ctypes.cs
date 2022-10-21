@@ -380,7 +380,7 @@ namespace IronPython.Modules {
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, new object[0], args);
+            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
         }
 
         public static void call_commethod() {
@@ -399,7 +399,7 @@ namespace IronPython.Modules {
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, new object[0], args);
+            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
         }
 
         private static CFuncPtrType GetFunctionType(CodeContext context, int flags) {
@@ -513,7 +513,7 @@ namespace IronPython.Modules {
                     lock (_lock) {
                         if (_dynamicModule == null) {
                             var attributes = new[] {
-                                new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
+                                new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), System.Array.Empty<object>()),
 #if !NETCOREAPP && !NETSTANDARD
                                 //PermissionSet(SecurityAction.Demand, Unrestricted = true)
                                 new CustomAttributeBuilder(typeof(PermissionSetAttribute).GetConstructor(new Type[] { typeof(SecurityAction) }),

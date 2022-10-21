@@ -1646,7 +1646,7 @@ void sqlite3VdbeLeave(Vdbe *p){
       int i;                               /* Loop counter */
       int rc = SQLITE_OK;                  /* Return code */
       if ( p.pResultSet == null )
-        p.pResultSet = new Mem[0];//Mem* pMem = p.pResultSet = p.aMem[1];   /* First Mem of result set */
+        p.pResultSet = Array.Empty<Mem>();//Mem* pMem = p.pResultSet = p.aMem[1];   /* First Mem of result set */
       Mem pMem;
       Debug.Assert( p.explain != 0 );
       Debug.Assert( p.magic == VDBE_MAGIC_RUN );

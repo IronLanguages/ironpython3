@@ -354,7 +354,7 @@ namespace IronPython.SQLite
 
                             case Sqlite3.SQLITE_BLOB:
                             default:
-                                converted = new Bytes(Sqlite3.sqlite3_column_blob(this.statement.st, i) ?? new byte[0]); // TODO: avoid creating a copy
+                                converted = new Bytes(Sqlite3.sqlite3_column_blob(this.statement.st, i) ?? Array.Empty<byte>()); // TODO: avoid creating a copy
                                 break;
                         }
                     }

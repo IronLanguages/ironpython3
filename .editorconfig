@@ -93,6 +93,3 @@ dotnet_diagnostic.CA5350.severity = suggestion  # CA5350: Do Not Use Weak Crypto
 dotnet_diagnostic.CA5351.severity = suggestion  # CA5351: Do Not Use Broken Cryptographic Algorithms
 dotnet_diagnostic.CA5359.severity = suggestion  # CA5359: Do Not Disable Certificate Validation
 dotnet_diagnostic.CA5372.severity = suggestion  # CA5372: Use XmlReader For XPathDocument
-
-# TODO: remove this
-dotnet_diagnostic.CA1825.severity = suggestion  # CA1825: Avoid zero-length array allocations

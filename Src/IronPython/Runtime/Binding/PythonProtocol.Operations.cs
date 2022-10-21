@@ -510,7 +510,7 @@ namespace IronPython.Runtime.Binding {
 
             DynamicMetaObject res = self is IPythonConvertible pyConv
                 ? pyConv.BindConvert(convBinder)
-                : convBinder.Bind(self, new DynamicMetaObject[0]);
+                : convBinder.Bind(self, Array.Empty<DynamicMetaObject>());
 
             return new DynamicMetaObject(
                 Expression.Block(

@@ -27,7 +27,7 @@ namespace IronPython.Compiler.Ast {
     public class TryStatement : Statement {
         private readonly TryStatementHandler[] _handlers;
 
-        private static readonly TryStatementHandler[] emptyArray = new TryStatementHandler[0];
+        private static readonly TryStatementHandler[] emptyArray = Array.Empty<TryStatementHandler>();
 
         public TryStatement(Statement body, TryStatementHandler[]? handlers, Statement? else_, Statement? finally_) {
             Body = body;

@@ -140,7 +140,7 @@ namespace IronPython.Runtime {
                 return new[] { DocBuilder.GetOverloadDoc(dlg.GetType().GetMethod("Invoke"), dlg.GetType().Name, 0, false) };
             }
 
-            return new OverloadDoc[0];
+            return Array.Empty<OverloadDoc>();
         }
 
         private static ICollection<ParameterDoc> GetParameterDocs(PythonFunction pf) {

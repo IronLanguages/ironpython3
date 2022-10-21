@@ -23,7 +23,7 @@ namespace IronPython.Modules {
         protected T _hasher;
         private static MethodInfo _memberwiseClone;
 
-        private static readonly byte[] _empty = new byte[0];
+        private static readonly byte[] _empty = Array.Empty<byte>();
 
         public readonly string name;
         public readonly int block_size;
@@ -87,7 +87,7 @@ namespace IronPython.Modules {
 
             if (_memberwiseClone != null) {
                 lock (_hasher) {
-                    clone = (T)_memberwiseClone.Invoke(_hasher, new object[0]);
+                    clone = (T)_memberwiseClone.Invoke(_hasher, Array.Empty<object>());
                 }
             }
 

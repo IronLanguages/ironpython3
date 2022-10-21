@@ -30,7 +30,7 @@ namespace IronPython.Compiler.Ast {
 
     public abstract class Node : MSAst.Expression {
         internal static readonly BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
-        internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
+        internal static readonly MSAst.Expression[] EmptyExpression = Array.Empty<Ast>();
 
         internal static ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");

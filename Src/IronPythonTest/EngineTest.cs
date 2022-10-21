@@ -1356,13 +1356,13 @@ range = range
 
             foreach (object inst in invokableObjects) {
                 var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1)));
-                VerifyFunction(new[] { "foo" }, new string[0], site2.Target(site2, inst, "foo"));
+                VerifyFunction(new[] { "foo" }, Array.Empty<string>(), site2.Target(site2, inst, "foo"));
 
                 site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1, "bar")));
                 VerifyFunction(new[] { "foo" }, new[] { "bar" }, site2.Target(site2, inst, "foo"));
 
                 var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(2)));
-                VerifyFunction(new[] { "foo", "bar" }, new string[0], site3.Target(site3, inst, "foo", "bar"));
+                VerifyFunction(new[] { "foo", "bar" }, Array.Empty<string>(), site3.Target(site3, inst, "foo", "bar"));
 
                 site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(2, "bar")));
                 VerifyFunction(new[] { "foo", "bar" }, new[] { "bar" }, site3.Target(site3, inst, "foo", "bar"));
@@ -1377,10 +1377,10 @@ range = range
                 Assert.AreEqual(site.Target(site, inst), "Python");
 
                 var dlgsiteo = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
-                VerifyFunction(new[] { "foo" }, new string[0], ((Func<object, object>)(dlgsiteo.Target(dlgsiteo, inst)))("foo"));
+                VerifyFunction(new[] { "foo" }, Array.Empty<string>(), ((Func<object, object>)(dlgsiteo.Target(dlgsiteo, inst)))("foo"));
 
                 var dlgsite2o = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object, object>), null));
-                VerifyFunction(new[] { "foo", "bar" }, new string[0], ((Func<object, object, object>)dlgsite2o.Target(dlgsite2o, inst))("foo", "bar"));
+                VerifyFunction(new[] { "foo", "bar" }, Array.Empty<string>(), ((Func<object, object, object>)dlgsite2o.Target(dlgsite2o, inst))("foo", "bar"));
 
                 // strongly typed return versions
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
@@ -1404,10 +1404,10 @@ range = range
                 Assert.AreEqual(bisite.Target(bisite, inst), (BigInteger)42);
 
                 var dlgsite = CallSite<Func<CallSite, object, Func<object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
-                VerifyFunction(new[] { "foo" }, new string[0], dlgsite.Target(dlgsite, inst)("foo"));
+                VerifyFunction(new[] { "foo" }, Array.Empty<string>(), dlgsite.Target(dlgsite, inst)("foo"));
 
                 var dlgsite2 = CallSite<Func<CallSite, object, Func<object, object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object, object>), null));
-                VerifyFunction(new[] { "foo", "bar" }, new string[0], dlgsite2.Target(dlgsite2, inst)("foo", "bar"));
+                VerifyFunction(new[] { "foo", "bar" }, Array.Empty<string>(), dlgsite2.Target(dlgsite2, inst)("foo", "bar"));
             }
 
             foreach (object inst in unconvertableObjects) {

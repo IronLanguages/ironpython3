@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Dynamic;
+
 using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime.Types {
@@ -13,7 +13,7 @@ namespace IronPython.Runtime.Types {
     internal class ResolvedMember {
         public readonly string/*!*/ Name;
         public readonly MemberGroup/*!*/ Member;
-        public static readonly ResolvedMember[]/*!*/ Empty = new ResolvedMember[0];
+        public static readonly ResolvedMember[]/*!*/ Empty = System.Array.Empty<ResolvedMember>();
 
         public ResolvedMember(string/*!*/ name, MemberGroup/*!*/ member) {
             Debug.Assert(name != null);

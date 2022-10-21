@@ -114,7 +114,7 @@ namespace IronPython.Runtime.Types {
 
             AssemblyGen ag = new AssemblyGen(new AssemblyName(assemblyName), ".", ".dll", false);
             TypeBuilder tb = ag.DefinePublicType(_constructorTypeName, typeof(object), true);
-            tb.SetCustomAttribute(new CustomAttributeBuilder(typeof(PythonCachedTypeInfoAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]));
+            tb.SetCustomAttribute(new CustomAttributeBuilder(typeof(PythonCachedTypeInfoAttribute).GetConstructor(ReflectionUtils.EmptyTypes), Array.Empty<object>()));
 
             MethodBuilder mb = tb.DefineMethod(_constructorMethodName, MethodAttributes.Public | MethodAttributes.Static, typeof(CachedNewTypeInfo[]), ReflectionUtils.EmptyTypes);
             ILGenerator ilg = mb.GetILGenerator();
@@ -141,7 +141,7 @@ namespace IronPython.Runtime.Types {
                 ilg.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));                
 
                 // create the dictionary<str, str[]> of special names
-                ilg.Emit(OpCodes.Newobj, typeof(Dictionary<string, string[]>).GetConstructor(new Type[0]));
+                ilg.Emit(OpCodes.Newobj, typeof(Dictionary<string, string[]>).GetConstructor(Array.Empty<Type>()));
                 foreach (var specialName in typeInfos.Value) {
                     // dup dict
                     ilg.Emit(OpCodes.Dup);
@@ -203,7 +203,7 @@ namespace IronPython.Runtime.Types {
             }
 
             MethodInfo mi = t.GetMethod(_constructorMethodName);
-            var typeInfo = (CachedNewTypeInfo[])mi.Invoke(null, new object[0]);
+            var typeInfo = (CachedNewTypeInfo[])mi.Invoke(null, Array.Empty<object>());
             foreach (var v in typeInfo) {
                 _newTypes.GetOrCreateValue(
                     new NewTypeInfo(v.Type.BaseType, v.InterfaceTypes),
@@ -1781,8 +1781,8 @@ namespace IronPython.Runtime.Types {
             if (res != null) {
                 return res;
             }
-        
-            return new MethodInfo[0];
+
+            return Array.Empty<MethodInfo>();
         }
 
         internal static IList<ExtensionPropertyTracker> GetOverriddenProperties(Type type, string name) {
@@ -1796,7 +1796,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            return new ExtensionPropertyTracker[0];
+            return Array.Empty<ExtensionPropertyTracker>();
         }
 
         #endregion

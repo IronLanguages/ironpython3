@@ -135,7 +135,7 @@ namespace IronPythonCompiler {
         }
 
         public bool ResolveReference(Dictionary<string, Assembly> cache, List<Assembly> references, string reference) {
-            string[] files = new string[0];
+            string[] files = Array.Empty<string>();
             try {
                 string path = Path.GetDirectoryName(reference);
                 files = Directory.GetFiles(path == "" ? "." : path, Path.GetFileName(reference));

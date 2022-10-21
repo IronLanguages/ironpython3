@@ -411,7 +411,7 @@ namespace IronPython.Compiler {
                 block[1] = Expression.MakeTry(null, @try, null, null, new ReadOnlyCollection<CatchBlock>(handlers));
                 @try = Expression.Block(block);
                 Debug.Assert(@try.Type == node.Body.Type);
-                handlers = new CatchBlock[0]; // so we don't reuse these
+                handlers = Array.Empty<CatchBlock>(); // so we don't reuse these
             }
 
             if (finallyYields != catchYields) {
@@ -433,7 +433,7 @@ namespace IronPython.Compiler {
                 if (handlers.Count > 0) {
                     @try = Expression.MakeTry(null, @try, null, null, handlers);
                     Debug.Assert(@try.Type == node.Body.Type);
-                    handlers = new CatchBlock[0];
+                    handlers = Array.Empty<CatchBlock>();
                 }
 
                 // NOTE: the order of these routers is important

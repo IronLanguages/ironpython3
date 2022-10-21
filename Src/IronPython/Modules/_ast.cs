@@ -68,7 +68,7 @@ namespace IronPython.Modules {
             } else
                 throw PythonOps.TypeError("unsupported type of AST: {0}", (source.GetType()));
 
-            return new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, printExpression, compilerContext, new int[] { });
+            return new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, printExpression, compilerContext, Array.Empty<int>());
         }
 
         internal static AST BuildAst(CodeContext context, SourceUnit sourceUnit, PythonCompilerOptions opts, string mode) {

@@ -991,19 +991,9 @@ namespace IronPython.Runtime.Operations {
             return bytes.IndexOf(sub, start, end - start);
         }
 
-        internal static byte ToByte(this string self, string name, int pos) {
-            if (self.Length != 1 || self[0] >= 256) {
-                throw PythonOps.TypeError(name + "() argument " + pos + " must be char < 256, not string");
-            }
-
-            return (byte)self[0];
-        }
-
         internal static byte ToByte(this IList<byte> self, string name, int pos) {
-            if (self == null) {
-                throw PythonOps.TypeError(name + "() argument " + pos + " must be char < 256, not None");
-            } else if (self.Count != 1) {
-                throw PythonOps.TypeError(name + "() argument " + pos + " must be char < 256, not bytearray or bytes");
+            if (self is null || self.Count != 1) {
+                throw PythonOps.TypeError("{0} () argument {1} must a byte string of length 1, not {2}", name, pos, PythonOps.GetPythonTypeName(self));
             }
 
             return self[0];

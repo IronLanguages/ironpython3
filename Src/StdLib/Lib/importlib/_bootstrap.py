@@ -958,10 +958,7 @@ def _spec_from_module(module, loader=None, origin=None):
         location = None
     if origin is None:
         if location is None:
-            try:
-                origin = loader._ORIGIN
-            except AttributeError:
-                origin = None
+            origin = getattr(loader, '_ORIGIN', None) # ironpython: optimization to avoid KeyError exception
         else:
             origin = location
     try:
@@ -2355,6 +2352,7 @@ def _setup(sys_module, _imp_module):
 
     # Directly load the os module (needed during bootstrap).
     os_details = ('posix', ['/']), ('nt', ['\\', '/'])
+    if sys.platform == 'win32': os_details = reversed(os_details) # ironpython: optimization to avoid ImportError exception
     for builtin_os, path_separators in os_details:
         # Assumption made in _path_join()
         assert all(len(sep) == 1 for sep in path_separators)

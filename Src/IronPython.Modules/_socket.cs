@@ -862,7 +862,7 @@ namespace IronPython.Modules {
             /// </summary>
             internal static Socket? HandleToSocket(Int64 handle) {
                 lock (_handleToSocket) {
-                    if (_handleToSocket.TryGetValue((IntPtr)handle, out WeakReference? weakref)) {
+                    if (_handleToSocket.TryGetValue(checked((IntPtr)handle), out WeakReference? weakref)) {
                         return weakref.Target as Socket;
                     }
                 }

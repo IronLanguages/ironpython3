@@ -24,6 +24,7 @@ work. One should use importlib as the public-facing version of this module.
 
 _CASE_INSENSITIVE_PLATFORMS = 'win', 'cygwin', 'darwin'
 
+_unspecified = object() # ironpython: default value for dict.get
 
 def _make_relax_case():
     if sys.platform.startswith(_CASE_INSENSITIVE_PLATFORMS):
@@ -276,10 +277,10 @@ def _get_module_lock(name):
 
     Should only be called with the import lock taken."""
     lock = None
-    try:
-        lock = _module_locks[name]()
-    except KeyError:
-        pass
+    # ironpython: optimization to avoid KeyError exception
+    lock_fn = _module_locks.get(name, _unspecified)
+    if lock_fn is not _unspecified:
+        lock = lock_fn()
     if lock is None:
         if _thread is None:
             lock = _DummyModuleLock(name)
@@ -1827,9 +1828,9 @@ class PathFinder:
         """
         if path == '':
             path = _os.getcwd()
-        try:
-            finder = sys.path_importer_cache[path]
-        except KeyError:
+        # ironpython: optimization to avoid KeyError exception
+        finder = sys.path_importer_cache.get(path, _unspecified)
+        if finder is _unspecified:
             finder = cls._path_hooks(path)
             sys.path_importer_cache[path] = finder
         return finder

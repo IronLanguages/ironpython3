@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Install tools
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-20.04'
       run: sudo apt-get -yq install mono-vbnc dos2unix
     - uses: actions/checkout@v2
       with:

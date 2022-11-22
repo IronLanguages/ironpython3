@@ -24,6 +24,7 @@ work. One should use importlib as the public-facing version of this module.
 
 _CASE_INSENSITIVE_PLATFORMS = 'win', 'cygwin', 'darwin'
 
+_unspecified = object() # ironpython: default value for dict.get
 
 def _make_relax_case():
     if sys.platform.startswith(_CASE_INSENSITIVE_PLATFORMS):
@@ -276,10 +277,10 @@ def _get_module_lock(name):
 
     Should only be called with the import lock taken."""
     lock = None
-    try:
-        lock = _module_locks[name]()
-    except KeyError:
-        pass
+    # ironpython: optimization to avoid KeyError exception
+    lock_fn = _module_locks.get(name, _unspecified)
+    if lock_fn is not _unspecified:
+        lock = lock_fn()
     if lock is None:
         if _thread is None:
             lock = _DummyModuleLock(name)
@@ -958,10 +959,7 @@ def _spec_from_module(module, loader=None, origin=None):
         location = None
     if origin is None:
         if location is None:
-            try:
-                origin = loader._ORIGIN
-            except AttributeError:
-                origin = None
+            origin = getattr(loader, '_ORIGIN', None) # ironpython: optimization to avoid KeyError exception
         else:
             origin = location
     try:
@@ -1830,9 +1828,9 @@ class PathFinder:
         """
         if path == '':
             path = _os.getcwd()
-        try:
-            finder = sys.path_importer_cache[path]
-        except KeyError:
+        # ironpython: optimization to avoid KeyError exception
+        finder = sys.path_importer_cache.get(path, _unspecified)
+        if finder is _unspecified:
             finder = cls._path_hooks(path)
             sys.path_importer_cache[path] = finder
         return finder
@@ -2355,6 +2353,7 @@ def _setup(sys_module, _imp_module):
 
     # Directly load the os module (needed during bootstrap).
     os_details = ('posix', ['/']), ('nt', ['\\', '/'])
+    if sys.platform == 'win32': os_details = reversed(os_details) # ironpython: optimization to avoid ImportError exception
     for builtin_os, path_separators in os_details:
         # Assumption made in _path_join()
         assert all(len(sep) == 1 for sep in path_separators)

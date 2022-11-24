@@ -15,6 +15,22 @@ if sys.implementation.name == "ironpython":
     print("IronPython!")
 ```
 
+## `None` is a keyword
+
+`None` is a keyword in Python 3 and trying to access a member called `None` will raise a `SyntaxError`. Since this name is frequently used in .NET code (e.g. in enums), code trying to use it is going to throw. You can use alternate syntax in order to access the .NET member, for example `getattr(x, "None")` or an accessor for enums `MyEnum["None"]`.
+
+```python
+# IronPython 2
+System.StringSplitOptions.None
+```
+
+```python
+# IronPython 3
+System.StringSplitOptions["None"]
+```
+
+Similarly, `True` and `False` are also keywords in Python 3.
+
 ## `int` Type
 
 One of the major backward incompatible changes in Python 3 is [PEP 237 – Unifying Long Integers and Integers][PEP 0237]: Essentially, `long` renamed to `int`. That is, there is only one built-in integral type, named `int`; but it behaves mostly like the old `long` type. From the pure Python perspective this means that `int` should be used wherever previously `long` was used. More consideration has to be applied in interop cases with .NET.
@@ -80,7 +96,7 @@ False
 '0x7fffffff'
 ```
 
-The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected. 
+The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected.
 
 ```pycon
 >>> bi = i.ToBigInteger()

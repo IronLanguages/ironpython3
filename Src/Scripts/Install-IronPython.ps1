@@ -99,7 +99,7 @@ if (-not $unzipDir) {
 
 # Copy files into place
 Copy-Item -Path (Join-Path $unzipDir $Framework "*") -Destination $Path -Recurse
-Copy-Item -Path (Join-Path $unzipDir "lib") -Destination $Path
+Copy-Item -Path (Join-Path $unzipDir "lib") -Destination $Path -Recurse
 
 # Prepare startup scripts
 if ($Framework -notlike "net4*") {

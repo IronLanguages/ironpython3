@@ -14,7 +14,7 @@
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>
-      <dependency id="IronPython" version="[3.4.0-beta1,3.5)" />
+      <dependency id="IronPython" version="[3.4.0,3.5)" />
     </dependencies>
     <contentFiles>
       <files include="**\*" buildAction="None" copyToOutput="true" />

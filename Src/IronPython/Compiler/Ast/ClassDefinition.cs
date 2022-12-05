@@ -299,7 +299,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression? docStmt = null;
             string? doc = GetDocumentation(Body);
             if (doc is not null) {
-                docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(object)));
+                docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(string)));
             }
 
             // Create the body

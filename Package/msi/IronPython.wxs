@@ -74,6 +74,11 @@
           Root="HKLM" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)\InstallPath" Type="string" Value="[INSTALLDIR]" />
       </Component>
 
+      <Component>
+        <RegistryValue Id="VSNet45ReferenceAssemblyKey"
+          Root="HKLM" Key="SOFTWARE\Microsoft\.NETFramework\v4.5.50709\AssemblyFoldersEx\$(var.ProductShortName)$(var.ReleaseSeries)" Type="string" Value="[INSTALLDIR]" />
+      </Component>
+
       <Component Id="CommonPythonRegistration">
         <RegistryKey Root="HKLM" Key="Software\Python\IronPython">
           <RegistryValue Name="DisplayName" Type="string" Value="IronPython" />
@@ -141,6 +146,7 @@
       <ComponentRef Id="System.Runtime.CompilerServices.Unsafe.dll" />
       <ComponentRef Id="LICENSE" />
       <ComponentRef Id="InstallationKey" />
+      <ComponentRef Id="VSNet45ReferenceAssemblyKey" />
       <ComponentRef Id="CommonPythonRegistration" />
       <ComponentRef Id="PythonRegistration" />
       <ComponentRef Id="PythonPathRegistry" />

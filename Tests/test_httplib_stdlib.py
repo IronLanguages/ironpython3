@@ -9,7 +9,7 @@
 import unittest
 import sys
 
-from iptest import run_test
+from iptest import is_mono, is_osx, run_test
 
 import test.test_httplib
 
@@ -59,7 +59,10 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_httplib.HTTPSTest('test_local_unknown_cert')) # StackOverflowException
         suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked'))) # AttributeError: 'SSLError' object has no attribute 'reason'
         suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_bad_cert'))) # AttributeError: 'SSLError' object has no attribute 'reason'
-        suite.addTest(test.test_httplib.HTTPSTest('test_networked_good_cert'))
+        if is_mono and is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_httplib.HTTPSTest('test_networked_good_cert'))) # https://github.com/IronLanguages/ironpython3/issues/1523
+        else:
+            suite.addTest(test.test_httplib.HTTPSTest('test_networked_good_cert'))
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_noverification'))
         suite.addTest(test.test_httplib.HTTPSTest('test_networked_trusted_by_default_cert'))
         suite.addTest(test.test_httplib.HeaderTests('test_auto_headers'))

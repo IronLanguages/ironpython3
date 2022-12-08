@@ -40,9 +40,8 @@
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'candidate'">rc</ShortReleaseLevel>
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'final'">f</ShortReleaseLevel>
 
-    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' == '0'">$(MajorVersion).$(MinorVersion)</DisplayVersion>
-    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</DisplayVersion>
-    <DisplayVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
+    <DisplayVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' != 'final'">$(DisplayVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
   </PropertyGroup>
 
   <!-- Deterministic build -->

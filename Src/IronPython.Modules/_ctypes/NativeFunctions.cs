@@ -58,32 +58,72 @@ namespace IronPython.Modules {
         }
 
         // unix entry points, VM needs to map the filenames.
-        [DllImport("libdl")]
+        [DllImport("libc")]
         private static extern IntPtr dlopen(string filename, int flags);
 
-        [DllImport("libdl")]
+        [DllImport("libdl", EntryPoint = "dlopen")]
+        private static extern IntPtr dlopen_dl(string filename, int flags);
+
+        [DllImport("libc")]
         private static extern IntPtr dlsym(IntPtr handle, string symbol);
+
+        [DllImport("libdl", EntryPoint = "dlsym")]
+        private static extern IntPtr dlsym_dl(IntPtr handle, string symbol);
+
+        [DllImport("libc")]
+        private static extern IntPtr gnu_get_libc_version();
+
+        private static bool GetGNULibCVersion(out int major, out int minor) {
+            major = minor = 0;
+            try {
+                string ver = Marshal.PtrToStringAnsi(gnu_get_libc_version());
+                int dot = ver.IndexOf('.');
+                if (dot < 0) dot = ver.Length;
+                if (!int.TryParse(ver.Substring(0, dot), out major)) return false;
+                if (dot + 1 < ver.Length) {
+                    if (!int.TryParse(ver.Substring(dot + 1), out minor)) return false;
+                }
+            } catch {
+                return false;
+            }
+            return true;
+        }
 
         private const int RTLD_NOW = 2;
 
+        private static bool UseLibDL() {
+            if (!_useLibDL.HasValue) {
+                bool success = GetGNULibCVersion(out int major, out int minor);
+                _useLibDL = !success || major < 2 || (major == 2 && minor < 34);
+            }
+            return _useLibDL.Value;
+        }
+        private static bool? _useLibDL;
+
         public static IntPtr LoadDLL(string filename, int flags) {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                if (flags == 0)
-                    flags = RTLD_NOW;
-                return dlopen(filename, flags);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return LoadLibrary(filename);
             }
 
-            return LoadLibrary(filename);
+            if (flags == 0) flags = RTLD_NOW;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && UseLibDL()) {
+                return dlopen_dl(filename, flags);
+            }
+
+            return dlopen(filename, flags);
         }
 
         public static IntPtr LoadFunction(IntPtr module, string functionName) {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                return dlsym(module, functionName);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return GetProcAddress(module, functionName);
             }
 
-            return GetProcAddress(module, functionName);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && UseLibDL()) {
+                return dlsym_dl(module, functionName);
+            }
+
+            return dlsym(module, functionName);
         }
 
         public static IntPtr LoadFunction(IntPtr module, IntPtr ordinal) {

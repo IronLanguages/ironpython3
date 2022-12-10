@@ -1007,6 +1007,14 @@ class NtTest(IronPythonTestCase):
         nt.close(w)
         nt.close(r)
 
+    def test_ipy3_gh1601_listdir(self):
+        cwd = nt.getcwd()
+        try:
+            nt.chdir("\\")
+            nt.listdir(".")
+        finally:
+            nt.chdir(cwd)
+
 #------------------------------------------------------------------------------
 try:
     run_test(__name__)

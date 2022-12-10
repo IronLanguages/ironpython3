@@ -26,5 +26,6 @@
     <file src="$STAGEDIR$\LICENSE" />
     <file src="README.md" />
     <file src="tools\*" target="tools" />
+    <file src="ignores\**\*" />
   </files>
 </package>

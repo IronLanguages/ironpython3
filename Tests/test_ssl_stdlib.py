@@ -68,14 +68,23 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_ssl.NetworkedTests('test_algorithms'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_ciphers'))) # AssertionError: SSLError not raised
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect'))) # AssertionError: {} != None
-        suite.addTest(test.test_ssl.NetworkedTests('test_connect_cadata'))
+        if is_mono and is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_cadata'))) # # https://github.com/IronLanguages/ironpython3/issues/1523
+        else:
+            suite.addTest(test.test_ssl.NetworkedTests('test_connect_cadata'))
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_capath'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors
-        suite.addTest(test.test_ssl.NetworkedTests('test_connect_ex'))
+        if is_mono and is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_ex'))) # https://github.com/IronLanguages/ironpython3/issues/1523
+        else:
+            suite.addTest(test.test_ssl.NetworkedTests('test_connect_ex'))
         #suite.addTest(test.test_ssl.NetworkedTests('test_connect_ex_error')) # slow
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_connect_with_context'))) # AssertionError: {} != None
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_context_setget'))) # AttributeError: can't assign to read-only property context of type '_SSLSocket'
         suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_ca_certs_capath'))) # AttributeError: 'SSLContext' object has no attribute 'get_ca_certs'
-        suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateNameMismatch, RemoteCertificateChainErrors
+        if is_mono and is_osx:
+            suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_get_server_certificate'))) # https://github.com/IronLanguages/ironpython3/issues/1523
+        else:
+            suite.addTest(test.test_ssl.NetworkedTests('test_get_server_certificate'))
         if is_posix:
             suite.addTest(unittest.expectedFailure(test.test_ssl.NetworkedTests('test_makefile_close'))) # OSError: [Errno 9] Bad file descriptor
         else:

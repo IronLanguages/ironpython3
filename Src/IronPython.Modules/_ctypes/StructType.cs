@@ -32,7 +32,7 @@ namespace IronPython.Modules {
         public class StructType : PythonType, INativeType {
             internal Field[] _fields;
             private int? _size, _alignment, _pack;
-            private static readonly Field[] _emptyFields = new Field[0]; // fields were never initialized before a type was created
+            private static readonly Field[] _emptyFields = System.Array.Empty<Field>(); // fields were never initialized before a type was created
 
             public StructType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {

@@ -33,7 +33,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_grammar.GrammarTests('test_eval_input'))
         suite.addTest(test.test_grammar.GrammarTests('test_expr_stmt'))
         suite.addTest(test.test_grammar.GrammarTests('test_for'))
-        suite.addTest(test.test_grammar.GrammarTests('test_former_statements_refer_to_builtins'))
+        suite.addTest(unittest.expectedFailure(test.test_grammar.GrammarTests('test_former_statements_refer_to_builtins'))) # https://github.com/IronLanguages/ironpython3/issues/374
         suite.addTest(test.test_grammar.GrammarTests('test_funcdef'))
         suite.addTest(test.test_grammar.GrammarTests('test_genexps'))
         suite.addTest(test.test_grammar.GrammarTests('test_global'))

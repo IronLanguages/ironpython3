@@ -34,7 +34,7 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         ScriptRuntimeSetup srs = base.CreateRuntimeSetup();
         foreach (var langSetup in srs.LanguageSetups) {
             if (langSetup.FileExtensions.Contains(".py")) {
-                langSetup.Options["SearchPaths"] = new string[0];
+                langSetup.Options["SearchPaths"] = Array.Empty<string>();
             }
         }
         return srs;

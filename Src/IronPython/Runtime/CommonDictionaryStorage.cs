@@ -463,6 +463,13 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
+        /// Since <see cref="CommonDictionaryStorage"/> is always mutable, this is a no-op.
+        /// </summary>
+        /// <param name="storage">Ignored.</param>
+        /// <returns><c>this</c></returns>
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
+        /// <summary>
         /// Checks to see if the key exists in the dictionary.
         /// </summary>
         public override bool Contains(object key) {

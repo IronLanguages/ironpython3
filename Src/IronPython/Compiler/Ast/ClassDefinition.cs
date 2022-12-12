@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -20,8 +21,6 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
 using MSAst = System.Linq.Expressions;
-
-#nullable enable
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -90,12 +89,8 @@ namespace IronPython.Compiler.Ast {
         private PythonVariable? ClassVariable { get; set; }
 
         internal override bool HasLateBoundVariableSets {
-            get {
-                return base.HasLateBoundVariableSets || NeedsLocalsDictionary;
-            }
-            set {
-                base.HasLateBoundVariableSets = value;
-            }
+            get => true; // If a class or any of its bases uses a metaclass, __prepare__ may insert extra variables into the class namespace
+            set => base.HasLateBoundVariableSets = value;
         }
 
         internal override bool ExposesLocalVariable(PythonVariable variable) {
@@ -104,7 +99,7 @@ namespace IronPython.Compiler.Ast {
         }
 
 
-        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
+        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, [NotNullWhen(true)] out PythonVariable? variable) {
             if (reference.Name == "__class__") {
                 ClassVariable = variable = EnsureClassVariable();
                 ClassCellVariable = EnsureVariable("__classcell__");
@@ -127,54 +122,67 @@ namespace IronPython.Compiler.Ast {
             // scope are accessed by name - the dictionary behavior of classes
             if (TryGetVariable(reference.Name, out variable)) {
                 if (variable.Kind is VariableKind.Global) {
+                    // Variable declared with `global` statement
                     AddReferencedGlobal(reference.Name);
                     return variable;
-                } else if (variable.Kind is VariableKind.Local) {
-                    // TODO: This results in doing a dictionary lookup to get/set the local,
-                    // when it should probably be an uninitialized check / global lookup for gets
-                    // and a direct set
+                } else if (variable.Kind is not VariableKind.Nonlocal) {
+                    // Fall back on LookupName/SetName in local context dict,
+                    // which is slightly faster than LookupGlobalVariable expression used by variables of Attribute kind.
                     return null;
-                } else if (variable.Kind is VariableKind.Attribute) {
-                    return null; // fall back on LookupName/SetName in local context dict, which is faster than LookupGlobalVariable
-                } else if (variable.Kind is VariableKind.Parameter) {
-                    return variable;
+                    // In practice, variable.Kind will always be Attribute here
+                    // as the only Local can be __class__ and it is never referenced directly from within the class body
+                    // and Parameter does not exist for a class.
                 }
-                // else NonLocal: continue binding
+
+                // else NonLocal (i.e. declared with `nonlocal`): continue binding
             }
 
-            // Try to bind in outer scopes, if we have an unqualified exec we need to leave the
-            // variables as free for the same reason that locals are accessed by name.
-            bool stopAtGlobal = variable?.Kind == VariableKind.Nonlocal;
-            for (ScopeStatement parent = Parent; parent != null && !(stopAtGlobal && parent.IsGlobal); parent = parent.Parent) {
-                if (parent.TryBindOuter(this, reference, out variable)) {
-                    return variable;
-                }
+            // Try to bind in outer scopes, except the global scope
+            if (TryBindOuterScopes(this, reference, out variable, stopAtGlobal: true)) {
+                // for implicit globals, fall back on dictionary behaviour
+                if (variable.Kind is VariableKind.Global) return null;
+
+                return variable;
             }
 
             return null;
         }
 
         internal override PythonVariable EnsureVariable(string name) {
-            if (TryGetVariable(name, out PythonVariable variable)) {
+            if (TryGetVariable(name, out PythonVariable? variable)) {
                 return variable;
             }
             return CreateVariable(name, VariableKind.Attribute);
         }
 
         internal PythonVariable EnsureClassVariable() {
-            if (TryGetVariable("$__class__", out PythonVariable variable)) {
+            if (TryGetVariable("$__class__", out PythonVariable? variable)) {
                 return variable;
             }
             return CreateVariable("__class__", VariableKind.Local, "$__class__");
         }
 
-        internal override Ast LookupVariableExpression(PythonVariable variable) {
+        internal override MSAst.Expression LookupVariableExpression(PythonVariable variable) {
+            if (variable.Kind is VariableKind.Global) {
+                // `global` declaration overrides class namespace lookup
+                return base.LookupVariableExpression(variable);
+            }
+            if (TryGetNonlocalStatement(variable.Name, out _)) {
+                // In IronPython, `nonlocal` declaration overrides class namespace lookup
+                // https://github.com/IronLanguages/ironpython3/issues/1560
+                return base.LookupVariableExpression(variable);
+            }
+
             // Emulates opcode LOAD_CLASSDEREF
+            MSAst.Expression fallbackValue = GetVariableExpression(variable);
+            if (fallbackValue is Microsoft.Scripting.Ast.ILightExceptionAwareExpression lightAware) {
+                fallbackValue = lightAware.ReduceForLightExceptions();
+            }
             return Ast.Call(
                 AstMethods.LookupLocalName,
                 LocalContext,
                 Ast.Constant(variable.Name),
-                GetVariableExpression(variable)
+                fallbackValue
             );
         }
 
@@ -289,15 +297,17 @@ namespace IronPython.Compiler.Ast {
 
             // __doc__ = """..."""
             MSAst.Expression? docStmt = null;
-            string doc = GetDocumentation(Body);
+            string? doc = GetDocumentation(Body);
             if (doc is not null) {
-                docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(object)));
+                docStmt = SetLocalName("__doc__", Ast.Constant(doc, typeof(string)));
             }
 
             // Create the body
             MSAst.Expression bodyStmt = Body;
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
-                bodyStmt = AddFrame(LocalContext, FuncCodeExpr, bodyStmt);
+                // FuncCodeExpr is set by Reduce() before class body lambda is generated.
+                Assert.NotNull(FuncCodeExpr);
+                bodyStmt = AddFrame(LocalContext, FuncCodeExpr!, bodyStmt);
                 locals.Add(FunctionStackVariable);
             }
 
@@ -335,7 +345,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override LightLambdaExpression GetLambda() {
-            if (_dlrBody == null) {
+            if (_dlrBody is null) {
                 PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Creating FunctionBody");
                 _dlrBody = MakeClassBody();
             }
@@ -348,7 +358,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal override MSAst.Expression GetParentClosureTuple() => _tupleExpression;
 
-        internal override string ScopeDocumentation => GetDocumentation(Body);
+        internal override string? ScopeDocumentation => GetDocumentation(Body);
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
@@ -405,7 +415,7 @@ namespace IronPython.Compiler.Ast {
 
             private bool IsSelfReference(Expression expr) {
                 return expr is NameExpression ne
-                    && _function.TryGetVariable(ne.Name, out PythonVariable variable)
+                    && _function.TryGetVariable(ne.Name, out PythonVariable? variable)
                     && variable == _self.PythonVariable;
             }
 

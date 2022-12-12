@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using Microsoft.Scripting;
 
 using MSAst = System.Linq.Expressions;
@@ -28,27 +30,40 @@ namespace IronPython.Compiler.Ast {
 
     public abstract class Node : MSAst.Expression {
         internal static readonly BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
-        internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
+        internal static readonly MSAst.Expression[] EmptyExpression = Array.Empty<Ast>();
 
         internal static ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");
         private static readonly ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
         private static readonly ParameterExpression _lineNoVar = Ast.Parameter(typeof(int), "$lineNo");
 
+        private ScopeStatement? _parent;
+
         protected Node() { }
 
         #region Public API
 
-        public ScopeStatement Parent { get; set; }
+        /// <summary>
+        /// The directly encompassing scope in which the node is defined.
+        /// For the root node (<see cref="PythonAst"/>), the parent is itself.
+        /// </summary>
+        /// <remarks>
+        /// This property is undefined and inaccessible until the start of namebinding.
+        /// </remarks>
+        public ScopeStatement Parent {
+            get => _parent ?? throw new InvalidOperationException("Node.Parent is not defined before the start of namebinding.");
+            set => _parent = value ?? throw new ArgumentNullException(nameof(Parent));
+        }
 
         public void SetLoc(PythonAst globalParent, int start, int end) {
-            IndexSpan = new IndexSpan(start, end > start ? end - start : start);
-            Parent = globalParent;
+            SetLoc(globalParent, new IndexSpan(start, end > start ? end - start : start));
         }
 
         public void SetLoc(PythonAst globalParent, IndexSpan span) {
             IndexSpan = span;
-            Parent = globalParent;
+            if (!ReferenceEquals(_parent, globalParent)) {
+                Parent = globalParent;
+            }
         }
 
         public IndexSpan IndexSpan { get; set; }
@@ -138,8 +153,7 @@ namespace IronPython.Compiler.Ast {
         internal PythonAst GlobalParent {
             get {
                 Node cur = this;
-                while (!(cur is PythonAst)) {
-                    Debug.Assert(cur != null);
+                while (cur is not PythonAst) {
                     cur = cur.Parent;
                 }
                 return (PythonAst)cur;
@@ -152,7 +166,7 @@ namespace IronPython.Compiler.Ast {
 
         internal bool Optimize => GlobalParent.PyContext.PythonOptions.Optimize;
 
-        internal virtual string GetDocumentation(Statement/*!*/ stmt) {
+        internal virtual string? GetDocumentation(Statement/*!*/ stmt) {
             if (StripDocStrings) {
                 return null;
             }
@@ -181,8 +195,8 @@ namespace IronPython.Compiler.Ast {
         }
 
 
-        internal static MSAst.Expression TransformOrConstantNull(Expression expression, Type/*!*/ type) {
-            if (expression == null) {
+        internal static MSAst.Expression TransformOrConstantNull(Expression? expression, Type/*!*/ type) {
+            if (expression is null) {
                 return AstUtils.Constant(null, type);
             } else {
                 return AstUtils.Convert(expression, type);
@@ -190,7 +204,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression TransformAndDynamicConvert(Expression expression, Type/*!*/ type) {
-            Debug.Assert(expression != null);
+            Assert.NotNull(expression);
             
             MSAst.Expression res = expression;
 
@@ -204,20 +218,22 @@ namespace IronPython.Compiler.Ast {
                 }
                 
                 // Add conversion step to the AST
-                MSAst.DynamicExpression ae = reduced as MSAst.DynamicExpression;
-                ReducableDynamicExpression rde = reduced as ReducableDynamicExpression;
+                MSAst.DynamicExpression? ae = reduced as MSAst.DynamicExpression;
+                ReducableDynamicExpression? rde = reduced as ReducableDynamicExpression;
 
-                if ((ae != null && ae.Binder is PythonBinaryOperationBinder) ||
-                    (rde != null && rde.Binder is PythonBinaryOperationBinder)) {
+                if ((ae?.Binder is PythonBinaryOperationBinder) ||
+                    (rde?.Binder is PythonBinaryOperationBinder)) {
                     // create a combo site which does the conversion
                     PythonBinaryOperationBinder binder;
                     IList<MSAst.Expression> args;
-                    if (ae != null) {
-                        binder = (PythonBinaryOperationBinder)ae.Binder;
+                    if (ae?.Binder is PythonBinaryOperationBinder aebinder) {
+                        binder = aebinder;
                         args = ArrayUtils.ToArray(ae.Arguments);
-                    } else {
-                        binder = (PythonBinaryOperationBinder)rde.Binder;
+                    } else if (rde?.Binder is PythonBinaryOperationBinder rdebinder) {
+                        binder = rdebinder;
                         args = rde.Args;
+                    } else {
+                        throw Assert.Unreachable;
                     }
 
                     ParameterMappingInfo[] infos = new ParameterMappingInfo[args.Count];
@@ -251,7 +267,7 @@ namespace IronPython.Compiler.Ast {
             => to.IsAssignableFrom(from) && (to.IsValueType == from.IsValueType);
 
         internal static MSAst.Expression/*!*/ ConvertIfNeeded(MSAst.Expression/*!*/ expression, Type/*!*/ type) {
-            Debug.Assert(expression != null);
+            Assert.NotNull(expression);
             // Do we need conversion?
             if (!CanAssign(type, expression.Type)) {
                 // Add conversion step to the AST
@@ -307,11 +323,11 @@ namespace IronPython.Compiler.Ast {
         /// Removes the frames from generated code for when we're compiling the tracing delegate
         /// which will track the frames it's self.
         /// </summary>
-        internal static MSAst.Expression RemoveFrame(MSAst.Expression expression)
+        internal static MSAst.Expression? RemoveFrame(MSAst.Expression expression)
             => new FramedCodeVisitor().Visit(expression);
 
         private class FramedCodeVisitor : ExpressionVisitor {
-            public override MSAst.Expression Visit(MSAst.Expression node) {
+            public override MSAst.Expression? Visit(MSAst.Expression? node) {
                 if (node is FramedCodeExpression framedCode) {
                     return framedCode.Body;
                 }
@@ -346,7 +362,7 @@ namespace IronPython.Compiler.Ast {
                 ).Finally(
                     Ast.Call(
                         FunctionStackVariable,
-                        typeof(List<FunctionStack>).GetMethod("RemoveAt"),
+                        typeof(List<FunctionStack>).GetMethod(nameof(List<FunctionStack>.RemoveAt))!,
                         Ast.Add(
                             Ast.Property(
                                 FunctionStackVariable,
@@ -399,7 +415,7 @@ namespace IronPython.Compiler.Ast {
                 return pyGlobal.Delete();
             }
 
-            return Ast.Assign(expression, Ast.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance))));
+            return Ast.Assign(expression, Ast.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance))!));
         }
 
         #endregion

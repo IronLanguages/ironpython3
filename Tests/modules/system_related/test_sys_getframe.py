@@ -56,6 +56,46 @@ def g(self):
     self.assertEqual(gfres.f_locals['y'], 42)
 
 class SysGetFrameTest(IronPythonTestCase):
+    def test_classcode(self):
+        # IronPython-specific: run before test_getframe
+
+        def no_dunder(seq):
+            return {x for x in seq if not x.startswith("__")}
+
+        global get_odd_code
+        def get_odd_code():
+            c = sys._getframe(1)
+            return c.f_code
+
+        class Meta(type):
+            @classmethod
+            def __prepare__(*args):
+                return {'spam' : 13}
+
+        class Y(metaclass=Meta):
+            classcode = get_odd_code()
+            defined = 42
+
+        # 'spam' attribute provided by __prepare__
+        self.assertEqual(no_dunder(Y.__dict__), {'spam', 'classcode', 'defined'})
+
+        d = {'get_odd_code' : get_odd_code}
+        # When `exec`-ed with explicit globals, d replaces dict from __prepare__
+        exec(Y.classcode, d)
+        self.assertEqual(no_dunder(d), {'get_odd_code', 'classcode', 'defined'})
+
+        g = {}
+        l = {'get_odd_code' : get_odd_code}
+        # When `exec`-ed with explicit globals and locals, l replaces dict from __prepare__
+        exec(Y.classcode, g, l)
+        self.assertEqual(no_dunder(g), set())
+        self.assertEqual(no_dunder(l), {'get_odd_code', 'classcode', 'defined'})
+
+        # When `exec`-ed with no explicit namespace, locals() replaces dict from __prepare__
+        l = no_dunder(locals())
+        exec(Y.classcode)
+        self.assertEqual(no_dunder(locals()), l | {'classcode', 'defined'})
+
     def test_getframe(self):
         # This test requires -X:FullFrames, run it in separate instance of IronPython.
 

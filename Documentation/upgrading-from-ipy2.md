@@ -2,7 +2,7 @@
 
 IronPython 3.4 uses Python 3.4 syntax and standard libraries and so your Python code will need to be updated accordingly. There are numerous tools and guides available on the web to help porting from Python 2 to 3.
 
-## Binary Compatibility
+## Binary compatibility
 
 The IronPython 3 binaries are not compatible with the IronPython 2 binaries. Modules compiled with `clr.CompileModules` using IronPython 2 are not compatible and will need to be recompiled using IronPython 3.
 
@@ -14,6 +14,22 @@ In an effort to improve compatibility, `sys.platform` no longer returns `cli`. I
 if sys.implementation.name == "ironpython":
     print("IronPython!")
 ```
+
+## `None` is a keyword
+
+`None` is a keyword in Python 3 and trying to access a member called `None` will raise a `SyntaxError`. Since this name is frequently used in .NET code (e.g. in enums), code trying to use it is going to throw. You can use alternate syntax in order to access the .NET member, for example `getattr(x, "None")` or an accessor for enums `MyEnum["None"]`.
+
+```python
+# IronPython 2
+System.StringSplitOptions.None
+```
+
+```python
+# IronPython 3
+System.StringSplitOptions["None"]
+```
+
+Similarly, `True` and `False` are also keywords in Python 3.
 
 ## `int` Type
 
@@ -80,7 +96,7 @@ False
 '0x7fffffff'
 ```
 
-The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected. 
+The creation of either `Int32` or `BigInteger` instances happens automatically by the `int` constructor. If for interop purposes it is important to create a `BigInteger` (despite the value fitting in 32 bits), use method `ToBigInteger`. It converts `Int32` values to `BigInteger` and leaves `BigInteger` values unaffected.
 
 ```pycon
 >>> bi = i.ToBigInteger()
@@ -188,5 +204,29 @@ i64 = System.Int64(j)
 
 IronPython's `range` is a generator that produces a sequence of `int` values. The values are instances of `Int32` or `BigInteger`, depending on the actual integer value they represent. When `range` is used in a LINQ context, it exposes interface `IEnumerable<Int32>` and all values generated are of type `Int32`. This limits the possible value to the range `Int32.MinValue` to `Int32.MaxValue`.
 
-
 [PEP 0237]: https://python.org/dev/peps/pep-0237
+
+
+## Redirecting output
+
+With IronPython 2, standard output was written to the runtime's `SharedIO.OutputWriter` (which was `Console.Out` by default). This is no longer the case with IronPython 3 where the standard output is a binary stream. The output is now written to runtime's `SharedIO.OutputStream`. Similarly, standard input and error are now using `SharedIO.InputStream` and `SharedIO.ErrorStream` respectively.
+
+Because of this, using a `TextWriter` to capture output will no longer work. As a workaround, in order to use a `TextWriter` as the main method of redirection, one could wrap the writer inside a stream (for example, see [TextStream][TextStream]).
+
+IronPython 2
+```c#
+var engine = Python.CreateEngine();
+var textWriter = new MyTextWriter();
+// no longer works!
+engine.Runtime.IO.RedirectToConsole();
+Console.SetOut(textWriter);
+```
+
+IronPython 3
+```c#
+var engine = Python.CreateEngine();
+var textWriter = new MyTextWriter();
+engine.Runtime.IO.SetOutput(new TextStream(textWriter), textWriter);
+```
+
+[TextStream]: https://github.com/IronLanguages/main/blob/master/Runtime/Microsoft.Dynamic/Utils/TextStream.cs

@@ -741,9 +741,16 @@ namespace IronPython.Runtime.Operations {
             if (LiteralParser.ParseFloat(res) == self) {
                 return res;
             }
+#if NETCOREAPP3_1_OR_GREATER
+            Debug.Assert(false);
+#endif
 
             // if it's not round trippable though use .NET's round-trip format
-            return self.ToString("R", CultureInfo.InvariantCulture);
+            res = self.ToString("R", CultureInfo.InvariantCulture);
+            if (trailingZeroAfterWholeFloat && res.IndexOf('.') == -1) {
+                res += ".0";
+            }
+            return res;
         }
 
         public static string __repr__(CodeContext/*!*/ context, double self)

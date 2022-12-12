@@ -33,6 +33,17 @@ namespace IronPython.Runtime {
             return false;
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) {
+            lock (this) {
+                if (storage == this) {
+                    return storage = new CommonDictionaryStorage();
+                }
+            }
+
+            // race, try again...
+            return storage.AsMutable(ref storage);
+        }
+
         public override void Clear(ref DictionaryStorage storage) {
         }
 

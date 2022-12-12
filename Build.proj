@@ -100,6 +100,18 @@
           DestinationFolder="$(StageDir)\%(RecursiveDir)" />
   </Target>
 
+  <Target Name="_CopyMonoUnixReferences" DependsOnTargets="_MakeStageDir">
+    <ItemGroup>
+      <MonoUnixReferenceFiles
+          Include="$(BinDir)\$(Configuration)\*\Mono.Unix.dll" />
+      <MonoUnixReferenceFiles
+          Include="$(BinDir)\$(Configuration)\*\runtimes\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(MonoUnixReferenceFiles)"
+          DestinationFolder="$(StageDir)\%(RecursiveDir)" />
+  </Target>
+
   <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
     <Copy SourceFiles="@(MainStageFiles)" DestinationFolder="$(StageDir)" />
   </Target>
@@ -115,6 +127,7 @@
       _MakeStageDir;
       _PlatformStage;
       _CopyDlrMainReferences;
+      _CopyMonoUnixReferences;
       _CopyMainStageFiles;
       _CopyStdLib;
     </StageDependsOn>

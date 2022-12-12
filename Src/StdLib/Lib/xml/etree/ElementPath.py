@@ -102,13 +102,13 @@ def prepare_child(next, token):
                     yield e
     return select
 
-def prepare_star(next_, token): # https://github.com/IronLanguages/ironpython3/issues/547
+def prepare_star(next, token):
     def select(context, result):
         for elem in result:
             yield from elem
     return select
 
-def prepare_self(next_, token): # https://github.com/IronLanguages/ironpython3/issues/547
+def prepare_self(next, token):
     def select(context, result):
         yield from result
     return select

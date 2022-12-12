@@ -22,7 +22,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(IsFullFramework)' != 'true' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
     <Content Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -37,17 +37,18 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' OR ('$(IsFullFramework)' != 'true' AND $([MSBuild]::IsOSPlatform('OSX'))) ">
-    <StageItem Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' " />
-    <StageItem Include="ipy.sh" Condition=" '$(OS)' == 'Unix' " />
+  <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
+    <StageItem Include="ipy.bat" />
+    <StageItem Include="ipy.sh" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
-    <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
+    <LateStageItem Include="$(TargetDir)\%2A%2A\ipy.runtimeconfig.json" />
+    <LateStageItem Include="$(TargetDir)\%2A%2A\ipy.deps.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <LateStageitem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
+    <LateStageItem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

@@ -146,9 +146,12 @@ namespace IronPython.Runtime {
         private int _tracebackListenersCount;
 
         internal FunctionCode.CodeList _allCodes;
-        internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
+        internal readonly object _codeCleanupLock = new object();
+        internal readonly object _codeUpdateLock = new object();
         internal int _codeCount, _nextCodeCleanup = 200;
         private int _recursionLimit;
+
+        private readonly object _indexBindersLock = new object(); // https://github.com/IronLanguages/ironpython3/issues/1596
 
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
@@ -3580,7 +3583,7 @@ namespace IronPython.Runtime {
                 Interlocked.CompareExchange(ref _getIndexBinders, new PythonGetIndexBinder[argCount + 1], null);
             }
 
-            lock (this) {
+            lock (_indexBindersLock) {
                 if (_getIndexBinders.Length <= argCount) {
                     Array.Resize(ref _getIndexBinders, argCount + 1);
                 }
@@ -3598,7 +3601,7 @@ namespace IronPython.Runtime {
                 Interlocked.CompareExchange(ref _setIndexBinders, new PythonSetIndexBinder[argCount + 1], null);
             }
 
-            lock (this) {
+            lock (_indexBindersLock) {
                 if (_setIndexBinders.Length <= argCount) {
                     Array.Resize(ref _setIndexBinders, argCount + 1);
                 }
@@ -3616,7 +3619,7 @@ namespace IronPython.Runtime {
                 Interlocked.CompareExchange(ref _deleteIndexBinders, new PythonDeleteIndexBinder[argCount + 1], null);
             }
 
-            lock (this) {
+            lock (_indexBindersLock) {
                 if (_deleteIndexBinders.Length <= argCount) {
                     Array.Resize(ref _deleteIndexBinders, argCount + 1);
                 }

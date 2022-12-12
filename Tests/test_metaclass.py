@@ -314,18 +314,68 @@ class MetaclassTest(IronPythonTestCase):
         class MetaClass(type):
             @classmethod
             def __prepare__(metacls, name, bases):
-                return MyDict()
+                d = MyDict()
+                d['prepared'] = True
+                return d
+
+            def __new__(metacls, name, bases, attrdict):
+                attrdict['created'] = attrdict['executed']
+                t = type.__new__(metacls, name, bases, attrdict)
+                self.assertNotIn('__class__', attrdict)
+                return t
 
         class MyClass(metaclass=MetaClass):
             """DOCSTRING"""
             def getclass(self):
                 return __class__
+            executed = True
 
         if is_cli:
-            # TODO: Use MyDict as the namespace for the class body lambda
-            self.assertEqual(set(attributes), {'__module__', '__doc__', 'getclass', '__classcell__'})
+            self.assertEqual(attributes, ['prepared', '__module__', '__doc__', 'getclass', 'executed', '__classcell__', 'created'])
         else:
-            self.assertEqual(attributes, ['__module__', '__qualname__', '__doc__', 'getclass', '__classcell__'])
+            self.assertEqual(attributes, ['prepared', '__module__', '__qualname__', '__doc__', 'getclass', 'executed', '__classcell__', 'created'])
+
+    def test_prepare_mapping(self):
+        import collections.abc
+
+        def makeclass(name, bases, attrs):
+            return type(name, bases, dict(attrs))
+
+        class MyMutableMapping(collections.abc.MutableMapping):
+            """A non-dict subclass that does not allow deletions."""
+            def __init__(self):
+                self.dict = {}
+            def __getitem__(self, key):
+                return self.dict[key]
+            def __setitem__(self, key, item):
+                self.dict[key] = item
+            def __delitem__(self, key):
+                raise NotImplementedError
+            def __iter__(self):
+                return iter(self.dict)
+            def __len__(self):
+                return len(self.dict)
+
+        md = None
+        def my_prepare(*args, **kwargs):
+            nonlocal md
+            md = MyMutableMapping()
+            return md
+
+        makeclass.__prepare__ = my_prepare
+
+        class A(metaclass=makeclass):
+            """DOCSTRING"""
+            @staticmethod
+            def getclass():
+                return __class__
+
+        self.assertIn('__module__', md)
+        self.assertIn('__doc__', md)
+        self.assertIn('__classcell__', md)
+        self.assertNotIn('__class__', md)
+        self.assertIn('getclass', md)
+        self.assertEqual(A.getclass(), A)
 
     def test_arguments(self):
         class MetaType(type):
@@ -570,10 +620,7 @@ class MetaclassTest(IronPythonTestCase):
         # Using a class as a metaclass
         flags = defaultdict(int)
         class C1(metaclass=MetaClass, private=True):
-            if is_cli:
-                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('MetaClass_prep', dir())
+            self.assertIn('MetaClass_prep', dir())
 
         self.assertEqual(flags['MetaClass.__prepare__'], 1)
         self.assertEqual(flags['MetaClass.__new__'], 1)
@@ -590,10 +637,7 @@ class MetaclassTest(IronPythonTestCase):
         # Metaclass as function with __prepare__
         flags = defaultdict(int)
         class C3(metaclass=meta_prep, private=True):
-            if is_cli:
-                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('my_prepare', dir())
+            self.assertIn('my_prepare', dir())
 
         self.assertEqual(flags['meta'], 1)
         self.assertEqual(flags['my_prepare'], 1) # !!!
@@ -613,10 +657,7 @@ class MetaclassTest(IronPythonTestCase):
         # Derived from a metaclassed class but overriden with meta-as-function w/ __prepare__
         flags = defaultdict(int)
         class C3_C1(C1, metaclass=meta_prep, private=True):
-            if is_cli:
-                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('my_prepare', dir())
+            self.assertIn('my_prepare', dir())
             self.assertNotIn('MetaClass_prep', dir())
 
         self.assertEqual(flags['meta'], 1)
@@ -629,10 +670,7 @@ class MetaclassTest(IronPythonTestCase):
         # Derived from two classes with meta-as-function, but sharing a common base with meta-as-class
         flags = defaultdict(int)
         class X(C2_C1, C3_C1):
-            if is_cli:
-                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('MetaClass_prep', dir())
+            self.assertIn('MetaClass_prep', dir())
             self.assertNotIn('my_prepare', dir())
 
         self.assertEqual(flags['meta'], 0) # !!!
@@ -645,10 +683,7 @@ class MetaclassTest(IronPythonTestCase):
         # Derived from two classes with meta-as-function, sharing a common base with meta-as-class, but again overriden here with meta-as-function w/ __prepare__
         flags = defaultdict(int)
         class XM(C2_C1, C3_C1, metaclass=meta_prep):
-            if is_cli:
-                self.assertNotIn('my_prepare', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('my_prepare', dir())
+            self.assertIn('my_prepare', dir())
             self.assertNotIn('MetaClass_prep', dir())
         self.assertEqual(flags['meta'], 1)
         self.assertEqual(flags['my_prepare'], 1)
@@ -669,10 +704,7 @@ class MetaclassTest(IronPythonTestCase):
         # Simple metaclass deriving from another metaclass
         flags = defaultdict(int)
         class C5(metaclass=SubMeta):
-            if is_cli:
-                self.assertNotIn('MetaClass_prep', dir()) # TODO: https://github.com/IronLanguages/ironpython3/issues/1154
-            else:
-                self.assertIn('MetaClass_prep', dir())
+            self.assertIn('MetaClass_prep', dir())
 
         self.assertEqual(flags['MetaClass.__prepare__'], 1)
         self.assertEqual(flags['MetaClass.__new__'], 1)

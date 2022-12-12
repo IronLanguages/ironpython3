@@ -1475,31 +1475,22 @@ namespace IronPython.Runtime.Operations {
             if (metaclass is null or PythonType) {
                 metaclass = PythonType.FindMetaClass((PythonType?)metaclass ?? TypeCache.PythonType, bases);
                 if (metaclass == TypeCache.PythonType) {
-                    metaclass = null; // enables fasttrack below
+                    metaclass = null; // enables fasttracks below
                 }
             } // else metaclass is expected to be a callable and overrides any inherited metaclass through any bases
+
+            // Prepare classdict
+            object? classdict = CallPrepare(parentContext, metaclass, name, bases, keywords);
 
             // Prepare class context
             // The class context is like the parent context but with its own attribute dict.
             // Or another way: the class context is like the local context of the class lambda but without the __class__ variable.
-            var attrStorage = new CommonDictionaryStorage();
-            PythonDictionary attrDict = parentContext.Dict._storage switch {
-                // If the parent context dict is backed by RuntimeVariablesDictionaryStorage,
-                // the class context dict also has to be backed by RuntimeVariablesDictionaryStorage so that the closure is preserved.
-                RuntimeVariablesDictionaryStorage parentStorage =>
-                    new PythonDictionary(new RuntimeVariablesDictionaryStorage(parentStorage, attrStorage)),
-                // Otherwise a standard dict suffices.
-                _ => new PythonDictionary(attrStorage),
-            };
-            CodeContext classContext = new CodeContext(attrDict, parentContext.ModuleContext);
+            PythonDictionary attrdict = CreateAttributeDictionary(parentContext, classdict);
+            var classContext = new CodeContext(attrdict, parentContext.ModuleContext);
 
             // Call class body lambda
             CodeContext localContext = func(classContext);
             PythonDictionary vars = localContext.Dict;
-
-            // Prepare classdict
-            // TODO: prepared classdict should be used by `func` (PEP 3115)
-            object classdict = CallPrepare(parentContext, metaclass, name, bases, keywords, vars);
 
             // Fasttrack for metaclass == `type`
             if (metaclass is null) {
@@ -1510,7 +1501,7 @@ namespace IronPython.Runtime.Operations {
                 if (bases.Count == 0) {
                     bases = PythonTuple.MakeTuple(TypeCache.Object);
                 }
-                
+
                 return PythonType.__new__(parentContext, TypeCache.PythonType, name, bases, vars, selfNames)!;
             }
 
@@ -1527,29 +1518,12 @@ namespace IronPython.Runtime.Operations {
                 metaclass,
                 name,
                 bases,
-                classdict,
+                classdict ?? attrdict,
                 keywords ?? MakeEmptyDict()
             );
 
             // If __class__ is used, verify that it has been set
-            if (vars._storage is RuntimeVariablesDictionaryStorage storage) {
-                int pos = Array.IndexOf(storage.Names, "__class__", storage.NumFreeVars, storage.Names.Length - storage.NumFreeVars);
-                if (pos >= 0) {
-                    ClosureCell classCell = storage.GetCell(pos);
-                    if (!ReferenceEquals(classCell.Value, obj)) {
-                        if (classCell.Value == Uninitialized.Instance) {
-                            if (obj is not null) {
-                                // Python 3.8: RuntimeError
-                                Warn(parentContext, PythonExceptions.DeprecationWarning,
-                                    "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
-                            }
-                            classCell.Value = obj; // Fill in the cell, since type.__new__ didn't do it
-                        } else {
-                            throw TypeError("__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
-                        }
-                    }
-                }
-            }
+            VerifyClassCell(parentContext, obj, name, vars);
 
             // Ensure the class derives from `object`
             if (obj is PythonType newType && newType.BaseTypes.Count == 0) {
@@ -1574,13 +1548,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            static object CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords, PythonDictionary dict) {
-                if (meta is null) return dict;
+            static object? CallPrepare(CodeContext/*!*/ context, object? meta, string name, PythonTuple bases, PythonDictionary? keywords) {
+                if (meta is null) return null; // fasttrack for meta == `type`
 
-                object? classdict = null;
-
-                object? prepareFunc = null;
                 // if available, call the __prepare__ method to get the classdict (PEP 3115)
+                object? prepareFunc = null;
                 if (meta is PythonType metatype) {
                     if (metatype.TryResolveSlot(context, "__prepare__", out PythonTypeSlot pts)) {
                         bool ok = pts.TryGetValue(context, null, metatype, out prepareFunc);
@@ -1590,6 +1562,7 @@ namespace IronPython.Runtime.Operations {
                     prepareFunc = null;
                 }
 
+                object? classdict = null;
                 if (prepareFunc is not null) {
                     if (keywords is null || keywords.Count == 0) {
                         classdict = PythonCalls.Call(context, prepareFunc, name, bases);
@@ -1597,19 +1570,74 @@ namespace IronPython.Runtime.Operations {
                         var args = new object[] { name, bases };
                         classdict = PythonCalls.CallWithKeywordArgs(context, prepareFunc, args, keywords);
                     }
-                    // copy the contents of dict to the classdict
-                    foreach (var pair in dict)
-                        context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
+                    if (!PythonOps.IsMappingType(context, classdict)) {
+                        throw PythonOps.TypeErrorForBadInstance("<metaclass>.__prepare__() must return a mapping, not {0}", classdict);
+                    }
                 }
 
-                return classdict ?? new PythonDictionary(dict);
+                return classdict;
+            }
+
+            static PythonDictionary CreateAttributeDictionary(CodeContext parentContext, object? classdict) {
+                PythonDictionary attrdict;
+                if (parentContext.Dict._storage is RuntimeVariablesDictionaryStorage parentStorage) {
+                    // If the parent context dict is backed by RuntimeVariablesDictionaryStorage,
+                    // the class context dict also has to be backed by RuntimeVariablesDictionaryStorage so that the closure is preserved.
+                    DictionaryStorage attrStorage = classdict switch {
+                        null =>
+                            new CommonDictionaryStorage(),
+                        PythonDictionary pydict when pydict.GetType() == typeof(PythonDictionary) =>
+                            pydict._storage.AsMutable(ref pydict._storage),
+                        var backing =>
+                            new ObjectAttributesAdapter(parentContext, backing)
+                    };
+                    attrdict = new PythonDictionary(new RuntimeVariablesDictionaryStorage(parentStorage, attrStorage));
+#if DEBUG
+                    Debug.Assert(attrStorage.IsMutable);
+#endif
+                } else {
+                    // Otherwise a standard dict suffices.
+                    if (classdict is null) {
+                        attrdict = new PythonDictionary(new CommonDictionaryStorage());
+                    } else if (classdict is PythonDictionary pydict && pydict.GetType() == typeof(PythonDictionary)) {
+                        pydict._storage.AsMutable(ref pydict._storage);
+                        attrdict = pydict;
+                    } else {
+                        attrdict = PythonDictionary.MakeDictFromIAC(parentContext, classdict);
+                    }
+#if DEBUG
+                    Debug.Assert(attrdict._storage.IsMutable);
+#endif
+                };
+                return attrdict;
+            }
+
+            static void VerifyClassCell(CodeContext parentContext, object? obj, string name, PythonDictionary vars) {
+                if (vars._storage is RuntimeVariablesDictionaryStorage storage) {
+                    int pos = Array.IndexOf(storage.Names, "__class__", storage.NumFreeVars, storage.Names.Length - storage.NumFreeVars);
+                    if (pos >= 0) {
+                        ClosureCell classCell = storage.GetCell(pos);
+                        if (!ReferenceEquals(classCell.Value, obj)) {
+                            if (classCell.Value == Uninitialized.Instance) {
+                                if (obj is not null) {
+                                    // Python 3.8: RuntimeError
+                                    Warn(parentContext, PythonExceptions.DeprecationWarning,
+                                        "__class__ not set defining '{0}' as {1}. Was __classcell__ propagated to type.__new__?", name, Repr(parentContext, obj));
+                                }
+                                classCell.Value = obj; // Fill in the cell, since type.__new__ didn't do it
+                            } else {
+                                throw TypeError("__class__ set to {2} defining '{0}' as {1}", name, Repr(parentContext, obj), Repr(parentContext, classCell.Value));
+                            }
+                        }
+                    }
+                }
             }
         }
 
         public static void RaiseAssertionError(CodeContext context) {
             PythonDictionary builtins = context.GetBuiltinsDict() ?? context.LanguageContext.BuiltinModuleDict;
 
-            if (builtins._storage.TryGetValue("AssertionError", out object obj)) {
+            if (builtins._storage.TryGetValue("AssertionError", out object? obj)) {
                 if (obj is PythonType type) {
                     throw PythonOps.CreateThrowable(type);
                 }
@@ -1627,7 +1655,7 @@ namespace IronPython.Runtime.Operations {
         public static void RaiseAssertionError(CodeContext context, object msg) {
             PythonDictionary builtins = context.GetBuiltinsDict() ?? context.LanguageContext.BuiltinModuleDict;
 
-            if (builtins._storage.TryGetValue("AssertionError", out object obj)) {
+            if (builtins._storage.TryGetValue("AssertionError", out object? obj)) {
                 if (obj is PythonType type) {
                     throw PythonOps.CreateThrowable(type, msg);
                 }
@@ -3632,7 +3660,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object? LookupLocalName(CodeContext context, string name, object? defaultValue) {
-            return context.TryGetVariable(name, out object? value) ? value : defaultValue;
+            if (context.TryGetVariable(name, out object? value)) {
+                return value;
+            }
+            return LightExceptions.CheckAndThrow(defaultValue);
         }
 
         /// <summary>
@@ -3658,18 +3689,17 @@ namespace IronPython.Runtime.Operations {
         #region Global Access
 
         public static CodeContext/*!*/ CreateLocalContext(CodeContext/*!*/ outerContext, MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, bool newAttribStorage) {
-            CommonDictionaryStorage? attribs = null;
-            if (!newAttribStorage) {
-                attribs = outerContext.Dict._storage switch {
-                    CustomDictionaryStorage vars => vars.Storage,
-                    CommonDictionaryStorage commonStorage => commonStorage,
-                    _ => new()
-                };
+            DictionaryStorage attribs;
+            if (newAttribStorage) {
+                attribs = new CommonDictionaryStorage();
+            } else {
+                attribs = outerContext.Dict._storage is RuntimeVariablesDictionaryStorage vars ?
+                    vars.Storage : outerContext.Dict._storage;
             }
 
             return new CodeContext(
                 new PythonDictionary(
-                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx, attribs ?? new())
+                    new RuntimeVariablesDictionaryStorage(boxes, args, numFreeVars, arg0Idx, attribs)
                 ),
                 outerContext.ModuleContext
             );
@@ -3779,7 +3809,7 @@ namespace IronPython.Runtime.Operations {
             throw NameError(name);
         }
 
-        public static PythonGlobal/*!*/[] GetGlobalArrayFromContext(CodeContext/*!*/ context) {
+        public static PythonGlobal/*!*/[]? GetGlobalArrayFromContext(CodeContext/*!*/ context) {
             return context.GetGlobalArray();
         }
 

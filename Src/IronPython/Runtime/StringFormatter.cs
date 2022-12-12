@@ -717,7 +717,6 @@ namespace IronPython.Runtime {
                 return x;
             }
 
-
             // A strange string formatting bug requires that we use Standard Numeric Format and
             // not Custom Numeric Format. Standard Numeric Format produces always a 3 digit exponent
             // which needs to be taken care off.

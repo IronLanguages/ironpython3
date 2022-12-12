@@ -57,6 +57,8 @@ namespace IronPython.Runtime {
             return _data.Remove(key);
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object key, out object value) {
             if (_hidden.Contains(key)) {
                 value = null;

@@ -59,6 +59,9 @@
         <File Source="$(var.PlatformDir)\System.Memory.dll" />
       </Component>
       <Component>
+        <File Source="$(var.PlatformDir)\System.Numerics.Vectors.dll" />
+      </Component>
+      <Component>
         <File Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
       </Component>
 
@@ -138,6 +141,7 @@
       <ComponentRef Id="README.md" />
       <ComponentRef Id="System.Buffers.dll" />
       <ComponentRef Id="System.Memory.dll" />
+      <ComponentRef Id="System.Numerics.Vectors.dll" />
       <ComponentRef Id="System.Runtime.CompilerServices.Unsafe.dll" />
       <ComponentRef Id="LICENSE" />
       <ComponentRef Id="InstallationKey" />

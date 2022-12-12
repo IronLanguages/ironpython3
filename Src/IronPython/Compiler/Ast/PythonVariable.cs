@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using MSAst = System.Linq.Expressions;
 
 using System;
@@ -54,7 +56,7 @@ namespace IronPython.Compiler.Ast {
         /// The actual variable represented by this variable instance.
         /// For reference variables this may be null if the reference is not yet resolved.
         /// </summary>
-        public virtual PythonVariable LimitVariable => this;
+        public virtual PythonVariable? LimitVariable => this;
 
         /// <summary>
         /// Gets a value indicating whether the variable gets deleted by a <c>del</c> statement in any scope.
@@ -93,6 +95,6 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonReference Reference { get; }
 
-        public override PythonVariable LimitVariable => Reference.PythonVariable?.LimitVariable;
+        public override PythonVariable? LimitVariable => Reference.PythonVariable?.LimitVariable;
     }
 }

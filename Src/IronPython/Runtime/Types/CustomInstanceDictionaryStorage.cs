@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,9 +13,9 @@ using System.Threading;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
-    /// Provides custom, versioned, dictionary access for instances.  Used for both
-    /// new-style and old-style instances.
-    /// 
+    /// Provides custom, versioned, dictionary access for instances.
+    /// </summary>
+    /// <remarks>
     /// Each class can allocate a version for instance storage using the 
     /// CustomInstanceDictionaryStorage.AllocateInstance method.  The version allocated
     /// is dependent upon the names which are likely to appear in the instance 
@@ -31,12 +33,12 @@ namespace IronPython.Runtime.Types {
     /// speed up the program.
     /// 
     /// TODO: Should we attempt to unify all versions which share the same keys?
-    /// </summary>
+    /// </remarks>
     [Serializable]
     internal sealed class CustomInstanceDictionaryStorage : StringDictionaryStorage {
         private readonly int _keyVersion;
         private readonly string[] _extraKeys;
-        private readonly object[] _values;
+        private readonly object?[] _values;
         [MultiRuntimeAware]
         private static int _namesVersion;
 
@@ -53,7 +55,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public override void Add(ref DictionaryStorage storage, object key, object value) {
+        public override void Add(ref DictionaryStorage storage, object? key, object? value) {
             int ikey = FindKey(key);
             if (ikey != -1) {
                 _values[ikey] = value;
@@ -63,7 +65,7 @@ namespace IronPython.Runtime.Types {
             base.Add(ref storage, key, value);
         }
 
-        public override void AddNoLock(ref DictionaryStorage storage, object key, object value) {
+        public override void AddNoLock(ref DictionaryStorage storage, object? key, object? value) {
             int ikey = FindKey(key);
             if (ikey != -1) {
                 _values[ikey] = value;
@@ -73,7 +75,7 @@ namespace IronPython.Runtime.Types {
             base.AddNoLock(ref storage, key, value);
         }
 
-        public override bool Contains(object key) {
+        public override bool Contains(object? key) {
             int ikey = FindKey(key);
             if (ikey != -1) {
                 return _values[ikey] != Uninitialized.Instance;
@@ -82,10 +84,10 @@ namespace IronPython.Runtime.Types {
             return base.Contains(key);
         }
 
-        public override bool Remove(ref DictionaryStorage storage, object key) {
+        public override bool Remove(ref DictionaryStorage storage, object? key) {
             int ikey = FindKey(key);
             if (ikey != -1) {
-                if (Interlocked.Exchange<object>(ref _values[ikey], Uninitialized.Instance) != Uninitialized.Instance) {
+                if (Interlocked.Exchange<object?>(ref _values[ikey], Uninitialized.Instance) != Uninitialized.Instance) {
                     return true;
                 }
 
@@ -95,7 +97,7 @@ namespace IronPython.Runtime.Types {
             return base.Remove(ref storage, key);
         }
 
-        public override bool TryGetValue(object key, out object value) {
+        public override bool TryGetValue(object? key, out object? value) {
             int ikey = FindKey(key);
             if (ikey != -1) {
                 value = _values[ikey];
@@ -113,7 +115,7 @@ namespace IronPython.Runtime.Types {
         public override int Count {
             get { 
                 int count = base.Count;
-                foreach (object o in _values) {
+                foreach (object? o in _values) {
                     if (o != Uninitialized.Instance) {
                         count++;
                     }
@@ -131,12 +133,12 @@ namespace IronPython.Runtime.Types {
             base.Clear(ref storage);
         }
 
-        public override List<KeyValuePair<object, object>> GetItems() {
-            List<KeyValuePair<object, object>> res = base.GetItems();
+        public override List<KeyValuePair<object?, object?>> GetItems() {
+            List<KeyValuePair<object?, object?>> res = base.GetItems();
 
             for (int i = 0; i < _extraKeys.Length; i++) {
                 if (!String.IsNullOrEmpty(_extraKeys[i]) && _values[i] != Uninitialized.Instance) {
-                    res.Add(new KeyValuePair<object, object>(_extraKeys[i], _values[i]));
+                    res.Add(new KeyValuePair<object?, object?>(_extraKeys[i], _values[i]));
                 }
             }
 
@@ -149,7 +151,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public int FindKey(object key) {
+        public int FindKey(object? key) {
             if (key is string strKey) {
                 return FindKey(strKey);
             }
@@ -166,12 +168,12 @@ namespace IronPython.Runtime.Types {
             return -1;
         }
 
-        public bool TryGetValue(int index, out object value) {
+        public bool TryGetValue(int index, out object? value) {
             value = _values[index];
             return value != Uninitialized.Instance;
         }        
 
-        public void SetExtraValue(int index, object value) {
+        public void SetExtraValue(int index, object? value) {
             _values[index] = value;
         }
     }

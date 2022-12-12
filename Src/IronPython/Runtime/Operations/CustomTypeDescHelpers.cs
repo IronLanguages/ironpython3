@@ -72,7 +72,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PropertyDescriptorCollection GetProperties(object self) {
-            return new PropertyDescriptorCollection(GetPropertiesImpl(self, new Attribute[0]));
+            return new PropertyDescriptorCollection(GetPropertiesImpl(self, Array.Empty<Attribute>()));
         }
 
         public static PropertyDescriptorCollection GetProperties(object self, Attribute[] attributes) {

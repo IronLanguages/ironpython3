@@ -4,6 +4,7 @@
     <TargetFrameworks>net462;netcoreapp2.1;netcoreapp3.1;net6.0</TargetFrameworks>
     <!-- EOL netcoreapp2.1 is used to test netstandard2.0 assemblies -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <PreventStaging>true</PreventStaging>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnitLite" Version="3.13.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.0.0" />
+    <PackageReference Include="NUnitLite" Version="3.13.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

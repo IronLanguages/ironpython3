@@ -72,10 +72,10 @@ namespace IronPython.Runtime {
         }
 
         internal static PythonDictionary FromIAC(CodeContext context, PythonDictionary iac) {
-            return iac.GetType() == typeof(PythonDictionary) ? (PythonDictionary)iac : MakeDictFromIAC(context, iac);
+            return iac.GetType() == typeof(PythonDictionary) ? iac : MakeDictFromIAC(context, iac);
         }
 
-        private static PythonDictionary MakeDictFromIAC(CodeContext context, PythonDictionary iac) {
+        internal static PythonDictionary MakeDictFromIAC(CodeContext context, object iac) {
             return new PythonDictionary(new ObjectAttributesAdapter(context, iac));
         }
 
@@ -763,6 +763,13 @@ namespace IronPython.Runtime {
 
             return res;
         }
+
+        /// <summary>
+        /// Since <see cref="EnvironmentDictionaryStorage"/> is always mutable, this is a no-op.
+        /// </summary>
+        /// <param name="storage">Ignored.</param>
+        /// <returns><c>this</c></returns>
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
 
         public override bool Contains(object key) {
             return _storage.Contains(key);

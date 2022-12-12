@@ -4,7 +4,6 @@
 
 import math
 import os
-import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, big, run_test, skipUnlessIronPython
 
@@ -37,14 +36,14 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual(str(12345678901.2), "12345678901.2")
         self.assertEqual(str(1.23456789012), "1.23456789012")
 
-        # 12 significant digits near the decimal point, preceeded by upto 3 0s
+        # 12 significant digits near the decimal point, preceded by up to 3 0s
 
         self.assertEqual(str(123456789012.00), "123456789012")
         self.assertEqual(str(123456789012.0), "123456789012")
         self.assertEqual(str(00.123456789012), "0.123456789012")
         self.assertEqual(str(0.000123456789012), "0.000123456789012")
 
-        # 12 significant digits near the decimal point, followed by 0s, or preceeded more than 3 0s
+        # 12 significant digits near the decimal point, followed by 0s, or preceded more than 3 0s
 
         self.assertEqual(str(1234567890120.00), "1.23456789012e+12")
         self.assertEqual(str(0.0000123456789012), "1.23456789012e-05")
@@ -62,7 +61,7 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual(str(1.234567890125), "1.23456789012" if format_rounds_to_even else "1.23456789013")
         self.assertEqual(str(1.234567890126), "1.23456789013")
 
-        # Signficiant digits away from the decimal point
+        # Significant digits away from the decimal point
 
         self.assertEqual(str(100000000000.0), "100000000000")
         self.assertEqual(str(1000000000000.0), "1e+12")
@@ -100,7 +99,7 @@ class FormattingTest(IronPythonTestCase):
                 (1.23456, "1.23456"),
                 (0.123456, "0.123456"),
 
-                # 6 significant digits near the decimal point, preceeded by upto 3 0s
+                # 6 significant digits near the decimal point, preceded by up to 3 0s
 
                 (0.000123456, "0.000123456"),
 
@@ -113,7 +112,7 @@ class FormattingTest(IronPythonTestCase):
 
                 (0.0001234565, "0.000123457"),
 
-                # Signficiant digits away from the decimal point
+                # Significant digits away from the decimal point
 
                 (100000.0, "100000"),
                 (1000000.0, "1e+06"),
@@ -250,9 +249,7 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual("%s" % a, "str")
         self.assertEqual("%r" % a, "repr")
         b = B()
-        # BUG 153
-        #self.assertEqual("%s" % b, "str")
-        # /BUG
+        self.assertEqual("%s" % b, "str")
         self.assertEqual("%r" % b, "repr")
 
     def test_unicode(self):
@@ -429,7 +426,6 @@ class FormattingTest(IronPythonTestCase):
 %#.0e 4.5 -> 4.e+00
 %#.0e 6.5 -> 6.e+00
 %#.0e 8.5 -> 8.e+00
-%r 9999999999999998 -> 9999999999999998.0
 """.strip().split("\n")
 
         import test

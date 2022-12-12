@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,15 +14,15 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime {
     internal class RuntimeVariablesDictionaryStorage : CustomDictionaryStorage {
         private readonly MutableTuple _boxes;
-        private readonly string[] _args;
+        private readonly string?[] _args;
         private readonly int _numFreeVars;
         private readonly int _arg0Idx;
 
-        public RuntimeVariablesDictionaryStorage(RuntimeVariablesDictionaryStorage vars, CommonDictionaryStorage storage)
+        public RuntimeVariablesDictionaryStorage(RuntimeVariablesDictionaryStorage vars, DictionaryStorage storage)
             : this(vars._boxes, vars._args, vars._numFreeVars, vars._arg0Idx, storage) {
         }
 
-        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string[] args, int numFreeVars, int arg0Idx, CommonDictionaryStorage storage)
+        public RuntimeVariablesDictionaryStorage(MutableTuple boxes, string?[] args, int numFreeVars, int arg0Idx, DictionaryStorage storage)
             : base(storage) {
 
             Debug.Assert(0 <= numFreeVars && numFreeVars <= args.Length);
@@ -41,7 +43,7 @@ namespace IronPython.Runtime {
         /// Names of the variables in the closure.
         /// Cell variables (not accessed in current scope) have null names.
         /// </summary>
-        internal string[] Names => _args;
+        internal string?[] Names => _args;
 
         /// <summary>
         /// Number of free variables in the closure.
@@ -59,15 +61,18 @@ namespace IronPython.Runtime {
         /// </remarks>
         internal int Arg0Idx => _arg0Idx;
 
-        protected override IEnumerable<KeyValuePair<string, object>> GetExtraItems() {
+        protected override IEnumerable<KeyValuePair<string, object?>> GetExtraItems() {
             for (int i = 0; i < _args.Length; i++) {
-                if (GetCell(i).Value != Uninitialized.Instance && _args[i] != null) {
-                    yield return new KeyValuePair<string, object>(_args[i], GetCell(i).Value);
+                if (GetCell(i).Value != Uninitialized.Instance) {
+                    string? name = _args[i];
+                    if (name is not null) {
+                        yield return new KeyValuePair<string, object?>(name, GetCell(i).Value);
+                    }
                 }
             }
         }
 
-        protected override bool TrySetExtraValue(string key, object value) {
+        protected override bool TrySetExtraValue(string key, object? value) {
             for (int i = 0; i < _args.Length; i++) {
                 if (_args[i] == key) {
                     var cell = GetCell(i);
@@ -79,7 +84,7 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        protected override bool TryGetExtraValue(string key, out object value) {
+        protected override bool TryGetExtraValue(string key, out object? value) {
             for (int i = 0; i < _args.Length; i++) {
                 if (_args[i] == key) {
                     value = GetCell(i).Value;

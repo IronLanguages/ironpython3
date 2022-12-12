@@ -3,8 +3,9 @@
 # See the LICENSE file in the project root for more information.
 
 import unittest
+import sys
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, clr_int_types, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, big, run_test, skipUnlessIronPython
 from types import FunctionType, MethodType
 
 global init
@@ -66,7 +67,7 @@ class FunctionTest(IronPythonTestCase):
         def foo(): pass
 
         self.assertEqual(foo.__code__.co_filename.lower().endswith('test_function.py'), True)
-        self.assertEqual(foo.__code__.co_firstlineno, 66)  # if you added lines to the top of this file you need to update this number.
+        self.assertEqual(foo.__code__.co_firstlineno, 67)  # if you added lines to the top of this file you need to update this number.
 
     def test_inherit_function(self):
         def foo(): pass
@@ -647,14 +648,15 @@ class FunctionTest(IronPythonTestCase):
             def foo(): pass
 
         import System
+        from iptest import clr_int_types
         for t in clr_int_types:
             @clr.accepts(t)
             def foo(x):
                 return x
 
-            self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (expected {str(t).split("'")[1]}, got int)""", foo, big(0))
+            self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected %s, got int)" % str(t).split("'")[1], foo, big(0))
             if t != System.Int32:
-                self.assertRaisesMessage(AssertionError, f"""argument 0 has bad value (expected {str(t).split("'")[1]}, got int)""", foo, 0)
+                self.assertRaisesMessage(AssertionError, "argument 0 has bad value (expected %s, got int)" % str(t).split("'")[1], foo, 0)
 
         @clr.accepts(System.IConvertible)
         @clr.returns(System.IConvertible)
@@ -1236,6 +1238,44 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(hasattr(f, 'def'), False)
 
         self.assertRaises(TypeError, lambda : delattr(f, '__dict__'))
+
+    def test_func_dict_emptykey(self):
+        def f(): pass
+
+        self.assertEqual(f.__dict__, {})
+        self.assertEqual(f(**f.__dict__), None)
+
+        f.__dict__[''] = None
+        self.assertEqual(f.__dict__[''],  None)
+        self.assertEqual(f.__dict__, {'' : None})
+        with self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument ''"):
+            f(**f.__dict__)
+
+        f.__dict__[None] = 1
+        self.assertEqual(f.__dict__[None], 1)
+        self.assertEqual(f.__dict__, {'' : None, None : 1})
+
+        del f.__dict__['']
+        self.assertEqual(f.__dict__, {None : 1})
+        with self.assertRaisesMessage(TypeError, "f() keywords must be strings"):
+            f(**f.__dict__)
+
+        f.__dict__[''] = 2
+        self.assertEqual(f.__dict__[None], 1)
+        self.assertEqual(f.__dict__[''],  2)
+        self.assertEqual(f.__dict__, {'' : 2, None : 1})
+        if is_cli or sys.version_info >= (3,6):
+            msg = "f() keywords must be strings"
+        else:
+            msg = "f() got an unexpected keyword argument ''"
+        with self.assertRaisesMessage(TypeError, msg):
+            f(**f.__dict__)
+
+        del f.__dict__[None]
+        self.assertEqual(f.__dict__[''],  2)
+        self.assertEqual(f.__dict__, {'' : 2})
+        with self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument ''"):
+            f(**f.__dict__)
 
     def test_method(self):
         method = MethodType(id, object())

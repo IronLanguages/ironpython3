@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="Current">
  <Target Name="ZipPackage" DependsOnTargets="Stage" AfterTargets="Package" Outputs="$(PackageDir)\IronPython.$(PackageVersion).zip;$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')"/>
 
     <ItemGroup>
-      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*;$(StageDir)\**\*.pdb;$(StageDir)\netcoreapp2.1\**\*;$(StageDir)\net7.0*\**\*" />
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\README.md;$(StageDir)\**\*.pdb;$(StageDir)\netstandard2.0\**\*;$(StageDir)\netcoreapp2.1\**\*;$(StageDir)\net7.0*\**\*" />
+      <ZipFiles Include="README.md" Link="$(MSBuildThisFileDirectory)README.md" />
+      <ZipFiles Include="scripts/Enter-IronPythonEnvironment.ps1" Link="$(RootDir)Src\Scripts\Enter-IronPythonEnvironment.ps1" />
+      <ZipFiles Include="scripts/Install-IronPython.ps1" Link="$(RootDir)Src\Scripts\Install-IronPython.ps1" />
     </ItemGroup>
     <Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
 

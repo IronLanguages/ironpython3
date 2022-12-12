@@ -68,6 +68,8 @@ namespace IronPythonTest {
             }
         }
 
+        public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
+
         public override bool TryGetValue(object key, out object value) {
             lock (this) {
                 string strKey = key as string;

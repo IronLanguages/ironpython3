@@ -176,15 +176,18 @@ namespace IronPython.Runtime {
             lock (this) {
                 EnsureLoaded();
 
+                var yieldedMethods = new HashSet<MethodInfo>();
+
                 foreach (var keyValue in _loadedAssemblies) {
                     AssemblyLoadInfo info = keyValue.Value;
 
                     Debug.Assert(info.Types != null);
                     foreach (var type in info.Types) {
-                        List<MethodInfo> methods;
-                        if (type.ExtensionMethods.TryGetValue(name, out methods)) {
+                        if (type.ExtensionMethods.TryGetValue(name, out var methods)) {
                             foreach (var method in methods) {
-                                yield return method;
+                                if (yieldedMethods.Add(method)) {
+                                    yield return method;
+                                }
                             }
                         }
                     }

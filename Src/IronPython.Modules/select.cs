@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 #if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting;
+using System.Net.Sockets;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -15,10 +15,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Utils;
-
-using System.Net.Sockets;
 
 [assembly: PythonModule("select", typeof(IronPython.Modules.PythonSelect))]
 namespace IronPython.Modules {
@@ -67,9 +63,9 @@ namespace IronPython.Modules {
             try {
                 Socket.Select(readerList, writerList, errorList, timeoutMicroseconds);
             } catch (ArgumentNullException) {
-                throw MakeException(context, SocketExceptionToTuple(new SocketException((int)SocketError.InvalidArgument)));
+                throw PythonSocket.MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } catch (SocketException e) {
-                throw MakeException(context, SocketExceptionToTuple(e));
+                throw PythonSocket.MakeException(context, e);
             }
 
             // Convert back to what the user originally passed in
@@ -78,14 +74,6 @@ namespace IronPython.Modules {
             for (int i = 0; i < errorList.__len__(); i++) errorList[i] = errorOriginals[(Socket)errorList[i]];
 
             return PythonTuple.MakeTuple(readerList, writerList, errorList);
-        }
-
-        private static PythonTuple SocketExceptionToTuple(SocketException e) {
-            return PythonTuple.MakeTuple(e.ErrorCode, e.Message);
-        }
-
-        private static Exception MakeException(CodeContext/*!*/ context, object value) {
-            return PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("selecterror"), value);
         }
 
         /// <summary>
@@ -137,8 +125,7 @@ namespace IronPython.Modules {
             }
             socket = PythonSocket.socket.HandleToSocket(handle);
             if (socket == null) {
-                SocketException e = new SocketException((int)SocketError.NotSocket);
-                throw PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("selecterror"), PythonTuple.MakeTuple(e.ErrorCode, e.Message));
+                throw PythonSocket.MakeException(context, new SocketException((int)SocketError.NotSocket));
             }
             return socket;
         }

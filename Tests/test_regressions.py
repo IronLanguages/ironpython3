@@ -1683,4 +1683,18 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
             exec('def f(' + ','.join('a{0}'.format(i) for i in range(size)) + '): pass', d)
             d["f"](*range(size)) # just make sure this runs successfully
 
+    def test_ipy3_gh1614(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1614
+
+        # this was causing an assertion error in DEBUG builds
+        self.assertEqual('{:c}'.format(0x2d), '-')
+
+    def test_ipy3_gh1615(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1615
+
+        # this was causing an assertion error in DEBUG builds
+        import select
+        with self.assertRaises(OSError):
+            select.select([], [], [])
+
 run_test(__name__)

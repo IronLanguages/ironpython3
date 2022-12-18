@@ -885,7 +885,7 @@ namespace IronPython.Runtime.Operations {
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
                             self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-                            digits = self.ToString("0.0" + new string('#', decimalPoints));
+                            digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
                         }
                     } else {
                         // just the default formatting

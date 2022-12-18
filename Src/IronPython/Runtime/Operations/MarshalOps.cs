@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Operations {
     public class MarshalOps {
@@ -487,8 +486,7 @@ namespace IronPython.Runtime.Operations {
 
                 string str = DecodeString (Encoding.ASCII, ReadBytes (_myBytes.Current));
 
-                double res = 0;
-                if (double.TryParse (str, out res)) {
+                if (double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out double res)) {
                     return res;
                 }
                 return 0;

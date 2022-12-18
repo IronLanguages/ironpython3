@@ -246,7 +246,7 @@ class NumberTest(IronPythonTestCase):
         if a: self.assertEqual(False, True)
 
 
-        self.assertEqual(int(Single.Parse("3.14159")), 3)
+        self.assertEqual(int(Single(3.14159)), 3)
 
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):

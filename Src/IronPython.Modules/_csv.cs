@@ -5,12 +5,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
@@ -833,8 +836,7 @@ in CSV format.")]
                     if (_is_numeric_field) {
                         _is_numeric_field = false;
 
-                        double tmp;
-                        if (double.TryParse(field, out tmp)) {
+                        if (double.TryParse(field, NumberStyles.Float, CultureInfo.InvariantCulture, out double tmp)) {
                             if (field.Contains("."))
                                 _fields.Add(tmp);
                             else

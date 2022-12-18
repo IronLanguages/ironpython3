@@ -13,6 +13,8 @@ namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
         public static bool __bool__(decimal x) => x != 0;
 
+        public static string __str__(decimal x) => x.ToString(CultureInfo.InvariantCulture);
+
         public static string __repr__(decimal x) => x.ToString(CultureInfo.InvariantCulture);
 
         [SpecialName]
@@ -61,7 +63,7 @@ namespace IronPython.Runtime.Operations {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             // default to the normal
             if (spec.IsEmpty) {
-                return self.ToString();
+                return __str__(self);
             }
 
             string digits = DecimalToFormatString(context, self, spec);

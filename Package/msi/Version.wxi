@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?> 
-<Include Id="VersionNumberInclude"> 
+﻿<Include Id="VersionNumberInclude" xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <?define ProductShortName = "IronPython" ?>
   <?define Manufacturer = "IronPython Team" ?>
-</Include> 
+</Include>

@@ -1,26 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.props" />
-  <Import Project="$(RootDir)packages\wix\3.11.2\build\wix.props" />
+<Project Sdk="WixToolset.Sdk/4.0.0-rc.1" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProductVersion>3.4</ProductVersion>
-    <ProjectGuid>{49c7ae2b-d9d1-4b32-9d11-474f1be86658}</ProjectGuid>
-    <SchemaVersion>2.0</SchemaVersion>
     <OutputName>IronPython-$(DisplayVersion)</OutputName>
-    <OutputType>Package</OutputType>
-    <DefineSolutionProperties>false</DefineSolutionProperties>
     <SuppressPdbOutput>true</SuppressPdbOutput>
     <SuppressSpecificWarnings>5151</SuppressSpecificWarnings>
     <SuppressIces>ICE61</SuppressIces>
-    <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(RootDir)Package\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BindInputPaths>
+    <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(RootDir)Package\$(Configuration)\Stage\IronPython-$(DisplayVersion)</BindInputPaths>
     <BuildDir Condition=" '$(BuildDir)' == '' ">$(RootDir)bin\$(Configuration)</BuildDir>
-
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</MsiVersion>
     <SetMsiAssemblyNameFileVersion>True</SetMsiAssemblyNameFileVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <WixConstant Include="ProductVersion">
       <Value>$(MsiVersion)</Value>
@@ -41,44 +31,23 @@
       <Value>$(BindInputPaths)\net462</Value>
     </WixConstant>
   </ItemGroup>
-
   <PropertyGroup>
-    <CommonWixConstants>@(WixConstant->'%(Identity)=%(Value)')</CommonWixConstants>
+    <CommonWixConstants>@(WixConstant-&gt;'%(Identity)=%(Value)')</CommonWixConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug;$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>$(CommonWixConstants)</DefineConstants>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="Dlr.wxs" />
-    <Compile Include="IronPython.wxs" />
-    <Compile Include="Product.wxs" />
-  </ItemGroup>
   <ItemGroup>
     <Content Include="Version.wxi" />
   </ItemGroup>
   <ItemGroup>
-    <WixExtension Include="WixUIExtension">
-      <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
-      <Name>WixUIExtension</Name>
-    </WixExtension>
-    <WixExtension Include="WixNetFxExtension">
-      <HintPath>$(WixExtDir)\WixNetFxExtension.dll</HintPath>
-      <Name>WixNetFxExtension</Name>
-    </WixExtension>
-    <WixExtension Include="WixUtilExtension">
-      <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
-      <Name>WixUtilExtension</Name>
-    </WixExtension>
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.0-rc.1" />
+    <PackageReference Include="WixToolset.NetFx.wixext" Version="4.0.0-rc.1" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.0-rc.1" />
+    <PackageReference Include="WixToolset.Heat" Version="4.0.0-rc.1" />
   </ItemGroup>
   <ItemGroup>
     <HarvestDirectory Include="$(BindInputPaths)\Lib">
@@ -88,5 +57,4 @@
       <SuppressRegistry>True</SuppressRegistry>
     </HarvestDirectory>
   </ItemGroup>
-  <Import Project="$(WixTargetsPath)" />
 </Project>

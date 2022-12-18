@@ -1,80 +1,78 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?include Version.wxi ?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+﻿<?include Version.wxi ?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx">
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
 
       <Component>
-        <File Source="$(var.PlatformDir)\IronPython.dll" />
+        <File Id="IronPython.dll" Source="$(var.PlatformDir)\IronPython.dll" />
       </Component>
 
       <Component>
-        <File Source="$(var.PlatformDir)\IronPython.Modules.dll" />
+        <File Id="IronPython.Modules.dll" Source="$(var.PlatformDir)\IronPython.Modules.dll" />
       </Component>
 
       <Component>
-        <File Source="$(var.PlatformDir)\ipy.exe">
+        <File Id="ipy.exe" Source="$(var.PlatformDir)\ipy.exe">
           <netfx:NativeImage Id="ngen_ipy.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\ipy32.exe">
+        <File Id="ipy32.exe" Source="$(var.PlatformDir)\ipy32.exe">
           <netfx:NativeImage Id="ngen_ipy32.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
 
       <Component>
-        <File Source="$(var.PlatformDir)\ipyc.exe">
+        <File Id="ipyc.exe" Source="$(var.PlatformDir)\ipyc.exe">
           <netfx:NativeImage Id="ngen_ipyc.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\IKVM.Reflection.dll" />
+        <File Id="IKVM.Reflection.dll" Source="$(var.PlatformDir)\IKVM.Reflection.dll" />
       </Component>
 
       <Component>
-        <File Source="$(var.PlatformDir)\ipyw.exe">
+        <File Id="ipyw.exe" Source="$(var.PlatformDir)\ipyw.exe">
           <netfx:NativeImage Id="ngen_ipyw.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\ipyw32.exe">
+        <File Id="ipyw32.exe" Source="$(var.PlatformDir)\ipyw32.exe">
           <netfx:NativeImage Id="ngen_ipyw32.exe" Platform="all" AppBaseDirectory="INSTALLDIR" />
         </File>
       </Component>
 
       <Directory Id="IronPython_DLLs" Name="DLLs">
         <Component>
-          <File Source="$(var.PlatformDir)\DLLs\IronPython.Wpf.dll" />
+          <File Id="IronPython.Wpf.dll" Source="$(var.PlatformDir)\DLLs\IronPython.Wpf.dll" />
         </Component>
         <Component>
-          <File Source="$(var.PlatformDir)\DLLs\IronPython.SQLite.dll" />
+          <File Id="IronPython.SQLite.dll" Source="$(var.PlatformDir)\DLLs\IronPython.SQLite.dll" />
         </Component>
       </Directory>
 
       <Component>
-        <File Source="$(var.PlatformDir)\System.Buffers.dll" />
+        <File Id="System.Buffers.dll" Source="$(var.PlatformDir)\System.Buffers.dll" />
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\System.Memory.dll" />
+        <File Id="System.Memory.dll" Source="$(var.PlatformDir)\System.Memory.dll" />
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\System.Numerics.Vectors.dll" />
+        <File Id="System.Numerics.Vectors.dll" Source="$(var.PlatformDir)\System.Numerics.Vectors.dll" />
       </Component>
       <Component>
-        <File Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
-      </Component>
-
-      <Component>
-        <File Source="LICENSE" />
-      </Component>
-      <Component>
-        <File Source="README.md" />
+        <File Id="System.Runtime.CompilerServices.Unsafe.dll" Source="$(var.PlatformDir)\System.Runtime.CompilerServices.Unsafe.dll" />
       </Component>
 
       <Component>
-        <RegistryValue Id="InstallationKey"
-          Root="HKLM" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)\InstallPath" Type="string" Value="[INSTALLDIR]" />
+        <File Id="LICENSE" Source="LICENSE" />
+      </Component>
+      <Component>
+        <File Id="README.md" Source="README.md" />
+      </Component>
+
+      <Component>
+        <RegistryValue Id="InstallationKey" Root="HKLM" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)\InstallPath" Type="string" Value="[INSTALLDIR]" />
       </Component>
 
       <Component Id="CommonPythonRegistration">

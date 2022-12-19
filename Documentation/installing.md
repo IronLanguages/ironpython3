@@ -6,11 +6,9 @@ IronPython can be used as a standalone interpreter, or embedded within another .
 
 Since .NET is a cross-platform framework, the instructions in this section apply to all supported operating systems (Windows, Linux, macOS), unless explicitly indicated.
 
-Currently IronPython is supported on .NET 6.0 and .NET Core 3.1.
-
 ### .NET SDK
 
-If the target system has already a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using `dotnet tool`.
+If the target system has already a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using [`dotnet tool`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
 #### _Global Tool_
 
@@ -64,7 +62,7 @@ Any additional packages installed with `/path/to/install/directory/ipy -m pip` a
 
 ### .NET Runtime
 
-If the target system does not have .NET SDK installed, but does have a .NET Runtime installed (i.e `dotnet --version` works ), a way to install IronPython is to use the zip file published on the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest).
+If the target system does not have .NET SDK installed, but does have a .NET Runtime installed (i.e `dotnet --version` works), a way to install IronPython is to use the zip file published on the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest).
 
 Installations from the zip file are self-contained, so in a sense work like a Python virtual environment. For PowerShell users, the zip archive also contains script `Enter-IronPythonEnvironment.ps1` that works similarly to Anaconda's `Enter-CondaEnvironment.ps1` or CPython's `activate.ps1`. Use `help` on this file for detailed usage information.
 
@@ -121,13 +119,13 @@ Install Homebrew cask (?)
 
 ### Windows
 
-IronPython for .NET Framework requires .NET Framework version 4.6.2 or higher, which comes preinstalled on modern versions of Windows. To install IronPython, download the `.msi` file from the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest) and execute it. Alternatively, use _Chocolatey_ package manager:
+IronPython for .NET Framework requires .NET Framework version 4.6.2 or higher, which comes preinstalled on modern versions of Windows. To install IronPython, download the `.msi` file from the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest) and execute it. The installation of `.msi` registers IronPython in the System Registry in compliance with [PEP 514](https://peps.python.org/pep-0514/) so that other tools may detect and use it.
+
+Alternatively, use _Chocolatey_ package manager:
 
 ```
 choco install ironpython
 ```
-
-The installation registers IronPython in the System Registry in compliance with [PEP 514](https://peps.python.org/pep-0514/) so that other tools may detect and use it.
 
 ### Linux (Debian-like)
 
@@ -150,13 +148,13 @@ Then download the `.pkg` installer from the project's [release page](https://git
 
 # Installing Non-Released Versions
 
-After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you got handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is till possible to install the relevant (or latest) version of IronPython without the need to compile the whole project from scratch.
+After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you got handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
 
 Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `master` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
 
 | Artifact             | .NET Platform                  | Operating System                    |
 | -------------------- | ------------------------------ | ----------------------------------- |
-| IronPython.3.X.Y.zip | .NET and .NET Core             | all                                 |
+| IronPython.3.X.Y.zip | all supported                  | all supported                       |
 | IronPython-3.X.Y.msi | .NET Framework 4.6.2 or higher | Windows                             |
 | ironpython_3.X.Y.deb | Mono 6.12 or higher            | Linux (Debian, Ubuntu, and similar) |
 | IronPython-3.X.Y.pkg | Mono 6.12 or higher            | macOS                               |
@@ -181,5 +179,5 @@ Note: as a convenience, if you run `Install-IronPython.ps1` directly from direct
 Installation example:
 
 ```
-./Src/Scripts/Install-IronPython.ps1 /path/to/installation/dir -framework net462
+./Src/Scripts/Install-IronPython.ps1 /path/to/install/directory -framework net462
 ```

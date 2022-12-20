@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
       <Component>
-        <File Source="$(var.PlatformDir)\Microsoft.Scripting.dll" />
+        <File Id="Microsoft.Scripting.dll" Source="$(var.PlatformDir)\Microsoft.Scripting.dll" />
       </Component>
 
       <Component>
-        <File Source="$(var.PlatformDir)\Microsoft.Dynamic.dll" />
+        <File Id="Microsoft.Dynamic.dll" Source="$(var.PlatformDir)\Microsoft.Dynamic.dll" />
       </Component>
     </DirectoryRef>
 

@@ -25,4 +25,4 @@ https://ironpython.groups.io/g/users.
 
 ### Versions
 
-You can get this information from executing `ipy -V`.
+You can get this information from executing `ipy -VV`.

@@ -97,24 +97,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>>
 ```
 
-### Standalone (TODO)
-
-**NOTE**: This section is tentative. None of the installation options mentioned here are supported yet.
-
-A standalone installation does not require any prior .NET Runtime.
-
-#### _Windows_
-
-Use Chocolatey (?)
-
-#### _Linux_
-
-Use Flatpak (?) or Snap (?)
-
-#### _macOS_
-
-Install Homebrew cask (?)
-
 ## IronPython on .NET Framework/Mono
 
 ### Windows
@@ -152,7 +134,7 @@ After a release, the development of IronPython continues so it is possible that 
 
 Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `master` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
 
-| Artifact             | .NET Platform                  | Operating System                    |
+| Artifact             | Framework                      | Operating System                    |
 | -------------------- | ------------------------------ | ----------------------------------- |
 | IronPython.3.X.Y.zip | all supported                  | all supported                       |
 | IronPython-3.X.Y.msi | .NET Framework 4.6.2 or higher | Windows                             |

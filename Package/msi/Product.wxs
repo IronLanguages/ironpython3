@@ -14,7 +14,9 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 <?define UpgradeCode = "664cd4f7-5c34-441e-b3d0-dba395e9414f" ?>
 
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)" InstallerVersion="200" ShortNames="no"><SummaryInformation Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" Manufacturer="$(var.Manufacturer)" />
+  <Package UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)" InstallerVersion="200" ShortNames="no">
+    <SummaryInformation Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" Manufacturer="$(var.Manufacturer)" />
+
     <Media Id="1" Cabinet="IronPy.cab" EmbedCab="yes" CompressionLevel="high" />
 
     <Icon Id="ipy.ico" SourceFile="..\..\Src\IronPythonConsole\ipy.ico" />

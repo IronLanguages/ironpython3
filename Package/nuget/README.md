@@ -3,7 +3,7 @@ IronPython Engine
 
 IronPython is an open-source implementation of the Python programming language that is tightly integrated with .NET. IronPython can use .NET and Python libraries, and other .NET languages can use Python code just as easily.
 
-This package contains the IronPython engine that allows embedding an IronPython interpreter in a .NET application. The interpreted Python code can call the .NET code and can be called from the .NET code. This package does not contain the IronPython Standard Library, which is distributed separatery as package `IronPython.StdLib`.
+This package contains the IronPython engine that allows embedding an IronPython interpreter in a .NET application. The interpreted Python code can call the .NET code and can be called from the .NET code. This package does not contain the IronPython Standard Library, which is distributed separately as package `IronPython.StdLib`.
 
 ## Example
 

@@ -155,10 +155,10 @@ namespace IronPython.Runtime {
                     case '6':
                     case '7': {
                             val = ch - '0';
-                            if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
+                            if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out int onechar)) {
                                 val = val * 8 + onechar;
                                 i++;
-                                if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
+                                if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out onechar)) {
                                     val = val * 8 + onechar;
                                     i++;
                                 }
@@ -562,10 +562,10 @@ namespace IronPython.Runtime {
                         case '6':
                         case '7': {
                                 val = ch - '0';
-                                if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
+                                if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out int onechar)) {
                                     val = val * 8 + onechar;
                                     i++;
-                                    if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
+                                    if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out onechar)) {
                                         val = val * 8 + onechar;
                                         i++;
                                     }
@@ -598,7 +598,7 @@ namespace IronPython.Runtime {
             return buf;
         }
 
-        private static bool HexValue(char ch, out int value) {
+        private static bool TryConvertDigit(char ch, int b, out int value) {
             switch (ch) {
                 case '0':
                 case '\x660': value = 0; break;
@@ -631,52 +631,13 @@ namespace IronPython.Runtime {
                     }
                     break;
             }
-            return true;
-        }
-
-        private static int HexValue(char ch) {
-            int value;
-            if (!HexValue(ch, out value)) {
-                throw new ValueErrorException("bad char for integer value: " + ch);
-            }
-            return value;
-        }
-
-        private static int CharValue(char ch, int b) {
-            int val = HexValue(ch);
-            if (val >= b) {
-                throw new ValueErrorException(String.Format("bad char for the integer value: '{0}' (base {1})", ch, b));
-            }
-            return val;
-        }
-
-        private static bool ParseInt(string text, int b, out int ret) {
-            ret = 0;
-            long m = 1;
-            for (int i = text.Length - 1; i >= 0; i--) {
-                var ch = text[i];
-
-                // avoid the exception here.  Not only is throwing it expensive,
-                // but loading the resources for it is also expensive 
-                long lret = ret + m * CharValue(ch, b);
-                if (int.MinValue <= lret && lret <= int.MaxValue) {
-                    ret = (int)lret;
-                } else {
-                    return false;
-                }
-
-                m *= b;
-                if (int.MinValue > m || m > int.MaxValue) {
-                    return false;
-                }
-            }
-            return true;
+            return value < b;
         }
 
         private static bool TryParseInt<T>(in ReadOnlySpan<T> text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
             value = 0;
             for (int i = start, end = start + length; i < end; i++) {
-                if (i < text.Length && HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
+                if (i < text.Length && TryConvertDigit(text[i].ToChar(null), b, out int onechar)) {
                     value = value * b + onechar;
                 } else {
                     consumed = i - start;
@@ -688,15 +649,10 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            Debug.Assert(b != 0);
-            int iret;
-            if (!ParseInt(text, b, out iret)) {
-                BigInteger ret = ParseBigInteger(text, b);
-                if (!ret.AsInt32(out iret)) {
-                    return ret;
-                }
+            if (TryParseInteger(text.AsSpan(), b, false, out object val)) {
+                return val;
             }
-            return ScriptingRuntimeHelpers.Int32ToObject(iret);
+            throw new ValueErrorException($"invalid literal with base {b}: {text}");
         }
 
         internal static bool TryParseIntegerSign(ReadOnlySpan<char> text, int b, out object val) {
@@ -706,7 +662,7 @@ namespace IronPython.Runtime {
 
             text = text.Trim();
 
-            if (TryParseIntegerStart(text, ref b, out int sign, out int consumed)) {
+            if (TryParseIntegerStart(text, ref b, out bool isNegative, out int consumed)) {
                 text = text.Slice(consumed);
             } else {
                 val = default;
@@ -715,11 +671,28 @@ namespace IronPython.Runtime {
 
             Debug.Assert(!text.IsEmpty);
 
+            return TryParseInteger(text, b, isNegative, out val);
+        }
+
+        private static bool TryParseInteger(ReadOnlySpan<char> text, int b, bool isNegative, out object val) {
             long ret = 0;
+            int underscore = 1;
 
             for (int i = 0; i < text.Length; i++) {
                 var ch = text[i];
-                if (!HexValue(ch, out int digit) || !(digit < b)) {
+
+                if (ch == '_') {
+                    underscore++;
+                    if (underscore > 1) {
+                        val = default;
+                        return false;
+                    }
+                    continue;
+                } else {
+                    underscore = 0;
+                }
+
+                if (!TryConvertDigit(ch, b, out int digit)) {
                     val = default;
                     return false;
                 }
@@ -728,17 +701,55 @@ namespace IronPython.Runtime {
 
                 if (ret > int.MaxValue) {
                     BigInteger retBi = ret;
+
+                    // Repeated integer multiplication is expensive so use a grouping strategy.
+                    // We pick group sizes that ensure our numbers stay in the Int32 range.
+                    int groupMax = 5; // zzzzzz (base 36) = 2_176_782_335 > int.MaxValue
+                    if (b <= 10) groupMax = 9; // 2_147_483_647
+
+                    int buffer = 0;
+                    int cnt = 0;
+                    int smallMult = 1;
+
                     for (i++; i < text.Length; i++) {
                         ch = text[i];
-                        if (!HexValue(ch, out digit) || !(digit < b)) {
+
+                        if (ch == '_') {
+                            underscore++;
+                            if (underscore > 1) {
+                                val = default;
+                                return false;
+                            }
+                            continue;
+                        } else {
+                            underscore = 0;
+                        }
+
+                        if (!TryConvertDigit(ch, b, out digit)) {
                             val = default;
                             return false;
                         }
 
-                        retBi = retBi * b + digit;
+                        buffer = buffer * b + digit;
+                        cnt++;
+                        smallMult *= b;
+
+                        Debug.Assert(smallMult > 0); // no overflows!
+
+                        if (cnt >= groupMax) {
+                            retBi = retBi * smallMult + buffer;
+                            // reset buffer
+                            buffer = 0;
+                            cnt = 0;
+                            smallMult = 1;
+                        }
                     }
 
-                    if (sign < 0) {
+                    if (cnt > 0) {
+                        retBi = retBi * smallMult + buffer;
+                    }
+
+                    if (isNegative) {
                         if (retBi == (BigInteger)int.MaxValue + 1) {
                             val = ScriptingRuntimeHelpers.Int32ToObject(int.MinValue);
                             return true;
@@ -747,20 +758,30 @@ namespace IronPython.Runtime {
                         return true;
                     }
 
+                    if (underscore != 0) {
+                        val = default;
+                        return false;
+                    }
+
                     val = retBi;
                     return true;
                 }
             }
 
+            if (underscore != 0) {
+                val = default;
+                return false;
+            }
+
             int res = unchecked((int)ret);
-            res = sign < 0 ? -res : res;
+            res = isNegative ? -res : res;
             val = ScriptingRuntimeHelpers.Int32ToObject(res);
             return true;
         }
 
-        private static bool TryParseIntegerStart(ReadOnlySpan<char> text, ref int b, out int sign, out int consumed) {
+        private static bool TryParseIntegerStart(ReadOnlySpan<char> text, ref int b, out bool isNegative, out int consumed) {
             // set defaults
-            sign = 1;
+            isNegative = false;
             consumed = 0;
 
             if (text.IsEmpty) return false;
@@ -774,7 +795,7 @@ namespace IronPython.Runtime {
             // sign?
             switch (text[start]) {
                 case '-':
-                    sign = -1;
+                    isNegative = true;
                     if (++start >= end) return false;
                     break;
                 case '+':
@@ -805,6 +826,9 @@ namespace IronPython.Runtime {
                             return true;
                     }
                     if (++start >= end) return false;
+                    if (text[start] == '_') {
+                        if (++start >= end) return false;
+                    }
                 } else {
                     b = 10;
                 }
@@ -812,35 +836,6 @@ namespace IronPython.Runtime {
 
             consumed = start;
             return true;
-        }
-
-        internal static BigInteger ParseBigInteger(string text, int b) {
-            Debug.Assert(b != 0);
-            BigInteger ret = BigInteger.Zero;
-            BigInteger m = BigInteger.One;
-
-            int i = text.Length - 1;
-
-            int groupMax = 7;
-            if (b <= 10) groupMax = 9;// 2 147 483 647
-
-            while (i >= 0) {
-                // extract digits in a batch
-                int smallMultiplier = 1;
-                uint uval = 0;
-
-                for (int j = 0; j < groupMax && i >= 0; j++) {
-                    var ch = text[i--];
-                    uval = (uint)(CharValue(ch, b) * smallMultiplier + uval);
-                    smallMultiplier *= b;
-                }
-
-                // this is more generous than needed
-                ret += m * (BigInteger)uval;
-                if (i >= 0) m = m * (smallMultiplier);
-            }
-
-            return ret;
         }
 
         internal static bool TryParseFloat(string text, out double res, bool replaceUnicode) {
@@ -895,7 +890,7 @@ namespace IronPython.Runtime {
                     try {
                         res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
                     } catch (OverflowException) {
-                        res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? Double.NegativeInfinity : Double.PositiveInfinity;
+                        res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? double.NegativeInfinity : double.PositiveInfinity;
                     }
                     return (res == 0.0 && text.lstrip().StartsWith("-", StringComparison.Ordinal)) ? DoubleOps.NegativeZero : res;
             }
@@ -970,7 +965,7 @@ namespace IronPython.Runtime {
                         imag += "1"; // convert +/- to +1/-1
                     }
 
-                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
+                    return new Complex(string.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
                 } else {
                     throw ExnMalformed();
                 }
@@ -986,7 +981,7 @@ namespace IronPython.Runtime {
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat
                     ));
             } catch (OverflowException) {
-                return new Complex(0, Double.PositiveInfinity);
+                return new Complex(0, double.PositiveInfinity);
             }
         }
     }

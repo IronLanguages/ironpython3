@@ -6,143 +6,71 @@
 ## Run selected tests from test_unicode from StdLib
 ##
 
-import unittest
-import sys
-
-from iptest import run_test
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_unicode
 
 def load_tests(loader, standard_tests, pattern):
-    if sys.implementation.name == 'ironpython':
-        suite = unittest.TestSuite()
-        suite.addTest(test.test_unicode.CAPITest('test_asucs4'))
-        suite.addTest(test.test_unicode.CAPITest('test_aswidechar'))
-        suite.addTest(test.test_unicode.CAPITest('test_aswidecharstring'))
-        suite.addTest(test.test_unicode.CAPITest('test_copycharacters'))
-        suite.addTest(test.test_unicode.CAPITest('test_encode_decimal'))
-        suite.addTest(test.test_unicode.CAPITest('test_from_format'))
-        suite.addTest(test.test_unicode.CAPITest('test_pep393_utf8_caching_bug'))
-        suite.addTest(test.test_unicode.CAPITest('test_transform_decimal'))
-        suite.addTest(test.test_unicode.StringModuleTest('test_formatter_field_name_split'))
-        suite.addTest(test.test_unicode.StringModuleTest('test_formatter_parser'))
-        suite.addTest(test.test_unicode.UnicodeTest('test___contains__'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_additional_rsplit'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_additional_split'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_ascii'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_bug1001011'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_bytes_comparison'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_capitalize')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_capitalize_nonascii'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_case_operation_overflow')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_casefold')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_center')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_codecs'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_codecs_charmap'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_codecs_errors')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_codecs_idna'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_codecs_utf7')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_codecs_utf8'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_compare')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_comparison'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_concatenation'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_constructor'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_constructor_defaults')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_constructor_keyword_args'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_contains'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_conversion'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_count'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_endswith'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_expandtabs'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_expandtabs_optimization')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_expandtabs_overflows_gracefully')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_extended_getslice'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_find'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_find_etc_raise_correct_error_messages'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_fixtype'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_floatformatting'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_format')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_format_auto_numbering'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_format_float'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_format_huge_item_number')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_format_huge_precision'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_format_huge_width'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_format_map')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_format_subclass')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_formatting')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_formatting_c_limits')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_formatting_huge_precision'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_formatting_huge_precision_c_limits')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_formatting_huge_width'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_formatting_with_enum'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_free_after_iterating'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_getnewargs')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_hash'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_index'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_inplace_rewrites'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_invalid_cb_for_2bytes_seq')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_invalid_cb_for_3bytes_seq')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_invalid_cb_for_4bytes_seq')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_invalid_start_byte')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isalnum')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isalpha')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isdecimal')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isdigit')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isidentifier')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_islower')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isnumeric')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isprintable')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_isspace'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_issue18183')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_issue28598_strsubclass_rhs')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_issue8271'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_istitle')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_isupper')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_iterators'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_join')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_join_overflow'))) # ValueError: capacity was less than the current size.
-        suite.addTest(test.test_unicode.UnicodeTest('test_literals'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_ljust'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_lower')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_maketrans_translate'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_mul')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_none_arguments'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_partition')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_printable_repr')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_printing'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_raiseMemError')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_replace')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_replace_id')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_replace_overflow')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_repr'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_resize'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_rfind'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_rindex'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_rjust'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_rpartition')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_rsplit')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_slice'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_split'))) # https://github.com/IronLanguages/ironpython3/issues/252
-        suite.addTest(test.test_unicode.UnicodeTest('test_splitlines'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_startswith'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_startswith_endswith_errors'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_strip'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_strip_whitespace'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_subclass_add'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_subscript'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_surrogates'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_swapcase')))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_title')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_ucs4'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_unexpected_end_of_data')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_unicode_repr'))
-        suite.addTest(unittest.expectedFailure(test.test_unicode.UnicodeTest('test_upper')))
-        suite.addTest(test.test_unicode.UnicodeTest('test_utf8_decode_invalid_sequences'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_utf8_decode_valid_sequences'))
-        suite.addTest(test.test_unicode.UnicodeTest('test_zfill'))
-        return suite
+    tests = loader.loadTestsFromModule(test.test_unicode, pattern=pattern)
+
+    if is_ironpython:
+        failing_tests = [
+            test.test_unicode.UnicodeTest('test_capitalize'),
+            test.test_unicode.UnicodeTest('test_case_operation_overflow'),
+            test.test_unicode.UnicodeTest('test_casefold'),
+            test.test_unicode.UnicodeTest('test_center'),
+            test.test_unicode.UnicodeTest('test_codecs_errors'),
+            test.test_unicode.UnicodeTest('test_codecs_utf7'),
+            test.test_unicode.UnicodeTest('test_compare'),
+            test.test_unicode.UnicodeTest('test_constructor_defaults'),
+            test.test_unicode.UnicodeTest('test_expandtabs_optimization'),
+            test.test_unicode.UnicodeTest('test_expandtabs_overflows_gracefully'),
+            test.test_unicode.UnicodeTest('test_format'),
+            test.test_unicode.UnicodeTest('test_format_huge_item_number'),
+            test.test_unicode.UnicodeTest('test_format_map'),
+            test.test_unicode.UnicodeTest('test_format_subclass'),
+            test.test_unicode.UnicodeTest('test_formatting'),
+            test.test_unicode.UnicodeTest('test_formatting_c_limits'),
+            test.test_unicode.UnicodeTest('test_formatting_huge_precision_c_limits'),
+            test.test_unicode.UnicodeTest('test_getnewargs'),
+            test.test_unicode.UnicodeTest('test_invalid_cb_for_2bytes_seq'),
+            test.test_unicode.UnicodeTest('test_invalid_cb_for_3bytes_seq'),
+            test.test_unicode.UnicodeTest('test_invalid_cb_for_4bytes_seq'),
+            test.test_unicode.UnicodeTest('test_invalid_start_byte'),
+            test.test_unicode.UnicodeTest('test_isalnum'),
+            test.test_unicode.UnicodeTest('test_isalpha'),
+            test.test_unicode.UnicodeTest('test_isdecimal'),
+            test.test_unicode.UnicodeTest('test_isdigit'),
+            test.test_unicode.UnicodeTest('test_isidentifier'),
+            test.test_unicode.UnicodeTest('test_islower'),
+            test.test_unicode.UnicodeTest('test_isnumeric'),
+            test.test_unicode.UnicodeTest('test_isprintable'),
+            test.test_unicode.UnicodeTest('test_issue18183'),
+            test.test_unicode.UnicodeTest('test_issue28598_strsubclass_rhs'),
+            test.test_unicode.UnicodeTest('test_istitle'),
+            test.test_unicode.UnicodeTest('test_isupper'),
+            test.test_unicode.UnicodeTest('test_join'),
+            test.test_unicode.UnicodeTest('test_join_overflow'), # ValueError: capacity was less than the current size.
+            test.test_unicode.UnicodeTest('test_lower'),
+            test.test_unicode.UnicodeTest('test_mul'),
+            test.test_unicode.UnicodeTest('test_partition'),
+            test.test_unicode.UnicodeTest('test_printable_repr'),
+            test.test_unicode.UnicodeTest('test_raiseMemError'),
+            test.test_unicode.UnicodeTest('test_replace'),
+            test.test_unicode.UnicodeTest('test_replace_id'),
+            test.test_unicode.UnicodeTest('test_replace_overflow'),
+            test.test_unicode.UnicodeTest('test_rpartition'),
+            test.test_unicode.UnicodeTest('test_rsplit'),
+            test.test_unicode.UnicodeTest('test_split'), # https://github.com/IronLanguages/ironpython3/issues/252
+            test.test_unicode.UnicodeTest('test_swapcase'),
+            test.test_unicode.UnicodeTest('test_title'),
+            test.test_unicode.UnicodeTest('test_unexpected_end_of_data'),
+            test.test_unicode.UnicodeTest('test_upper'),
+        ]
+
+        return generate_suite(tests, failing_tests)
 
     else:
-        return loader.loadTestsFromModule(test.test_unicode, pattern)
+        return tests
 
 run_test(__name__)

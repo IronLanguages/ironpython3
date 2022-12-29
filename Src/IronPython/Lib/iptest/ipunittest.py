@@ -112,9 +112,9 @@ def load_ironpython_test(*args):
     clr.AddReference("Microsoft.Dynamic")
     clr.AddReference("IronPython")
 
-    if args: 
+    if args:
         return clr.LoadAssemblyFromFileWithPath(_iron_python_test_dll)
-    else: 
+    else:
         clr.AddReferenceToFileAndPath(_iron_python_test_dll)
 
 class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
@@ -195,6 +195,36 @@ def run_test(name):
         from test import support
         support.run_unittest(name)
 
+def _flatten_suite(suite):
+    tests = []
+    for t in suite:
+        if isinstance(t, unittest.BaseTestSuite):
+            tests.extend(_flatten_suite(t))
+        else:
+            tests.append(t)
+    return tests
+
+def generate_suite(tests, failing_tests, skip_tests=[]):
+    all_tests = _flatten_suite(tests)
+    unknown_tests = []
+
+    for t in skip_tests:
+        try:
+            all_tests.remove(t)
+        except ValueError:
+            unknown_tests.append(t)
+
+    for t in failing_tests:
+        try:
+            all_tests[all_tests.index(t)] = unittest.expectedFailure(t)
+        except:
+            unknown_tests.append(t)
+
+    if unknown_tests:
+        raise ValueError("Unknown tests:\n - {}".format('\n - '.join(str(t) for t in unknown_tests)))
+
+    return unittest.TestSuite(all_tests)
+
 # class testpath:
 #     # find the ironpython root directory
 #     rowan_root          = get_environ_variable("dlr_root")
@@ -220,13 +250,13 @@ def run_test(name):
 #     lib_testdir         = path_combine(external_dir, '27/Lib')
 #     private_testdir     = path_combine(external_dir, '27/Lib/test')
 
-#     if is_cli: 
+#     if is_cli:
 #         ipython_executable  = sys.executable
 #         if is_posix:
 #             cpython_executable  = '/usr/bin/python2.7'
 #         else:
 #             cpython_executable  = path_combine(external_dir, '27/python.exe')
-#     else: 
+#     else:
 #         ipython_executable  = path_combine(sys.prefix, 'ipy.exe')
 #         cpython_executable  = sys.executable
 

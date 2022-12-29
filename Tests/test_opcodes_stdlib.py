@@ -6,27 +6,23 @@
 ## Run selected tests from test_opcodes from StdLib
 ##
 
-import unittest
-import sys
-
-from iptest import run_test
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_opcodes
 
 def load_tests(loader, standard_tests, pattern):
-    if sys.implementation.name == 'ironpython':
-        suite = unittest.TestSuite()
-        suite.addTest(test.test_opcodes.OpcodeTest('test_compare_function_objects'))
-        suite.addTest(unittest.expectedFailure(test.test_opcodes.OpcodeTest('test_do_not_recreate_annotations'))) # https://github.com/IronLanguages/ironpython3/issues/106
-        suite.addTest(test.test_opcodes.OpcodeTest('test_modulo_of_string_subclasses'))
-        suite.addTest(test.test_opcodes.OpcodeTest('test_no_annotations_if_not_needed'))
-        suite.addTest(test.test_opcodes.OpcodeTest('test_raise_class_exceptions'))
-        suite.addTest(unittest.expectedFailure(test.test_opcodes.OpcodeTest('test_setup_annotations_line'))) # https://github.com/IronLanguages/ironpython3/issues/106
-        suite.addTest(test.test_opcodes.OpcodeTest('test_try_inside_for_loop'))
-        suite.addTest(unittest.expectedFailure(test.test_opcodes.OpcodeTest('test_use_existing_annotations'))) # https://github.com/IronLanguages/ironpython3/issues/106
-        return suite
+    tests = loader.loadTestsFromModule(test.test_opcodes, pattern=pattern)
+
+    if is_ironpython:
+        failing_tests = [
+            test.test_opcodes.OpcodeTest('test_do_not_recreate_annotations'), # https://github.com/IronLanguages/ironpython3/issues/106
+            test.test_opcodes.OpcodeTest('test_setup_annotations_line'), # https://github.com/IronLanguages/ironpython3/issues/106
+            test.test_opcodes.OpcodeTest('test_use_existing_annotations'), # https://github.com/IronLanguages/ironpython3/issues/106
+        ]
+
+        return generate_suite(tests, failing_tests)
 
     else:
-        return loader.loadTestsFromModule(test.test_opcodes, pattern)
+        return tests
 
 run_test(__name__)

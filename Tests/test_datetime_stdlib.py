@@ -118,7 +118,13 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.ZoneInfoTest('test_system_transitions'), # AttributeError: 'module' object has no attribute 'tzset'
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+        for test_or_suite in tests:
+            if isinstance(test_or_suite, test.datetimetester.ZoneInfoCompleteTest):
+                for t in test_or_suite:
+                    skip_tests.append(t)
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

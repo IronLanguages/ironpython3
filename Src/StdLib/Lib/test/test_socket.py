@@ -5123,7 +5123,8 @@ class TestSocketSharing(SocketTCPTest):
                     source.close()
 
 
-def test_main():
+# ironpython: refactored to use load_tests protocol
+def load_tests(*args):
     tests = [GeneralModuleTests, BasicTCPTest, TCPCloserTest, TCPTimeoutTest,
              TestExceptions, BufferIOTest, BasicTCPTest2, BasicUDPTest, UDPTimeoutTest ]
 
@@ -5177,8 +5178,11 @@ def test_main():
         TestSocketSharing,
     ])
 
+    return unittest.TestSuite([unittest.makeSuite(test) for test in tests])
+
+def test_main():
     thread_info = support.threading_setup()
-    support.run_unittest(*tests)
+    support.run_unittest(__name__)
     support.threading_cleanup(*thread_info)
 
 if __name__ == "__main__":

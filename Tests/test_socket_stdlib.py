@@ -6,7 +6,7 @@
 ## Run selected tests from test_socket from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_linux, is_posix
+from iptest import is_ironpython, generate_suite, run_test, is_linux, is_mono, is_posix
 
 import test.test_socket
 
@@ -40,9 +40,8 @@ def load_tests(loader, standard_tests, pattern):
         if is_posix:
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
-
             ]
-        else:
+        if not is_mono:
             failing_tests += [
                 test.test_socket.GeneralModuleTests('test_getnameinfo'), # https://github.com/IronLanguages/ironpython3/issues/1222
             ]

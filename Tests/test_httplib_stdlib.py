@@ -29,10 +29,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_httplib.HTTPSTest('test_local_good_hostname'), # StackOverflowException
             test.test_httplib.HTTPSTest('test_local_unknown_cert'), # StackOverflowException
         ]
-        if is_mono:
-            skip_tests += [
-                test.test_functools.TestPartialPy('test_weakref'),
-            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

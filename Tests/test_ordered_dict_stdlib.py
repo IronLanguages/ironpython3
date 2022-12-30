@@ -6,279 +6,58 @@
 ## Run selected tests from test_ordered_dict from StdLib
 ##
 
-import unittest
-import sys
-
-from iptest import is_net60, run_test
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_ordered_dict
 
 def load_tests(loader, standard_tests, pattern):
-    if sys.implementation.name == 'ironpython':
-        suite = unittest.TestSuite()
-        # https://github.com/IronLanguages/ironpython3/issues/1556
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_abc'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_clear'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem_hash_collision'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_detect_deletion_during_iteration'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested_subclass'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_init'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_override_update'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_popitem'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_reinsert'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_setitem'))
-        # suite.addTest(test.test_ordered_dict.CPythonBuiltinDictTests('test_update'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_bool'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_constructor'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_get'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_getitem'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_items'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_keys'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_len'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_read'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_update'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_values'))
-        suite.addTest(test.test_ordered_dict.CPythonGeneralMappingTests('test_write'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_468'))) # https://github.com/IronLanguages/ironpython3/issues/1460
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_abc'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_clear'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_copying'))) # pickle.PicklingError
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_delitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_delitem_hash_collision'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_detect_deletion_during_iteration'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_clear'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_delitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_setitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_dict_update'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_equality'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_free_after_iterating'))) # AssertionError
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_fromkeys'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested'))
-        # suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_init'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_init_calls'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_issue24347'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_issue24348'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_issue24667'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_iterators'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_iterators_empty'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_iterators_pickling'))) # pickle.PicklingError
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_key_change_during_iteration'))) # AssertionError: RuntimeError not raised
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_move_to_end'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_move_to_end_issue25406'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_override_update'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_pickle_recursive'))) # pickle.PicklingError
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_popitem_last'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_reduce_not_too_fat'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_reference_loop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_reinsert'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_repr'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_repr_recursive'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_repr_recursive_values'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_setitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_sizeof'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_sizeof_exact'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_sorted_iterators'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_update'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_views'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_yaml_linkage'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictTests('test_468'))) # https://github.com/IronLanguages/ironpython3/issues/1460
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_abc'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_clear'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_copying'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_delitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_delitem_hash_collision'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_detect_deletion_during_iteration'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_clear'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_delitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_setitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_dict_update'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_equality'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictTests('test_free_after_iterating'))) # AssertionError
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_fromkeys'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested'))
-        # suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_init'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_init_calls'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_issue24347'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_issue24348'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_issue24667'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_iterators'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_iterators_empty'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictTests('test_iterators_pickling'))) # pickle.PicklingError
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.CPythonOrderedDictTests('test_key_change_during_iteration'))) # AssertionError: RuntimeError not raised
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_move_to_end'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_move_to_end_issue25406'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_override_update'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_pickle_recursive'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_popitem_last'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_reduce_not_too_fat'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_reference_loop'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_reinsert'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_repr'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_repr_recursive'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_repr_recursive_values'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_setitem'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_sizeof'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_sizeof_exact'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_sorted_iterators'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_update'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_views'))
-        suite.addTest(test.test_ordered_dict.CPythonOrderedDictTests('test_yaml_linkage'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_bool'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_constructor'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_get'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_getitem'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_items'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_keys'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_len'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_read'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_update'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_values'))
-        suite.addTest(test.test_ordered_dict.CPythonSubclassMappingTests('test_write'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_bool'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_constructor'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_get'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_getitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_items'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_keys'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_len'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_read'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_values'))
-        suite.addTest(test.test_ordered_dict.PurePythonGeneralMappingTests('test_write'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_468'))) # https://github.com/IronLanguages/ironpython3/issues/1460
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_abc'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_clear'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_copying'))) # pickle.PicklingError
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_delitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_delitem_hash_collision'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_detect_deletion_during_iteration'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_clear'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_delitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_setitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_dict_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_equality'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_free_after_iterating'))) # AssertionError
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_fromkeys'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested'))
-        # suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_init'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_init_calls'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_issue24347'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_issue24348'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_issue24667'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_iterators'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_iterators_empty'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_move_to_end'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_move_to_end_issue25406'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_override_update'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_pickle_recursive'))) # pickle.PicklingError
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_popitem_last'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_reduce_not_too_fat'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_reference_loop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_reinsert'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_repr'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_repr_recursive'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_repr_recursive_values'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_setitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_sizeof'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_sorted_iterators'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_views'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_yaml_linkage'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictTests('test_468'))) # https://github.com/IronLanguages/ironpython3/issues/1460
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_abc'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_clear'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_copying'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_delitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_delitem_hash_collision'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_detect_deletion_during_iteration'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_clear'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_delitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_setitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_dict_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_equality'))
-        suite.addTest(unittest.expectedFailure(test.test_ordered_dict.PurePythonOrderedDictTests('test_free_after_iterating'))) # AssertionError
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_fromkeys'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested'))
-        # suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested_subclass')) # intermittent AssertionError - GC related?
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_init'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_init_calls'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_issue24347'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_issue24348'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_issue24667'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_iterators'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_iterators_empty'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_move_to_end'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_move_to_end_issue25406'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_override_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_pickle_recursive'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_popitem_last'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_reduce_not_too_fat'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_reference_loop'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_reinsert'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_repr'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_repr_recursive'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_repr_recursive_values'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_setitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_sizeof'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_sorted_iterators'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_views'))
-        suite.addTest(test.test_ordered_dict.PurePythonOrderedDictTests('test_yaml_linkage'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_bool'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_constructor'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_get'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_getitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_items'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_keys'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_len'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_pop'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_popitem'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_read'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_setdefault'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_update'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_values'))
-        suite.addTest(test.test_ordered_dict.PurePythonSubclassMappingTests('test_write'))
-        return suite
+    tests = loader.loadTestsFromModule(test.test_ordered_dict, pattern=pattern)
+
+    if is_ironpython:
+        failing_tests = [
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_468'), # https://github.com/IronLanguages/ironpython3/issues/1460
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_copying'), # pickle.PicklingError
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_free_after_iterating'), # AssertionError
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_iterators_pickling'), # pickle.PicklingError
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_key_change_during_iteration'), # AssertionError: RuntimeError not raised
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_pickle_recursive'), # pickle.PicklingError
+            test.test_ordered_dict.CPythonOrderedDictTests('test_468'), # https://github.com/IronLanguages/ironpython3/issues/1460
+            test.test_ordered_dict.CPythonOrderedDictTests('test_free_after_iterating'), # AssertionError
+            test.test_ordered_dict.CPythonOrderedDictTests('test_iterators_pickling'), # pickle.PicklingError
+            test.test_ordered_dict.CPythonOrderedDictTests('test_key_change_during_iteration'), # AssertionError: RuntimeError not raised
+            test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_468'), # https://github.com/IronLanguages/ironpython3/issues/1460
+            test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_copying'), # pickle.PicklingError
+            test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_free_after_iterating'), # AssertionError
+            test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_pickle_recursive'), # pickle.PicklingError
+            test.test_ordered_dict.PurePythonOrderedDictTests('test_468'), # https://github.com/IronLanguages/ironpython3/issues/1460
+            test.test_ordered_dict.PurePythonOrderedDictTests('test_free_after_iterating'), # AssertionError
+        ]
+
+        skip_tests = [
+            # https://github.com/IronLanguages/ironpython3/issues/1556
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_abc'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_clear'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_delitem_hash_collision'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_detect_deletion_during_iteration'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested_subclass'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_init'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_override_update'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_popitem'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_reinsert'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_setitem'),
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_update'),
+
+            test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
+            test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
+            test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
+            test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
+        ]
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
-        return loader.loadTestsFromModule(test.test_ordered_dict, pattern)
+        return tests
 
 run_test(__name__)

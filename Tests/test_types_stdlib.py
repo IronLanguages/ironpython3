@@ -6,89 +6,44 @@
 ## Run selected tests from test_types from StdLib
 ##
 
-import unittest
-import sys
-
-from iptest import is_linux, is_netcoreapp21, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_linux, is_netcoreapp21
 
 import test.test_types
 
 def load_tests(loader, standard_tests, pattern):
-    if sys.implementation.name == 'ironpython':
-        suite = unittest.TestSuite()
-        suite.addTest(unittest.expectedFailure(test.test_types.ClassCreationTests('test_bad___prepare__'))) # AssertionError
-        suite.addTest(test.test_types.ClassCreationTests('test_metaclass_derivation'))
-        suite.addTest(test.test_types.ClassCreationTests('test_metaclass_override_callable'))
-        suite.addTest(test.test_types.ClassCreationTests('test_metaclass_override_function'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_basics'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_defaults'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_exec_body'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_meta'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_meta_with_base'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_metaclass_keywords'))
-        suite.addTest(test.test_types.ClassCreationTests('test_new_class_subclass'))
-        suite.addTest(unittest.expectedFailure(test.test_types.ClassCreationTests('test_one_argument_type'))) # AssertionError: TypeError not raised
-        suite.addTest(test.test_types.ClassCreationTests('test_prepare_class'))
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_async_def'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_coro'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_corogen'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_functional_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_duck_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_gen'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_genfunc'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_non_gen_values'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_returning_itercoro'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(unittest.expectedFailure(test.test_types.CoroutineTests('test_wrapper_object'))) # https://github.com/IronLanguages/ironpython3/issues/98
-        suite.addTest(test.test_types.CoroutineTests('test_wrong_args'))
-        suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_chainmap'))) # TypeError: expected dict, got Object_1$1
-        suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_constructor'))) # TypeError: expected dict, got Object_1$1
-        suite.addTest(test.test_types.MappingProxyTests('test_contains'))
-        suite.addTest(test.test_types.MappingProxyTests('test_copy'))
-        suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_customdict'))) # AssertionError: False is not true
-        suite.addTest(test.test_types.MappingProxyTests('test_get'))
-        suite.addTest(test.test_types.MappingProxyTests('test_iterators'))
-        suite.addTest(test.test_types.MappingProxyTests('test_len'))
-        suite.addTest(test.test_types.MappingProxyTests('test_methods'))
-        suite.addTest(unittest.expectedFailure(test.test_types.MappingProxyTests('test_missing'))) # AssertionError: 'missing=y' != None
-        suite.addTest(test.test_types.MappingProxyTests('test_views'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_as_dict'))
-        suite.addTest(unittest.expectedFailure(test.test_types.SimpleNamespaceTests('test_attrdel'))) # KeyError: spam
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_attrget'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_attrset'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_constructor'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_equal'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_fake_namespace_compare'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_nested'))
-        suite.addTest(unittest.expectedFailure(test.test_types.SimpleNamespaceTests('test_pickle'))) # TypeError: protocol 0
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_recursive'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_recursive_repr'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_repr'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_subclass'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_unbound'))
-        suite.addTest(test.test_types.SimpleNamespaceTests('test_underlying_dict'))
-        suite.addTest(test.test_types.TypesTests('test_boolean_ops'))
-        suite.addTest(test.test_types.TypesTests('test_comparisons'))
-        suite.addTest(unittest.expectedFailure(test.test_types.TypesTests('test_float__format__'))) # AssertionError: '1.12339e+200' != '1.1234e+200'
+    tests = loader.loadTestsFromModule(test.test_types, pattern=pattern)
+
+    if is_ironpython:
+        failing_tests = [
+            test.test_types.ClassCreationTests('test_bad___prepare__'), # AssertionError
+            test.test_types.ClassCreationTests('test_one_argument_type'), # AssertionError: TypeError not raised
+            test.test_types.CoroutineTests('test_async_def'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_duck_coro'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_duck_corogen'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_duck_functional_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_duck_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_genfunc'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_non_gen_values'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_returning_itercoro'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_wrapper_object'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.MappingProxyTests('test_chainmap'), # TypeError: expected dict, got Object_1$1
+            test.test_types.MappingProxyTests('test_constructor'), # TypeError: expected dict, got Object_1$1
+            test.test_types.MappingProxyTests('test_customdict'), # AssertionError: False is not true
+            test.test_types.MappingProxyTests('test_missing'), # AssertionError: 'missing=y' != None
+            test.test_types.SimpleNamespaceTests('test_attrdel'), # KeyError: spam
+            test.test_types.SimpleNamespaceTests('test_pickle'), # TypeError: protocol 0
+            test.test_types.TypesTests('test_float__format__'), # AssertionError: '1.12339e+200' != '1.1234e+200'
+            test.test_types.TypesTests('test_internal_sizes'), # AttributeError: 'type' object has no attribute '__basicsize__'
+        ]
         if is_netcoreapp21 and is_linux:
-            suite.addTest(unittest.expectedFailure(test.test_types.TypesTests('test_float__format__locale'))) # https://github.com/IronLanguages/ironpython3/issues/751
-        else:
-            suite.addTest(test.test_types.TypesTests('test_float__format__locale'))
-        suite.addTest(test.test_types.TypesTests('test_float_constructor'))
-        suite.addTest(test.test_types.TypesTests('test_float_to_string'))
-        suite.addTest(test.test_types.TypesTests('test_floats'))
-        suite.addTest(test.test_types.TypesTests('test_format_spec_errors'))
-        suite.addTest(test.test_types.TypesTests('test_int__format__'))
-        suite.addTest(test.test_types.TypesTests('test_int__format__locale'))
-        suite.addTest(unittest.expectedFailure(test.test_types.TypesTests('test_internal_sizes'))) # AttributeError: 'type' object has no attribute '__basicsize__'
-        suite.addTest(test.test_types.TypesTests('test_normal_integers'))
-        suite.addTest(test.test_types.TypesTests('test_numeric_types'))
-        suite.addTest(test.test_types.TypesTests('test_strings'))
-        suite.addTest(test.test_types.TypesTests('test_truth_values'))
-        suite.addTest(test.test_types.TypesTests('test_type_function'))
-        suite.addTest(test.test_types.TypesTests('test_zero_division'))
-        return suite
+            failing_tests += [
+                test.test_types.TypesTests('test_float__format__locale'), # https://github.com/IronLanguages/ironpython3/issues/751
+            ]
+
+        return generate_suite(tests, failing_tests)
 
     else:
-        return loader.loadTestsFromModule(test.test_types, pattern)
+        return tests
 
 run_test(__name__)

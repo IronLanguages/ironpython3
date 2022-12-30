@@ -6,28 +6,21 @@
 ## Run selected tests from test_code_module from StdLib
 ##
 
-import unittest
-import sys
-
-from iptest import run_test
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_code_module
 
 def load_tests(loader, standard_tests, pattern):
-    if sys.implementation.name == 'ironpython':
-        suite = unittest.TestSuite()
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_banner'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_cause_tb'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_console_stderr'))
-        suite.addTest(unittest.expectedFailure(test.test_code_module.TestInteractiveConsole('test_context_tb'))) # https://github.com/IronLanguages/ironpython3/issues/1557
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_exit_msg'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_ps1'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_ps2'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_syntax_error'))
-        suite.addTest(test.test_code_module.TestInteractiveConsole('test_sysexcepthook'))
-        return suite
+    tests = loader.loadTestsFromModule(test.test_code_module, pattern=pattern)
+
+    if is_ironpython:
+        failing_tests = [
+            test.test_code_module.TestInteractiveConsole('test_context_tb'), # https://github.com/IronLanguages/ironpython3/issues/1557
+        ]
+
+        return generate_suite(tests, failing_tests)
 
     else:
-        return loader.loadTestsFromModule(test.test_code_module, pattern)
+        return tests
 
 run_test(__name__)

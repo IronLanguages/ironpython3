@@ -2,7 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-from .ipunittest import IronPythonTestCase, stdout_trapper, stderr_trapper, path_modifier, retryOnFailure, run_test, skipUnlessIronPython, source_root, expectedFailureIf
+from .ipunittest import IronPythonTestCase, stdout_trapper, stderr_trapper, path_modifier, retryOnFailure, run_test, skipUnlessIronPython, source_root, expectedFailureIf, generate_suite
 from .test_env import *
 from .type_util import *
 from .misc_util import ip_supported_encodings

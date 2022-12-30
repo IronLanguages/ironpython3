@@ -2,7 +2,7 @@
 
 The issue tracker is used to report bugs and request new features, NOT to ask questions.
 
-Questions should be posted to the users mailing list which can be accessed at 
+Questions should be posted in [Discussions](https://github.com/IronLanguages/ironpython3/discussions/categories/q-a) or to the users mailing list which can be accessed at 
 https://ironpython.groups.io/g/users. 
 
 * [ ] Are you running the latest version?
@@ -25,4 +25,4 @@ https://ironpython.groups.io/g/users.
 
 ### Versions
 
-You can get this information from executing `ipy -V`.
+You can get this information from executing `ipy -VV`.

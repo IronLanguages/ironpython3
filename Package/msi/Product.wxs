@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+﻿<!--
   IronPython installer root features, upgrades, and product definition
   2006-01-01 BobArnso Created
 -->
@@ -15,16 +13,16 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
 <?define UpgradeCode = "664cd4f7-5c34-441e-b3d0-dba395e9414f" ?>
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
-  <Product Id="*" UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)">
-    <Package Id="*" Compressed="yes" Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" InstallerVersion="200" ShortNames="no" Manufacturer="$(var.Manufacturer)" InstallScope="perMachine" />
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package UpgradeCode="$(var.UpgradeCode)" Name="$(var.ProductShortName) $(var.ProductVersionText)" Version="$(var.ProductVersion)" Language="1033" Manufacturer="$(var.Manufacturer)" InstallerVersion="200" ShortNames="no">
+    <SummaryInformation Description="$(var.ProductShortName) $(var.ProductVersionText) ($(var.ProductVersion))" Manufacturer="$(var.Manufacturer)" />
+
     <Media Id="1" Cabinet="IronPy.cab" EmbedCab="yes" CompressionLevel="high" />
 
     <Icon Id="ipy.ico" SourceFile="..\..\Src\IronPythonConsole\ipy.ico" />
 
     <!-- Major upgrade -->
-    <MajorUpgrade AllowSameVersionUpgrades="no"
-                  DowngradeErrorMessage="A later version of [ProductName] is already installed."/>
+    <MajorUpgrade AllowSameVersionUpgrades="no" DowngradeErrorMessage="A later version of [ProductName] is already installed." />
 
     <!-- Normal upgrades -->
     <Upgrade Id="$(var.UpgradeCode)">
@@ -52,21 +50,11 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     </Property>
 
     <!-- Launch conditions -->
-    <Condition Message="An administrator must approve or install [ProductName]."><![CDATA[Privileged]]></Condition>
-    <Condition Message="[ProductName] requires .NET Framework 4.6.2 or later."><![CDATA[Installed OR WIX_IS_NETFRAMEWORK_462_OR_LATER_INSTALLED]]></Condition>
+    <Launch Condition="Privileged" Message="An administrator must approve or install [ProductName]." />
+    <Launch Condition="Installed OR WIX_IS_NETFRAMEWORK_462_OR_LATER_INSTALLED" Message="[ProductName] requires .NET Framework 4.6.2 or later." />
 
     <!-- Root directories -->
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="IronPythonStartMenu" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
-      </Directory>
 
-      <Directory Id="ProgramFiles64Folder">
-        <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
-      </Directory>
-
-      <Directory Id="GAC" Name="GAC" />
-    </Directory>
 
     <DirectoryRef Id="IronPythonStartMenu">
       <Component Id="IronPythonCommonShortcuts">
@@ -79,8 +67,8 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     </DirectoryRef>
 
     <!-- Features - listed in the UI in the same order as they appear here -->
-    <Feature Id="Feature_IronPython" ConfigurableDirectory="INSTALLDIR" Absent="disallow" AllowAdvertise="no" Display="expand" Level="1" Title="IronPython">
-      <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Display="collapse" Level="1" Title="IronPython" Description="IronPython binaries for the Desktop CLR.">
+    <Feature Id="Feature_IronPython" ConfigurableDirectory="INSTALLDIR" AllowAdvertise="no" Display="expand" Level="1" Title="IronPython" AllowAbsent="no">
+      <Feature Id="Feature_Core" AllowAdvertise="no" Display="collapse" Level="1" Title="IronPython" Description="IronPython binaries for the Desktop CLR." AllowAbsent="no">
         <ComponentGroupRef Id="Dlr" />
         <ComponentGroupRef Id="IronPython" />
         <ComponentGroupRef Id="IronPythonStdLib" />
@@ -93,7 +81,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
 
     <!-- User interface -->
-    <UIRef Id="WixUI_FeatureTree" />
+    <ui:WixUI Id="WixUI_FeatureTree" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <WixVariable Id="WixUIDialogBmp" Value="ironpython.bmp" />
     <WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
@@ -103,12 +91,12 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
     <!-- Install/uninstall pip -->
     <?if $(var.Platform)~="x64" ?>
-        <CustomAction Id="UpdatePip" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Return="ignore" Impersonate="no" />
-        <CustomAction Id="RemovePip" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Return="ignore" Impersonate="no" />
-    <?else ?>
-        <CustomAction Id="UpdatePip" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" />
-        <CustomAction Id="RemovePip" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" />
-    <?endif ?>
+        <CustomAction Id="UpdatePip" DllEntry="WixQuietExec64" Execute="deferred" Return="ignore" Impersonate="no" BinaryRef="Wix4UtilCA_X86" />
+        <CustomAction Id="RemovePip" DllEntry="WixQuietExec64" Execute="deferred" Return="ignore" Impersonate="no" BinaryRef="Wix4UtilCA_X86" />
+    <?else?>
+        <CustomAction Id="UpdatePip" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" BinaryRef="Wix4UtilCA_X86" />
+        <CustomAction Id="RemovePip" DllEntry="WixQuietExec" Execute="deferred" Return="ignore" Impersonate="no" BinaryRef="Wix4UtilCA_X86" />
+    <?endif?>
 
     <SetProperty Id="UpdatePip" Value="&quot;[#ipy.exe]&quot; -E -s -m ensurepip -U --default-pip" Before="UpdatePip" Sequence="execute" />
     <SetProperty Id="RemovePip" Value="&quot;[#ipy.exe]&quot; -E -s -B -m ensurepip._uninstall" Before="RemovePip" Sequence="execute" />
@@ -116,10 +104,20 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <!-- Sequences -->
     <InstallExecuteSequence>
       <Custom Action="SetInstallLocation" After="InstallValidate" />
-      <Custom Action="UpdatePip" After="InstallFiles"><![CDATA[(&Pip_Setup=3) AND NOT Installed]]></Custom>
-      <Custom Action="RemovePip" Before="RemoveFiles"><![CDATA[(!Pip_Setup<>2) AND Installed]]></Custom>
+      <Custom Action="UpdatePip" After="InstallFiles" Condition="(&amp;Pip_Setup=3) AND NOT Installed" />
+      <Custom Action="RemovePip" Before="RemoveFiles" Condition="(!Pip_Setup&lt;&gt;2) AND Installed" />
     </InstallExecuteSequence>
 
-  </Product>
+
+      <StandardDirectory Id="ProgramMenuFolder">
+        <Directory Id="IronPythonStartMenu" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
+      </StandardDirectory>
+
+      <StandardDirectory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
+      </StandardDirectory>
+
+      <Directory Id="GAC" Name="GAC" />
+    </Package>
 
 </Wix>

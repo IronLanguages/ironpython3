@@ -4,7 +4,7 @@ IronPython 3
 
 [Official Website](https://ironpython.net)
 
-IronPython is an open-source implementation of the Python programming language which is tightly integrated with .NET. IronPython can use .NET and Python libraries, and other .NET languages can use Python code just as easily.
+IronPython is an open-source implementation of the Python programming language that is tightly integrated with .NET. IronPython can use .NET and Python libraries, and other .NET languages can use Python code just as easily.
 
 IronPython 3 targets Python 3, including the re-organized standard library, Unicode strings, and all of the other new features.
 
@@ -80,7 +80,7 @@ While compatibility with CPython is one of our main goals with IronPython 3, the
 See the [Package compatibility](Documentation/package-compatibility.md) document for information on compatibility with popular packages.
 
 ## Installation
-Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0).
+Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](Documentation/installing.md) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
 
 ## Build
 See the [building document](Documentation/building.md). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!

@@ -36,10 +36,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_types.TypesTests('test_float__format__'), # AssertionError: '1.12339e+200' != '1.1234e+200'
             test.test_types.TypesTests('test_internal_sizes'), # AttributeError: 'type' object has no attribute '__basicsize__'
         ]
-        if is_netcoreapp21 and is_linux:
-            failing_tests += [
-                test.test_types.TypesTests('test_float__format__locale'), # https://github.com/IronLanguages/ironpython3/issues/751
-            ]
 
         return generate_suite(tests, failing_tests)
 

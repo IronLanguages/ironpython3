@@ -886,7 +886,7 @@ namespace IronPython.Runtime.Operations {
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
                             self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-                            digits = self.ToString("0.0" + new string('#', decimalPoints));
+                            digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
                         }
                     } else {
                         // just the default formatting
@@ -952,17 +952,17 @@ namespace IronPython.Runtime.Operations {
 
                             if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("#,0.0" + new string('#', decimalPoints));
+                                    digits = self.ToString("#,0.0" + new string('#', decimalPoints), context.LanguageContext.NumericCulture);
                                 } else {
                                     // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("#,0");
+                                    digits = self.ToString("#,0", context.LanguageContext.NumericCulture);
                                 }
                             } else {
                                 if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("0.0" + new string('#', decimalPoints));
+                                    digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
                                 } else {
                                     // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("0");
+                                    digits = self.ToString("0", CultureInfo.InvariantCulture);
                                 }
                             }
                         }

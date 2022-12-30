@@ -407,7 +407,7 @@ class MethodDispatchTest(IronPythonTestCase):
         #======================================================================
 
         #!!! easy way to get M5(float) invoked
-        Check(105, d.M5, System.Single.Parse("3.14"))
+        Check(105, d.M5, System.Single(3.14))
         Check(205, d.M5, 3.14)
         self.assertRaises(TypeError, d.M5, None)
 
@@ -1231,7 +1231,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
         one.extend([True, False, big(5), DispatchHelpers.Color.Red ])
 
-        two = [t.Parse("5.5") for t in [ System.Decimal, System.Single, System.Double] ]
+        two = [t(5.5) for t in [ System.Decimal, System.Single, System.Double] ]
 
         two.extend([None, "5", "5.5", maxint * 2, ])
 

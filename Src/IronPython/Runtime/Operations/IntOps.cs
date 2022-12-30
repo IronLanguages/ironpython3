@@ -304,7 +304,7 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'int'", spec.TypeRepr);
             }
 
-            Debug.Assert(digits[0] != '-');
+            Debug.Assert(spec.Type == 'c' || digits[0] != '-');
 
             return spec.AlignNumericText(digits, self == 0, self > 0);
         }

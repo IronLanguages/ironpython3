@@ -37,11 +37,11 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.TestSocketSharing('testTypes'), # https://github.com/IronLanguages/ironpython3/issues/1226
             test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking'), # TODO: figure out
         ]
-        if is_posix:
+        if is_mono:
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]
-        if not is_mono:
+        else:
             failing_tests += [
                 test.test_socket.GeneralModuleTests('test_getnameinfo'), # https://github.com/IronLanguages/ironpython3/issues/1222
             ]

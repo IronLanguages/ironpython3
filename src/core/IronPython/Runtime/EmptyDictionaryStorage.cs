@@ -17,8 +17,7 @@ namespace IronPython.Runtime {
     internal class EmptyDictionaryStorage : DictionaryStorage {
         public static EmptyDictionaryStorage Instance = new EmptyDictionaryStorage();
 
-        private EmptyDictionaryStorage() {
-        }
+        private EmptyDictionaryStorage() { }
 
         public override void Add(ref DictionaryStorage storage, object? key, object? value) {
             lock (this) {
@@ -49,8 +48,7 @@ namespace IronPython.Runtime {
             return storage.AsMutable(ref storage);
         }
 
-        public override void Clear(ref DictionaryStorage storage) {
-        }
+        public override void Clear(ref DictionaryStorage storage) { }
 
         public override bool Contains(object? key) {
             // make sure argument is valid, do not calculate hash

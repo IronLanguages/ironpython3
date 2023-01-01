@@ -2603,6 +2603,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonDictionary CopyAndVerifyPythonDictionary(PythonFunction function, PythonDictionary dict) {
+            if (dict.TreatAsMapping) return CopyAndVerifyUserMapping(function, dict);
+
             if (dict._storage.HasNonStringAttributes()) {
                 throw TypeError("{0}() keywords must be strings", function.__name__);
             }

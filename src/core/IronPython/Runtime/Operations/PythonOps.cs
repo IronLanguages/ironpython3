@@ -1824,6 +1824,13 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void DictMerge(CodeContext context, PythonDictionary dict, object? item) {
+            if (item is PythonDictionary pyDict && !pyDict.TreatAsMapping) {
+                foreach (KeyValuePair<object?, object?> kvp in pyDict._storage.GetItems()) {
+                    DictMergeOne(context, dict, kvp.Key, kvp.Value);
+                }
+                return;
+            }
+
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
                 throw TypeError($"'{PythonOps.GetPythonTypeName(item)}' object is not a mapping");
@@ -1854,6 +1861,11 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void DictUpdate(CodeContext context, PythonDictionary dict, object? item) {
+            if (item is PythonDictionary pyDict && !pyDict.TreatAsMapping) {
+                pyDict._storage.CopyTo(ref dict._storage);
+                return;
+            }
+
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, item, "keys", out object keys)) {
                 throw TypeError($"'{PythonOps.GetPythonTypeName(item)}' object is not a mapping");
@@ -2713,6 +2725,13 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonDictionary UserMappingToPythonDictionary(CodeContext/*!*/ context, object dict, string funcName) {
+            if (dict is PythonDictionary pyDict && !pyDict.TreatAsMapping) {
+                if (pyDict._storage.HasNonStringAttributes()) {
+                    throw TypeError("{0}() keywords must be strings", funcName);
+                }
+                return new PythonDictionary(pyDict);
+            }
+
             // call dict.keys()
             if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, "keys", out object keys)) {
                 throw TypeError("{0}() argument after ** must be a mapping, not {1}",
@@ -2736,13 +2755,8 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        public static PythonDictionary CopyAndVerifyPythonDictionary(PythonFunction function, PythonDictionary dict) {
-            if (dict._storage.HasNonStringAttributes()) {
-                throw TypeError("{0}() keywords must be strings", function.__name__);
-            }
-
-            return new PythonDictionary(dict);
-        }
+        public static PythonDictionary CopyAndVerifyPythonDictionary(PythonFunction function, PythonDictionary dict)
+            => UserMappingToPythonDictionary(function.Context, dict, function.__name__);
 
         public static object ExtractDictionaryArgument(PythonFunction function, string name, int argCnt, PythonDictionary dict) {
             if (dict.TryGetValue(name, out object val)) {

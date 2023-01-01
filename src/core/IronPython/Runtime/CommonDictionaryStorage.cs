@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 using IronPython.Runtime.Operations;
@@ -33,7 +34,8 @@ namespace IronPython.Runtime {
     /// the buckets and then calls a static helper function to do the read from the bucket
     /// array to ensure that readers are not seeing multiple bucket arrays.
     /// </summary>
-    internal sealed class CommonDictionaryStorage : DictionaryStorage {
+    [Serializable]
+    internal sealed class CommonDictionaryStorage : DictionaryStorage, ISerializable, IDeserializationCallback {
         private int[] _indices;
         private List<Bucket> _buckets;
         private int _count;
@@ -116,6 +118,16 @@ namespace IronPython.Runtime {
             _hashFunc = hashFunc;
             _eqFunc = eqFunc;
         }
+
+#if FEATURE_SERIALIZATION
+        private CommonDictionaryStorage(SerializationInfo info, StreamingContext context) {
+            // Remember the serialization info, we'll deserialize when we get the callback.  This
+            // enables special types like DBNull.Value to successfully be deserialized inside of us.  We
+            // store the serialization info in a special bucket so we don't have an extra field just for
+            // serialization.
+            _buckets = new List<Bucket> { new Bucket(null, info, 0) };
+        }
+#endif
 
         public override void Add(ref DictionaryStorage storage, object key, object value)
             => Add(key, value);
@@ -651,5 +663,31 @@ namespace IronPython.Runtime {
         private static bool GenericEquals(object o1, object o2) => PythonOps.EqualRetBool(o1, o2);
 
         #endregion
+
+#if FEATURE_SERIALIZATION
+        #region ISerializable Members
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context) {
+            info.AddValue("buckets", GetItems());
+        }
+
+        void IDeserializationCallback.OnDeserialization(object sender) {
+            if (_indices is not null) {
+                // we've received multiple OnDeserialization callbacks, only
+                // deserialize after the 1st one
+                return;
+            }
+
+            var info = (SerializationInfo)_buckets[0].Value;
+            _buckets.Clear();
+
+            var buckets = (List<KeyValuePair<object, object>>)info.GetValue("buckets", typeof(List<KeyValuePair<object, object>>));
+            foreach (KeyValuePair<object, object> kvp in buckets) {
+                AddNoLock(kvp.Key, kvp.Value);
+            }
+        }
+
+        #endregion
+#endif
     }
 }

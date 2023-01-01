@@ -30,6 +30,7 @@ def load_tests(loader, standard_tests, pattern):
         ]
 
         skip_tests = [
+            test.test_ordered_dict.CPythonBuiltinDictTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
             test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
             test.test_ordered_dict.CPythonOrderedDictTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
             test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?

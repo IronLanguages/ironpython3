@@ -120,7 +120,11 @@ namespace IronPython.Runtime {
 
         public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             if (other is PythonDictionary pyDict) {
-                pyDict._storage.CopyTo(ref self._storage);
+                if (pyDict.TreatAsMapping) {
+                    SlowUpdate(context, self, other);
+                } else {
+                    pyDict._storage.CopyTo(ref self._storage);
+                }
             } else {
                 SlowUpdate(context, self, other);
             }
@@ -129,7 +133,7 @@ namespace IronPython.Runtime {
         private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             if (other is MappingProxy proxy) {
                 update(context, self, proxy.GetDictionary(context));
-            } else if (other is IDictionary dict) {
+            } else if (other is IDictionary dict && other is not PythonDictionary) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);

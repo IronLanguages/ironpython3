@@ -678,6 +678,11 @@ namespace IronPython.Runtime {
             return _storage.TryRemoveValue(ref _storage, key, out value);
         }
 
+        /// <summary>
+        /// If __iter__ is overridden then we should treat the dict as a mapping.
+        /// </summary>
+        internal bool TreatAsMapping => GetType() != typeof(PythonDictionary) && ((Func<object>)__iter__).Method.DeclaringType != typeof(PythonDictionary);
+
         #region Debugger View
 
         internal class DebugProxy {

@@ -143,11 +143,19 @@ namespace IronPython.Modules {
                     // we now own the lifetime of the socket
                     GC.SuppressFinalize(sock);
                 } else if (fileno != null) {
-                    if (Converter.TryConvertToInt64(fileno, out long l)) {
-                        socket = HandleToSocket(l);
+                    if (!PythonOps.TryToIndex(fileno, out object? handleObj)) {
+                        throw PythonOps.TypeErrorForUnIndexableObject(fileno);
                     }
+                    long handle = Converter.ConvertToInt64(handleObj);
+                    // Windows reserves only INVALID_SOCKET (~0) as an invalid handle
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? handle == -1 : handle < 0) {
+                        throw PythonOps.ValueError("negative file descriptor");
+                    }
+                    socket = HandleToSocket(handle);
                     if (socket is null) {
-                        throw PythonOps.OSError("Bad file descriptor");
+                        throw PythonOps.OSError(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? PythonErrorNumber.WSAENOTSOCK : PythonErrorNumber.EBADF,
+                            "Bad file descriptor");
                     }
                 } else {
                     try {

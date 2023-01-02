@@ -49,6 +49,10 @@ def load_tests(loader, standard_tests, pattern):
             failing_tests += [
                 test.test_socket.GeneralModuleTests('test_idna'), # TODO: figure out
             ]
+        if is_posix: # https://github.com/IronLanguages/ironpython3/pull/1638#discussion_r1059535867
+            failing_tests += [
+                test.test_socket.GeneralModuleTests('test_socket_fileno_requires_socket_fd'),
+            ]
 
         skip_tests = [
             test.test_socket.UnbufferedFileObjectClassTestCase('testWriteNonBlocking') # fails intermittently during CI

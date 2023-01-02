@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
     /// Mutations to the dictionary involves a simple locking strategy of
     /// locking on the DictionaryStorage object to ensure that only one
     /// mutation happens at a time.
-    /// 
+    ///
     /// Reads against the dictionary happen lock free.  When the dictionary is mutated
     /// it is either adding or removing buckets in a thread-safe manner so that the readers
     /// will either see a consistent picture as if the read occured before or after the mutation.
@@ -161,11 +161,12 @@ namespace IronPython.Runtime {
         }
 
         private void AddOne(object key, object value) {
-            GetHash(key, out var hc, out var eqFunc);
-            if (AddWorker(_indices, _buckets, new Bucket(key, value, hc), eqFunc)) {
+            Debug.Assert(_keyType == HeterogeneousType || key?.GetType() == _keyType);
+            var hc = _hashFunc(key) & int.MaxValue;
+            if (AddWorker(_indices, _buckets, new Bucket(key, value, hc), _eqFunc)) {
                 if (_count >= (_indices.Length * Load)) {
                     // grow the hash table
-                    EnsureSize((int)(_indices.Length / Load) * ResizeMultiplier, eqFunc);
+                    EnsureSize((int)(_indices.Length / Load) * ResizeMultiplier, _eqFunc);
                 }
             }
         }
@@ -298,7 +299,9 @@ namespace IronPython.Runtime {
                 }
 
                 // keep walking
-                index = ProbeNext(indices, index);
+                if (++index == indices.Length) {
+                    index = 0;
+                }
 
                 // if we ended up doing a full scan, then this means the key is not already in use and there are
                 // only recycled buckets available -- nothing more to probe
@@ -327,15 +330,6 @@ namespace IronPython.Runtime {
             _version++;
 
             return true;
-        }
-
-        private static int ProbeNext(int[] indices, int index) {
-            // probe to next bucket
-            index++;
-            if (index == indices.Length) {
-                index = 0;
-            }
-            return index;
         }
 
         /// <summary>
@@ -389,10 +383,7 @@ namespace IronPython.Runtime {
 
         private bool TryRemoveNoLock(object key, out object value) {
             GetHash(key, out var hc, out var eqFunc);
-            return TryRemoveNoLock(key, hc, eqFunc, out value);
-        }
 
-        private bool TryRemoveNoLock(object key, int hc, Func<object, object, bool> eqFunc, out object value) {
             if (_indices == null) {
                 value = null;
                 return false;
@@ -445,22 +436,19 @@ namespace IronPython.Runtime {
         private bool TryGetValue(int[] indices, List<Bucket> buckets, object key, out object value) {
             if (_count > 0 && indices != null) {
                 GetHash(key, out var hc, out var eqFunc);
-                return TryGetValue(indices, buckets, key, hc, eqFunc, out value);
+
+                var pair = LookupIndex(indices, buckets, key, hc, eqFunc);
+                if (pair.Value < 0) {
+                    value = null;
+                    return false;
+                }
+
+                value = buckets[pair.Value].Value;
+                return true;
             }
 
             value = null;
             return false;
-        }
-
-        private static bool TryGetValue(int[] indices, List<Bucket> buckets, object key, int hc, Func<object, object, bool> eqFunc, out object value) {
-            var pair = LookupIndex(indices, buckets, key, hc, eqFunc);
-            if (pair.Value < 0) {
-                value = null;
-                return false;
-            }
-
-            value = buckets[pair.Value].Value;
-            return true;
         }
 
         /// <summary>

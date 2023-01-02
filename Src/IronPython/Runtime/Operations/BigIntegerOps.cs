@@ -738,16 +738,15 @@ namespace IronPython.Runtime.Operations {
         public static string/*!*/ __format__(CodeContext/*!*/ context, BigInteger/*!*/ self, [NotNone] string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
-            if (spec.Precision != null) {
-                throw PythonOps.ValueError("Precision not allowed in integer format specifier");
-            }
-
             BigInteger val = self.Abs();
 
             string digits;
 
             switch (spec.Type) {
                 case 'n':
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     CultureInfo culture = context.LanguageContext.NumericCulture;
 
                     if (culture == CultureInfo.InvariantCulture) {
@@ -765,6 +764,9 @@ namespace IronPython.Runtime.Operations {
                     break;
                 case null:
                 case 'd':
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     if (spec.ThousandsComma || spec.ThousandsUnderscore) {
                         var numberFormat = spec.ThousandsUnderscore ? FormattingHelper.InvariantUnderscoreNumberInfo : CultureInfo.InvariantCulture.NumberFormat;
 
@@ -790,22 +792,38 @@ namespace IronPython.Runtime.Operations {
                     digits = DoubleOps.DoubleToFormatString(context, ToDouble(val), spec);
                     break;
                 case 'X':
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     digits = AbsToHex(val, lowercase: false);
                     break;
                 case 'x':
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     digits = AbsToHex(val, lowercase: true);
                     break;
                 case 'o': // octal
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     digits = ToOctal(val, lowercase: true);
                     break;
                 case 'b': // binary
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     digits = ToBinary(val, includeType: false, lowercase: true);
                     break;
                 case 'c': // single char
-                    int iVal;
+                    if (spec.Precision != null) {
+                        throw PythonOps.ValueError("Precision not allowed in integer format specifier");
+                    }
                     if (spec.Sign != null) {
                         throw PythonOps.ValueError("Sign not allowed with integer format specifier 'c'");
-                    } else if (!self.AsInt32(out iVal)) {
+                    }
+                    int iVal;
+                    if (!self.AsInt32(out iVal)) {
                         throw PythonOps.OverflowError("Python int too large to convert to System.Int32");
                     } else if(iVal < 0 || iVal > 0x10ffff) {
                         throw PythonOps.OverflowError("%c arg not in range(0x110000)");

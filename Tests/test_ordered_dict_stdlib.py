@@ -6,7 +6,7 @@
 ## Run selected tests from test_ordered_dict from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_ordered_dict
 
@@ -54,6 +54,13 @@ def load_tests(loader, standard_tests, pattern):
             test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
             test.test_ordered_dict.PurePythonOrderedDictTests('test_highly_nested_subclass'), # intermittent AssertionError - GC related?
         ]
+        if is_mono: # maybe https://github.com/IronLanguages/ironpython3/issues/544
+            skip_tests += [
+                test.test_ordered_dict.PurePythonOrderedDictSubclassTests('test_reference_loop'),
+                test.test_ordered_dict.PurePythonOrderedDictTests('test_reference_loop'),
+                test.test_ordered_dict.CPythonOrderedDictSubclassTests('test_reference_loop'),
+                test.test_ordered_dict.CPythonOrderedDictTests('test_reference_loop'),
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

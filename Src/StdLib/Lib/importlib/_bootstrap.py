@@ -162,10 +162,13 @@ def _get_module_lock(name):
 
     _imp.acquire_lock()
     try:
-        try:
-            lock = _module_locks[name]()
-        except KeyError:
+        # ironpython: optimization to avoid KeyError exception
+        _unspecified = _bootstrap_external._unspecified
+        lock_fn = _module_locks.get(name, _unspecified)
+        if lock_fn is _unspecified:
             lock = None
+        else:
+            lock = lock_fn()
 
         if lock is None:
             if _thread is None:
@@ -402,11 +405,6 @@ class ModuleSpec:
 
     @property
     def cached(self):
-        if self._cached is None:
-            if self.origin is not None and self._set_fileattr:
-                if _bootstrap_external is None:
-                    raise NotImplementedError
-                self._cached = _bootstrap_external._get_cached(self.origin)
         return self._cached
 
     @cached.setter
@@ -479,10 +477,7 @@ def _spec_from_module(module, loader=None, origin=None):
         location = None
     if origin is None:
         if location is None:
-            try:
-                origin = loader._ORIGIN
-            except AttributeError:
-                origin = None
+            origin = getattr(loader, '_ORIGIN', None) # ironpython: optimization to avoid KeyError exception
         else:
             origin = location
     try:

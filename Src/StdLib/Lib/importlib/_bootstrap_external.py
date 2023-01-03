@@ -26,6 +26,7 @@ _CASE_INSENSITIVE_PLATFORMS_BYTES_KEY = 'cygwin', 'darwin'
 _CASE_INSENSITIVE_PLATFORMS =  (_CASE_INSENSITIVE_PLATFORMS_BYTES_KEY
                                 + _CASE_INSENSITIVE_PLATFORMS_STR_KEY)
 
+_unspecified = object() # ironpython: default value for dict.get
 
 def _make_relax_case():
     if sys.platform.startswith(_CASE_INSENSITIVE_PLATFORMS):
@@ -356,18 +357,6 @@ def _get_sourcefile(bytecode_path):
     except (NotImplementedError, ValueError):
         source_path = bytecode_path[:-1]
     return source_path if _path_isfile(source_path) else bytecode_path
-
-
-def _get_cached(filename):
-    if filename.endswith(tuple(SOURCE_SUFFIXES)):
-        try:
-            return cache_from_source(filename)
-        except NotImplementedError:
-            pass
-    elif filename.endswith(tuple(BYTECODE_SUFFIXES)):
-        return filename
-    else:
-        return None
 
 
 def _calc_mode(path):
@@ -749,46 +738,9 @@ class SourceLoader(_LoaderBasics):
         """
         source_path = self.get_filename(fullname)
         source_mtime = None
-        try:
-            bytecode_path = cache_from_source(source_path)
-        except NotImplementedError:
-            bytecode_path = None
-        else:
-            try:
-                st = self.path_stats(source_path)
-            except IOError:
-                pass
-            else:
-                source_mtime = int(st['mtime'])
-                try:
-                    data = self.get_data(bytecode_path)
-                except OSError:
-                    pass
-                else:
-                    try:
-                        bytes_data = _validate_bytecode_header(data,
-                                source_stats=st, name=fullname,
-                                path=bytecode_path)
-                    except (ImportError, EOFError):
-                        pass
-                    else:
-                        _bootstrap._verbose_message('{} matches {}', bytecode_path,
-                                                    source_path)
-                        return _compile_bytecode(bytes_data, name=fullname,
-                                                 bytecode_path=bytecode_path,
-                                                 source_path=source_path)
         source_bytes = self.get_data(source_path)
         code_object = self.source_to_code(source_bytes, source_path)
         _bootstrap._verbose_message('code object from {}', source_path)
-        if (not sys.dont_write_bytecode and bytecode_path is not None and
-                source_mtime is not None):
-            data = _code_to_bytecode(code_object, source_mtime,
-                    len(source_bytes))
-            try:
-                self._cache_bytecode(source_path, bytecode_path, data)
-                _bootstrap._verbose_message('wrote {!r}', bytecode_path)
-            except NotImplementedError:
-                pass
         return code_object
 
 
@@ -1092,9 +1044,9 @@ class PathFinder:
                 # Don't cache the failure as the cwd can easily change to
                 # a valid directory later on.
                 return None
-        try:
-            finder = sys.path_importer_cache[path]
-        except KeyError:
+        # ironpython: optimization to avoid KeyError exception
+        finder = sys.path_importer_cache.get(path, _unspecified)
+        if finder is _unspecified:
             finder = cls._path_hooks(path)
             sys.path_importer_cache[path] = finder
         return finder
@@ -1361,10 +1313,8 @@ def _get_supported_file_loaders():
 
     Each item is a tuple (loader, suffixes).
     """
-    extensions = ExtensionFileLoader, _imp.extension_suffixes()
     source = SourceFileLoader, SOURCE_SUFFIXES
-    bytecode = SourcelessFileLoader, BYTECODE_SUFFIXES
-    return [extensions, source, bytecode]
+    return [source]
 
 
 def _setup(_bootstrap_module):
@@ -1390,6 +1340,7 @@ def _setup(_bootstrap_module):
 
     # Directly load the os module (needed during bootstrap).
     os_details = ('posix', ['/']), ('nt', ['\\', '/'])
+    if sys.platform == 'win32': os_details = reversed(os_details) # ironpython: optimization to avoid ImportError exception
     for builtin_os, path_separators in os_details:
         # Assumption made in _path_join()
         assert all(len(sep) == 1 for sep in path_separators)
@@ -1421,18 +1372,9 @@ def _setup(_bootstrap_module):
     weakref_module = _bootstrap._builtin_from_name('_weakref')
     setattr(self_module, '_weakref', weakref_module)
 
-    # Directly load the winreg module (needed during bootstrap).
-    if builtin_os == 'nt':
-        winreg_module = _bootstrap._builtin_from_name('winreg')
-        setattr(self_module, '_winreg', winreg_module)
-
     # Constants
     setattr(self_module, '_relax_case', _make_relax_case())
     EXTENSION_SUFFIXES.extend(_imp.extension_suffixes())
-    if builtin_os == 'nt':
-        SOURCE_SUFFIXES.append('.pyw')
-        if '_d.pyd' in EXTENSION_SUFFIXES:
-            WindowsRegistryFinder.DEBUG_BUILD = True
 
 
 def _install(_bootstrap_module):

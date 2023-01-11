@@ -14,7 +14,7 @@ Most PR's will not be accepted if there is not a test included.
  * Use `/*!*/` for method parameters and instance fields that should never be null. [Spec# annotations](http://research.microsoft.com/specsharp).
  * Do not use public fields (Base::algorithm, buffer). Use properties if it is necessary to expose the field or private/internal visibility otherwise.
  * Use `readonly` if the field is not mutated after the object is constructed.
- * Auto properties are to be used when possible instead of private fields with wrapping properties
+ * Auto properties are to be used when possible instead of private fields with wrapping properties.
  * String interpolation should use used instead of calls to `String.Format`
 
 # Validating the changes

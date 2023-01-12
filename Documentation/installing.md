@@ -8,7 +8,7 @@ Since .NET is a cross-platform framework, the instructions in this section apply
 
 ### .NET SDK
 
-If the target system has already a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using [`dotnet tool`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools).
+If the target system already has a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using [`dotnet tool`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
 #### _Global Tool_
 
@@ -18,7 +18,7 @@ If the target system has already a full .NET SDK installed, the most straightfor
 dotnet tool install --global ironpython.console
 ```
 
-The switch `--global` can be abbreviated to `-g`. The `ipy` program will be installed in `~/.dotnet/tools`, together with the Python Standard Library for IronPython. The directory `~/.dotnet/tools` should have been added to the search path for the user (a.k.a. `PATH` environment variable), if not yet done.
+The switch `--global` can be abbreviated to `-g`. The `ipy` program will be installed in `~/.dotnet/tools`, together with the Python Standard Library for IronPython. The directory `~/.dotnet/tools` should be added to the search path for the user (AKA `PATH` environment variable), if not yet done.
 
 Note that any additional Python packages installed using `ipy -m pip` from this location will be installed inside that directory, hence being "global" for the user.
 
@@ -130,7 +130,7 @@ Then download the `.pkg` installer from the project's [release page](https://git
 
 # Installing Non-Released Versions
 
-After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you got handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
+After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you was handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
 
 Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `master` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
 

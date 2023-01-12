@@ -132,7 +132,7 @@ $ source test.sh
 $ export NAME
 ```
 
-This creates an environment variable that is encoded using Latin-1 encoding, thather than the system encoding. CPython will escape the invalid byte 0xe9 (letter 'é' in Latin-1) in a lone surrogate 0xdce9, which is still an invalid Unicode character.
+This creates an environment variable that is encoded using Latin-1 encoding, rather than the system encoding. CPython will escape the invalid byte 0xe9 (letter 'é' in Latin-1) in a lone surrogate 0xdce9, which is still an invalid Unicode character.
 
 _CPython_
 ```
@@ -158,7 +158,7 @@ Andr�
 '0xfffd'
 ```
 
-The CPython's representation is not printable, but can be safely encoded back to the original form using `'surrogateescape'` (default when dealing with the OS environment):
+The CPython representation is not printable, but can be safely encoded back to the original form using `'surrogateescape'` (default when dealing with the OS environment):
 
 _CPython_
 ```
@@ -170,7 +170,7 @@ b'/bin:/usr/bin:/usr/local/bin:/home/Andr\xe9/bin'
 b'Andr\xe9'
 ```
 
-The IronPython's representation is printable, but the original byte value is lost:
+The IronPython representation is printable, but the original byte value is lost:
 
 _IronPython_
 ```
@@ -180,7 +180,7 @@ b'Andr\xef\xbf\xbd'
 
 # Codecs
 
-* Some single-byte codecs may have unused positions in their codepage. There are differences how CPython and IronPython (and .NET) handle such cases.
+* Some single-byte codecs may have unused positions in their codepage. There are differences between how CPython and IronPython (and .NET) handle such cases.
 
 A simple example is encoding Windows-1252. According to the information on Microsoft's and the Unicode Consortium's websites, positions 81, 8D, 8F, 90, and 9D are unused; however, the Windows API `MultiByteToWideChar` maps these to the corresponding C1 control codes. The Unicode "best fit" mapping [documents this behavior](https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WindowsBestFit/bestfit1252.txt). CPython will treat those bytes as invalid, while IronPython will map them to the "best fit" Unicode character:
 

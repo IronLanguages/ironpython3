@@ -1697,4 +1697,12 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         with self.assertRaises(OSError):
             select.select([], [], [])
 
+    @skipUnlessIronPython()
+    def test_ipy3_gh1649(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1649
+
+        # IntPtr equality used to work in IronPython 2
+        import System
+        self.assertEqual(System.IntPtr.Zero, System.IntPtr.Zero)
+
 run_test(__name__)

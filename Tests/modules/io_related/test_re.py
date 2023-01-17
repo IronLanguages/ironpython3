@@ -842,4 +842,9 @@ class ReTest(IronPythonTestCase):
         d = re.match('(?P<foo>.*)(.*)', 'bar').groupdict()
         self.assertEqual(d, {'foo': 'bar'})
 
+    def test_empty_group(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1654
+        res = re.sub(r'^(.*)(A)', r'\g<1>', 'A')
+        self.assertEqual(res, '')
+
 run_test(__name__)

@@ -126,6 +126,9 @@ class ClrLoadTest(IronPythonTestCase):
     #TODO:@skip("multiple_execute")
     def test_addreferencetofileandpath_conflict(self):
         """verify AddReferenceToFileAndPath picks up the path specified, not some arbitrary assembly somewhere in your path already"""
+
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         code1 = """
     using System;
 
@@ -163,6 +166,8 @@ class ClrLoadTest(IronPythonTestCase):
 
     #TODO:@skip("multiple_execute")
     def test_addreferencetofile_verification(self):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr
         tmp = self.temporary_dir
         sys.path.append(tmp)
@@ -227,6 +232,8 @@ class ClrLoadTest(IronPythonTestCase):
     #TODO: @skip("multiple_execute")
     @unittest.skipIf(is_mono, "mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595")
     def test_assembly_resolve_isolation(self):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr, os
         clr.AddReference("IronPython")
         clr.AddReference("Microsoft.Scripting")
@@ -345,6 +352,8 @@ result = Test()
             return base
 
     def compileAndLoad(self, name, filename, *args):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr
         sys.path.append(sys.exec_prefix)
         self.assertEqual(self.run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + os.path.join(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
@@ -352,6 +361,8 @@ result = Test()
 
     #TODO: @skip("multiple_execute")
     def test_classname_same_as_ns(self):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr
         sys.path.append(sys.exec_prefix)
         self.assertEqual(self.run_csc("/nologo /t:library /out:\"" + os.path.join(sys.exec_prefix, "c4.dll") + "\" \"" + self.get_local_filename('c4.cs') + "\""), 0)
@@ -389,6 +400,8 @@ result = Test()
 
     #TODO:@skip("multiple_execute")
     def test_namespaceimport(self):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr
         tmp = self.temporary_dir
         if tmp not in sys.path:

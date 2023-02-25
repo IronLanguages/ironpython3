@@ -826,6 +826,8 @@ class C:
 
     @skipUnlessIronPython()
     def test_gh1435(self):
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+
         import clr
         code = """
     using System;

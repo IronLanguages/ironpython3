@@ -116,6 +116,8 @@ class DynamicRegressionTest(IronPythonTestCase):
                             DR.cp24088, DelegateTest.Event)
 
     def test_cp24113(self):
+        if not self.has_vbc(): raise unittest.SkipTest("missing vbc")
+
         import clr
         import os
 

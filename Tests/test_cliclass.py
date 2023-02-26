@@ -1872,9 +1872,9 @@ if not hasattr(A, 'Rank'):
         finally:
             os.unlink(fname)
 
-    @unittest.skipIf(is_netcoreapp, "https://github.com/IronLanguages/ironpython2/issues/810")
+    @unittest.skipIf(is_netcoreapp21, "TODO: figure out")
     def test_extension_methods(self):
-        import clr, imp, os
+        import clr, os
         if is_netcoreapp:
             clr.AddReference('System.Linq')
         else:

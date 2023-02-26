@@ -41,7 +41,6 @@ steps:
     inputs:
       packageType: 'sdk'
       version: '7.0.x'
-      includePreviewVersions: true
 
   # Set Mono version on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:

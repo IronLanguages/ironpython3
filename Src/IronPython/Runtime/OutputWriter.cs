@@ -29,7 +29,7 @@ namespace IronPython.Runtime {
         public override void Write(string value) {
             // the context arg is only used to get stdout if it's not passed in
             try {
-                PythonOps.PrintWithDest(DefaultContext.Default, Sink, value, noNewLine: true);
+                PythonOps.PrintWithDestNoNewline(DefaultContext.Default, Sink, value);
             } catch (Exception e) {
                 PythonOps.PrintWithDest(DefaultContext.Default, _context.SystemStandardOut, _context.FormatException(e));
             }

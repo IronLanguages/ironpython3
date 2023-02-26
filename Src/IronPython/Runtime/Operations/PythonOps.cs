@@ -475,7 +475,8 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull]object? typeinfo) {
+        // used by Ironclad
+        public static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull]object? typeinfo) {
             if (typeinfo == null) throw PythonOps.TypeError("isinstance: arg 2 must be a class, type, or tuple of classes and types");
 
             if (typeinfo is PythonTuple tt) {
@@ -1949,7 +1950,14 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.Invoke(context, f, "readline");
         }
 
-        internal static void PrintWithDest(CodeContext/*!*/ context, object dest, object o, bool noNewLine = false, bool flush = false) {
+        // used by Ironclad
+        public static void PrintWithDest(CodeContext/*!*/ context, object dest, object o)
+            => PrintWithDestHelper(context, dest, o, noNewLine: false, flush: false);
+
+        internal static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o, bool flush = false)
+            => PrintWithDestHelper(context, dest, o, noNewLine: true, flush: flush);
+
+        private static void PrintWithDestHelper(CodeContext/*!*/ context, object dest, object o, bool noNewLine, bool flush) {
             Write(context, dest, ToString(context, o));
             if (!noNewLine) Write(context, dest, "\n");
 
@@ -3350,7 +3358,7 @@ namespace IronPython.Runtime.Operations {
             message = FormatWarning(message, args);
 
             if (warn == null) {
-                PythonOps.PrintWithDest(context, pc.SystemStandardError, "warning: " + category.Name + ": " + message);
+                PythonOps.PrintWithDest(context, pc.SystemStandardError, $"warning: {category.Name}: {message}");
             } else {
                 PythonOps.CallWithContext(context, warn, message, category);
             }
@@ -3366,7 +3374,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (warn == null) {
-                PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}\n", noNewLine: true);
+                PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}");
             } else {
                 PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
             }

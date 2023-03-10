@@ -304,7 +304,7 @@ namespace IronPython.Runtime {
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {
                     var sourceUnit = CreateSourceUnit(new ResourceStreamContentProvider(resourceName), null, DefaultEncoding, SourceCodeKind.File);
-                    var moduleOptions = ModuleOptions.Initialize | ModuleOptions.Optimized;
+                    var moduleOptions = ModuleOptions.Initialize;
                     var scriptCode = GetScriptCode(sourceUnit, name, moduleOptions);
                     var scope = scriptCode.CreateScope();
                     return InitializeModule(null, ((PythonScopeExtension)scope.GetExtension(ContextId)).ModuleContext, scriptCode, moduleOptions);

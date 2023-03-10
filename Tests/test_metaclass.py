@@ -488,7 +488,7 @@ class MetaclassTest(IronPythonTestCase):
 
         class MetaN(type):
             def __new__(metacls, name, bases, attrdict, **kwargs):
-                nonlocal recv_new_args, recv_new_kwargs 
+                nonlocal recv_new_args, recv_new_kwargs
                 recv_new_args = metacls, name, bases, attrdict
                 recv_new_kwargs = kwargs
                 return type.__new__(metacls, name, bases, attrdict)
@@ -513,13 +513,13 @@ class MetaclassTest(IronPythonTestCase):
 
         class MetaNI(type):
             def __new__(metacls, name, bases, attrdict, **kwargs):
-                nonlocal recv_new_args, recv_new_kwargs 
+                nonlocal recv_new_args, recv_new_kwargs
                 recv_new_args = metacls, name, bases, attrdict
                 recv_new_kwargs = kwargs
                 return type.__new__(metacls, name, bases, attrdict)
 
             def __init__(metacls, name, bases, attrdict, **kwargs):
-                nonlocal recv_init_args, recv_init_kwargs 
+                nonlocal recv_init_args, recv_init_kwargs
                 recv_init_args = metacls, name, bases, attrdict
                 recv_init_kwargs = kwargs
                 return type.__init__(metacls, name, bases, attrdict)
@@ -545,13 +545,13 @@ class MetaclassTest(IronPythonTestCase):
                 return type.__prepare__(metacls, name, bases)
 
             def __new__(metacls, name, bases, attrdict, **kwargs):
-                nonlocal recv_new_args, recv_new_kwargs 
+                nonlocal recv_new_args, recv_new_kwargs
                 recv_new_args = metacls, name, bases, attrdict
                 recv_new_kwargs = kwargs
                 return type.__new__(metacls, name, bases, attrdict)
 
             def __init__(metacls, name, bases, attrdict, **kwargs):
-                nonlocal recv_init_args, recv_init_kwargs 
+                nonlocal recv_init_args, recv_init_kwargs
                 recv_init_args = metacls, name, bases, attrdict
                 recv_init_kwargs = kwargs
                 return type.__init__(metacls, name, bases, attrdict)
@@ -750,5 +750,21 @@ class MetaclassTest(IronPythonTestCase):
             pass
 
         self.assertEqual(repr(test), "qwerty")
+
+    def test_setattr_on_metaclass(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1661
+
+        class Test(type):
+            def __setattr__(cls, attr, value):
+                super().__setattr__("last_attr", (attr, value))
+                super().__setattr__(attr, value)
+
+        class TestMeta(metaclass=Test):
+            aaa = 10
+
+        TestMeta.aaa = 80
+
+        self.assertEqual(TestMeta.aaa, 80)
+        self.assertEqual(TestMeta.last_attr, ("aaa", 80))
 
 run_test(__name__)

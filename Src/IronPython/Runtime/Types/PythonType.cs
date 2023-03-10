@@ -1293,15 +1293,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         internal bool TryGetCustomSetAttr(CodeContext context, out PythonTypeSlot pts) {
-            PythonContext pc = context.LanguageContext;
-            return pc.Binder.TryResolveSlot(
-                    context,
-                    DynamicHelpers.GetPythonType(this),
-                    this,
-                    "__setattr__",
-                    out pts) &&
-                    pts is BuiltinMethodDescriptor &&
-                    ((BuiltinMethodDescriptor)pts).DeclaringType != typeof(PythonType);
+            return DynamicHelpers.GetPythonType(this).TryResolveSlot(context, "__setattr__", out pts) &&
+                    (pts is not BuiltinMethodDescriptor descr || descr.DeclaringType != typeof(PythonType));
         }
 
         internal void SetCustomMember(CodeContext/*!*/ context, string name, object value) {

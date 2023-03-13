@@ -57,6 +57,12 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
+        #region Unary Operations
+
+        public static BigInteger __index__(IntPtr x) => unchecked((BigInteger)(nint)x);
+
+        #endregion
+
         #region Binary Operations - Comparisons
 
         [SpecialName]

@@ -82,7 +82,7 @@ namespace IronPython.Runtime.Operations {
                     break;
             }
 
-            if (TryInvokeInt(context, o, out result)) {
+            if (TryInvokeInt(context, o, out result) || PythonOps.TryToIndex(o, out result)) { // Python 3.8: try __index__
                 return result;
             } else if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__trunc__", out result)) {
                 switch (result) {

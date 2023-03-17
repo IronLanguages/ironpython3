@@ -1707,4 +1707,7 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         import System
         self.assertEqual(System.IntPtr.Zero, System.IntPtr.Zero)
 
+    def test_map_type_int(self):
+        self.assertEqual(list(map(type, [0])), [type(0)])
+
 run_test(__name__)

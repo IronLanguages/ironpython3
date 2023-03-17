@@ -1289,7 +1289,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 line = PythonOps.Invoke(context, rl, "readline", new[] { prompt }) as string;
             } else {
                 if (prompt != null) {
-                    PythonOps.PrintWithDest(context, context.LanguageContext.SystemStandardOut, prompt, noNewLine: true, flush: true);
+                    PythonOps.PrintWithDestNoNewline(context, context.LanguageContext.SystemStandardOut, prompt, flush: true);
                 }
                 line = PythonOps.ReadLineFromSrc(context, context.LanguageContext.SystemStandardIn) as string;
             }

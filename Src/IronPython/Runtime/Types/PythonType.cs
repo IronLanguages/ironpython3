@@ -308,6 +308,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public static object __new__(CodeContext/*!*/ context, object cls, object o) {
+            if (cls == TypeCache.PythonType && o?.GetType() == typeof(int)) {
+                return TypeCache.BigInteger;  // PEP 237: int/long unification (GH #52)
+            }
             return DynamicHelpers.GetPythonType(o);
         }
 

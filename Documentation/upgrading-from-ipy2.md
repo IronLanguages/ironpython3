@@ -108,7 +108,7 @@ In the opposite direction, if it is essential to create `Int32` objects, either 
 
 ```pycon
 >>> # k is a BigInteger that fits in 32 bits
->>> isinstance(j, System.Int32)
+>>> isinstance(k, System.Int32)
 False
 >>> hex(k)
 '0x7fffffff'

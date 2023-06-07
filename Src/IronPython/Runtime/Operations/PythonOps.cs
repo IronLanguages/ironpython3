@@ -346,7 +346,7 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.FsPath(path) switch {
                 string s => s,
                 Extensible<string> es => es,
-                Bytes b => b.decode(context, SysModule.getfilesystemencoding(), SysModule.getfilesystemencodeerrors()),
+                Bytes b => b.decode(context, SysModule.getfilesystemencoding(context), SysModule.getfilesystemencodeerrors()),
                 _ => throw new InvalidOperationException(),
             };
         }

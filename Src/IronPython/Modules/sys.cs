@@ -153,8 +153,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             return context.LanguageContext.GetDefaultEncodingName();
         }
 
-        public static string getfilesystemencoding() {
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
+        public static string getfilesystemencoding(CodeContext/*!*/ context) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix || context.LanguageContext.PythonOptions.Utf8Mode)
                 return "utf-8";
             return "mbcs";
         }
@@ -347,7 +347,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
         public sealed class SysFlags : PythonTuple {
-            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_INSPECT = 1;
@@ -362,9 +362,10 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             private const int INDEX_QUIET = 10;
             private const int INDEX_HASH_RANDOMIZATION = 11;
             private const int INDEX_ISOLATED = 12;
+            private const int INDEX_UTF8_MODE = 13;
 
-            public const int n_fields = 13;
-            public const int n_sequence_fields = 13;
+            public const int n_fields = 14;
+            public const int n_sequence_fields = 14;
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
@@ -382,6 +383,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                     $"{nameof(quiet)}={quiet}",
                     $"{nameof(hash_randomization)}={hash_randomization}",
                     $"{nameof(isolated)}={isolated}",
+                    $"{nameof(utf8_mode)}={utf8_mode}",
                 };
                 return $"sys.flags({string.Join(", ", fields)})";
             }
@@ -451,6 +453,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public int isolated {
                 get => (int)_data[INDEX_ISOLATED];
                 internal set => _data[INDEX_ISOLATED] = value;
+            }
+
+            public int utf8_mode {
+                get => (int)_data[INDEX_UTF8_MODE];
+                internal set => _data[INDEX_UTF8_MODE] = value;
             }
 
             #endregion

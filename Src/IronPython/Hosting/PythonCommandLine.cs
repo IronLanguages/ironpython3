@@ -213,7 +213,6 @@ namespace IronPython.Hosting {
         }
 
         private void InitializePath(ref int pathIndex) {
-
             // paths, environment vars
             if (!Options.IgnoreEnvironmentVariables) {
                 string path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");

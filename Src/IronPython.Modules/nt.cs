@@ -61,6 +61,8 @@ namespace IronPython.Modules {
         private static readonly Encoding _mbcsEncoding;
 
         static PythonNT() {
+            // TODO: Python 3.6: use sys.getfilesystemencodeerrors()
+
             _mbcsEncoding = Encoding.GetEncoding(0); // on errors does diacritics stripping if possible else replace
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {

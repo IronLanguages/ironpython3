@@ -64,7 +64,6 @@ class UTF8ModeTests(unittest.TestCase):
                                   PYTHONLEGACYWINDOWSFSENCODING='1')
             self.assertEqual(out, '0')
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "IronPython doesn't support PYTHONUTF8") # https://github.com/IronLanguages/ironpython3/issues/1694
     def test_env_var(self):
         code = 'import sys; print(sys.flags.utf8_mode)'
 
@@ -120,7 +119,6 @@ class UTF8ModeTests(unittest.TestCase):
                                   PYTHONLEGACYWINDOWSFSENCODING='1')
             self.assertEqual(out, 'mbcs/replace')
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "IronPython doesn't support PYTHONIOENCODING") # https://github.com/IronLanguages/ironpython3/issues/1694
     def test_stdio(self):
         code = textwrap.dedent('''
             import sys

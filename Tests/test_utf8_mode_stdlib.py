@@ -28,7 +28,9 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_utf8_mode.UTF8ModeTests('test_pyio_encoding'),
             ]
 
+        # posix locales
         skip_tests = [
+            test.test_utf8_mode.UTF8ModeTests('test_posix_locale'),
             test.test_utf8_mode.UTF8ModeTests('test_cmd_line'),
         ]
 

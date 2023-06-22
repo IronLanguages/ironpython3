@@ -19,6 +19,7 @@ class UTF8ModeTests(unittest.TestCase):
         'PYTHONUTF8': '',
         'PYTHONLEGACYWINDOWSFSENCODING': '',
         'PYTHONCOERCECLOCALE': '0',
+        '__isolated': False, # https://github.com/IronLanguages/ironpython3/issues/1440
     }
 
     def posix_locale(self):

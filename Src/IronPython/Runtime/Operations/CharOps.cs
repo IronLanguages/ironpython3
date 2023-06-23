@@ -33,7 +33,7 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static string __repr__(char self) => char.ToString(self);
+        public static string __repr__(char self) => StringOps.__repr__(char.ToString(self));
 
         public static int __hash__(char self) => char.ToString(self).GetHashCode();
 

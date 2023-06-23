@@ -509,7 +509,7 @@ def execsitecustomize():
     except ImportError:
         pass
     except Exception as err:
-        if os.environ.get("PYTHONVERBOSE"):
+        if sys.flags.verbose:
             sys.excepthook(*sys.exc_info())
         else:
             sys.stderr.write(
@@ -525,7 +525,7 @@ def execusercustomize():
     except ImportError:
         pass
     except Exception as err:
-        if os.environ.get("PYTHONVERBOSE"):
+        if sys.flags.verbose:
             sys.excepthook(*sys.exc_info())
         else:
             sys.stderr.write(

@@ -335,7 +335,7 @@ namespace IronPython.Hosting {
                 { "-S",                     "Don't imply 'import site' on initialization" },
                 { "-u",                     "Unbuffered stdout & stderr" },
 #if !IRONPYTHON_WINDOW
-                { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
+                { "-v",                     "Verbose (trace import statements)" },
 #endif
                 { "-V",                     "print the Python version number and exit (also --version)\nwhen given twice, print more information about the build" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },

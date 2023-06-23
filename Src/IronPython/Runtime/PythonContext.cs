@@ -732,6 +732,7 @@ namespace IronPython.Runtime {
             };
             flags.quiet = PythonOptions.Quiet ? 1 : 0;
             flags.isolated = PythonOptions.Isolated ? 1 : 0;
+            flags.utf8_mode = PythonOptions.Utf8Mode ? 1 : 0;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {

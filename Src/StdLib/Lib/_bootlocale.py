@@ -9,12 +9,16 @@ import _locale
 
 if sys.platform.startswith("win"):
     def getpreferredencoding(do_setlocale=True):
+        if sys.flags.utf8_mode:
+            return 'UTF-8'
         return _locale._getdefaultlocale()[1]
 else:
     try:
         _locale.CODESET
     except AttributeError:
         def getpreferredencoding(do_setlocale=True):
+            if sys.flags.utf8_mode:
+                return 'UTF-8'
             # This path for legacy systems needs the more complex
             # getdefaultlocale() function, import the full locale module.
             import locale
@@ -22,6 +26,8 @@ else:
     else:
         def getpreferredencoding(do_setlocale=True):
             assert not do_setlocale
+            if sys.flags.utf8_mode:
+                return 'UTF-8'
             result = _locale.nl_langinfo(_locale.CODESET)
             if not result and sys.platform == 'darwin':
                 # nl_langinfo can return an empty string

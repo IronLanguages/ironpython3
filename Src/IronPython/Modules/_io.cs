@@ -1991,7 +1991,7 @@ namespace IronPython.Modules {
                         throw PythonOps.ValueError(string.Format("illegal newline value: " + newline));
                 }
 
-                encoding ??= PythonLocale.PreferredEncoding;
+                encoding ??= context.LanguageContext.PythonOptions.Utf8Mode ? "UTF-8" : PythonLocale.PreferredEncoding;
 
                 if (errors == null) {
                     errors = "strict";

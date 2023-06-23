@@ -457,6 +457,8 @@ class Python26Test(unittest.TestCase):
         attrs = set(dir(sys.flags))
         structseq_attrs = set(["n_fields", "n_sequence_fields", "n_unnamed_fields"])
         flag_attrs = set(['bytes_warning', 'debug', 'dont_write_bytecode', 'ignore_environment', 'inspect', 'interactive', 'no_site', 'no_user_site', 'optimize', 'quiet', 'verbose', 'hash_randomization', 'isolated'])
+        if sys.implementation.name == "ironpython":
+            flag_attrs.update({'utf8_mode'})
         if sys.version_info >= (3,7):
             flag_attrs.update({'dev_mode', 'utf8_mode'})
         expected_attrs = structseq_attrs.union(flag_attrs, dir(object), dir(tuple))

@@ -69,6 +69,11 @@ namespace IronPython.Runtime {
         public bool Isolated { get; }
 
         /// <summary>
+        /// Run in UTF-8 mode.
+        /// </summary>
+        internal bool Utf8Mode { get; }
+
+        /// <summary>
         /// Enables the verbose option which traces import statements.  This is ignored by IronPython
         /// except for setting sys.flags.
         /// </summary>
@@ -152,6 +157,7 @@ namespace IronPython.Runtime {
             Quiet = GetOption(options, "Quiet", false);
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);
+            Utf8Mode = GetOption(options, "Utf8Mode", false);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

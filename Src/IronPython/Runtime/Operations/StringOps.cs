@@ -1761,7 +1761,7 @@ namespace IronPython.Runtime.Operations {
                     case 65000: name = "utf-7"; break;
                     case 65001: name = "utf-8"; break;
                 }
-#if !NETCOREAPP && !NETSTANDARD
+#if NETFRAMEWORK
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1996,7 +1996,7 @@ namespace IronPython.Runtime.Operations {
             internal static readonly IDictionary<string, Lazy<Encoding?>> Codecs;
 
             static CodecsInfo() {
-#if NETCOREAPP || NETSTANDARD
+#if !NETFRAMEWORK
                 // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif

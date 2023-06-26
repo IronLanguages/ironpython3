@@ -7,16 +7,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_datetime", typeof(IronPython.Modules.PythonDateTime))]
 namespace IronPython.Modules {
@@ -756,9 +754,6 @@ namespace IronPython.Modules {
                 _tz = tzinfo;
             }
 
-            private void Initialize(int year, int month, int day, int hour, int minute, int second, int microsecond, tzinfo tzinfo) {
-            }
-
             public datetime(DateTime dt)
                 : this(dt, null) {
             }
@@ -1118,8 +1113,9 @@ namespace IronPython.Modules {
             }
 
             public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
-                var packed = PythonTime._strptime(context, date_string, format);
-                return new datetime(packed.Item1);
+                var module = context.LanguageContext.GetStrptimeModule();
+                var _strptime_datetime = PythonOps.GetBoundAttr(context, module, "_strptime_datetime");
+                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, typeof(datetime), date_string, format);
             }
 
             #region IRichComparable Members

@@ -1129,6 +1129,15 @@ namespace IronPython.Runtime {
             return copyRegModule;
         }
 
+        private object strptimeModule;
+
+        internal object GetStrptimeModule() {
+            if (strptimeModule is null) {
+                strptimeModule = Importer.ImportModule(SharedContext, new PythonDictionary(), "_strptime", false, 0);
+            }
+            return strptimeModule;
+        }
+
         public object GetWarningsModule() {
             object warnings = null;
             try {

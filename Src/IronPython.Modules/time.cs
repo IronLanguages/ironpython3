@@ -33,7 +33,6 @@ namespace IronPython.Modules {
         private const int IsDaylightSavingsIndex = 8;
         private const int MaxIndex = 9;
 
-        private const int minYear = 1900;   // minimum year for python dates (CLS dates are bigger)
         private const double epochDifferenceDouble = 62135596800.0; // Difference between CLS epoch and UNIX epoch, == System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond
         private const long epochDifferenceLong = 62135596800;
         private const double ticksPerSecond = (double)TimeSpan.TicksPerSecond;
@@ -102,7 +101,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("expected struct_time or None");
             }
 
-            return $"{dt.ToString("ddd MMM", CultureInfo.InvariantCulture)} {dt.Day,2} {dt.ToString("HH:mm:ss yyyy", CultureInfo.InvariantCulture)}";
+            return $"{dt.ToString("ddd MMM", CultureInfo.InvariantCulture)} {dt.Day,2} {dt.ToString("HH:mm:ss", CultureInfo.InvariantCulture)} {dt.Year}";
         }
 
         public static double clock() {
@@ -175,141 +174,73 @@ namespace IronPython.Modules {
         }
 
         public static string strftime(CodeContext/*!*/ context, string format) {
-            return strftime(context, format, DateTime.Now, null);
+            return strftime(context, format, DateTime.Now, null, TimeZoneInfo.Local, errorOnF: true);
         }
 
         public static string strftime(CodeContext/*!*/ context, string format, PythonTuple dateTime) {
-            return strftime(context, format, GetDateTimeFromTupleNoDst(context, dateTime), null);
+            return strftime(context, format, GetDateTimeFromTupleNoDst(context, dateTime), null, TimeZoneInfo.Local, errorOnF: true);
         }
 
         public static object strptime(CodeContext/*!*/ context, string @string) {
-            return DateTime.Parse(@string, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat);
+            var module = context.LanguageContext.GetStrptimeModule();
+            var _strptime_time = PythonOps.GetBoundAttr(context, module, "_strptime_time");
+            return PythonOps.CallWithContext(context, _strptime_time, @string);
         }
 
         public static object strptime(CodeContext/*!*/ context, string @string, string format) {
-            var packed = _strptime(context, @string, format);
-            return GetDateTimeTuple(packed.Item1, packed.Item2);
-        }
-        
-        // returns object array containing 2 elements: DateTime and DayOfWeek 
-        internal static Tuple<DateTime, DayOfWeek?> _strptime(CodeContext/*!*/ context, string @string, string format) {
-            bool postProc;
-            FoundDateComponents foundDateComp;
-            List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, true, out postProc, out foundDateComp);
-            var lc_info = PythonLocale.GetLocaleInfo(context);
-
-            DateTime res;
-            if (postProc) {
-                int doyIndex = FindFormat(formatInfo, "\\%j");
-                int dowMIndex = FindFormat(formatInfo, "\\%W");
-                int dowSIndex = FindFormat(formatInfo, "\\%U");
-
-                if (doyIndex != -1 && dowMIndex == -1 && dowSIndex == -1) {
-                    res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(int.Parse(@string));
-                } else if (dowMIndex != -1 && doyIndex == -1 && dowSIndex == -1) {
-                    res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(int.Parse(@string) * 7);
-                } else if (dowSIndex != -1 && doyIndex == -1 && dowMIndex == -1) {
-                    res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(int.Parse(@string) * 7);
-                } else {
-                    throw PythonOps.ValueError("cannot parse %j, %W, or %U w/ other values");
-                }
-            } else {
-                var fIdx = -1;
-                string[] formatParts = new string[formatInfo.Count];
-                for (int i = 0; i < formatInfo.Count; i++) {
-                    switch (formatInfo[i].Type) {
-                        case FormatInfoType.UserText: formatParts[i] = "'" + formatInfo[i].Text.ToUpper(lc_info.Time) + "'"; break;
-                        case FormatInfoType.SimpleFormat: formatParts[i] = formatInfo[i].Text; break;
-                        case FormatInfoType.CustomFormat:
-                            if (formatInfo[i].Text == "f") {
-                                fIdx = i;
-                            }
-                            // include % if we only have one specifier to mark that it's a custom
-                            // specifier
-                            if (formatInfo.Count == 1 && formatInfo[i].Text.Length == 1) {
-                                formatParts[i] = "%" + formatInfo[i].Text;
-                            } else {
-                                formatParts[i] = formatInfo[i].Text;
-                            }
-                            break;
-                    }
-                }
-                var formats =
-                    fIdx == -1 ? new [] { string.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
-                try {
-                    if (!DateTime.TryParseExact(@string.ToUpper(lc_info.Time),
-                        formats,
-                        lc_info.Time.DateTimeFormat,
-                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault,
-                        out res)) {
-                        throw PythonOps.ValueError("time data does not match format" + Environment.NewLine + 
-                            "data=" + @string + ", fmt=" + format + ", to: " + formats[0]);
-                    }
-                } catch (FormatException e) {
-                    throw PythonOps.ValueError(e.Message + Environment.NewLine + 
-                        "data=" + @string + ", fmt=" + format + ", to: " + formats[0]);
-                }
-            }
-
-            DayOfWeek? dayOfWeek = null;
-            if ((foundDateComp & FoundDateComponents.DayOfWeek) != 0) {
-                dayOfWeek = res.DayOfWeek;
-            }
-
-            if ((foundDateComp & FoundDateComponents.Year) == 0) {
-                res = new DateTime(1900, res.Month, res.Day, res.Hour, res.Minute, res.Second, res.Millisecond, res.Kind);
-            }
-
-            return Tuple.Create(res, dayOfWeek);
+            var module = context.LanguageContext.GetStrptimeModule();
+            var _strptime_time = PythonOps.GetBoundAttr(context, module, "_strptime_time");
+            return PythonOps.CallWithContext(context, _strptime_time, @string, format);
         }
 
-        private static string[] ExpandMicrosecondFormat(int fIdx, string [] formatParts) {
-            // for %f number of digits can be anything between 1 and 6
-            string[] formats = new string[6];
-            formats[0] = string.Join("", formatParts);
-            for (var i = 1; i < 6; i++) {
-                formatParts[fIdx] = new string('f', i+1);
-                formats[i] = string.Join("", formatParts);
-            }
-            return formats;
-        }
-
-        internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds) {
-            bool postProc;
-            List<FormatInfo> formatInfoList = PythonFormatToCLIFormat(format, false, out postProc, out _);
+        internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds, TimeZoneInfo tzinfo = null, bool errorOnF = false) {
+            List<FormatInfo> formatInfoList = PythonFormatToCLIFormat(format);
             StringBuilder res = new StringBuilder();
             var lc_info = PythonLocale.GetLocaleInfo(context);
+
+            // figure out first day of the year...
+            DateTime first = new DateTime(dt.Year, 1, 1);
+            int weekOneSunday = (7 - (int)first.DayOfWeek) % 7;
+            int dayOffset = (8 - (int)first.DayOfWeek) % 7;
+            var now = DateTime.Now;
 
             foreach (FormatInfo formatInfo in formatInfoList) {
                 switch (formatInfo.Type) {
                     case FormatInfoType.UserText: res.Append(formatInfo.Text); break;
                     case FormatInfoType.SimpleFormat: res.Append(dt.ToString(formatInfo.Text, lc_info.Time.DateTimeFormat)); break;
                     case FormatInfoType.CustomFormat:
-                        // custom format strings need to be at least 2 characters long                        
-                        string custom_field_format = formatInfo.Text.Length == 1 ? "%" + formatInfo.Text : formatInfo.Text;
-                        res.Append(dt.ToString(custom_field_format, lc_info.Time.DateTimeFormat));
+                        switch(formatInfo.Text) {
+                            case "f":
+                                if (errorOnF) throw PythonOps.ValueError("Invalid format string");
+                                res.Append(microseconds != null ? string.Format("{0:D6}", microseconds) : "");
+                                break;
+                            case "j":
+                                res.Append(dt.DayOfYear.ToString("D03"));
+                                break;
+                            case "U":
+                                // week of year (sunday first day, 0-53), all days before Sunday are 0
+                                res.Append(((dt.DayOfYear + 6 - weekOneSunday) / 7).ToString("D02"));
+                                break;
+                            case "W":
+                                // week number of year (monday first day, 0-53), all days before Monday are 0
+                                res.Append(((dt.DayOfYear + 6 - dayOffset) / 7).ToString("D02"));
+                                break;
+                            case "w":
+                                res.Append(((int)dt.DayOfWeek).ToString());
+                                break;
+                            case "z":
+                                if (tzinfo is null) break;
+                                var offset = tzinfo.GetUtcOffset(now);
+                                res.Append(((offset < TimeSpan.Zero) ? "-" : "+") + offset.ToString("hhmm"));
+                                break;
+                            case "Z":
+                                if (tzinfo is null) break;
+                                res.Append(tzinfo.IsDaylightSavingTime(now) ? tzinfo.DaylightName : tzinfo.StandardName);
+                                break;
+                            default: throw new InvalidOperationException();
+                        }
                         break;
                 }
-            }
-
-            if (postProc) {
-                res = res.Replace("%f", microseconds != null ? string.Format("{0:D6}", microseconds) : "");
-
-                res = res.Replace("%j", dt.DayOfYear.ToString("D03"));  // day of the year (001 - 366)
-
-                // figure out first day of the year...
-                DateTime first = new DateTime(dt.Year, 1, 1);
-                int weekOneSunday = (7 - (int)first.DayOfWeek) % 7;
-                int dayOffset = (8 - (int)first.DayOfWeek) % 7;
-
-                // week of year  (sunday first day, 0-53), all days before Sunday are 0
-                res = res.Replace("%U", (((dt.DayOfYear + 6 - weekOneSunday) / 7)).ToString());
-                // week number of year (monday first day, 0-53), all days before Monday are 0
-                res = res.Replace("%W", (((dt.DayOfYear + 6 - dayOffset) / 7)).ToString());
-                res = res.Replace("%w", ((int)dt.DayOfWeek).ToString());
             }
             return res.ToString();
         }
@@ -411,98 +342,53 @@ namespace IronPython.Modules {
             DayOfWeek = 0x02,
         }
 
-        private static List<FormatInfo> PythonFormatToCLIFormat(string format, bool forParse, out bool postProcess, out FoundDateComponents found) {
-            postProcess = false;
-            found = FoundDateComponents.None;
+        private static List<FormatInfo> PythonFormatToCLIFormat(string format) {
             List<FormatInfo> newFormat = new List<FormatInfo>();
 
             for (int i = 0; i < format.Length; i++) {
                 if (format[i] == '%') {
-                    if (i + 1 == format.Length) throw PythonOps.ValueError("badly formatted string");
+                    if (i + 1 == format.Length) throw PythonOps.ValueError("Invalid format string");
 
                     switch (format[++i]) {
-                        case 'a':
-                            found |= FoundDateComponents.DayOfWeek;
-                            newFormat.Add(new FormatInfo("ddd")); break;
-                        case 'A':
-                            found |= FoundDateComponents.DayOfWeek;
-                            newFormat.Add(new FormatInfo("dddd")); break;
-                        case 'b': 
-                            newFormat.Add(new FormatInfo("MMM")); 
-                            break;
-                        case 'B':
-                            newFormat.Add(new FormatInfo("MMMM")); 
-                            break;
+                        case 'a': newFormat.Add(new FormatInfo("ddd")); break;
+                        case 'A': newFormat.Add(new FormatInfo("dddd")); break;
+                        case 'b': newFormat.Add(new FormatInfo("MMM")); break;
+                        case 'B': newFormat.Add(new FormatInfo("MMMM")); break;
                         case 'c':
-                            found |= FoundDateComponents.Date;
                             AddDate(newFormat);
                             newFormat.Add(new FormatInfo(FormatInfoType.UserText, " "));
                             AddTime(newFormat);
                             break;
-                        case 'd':
-                            // if we're parsing we want to use the less-strict
-                            // d format and which doesn't require both digits.
-                            if (forParse) newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "d"));
-                            else newFormat.Add(new FormatInfo("dd"));
-                            break;
-                        case 'H': newFormat.Add(new FormatInfo(forParse ? "H" : "HH")); break;
-                        case 'I': newFormat.Add(new FormatInfo(forParse ? "h" : "hh")); break;
-                        case 'm':
-                            newFormat.Add(new FormatInfo(forParse ? "M" : "MM"));
-                            break;
-                        case 'M': newFormat.Add(new FormatInfo(forParse ? "m" : "mm")); break;
-                        case 'p':
-                            newFormat.Add(new FormatInfo("tt"));
-                            break;
+                        case 'd': newFormat.Add(new FormatInfo("dd")); break;
+                        case 'H': newFormat.Add(new FormatInfo("HH")); break;
+                        case 'I': newFormat.Add(new FormatInfo("hh")); break;
+                        case 'm': newFormat.Add(new FormatInfo("MM")); break;
+                        case 'M': newFormat.Add(new FormatInfo("mm")); break;
+                        case 'p': newFormat.Add(new FormatInfo("tt")); break;
                         case 'S': newFormat.Add(new FormatInfo("ss")); break;
-                        case 'x':
-                            found |= FoundDateComponents.Date;
-                            AddDate(newFormat); break;
-                        case 'X':
-                            AddTime(newFormat);
-                            break;
-                        case 'y':
-                            found |= FoundDateComponents.Year;
-                            newFormat.Add(new FormatInfo("yy")); 
-                            break;
-                        case 'Y':
-                            found |= FoundDateComponents.Year;
-                            newFormat.Add(new FormatInfo("yyyy")); 
-                            break;
+                        case 'x': AddDate(newFormat); break;
+                        case 'X': AddTime(newFormat); break;
+                        case 'y': newFormat.Add(new FormatInfo("yy")); break;
+                        case 'Y': newFormat.Add(new FormatInfo("yyyy")); break;
                         case '%': newFormat.Add(new FormatInfo("\\%")); break;
 
-                        // format conversions not defined by the CLR.  We leave
-                        // them as \\% and then replace them by hand later
-                        case 'j': // day of year
-                            newFormat.Add(new FormatInfo("\\%j")); 
-                            postProcess = true; 
-                            break;
-                        case 'f':
-                            if (forParse) {
-                                newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "f")); 
-                            } else {
-                                postProcess = true;
-                                newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f"));
-                            }
-                            break;
-                        case 'W': newFormat.Add(new FormatInfo("\\%W")); postProcess = true; break;
-                        case 'U': newFormat.Add(new FormatInfo("\\%U")); postProcess = true; break; // week number
-                        case 'w': newFormat.Add(new FormatInfo("\\%w")); postProcess = true; break; // weekday number
-                        case 'z':
-                        case 'Z':
-                            // !!!TODO: 
-                            // 'z' for offset
-                            // 'Z' for time zone name; could be from PythonTimeZoneInformation
-                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, ""));
-                            break;
+                        // format conversions not defined by the CLR, we will need to do special handling
+                        case 'j': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "j")); break; // day of year
+                        case 'f': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "f")); break; // microseconds
+                        case 'W': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "W")); break; // week number (Monday-based)
+                        case 'U': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "U")); break; // week number (Sunday-based)
+                        case 'w': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "w")); break; // weekday number
+                        case 'z': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "z")); break; // UTC offset
+                        case 'Z': newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "Z")); break; // time zone name
+
                         default:
-                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, "")); break;
+                            throw PythonOps.ValueError("Invalid format string");
                     }
                 } else {
                     if (newFormat.Count == 0 || newFormat[newFormat.Count - 1].Type != FormatInfoType.UserText)
                         newFormat.Add(new FormatInfo(FormatInfoType.UserText, format[i].ToString()));
                     else
-                        newFormat[newFormat.Count - 1].Text = newFormat[newFormat.Count - 1].Text + format[i];
+                        newFormat[newFormat.Count - 1].Text += format[i];
                 }
             }
 
@@ -603,17 +489,10 @@ namespace IronPython.Modules {
                     year += 2000;
                 }
             }
-            if (year < DateTime.MinValue.Year || year <= minYear) throw PythonOps.ValueError("year is too low");
+            if (year < DateTime.MinValue.Year) throw PythonOps.ValueError("year is too low");
             if (year > DateTime.MaxValue.Year) throw PythonOps.ValueError("year is too high");
             if (ints[WeekdayIndex] < 0 || ints[WeekdayIndex] >= 7) throw PythonOps.ValueError("day of week is outside of 0-6 range");
             return ints;
-        }
-
-        private static int FindFormat(List<FormatInfo> formatInfo, string format) {
-            for (int i = 0; i < formatInfo.Count; i++) {
-                if (formatInfo[i].Text == format) return i;
-            }
-            return -1;
         }
 
         private static void InitStopWatch() {

@@ -4,6 +4,7 @@
 
 import unittest
 import datetime
+import sys
 import time
 
 from iptest import run_test, skipUnlessIronPython
@@ -46,7 +47,7 @@ class TestDatetime(unittest.TestCase):
     def test_strptime_9(self):
         d = datetime.datetime.strptime('Monday 11. March 2002', "%A %d. %B %Y")
         self.assertEqual(d, datetime.datetime(2002, 3, 11, 0, 0))
-    
+
     def test_strftime_1(self):
         d = datetime.datetime(2013, 11, 29, 16, 38, 12, 507000)
         self.assertEqual(d.strftime("%Y-%m-%dT%H:%M:%S.%f"), "2013-11-29T16:38:12.507000")
@@ -73,7 +74,7 @@ class TestDatetime(unittest.TestCase):
 
     def test_strptime_day_of_week(self):
         t = time.strptime("2013", "%Y")
-        self.assertEqual(t, (2013, 1, 1, 0, 0, 0, 1, 1, -1)) 
+        self.assertEqual(t, (2013, 1, 1, 0, 0, 0, 1, 1, -1))
         t = time.strptime("2013-11", "%Y-%m")
         self.assertEqual(t, (2013, 11, 1, 0, 0, 0, 4, 305, -1))
         t = time.strptime("2013-11-29", "%Y-%m-%d")
@@ -132,20 +133,41 @@ class TestDatetime(unittest.TestCase):
         example = datetime.datetime(2015, 4, 25, 8, 39, 54)
         result = clr.Convert(example, DateTime)
         self.assertIsInstance(result, DateTime)
-        
+
         expected = DateTime(2015, 4, 25, 8, 39, 54)
         self.assertEqual(expected, result)
-    
+
     @skipUnlessIronPython()
     def test_System_DateTime_binding(self):
         import clr
         from System import DateTime, TimeSpan
         pydt = datetime.datetime(2015, 4, 25, 8, 39, 54)
         netdt = DateTime(2015, 4, 25, 9, 39, 54)
-        
+
         result = netdt.Subtract(pydt)
         expected = TimeSpan(1, 0, 0)
-        
+
         self.assertEqual(expected, result)
+
+    def test_strptime_timezone(self):
+        # https://github.com/IronLanguages/ironpython2/issues/118
+        data = '2015-03-19T16:00:35+0200'
+        dt = datetime.datetime(2015, 3, 19, 16, 0, 35, tzinfo=datetime.timezone(datetime.timedelta(0, 7200)))
+        fmt = '%Y-%m-%dT%H:%M:%S%z'
+        self.assertEqual(datetime.datetime.strptime(data, fmt), dt)
+
+        data = '2015-03-19T16:00:35+02:00'
+        if sys.version_info >= (3,7):
+            self.assertEqual(datetime.datetime.strptime(data, fmt), dt)
+        else:
+            with self.assertRaises(ValueError):
+                datetime.datetime.strptime(data, fmt)
+
+    def test_strftime_timezone(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1121
+        utcoffset = datetime.timedelta(hours=-7)
+        tz = datetime.timezone(utcoffset)
+        dt = datetime.datetime(2001, 9, 23, 20, 10, 55, tzinfo=tz)
+        self.assertEqual(dt.strftime("%Z%z"), 'UTC-07:00-0700')
 
 run_test(__name__)

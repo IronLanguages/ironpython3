@@ -7,16 +7,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_datetime", typeof(IronPython.Modules.PythonDateTime))]
 namespace IronPython.Modules {
@@ -89,13 +87,13 @@ namespace IronPython.Modules {
             }
 
             public static timedelta __new__(CodeContext context, PythonType cls,
-                double days=0D,
-                double seconds=0D,
-                double microseconds=0D,
-                double milliseconds=0D,
-                double minutes=0D,
-                double hours=0D,
-                double weeks=0D) {
+                double days = 0D,
+                double seconds = 0D,
+                double microseconds = 0D,
+                double milliseconds = 0D,
+                double minutes = 0D,
+                double hours = 0D,
+                double weeks = 0D) {
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(timedelta))) {
                     return new timedelta(days, seconds, microseconds, milliseconds, minutes, hours, weeks);
                 } else {
@@ -203,7 +201,7 @@ namespace IronPython.Modules {
             }
 
             public double total_seconds() {
-                var total_microseconds = (double) this.microseconds + (this.seconds + this.days * 24.0 * 3600.0) * 1000000.0;
+                var total_microseconds = (double)this.microseconds + (this.seconds + this.days * 24.0 * 3600.0) * 1000000.0;
                 return total_microseconds / 1000000.0;
             }
 
@@ -242,7 +240,8 @@ namespace IronPython.Modules {
                         sb.Append(" days, ");
                 }
 
-                sb.AppendFormat("{0}:{1:d2}:{2:d2}", TimeSpanWithSeconds.Hours, TimeSpanWithSeconds.Minutes, TimeSpanWithSeconds.Seconds);
+                var ts = TimeSpanWithSeconds;
+                sb.AppendFormat("{0}:{1:d2}:{2:d2}", ts.Hours, ts.Minutes, ts.Seconds);
 
                 if (_microseconds != 0)
                     sb.AppendFormat(".{0:d6}", _microseconds);
@@ -468,7 +467,7 @@ namespace IronPython.Modules {
             }
 
             // instance methods
-            public virtual date replace(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict) {
+            public virtual date replace(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict) {
                 int year2 = _dateTime.Year;
                 int month2 = _dateTime.Month;
                 int day2 = _dateTime.Day;
@@ -564,7 +563,7 @@ namespace IronPython.Modules {
 
             public override bool Equals(object obj) {
                 if (obj == null) return false;
-                
+
                 date other = obj as date;
                 if (other != null && !(obj is datetime)) {
                     return this._dateTime == other._dateTime;
@@ -670,7 +669,7 @@ namespace IronPython.Modules {
                 return string.Format("datetime.date({0}, {1}, {2})", _dateTime.Year, _dateTime.Month, _dateTime.Day);
             }
 
-            public virtual string __format__(CodeContext/*!*/ context, [NotNone] string dateFormat){
+            public virtual string __format__(CodeContext/*!*/ context, [NotNone] string dateFormat) {
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
                 } else {
@@ -704,16 +703,16 @@ namespace IronPython.Modules {
 
             private UnifiedDateTime _utcDateTime;
 
-            private const long TicksPerMicrosecond = TimeSpan.TicksPerMillisecond/1000;
+            private const long TicksPerMicrosecond = TimeSpan.TicksPerMillisecond / 1000;
 
             public datetime(int year,
                 int month,
                 int day,
-               int hour=0,
-               int minute=0,
-               int second=0,
-               int microsecond=0,
-               tzinfo tzinfo=null) {
+                int hour = 0,
+                int minute = 0,
+                int second = 0,
+                int microsecond = 0,
+                tzinfo tzinfo = null) {
 
                 PythonDateTime.ValidateInput(InputKind.Year, year);
                 PythonDateTime.ValidateInput(InputKind.Month, month);
@@ -756,9 +755,6 @@ namespace IronPython.Modules {
                 _tz = tzinfo;
             }
 
-            private void Initialize(int year, int month, int day, int hour, int minute, int second, int microsecond, tzinfo tzinfo) {
-            }
-
             public datetime(DateTime dt)
                 : this(dt, null) {
             }
@@ -769,13 +765,13 @@ namespace IronPython.Modules {
 
             // just present to match CPython's error messages...
             public datetime(params object[] args) {
-                
+
                 if (args.Length < 3) {
                     throw PythonOps.TypeError("function takes at least 3 arguments ({0} given)", args.Length);
                 } else if (args.Length > 8) {
                     throw PythonOps.TypeError("function takes at most 8 arguments ({0} given)", args.Length);
                 }
-                
+
                 for (int i = 0; i < args.Length && i < 7; i++) {    // 8 is offsetof tzinfo
                     if (!(args[i] is int)) {
                         throw PythonOps.TypeError("an integer is required");
@@ -816,7 +812,7 @@ namespace IronPython.Modules {
             }
 
             // other constructors, all class methods:
-            public static object now(tzinfo tz=null) {
+            public static object now(tzinfo tz = null) {
                 if (tz != null) {
                     return tz.fromutc(new datetime(DateTime.UtcNow, 0, tz));
                 } else {
@@ -828,12 +824,11 @@ namespace IronPython.Modules {
                 return new datetime(DateTime.UtcNow, 0, null);
             }
 
-            
             public static new object today() {
                 return new datetime(DateTime.Now, 0, null);
-            }           
+            }
 
-            public static object fromtimestamp(double timestamp, tzinfo tz=null) {
+            public static object fromtimestamp(double timestamp, tzinfo tz = null) {
                 DateTime dt = PythonTime.TimestampToDateTime(timestamp);
                 dt = dt.AddSeconds(-PythonTime.timezone);
 
@@ -946,7 +941,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("gets a new datetime object with the fields provided as keyword arguments replaced.")]
-            public override date replace(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict) {
+            public override date replace(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict) {
                 int lyear = year;
                 int lmonth = month;
                 int lday = day;
@@ -1040,7 +1035,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public string isoformat(char sep='T') {
+            public string isoformat(char sep = 'T') {
                 StringBuilder sb = new StringBuilder();
                 sb.AppendFormat("{0:d4}-{1:d2}-{2:d2}{3}{4:d2}:{5:d2}:{6:d2}", year, month, day, sep, hour, minute, second);
 
@@ -1048,10 +1043,11 @@ namespace IronPython.Modules {
 
                 timedelta delta = utcoffset();
                 if (delta != null) {
-                    if (delta.TimeSpanWithDaysAndSeconds >= TimeSpan.Zero) {
-                        sb.AppendFormat("+{0:d2}:{1:d2}", delta.TimeSpanWithDaysAndSeconds.Hours, delta.TimeSpanWithDaysAndSeconds.Minutes);
+                    var ts = delta.TimeSpanWithDaysAndSeconds;
+                    if (ts >= TimeSpan.Zero) {
+                        sb.AppendFormat("+{0:d2}:{1:d2}", ts.Hours, ts.Minutes);
                     } else {
-                        sb.AppendFormat("-{0:d2}:{1:d2}", -delta.TimeSpanWithDaysAndSeconds.Hours, -delta.TimeSpanWithDaysAndSeconds.Minutes);
+                        sb.AppendFormat("-{0:d2}:{1:d2}", -ts.Hours, -ts.Minutes);
                     }
                 }
 
@@ -1101,8 +1097,8 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(
                     DynamicHelpers.GetPythonType(this),
                     PythonTuple.MakeTuple(
-                        InternalDateTime.Year, 
-                        InternalDateTime.Month, 
+                        InternalDateTime.Year,
+                        InternalDateTime.Month,
                         InternalDateTime.Day,
                         InternalDateTime.Hour,
                         InternalDateTime.Minute,
@@ -1114,12 +1110,13 @@ namespace IronPython.Modules {
             }
 
             public override string strftime(CodeContext/*!*/ context, string dateFormat) {
-                return PythonTime.strftime(context, dateFormat, _dateTime, microsecond);
+                return PythonTime.strftime(context, dateFormat, _dateTime, microsecond, _tz?.GetTimeZoneInfo(this));
             }
 
             public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
-                var packed = PythonTime._strptime(context, date_string, format);
-                return new datetime(packed.Item1);
+                var module = context.LanguageContext.GetStrptimeModule();
+                var _strptime_datetime = PythonOps.GetBoundAttr(context, module, "_strptime_datetime");
+                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, typeof(datetime), date_string, format);
             }
 
             #region IRichComparable Members
@@ -1220,11 +1217,11 @@ namespace IronPython.Modules {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
             public static readonly timedelta resolution = timedelta.resolution;
 
-            public time(int hour=0,
-                int minute=0,
-                int second=0,
-                int microsecond=0,
-                tzinfo tzinfo=null) {
+            public time(int hour = 0,
+                int minute = 0,
+                int second = 0,
+                int microsecond = 0,
+                tzinfo tzinfo = null) {
 
                 PythonDateTime.ValidateInput(InputKind.Hour, hour);
                 PythonDateTime.ValidateInput(InputKind.Minute, minute);
@@ -1315,7 +1312,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public object replace([ParamDictionary]IDictionary<object, object> dict) {
+            public object replace([ParamDictionary] IDictionary<object, object> dict) {
                 int lhour = hour;
                 int lminute = minute;
                 int lsecond = second;
@@ -1359,10 +1356,11 @@ namespace IronPython.Modules {
 
                 timedelta delta = utcoffset();
                 if (delta != null) {
-                    if (delta.TimeSpanWithDaysAndSeconds >= TimeSpan.Zero) {
-                        sb.AppendFormat("+{0:d2}:{1:d2}", delta.TimeSpanWithDaysAndSeconds.Hours, delta.TimeSpanWithDaysAndSeconds.Minutes);
+                    var ts = delta.TimeSpanWithDaysAndSeconds;
+                    if (ts >= TimeSpan.Zero) {
+                        sb.AppendFormat("+{0:d2}:{1:d2}", ts.Hours, ts.Minutes);
                     } else {
-                        sb.AppendFormat("-{0:d2}:{1:d2}", -delta.TimeSpanWithDaysAndSeconds.Hours, -delta.TimeSpanWithDaysAndSeconds.Minutes);
+                        sb.AppendFormat("-{0:d2}:{1:d2}", -ts.Hours, -ts.Minutes);
                     }
                 }
 
@@ -1373,7 +1371,7 @@ namespace IronPython.Modules {
                 return PythonTime.strftime(context,
                     format,
                     new DateTime(1900, 1, 1, _timeSpan.Hours, _timeSpan.Minutes, _timeSpan.Seconds, _timeSpan.Milliseconds),
-                    _lostMicroseconds);
+                    _lostMicroseconds, _tz?.GetTimeZoneInfo(this));
             }
 
             public timedelta utcoffset() {
@@ -1411,14 +1409,21 @@ namespace IronPython.Modules {
             }
 
             public override bool Equals(object obj) {
-                time other = obj as time;
-                if (other == null) return false;
+                if (obj is not time other) return false;
 
-                if (CheckTzInfoBeforeCompare(this, other)) {
-                    return this._timeSpan == other._timeSpan && this._lostMicroseconds == other._lostMicroseconds;
-                } else {
-                    return this.UtcTime.Equals(other.UtcTime);
+                var self = this;
+
+                if (_tz != other._tz) {
+                    timedelta offset1 = utcoffset();
+                    timedelta offset2 = other.utcoffset();
+                    if (offset1 != offset2) {
+                        if (offset1 is null || offset2 is null) return false; // mixed tz-aware & naive
+                        self = Add(self, offset1);
+                        other = Add(other, offset2);
+                    }
                 }
+
+                return self._timeSpan == other._timeSpan && self._lostMicroseconds == other._lostMicroseconds;
             }
 
             #region Rich Comparison Members
@@ -1485,14 +1490,12 @@ namespace IronPython.Modules {
             public object __format__(CodeContext/*!*/ context, [NotNone] string dateFormat) {
                 if (string.IsNullOrEmpty(dateFormat)) {
                     return PythonOps.ToString(context, this);
-                }
-                else {
+                } else {
                     // If we're a subtype, there might be a strftime overload,
                     // so call it if it exists.
                     if (GetType() == typeof(time)) {
                         return strftime(context, dateFormat);
-                    }
-                    else {
+                    } else {
                         return PythonOps.Invoke(context, this, "strftime", dateFormat);
                     }
                 }
@@ -1527,52 +1530,58 @@ namespace IronPython.Modules {
             }
         }
 
+#nullable enable
+
         [PythonType]
         public class tzinfo {
             public tzinfo() {
             }
 
-            public tzinfo(params object[] args) {
+            public tzinfo([NotNone] params object?[] args) {
             }
 
-            public tzinfo([ParamDictionary]PythonDictionary dict, params object[] args) {
+            public tzinfo([ParamDictionary, NotNone] PythonDictionary dict, [NotNone] params object?[] args) {
             }
 
-            public virtual object fromutc(datetime dt) {
-                timedelta dtOffset = utcoffset(dt);
+            public virtual object fromutc([NotNone] datetime dt) {
+                if (dt is null) throw PythonOps.TypeError($"{nameof(fromutc)}: argument must be a datetime");
+                if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError($"{nameof(fromutc)}: dt.tzinfo is not self");
+
+                timedelta? dtOffset = utcoffset(dt);
                 if (dtOffset == null)
-                    throw PythonOps.ValueError("fromutc: non-None utcoffset() result required");
+                    throw PythonOps.ValueError($"{nameof(fromutc)}: non-None utcoffset() result required");
 
-                timedelta dtDst = dst(dt);
+                timedelta? dtDst = dst(dt);
                 if (dtDst == null)
-                    throw PythonOps.ValueError("fromutc: non-None dst() result required");
+                    throw PythonOps.ValueError($"{nameof(fromutc)}: non-None dst() result required");
 
                 timedelta delta = dtOffset - dtDst;
                 dt = dt + delta; // convert to standard LOCAL time
                 dtDst = dt.dst();
+                if (dtDst is null) throw PythonOps.ValueError($"{nameof(fromutc)}: tz.dst() gave inconsistent results; cannot convert");
 
                 return dt + dtDst;
             }
 
-            public virtual timedelta dst(object dt) {
-                throw new NotImplementedException();
+            public virtual timedelta? dst(object? dt) {
+                throw new NotImplementedException($"a tzinfo subclass must implement {nameof(dst)}()");
             }
 
-            public virtual string tzname(object dt) {
-                throw new NotImplementedException("a tzinfo subclass must implement tzname()");
+            public virtual string tzname(object? dt) {
+                throw new NotImplementedException($"a tzinfo subclass must implement {nameof(tzname)}()");
             }
 
-            public virtual timedelta utcoffset(object dt) {
-                throw new NotImplementedException();
+            public virtual timedelta? utcoffset(object? dt) {
+                throw new NotImplementedException($"a tzinfo subclass must implement {nameof(utcoffset)}()");
             }
 
             public PythonTuple __reduce__(CodeContext/*!*/ context) {
-                object args = PythonTuple.EMPTY;
+                object? args = PythonTuple.EMPTY;
                 if (PythonOps.TryGetBoundAttr(context, this, "__getinitargs__", out var getinitargs)) {
                     args = PythonOps.CallWithContext(context, getinitargs);
                 }
 
-                object dict;
+                object? dict;
                 if (GetType() == typeof(tzinfo) ||
                     !PythonOps.TryGetBoundAttr(context, this, "__dict__", out dict)) {
                     return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
@@ -1580,9 +1589,18 @@ namespace IronPython.Modules {
 
                 return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args, dict);
             }
-        }
 
-#nullable enable
+            internal TimeZoneInfo GetTimeZoneInfo(time dt) {
+                var name = tzname(dt);
+                // TODO: what happens if utcoffset is null...
+                return TimeZoneInfo.CreateCustomTimeZone(name, utcoffset(dt)?.TimeSpanWithDaysAndSeconds ?? default, name, name);
+            }
+            internal TimeZoneInfo GetTimeZoneInfo(datetime dt) {
+                var name = tzname(dt);
+                // TODO: what happens if utcoffset is null...
+                return TimeZoneInfo.CreateCustomTimeZone(name, utcoffset(dt)?.TimeSpanWithDaysAndSeconds ?? default, name, name);
+            }
+        }
 
         [PythonType]
         public sealed class timezone : tzinfo, ICodeFormattable, IEquatable<timezone> {
@@ -1611,7 +1629,7 @@ namespace IronPython.Modules {
 
             public static timezone max { get; } = new timezone(new timedelta(0, 86340, 0));
 
-            public override timedelta utcoffset(object? dt) {
+            public override timedelta? utcoffset(object? dt) {
                 if (dt is not null && dt is not datetime) throw PythonOps.TypeError("utcoffset(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
                 return _offset;
             }
@@ -1622,7 +1640,7 @@ namespace IronPython.Modules {
             }
 
             public override object fromutc([NotNone] datetime dt) {
-                if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError("fromutc: dt.tzinfo is not self");
+                if (!ReferenceEquals(this, dt.tzinfo)) throw PythonOps.ValueError($"{nameof(fromutc)}: dt.tzinfo is not self");
                 return dt + _offset;
             }
 

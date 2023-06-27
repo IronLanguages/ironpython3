@@ -1038,13 +1038,13 @@ class DatetimeTest(IronPythonTestCase):
         x = datetime.time(2,28,3,99,None)
         self.assertEqual(x.tzname(), None)
 
-    @skipUnlessIronPython()
     def test_tzinfo(self):
         x = datetime.tzinfo()
         self.assertRaises(NotImplementedError, x.utcoffset, None)
         self.assertRaises(NotImplementedError, x.dst, None)
         self.assertRaises(NotImplementedError, x.tzname, None)
-        self.assertRaises(NotImplementedError, x.fromutc, None)
+        self.assertRaises(TypeError, x.fromutc, None)
+        self.assertRaises(ValueError, x.fromutc, datetime.datetime.now())
 
     def test_invariant(self):
         for x in range(0, 10000, 99):

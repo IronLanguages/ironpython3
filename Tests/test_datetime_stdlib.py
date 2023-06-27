@@ -28,7 +28,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTime('test_mixed_compare'),
             test.datetimetester.TestDateTime('test_overflow'),
             test.datetimetester.TestDateTime('test_strftime_with_bad_tzname_replace'),
-            test.datetimetester.TestDateTime('test_strptime'),
             test.datetimetester.TestDateTime('test_timestamp_aware'), # AttributeError: 'datetime' object has no attribute 'timestamp'
             test.datetimetester.TestDateTimeTZ('test_astimezone'), # https://github.com/IronLanguages/ironpython3/issues/1136
             test.datetimetester.TestDateTimeTZ('test_backdoor_resistance'),
@@ -41,7 +40,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTimeTZ('test_mixed_compare'),
             test.datetimetester.TestDateTimeTZ('test_overflow'),
             test.datetimetester.TestDateTimeTZ('test_strftime_with_bad_tzname_replace'),
-            test.datetimetester.TestDateTimeTZ('test_strptime'),
             test.datetimetester.TestDateTimeTZ('test_timestamp_aware'), # AttributeError: 'datetime' object has no attribute 'timestamp'
             test.datetimetester.TestDateTimeTZ('test_tz_aware_arithmetic'),
             test.datetimetester.TestDateTimeTZ('test_utctimetuple'), # SystemError: Object reference not set to an instance of an object.
@@ -59,11 +57,8 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestSubclassDateTime('test_timestamp_aware'),
             test.datetimetester.TestSubclassDateTime('test_tz_independent_comparing'),
             test.datetimetester.TestTimeDelta('test_computations'), # rounding differences
-            test.datetimetester.TestTimeTZ('test_mixed_compare'),
             test.datetimetester.TestTimeTZ('test_zones'),
             test.datetimetester.TestTimeZone('test_constructor'),
-            test.datetimetester.TestTimezoneConversions('test_bogus_dst'), # SystemError: Object reference not set to an instance of an object.
-            test.datetimetester.TestTimezoneConversions('test_fromutc'),
         ]
 
         return generate_suite(tests, failing_tests)

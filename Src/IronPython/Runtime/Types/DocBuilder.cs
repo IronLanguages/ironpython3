@@ -542,7 +542,7 @@ namespace IronPython.Runtime.Types {
             return location;
         }
 
-#if !NETCOREAPP && !NETSTANDARD
+#if NETFRAMEWORK
         private const string _frameworkReferencePath = @"Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0";
 #endif
 
@@ -571,7 +571,7 @@ namespace IronPython.Runtime.Types {
                 if (!File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!File.Exists(xml)) {
-#if !NETCOREAPP && !NETSTANDARD
+#if NETFRAMEWORK
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(

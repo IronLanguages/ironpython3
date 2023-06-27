@@ -77,16 +77,8 @@ class TimeTest(IronPythonTestCase):
         self.assertEqual((1942, 1, 1, 0, 0, 0, 3, 1, -1), time.strptime("%1942", "%%%Y"))
         self.assertEqual((1900, 1, 6, 0, 0, 0, 5, 6, -1), time.strptime("%6", "%%%d"))
 
-        if is_cli: # https://github.com/IronLanguages/main/issues/239
-            # TODO: day of the week does not work as expected
-            import System.DateTime
-            if System.DateTime(System.DateTime.Now.Year, 7, 9).DayOfWeek == System.DayOfWeek.Friday:
-                self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
-            else:
-                with self.assertRaises(ValueError):
-                    time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p')
-        else:
-            self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
+        # https://github.com/IronLanguages/main/issues/239
+        self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
 
         self.assertEqual((1900, 7, 9, 19, 30, 0, 0, 190, -1), time.strptime('July 9 7:30 PM', '%B %d %I:%M %p'))
         # CPY & IPY differ on daylight savings time for this parse

@@ -57,7 +57,10 @@ class TimeTest(IronPythonTestCase):
                 ]
 
         for dateTime, result in tests:
-            self.assertEqual(time.strftime('%Y-%m-%d %H:%M:%S',time.struct_time(dateTime)), result)
+            self.assertEqual(time.strftime('%Y-%m-%d %H:%M:%S', time.struct_time(dateTime)), result)
+
+        # https://github.com/IronLanguages/ironpython3/issues/1121
+        self.assertTrue(time.strftime("%Z%z")) # make sure it doesn't produce an empty string
 
     def test_strptime(self):
         import time
@@ -78,7 +81,9 @@ class TimeTest(IronPythonTestCase):
         self.assertEqual((1900, 1, 6, 0, 0, 0, 5, 6, -1), time.strptime("%6", "%%%d"))
 
         # https://github.com/IronLanguages/main/issues/239
-        self.assertEqual((1900, 7, 9, 19, 30, 0, 4, 190, -1), time.strptime('Fri, July 9 7:30 PM', '%a, %B %d %I:%M %p'))
+        self.assertEqual(time.strptime('Fri', '%a'), (1900, 1, 1, 0, 0, 0, 4, 1, -1))
+        for i, d in enumerate(('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')):
+            self.assertEqual((1900, 7, 9, 19, 30, 0, i, 190, -1), time.strptime(d + ', July 9 7:30 PM', '%a, %B %d %I:%M %p'))
 
         self.assertEqual((1900, 7, 9, 19, 30, 0, 0, 190, -1), time.strptime('July 9 7:30 PM', '%B %d %I:%M %p'))
         # CPY & IPY differ on daylight savings time for this parse

@@ -574,83 +574,40 @@ namespace IronPython.Modules {
                 return this._dateTime.CompareTo(other._dateTime);
             }
 
-            /// <summary>
-            /// Used to check the type to see if we can do a comparison.  Returns true if we can
-            /// or false if we should return NotImplemented.  May throw if the type's really wrong.
-            /// </summary>
-            internal bool CheckType(object? other, bool shouldThrow = true) {
-                if (other == null) {
-                    return CheckTypeError(other, shouldThrow);
-                }
-
-                if (other.GetType() != GetType()) {
-                    // if timetuple is defined on the other object go ahead and let it try the compare,
-                    // but only if it's a user-defined object
-                    if (!(GetType() == typeof(date) && other.GetType() == typeof(datetime) ||
-                        GetType() == typeof(datetime) && other.GetType() == typeof(date))) {
-
-                        // TODO: review this...
-                        if (PythonOps.HasAttr(DefaultContext.Default, other, "timetuple")) {
-                            return false;
-                        }
-                    }
-
-                    return CheckTypeError(other, shouldThrow);
-                }
-
-                return true;
-            }
-
-            private static bool CheckTypeError(object? other, bool shouldThrow) {
-                if (shouldThrow) {
-                    throw PythonOps.TypeError("can't compare datetime.date to {0}", PythonOps.GetPythonTypeName(other));
-                } else {
-                    return true;
-                }
-            }
-
             [return: MaybeNotImplemented]
             public static object operator >([NotNone] date self, object? other) {
                 if (other is not date date) return NotImplementedType.Value;
-                if (!self.CheckType(other)) return NotImplementedType.Value;
-
-                return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) > 0);
+                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) > 0);
             }
 
             [return: MaybeNotImplemented]
             public static object operator <([NotNone] date self, object? other) {
                 if (other is not date date) return NotImplementedType.Value;
-                if (!self.CheckType(other)) return NotImplementedType.Value;
-
-                return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) < 0);
+                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) < 0);
             }
 
             [return: MaybeNotImplemented]
             public static object operator >=([NotNone] date self, object? other) {
                 if (other is not date date) return NotImplementedType.Value;
-                if (!self.CheckType(other)) return NotImplementedType.Value;
-
-                return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) >= 0);
+                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) >= 0);
             }
 
             [return: MaybeNotImplemented]
             public static object operator <=([NotNone] date self, object? other) {
                 if (other is not date date) return NotImplementedType.Value;
-                if (!self.CheckType(other)) return NotImplementedType.Value;
-
-                return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) <= 0);
+                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) <= 0);
             }
 
+            [return: MaybeNotImplemented]
             public object __eq__(object? other) {
-                if (!CheckType(other, false)) return NotImplementedType.Value;
-
-                return Equals(other);
+                if (other is not date) return NotImplementedType.Value;
+                return ScriptingRuntimeHelpers.BooleanToObject(Equals(other));
             }
 
+            [return: MaybeNotImplemented]
             public object __ne__(object? other) {
-                if (!CheckType(other, false)) return NotImplementedType.Value;
-
-                return !Equals(other);
+                if (other is not date) return NotImplementedType.Value;
+                return ScriptingRuntimeHelpers.BooleanToObject(!Equals(other));
             }
 
             #endregion

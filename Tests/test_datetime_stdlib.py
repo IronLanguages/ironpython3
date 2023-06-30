@@ -44,7 +44,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestSubclassDateTime('test_strftime_with_bad_tzname_replace'),
             test.datetimetester.TestSubclassDateTime('test_strptime'),
             test.datetimetester.TestSubclassDateTime('test_timestamp_aware'),
-            test.datetimetester.TestSubclassDateTime('test_tz_independent_comparing'),
             test.datetimetester.TestTimeDelta('test_computations'), # rounding differences
             test.datetimetester.TestTimeTZ('test_zones'),
             test.datetimetester.TestTimeZone('test_constructor'),

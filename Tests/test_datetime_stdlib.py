@@ -23,7 +23,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTime('test_insane_utcfromtimestamp'),
             test.datetimetester.TestDateTime('test_microsecond_rounding'),
             test.datetimetester.TestDateTime('test_strftime_with_bad_tzname_replace'),
-            test.datetimetester.TestDateTime('test_timestamp_aware'), # AttributeError: 'datetime' object has no attribute 'timestamp'
             test.datetimetester.TestDateTimeTZ('test_backdoor_resistance'),
             test.datetimetester.TestDateTimeTZ('test_even_more_compare'),
             test.datetimetester.TestDateTimeTZ('test_extreme_hashes'),
@@ -33,7 +32,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTimeTZ('test_microsecond_rounding'),
             test.datetimetester.TestDateTimeTZ('test_mixed_compare'),
             test.datetimetester.TestDateTimeTZ('test_strftime_with_bad_tzname_replace'),
-            test.datetimetester.TestDateTimeTZ('test_timestamp_aware'), # AttributeError: 'datetime' object has no attribute 'timestamp'
             test.datetimetester.TestDateTimeTZ('test_tz_aware_arithmetic'),
             test.datetimetester.TestSubclassDateTime('test_backdoor_resistance'),
             test.datetimetester.TestSubclassDateTime('test_extreme_timedelta'),
@@ -42,8 +40,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestSubclassDateTime('test_microsecond_rounding'),
             test.datetimetester.TestSubclassDateTime('test_replace'), # TODO
             test.datetimetester.TestSubclassDateTime('test_strftime_with_bad_tzname_replace'),
-            test.datetimetester.TestSubclassDateTime('test_strptime'),
-            test.datetimetester.TestSubclassDateTime('test_timestamp_aware'),
             test.datetimetester.TestTimeDelta('test_computations'), # rounding differences
             test.datetimetester.TestTimeTZ('test_zones'),
             test.datetimetester.TestTimeZone('test_constructor'),

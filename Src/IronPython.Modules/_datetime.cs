@@ -570,45 +570,15 @@ namespace IronPython.Modules {
 
             #region Rich Comparison Members
 
-            internal virtual int CompareTo(date other) {
-                return this._dateTime.CompareTo(other._dateTime);
-            }
+            internal virtual int CompareTo(date other) => this._dateTime.CompareTo(other._dateTime);
 
-            [return: MaybeNotImplemented]
-            public static object operator >([NotNone] date self, object? other) {
-                if (other is not date date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) > 0);
-            }
+            public static bool operator >([NotNone] date self, [NotNone] date other) => self.CompareTo(other) > 0;
 
-            [return: MaybeNotImplemented]
-            public static object operator <([NotNone] date self, object? other) {
-                if (other is not date date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) < 0);
-            }
+            public static bool operator <([NotNone] date self, [NotNone] date other) => self.CompareTo(other) < 0;
 
-            [return: MaybeNotImplemented]
-            public static object operator >=([NotNone] date self, object? other) {
-                if (other is not date date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) >= 0);
-            }
+            public static bool operator >=([NotNone] date self, [NotNone] date other) => self.CompareTo(other) >= 0;
 
-            [return: MaybeNotImplemented]
-            public static object operator <=([NotNone] date self, object? other) {
-                if (other is not date date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(date) <= 0);
-            }
-
-            [return: MaybeNotImplemented]
-            public object __eq__(object? other) {
-                if (other is not date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(Equals(other));
-            }
-
-            [return: MaybeNotImplemented]
-            public object __ne__(object? other) {
-                if (other is not date) return NotImplementedType.Value;
-                return ScriptingRuntimeHelpers.BooleanToObject(!Equals(other));
-            }
+            public static bool operator <=([NotNone] date self, [NotNone] date other) => self.CompareTo(other) <= 0;
 
             #endregion
 
@@ -1064,10 +1034,20 @@ namespace IronPython.Modules {
                 return PythonTime.strftime(context, dateFormat, _dateTime, microsecond, _tz?.GetTimeZoneInfo(this));
             }
 
-            public static datetime strptime(CodeContext/*!*/ context, [NotNone] string date_string, [NotNone] string format) {
+            public double timestamp() {
+                if (tzinfo is null) {
+                    return PythonTime.TicksToTimestamp(_dateTime.Ticks);
+                }
+                else {
+                    return (this - new datetime(new DateTime(1970, 1, 1), timezone.utc)).total_seconds();
+                }
+            }
+
+            [ClassMethod]
+            public static datetime strptime(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] string date_string, [NotNone] string format) {
                 var module = context.LanguageContext.GetStrptimeModule();
                 var _strptime_datetime = PythonOps.GetBoundAttr(context, module, "_strptime_datetime");
-                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, typeof(datetime), date_string, format)!;
+                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, cls, date_string, format)!;
             }
 
             #region IRichComparable Members
@@ -1358,8 +1338,8 @@ namespace IronPython.Modules {
                     timedelta? offset2 = other.utcoffset();
                     if (offset1 != offset2) {
                         if (offset1 is null || offset2 is null) return false; // mixed tz-aware & naive
-                        self = Add(self, offset1);
-                        other = Add(other, offset2);
+                        self = Add(self, -offset1);
+                        other = Add(other, -offset2);
                     }
                 }
 
@@ -1371,16 +1351,13 @@ namespace IronPython.Modules {
             /// <summary>
             /// Helper function for doing the comparisons.
             /// </summary>
-            private int CompareTo(object other) {
-                if (other is not time other2)
-                    throw PythonOps.TypeError("can't compare datetime.time to {0}", PythonOps.GetPythonTypeName(other));
-
-                if (CheckTzInfoBeforeCompare(this, other2)) {
-                    int res = this._timeSpan.CompareTo(other2._timeSpan);
+            private int CompareTo(time other) {
+                if (CheckTzInfoBeforeCompare(this, other)) {
+                    int res = this._timeSpan.CompareTo(other._timeSpan);
                     if (res != 0) return res;
-                    return this._lostMicroseconds - other2._lostMicroseconds;
+                    return this._lostMicroseconds - other._lostMicroseconds;
                 } else {
-                    return this.UtcTime.CompareTo(other2.UtcTime);
+                    return this.UtcTime.CompareTo(other.UtcTime);
                 }
             }
 

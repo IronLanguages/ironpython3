@@ -15,7 +15,6 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_ssl.BasicSocketTests('test_cert_time_to_seconds'), # ValueError: time data does not match format
             test.test_ssl.BasicSocketTests('test_enum_crls'), # AssertionError: [] is not true
             test.test_ssl.BasicSocketTests('test_errors_sslwrap'), # NotImplementedError: keyfile
             test.test_ssl.BasicSocketTests('test_get_default_verify_paths'), # AttributeError: 'module' object has no attribute 'get_default_verify_paths'

@@ -7,7 +7,7 @@ import sys
 import textwrap
 import unittest
 from test import support
-from test.script_helper import assert_python_ok, assert_python_failure
+from test.support.script_helper import assert_python_ok, assert_python_failure
 
 
 MS_WINDOWS = (sys.platform == 'win32')

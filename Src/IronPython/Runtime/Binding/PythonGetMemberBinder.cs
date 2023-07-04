@@ -391,17 +391,30 @@ namespace IronPython.Runtime.Binding {
                     case TrackerTypes.Property:
                         if (members.Count == 1) {
                             PropertyTracker pt = (PropertyTracker)members[0];
-                            if (!pt.IsStatic && pt.GetIndexParameters().Length == 0) {
-                                MethodInfo prop = pt.GetGetMethod();
-                                ParameterInfo[] parameters;
+                            if (!pt.IsStatic && pt.GetIndexParameters() is { Length: 0}) {
+                                if (pt.GetGetMethod() is {} prop && prop.GetParameters() is { Length: 0 }) {
+                                    Func<object, object> invoke;
 
-                                if (prop != null && (parameters = prop.GetParameters()).Length == 0) {
-                                    if (prop.ReturnType == typeof(bool)) {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyBool;
-                                    } else if (prop.ReturnType == typeof(int)) {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyInt;
+                                    if (prop.DeclaringType is { } declaringType) {
+                                        var input = Expression.Parameter(typeof(object));
+                                        invoke = Expression.Lambda<Func<object, object>>(
+                                            Expression.Convert(
+                                                Expression.Call(
+                                                    Expression.Convert(input, declaringType),
+                                                    prop
+                                                    ),
+                                                typeof(object)),
+                                            input
+                                        ).Compile();
                                     } else {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetProperty;
+                                        invoke = CallInstruction.Create(prop, Array.Empty<ParameterInfo>()).Invoke;
+                                    }
+                                    if (prop.ReturnType == typeof(bool)) {
+                                        return new FastPropertyGet<TSelfType>(type, invoke).GetPropertyBool;
+                                    } else if (prop.ReturnType == typeof(int)) {
+                                        return new FastPropertyGet<TSelfType>(type, invoke).GetPropertyInt;
+                                    } else {
+                                        return new FastPropertyGet<TSelfType>(type, invoke).GetProperty;
                                     }
                                 }
                             }
@@ -580,7 +593,7 @@ namespace IronPython.Runtime.Binding {
             Type limitType = self.GetLimitType();
 
             if (limitType == typeof(DynamicNull) || PythonBinder.IsPythonType(limitType) || PythonBinder.IsPythonSupportingType(limitType)) {
-                // look up in the PythonType so that we can 
+                // look up in the PythonType so that we can
                 // get our custom method names (e.g. string.startswith)
                 PythonType argType = DynamicHelpers.GetPythonTypeFromType(limitType);
 
@@ -608,7 +621,7 @@ namespace IronPython.Runtime.Binding {
 
                 if (extMethods != null) {
                     // try again w/ the extension method binder
-                    res = extMethods.GetBinder(context).GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);                    
+                    res = extMethods.GetBinder(context).GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
                 }
 
                 // and add any restrictions (we need an empty restriction even if it's an error so later adds work)

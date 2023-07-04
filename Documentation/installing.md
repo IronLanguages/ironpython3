@@ -8,7 +8,7 @@ Since .NET is a cross-platform framework, the instructions in this section apply
 
 ### .NET SDK
 
-If the target system has already a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using [`dotnet tool`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools).
+If the target system already has a full .NET SDK installed, the most straightforward method to install a standalone IronPython interpreter is by using [`dotnet tool`](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
 #### _Global Tool_
 
@@ -18,7 +18,7 @@ If the target system has already a full .NET SDK installed, the most straightfor
 dotnet tool install --global ironpython.console
 ```
 
-The switch `--global` can be abbreviated to `-g`. The `ipy` program will be installed in `~/.dotnet/tools`, together with the Python Standard Library for IronPython. The directory `~/.dotnet/tools` should have been added to the search path for the user (a.k.a. `PATH` environment variable), if not yet done.
+The switch `--global` can be abbreviated to `-g`. The `ipy` program will be installed in `~/.dotnet/tools`, together with the Python Standard Library for IronPython. The directory `~/.dotnet/tools` should be added to the search path for the user (AKA `PATH` environment variable), if not yet done.
 
 Note that any additional Python packages installed using `ipy -m pip` from this location will be installed inside that directory, hence being "global" for the user.
 
@@ -125,12 +125,26 @@ dpkg -i ~/Downloads/ironpython_3.X.Y.deb
 
 On macOS (AKA OSX, Darwin), Mono provides the necessary .NET Framework. First install Mono following installation instructions from the [Mono Project page](https://www.mono-project.com/download/stable/#download-mac).  After installation, verify that command `mono` is available at the shell prompt, with, e.g. `mono --version`.
 
-Then download the `.pkg` installer from the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest) and execute it.
+Then download the `.pkg` installer from the project's [release page](https://github.com/IronLanguages/ironpython3/releases/latest) and execute it. The IronPython installation is placed in `/Library/Frameworks/IronPython.framework/Versions/3.X.Y` (`X` and `Y` being the minor and patch version numbers). It can be run with:
 
+```
+mono /Library/Frameworks/IronPython.framework/Versions/3.X.Y/bin/ipy.exe
+```
+
+Note that Mono comes with its own (old, obsolete, and unsupported) version of IronPython and a launcher script `ipy` in Mono's commands directory (`/Library/Frameworks/Mono.framework/Versions/Current/Commands/ipy`). Since Mono's command directory is by default added to the command search path, simply running `ipy` from the command line will most likely pick up the Mono version. This version reports version number 3.0.0.0 and is backed by Python StdLib 2.7. To verify if this is the case, run:
+
+```shell
+$ which ipy
+/Library/Frameworks/Mono.framework/Versions/Current/Commands/ipy
+$ ipy -V
+IronPython 3.0 3.0.0.0 on 6.12.0.188 (2020-02/ca8abcb6bc4 Thu Oct 13 14:26:22 EDT 2022)
+```
+
+It is recommended to create one's own launcher script launching the newer IronPython version and to put it before Mono's `ipy` on the search path.
 
 # Installing Non-Released Versions
 
-After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you got handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
+After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you was handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
 
 Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `master` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
 

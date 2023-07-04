@@ -37,7 +37,7 @@ except ImportError:
     from test import mod_generics_cache
 
 
-PY36 = sys.version_info[:2] >= (3, 6)
+PY36 = sys.version_info[:2] >= (3, 6) and not sys.implementation.name == 'ironpython' # https://github.com/IronLanguages/ironpython3/issues/98
 
 
 class BaseTestCase(TestCase):
@@ -1647,7 +1647,7 @@ class OverloadTests(BaseTestCase):
         blah()
 
 
-ASYNCIO = sys.version_info[:2] >= (3, 5)
+ASYNCIO = sys.version_info[:2] >= (3, 5) and not sys.implementation.name == 'ironpython' # https://github.com/IronLanguages/ironpython3/issues/98
 
 ASYNCIO_TESTS = """
 import asyncio

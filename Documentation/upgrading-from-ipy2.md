@@ -104,11 +104,11 @@ The creation of either `Int32` or `BigInteger` instances happens automatically b
 False
 ```
 
-In the opposite direction, if it is essential to create `Int32` objects, either use constructors for `int` or `Int32`. In the current implementation, the former converts an integer to `Int32` if the value fits in 32 bits, otherwise it leaves it as `BigInteger`. The latter throws an exception is the conversion is not possible. Although the behavior of the constructor `int` may or may not change in the future, it is always guaranteed to convert the value to the "canonical form" adopted for that version of IronPython.
+In the opposite direction, if it is essential to create `Int32` objects, either use constructors for `int` or `Int32`. In the current implementation, the former converts an integer to `Int32` if the value fits in 32 bits, otherwise it leaves it as `BigInteger`. The latter throws an exception if the conversion is not possible. Although the behavior of the constructor `int` may or may not change in the future, it is always guaranteed to convert the value to the "canonical form" adopted for that version of IronPython.
 
 ```pycon
 >>> # k is a BigInteger that fits in 32 bits
->>> isinstance(j, System.Int32)
+>>> isinstance(k, System.Int32)
 False
 >>> hex(k)
 '0x7fffffff'
@@ -150,7 +150,7 @@ When an `int` object is serialized using `pickle.dump(x, myfile)` and subsequent
 
 ### BigIntegerV2 API
 
-In IronPython 2, `long` type carries an obsolete `BigIntegerV2` API, accessible after importing `System`. In IronPython 3 this API is not available directly on `int` instances (regardless whether the instance is `Int32` or `BigInteger`), but is still accessible in some form through `Microsoft.Scripting.Utils.MathUtils` in `Microsoft.Dynamic.dll`.
+In IronPython 2, `long` type carries an obsolete `BigIntegerV2` API, accessible after importing `System`. In IronPython 3 this API is not available directly on `int` instances (regardless of whether the instance is `Int32` or `BigInteger`), but is still accessible in some form through `Microsoft.Scripting.Utils.MathUtils` in `Microsoft.Dynamic.dll`.
 
 ```pycon
 >>> # IronPython 2

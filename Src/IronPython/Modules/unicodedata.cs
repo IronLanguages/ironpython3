@@ -5,155 +5,137 @@
 // Copyright (c) Jeff Hardy 2011.
 //
 
+# nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("unicodedata", typeof(IronPython.Modules.unicodedata))]
 namespace IronPython.Modules {
     public static class unicodedata {
-        private static UCD ucd_5_2_0 = null;
+        private static UCD ucd = null!;
 
-        // This is supposed to by the Unicode 3.2 database, but since .NET doesn't provide it
-        // just use the 5.2 one instead. 
-        public static UCD ucd_3_2_0 { 
+        public static UCD ucd_3_2_0 {
             get {
                 if (_ucd_3_2_0 == null) {
                     Interlocked.CompareExchange(ref _ucd_3_2_0, new UCD("3.2.0"), null);
                 }
 
                 return _ucd_3_2_0;
-            } 
+            }
         }
-        private static UCD _ucd_3_2_0 = null;
+        private static UCD? _ucd_3_2_0;
 
-        public static string unidata_version { get { return ucd_5_2_0.unidata_version; } }
+        public static string unidata_version => ucd.unidata_version;
 
+#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IDictionary/*!*/ dict) {
             EnsureInitialized();
         }
+#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         /// <summary>
         /// Ensures that the modules is initialized so that static methods don't throw.
         /// </summary>
-        [MemberNotNull(nameof(ucd_5_2_0))]
+        [MemberNotNull(nameof(ucd))]
         internal static void EnsureInitialized() {
-            if (ucd_5_2_0 == null) {
+            if (ucd == null) {
                 // This is a lie. The version of Unicode depends on the .NET version as well as the OS. The
-                // version of the database stored internally is 5.2, so just say that.
-                Interlocked.CompareExchange(ref ucd_5_2_0, new UCD("5.2.0"), null);
+                // version of the database stored internally is 6.3, so just say that.
+                Interlocked.CompareExchange(ref ucd, new UCD("6.3.0"), null);
             }
         }
 
-        public static string lookup(string name) {
-            return ucd_5_2_0.lookup(name);
-        }
-
-#nullable enable
+        public static string lookup([NotNone] string name)
+            => ucd.lookup(name);
 
         public static string name([NotNone] string unichr)
-            => ucd_5_2_0.name(unichr);
+            => ucd.name(unichr);
 
         public static object? name([NotNone] string unichr, object? @default)
-            => ucd_5_2_0.name(unichr, @default);
+            => ucd.name(unichr, @default);
 
         internal static bool TryGetName(int rune, [NotNullWhen(true)] out string? name)
-            => ucd_5_2_0.TryGetName(rune, out name);
+            => ucd.TryGetName(rune, out name);
 
-#nullable restore
+        public static int @decimal(char unichr, int @default)
+            => ucd.@decimal(unichr, @default);
 
-        public static int @decimal(char unichr, int @default) {
-            return ucd_5_2_0.@decimal(unichr, @default);
-        }
+        public static int @decimal(char unichr)
+            => ucd.@decimal(unichr);
 
-        public static int @decimal(char unichr) {
-            return ucd_5_2_0.@decimal(unichr);
-        }
+        public static object? @decimal(char unichr, object? @default)
+            => ucd.@decimal(unichr, @default);
 
-        public static object @decimal(char unichr, object @default) {
-            return ucd_5_2_0.@decimal(unichr, @default);
-        }
+        public static int digit(char unichr, int @default)
+            => ucd.digit(unichr, @default);
 
-        public static int digit(char unichr, int @default) {
-            return ucd_5_2_0.digit(unichr, @default);
-        }
+        public static object? digit(char unichr, object? @default)
+            => ucd.digit(unichr, @default);
 
-        public static object digit(char unichr, object @default) {
-            return ucd_5_2_0.digit(unichr, @default);
-        }
+        public static int digit(char unichr)
+            => ucd.digit(unichr);
 
-        public static int digit(char unichr) {
-            return ucd_5_2_0.digit(unichr);
-        }
+        public static double numeric(char unichr, double @default)
+            => ucd.numeric(unichr, @default);
 
-        public static double numeric(char unichr, double @default) {
-            return ucd_5_2_0.numeric(unichr, @default);
-        }
+        public static double numeric(char unichr)
+            => ucd.numeric(unichr);
 
-        public static double numeric(char unichr) {
-            return ucd_5_2_0.numeric(unichr);
-        }
+        public static object? numeric(char unichr, object? @default)
+            => ucd.numeric(unichr, @default);
 
-        public static object numeric(char unichr, object @default) {
-            return ucd_5_2_0.numeric(unichr, @default);
-        }
+        public static string category(char unichr)
+            => ucd.category(unichr);
 
-        public static string category(char unichr) {
-            return ucd_5_2_0.category(unichr);
-        }
+        public static string bidirectional(char unichr)
+            => ucd.bidirectional(unichr);
 
-        public static string bidirectional(char unichr) {
-            return ucd_5_2_0.bidirectional(unichr);
-        }
+        public static int combining(char unichr)
+            => ucd.combining(unichr);
 
-        public static int combining(char unichr) {
-            return ucd_5_2_0.combining(unichr);
-        }
+        public static string east_asian_width(char unichr)
+            => ucd.east_asian_width(unichr);
 
-        public static string east_asian_width(char unichr) {
-            return ucd_5_2_0.east_asian_width(unichr);
-        }
+        public static int mirrored(char unichr)
+            => ucd.mirrored(unichr);
 
-        public static int mirrored(char unichr) {
-            return ucd_5_2_0.mirrored(unichr);
-        }
+        public static string decomposition(char unichr)
+            => ucd.decomposition(unichr);
 
-        public static string decomposition(char unichr) {
-            return ucd_5_2_0.decomposition(unichr);
-        }
-
-        public static string normalize(string form, string unistr) {
-            return ucd_5_2_0.normalize(form, unistr);
-        }
+        public static string normalize([NotNone] string form, [NotNone] string unistr)
+            => ucd.normalize(form, unistr);
 
         [PythonType("unicodedata.UCD")]
         public class UCD {
             private const string UnicodedataResourceName = "IronPython.Modules.unicodedata.IPyUnicodeData.txt.gz";
+            private const string Unicodedata320ResourceName = "IronPython.Modules.unicodedata.IPyUnicodeData-3.2.0.txt.gz";
             private const string OtherNotAssigned = "Cn";
 
             private Dictionary<int, CharInfo> database;
             private List<RangeInfo> ranges;
             private Dictionary<string, int> nameLookup;
 
-            public UCD(string version) {
+            internal UCD(string version) {
                 unidata_version = version;
                 EnsureLoaded();
             }
 
             public string unidata_version { get; private set; }
 
-            public string lookup(string name) {
+            public string lookup([NotNone] string name) {
                 if (TryLookup(name, out int code))
                     return char.ConvertFromUtf32(code);
                 throw PythonOps.KeyError("undefined character name");
@@ -211,8 +193,6 @@ namespace IronPython.Modules {
                 return nameLookup.TryGetValue(name, out code);
             }
 
-#nullable enable
-
             public string name([NotNone] string unichr)
                 => TryGetName(GetRune(unichr), out var name) ? name : throw PythonOps.ValueError("no such name");
 
@@ -224,7 +204,7 @@ namespace IronPython.Modules {
                     name = $"CJK UNIFIED IDEOGRAPH-{rune:X}";
                     return true;
                 }
-                if (TryGetInfo(rune, out CharInfo info, excludeRanges: true)) {
+                if (TryGetInfo(rune, out CharInfo? info, excludeRanges: true)) {
                     name = info.Name;
                     return true;
                 }
@@ -241,10 +221,8 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("argument 1 must be a unicode character, not str");
             }
 
-#nullable restore
-
             public int @decimal(char unichr, int @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
@@ -254,7 +232,7 @@ namespace IronPython.Modules {
             }
 
             public int @decimal(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
@@ -263,8 +241,8 @@ namespace IronPython.Modules {
                 throw PythonOps.ValueError("not a decimal");
             }
 
-            public object @decimal(char unichr, object @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+            public object? @decimal(char unichr, object? @default) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
@@ -274,7 +252,7 @@ namespace IronPython.Modules {
             }
 
             public int digit(char unichr, int @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
@@ -283,8 +261,8 @@ namespace IronPython.Modules {
                 return @default;
             }
 
-            public object digit(char unichr, object @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+            public object? digit(char unichr, object? @default) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
@@ -294,7 +272,7 @@ namespace IronPython.Modules {
             }
 
             public int digit(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
@@ -304,7 +282,7 @@ namespace IronPython.Modules {
             }
 
             public double numeric(char unichr, double @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
@@ -314,7 +292,7 @@ namespace IronPython.Modules {
             }
 
             public double numeric(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
@@ -323,8 +301,8 @@ namespace IronPython.Modules {
                 throw PythonOps.ValueError("not a numeric character");
             }
 
-            public object numeric(char unichr, object @default) {
-                if (TryGetInfo(unichr, out CharInfo info)) {
+            public object? numeric(char unichr, object? @default) {
+                if (TryGetInfo(unichr, out CharInfo? info)) {
                     var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
@@ -334,67 +312,53 @@ namespace IronPython.Modules {
             }
 
             public string category(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.General_Category;
                 return OtherNotAssigned;
             }
 
             public string bidirectional(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.Bidi_Class;
                 return string.Empty;
             }
 
             public int combining(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.Canonical_Combining_Class;
                 return 0;
             }
 
             public string east_asian_width(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.East_Asian_Width;
                 return string.Empty;
             }
 
             public int mirrored(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.Bidi_Mirrored;
                 return 0;
             }
 
             public string decomposition(char unichr) {
-                if (TryGetInfo(unichr, out CharInfo info))
+                if (TryGetInfo(unichr, out CharInfo? info))
                     return info.Decomposition_Type;
                 return string.Empty;
             }
 
-            public string normalize(string form, string unistr) {
-                NormalizationForm nf;
-                switch (form) {
-                    case "NFC":
-                        nf = NormalizationForm.FormC;
-                        break;
-
-                    case "NFD":
-                        nf = NormalizationForm.FormD;
-                        break;
-
-                    case "NFKC":
-                        nf = NormalizationForm.FormKC;
-                        break;
-
-                    case "NFKD":
-                        nf = NormalizationForm.FormKD;
-                        break;
-
-                    default:
-                        throw new ArgumentException("Invalid normalization form " + form, nameof(form));
-                }
-
+            public string normalize([NotNone] string form, [NotNone] string unistr) {
+                var nf = form switch {
+                    "NFC" => NormalizationForm.FormC,
+                    "NFD" => NormalizationForm.FormD,
+                    "NFKC" => NormalizationForm.FormKC,
+                    "NFKD" => NormalizationForm.FormKD,
+                    _ => throw new ArgumentException("Invalid normalization form " + form, nameof(form)),
+                };
                 return unistr.Normalize(nf);
             }
 
+            [MemberNotNull(nameof(ranges), nameof(database))]
             private void BuildDatabase(StreamReader data) {
                 var sep = new char[] { ';' };
 
@@ -423,11 +387,20 @@ namespace IronPython.Modules {
                 }
             }
 
+            [MemberNotNull(nameof(nameLookup))]
             private void BuildNameLookup() {
-                nameLookup = database.Where(c => !c.Value.Name.StartsWith("<", StringComparison.Ordinal)).ToDictionary(c => c.Value.Name, c => c.Key, StringComparer.OrdinalIgnoreCase);
+                var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var c in database) {
+                    if (c.Value.Name.StartsWith("<", StringComparison.Ordinal)) continue;
+                    lookup[c.Value.Name] = c.Key;
+                    foreach (var alias in c.Value.Aliases) {
+                        lookup[alias] = c.Key;
+                    }
+                }
+                nameLookup = lookup;
             }
 
-            internal bool TryGetInfo(int unichr, out CharInfo charInfo, bool excludeRanges = false) {
+            internal bool TryGetInfo(int unichr, [NotNullWhen(true)] out CharInfo? charInfo, bool excludeRanges = false) {
                 if (database.TryGetValue(unichr, out charInfo)) return true;
                 if (!excludeRanges) {
                     foreach (var range in ranges) {
@@ -440,9 +413,10 @@ namespace IronPython.Modules {
                 return false;
             }
 
+            [MemberNotNull(nameof(database), nameof(ranges), nameof(nameLookup))]
             private void EnsureLoaded() {
-                if (database == null || nameLookup == null) {
-                    var rsrc = typeof(unicodedata).Assembly.GetManifestResourceStream(UnicodedataResourceName);
+                if (database == null || ranges == null || nameLookup == null) {
+                    var rsrc = typeof(unicodedata).Assembly.GetManifestResourceStream(unidata_version == "3.2.0" ? Unicodedata320ResourceName : UnicodedataResourceName)!;
                     var gzip = new GZipStream(rsrc, CompressionMode.Decompress);
                     var data = new StreamReader(gzip, Encoding.UTF8);
 
@@ -455,7 +429,7 @@ namespace IronPython.Modules {
 
     internal static class StreamReaderExtensions {
         public static IEnumerable<string> ReadLines(this StreamReader reader) {
-            string line;
+            string? line;
             while ((line = reader.ReadLine()) != null)
                 yield return line;
         }
@@ -491,6 +465,9 @@ namespace IronPython.Modules {
 
             Bidi_Mirrored = info[PropertyIndex.Bidi_Mirrored] == "Y" ? 1 : 0;
             East_Asian_Width = info[PropertyIndex.East_Asian_Width];
+
+            // trailing elements should be aliases
+            Aliases = info.Length > PropertyIndex.Aliases ? info.AsSpan(PropertyIndex.Aliases).ToArray() : Array.Empty<string>();
         }
 
         internal readonly string Name;
@@ -503,6 +480,7 @@ namespace IronPython.Modules {
         internal readonly double? Numeric_Value_Numeric;
         internal readonly int Bidi_Mirrored;
         internal readonly string East_Asian_Width;
+        internal readonly string[] Aliases;
 
         private static class PropertyIndex {
             internal const int Name = 0;
@@ -515,6 +493,7 @@ namespace IronPython.Modules {
             internal const int Numeric_Value_Numeric = 7;
             internal const int Bidi_Mirrored = 8;
             internal const int East_Asian_Width = 9;
+            internal const int Aliases = 10; // must be last as there could be more than one...
         }
     }
 

@@ -1273,13 +1273,13 @@ namespace IronPython.Modules {
 
                                             if (int.TryParse(grp, out int num)) {
                                                 g = m.Groups[num];
-                                                if (string.IsNullOrEmpty(g.Value)) {
+                                                if (!g.Success) {
                                                     throw PythonOps.IndexError("unknown group reference");
                                                 }
                                                 sb.Append(g.Value);
                                             } else {
                                                 g = m.Groups[grp];
-                                                if (string.IsNullOrEmpty(g.Value)) {
+                                                if (!g.Success) {
                                                     throw PythonOps.IndexError("unknown group reference");
                                                 }
                                                 sb.Append(g.Value);

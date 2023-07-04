@@ -305,7 +305,7 @@ namespace IronPython.Runtime {
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {
                     var sourceUnit = CreateSourceUnit(new ResourceStreamContentProvider(resourceName), null, DefaultEncoding, SourceCodeKind.File);
-                    var moduleOptions = ModuleOptions.Initialize | ModuleOptions.Optimized;
+                    var moduleOptions = ModuleOptions.Initialize;
                     var scriptCode = GetScriptCode(sourceUnit, name, moduleOptions);
                     var scope = scriptCode.CreateScope();
                     return InitializeModule(null, ((PythonScopeExtension)scope.GetExtension(ContextId)).ModuleContext, scriptCode, moduleOptions);
@@ -733,6 +733,7 @@ namespace IronPython.Runtime {
             };
             flags.quiet = PythonOptions.Quiet ? 1 : 0;
             flags.isolated = PythonOptions.Isolated ? 1 : 0;
+            flags.utf8_mode = PythonOptions.Utf8Mode ? 1 : 0;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
@@ -1127,6 +1128,15 @@ namespace IronPython.Runtime {
                 copyRegModule = Importer.ImportModule(SharedContext, new PythonDictionary(), "copyreg", false, 0);
             }
             return copyRegModule;
+        }
+
+        private object strptimeModule;
+
+        internal object GetStrptimeModule() {
+            if (strptimeModule is null) {
+                strptimeModule = Importer.ImportModule(SharedContext, new PythonDictionary(), "_strptime", false, 0);
+            }
+            return strptimeModule;
         }
 
         public object GetWarningsModule() {

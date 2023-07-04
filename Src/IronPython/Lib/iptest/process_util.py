@@ -10,19 +10,40 @@ from .test_env import is_cli, is_posix, is_netcoreapp, is_osx
 
 class ProcessUtil(object):
     def has_csc(self):
-        try:   self.run_csc("/?")
-        except WindowsError: return False
-        else:  return True
+        try:
+            return self.__has_csc
+        except AttributeError:
+            try:
+                self.run_csc("/?")
+            except OSError:
+                self.__has_csc = False
+            else:
+                self.__has_csc = True
+        return self.__has_csc
 
     def has_vbc(self):
-        try:   self.run_vbc("/?")
-        except WindowsError: return False
-        else:  return True
+        try:
+            return self.__has_vbc
+        except AttributeError:
+            try:
+                self.run_vbc("/?")
+            except OSError:
+                self.__has_vbc = False
+            else:
+                self.__has_vbc = True
+        return self.__has_vbc
 
     def has_ilasm(self):
-        try:   self.run_ilasm("/?")
-        except WindowsError: return False
-        else:  return True
+        try:
+            return self.__has_ilasm
+        except AttributeError:
+            try:
+                self.run_ilasm("/?")
+            except OSError:
+                self.__has_ilasm = False
+            else:
+                self.__has_ilasm = True
+        return self.__has_ilasm
 
     def run_csc(self, args):
         if is_osx:
@@ -64,7 +85,7 @@ class ProcessUtil(object):
         process.Start()
         process.WaitForExit()
         return process.ExitCode
-    
+
     def launch(self, executable, *params):
         l = [ '"{}"'.format(executable) ] + list(params)
         return os.spawnv(0, executable, l)
@@ -103,7 +124,7 @@ class ProcessUtil(object):
 #     lastConsumesNext = False
 #     switches = []
 #     for param in System.Environment.GetCommandLineArgs():
-#         if param.startswith('-T:') or param.startswith('-O:'): 
+#         if param.startswith('-T:') or param.startswith('-O:'):
 #             continue
 #         if param.startswith("-"):
 #             switches.append(param)
@@ -111,7 +132,7 @@ class ProcessUtil(object):
 #                 lastConsumesNext = True
 #         else:
 #             if lastConsumesNext:
-#                  switches.append(param)   
+#                  switches.append(param)
 #             lastConsumesNext = False
 #     return switches
 
@@ -119,7 +140,7 @@ class ProcessUtil(object):
 #     final = _get_ip_testmode()
 #     for param in add:
 #         if param not in final: final.append(param)
-        
+
 #     for param in remove:
 #         if param in final:
 #             pos = final.index(param)
@@ -128,14 +149,14 @@ class ProcessUtil(object):
 #                     del final[pos:pos+2]
 #                 else :
 #                     del final[pos]
-        
+
 #     params = [sys.executable]
 #     params.extend(final)
 #     params.append(test)
 #     params.extend(additionalScriptParams)
-    
+
 #     print "Starting process: %s" % params
-    
+
 #     return os.spawnv(0, sys.executable, params)
 
 
@@ -145,7 +166,7 @@ class ProcessUtil(object):
 # def run_tlbimp(pathToTypeLib, outputName=None):
 #     if outputName:
 #         return run_tool("tlbimp.exe", pathToTypeLib+" /out:"+outputName)
-#     else: 
+#     else:
 #         return run_tool("tlbimp.exe", pathToTypeLib)
 
 # def run_register_com_component(pathToDll):

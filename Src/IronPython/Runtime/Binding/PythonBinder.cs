@@ -756,6 +756,8 @@ namespace IronPython.Runtime.Binding {
             res[typeof(UInt32)] = new Type[] { typeof(UInt32Ops) };
             res[typeof(Int64)] = new Type[] { typeof(Int64Ops) };
             res[typeof(UInt64)] = new Type[] { typeof(UInt64Ops) };
+            res[typeof(IntPtr)] = new Type[] { typeof(IntPtrOps) };
+            res[typeof(UIntPtr)] = new Type[] { typeof(UIntPtrOps) };
             res[typeof(char)] = new Type[] { typeof(CharOps) };
             res[typeof(decimal)] = new Type[] { typeof(DecimalOps) };
             res[typeof(float)] = new Type[] { typeof(SingleOps) };

@@ -15,7 +15,7 @@ The following links include resources for installing and using GIT:
 
 ### Creating a local GIT repository
 
-You will first need to fork the IronPython3 project. [Creating a fork](https://help.github.com/fork-a-repo/) is recommended as it will allow you to contribute patches back easily. Click the "Fork" button on [https://github.com/IronLanguages/ironpython3/](https://github.com/IronLanguages/ironpython3/). This should create your personal fork, with a website like http://github.com/janedoe/ironpython3 (where janedoe is your github username). 
+You will first need to fork the IronPython3 project. [Creating a fork](https://help.github.com/fork-a-repo/) is recommended as it will allow you to contribute patches back easily. Click the "Fork" button on [https://github.com/IronLanguages/ironpython3/](https://github.com/IronLanguages/ironpython3/). This should create your personal fork, with a web URL like http://github.com/janedoe/ironpython3 (where janedoe is your github username). 
 
 You can now use the git command-line client with many Linux distributions, Mac OS, Cygwin, and Windows (msysgit) to get the sources onto your local computer using the following commands:
 

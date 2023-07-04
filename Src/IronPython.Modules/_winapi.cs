@@ -207,8 +207,10 @@ namespace IronPython.Modules {
             return System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
         }
 
-        public static object GetStdHandle(int STD_OUTPUT_HANDLE) {
-            return GetStdHandlePI(STD_OUTPUT_HANDLE).ToPython();
+        public static object? GetStdHandle(int std_handle) {
+            var handle = GetStdHandlePI(std_handle);
+            if (handle == IntPtr.Zero) return null;
+            return handle.ToPython();
         }
 
         public static int GetVersion() {

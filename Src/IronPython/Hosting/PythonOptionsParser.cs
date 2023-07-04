@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 #if FEATURE_FULL_CONSOLE
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
@@ -279,6 +282,17 @@ namespace IronPython.Hosting {
                     ConsoleOptions.BasicConsole = true;
                     break;
 
+                case "utf8":
+                    if (!string.IsNullOrEmpty(val)) {
+                        if (!int.TryParse(val, out int mode) || mode != 0 && mode != 1) {
+                            throw new InvalidOptionException($"The argument for the -X {arg} option must be 0 or 1.");
+                        }
+                        LanguageSetup.Options["Utf8Mode"] = mode == 1 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+                    } else {
+                        LanguageSetup.Options["Utf8Mode"] = ScriptingRuntimeHelpers.True;
+                    }
+                    break;
+
 #if DEBUG
                 case "NoImportLib":
                     LanguageSetup.Options["NoImportLib"] = ScriptingRuntimeHelpers.True;
@@ -335,7 +349,7 @@ namespace IronPython.Hosting {
                 { "-S",                     "Don't imply 'import site' on initialization" },
                 { "-u",                     "Unbuffered stdout & stderr" },
 #if !IRONPYTHON_WINDOW
-                { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
+                { "-v",                     "Verbose (trace import statements)" },
 #endif
                 { "-V",                     "print the Python version number and exit (also --version)\nwhen given twice, print more information about the build" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
@@ -356,6 +370,7 @@ namespace IronPython.Hosting {
 #if DEBUG
                 { "-X NoImportLib",         "Don't bootstrap importlib [debug only]" },
 #endif
+                { "-X utf8",                "Enable UTF-8 mode for operating system interfaces, overriding the default\n  locale-aware mode. -X utf8=0 explicitly disables UTF-8 mode (even when it would\n  otherwise activate automatically)" },
             };
 
             // Ensure the combined options come out sorted
@@ -389,4 +404,5 @@ namespace IronPython.Hosting {
         }
     }
 }
+
 #endif

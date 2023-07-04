@@ -565,6 +565,7 @@ class SysModuleTest(unittest.TestCase):
                  "inspect", "interactive", "optimize", "dont_write_bytecode",
                  "no_user_site", "no_site", "ignore_environment", "verbose",
                  "bytes_warning", "quiet", "hash_randomization", "isolated")
+        if sys.implementation.name == "ironpython": attrs += ("utf8_mode",)
         for attr in attrs:
             self.assertTrue(hasattr(sys.flags, attr), attr)
             self.assertEqual(type(getattr(sys.flags, attr)), int, attr)

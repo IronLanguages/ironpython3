@@ -30,8 +30,6 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-
 #if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
@@ -56,33 +54,23 @@ namespace IronPython.Modules {
 
         private static readonly object _keyFields = new object();
         private static readonly string _keyHaveFunctions = "_have_functions";
-        private static readonly Encoding _filesystemEncoding;
+        private static readonly Encoding _utf8Encoding;
+        private static readonly Encoding _mbcsEncoding;
 
         static PythonNT() {
-            string fsEncodingName = SysModule.getfilesystemencoding();
-
             // TODO: Python 3.6: use sys.getfilesystemencodeerrors()
-            switch (fsEncodingName) {
-                case "mbcs":
-                    _filesystemEncoding = Encoding.GetEncoding(0); // on errors does diacritics stripping if possible else replace
-                    break;
 
-                case "utf-8":
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        _filesystemEncoding = new PythonSurrogatePassEncoding(Encoding.UTF8);
-                    } else {
-                        // TODO: Verify: CPython uses surrogateescape, but .NET will handle using replace
-                        // so paths produced as output will never have surrogates, but have errors replaced by U+FFFD
-                        // and paths provided as input will have any surrogates replaced by U+FFFD or ?
-                        // Using surrogateescape here properly validates bytes input but does not guarantee safe roundtrip
-                        _filesystemEncoding = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
-                    }
-                    break;
+            _mbcsEncoding = Encoding.GetEncoding(0); // on errors does diacritics stripping if possible else replace
 
-                default:
-                    throw new InvalidImplementationException("SysModule.getfilesystemencoding() returned invalid encoding");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                _utf8Encoding = new PythonSurrogatePassEncoding(Encoding.UTF8);
+            } else {
+                // TODO: Verify: CPython uses surrogateescape, but .NET will handle using replace
+                // so paths produced as output will never have surrogates, but have errors replaced by U+FFFD
+                // and paths provided as input will have any surrogates replaced by U+FFFD or ?
+                // Using surrogateescape here properly validates bytes input but does not guarantee safe roundtrip
+                _utf8Encoding = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
             }
-
         }
 
         [SpecialName]
@@ -199,25 +187,10 @@ namespace IronPython.Modules {
         }
 
         public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
-            => _getfullpathname(context, path.ToFsString()).ToFsBytes();
+            => _getfullpathname(context, path.ToFsString(context)).ToFsBytes(context);
 
-        public static object _getfullpathname(CodeContext/*!*/ context, object? path) {
-            if (path is IBufferProtocol bp) {
-                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", nameof(_getfullpathname), nameof(path), PythonOps.GetPythonTypeName(path));
-                return _getfullpathname(context, new Bytes(bp));
-            }
-
-            if (PythonOps.TryToFsPath(context, path, out var res)) {
-                switch (res) {
-                    case string s: return _getfullpathname(context, s);
-                    case Extensible<string> es: return _getfullpathname(context, es.Value);
-                    case Bytes b: return _getfullpathname(context, b);
-                    default: throw new InvalidOperationException();
-                }
-            }
-
-            throw PythonOps.TypeError("{0}: {1} should be string, bytes or os.PathLike, not {2}", nameof(_getfullpathname), nameof(path), PythonOps.GetPythonTypeName(path));
-        }
+        public static Bytes _getfullpathname(CodeContext/*!*/ context, object? path)
+            => _getfullpathname(context, ConvertToFsString(context, path, nameof(path))).ToFsBytes(context);
 
 #if FEATURE_PROCESS
         public static void abort() {
@@ -282,7 +255,7 @@ namespace IronPython.Modules {
 
         [Documentation("")]
         public static bool access(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => access(context, path.ToFsString(), mode, kwargs);
+            => access(context, path.ToFsString(context), mode, kwargs);
 
         [Documentation("")]
         public static bool access(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -302,8 +275,8 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void chdir([NotNone] Bytes path)
-            => chdir(path.ToFsString());
+        public static void chdir(CodeContext context, [NotNone] Bytes path)
+            => chdir(path.ToFsString(context));
 
         public static void chdir(CodeContext context, object? path)
             => chdir(ConvertToFsString(context, path, nameof(path)));
@@ -346,8 +319,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void chmod([NotNone] Bytes path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => chmod(path.ToFsString(), mode, kwargs);
+        public static void chmod(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => chmod(path.ToFsString(context), mode, kwargs);
 
         [Documentation("")]
         public static void chmod(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -493,7 +466,7 @@ namespace IronPython.Modules {
         }
 
         public static Bytes getcwdb(CodeContext/*!*/ context)
-            => getcwd(context).ToFsBytes();
+            => getcwd(context).ToFsBytes(context);
 
 #if NETCOREAPP || NETSTANDARD
         private static readonly char[] invalidPathChars = new char[] { '\"', '<', '>' };
@@ -545,8 +518,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void link([NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => link(src.ToFsString(), dst.ToFsString(), kwargs);
+        public static void link(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => link(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void link(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -585,8 +558,8 @@ namespace IronPython.Modules {
 
         public static PythonList listdir(CodeContext context, [NotNone] Bytes path) {
             PythonList ret = new PythonList();
-            foreach (object? item in listdir(context, path.ToFsString())) {
-                ret.AddNoLock(((string)item!).ToFsBytes());
+            foreach (object? item in listdir(context, path.ToFsString(context))) {
+                ret.AddNoLock(((string)item!).ToFsBytes(context));
             }
             return ret;
         }
@@ -613,8 +586,8 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing, Documentation("")]
-        public static object lstat([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => lstat(path.ToFsString(), kwargs);
+        public static object lstat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => lstat(path.ToFsString(context), kwargs);
 
         [LightThrowing, Documentation("")]
         public static object lstat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -622,16 +595,18 @@ namespace IronPython.Modules {
 
         [PythonType]
         public sealed class DirEntry {
+            private readonly CodeContext context;
             private readonly FileSystemInfo info;
             private readonly bool asBytes;
 
-            internal DirEntry(FileSystemInfo info, bool asBytes) {
+            internal DirEntry(CodeContext context, FileSystemInfo info, bool asBytes) {
+                this.context = context;
                 this.info = info;
                 this.asBytes = asBytes;
             }
 
-            public object path => asBytes ? info.FullName.ToFsBytes() : info.FullName;
-            public object name => asBytes ? info.Name.ToFsBytes() : info.Name;
+            public object path => asBytes ? info.FullName.ToFsBytes(context) : info.FullName;
+            public object name => asBytes ? info.Name.ToFsBytes(context) : info.Name;
 
             [LightThrowing]
             public object? inode() {
@@ -654,16 +629,18 @@ namespace IronPython.Modules {
 
         [PythonType, PythonHidden]
         public sealed class ScandirIterator : IEnumerable<DirEntry>, IEnumerator<DirEntry> {
+            private readonly CodeContext context;
             private readonly IEnumerator<FileSystemInfo> enumerator;
             private readonly bool asBytes;
 
-            internal ScandirIterator(IEnumerable<FileSystemInfo> list, bool asBytes) {
+            internal ScandirIterator(CodeContext context, IEnumerable<FileSystemInfo> list, bool asBytes) {
+                this.context = context;
                 enumerator = list.GetEnumerator();
                 this.asBytes = asBytes;
             }
 
             [PythonHidden]
-            public DirEntry Current => new DirEntry(enumerator.Current, asBytes);
+            public DirEntry Current => new DirEntry(context, enumerator.Current, asBytes);
 
             object IEnumerator.Current => Current;
 
@@ -683,10 +660,10 @@ namespace IronPython.Modules {
         }
 
         public static ScandirIterator scandir(CodeContext context, string? path = null)
-            => new ScandirIterator(ScandirHelper(context, path), asBytes: false);
+            => new ScandirIterator(context, ScandirHelper(context, path), asBytes: false);
 
         public static ScandirIterator scandir(CodeContext context, [NotNone] object path)
-            => new ScandirIterator(ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
+            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {
@@ -751,8 +728,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void symlink([NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => symlink(src.ToFsString(), dst.ToFsString(), kwargs, args);
+        public static void symlink(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => symlink(src.ToFsString(context), dst.ToFsString(context), kwargs, args);
 
         [Documentation("")]
         public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
@@ -830,8 +807,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void mkdir([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => mkdir(path.ToFsString(), kwargs, args);
+        public static void mkdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => mkdir(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
         public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
@@ -840,7 +817,7 @@ namespace IronPython.Modules {
         private const int DefaultBufferSize = 4096;
 
         [Documentation("open(path, flags, mode=511, *, dir_fd=None)")]
-        public static object open(CodeContext/*!*/ context, [NotNone] string filename, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
+        public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -864,19 +841,19 @@ namespace IronPython.Modules {
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
                 Stream fs;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(filename, "nul", StringComparison.OrdinalIgnoreCase)
-                   || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && filename == "/dev/null") {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(path, "nul", StringComparison.OrdinalIgnoreCase)
+                   || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && path == "/dev/null") {
                     fs = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
-                    fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
+                    fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else {
-                    fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
                 string mode2;
@@ -888,20 +865,19 @@ namespace IronPython.Modules {
                     mode2 += "b";
                 }
 
-                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = filename });
+                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = path });
             } catch (Exception e) {
-                throw ToPythonException(e, filename);
+                throw ToPythonException(e, path);
             }
         }
 
         [Documentation("")]
-        public static object open(CodeContext context, [NotNone] Bytes filename, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => open(context, filename.ToFsString(), flags, kwargs, args);
+        public static object open(CodeContext context, [NotNone] Bytes path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => open(context, path.ToFsString(context), flags, kwargs, args);
 
         [Documentation("")]
         public static object open(CodeContext context, object? path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => open(context, ConvertToFsString(context, path, nameof(path)), flags, kwargs, args);
-
 
         private static FileOptions FileOptionsFromFlags(int flag) {
             FileOptions res = FileOptions.None;
@@ -1002,8 +978,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void rename([NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => rename(src.ToFsString(), dst.ToFsString(), kwargs);
+        public static void rename(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => rename(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void rename(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1044,8 +1020,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void replace([NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => replace(src.ToFsString(), dst.ToFsString(), kwargs);
+        public static void replace(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => replace(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void replace(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1071,8 +1047,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void rmdir([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => rmdir(path.ToFsString(), kwargs);
+        public static void rmdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => rmdir(path.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void rmdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1095,7 +1071,7 @@ namespace IronPython.Modules {
         }
 
         public static object spawnv(CodeContext context, int mode, [NotNone] Bytes path, object? args)
-            => spawnv(context, mode, path.ToFsString(), args);
+            => spawnv(context, mode, path.ToFsString(context), args);
 
         public static object spawnv(CodeContext context, int mode, object? path, object? args)
             => spawnv(context, mode, ConvertToFsString(context, path, nameof(path)), args);
@@ -1118,7 +1094,7 @@ namespace IronPython.Modules {
         }
 
         public static object spawnve(CodeContext context, int mode, [NotNone] Bytes path, object? args, object? env)
-            => spawnve(context, mode, path.ToFsString(), args, env);
+            => spawnve(context, mode, path.ToFsString(context), args, env);
 
         public static object spawnve(CodeContext context, int mode, object? path, object? args, object? env)
             => spawnve(context, mode, ConvertToFsString(context, path, nameof(path)), args, env);
@@ -1244,8 +1220,8 @@ namespace IronPython.Modules {
         }
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile([NotNone] Bytes filepath, string operation = "open")
-            => startfile(filepath.ToFsString(), operation);
+        public static void startfile(CodeContext context, [NotNone] Bytes filepath, string operation = "open")
+            => startfile(filepath.ToFsString(context), operation);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void startfile(CodeContext context, object? filepath, string operation = "open")
@@ -1503,8 +1479,8 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing, Documentation("")]
-        public static object stat([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> dict)
-            => stat(path.ToFsString(), dict);
+        public static object stat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> dict)
+            => stat(path.ToFsString(context), dict);
 
         [LightThrowing, Documentation("")]
         public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
@@ -1608,7 +1584,7 @@ namespace IronPython.Modules {
 
         [Documentation("")]
         public static void truncate(CodeContext context, [NotNone] Bytes path, BigInteger length)
-            => truncate(context, path.ToFsString(), length);
+            => truncate(context, path.ToFsString(context), length);
 
         [Documentation("")]
         public static void truncate(CodeContext context, object? path, BigInteger length) {
@@ -1655,8 +1631,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void remove([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => remove(path.ToFsString(), kwargs);
+        public static void remove(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => remove(path.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void remove(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1667,8 +1643,8 @@ namespace IronPython.Modules {
             => remove(path, kwargs);
 
         [Documentation("")]
-        public static void unlink([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
-            => unlink(path.ToFsString(), kwargs);
+        public static void unlink(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+            => unlink(path.ToFsString(context), kwargs);
 
         [Documentation("")]
         public static void unlink(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -1820,8 +1796,8 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void utime([NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
-            => utime(path.ToFsString(), kwargs, args);
+        public static void utime(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+            => utime(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
         public static void utime(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
@@ -2255,9 +2231,18 @@ the 'status' value."),
         }
 
 #endif
-        private static string ToFsString(this Bytes b) => _filesystemEncoding.GetString(b.AsSpan());
 
-        private static Bytes ToFsBytes(this string s) => Bytes.Make(_filesystemEncoding.GetBytes(s));
+        private static Encoding _getFileSystemEncoding(CodeContext context) {
+            return SysModule.getfilesystemencoding(context) switch {
+                "mbcs" => _mbcsEncoding,
+                "utf-8" => _utf8Encoding,
+                _ => throw new InvalidImplementationException("SysModule.getfilesystemencoding() returned invalid encoding"),
+            };
+        }
+
+        private static string ToFsString(this Bytes b, CodeContext context) => _getFileSystemEncoding(context).GetString(b.AsSpan());
+
+        private static Bytes ToFsBytes(this string s, CodeContext context) => Bytes.Make(_getFileSystemEncoding(context).GetBytes(s));
 
         private static string ConvertToFsString(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null) {
             if (o is not Bytes && o is IBufferProtocol bp) {

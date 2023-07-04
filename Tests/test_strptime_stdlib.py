@@ -15,13 +15,7 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_strptime.CalculationTests('test_day_of_week_calculation'), # https://github.com/IronLanguages/ironpython3/issues/1121
-            test.test_strptime.CalculationTests('test_gregorian_calculation'), # https://github.com/IronLanguages/ironpython3/issues/1121
-            test.test_strptime.CalculationTests('test_julian_calculation'), # https://github.com/IronLanguages/ironpython3/issues/1121
             test.test_strptime.CalculationTests('test_week_of_year_and_day_of_week_calculation'), # TODO: figure out
-            test.test_strptime.StrptimeTests('test_feb29_on_leap_year_without_year'),
-            test.test_strptime.StrptimeTests('test_mar1_comes_after_feb29_even_when_omitting_the_year'),
-            test.test_strptime.StrptimeTests('test_timezone'), # https://github.com/IronLanguages/ironpython3/issues/1121
             test.test_strptime.StrptimeTests('test_weekday'), # TODO: figure out
             test.test_strptime.TimeRETests('test_compile'),
         ]

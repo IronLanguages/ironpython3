@@ -615,8 +615,8 @@ class CliClassTestCase(IronPythonTestCase):
         a.CallIntParamsWithContext(2, 3)
 
     def test_nondefault_indexers(self):
+        if not self.has_vbc(): raise unittest.SkipTest("missing vbc")
 
-        if not self.has_vbc(): return
         import os
         import _random
 
@@ -682,7 +682,8 @@ End Class""")
 
 
     def test_nondefault_indexers_overloaded(self):
-        if not self.has_vbc(): return
+        if not self.has_vbc(): raise unittest.SkipTest("missing vbc")
+
         import os
         import _random
 
@@ -1561,6 +1562,8 @@ if not hasattr(A, 'Rank'):
 
     @unittest.skipIf(is_mono, "Causes an abort on mono, needs debug")
     def test_abstract_class_no_interface_implself(self):
+        if not self.has_ilasm(): raise unittest.SkipTest("missing ilasm")
+
         # this can't be defined in C# or VB, it's a class which is
         # abstract and therefore doesn't implement the interface method
         ilcode = """
@@ -1869,9 +1872,9 @@ if not hasattr(A, 'Rank'):
         finally:
             os.unlink(fname)
 
-    @unittest.skipIf(is_netcoreapp, "https://github.com/IronLanguages/ironpython2/issues/810")
+    @unittest.skipIf(is_netcoreapp21, "TODO: figure out")
     def test_extension_methods(self):
-        import clr, imp, os
+        import clr, os
         if is_netcoreapp:
             clr.AddReference('System.Linq')
         else:

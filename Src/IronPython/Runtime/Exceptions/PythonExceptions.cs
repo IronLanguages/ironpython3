@@ -725,9 +725,9 @@ for k, v in toError.items():
         /// <summary>
         /// Given a CLR exception returns the Python exception which most closely maps to the CLR exception.
         /// </summary>
-        internal static object ToPython(System.Exception/*!*/ clrException) {
+        public static object ToPython(System.Exception/*!*/ clrException) {
             var res = clrException.GetPythonException();
-            if (res == null) {
+            if (res is null) {
                 // explicit extra conversions that need a special transformation
                 if (clrException is SyntaxErrorException syntax) {
                     return SyntaxErrorToPython(syntax);
@@ -747,10 +747,8 @@ for k, v in toError.items():
                     }
                 }
 #endif
-                if (res == null) {
-                    res = ToPythonNewStyle(clrException);
-                }
 
+                res = ToPythonNewStyle(clrException);
                 clrException.SetPythonException(res);
             }
 

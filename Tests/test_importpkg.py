@@ -7,7 +7,7 @@ import sys
 import toimport
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 import imp
 
 def get_local_filename(base):
@@ -212,19 +212,18 @@ j = 10
 
 
     def compileAndRef(self, name, filename, *args):
-        if is_cli:
-            import clr
-            sys.path.append(sys.exec_prefix)
-            self.assertEqual(self.run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + os.path.join(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
-            clr.AddReference(name)
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
+        import clr
+        sys.path.append(sys.exec_prefix)
+        self.assertEqual(self.run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + os.path.join(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
+        clr.AddReference(name)
 
 
     #TODO: @skip("multiple_execute")
     @skipUnlessIronPython()
     def test_c1cs(self):
         """verify re-loading an assembly causes the new type to show up"""
-        if not self.has_csc():
-            return
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
 
         c1cs = get_local_filename('c1.cs')
         outp = sys.exec_prefix
@@ -250,8 +249,7 @@ j = 10
     def test_c2cs(self):
         """verify generic types & non-generic types mixed in the same namespace can
         successfully be used"""
-        if not self.has_csc():
-            return
+        if not self.has_csc(): raise unittest.SkipTest("missing csc")
 
         c2cs = get_local_filename('c2.cs')
         outp = sys.exec_prefix

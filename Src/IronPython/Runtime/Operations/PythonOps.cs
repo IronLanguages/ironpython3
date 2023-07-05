@@ -357,7 +357,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        private static string DecodeFsPath(CodeContext context, object obj) {
+        internal static string DecodeFsPath(CodeContext context, object obj) {
             return obj switch {
                 string s => s,
                 Extensible<string> es => es,

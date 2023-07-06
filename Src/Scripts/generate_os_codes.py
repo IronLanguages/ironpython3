@@ -149,6 +149,9 @@ O_flags_linux = {'O_ACCMODE': 3, 'O_APPEND': 1024, 'O_ASYNC': 8192, 'O_CLOEXEC':
 O_flags_darwin = {'O_ACCMODE': 3, 'O_APPEND': 8, 'O_ASYNC': 64, 'O_CLOEXEC': 16777216, 'O_CREAT': 512, 'O_DIRECTORY': 1048576, 'O_DSYNC': 4194304, 'O_EXCL': 2048, 'O_EXEC': 1073741824, 'O_EXLOCK': 32, 'O_NDELAY': 4, 'O_NOCTTY': 131072, 'O_NOFOLLOW': 256, 'O_NONBLOCK': 4, 'O_RDONLY': 0, 'O_RDWR': 2, 'O_SEARCH': 1074790400, 'O_SHLOCK': 16, 'O_SYNC': 128, 'O_TRUNC': 1024, 'O_WRONLY': 1}
 O_flags_windows = {'O_APPEND': 8, 'O_BINARY': 32768, 'O_CREAT': 256, 'O_EXCL': 1024, 'O_NOINHERIT': 128, 'O_RANDOM': 16, 'O_RDONLY': 0, 'O_RDWR': 2, 'O_SEQUENTIAL': 32, 'O_SHORT_LIVED': 4096, 'O_TEMPORARY': 64, 'O_TEXT': 16384, 'O_TRUNC': 512, 'O_WRONLY': 1}
 
+O_flags_optional = {'O_ASYNC', 'O_DIRECT', 'O_DIRECTORY', 'O_NOFOLLOW', 'O_NOATIME', 'O_PATH', 'O_TMPFILE', 'O_SHLOCK', 'O_EXLOCK'}
+O_flags_python3_10 = {'O_EVTONLY', 'O_FSYNC', 'O_SYMLINK', 'O_NOFOLLOW_ANY'}
+
 def collect_codes():
     codeval = {}
     for name in O_flags_linux:
@@ -157,6 +160,8 @@ def collect_codes():
         set_value(codeval, name, O_flags_darwin[name], darwin_idx)
     for name in O_flags_windows:
         set_value(codeval, name, O_flags_windows[name], windows_idx)
+    for name in O_flags_optional | O_flags_python3_10:
+        codeval.pop(name, None)
     return OrderedDict(sorted(codeval.items()))
 
 O_flagvalues = collect_codes()

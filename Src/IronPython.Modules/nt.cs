@@ -1858,11 +1858,6 @@ are defined in the signal module.")]
 
         public static int O_APPEND => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x8 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x8 : 0x400;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("macos")]
-        public static int O_ASYNC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x40 : 0x2000;
-
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
         public static int O_BINARY => 0x8000;
@@ -1873,15 +1868,6 @@ are defined in the signal module.")]
         public static int O_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000000 : 0x80000;
 
         public static int O_CREAT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x100 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x200 : 0x40;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        [SupportedOSPlatform("linux")]
-        public static int O_DIRECT => 0x4000;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("macos")]
-        public static int O_DIRECTORY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x100000 : 0x10000;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         [SupportedOSPlatform("linux")]
@@ -1894,14 +1880,6 @@ are defined in the signal module.")]
         [SupportedOSPlatform("macos")]
         public static int O_EXEC => 0x40000000;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        [SupportedOSPlatform("macos")]
-        public static int O_EXLOCK => 0x20;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        [SupportedOSPlatform("linux")]
-        public static int O_FSYNC => 0x101000;
-
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
         [SupportedOSPlatform("linux")]
         public static int O_LARGEFILE => 0x0;
@@ -1911,19 +1889,10 @@ are defined in the signal module.")]
         [SupportedOSPlatform("macos")]
         public static int O_NDELAY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x4 : 0x800;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        [SupportedOSPlatform("linux")]
-        public static int O_NOATIME => 0x40000;
-
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         public static int O_NOCTTY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x20000 : 0x100;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("macos")]
-        public static int O_NOFOLLOW => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x100 : 0x20000;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
@@ -1933,10 +1902,6 @@ are defined in the signal module.")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         public static int O_NONBLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x4 : 0x800;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        [SupportedOSPlatform("linux")]
-        public static int O_PATH => 0x200000;
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
@@ -1958,10 +1923,6 @@ are defined in the signal module.")]
         [SupportedOSPlatform("windows")]
         public static int O_SEQUENTIAL => 0x20;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        [SupportedOSPlatform("macos")]
-        public static int O_SHLOCK => 0x10;
-
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
         public static int O_SHORT_LIVED => 0x1000;
@@ -1978,10 +1939,6 @@ are defined in the signal module.")]
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
         public static int O_TEXT => 0x4000;
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
-        [SupportedOSPlatform("linux")]
-        public static int O_TMPFILE => 0x410000;
 
         public static int O_TRUNC => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x200 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x400 : 0x200;
 

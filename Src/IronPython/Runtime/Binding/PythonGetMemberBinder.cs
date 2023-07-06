@@ -330,6 +330,37 @@ namespace IronPython.Runtime.Binding {
             }
 
             private static TryGetProperty TryGetByJit(MethodInfo method) {
+                return method.DeclaringType!.IsAssignableFrom(typeof(TSelfType))
+                    ? TryGetByJitWithoutCast(method)
+                    : TryGetByJitRequiringCast(method);
+            }
+
+            private static TryGetProperty TryGetByJitWithoutCast(MethodInfo method) {
+                var input = Expression.Parameter(typeof(TSelfType));
+                var output = Expression.Parameter(typeof(object).MakeByRefType());
+
+                var returnTarget = Expression.Label(typeof(bool));
+                return Expression.Lambda<TryGetProperty>(
+                    Expression.Block(new Expression[] {
+
+
+                        Expression.IfThen(
+                            // if (input != null)
+                            Expression.NotEqual(input, Expression.Constant(null)),
+                            Expression.Block(
+                                // output = property.Invoke(input)
+                                Expression.Assign(output, Utils.Box(Expression.Call(input, method))),
+                                // return true
+                                Expression.Return(returnTarget, Expression.Constant(true)))
+                        ),
+                        Expression.Label(returnTarget, Expression.Constant(false)),
+                    }),
+                    input,
+                    output
+                ).Compile();
+            }
+
+            private static TryGetProperty TryGetByJitRequiringCast(MethodInfo method) {
                 var input = Expression.Parameter(typeof(TSelfType));
                 var output = Expression.Parameter(typeof(object).MakeByRefType());
 

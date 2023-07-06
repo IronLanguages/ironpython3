@@ -11,6 +11,7 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -282,39 +283,132 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private class FastPropertyGet<TSelfType> : BuiltinBase<TSelfType> {
+        /// <summary>
+        /// Property Getter that will JIT compile a getter
+        /// after 8 invocations, for faster gets.
+        /// </summary>
+        /// <typeparam name="TSelfType"></typeparam>
+        private class TieredJitPropertyGet<TSelfType> {
+            private const int ReflectionGetLimit = 8;
             private readonly Type _type;
-            private readonly Func<object, object> _propGetter;
+            private readonly MethodInfo _method;
 
-            public FastPropertyGet(Type type, Func<object, object> propGetter) {
+            private delegate bool TryGetProperty(TSelfType target, out object result);
+
+            private int _runCount;
+            private TryGetProperty _jitTryGetProperty;
+            private readonly TryGetProperty _reflectionTryGetProperty;
+
+            public TieredJitPropertyGet(Type type, MethodInfo method) {
                 _type = type;
-                _propGetter = propGetter;
+                _method = method;
+                _reflectionTryGetProperty = TryGetByReflection(method);
             }
 
             public object GetProperty(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
-                    return _propGetter(target);
-                }
+                try {
+                    if (_jitTryGetProperty == null) {
+                        if (Interlocked.Increment(ref _runCount) > ReflectionGetLimit) {
+                            _jitTryGetProperty = TryGetByJit(_method);
+                        }
+                    }
 
-                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
+                    var tryGetProperty = _jitTryGetProperty ?? _reflectionTryGetProperty;
+                    if (tryGetProperty(target, out var result))
+                        return result;
+
+                    return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target,
+                        context);
+                } catch (Exception ex) {
+                    Console.WriteLine(ex);
+                    throw;
+                }
             }
 
-            public object GetPropertyBool(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
-                    return ScriptingRuntimeHelpers.BooleanToObject((bool)_propGetter(target));
+            private TryGetProperty TryGetByReflection(MethodInfo prop) {
+                var propertyInvoker = CallInstruction.Create(prop, Array.Empty<ParameterInfo>());
+                var propType = prop.ReturnType;
+
+                if (propType == typeof(bool)) {
+                    return (TSelfType target, out object result) => {
+                        if (target != null && target.GetType() == _type) {
+                            result = ScriptingRuntimeHelpers.BooleanToObject((bool)propertyInvoker.Invoke(target));
+                            return true;
+                        }
+
+                        result = default;
+                        return false;
+                    };
+                }
+                if (propType == typeof(int)) {
+                    return (TSelfType target, out object result) => {
+                        if (target != null && target.GetType() == _type) {
+                            result = ScriptingRuntimeHelpers.Int32ToObject((int)propertyInvoker.Invoke(target));
+                            return true;
+                        }
+
+                        result = default;
+                        return false;
+                    };
                 }
 
-                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
+                return (TSelfType target, out object result) => {
+                    if (target != null && target.GetType() == _type) {
+                        result = propertyInvoker.Invoke(target);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                };
             }
 
-            public object GetPropertyInt(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
-                    return ScriptingRuntimeHelpers.Int32ToObject((int)_propGetter(target));
+            private static TryGetProperty TryGetByJit(MethodInfo method) {
+                var input = Expression.Parameter(typeof(TSelfType));
+                var output = Expression.Parameter(typeof(object).MakeByRefType());
+
+                var declaringType = method.DeclaringType!;
+                var isStruct = declaringType.IsValueType;
+                var isNullable = declaringType.IsGenericType &&
+                                 declaringType.GetGenericTypeDefinition() == typeof(Nullable<>);
+
+                var tryCastResult = Expression.Variable(isStruct && !isNullable
+                    ? typeof(Nullable<>).MakeGenericType(declaringType)
+                    : declaringType);
+                var returnTarget = Expression.Label(typeof(bool));
+
+                Expression UnwrapNullable(Expression expression) {
+                    if (isStruct && !isNullable) {
+                        return Expression.Property(expression, nameof(Nullable<int>.Value));
+                    }
+
+                    return expression;
                 }
 
-                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
+                return Expression.Lambda<TryGetProperty>(
+                    Expression.Block(new[] { tryCastResult }, new Expression[] {
+                            // var tryCastResult = input as T;
+                            Expression.Assign(
+                                tryCastResult,
+                                Expression.TypeAs(input, tryCastResult.Type)),
+                            Expression.IfThen(
+                                // if (tryCastResult != null)
+                                Expression.NotEqual(tryCastResult, Expression.Constant(null)),
+                                Expression.Block(
+                                    // output = property.Invoke(tryCastResult)
+                                    Expression.Assign(output, Utils.Box(Expression.Call(UnwrapNullable(tryCastResult), method))),
+                                    // return true
+                                    Expression.Return(returnTarget, Expression.Constant(true)))
+                            ),
+                            Expression.Label(returnTarget, Expression.Constant(false)),
+                        }),
+                        input,
+                        output
+                ).Compile();
             }
         }
+
+
 
         private Func<CallSite, TSelfType, CodeContext, object> MakeGetMemberTarget<TSelfType>(string name, object target, CodeContext context) {
             Type type = CompilerHelpers.GetType(target);
@@ -393,29 +487,7 @@ namespace IronPython.Runtime.Binding {
                             PropertyTracker pt = (PropertyTracker)members[0];
                             if (!pt.IsStatic && pt.GetIndexParameters() is { Length: 0}) {
                                 if (pt.GetGetMethod() is {} prop && prop.GetParameters() is { Length: 0 }) {
-                                    Func<object, object> invoke;
-
-                                    if (prop.DeclaringType is { } declaringType) {
-                                        var input = Expression.Parameter(typeof(object));
-                                        invoke = Expression.Lambda<Func<object, object>>(
-                                            Expression.Convert(
-                                                Expression.Call(
-                                                    Expression.Convert(input, declaringType),
-                                                    prop
-                                                    ),
-                                                typeof(object)),
-                                            input
-                                        ).Compile();
-                                    } else {
-                                        invoke = CallInstruction.Create(prop, Array.Empty<ParameterInfo>()).Invoke;
-                                    }
-                                    if (prop.ReturnType == typeof(bool)) {
-                                        return new FastPropertyGet<TSelfType>(type, invoke).GetPropertyBool;
-                                    } else if (prop.ReturnType == typeof(int)) {
-                                        return new FastPropertyGet<TSelfType>(type, invoke).GetPropertyInt;
-                                    } else {
-                                        return new FastPropertyGet<TSelfType>(type, invoke).GetProperty;
-                                    }
+                                    return new TieredJitPropertyGet<TSelfType>(type, prop).GetProperty;
                                 }
                             }
                         }

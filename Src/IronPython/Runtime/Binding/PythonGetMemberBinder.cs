@@ -297,70 +297,36 @@ namespace IronPython.Runtime.Binding {
 
             private int _runCount;
             private TryGetProperty _jitTryGetProperty;
-            private readonly TryGetProperty _reflectionTryGetProperty;
+            private readonly CallInstruction _reflectionInvoke;
 
             public TieredJitPropertyGet(Type type, MethodInfo method) {
                 _type = type;
                 _method = method;
-                _reflectionTryGetProperty = TryGetByReflection(method);
+                _reflectionInvoke = CallInstruction.Create(method, Array.Empty<ParameterInfo>());
             }
 
             public object GetProperty(CallSite site, TSelfType target, CodeContext context) {
-                try {
-                    if (_jitTryGetProperty == null) {
-                        if (Interlocked.Increment(ref _runCount) > ReflectionGetLimit) {
-                            _jitTryGetProperty = TryGetByJit(_method);
-                        }
+                if (_jitTryGetProperty == null) {
+                    if (Interlocked.Increment(ref _runCount) > ReflectionGetLimit) {
+                        _jitTryGetProperty = TryGetByJit(_method);
                     }
-
-                    var tryGetProperty = _jitTryGetProperty ?? _reflectionTryGetProperty;
-                    if (tryGetProperty(target, out var result))
-                        return result;
-
-                    return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target,
-                        context);
-                } catch (Exception ex) {
-                    Console.WriteLine(ex);
-                    throw;
                 }
+
+                var tryGetProperty = _jitTryGetProperty ?? TryGetByReflection;
+                if (tryGetProperty(target, out var result))
+                    return result;
+
+                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
             }
 
-            private TryGetProperty TryGetByReflection(MethodInfo prop) {
-                var propertyInvoker = CallInstruction.Create(prop, Array.Empty<ParameterInfo>());
-                var propType = prop.ReturnType;
-
-                if (propType == typeof(bool)) {
-                    return (TSelfType target, out object result) => {
-                        if (target != null && target.GetType() == _type) {
-                            result = ScriptingRuntimeHelpers.BooleanToObject((bool)propertyInvoker.Invoke(target));
-                            return true;
-                        }
-
-                        result = default;
-                        return false;
-                    };
-                }
-                if (propType == typeof(int)) {
-                    return (TSelfType target, out object result) => {
-                        if (target != null && target.GetType() == _type) {
-                            result = ScriptingRuntimeHelpers.Int32ToObject((int)propertyInvoker.Invoke(target));
-                            return true;
-                        }
-
-                        result = default;
-                        return false;
-                    };
+            private bool TryGetByReflection(TSelfType target, out object result) {
+                if (target != null && target.GetType() == _type) {
+                    result = _reflectionInvoke.Invoke(target);
+                    return true;
                 }
 
-                return (TSelfType target, out object result) => {
-                    if (target != null && target.GetType() == _type) {
-                        result = propertyInvoker.Invoke(target);
-                        return true;
-                    }
-
-                    result = default;
-                    return false;
-                };
+                result = default;
+                return false;
             }
 
             private static TryGetProperty TryGetByJit(MethodInfo method) {

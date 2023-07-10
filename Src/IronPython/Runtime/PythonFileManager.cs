@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -212,6 +213,7 @@ namespace IronPython.Runtime {
         private int _current = _offset; // lowest potentially unused key in _objects at or above _offset
         private readonly ConcurrentDictionary<Stream, int> _refs = new();
 
+        // Mandatory Add for Unix, on Windows only for dup2 case
         public int Add(int id, StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));
@@ -226,6 +228,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public int Add(StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));

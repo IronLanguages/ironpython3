@@ -353,7 +353,18 @@ namespace IronPython.Modules {
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
             fileManager.EnsureRefStreams(streams);
             fileManager.AddRefStreams(streams);
-            return fileManager.Add(new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return fileManager.Add(new(streams));
+            } else {
+                return fileManager.Add(UnixDup(fd), new(streams));
+            }
+
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
+            static int UnixDup(int fd) {
+                int res = Mono.Unix.Native.Syscall.dup(fd);
+                if (res < 0) throw GetLastUnixError();
+                return res;
+            }
         }
 
 
@@ -377,7 +388,18 @@ namespace IronPython.Modules {
 
             fileManager.EnsureRefStreams(streams);
             fileManager.AddRefStreams(streams);
-            return fileManager.Add(fd2, new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return fileManager.Add(fd2, new(streams));
+            } else {
+                return fileManager.Add(UnixDup2(fd, fd2), new(streams));
+            }
+
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
+            static int UnixDup2(int fd, int fd2) {
+                int res = Mono.Unix.Native.Syscall.dup2(fd, fd2);
+                if (res < 0) throw GetLastUnixError();
+                return res;
+            }
         }
 
 #if FEATURE_PROCESS
@@ -842,7 +864,11 @@ namespace IronPython.Modules {
                     fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
-                return context.LanguageContext.FileManager.Add(new(fs));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    return context.LanguageContext.FileManager.Add(new(fs));
+                } else {
+                    return context.LanguageContext.FileManager.Add((int)fs.SafeFileHandle.DangerousGetHandle(), new(fs));
+                }
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -877,29 +903,28 @@ namespace IronPython.Modules {
 
 #if FEATURE_PIPES
 
-        private static Tuple<Stream, Stream> CreatePipeStreams() {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                return CreatePipeStreamsUnix();
-            } else {
+        public static PythonTuple pipe(CodeContext context) {
+            var manager = context.LanguageContext.FileManager;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
                 var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
-                return Tuple.Create<Stream, Stream>(inPipe, outPipe);
+                return PythonTuple.MakeTuple(
+                    manager.Add(new(inPipe)),
+                    manager.Add(new(outPipe))
+                );
+            } else {
+                var pipeStreams = CreatePipeStreamsUnix();
+                return PythonTuple.MakeTuple(
+                    manager.Add((int)pipeStreams.Item1.SafeFileHandle.DangerousGetHandle(), new(pipeStreams.Item1)),
+                    manager.Add((int)pipeStreams.Item2.SafeFileHandle.DangerousGetHandle(), new(pipeStreams.Item2))
+                );
             }
 
             static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
                 Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
                 return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
             }
-        }
-
-        public static PythonTuple pipe(CodeContext context) {
-            var pipeStreams = CreatePipeStreams();
-            var manager = context.LanguageContext.FileManager;
-
-            return PythonTuple.MakeTuple(
-                manager.Add(new(pipeStreams.Item1)),
-                manager.Add(new(pipeStreams.Item2))
-            );
         }
 #endif
 

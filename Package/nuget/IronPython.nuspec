@@ -19,23 +19,23 @@ This package contains the IronPython interpreter engine.</description>
     <tags>ironpython python dynamic dlr</tags>
     <dependencies>
       <group targetFramework="net462">
-        <dependency id="DynamicLanguageRuntime" version="1.3.3" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
         <dependency id="System.Memory" version="4.5.5" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="DynamicLanguageRuntime" version="1.3.3" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
         <dependency id="System.Memory" version="4.5.5" />
         <dependency id="System.Text.Encoding.CodePages" version="4.6.0" />
         <dependency id="Microsoft.Win32.Registry" version="4.5.0" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
       <group targetFramework="netcoreapp3.1">
-        <dependency id="DynamicLanguageRuntime" version="1.3.3" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
         <dependency id="Microsoft.Win32.Registry" version="4.7.0" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
       <group targetFramework="net6.0">
-        <dependency id="DynamicLanguageRuntime" version="1.3.3" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
     </dependencies>

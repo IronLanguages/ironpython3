@@ -130,8 +130,9 @@ namespace IronPython.Modules {
                             _readStream = _writeStream = OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
                             break;
                         case "ab+":
-                            _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            // Opening _writeStream before _readStream will create the file if it does not exist
                             _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                            _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                             _readStream.Seek(0L, SeekOrigin.End);
                             _writeStream.Seek(0L, SeekOrigin.End);
                             break;

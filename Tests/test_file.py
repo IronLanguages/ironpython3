@@ -769,4 +769,10 @@ class FileTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
 
+    def test_open_abplus(self):
+        with open(self.temp_file, "ab+") as f:
+            f.write(b"abc")
+            f.seek(0)
+            self.assertEqual(f.read(), b"abc")
+
 run_test(__name__)

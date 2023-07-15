@@ -41,6 +41,7 @@ namespace IronPython.Modules {
             internal Stream _readStream;
             private Stream _writeStream;
             private bool _closed, _closefd;
+            private int _fd = -1;
             private WeakRefTracker _tracker;
             private PythonContext _context;
             public object name;
@@ -90,6 +91,7 @@ namespace IronPython.Modules {
                     Debug.Fail($"{nameof(fileObject)} is of unexpected type {fileObject.GetType().Name}");
                 }
 
+                _fd = fd;
                 _closefd = closefd;
             }
 
@@ -273,17 +275,23 @@ namespace IronPython.Modules {
                 _closed = true;
 
                 if (_closefd) {
+                    PythonFileManager myManager = _context.RawFileManager;
+
                     if (_readStream != null) {
                         _readStream.Close();
                         _readStream.Dispose();
+                        myManager?.Remove(_readStream);
                     }
                     if (_writeStream != null && !ReferenceEquals(_readStream, _writeStream)) {
                         _writeStream.Close();
                         _writeStream.Dispose();
+                        myManager.Remove(_writeStream);
                     }
 
-                    PythonFileManager myManager = _context.RawFileManager;
                     myManager?.Remove(this);
+                    if (_fd >= 0) {
+                        myManager.RemoveObjectOnId(_fd);
+                    }
                 }
             }
 

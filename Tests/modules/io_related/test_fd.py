@@ -71,10 +71,7 @@ class FdTest(IronPythonTestCase):
         self.assertTrue(is_open(fd + 2))
 
         # Verify that dup2 closes the previous occupant of a fd.
-        if is_cli:
-            self.assertEqual(os.open(os.devnull, os.O_WRONLY, 0o600), fd + 1)
-        else:
-            self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
+        self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
         self.assertEqual(os.dup2(fd + 1, fd), fd if is_cli or sys.version_info >= (3,7) else None)
         # null can not be stated on windows - but writes are ok
         self.assertTrue(is_open_nul(fd))

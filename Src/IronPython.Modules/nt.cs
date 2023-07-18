@@ -439,20 +439,20 @@ namespace IronPython.Modules {
             PythonContext pythonContext = context.LanguageContext;
             pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object obj);
             if (obj is PythonIOModule.FileIO file) {
-                if (file.IsConsole) return new stat_result(8192);
+                if (file.IsConsole) return new stat_result(0x2000);
                 if (StatStream(file._readStream) is not null and var res) return res;
-                if (file.name is string strName) return lstat(strName, new Dictionary<string, object>(1));
             } else if (obj is Stream stream && StatStream(stream) is not null and var res) {
                 return res;
             }
             return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
 
-            static stat_result? StatStream(Stream stream) {
-                if (stream is PipeStream) return new stat_result(4096);
+            static object? StatStream(Stream stream) {
+                if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
+                if (stream is PipeStream) return new stat_result(0x1000);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    if (ReferenceEquals(stream, Stream.Null)) return new stat_result(8192);
+                    if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    if (IsUnixStream(stream)) return new stat_result(4096);
+                    if (IsUnixStream(stream)) return new stat_result(0x1000);
                 }
                 return null;
             }

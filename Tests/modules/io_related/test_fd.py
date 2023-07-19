@@ -216,4 +216,17 @@ class FdTest(IronPythonTestCase):
         for i in range(1, 3):
             os.unlink(test_filename + str(i))
 
+    def test_stat_chdir(self):
+        test_filename = "tmp_%d.stat.test" % os.getpid()
+        fd = os.open(test_filename, os.O_CREAT | os.O_RDWR)
+        self.assertIsNotNone(os.fstat(fd))
+        cwd = os.getcwd()
+        os.chdir(os.sep)
+        try:
+            self.assertIsNotNone(os.fstat(fd))
+        finally:
+            os.chdir(cwd)
+        os.close(fd)
+        os.unlink(test_filename)
+
 run_test(__name__)

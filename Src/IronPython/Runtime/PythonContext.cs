@@ -1873,15 +1873,15 @@ namespace IronPython.Runtime {
             var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out PythonIOModule.FileIO fstdout);
             var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out PythonIOModule.FileIO fstderr);
 
-            FileManager.AddToStrongMapping(fstdin, 0);
+            FileManager.AddFile(0, fstdin);
             SetSystemStateValue("__stdin__", stdin);
             SetSystemStateValue("stdin", stdin);
 
-            FileManager.AddToStrongMapping(fstdout, 1);
+            FileManager.AddFile(1, fstdout);
             SetSystemStateValue("__stdout__", stdout);
             SetSystemStateValue("stdout", stdout);
 
-            FileManager.AddToStrongMapping(fstderr, 2);
+            FileManager.AddFile(2, fstderr);
             SetSystemStateValue("__stderr__", stderr);
             SetSystemStateValue("stderr", stderr);
         }

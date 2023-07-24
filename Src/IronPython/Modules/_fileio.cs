@@ -41,7 +41,7 @@ namespace IronPython.Modules {
             internal Stream _readStream;
             private Stream _writeStream;
             private bool _closed, _closefd;
-            private int _fd = -1;
+            internal int _fd = -1;
             private WeakRefTracker _tracker;
             private PythonContext _context;
             public object name;
@@ -149,12 +149,14 @@ namespace IronPython.Modules {
                             throw PythonOps.ValueError("opener returned {0}", fd);
                         }
 
-                        if (_context.FileManager.TryGetFileFromId(_context, fd, out FileIO file)) {
+                        if (_context.FileManager.TryGetFileFromId(fd, out FileIO file)) {
                             _readStream = file._readStream;
                             _writeStream = file._writeStream;
-                        } else if (_context.FileManager.TryGetObjectFromId(_context, fd, out object fileObj) && fileObj is Stream stream) {
+                        } else if (_context.FileManager.TryGetStreamFromId(fd, out Stream stream)) {
                             _readStream = stream;
                             _writeStream = stream;
+                        } else {
+                            throw PythonOps.OSError(9, "Bad file descriptor");
                         }
                     } else {
                         throw PythonOps.TypeError("expected integer from opener");
@@ -277,20 +279,24 @@ namespace IronPython.Modules {
                 if (_closefd) {
                     PythonFileManager myManager = _context.RawFileManager;
 
-                    if (_readStream != null) {
-                        _readStream.Close();
-                        _readStream.Dispose();
-                        myManager?.Remove(_readStream);
-                    }
-                    if (_writeStream != null && !ReferenceEquals(_readStream, _writeStream)) {
-                        _writeStream.Close();
-                        _writeStream.Dispose();
-                        myManager.Remove(_writeStream);
+                    if (_fd >= 0) {
+                        myManager?.RemoveObjectOnId(_fd);
                     }
 
-                    myManager?.Remove(this);
-                    if (_fd >= 0) {
-                        myManager.RemoveObjectOnId(_fd);
+                    bool readStreamClosed = true;
+                    if (_readStream is not null) {
+                        if (myManager is not null) {
+                            readStreamClosed = myManager.DerefAndCloseLast(_readStream);
+                            if (readStreamClosed) {
+                                myManager.Remove(_readStream);
+                            }
+                        } else {
+                            _readStream.Close();
+                        }
+                    }
+                    if (_writeStream is not null && !ReferenceEquals(_readStream, _writeStream) && readStreamClosed) {
+                        _writeStream.Close();
+                        myManager?.Remove(_readStream);
                     }
                 }
             }
@@ -302,10 +308,9 @@ namespace IronPython.Modules {
                 }
             }
 
-            public bool closefd {
-                get {
-                    return _closefd;
-                }
+            internal bool closefd {
+                get => _closefd;
+                set => _closefd = value;
             }
 
             [Documentation("fileno() -> int. \"file descriptor\".\n\n"
@@ -314,7 +319,10 @@ namespace IronPython.Modules {
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _context.FileManager.GetOrAssignIdForFile(this);
+                if (_fd < 0) {
+                    _fd = _context.FileManager.GetOrAssignId(this);
+                }
+                return _fd;
             }
 
             [Documentation("Flush write buffers, if applicable.\n\n"

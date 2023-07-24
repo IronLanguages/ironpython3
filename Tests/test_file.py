@@ -509,6 +509,12 @@ class FileTest(IronPythonTestCase):
             f = os.fdopen(fd, 'w', closefd=True)
             f.close()
 
+        for i in range(N):
+            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT)
+            f = os.fdopen(fd, 'w', closefd=False)
+            g = os.fdopen(f.fileno(), 'w', closefd=True)
+            g.close()
+
     def test_sharing(self):
         modes = ['w', 'w+', 'a+', 'r', 'w']
         fname = self.temp_file

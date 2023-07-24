@@ -64,6 +64,20 @@ class NtTest(IronPythonTestCase):
         else:
             self.assertRaisesNumber(WindowsError, 22, nt.stat, 'bad?path.txt')
 
+    def test_stat_nul(self):
+        st_arg = [0] * nt.stat_result.n_sequence_fields
+        st_arg[0] = 0x2000
+        st_res = nt.stat_result(st_arg)
+        for name in ["nul", "nul:", "nul::", "NUL", "NUL:", "NUL::"]:
+            with self.subTest(name=name):
+                self.assertEqual(nt.stat(name), st_res)
+                self.assertEqual(nt.lstat(name), st_res)
+                fd = nt.open(name, os.O_RDWR)
+                self.assertEqual(nt.fstat(fd), st_res)
+                nt.close(fd)
+        self.assertRaises(WindowsError, nt.stat, "nul:::")
+
+
     # stat should accept bytes as argument
     def test_stat_cp34910(self):
         self.assertEqual(nt.stat('/'), nt.stat(b'/'))

@@ -437,15 +437,25 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                if (file.IsConsole) return new stat_result(8192);
-                if (file._readStream is PipeStream) return new stat_result(4096);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    if (IsUnixStream(file._readStream)) return new stat_result(4096);
-                }
-                if (file.name is string strName) return lstat(strName, new Dictionary<string, object>(1));
+            pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object obj);
+            if (obj is PythonIOModule.FileIO file) {
+                if (file.IsConsole) return new stat_result(0x2000);
+                if (StatStream(file._readStream) is not null and var res) return res;
+            } else if (obj is Stream stream && StatStream(stream) is not null and var res) {
+                return res;
             }
-            throw PythonOps.OSError(9, "Bad file descriptor");
+            return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
+
+            static object? StatStream(Stream stream) {
+                if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
+                if (stream is PipeStream) return new stat_result(0x1000);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (IsUnixStream(stream)) return new stat_result(0x1000);
+                }
+                return null;
+            }
 
             static bool IsUnixStream(Stream stream) {
                 return stream is Mono.Unix.UnixStream;
@@ -843,8 +853,7 @@ namespace IronPython.Modules {
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
                 Stream fs;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(path, "nul", StringComparison.OrdinalIgnoreCase)
-                   || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && path == "/dev/null") {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
                     fs = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
@@ -1427,7 +1436,9 @@ namespace IronPython.Modules {
                     int mode = 0;
                     long size;
 
-                    if (Directory.Exists(path)) {
+                    if (IsNulFile(path)) {
+                        return new stat_result(0x2000);
+                    } else if (Directory.Exists(path)) {
                         size = 0;
                         mode = 0x4000 | S_IEXEC;
                     } else if (File.Exists(path)) {
@@ -2336,6 +2347,13 @@ the 'status' value."),
         private static void VerifyPath(string path, string functionName, string argName) {
             if (path.IndexOf((char)0) != -1) throw PythonOps.ValueError($"{functionName}: embedded null character in {argName}");
         }
+
+        [SupportedOSPlatform("windows")]
+        private static bool IsNulFile(string path)
+            => path.StartsWith("nul", StringComparison.OrdinalIgnoreCase)
+                && (path.Length == 3
+                 || path.Length == 4 && path[3] == ':'
+                 || path.Length == 5 && path[3] == ':' && path[4] == ':');
 
         #endregion
     }

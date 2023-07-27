@@ -339,7 +339,7 @@ namespace IronPython.Modules {
             } else {
                 Stream stream = fileManager.GetStreamFromId(fd);
                 fileManager.RemoveObjectOnId(fd);
-                fileManager.DerefAndCloseLast(stream);
+                fileManager.DerefAndCloseIfLast(stream);
             }
         }
 

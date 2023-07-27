@@ -286,7 +286,7 @@ namespace IronPython.Modules {
                     bool readStreamClosed = true;
                     if (_readStream is not null) {
                         if (myManager is not null) {
-                            readStreamClosed = myManager.DerefAndCloseLast(_readStream);
+                            readStreamClosed = myManager.DerefAndCloseIfLast(_readStream);
                             if (readStreamClosed) {
                                 myManager.Remove(_readStream);
                             }
@@ -296,7 +296,7 @@ namespace IronPython.Modules {
                     }
                     if (_writeStream is not null && !ReferenceEquals(_readStream, _writeStream) && readStreamClosed) {
                         _writeStream.Close();
-                        myManager?.Remove(_readStream);
+                        myManager?.Remove(_writeStream);
                     }
                 }
             }
@@ -308,9 +308,9 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal bool closefd {
+            public bool closefd {
                 get => _closefd;
-                set => _closefd = value;
+                internal set => _closefd = value;
             }
 
             [Documentation("fileno() -> int. \"file descriptor\".\n\n"

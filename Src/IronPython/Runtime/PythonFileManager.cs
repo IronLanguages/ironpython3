@@ -25,11 +25,11 @@ namespace IronPython.Runtime {
     ///
     /// The manager maintains a mapping between open files (or system file-like objects) and a "descriptor", being a small non-negative integer.
     /// Unlike in CPython, the descriptors are allocated lazily, meaning they are allocated only when they become exposed (requested)
-    /// though relevant API calls. Therefore the ordering of assigned descriptors in IronPython may be different than in CPython.
-    /// This should not be a problem since assumptions on descriptor ordering are not goot programming practice.
+    /// through relevant API calls. Therefore the ordering of assigned descriptors in IronPython may be different than in CPython.
+    /// This should not be a problem since assumptions on descriptor ordering are not good programming practice.
     ///
     /// Open filesystem files are represented in the manager as lower level Stream objects, and higher level FileIO objects.
-    /// FileIO basically encapsulates one ot two Streams (one for reading and one for writing, which may be the same).
+    /// FileIO basically encapsulates one of two Streams (one for reading and one for writing, which may be the same).
     ///
     /// There are two levels of sharing that are supported. On the higher level, several different FileIO objects may share the same
     /// file descriptor. In such case, all of those FileIO objects maintain references to the same underlying Stream object(s)
@@ -40,7 +40,7 @@ namespace IronPython.Runtime {
     /// for itself to manage the mapping. This object is not exposed to Python and only used for opening/closing/dup etc. purposes.
     ///
     /// The second lever of sharing of open files is below the file descriptor level. A file descriptor can be duplicated using dup/dup2,
-    /// but the dupplicated descriptor is still refering to the same open file in the filesystem. In such case, the manager maintains
+    /// but the duplicated descriptor is still refering to the same open file in the filesystem. In such case, the manager maintains
     /// a separate FileIO for the duplicated descriptor, but the FileIOs for both descriptors share the underlying Streams.
     /// Both such descriptors have to be closed independently by the user code (either explicitly by os.close(fd) or through close()
     /// on the FileIO objects), but the underlying shared streams are closed only when all such duplicated descriptors are closed.
@@ -92,7 +92,7 @@ namespace IronPython.Runtime {
             lock (_synchObject) {
                 while (_objects.ContainsKey(_current)) {
                     _current++;
-                    if (_current == LIMIT_OFILE)
+                    if (_current >= LIMIT_OFILE)
                         throw PythonOps.OSError(24, "Too many open files");
                 }
                 _objects.Add(_current, obj);
@@ -167,7 +167,7 @@ namespace IronPython.Runtime {
             _refs.AddOrUpdate(stream, 1, (_,  v) => v + 1);
         }
 
-        public bool DerefAndCloseLast(Stream stream) {
+        public bool DerefAndCloseIfLast(Stream stream) {
             int newref = _refs.AddOrUpdate(stream, 0, (_, v) => v - 1);
             if (newref <= 0) {
                 stream.Close(); // equivalent of Dispose()

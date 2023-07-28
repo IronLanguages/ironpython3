@@ -332,16 +332,14 @@ namespace IronPython.Modules {
 #endif
 
         public static void close(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            PythonFileManager fileManager = pythonContext.FileManager;
-            if (fileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                fileManager.CloseIfLast(context, fd, file);
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+            if (fileManager.TryGetFileFromId(fd, out PythonIOModule.FileIO? file)) {
+                file.closefd = true;
+                file.close(context);
             } else {
-                Stream? stream = fileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonOps.OSError(9, "Bad file descriptor");
-                }
-                fileManager.CloseIfLast(fd, stream);
+                Stream stream = fileManager.GetStreamFromId(fd);
+                fileManager.RemoveObjectOnId(fd);
+                fileManager.DerefAndCloseIfLast(stream);
             }
         }
 
@@ -355,65 +353,55 @@ namespace IronPython.Modules {
             }
         }
 
-        private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO _)) {
-                return true;
-            }
-            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object o)) {
-                if (o is Stream) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public static int dup(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                return pythonContext.FileManager.AddToStrongMapping(file);
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+
+            object obj = fileManager.GetObjectFromId(fd); // OSError if fd not valid
+            if (obj is PythonIOModule.FileIO file) {
+                var file2 = new PythonIOModule.FileIO(context, file.fileno(context));
+                int fd2 = fileManager.AddFile(file2);
+                fileManager.EnsureRef(file._readStream);
+                fileManager.AddRef(file2._readStream);
+                return fd2;
             } else {
-                Stream? stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonOps.OSError(9, "Bad file descriptor");
-                }
-                return pythonContext.FileManager.AddToStrongMapping(stream);
+                var stream = (Stream)obj;
+                fileManager.EnsureRef(stream);
+                fileManager.AddRef(stream);
+                return fileManager.AddStream(stream);
             }
         }
 
 
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
-            PythonContext pythonContext = context.LanguageContext;
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
 
-            if (!IsValidFd(context, fd)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-
-            if (!pythonContext.FileManager.ValidateFdRange(fd2)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-
-            bool fd2Valid = IsValidFd(context, fd2);
-
+            object obj = fileManager.GetObjectFromId(fd); // OSError if fd not valid
             if (fd == fd2) {
-                if (fd2Valid) {
-                    return fd2;
-                }
+                return fd2;
+            }
+
+            if (!fileManager.ValidateFdRange(fd2)) {
                 throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
-            if (fd2Valid) {
+            if (fileManager.TryGetObjectFromId(fd2, out _)) {
                 close(context, fd2);
             }
 
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                return pythonContext.FileManager.AddToStrongMapping(file, fd2);
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
+
+            if (obj is PythonIOModule.FileIO file) {
+                var file2 = new PythonIOModule.FileIO(context, file.fileno(context));
+                fileManager.AddFile(fd2, file2);
+                fileManager.EnsureRef(file._readStream);
+                fileManager.AddRef(file2._readStream);
+                return fd2;
+            } else {
+                var stream = (Stream)obj;
+                fileManager.EnsureRef(stream);
+                fileManager.AddRef(stream);
+                return fileManager.AddStream(fd2, stream);
             }
-            var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-            if (stream == null) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-            return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
         }
 
 #if FEATURE_PROCESS
@@ -436,8 +424,9 @@ namespace IronPython.Modules {
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object obj);
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+
+            fileManager.TryGetObjectFromId(fd, out object? obj);
             if (obj is PythonIOModule.FileIO file) {
                 if (file.IsConsole) return new stat_result(0x2000);
                 if (StatStream(file._readStream) is not null and var res) return res;
@@ -463,8 +452,8 @@ namespace IronPython.Modules {
         }
 
         public static void fsync(CodeContext context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+            var pf = fileManager.GetFileFromId(fd);
             try {
                 pf.flush(context);
             } catch (Exception ex) when (ex is ValueErrorException || ex is IOException) {
@@ -523,7 +512,7 @@ namespace IronPython.Modules {
         }
 
         public static bool isatty(CodeContext context, int fd) {
-            if (context.LanguageContext.FileManager.TryGetFileFromId(context.LanguageContext, fd, out var file))
+            if (context.LanguageContext.FileManager.TryGetFileFromId(fd, out var file))
                 return file.isatty(context);
             return false;
         }
@@ -578,8 +567,8 @@ namespace IronPython.Modules {
         public static PythonList listdir(CodeContext context, object? path)
             => listdir(context, ConvertToFsString(context, path, nameof(path)));
 
-        public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
-            var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
+        public static BigInteger lseek(CodeContext context, int fd, long offset, int whence) {
+            var file = context.LanguageContext.FileManager.GetFileFromId(fd);
 
             return file.seek(context, offset, whence);
         }
@@ -867,7 +856,7 @@ namespace IronPython.Modules {
                     fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
-                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = path });
+                return context.LanguageContext.FileManager.AddFile(new PythonIOModule.FileIO(context, fs) { name = path, closefd = false });
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -924,8 +913,8 @@ namespace IronPython.Modules {
             var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2);
 
             return PythonTuple.MakeTuple(
-                context.LanguageContext.FileManager.AddToStrongMapping(inFile),
-                context.LanguageContext.FileManager.AddToStrongMapping(outFile)
+                context.LanguageContext.FileManager.AddFile(inFile),
+                context.LanguageContext.FileManager.AddFile(outFile)
             );
         }
 #endif
@@ -947,7 +936,7 @@ namespace IronPython.Modules {
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+                var pf = pythonContext.FileManager.GetFileFromId(fd);
                 return (Bytes)pf.read(context, buffersize);
             } catch (Exception e) {
                 throw ToPythonException(e);
@@ -1601,7 +1590,7 @@ namespace IronPython.Modules {
             => ftruncate(context, fd, length);
 
         public static void ftruncate(CodeContext context, int fd, BigInteger length)
-            => context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd).truncate(context, length);
+            => context.LanguageContext.FileManager.GetFileFromId(fd).truncate(context, length);
 
 #if FEATURE_FILESYSTEM
         public static object times() {
@@ -1828,7 +1817,7 @@ namespace IronPython.Modules {
         public static int write(CodeContext/*!*/ context, int fd, [NotNone] IBufferProtocol data) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+                var pf = pythonContext.FileManager.GetFileFromId(fd);
                 return (int)pf.write(context, data);
             } catch (Exception e) {
                 throw ToPythonException(e);

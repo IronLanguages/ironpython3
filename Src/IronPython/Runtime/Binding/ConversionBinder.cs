@@ -781,7 +781,7 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot pts;
 
             if (pt.TryResolveSlot(context, "__iter__", out pts)) {
-                return MakeIterRule(metaUserObject, nameof(PythonOps.CreatePythonEnumerable));
+                return MakeIterRule(metaUserObject, pyContext, nameof(PythonOps.CreatePythonEnumerable));
             } else if (pt.TryResolveSlot(context, "__getitem__", out pts)) {
                 return MakeGetItemIterable(metaUserObject, pyContext, pts, nameof(PythonOps.CreateItemEnumerable));
             }
@@ -867,10 +867,11 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeIterRule(DynamicMetaObject/*!*/ self, string methodName) {
+        private static DynamicMetaObject/*!*/ MakeIterRule(DynamicMetaObject/*!*/ self, PythonContext state, string methodName) {
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod(methodName),
+                    AstUtils.Constant(state.SharedContext),
                     AstUtils.Convert(self.Expression, typeof(object))
                 ),
                 self.Restrictions

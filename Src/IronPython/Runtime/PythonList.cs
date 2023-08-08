@@ -106,7 +106,7 @@ namespace IronPython.Runtime {
 
             _data = new object[len];
             _size = 0;
-            ExtendNoLengthCheck(sequence);
+            ExtendNoLengthCheck(context, sequence);
         }
 
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
@@ -174,7 +174,7 @@ namespace IronPython.Runtime {
                 }
 
                 _data = new object[len];
-                ExtendNoLengthCheck(sequence);
+                ExtendNoLengthCheck(DefaultContext.Default, sequence);
             }
         }
 
@@ -743,16 +743,24 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend(object? seq) {
-            if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
+        public void extend(CodeContext context, object? seq) {
+            if (PythonOps.TryInvokeLengthHint(context, seq, out int len)) {
                 EnsureSize(len);
             }
 
-            ExtendNoLengthCheck(seq);
+            ExtendNoLengthCheck(context, seq);
         }
 
-        private void ExtendNoLengthCheck(object? seq) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+        internal void ExtendNoLock(ICollection seq) {
+            EnsureSize(Count + seq.Count);
+
+            foreach (var item in seq) {
+                AddNoLock(item);
+            }
+        }
+
+        private void ExtendNoLengthCheck(CodeContext context, object? seq) {
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             if (seq == (object)this) {
                 PythonList other = new PythonList(i);
                 i = ((IEnumerable)other).GetEnumerator();

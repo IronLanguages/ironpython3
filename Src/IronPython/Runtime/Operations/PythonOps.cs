@@ -1761,7 +1761,7 @@ namespace IronPython.Runtime.Operations {
         /// LIST_EXTEND
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void ListExtend(PythonList list, object? o) => list.extend(o);
+        public static void ListExtend(PythonList list, object? o) => list.extend(DefaultContext.Default, o);
 
         /// <summary>
         /// LIST_TO_TUPLE
@@ -3249,8 +3249,8 @@ namespace IronPython.Runtime.Operations {
             return new DictionaryKeyEnumerator(dict._storage);
         }
 
-        public static IEnumerable CreatePythonEnumerable(object baseObject) {
-            return PythonEnumerable.Create(baseObject);
+        public static IEnumerable CreatePythonEnumerable(CodeContext context, object baseObject) {
+            return PythonEnumerable.Create(context, baseObject);
         }
 
         public static IEnumerator CreateItemEnumerator(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {

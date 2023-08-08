@@ -1790,7 +1790,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             List<string> strKeys = new List<string>(keys.Keys);
             strKeys.Sort();
-            res.extend(strKeys);
+            res.ExtendNoLock(strKeys);
 
             return res;
         }

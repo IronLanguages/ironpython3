@@ -277,15 +277,15 @@ namespace IronPython.Runtime {
     public class PythonEnumerable : IEnumerable {
         private readonly object _iterator;
 
-        public static bool TryCreate(object baseEnumerator, out IEnumerable enumerator) {
+        public static bool TryCreate(CodeContext context, object baseEnumerator, out IEnumerable enumerator) {
             Debug.Assert(!(baseEnumerator is IEnumerable) || baseEnumerator is IPythonObject);   // we shouldn't re-wrap things that don't need it
 
-            if (PythonOps.TryGetBoundAttr(baseEnumerator, "__iter__", out object iter)) {
-                object iterator = PythonCalls.Call(iter);
-                if (iterator is IEnumerable) {
-                    enumerator = (IEnumerable)iterator;
+            if (PythonOps.TryGetBoundAttr(context, baseEnumerator, "__iter__", out object iter)) {
+                object iterator = PythonCalls.Call(context, iter);
+                if (iterator is IEnumerable en) {
+                    enumerator = en;
                 } else {
-                    if (!PythonOps.TryGetBoundAttr(iterator, "__next__", out _)) {
+                    if (!PythonOps.TryGetBoundAttr(context, iterator, "__next__", out _)) {
                         enumerator = null;
                         return false;
                     }
@@ -298,9 +298,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static IEnumerable Create(object baseObject) {
+        public static IEnumerable Create(CodeContext context, object baseObject) {
             IEnumerable res;
-            if (!TryCreate(baseObject, out res)) {
+            if (!TryCreate(context, baseObject, out res)) {
                 throw PythonOps.TypeError("cannot convert {0} to IEnumerable", PythonOps.GetPythonTypeName(baseObject));
             }
             return res;

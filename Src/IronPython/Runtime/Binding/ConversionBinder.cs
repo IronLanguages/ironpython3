@@ -804,6 +804,7 @@ namespace IronPython.Runtime.Binding {
                         new[] { tmp },
                         Expression.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.CreatePythonEnumerator)),
+                            AstUtils.Constant(context),
                             Ast.Block(
                                 MetaPythonObject.MakeTryGetTypeMember(
                                     state,

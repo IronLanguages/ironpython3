@@ -3257,8 +3257,8 @@ namespace IronPython.Runtime.Operations {
             return new ItemEnumerator(source, callable, site);
         }
 
-        public static IEnumerator CreatePythonEnumerator(object baseObject) {
-            return PythonEnumerator.Create(baseObject);
+        public static IEnumerator CreatePythonEnumerator(CodeContext context, object baseObject) {
+            return PythonEnumerator.Create(context, baseObject);
         }
 
         public static bool ContainsFromEnumerable(CodeContext/*!*/ context, object enumerable, object value) {

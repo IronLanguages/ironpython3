@@ -176,16 +176,17 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerator")]
     public class PythonEnumerator : IEnumerator {
+        private readonly CodeContext _context;
         private readonly object _baseObject;
         private object _current;
         public static bool TryCastIEnumer(object baseObject, out IEnumerator enumerator) {
-            if (baseObject is IEnumerator) {
-                enumerator = (IEnumerator)baseObject;
+            if (baseObject is IEnumerator et) {
+                enumerator = et;
                 return true;
             }
 
-            if (baseObject is IEnumerable) {
-                enumerator = ((IEnumerable)baseObject).GetEnumerator();
+            if (baseObject is IEnumerable en) {
+                enumerator = en.GetEnumerator();
                 return true;
             }
 
@@ -193,18 +194,18 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        public static bool TryCreate(object baseObject, out IEnumerator enumerator) {
+        public static bool TryCreate(CodeContext context, object baseObject, out IEnumerator enumerator) {
             if (TryCastIEnumer(baseObject, out enumerator)) {
                 return true;
             }
 
-            if (PythonOps.TryGetBoundAttr(baseObject, "__iter__", out object iter)) {
+            if (PythonOps.TryGetBoundAttr(context, baseObject, "__iter__", out object iter)) {
                 object iterator = PythonCalls.Call(iter);
                 // don't re-wrap if we don't need to (common case is PythonGenerator).
                 if (TryCastIEnumer(iterator, out enumerator)) {
                     return true;
                 }
-                enumerator = new PythonEnumerator(iterator);
+                enumerator = new PythonEnumerator(context, iterator);
                 return true;
             } else {
                 enumerator = null;
@@ -212,17 +213,18 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static IEnumerator Create(object baseObject) {
+        public static IEnumerator Create(CodeContext context, object baseObject) {
             IEnumerator res;
-            if (!TryCreate(baseObject, out res)) {
+            if (!TryCreate(context, baseObject, out res)) {
                 throw PythonOps.TypeError("cannot convert {0} to IEnumerator", PythonOps.GetPythonTypeName(baseObject));
             }
             return res;
         }
 
-        internal PythonEnumerator(object iter) {
+        internal PythonEnumerator(CodeContext context, object iter) {
             Debug.Assert(!(iter is PythonGenerator));
 
+            _context = context;
             _baseObject = iter;
         }
 
@@ -244,14 +246,14 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>True if moving was successfull</returns>
         public bool MoveNext() {
-            PythonTypeOps.TryGetOperator(DefaultContext.Default, _baseObject, "__next__", out object nextMethod);
+            PythonTypeOps.TryGetOperator(_context, _baseObject, "__next__", out object nextMethod);
 
             if (nextMethod == null) {
                 throw PythonOps.TypeErrorForNotAnIterator(_baseObject);
             }
 
             try {
-                _current = DefaultContext.Default.LanguageContext.CallLightEh(DefaultContext.Default, nextMethod);
+                _current = _context.LanguageContext.CallLightEh(_context, nextMethod);
                 Exception lightEh = LightExceptions.GetLightException(_current);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException) {
@@ -275,6 +277,7 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerable")]
     public class PythonEnumerable : IEnumerable {
+        private readonly CodeContext _context;
         private readonly object _iterator;
 
         public static bool TryCreate(CodeContext context, object baseEnumerator, out IEnumerable enumerator) {
@@ -289,7 +292,7 @@ namespace IronPython.Runtime {
                         enumerator = null;
                         return false;
                     }
-                    enumerator = new PythonEnumerable(iterator);
+                    enumerator = new PythonEnumerable(context, iterator);
                 }
                 return true;
             } else {
@@ -306,14 +309,15 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        private PythonEnumerable(object iterator) {
-            this._iterator = iterator;
+        private PythonEnumerable(CodeContext context, object iterator) {
+            _iterator = iterator;
+            _context = iterator is IEnumerable ? DefaultContext.Default : context;
         }
 
         #region IEnumerable Members
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return _iterator as IEnumerator ?? new PythonEnumerator(_iterator);
+            return _iterator as IEnumerator ?? new PythonEnumerator(_context, _iterator);
         }
 
         #endregion

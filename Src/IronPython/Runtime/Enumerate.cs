@@ -28,14 +28,14 @@ namespace IronPython.Runtime {
         private readonly IEnumerator _iter;
         private object _index;
 
-        public Enumerate(object iter) {
-            _iter = PythonOps.GetEnumerator(iter);
+        public Enumerate(CodeContext context, object iter) {
+            _iter = PythonOps.GetEnumerator(context, iter);
             _index = ScriptingRuntimeHelpers.Int32ToObject(-1);
         }
 
         public Enumerate(CodeContext context, object iter, object start) {
             object index = PythonOps.Index(start);
-            _iter = PythonOps.GetEnumerator(iter);
+            _iter = PythonOps.GetEnumerator(context, iter);
             _index = context.LanguageContext.Operation(Binding.PythonOperationKind.Subtract, index, ScriptingRuntimeHelpers.Int32ToObject(1));
         }
 
@@ -325,6 +325,7 @@ namespace IronPython.Runtime {
 
     [PythonType("iterator")]
     public sealed class ItemEnumerator : IEnumerator {
+        private readonly CodeContext _context;
         // The actual object on which we are calling __getitem__()
         private object _source;
         private object _getItemMethod;
@@ -332,7 +333,8 @@ namespace IronPython.Runtime {
         private object _current;
         private int _index;
 
-        internal ItemEnumerator(object source, object getItemMethod, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+        internal ItemEnumerator(CodeContext context, object source, object getItemMethod, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _context = context;
             _source = source;
             _getItemMethod = getItemMethod;
             _site = site;
@@ -378,7 +380,7 @@ namespace IronPython.Runtime {
             }
 
             try {
-                _current = _site.Target(_site, DefaultContext.Default, _getItemMethod, _index);
+                _current = _site.Target(_site, _context, _getItemMethod, _index);
                 _index++;
                 return true;
             } catch (IndexOutOfRangeException) {
@@ -408,11 +410,13 @@ namespace IronPython.Runtime {
 
     [PythonType("iterable")]
     public sealed class ItemEnumerable : IEnumerable {
+        private readonly CodeContext _context;
         private readonly object _source;
         private readonly object _getitem;
         private readonly CallSite<Func<CallSite, CodeContext, object, int, object>> _site;
 
-        internal ItemEnumerable(object source, object getitem, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+        internal ItemEnumerable(CodeContext context, object source, object getitem, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            _context = context;
             _source = source;
             _getitem = getitem;
             _site = site;
@@ -425,7 +429,7 @@ namespace IronPython.Runtime {
         #region IEnumerable Members
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return new ItemEnumerator(_source, _getitem, _site);
+            return new ItemEnumerator(_context, _source, _getitem, _site);
         }
 
         #endregion

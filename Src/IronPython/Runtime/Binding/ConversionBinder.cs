@@ -840,6 +840,7 @@ namespace IronPython.Runtime.Binding {
                     new[] { tmp },
                     Expression.Call(
                         typeof(PythonOps).GetMethod(method),
+                        AstUtils.Constant(state.SharedContext),
                         AstUtils.Convert(metaUserObject.Expression, typeof(object)),
                         Ast.Block(
                             MetaPythonObject.MakeTryGetTypeMember(

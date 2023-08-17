@@ -257,8 +257,15 @@ class FdTest(IronPythonTestCase):
                 self.assertEqual(file.fileno(), fd)
                 self.assertFalse(file.buffer.raw.closefd)
                 with open(fd, mode=mode, closefd=True) as file2:
+                    # this fails in CPython if standard I/O is redirected
                     self.assertFalse(file2.buffer.raw.closefd)
                 with open(fd, mode=mode, closefd=True) as file3:
                     self.assertFalse(file3.buffer.raw.closefd)
+
+                fd2 = os.dup(fd)
+                self.assertNotEqual(fd2, fd)
+                with open(fd2, mode=mode, closefd=True) as file4:
+                    self.assertFalse(file4.buffer.raw.closefd)
+                os.close(fd2)
 
 run_test(__name__)

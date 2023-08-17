@@ -334,8 +334,8 @@ namespace IronPython.Modules {
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
             if (fileManager.TryGetFileFromId(fd, out PythonIOModule.FileIO? file)) {
-                file.closefd = true;
-                file.close(context);
+                file.CloseStreams(fileManager);
+                fileManager.RemoveObjectOnId(fd);
             } else {
                 Stream stream = fileManager.GetStreamFromId(fd);
                 fileManager.RemoveObjectOnId(fd);

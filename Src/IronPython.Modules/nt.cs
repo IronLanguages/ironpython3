@@ -334,8 +334,8 @@ namespace IronPython.Modules {
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
             if (fileManager.TryGetFileFromId(fd, out PythonIOModule.FileIO? file)) {
-                file.closefd = true;
-                file.close(context);
+                file.CloseStreams(fileManager);
+                fileManager.RemoveObjectOnId(fd);
             } else {
                 Stream stream = fileManager.GetStreamFromId(fd);
                 fileManager.RemoveObjectOnId(fd);
@@ -358,7 +358,7 @@ namespace IronPython.Modules {
 
             object obj = fileManager.GetObjectFromId(fd); // OSError if fd not valid
             if (obj is PythonIOModule.FileIO file) {
-                var file2 = new PythonIOModule.FileIO(context, file.fileno(context));
+                var file2 = new PythonIOModule.FileIO(context, file.fileno(context)) { closefd = false };
                 int fd2 = fileManager.AddFile(file2);
                 fileManager.EnsureRef(file._readStream);
                 fileManager.AddRef(file2._readStream);
@@ -391,7 +391,7 @@ namespace IronPython.Modules {
             // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
 
             if (obj is PythonIOModule.FileIO file) {
-                var file2 = new PythonIOModule.FileIO(context, file.fileno(context));
+                var file2 = new PythonIOModule.FileIO(context, file.fileno(context)) { closefd = false };
                 fileManager.AddFile(fd2, file2);
                 fileManager.EnsureRef(file._readStream);
                 fileManager.AddRef(file2._readStream);
@@ -909,8 +909,8 @@ namespace IronPython.Modules {
         public static PythonTuple pipe(CodeContext context) {
             var pipeStreams = CreatePipeStreams();
 
-            var inFile = new PythonIOModule.FileIO(context, pipeStreams.Item1);
-            var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2);
+            var inFile = new PythonIOModule.FileIO(context, pipeStreams.Item1) { closefd = false };
+            var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2) { closefd = false };
 
             return PythonTuple.MakeTuple(
                 context.LanguageContext.FileManager.AddFile(inFile),

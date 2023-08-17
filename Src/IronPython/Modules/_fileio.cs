@@ -64,6 +64,7 @@ namespace IronPython.Modules {
                 : this(context, stream) {
                 IsConsole = true;
                 _consoleStreamType = consoleStreamType;
+                _closefd= false;
             }
 
             public FileIO(CodeContext/*!*/ context, int fd, string mode = "r", bool closefd = true, object opener = null)
@@ -92,7 +93,7 @@ namespace IronPython.Modules {
                 }
 
                 _fd = fd;
-                _closefd = closefd;
+                _closefd = closefd && !SharedIO.IsConsoleStream(_readStream);
             }
 
             public FileIO(CodeContext/*!*/ context, string name, string mode = "r", bool closefd = true, object opener = null)
@@ -283,21 +284,25 @@ namespace IronPython.Modules {
                         myManager?.RemoveObjectOnId(_fd);
                     }
 
-                    bool readStreamClosed = true;
-                    if (_readStream is not null) {
-                        if (myManager is not null) {
-                            readStreamClosed = myManager.DerefAndCloseIfLast(_readStream);
-                            if (readStreamClosed) {
-                                myManager.Remove(_readStream);
-                            }
-                        } else {
-                            _readStream.Close();
+                    CloseStreams(myManager);
+                }
+            }
+
+            internal void CloseStreams(PythonFileManager manager) {
+                bool readStreamClosed = true;
+                if (_readStream is not null) {
+                    if (manager is not null) {
+                        readStreamClosed = manager.DerefAndCloseIfLast(_readStream);
+                        if (readStreamClosed) {
+                            manager.Remove(_readStream);
                         }
+                    } else {
+                        _readStream.Close();
                     }
-                    if (_writeStream is not null && !ReferenceEquals(_readStream, _writeStream) && readStreamClosed) {
-                        _writeStream.Close();
-                        myManager?.Remove(_writeStream);
-                    }
+                }
+                if (_writeStream is not null && !ReferenceEquals(_readStream, _writeStream) && readStreamClosed) {
+                    _writeStream.Close();
+                    manager?.Remove(_writeStream);
                 }
             }
 

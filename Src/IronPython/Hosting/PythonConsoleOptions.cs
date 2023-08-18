@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
-#if FEATURE_FULL_CONSOLE
+
 using System;
 using Microsoft.Scripting.Hosting.Shell; 
 
@@ -27,4 +27,3 @@ namespace IronPython.Hosting {
         public bool PrintSysVersion { get; set; }
     }
 }
-#endif

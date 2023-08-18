@@ -330,7 +330,6 @@ namespace IronPython.Runtime.Types {
         }
 
         internal static string CreateAutoDoc(MethodBase info, string name, int endParamSkip, bool includeSelf) {
-#if FEATURE_FULL_CONSOLE
             int lineWidth;
             try {
                 lineWidth = Console.WindowWidth - 30;
@@ -338,9 +337,6 @@ namespace IronPython.Runtime.Types {
                 // console output has been redirected.
                 lineWidth = 80;
             }
-#else
-            int lineWidth = 80;
-#endif
             var docInfo = GetOverloadDoc(info, name, endParamSkip, includeSelf);
             StringBuilder ret = new StringBuilder();
 

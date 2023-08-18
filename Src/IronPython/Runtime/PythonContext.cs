@@ -1866,6 +1866,7 @@ namespace IronPython.Runtime {
 
         private void SetStandardIO() {
             SharedIO io = DomainManager.SharedIO;
+            io.ConsoleSupportLevel = PythonOptions.ConsoleSupportLevel;
 
             var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out PythonIOModule.FileIO fstdin);
             var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out PythonIOModule.FileIO fstdout);

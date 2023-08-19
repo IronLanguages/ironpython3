@@ -736,24 +736,34 @@ namespace IronPython.Modules {
         public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
 
-        public class uname_result : PythonTuple {
-            // TODO: posix: support constructor with a sequence, see construction of stat_result
-            public uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :
+        [PythonType]
+        public sealed class uname_result : PythonTuple {
+            public const int n_fields = 5;
+            public const int n_sequence_fields = 5;
+            public const int n_unnamed_fields = 0;
+
+            internal uname_result(object?[] sequence) : base(sequence) {
+                if (_data.Length != n_sequence_fields) {
+                    // TODO: CPython shows nt/posix instead of os...
+                    throw PythonOps.ValueError($"os.{nameof(uname_result)}() takes a 5-sequence ({_data.Length}-sequence given)");
+                }
+            }
+
+            internal uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :
                 base(new object?[] { sysname, nodename, release, version, machine }) { }
 
-            public string? sysname => (string?)this[0];
+            public static uname_result __new__(CodeContext context, [NotNone] PythonType cls, [NotNone] IEnumerable<object?> sequence) {
+                return new uname_result(sequence.ToArray());
+            }
 
-            public string? nodename => (string?)this[1];
+            public object? sysname => this[0];
+            public object? nodename => this[1];
+            public object? release => this[2];
+            public object? version => this[3];
+            public object? machine => this[4];
 
-            public string? release => (string?)this[2];
-
-            public string? version => (string?)this[3];
-
-            public string? machine => (string?)this[4];
-
-            public override string ToString() {
-                // TODO: posix: handle null values, see terminal_size.__repr__()
-                return $"posix.uname_result(sysname='{sysname}', nodename='{nodename}', release='{release}', version='{version}', machine='{machine}')";
+            public override string __repr__(CodeContext context) {
+                return $"os.{nameof(uname_result)}sysname={PythonOps.Repr(context, sysname)}, nodename={PythonOps.Repr(context, nodename)}, release={PythonOps.Repr(context, release)}, version={PythonOps.Repr(context, version)}, machine={PythonOps.Repr(context, machine)})";
             }
         }
 

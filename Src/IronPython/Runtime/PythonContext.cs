@@ -1301,11 +1301,9 @@ namespace IronPython.Runtime {
                     PythonCalls.Call(SharedContext, callable);
                 }
             } finally {
-#if FEATURE_BASIC_CONSOLE
                 if (PythonOptions.PerfStats) {
                     PerfTrack.DumpStats();
                 }
-#endif
             }
 
             Flush(SharedContext, SystemStandardOut);

@@ -10,7 +10,6 @@
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_SAVE</Features>
-    <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>
     <Features>$(Features);FEATURE_CODEDOM</Features>
     <Features>$(Features);FEATURE_COM</Features>
     <Features>$(Features);FEATURE_CONFIGURATION</Features>
@@ -18,7 +17,6 @@
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
     <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
     <Features>$(Features);FEATURE_FILESYSTEM</Features>
-    <Features>$(Features);FEATURE_FULL_CONSOLE</Features>
     <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
     <Features>$(Features);FEATURE_FULL_NET</Features>
     <Features>$(Features);FEATURE_LAMBDAEXPRESSION_COMPILETOMETHOD</Features>

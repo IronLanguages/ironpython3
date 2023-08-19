@@ -20,9 +20,6 @@ System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly
 ### FEATURE_ASSEMBLYBUILDER_SAVE
 System.Reflection.Emit.AssemblyBuilder.Save
 
-### FEATURE_BASIC_CONSOLE
-Basic Console features like Console.WriteLine, Console.ReadLine.
-
 ### FEATURE_CODEDOM
 System.CodeDom
 
@@ -41,9 +38,6 @@ System.Threading.ThreadAbortException.ExceptionState
 
 ### FEATURE_FILESYSTEM
 Full file system (Directory, File, Path, FileStream, etc.)
-
-### FEATURE_FULL_CONSOLE
-Full Console APIs including stdin, stdout, stderr streams, colors, etc.
 
 ### FEATURE_FULL_CRYPTO
 

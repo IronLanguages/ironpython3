@@ -2008,13 +2008,10 @@ namespace IronPython.Runtime.Operations {
             object exceptHook = pc.GetSystemStateValue("excepthook");
             if (exceptHook is BuiltinFunction bf && bf.DeclaringType == typeof(SysModule) && bf.Name == "excepthook") {
                 // builtin except hook
-#if FEATURE_FULL_CONSOLE
                 if (console is IConsole con) {
                     // display it to the console which may do nice coloring
                     con.WriteLine(pc.FormatException(exception), Style.Error);
-                } else
-#endif
-                {
+                } else {
                     PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
                 }
             } else {

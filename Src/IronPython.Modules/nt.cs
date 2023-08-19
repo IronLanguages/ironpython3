@@ -333,14 +333,8 @@ namespace IronPython.Modules {
 
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
-            if (fileManager.TryGetFileFromId(fd, out PythonIOModule.FileIO? file)) {
-                file.CloseStreams(fileManager);
-                fileManager.RemoveObjectOnId(fd);
-            } else {
-                Stream stream = fileManager.GetStreamFromId(fd);
-                fileManager.RemoveObjectOnId(fd);
-                fileManager.DerefAndCloseIfLast(stream);
-            }
+            StreamBox streams = fileManager.GetStreams(fd);
+            streams.CloseStreams(fileManager);
         }
 
         public static void closerange(CodeContext/*!*/ context, int fd_low, int fd_high) {
@@ -356,26 +350,18 @@ namespace IronPython.Modules {
         public static int dup(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
-            object obj = fileManager.GetObjectFromId(fd); // OSError if fd not valid
-            if (obj is PythonIOModule.FileIO file) {
-                var file2 = new PythonIOModule.FileIO(context, file.fileno(context)) { closefd = false };
-                int fd2 = fileManager.AddFile(file2);
-                fileManager.EnsureRef(file._readStream);
-                fileManager.AddRef(file2._readStream);
-                return fd2;
-            } else {
-                var stream = (Stream)obj;
-                fileManager.EnsureRef(stream);
-                fileManager.AddRef(stream);
-                return fileManager.AddStream(stream);
-            }
+            StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
+            var stream = streams.ReadStream;
+            fileManager.EnsureRef(stream);
+            fileManager.AddRef(stream);
+            return fileManager.Add(new(streams));
         }
 
 
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
-            object obj = fileManager.GetObjectFromId(fd); // OSError if fd not valid
+            StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
             if (fd == fd2) {
                 return fd2;
             }
@@ -384,24 +370,16 @@ namespace IronPython.Modules {
                 throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
-            if (fileManager.TryGetObjectFromId(fd2, out _)) {
+            if (fileManager.TryGetStreams(fd2, out _)) {
                 close(context, fd2);
             }
 
             // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
 
-            if (obj is PythonIOModule.FileIO file) {
-                var file2 = new PythonIOModule.FileIO(context, file.fileno(context)) { closefd = false };
-                fileManager.AddFile(fd2, file2);
-                fileManager.EnsureRef(file._readStream);
-                fileManager.AddRef(file2._readStream);
-                return fd2;
-            } else {
-                var stream = (Stream)obj;
-                fileManager.EnsureRef(stream);
-                fileManager.AddRef(stream);
-                return fileManager.AddStream(fd2, stream);
-            }
+            var stream = streams.ReadStream;
+            fileManager.EnsureRef(stream);
+            fileManager.AddRef(stream);
+            return fileManager.Add(fd2, new(streams));
         }
 
 #if FEATURE_PROCESS
@@ -426,18 +404,18 @@ namespace IronPython.Modules {
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
-            fileManager.TryGetObjectFromId(fd, out object? obj);
-            if (obj is PythonIOModule.FileIO file) {
-                if (file.IsConsole) return new stat_result(0x2000);
-                if (StatStream(file._readStream) is not null and var res) return res;
-            } else if (obj is Stream stream && StatStream(stream) is not null and var res) {
-                return res;
+            if (fileManager.TryGetStreams(fd, out StreamBox? streams)) {
+                if (streams.IsConsoleStream()) return new stat_result(0x2000);
+                if (streams.IsStandardIOStream()) return new stat_result(0x1000);
+                if (StatStream(streams.ReadStream) is not null and var res) return res;
             }
             return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
 
             static object? StatStream(Stream stream) {
                 if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
+#if FEATURE_PIPES
                 if (stream is PipeStream) return new stat_result(0x1000);
+#endif
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -453,10 +431,10 @@ namespace IronPython.Modules {
 
         public static void fsync(CodeContext context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
-            var pf = fileManager.GetFileFromId(fd);
+            StreamBox streams = fileManager.GetStreams(fd);
             try {
-                pf.flush(context);
-            } catch (Exception ex) when (ex is ValueErrorException || ex is IOException) {
+                streams.Flush();
+            } catch (IOException) {
                 throw PythonOps.OSError(9, "Bad file descriptor");
             }
         }
@@ -512,8 +490,8 @@ namespace IronPython.Modules {
         }
 
         public static bool isatty(CodeContext context, int fd) {
-            if (context.LanguageContext.FileManager.TryGetFileFromId(fd, out var file))
-                return file.isatty(context);
+            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams))
+                return streams.IsConsoleStream();
             return false;
         }
 
@@ -568,9 +546,9 @@ namespace IronPython.Modules {
             => listdir(context, ConvertToFsString(context, path, nameof(path)));
 
         public static BigInteger lseek(CodeContext context, int fd, long offset, int whence) {
-            var file = context.LanguageContext.FileManager.GetFileFromId(fd);
+            var streams = context.LanguageContext.FileManager.GetStreams(fd);
 
-            return file.seek(context, offset, whence);
+            return streams.ReadStream.Seek(offset, (SeekOrigin)whence);
         }
 
         [Documentation("lstat(path, *, dir_fd=None) -> stat_result\n\n" +
@@ -856,7 +834,7 @@ namespace IronPython.Modules {
                     fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
-                return context.LanguageContext.FileManager.AddFile(new PythonIOModule.FileIO(context, fs) { name = path, closefd = false });
+                return context.LanguageContext.FileManager.Add(new(fs));
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -908,13 +886,11 @@ namespace IronPython.Modules {
 
         public static PythonTuple pipe(CodeContext context) {
             var pipeStreams = CreatePipeStreams();
-
-            var inFile = new PythonIOModule.FileIO(context, pipeStreams.Item1) { closefd = false };
-            var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2) { closefd = false };
+            var manager = context.LanguageContext.FileManager;
 
             return PythonTuple.MakeTuple(
-                context.LanguageContext.FileManager.AddFile(inFile),
-                context.LanguageContext.FileManager.AddFile(outFile)
+                manager.Add(new(pipeStreams.Item1)),
+                manager.Add(new(pipeStreams.Item2))
             );
         }
 #endif
@@ -936,8 +912,10 @@ namespace IronPython.Modules {
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(fd);
-                return (Bytes)pf.read(context, buffersize);
+                var streams = pythonContext.FileManager.GetStreams(fd);
+                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(9, "Bad file descriptor");
+
+                return Bytes.Make(streams.Read(buffersize));
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1590,7 +1568,7 @@ namespace IronPython.Modules {
             => ftruncate(context, fd, length);
 
         public static void ftruncate(CodeContext context, int fd, BigInteger length)
-            => context.LanguageContext.FileManager.GetFileFromId(fd).truncate(context, length);
+            => context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
 
 #if FEATURE_FILESYSTEM
         public static object times() {
@@ -1817,8 +1795,12 @@ namespace IronPython.Modules {
         public static int write(CodeContext/*!*/ context, int fd, [NotNone] IBufferProtocol data) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(fd);
-                return (int)pf.write(context, data);
+                var streams = pythonContext.FileManager.GetStreams(fd);
+                using var buffer = data.GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
+                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(9, "Bad file descriptor");
+
+                return streams.Write(bytes);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }

@@ -185,7 +185,7 @@ class FdTest(IronPythonTestCase):
 
         # write to file with wrong permissions
         fd = os.open(test_filename, os.O_CREAT | os.O_TRUNC | os.O_RDONLY)
-        self.assertRaisesMessage(OSError, "File not open for writing" if is_cli else "[Errno 9] Bad file descriptor", os.write, fd, b"42") # IronPython is throwing an io.UnsupportedOperation which doesn't match CPython...
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.write, fd, b"42")
         os.close(fd)
         os.unlink(test_filename)
 
@@ -255,9 +255,11 @@ class FdTest(IronPythonTestCase):
         for file, fd, mode in [(sys.stdin, 0, 'r'), (sys.stdout, 1, 'w'), (sys.stderr, 2, 'w')]:
             with self.subTest(fd=fd):
                 self.assertEqual(file.fileno(), fd)
+                if os.fstat(fd).st_mode & 0x1000:
+                    continue # stdio stream redirected
+
                 self.assertFalse(file.buffer.raw.closefd)
                 with open(fd, mode=mode, closefd=True) as file2:
-                    # this fails in CPython if standard I/O is redirected
                     self.assertFalse(file2.buffer.raw.closefd)
                 with open(fd, mode=mode, closefd=True) as file3:
                     self.assertFalse(file3.buffer.raw.closefd)

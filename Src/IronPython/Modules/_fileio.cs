@@ -38,33 +38,30 @@ namespace IronPython.Modules {
 
             private static readonly int DEFAULT_BUF_SIZE = 32;
 
-            internal Stream _readStream;
-            private Stream _writeStream;
+            private StreamBox _streams;
             private bool _closed, _closefd;
-            internal int _fd = -1;
             private WeakRefTracker _tracker;
             private PythonContext _context;
+
             public object name;
-            private ConsoleStreamType _consoleStreamType;
 
             internal FileIO(CodeContext/*!*/ context, Stream stream)
+                : this(context, new StreamBox(stream)) {
+            }
+
+            internal FileIO(CodeContext/*!*/ context, StreamBox streams)
                 : base(context) {
                 _context = context.LanguageContext;
+
+                Stream stream = streams.ReadStream;
                 string mode;
                 if (stream.CanRead && stream.CanWrite) mode = "w+";
                 else if (stream.CanWrite) mode = "w";
                 else mode = "r";
                 this.mode = mode;
-                _writeStream = stream;
-                _readStream = stream;
-                _closefd = true;
-            }
 
-            internal FileIO(CodeContext/*!*/ context, Stream stream, ConsoleStreamType consoleStreamType)
-                : this(context, stream) {
-                IsConsole = true;
-                _consoleStreamType = consoleStreamType;
-                _closefd= false;
+                _streams = streams;
+                _closefd = !streams.IsConsoleStream();
             }
 
             public FileIO(CodeContext/*!*/ context, int fd, string mode = "r", bool closefd = true, object opener = null)
@@ -76,24 +73,11 @@ namespace IronPython.Modules {
                 _context = context.LanguageContext;
                 this.mode = NormalizeMode(mode, out _);
 
-                object fileObject = _context.FileManager.GetObjectFromId(fd); // OSError here if no such fd
+                _streams = _context.FileManager.GetStreams(fd); // OSError here if no such fd
 
-                // FileManager interface guarantees fileObject is
-                // one of these two types
-                if (fileObject is FileIO file) {
-                    name = file.name ?? fd;
-                    _readStream = file._readStream;
-                    _writeStream = file._writeStream;
-                } else if (fileObject is Stream stream) {
-                    name = fd;
-                    _readStream = stream;
-                    _writeStream = stream;
-                } else {
-                    Debug.Fail($"{nameof(fileObject)} is of unexpected type {fileObject.GetType().Name}");
-                }
+                name = fd;
 
-                _fd = fd;
-                _closefd = closefd && !SharedIO.IsConsoleStream(_readStream);
+                _closefd = closefd && !_streams.IsConsoleStream();
             }
 
             public FileIO(CodeContext/*!*/ context, string name, string mode = "r", bool closefd = true, object opener = null)
@@ -111,33 +95,34 @@ namespace IronPython.Modules {
                 if (opener is null) {
                     switch (this.mode) {
                         case "rb":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
                             break;
                         case "wb":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
                             break;
                         case "xb":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite));
                             break;
                         case "ab":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                            _readStream.Seek(0L, SeekOrigin.End);
+                            _streams = new(OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
+                            _streams.ReadStream.Seek(0L, SeekOrigin.End);
                             break;
                         case "rb+":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite));
                             break;
                         case "wb+":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
                             break;
                         case "xb+":
-                            _readStream = _writeStream = OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite));
                             break;
                         case "ab+":
-                            // Opening _writeStream before _readStream will create the file if it does not exist
-                            _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                            _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                            _readStream.Seek(0L, SeekOrigin.End);
-                            _writeStream.Seek(0L, SeekOrigin.End);
+                            // Opening writeStream before readStream will create the file if it does not exist
+                            var writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                            var readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            readStream.Seek(0L, SeekOrigin.End);
+                            writeStream.Seek(0L, SeekOrigin.End);
+                            _streams = new(readStream, writeStream);
                             break;
                         default:
                             throw new InvalidOperationException();
@@ -150,13 +135,7 @@ namespace IronPython.Modules {
                             throw PythonOps.ValueError("opener returned {0}", fd);
                         }
 
-                        if (_context.FileManager.TryGetFileFromId(fd, out FileIO file)) {
-                            _readStream = file._readStream;
-                            _writeStream = file._writeStream;
-                        } else if (_context.FileManager.TryGetStreamFromId(fd, out Stream stream)) {
-                            _readStream = stream;
-                            _writeStream = stream;
-                        } else {
+                        if (!_context.FileManager.TryGetStreams(fd, out _streams)) {
                             throw PythonOps.OSError(9, "Bad file descriptor");
                         }
                     } else {
@@ -256,8 +235,6 @@ namespace IronPython.Modules {
 
             #endregion
 
-            internal bool IsConsole { get; }
-
             #region Public API
 
             [Documentation("close() -> None.  Close the file.\n\n"
@@ -278,31 +255,7 @@ namespace IronPython.Modules {
                 _closed = true;
 
                 if (_closefd) {
-                    PythonFileManager myManager = _context.RawFileManager;
-
-                    if (_fd >= 0) {
-                        myManager?.RemoveObjectOnId(_fd);
-                    }
-
-                    CloseStreams(myManager);
-                }
-            }
-
-            internal void CloseStreams(PythonFileManager manager) {
-                bool readStreamClosed = true;
-                if (_readStream is not null) {
-                    if (manager is not null) {
-                        readStreamClosed = manager.DerefAndCloseIfLast(_readStream);
-                        if (readStreamClosed) {
-                            manager.Remove(_readStream);
-                        }
-                    } else {
-                        _readStream.Close();
-                    }
-                }
-                if (_writeStream is not null && !ReferenceEquals(_readStream, _writeStream) && readStreamClosed) {
-                    _writeStream.Close();
-                    manager?.Remove(_writeStream);
+                    _streams.CloseStreams(_context.RawFileManager);
                 }
             }
 
@@ -313,10 +266,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public bool closefd {
-                get => _closefd;
-                internal set => _closefd = value;
-            }
+            public bool closefd => _closefd;
 
             [Documentation("fileno() -> int. \"file descriptor\".\n\n"
                 + "This is needed for lower-level file interfaces, such as the fcntl module."
@@ -324,10 +274,7 @@ namespace IronPython.Modules {
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                if (_fd < 0) {
-                    _fd = _context.FileManager.GetOrAssignId(this);
-                }
-                return _fd;
+                return _context.FileManager.GetOrAssignId(_streams);
             }
 
             [Documentation("Flush write buffers, if applicable.\n\n"
@@ -336,46 +283,14 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                if (_writeStream != null && _writeStream.CanWrite) {
-                    _writeStream.Flush();
-                }
+                _streams.Flush();
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]
             public override bool isatty(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                if (Environment.OSVersion.Platform == PlatformID.Unix) {
-                    return isattyUnix();
-                }
-
-                return IsConsole && !isRedirected();
-
-                // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-                bool isattyUnix() {
-                    if (IsConsole) {
-                        if (_consoleStreamType == ConsoleStreamType.Input) {
-                            return Mono.Unix.Native.Syscall.isatty(0);
-                        }
-                        if (_consoleStreamType == ConsoleStreamType.Output) {
-                            return Mono.Unix.Native.Syscall.isatty(1);
-                        }
-                        Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
-                        return Mono.Unix.Native.Syscall.isatty(2);
-                    }
-                    return false;
-                }
-            }
-
-            private bool isRedirected() {
-                if (_consoleStreamType == ConsoleStreamType.Output) {
-                    return Console.IsOutputRedirected;
-                }
-                if (_consoleStreamType == ConsoleStreamType.Input) {
-                    return Console.IsInputRedirected;
-                }
-                Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
-                return Console.IsErrorRedirected;
+                return _streams.IsConsoleStream();
             }
 
             [Documentation("String giving the file mode")]
@@ -393,18 +308,14 @@ namespace IronPython.Modules {
                 }
                 EnsureReadable();
 
-                byte[] buffer = new byte[sizeInt];
-                int bytesRead = _readStream.Read(buffer, 0, sizeInt);
-
-                Array.Resize(ref buffer, bytesRead);
-                return Bytes.Make(buffer);
+                return Bytes.Make(_streams.Read(sizeInt));
             }
 
             [Documentation("readable() -> bool.  True if file was opened in a read mode.")]
             public override bool readable(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _readStream.CanRead;
+                return _streams.ReadStream.CanRead;
             }
 
             [Documentation("readall() -> bytes.  read all data from the file, returned as bytes.\n\n"
@@ -419,7 +330,7 @@ namespace IronPython.Modules {
                 int totalBytes = 0;
 
                 for (var bytesRead = -1; bytesRead != 0;) {
-                    bytesRead = _readStream.Read(buffer, totalBytes, bufSize - totalBytes);
+                    bytesRead = _streams.ReadStream.Read(buffer, totalBytes, bufSize - totalBytes);
                     totalBytes += bytesRead;
                     if (totalBytes >= bufSize) {
                         bufSize = bufSize * 2;
@@ -442,7 +353,7 @@ namespace IronPython.Modules {
 
                 var span = pythonBuffer.AsSpan();
                 for (int i = 0; i < span.Length; i++) {
-                    int b = _readStream.ReadByte();
+                    int b = _streams.ReadStream.ReadByte();
                     if (b == -1) return i;
                     span[i] = (byte)b;
                 }
@@ -466,7 +377,7 @@ namespace IronPython.Modules {
             public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional] object whence) {
                 _checkClosed();
 
-                return _readStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
+                return _streams.ReadStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
             }
 
             public BigInteger seek(double offset, [Optional] object whence) {
@@ -479,24 +390,20 @@ namespace IronPython.Modules {
             public override bool seekable(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _readStream.CanSeek;
+                return _streams.ReadStream.CanSeek;
             }
 
             [Documentation("tell() -> int.  Current file position")]
             public override BigInteger tell(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _readStream.Position;
+                return _streams.ReadStream.Position;
             }
 
             public BigInteger truncate(BigInteger size) {
                 EnsureWritable();
 
-                long pos = _readStream.Position;
-                _writeStream.SetLength((long)size);
-                _readStream.Seek(pos, SeekOrigin.Begin);
-
-                return size;
+                return _streams.Truncate((long)size);
             }
 
             public BigInteger truncate(double size) {
@@ -527,7 +434,7 @@ namespace IronPython.Modules {
             public override bool writable(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _writeStream.CanWrite;
+                return _streams.WriteStream.CanWrite;
             }
 
             [Documentation("write(b: bytes) -> int.  Write bytes b to file, return number written.\n\n"
@@ -540,11 +447,7 @@ namespace IronPython.Modules {
                 var bytes = buffer.AsReadOnlySpan();
 
                 EnsureWritable();
-                _writeStream.Write(bytes);
-                _writeStream.Flush(); // FileIO is not supposed to buffer so we need to call Flush.
-                SeekToEnd();
-
-                return bytes.Length;
+                return _streams.Write(bytes);
             }
 
             #endregion
@@ -619,19 +522,7 @@ namespace IronPython.Modules {
                 _checkWritable("File not open for writing");
             }
 
-            private void SeekToEnd() {
-                if (!object.ReferenceEquals(_readStream, _writeStream)) {
-                    _readStream.Seek(_writeStream.Position, SeekOrigin.Begin);
-                }
-            }
-
             #endregion
         }
-
-#if !NETCOREAPP
-        private static void Write(this Stream stream, ReadOnlySpan<byte> buffer) {
-            stream.Write(buffer.ToArray(), 0, buffer.Length);
-        }
-#endif
     }
 }

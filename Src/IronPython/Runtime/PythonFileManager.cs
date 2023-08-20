@@ -14,6 +14,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
+using System.Diagnostics;
 
 namespace IronPython.Runtime {
 
@@ -128,15 +129,14 @@ namespace IronPython.Runtime {
         }
 
         public void CloseStreams(PythonFileManager? manager) {
-            bool readStreamClosed = true;
             if (manager is not null && Id >= 0) {
                 manager.Remove(this);
-                readStreamClosed = manager.DerefAndCloseIfLast(_readStream);
+                manager.DerefStreamsAndCloseIfLast(this);
             } else {
                 _readStream.Close();
-            }
-            if (readStreamClosed && !IsSingleStream) {
-                _writeStream.Close();
+                if (!IsSingleStream) {
+                    _writeStream.Close();
+                }
             }
         }
     }
@@ -251,19 +251,25 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void EnsureRef(Stream stream) {
-            _refs.TryAdd(stream, 1);
+        public void EnsureRefStreams(StreamBox streams) {
+            Debug.Assert(streams.Id >= 0);
+            _refs.TryAdd(streams.ReadStream, 1);
         }
 
-        public void AddRef(Stream stream) {
-            _refs.AddOrUpdate(stream, 1, (_,  v) => v + 1);
+        public void AddRefStreams(StreamBox streams) {
+            Debug.Assert(streams.Id >= 0);
+            _refs.AddOrUpdate(streams.ReadStream, 1, (_,  v) => v + 1);
         }
 
-        public bool DerefAndCloseIfLast(Stream stream) {
-            int newref = _refs.AddOrUpdate(stream, 0, (_, v) => v - 1);
+        public bool DerefStreamsAndCloseIfLast(StreamBox streams) {
+            Debug.Assert(streams.Id >= 0);
+            int newref = _refs.AddOrUpdate(streams.ReadStream, 0, (_, v) => v - 1);
             if (newref <= 0) {
-                stream.Close(); // equivalent of Dispose()
-                _refs.TryRemove(stream, out _);
+                streams.ReadStream.Close(); // equivalent of Dispose()
+                _refs.TryRemove(streams.ReadStream, out _);
+                if (!streams.IsSingleStream) {
+                    streams.WriteStream.Close();
+                }
                 return true;
             }
             return false;

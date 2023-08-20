@@ -351,9 +351,8 @@ namespace IronPython.Modules {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
-            var stream = streams.ReadStream;
-            fileManager.EnsureRef(stream);
-            fileManager.AddRef(stream);
+            fileManager.EnsureRefStreams(streams);
+            fileManager.AddRefStreams(streams);
             return fileManager.Add(new(streams));
         }
 
@@ -376,9 +375,8 @@ namespace IronPython.Modules {
 
             // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
 
-            var stream = streams.ReadStream;
-            fileManager.EnsureRef(stream);
-            fileManager.AddRef(stream);
+            fileManager.EnsureRefStreams(streams);
+            fileManager.AddRefStreams(streams);
             return fileManager.Add(fd2, new(streams));
         }
 

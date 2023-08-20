@@ -116,9 +116,39 @@ class FdTest(IronPythonTestCase):
         fd3 = os.dup(fd2)
         self.assertEqual(fd3, fd1)
 
-        # cleanup
+        # writing though the duplicated fd writes to the same file
+        self.assertEqual(os.write(fd2, b"fd2"), 3)
+        self.assertEqual(os.write(fd3, b"fd3"), 3)
+        self.assertEqual(os.write(fd2, b"fd2-again"), 9)
         os.close(fd3)
+
+        self.assertEqual(os.lseek(fd2, 0, os.SEEK_SET), 0)
+        self.assertEqual(os.read(fd2, 15), b"fd2fd3fd2-again")
+
+        # cleanup
         os.close(fd2)
+        os.unlink(test_filename)
+
+    def test_dup_file(self):
+        test_filename = "tmp_%d.dup-file.test" % os.getpid()
+
+        file1 = open(test_filename, 'w+')
+        file1.write("file1")
+        file1.flush()
+
+        fd2 = os.dup(file1.fileno())
+        file2 = open(fd2, 'w+')
+        self.assertNotEqual(file1.fileno(), file2.fileno())
+
+        file2.write("file2")
+        file2.flush()
+        file1.write("file1-again")
+        file1.close()
+
+        file2.seek(0)
+        self.assertEqual(file2.read(), "file1file2file1-again")
+
+        file2.close()
         os.unlink(test_filename)
 
     def test_open(self):

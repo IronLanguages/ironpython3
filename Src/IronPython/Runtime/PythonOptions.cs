@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
@@ -125,6 +127,11 @@ namespace IronPython.Runtime {
 
         public bool Quiet { get; }
 
+        /// <summary>
+        /// On Basic level, console IO streams are emulated using console writer/reader.
+        /// </summary>
+        public SharedIO.SupportLevel ConsoleSupportLevel { get; }
+
         internal bool NoImportLib { get; } // TODO: get rid of me when we no longer bootstrap importlib
 
         public PythonOptions() 
@@ -158,6 +165,7 @@ namespace IronPython.Runtime {
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);
             Utf8Mode = GetOption(options, "Utf8Mode", false);
+            ConsoleSupportLevel = GetOption(options, "ConsoleSupportLevel", SharedIO.SupportLevel.Full);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

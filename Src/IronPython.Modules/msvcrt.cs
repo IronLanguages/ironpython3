@@ -65,7 +65,7 @@ to os.fdopen() to create a file object.
         public static int open_osfhandle(CodeContext context, BigInteger os_handle, int flags) {
             if ((flags & O_TEXT) != 0) throw new NotImplementedException();
             FileStream stream = new FileStream(new SafeFileHandle(new IntPtr((long)os_handle), true), FileAccess.ReadWrite);
-            return context.LanguageContext.FileManager.AddStream(stream);
+            return context.LanguageContext.FileManager.Add(new(stream));
         }
 
         private static bool TryGetFileHandle(Stream stream, out object handle) {
@@ -96,11 +96,10 @@ to os.fdopen() to create a file object.
 Return the file handle for the file descriptor fd. Raises IOError
 if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
-            // TODO: handle other FileManager types?
-            var pfile = context.LanguageContext.FileManager.GetFileFromId(fd);
+            var sbox = context.LanguageContext.FileManager.GetStreams(fd);
 
             object handle;
-            if (TryGetFileHandle(pfile._readStream, out handle)) return handle;
+            if (TryGetFileHandle(sbox.ReadStream, out handle)) return handle;
 
             return -1;
         }

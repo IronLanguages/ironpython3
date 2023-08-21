@@ -1868,19 +1868,19 @@ namespace IronPython.Runtime {
             SharedIO io = DomainManager.SharedIO;
             io.ConsoleSupportLevel = PythonOptions.ConsoleSupportLevel;
 
-            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out PythonIOModule.FileIO fstdin);
-            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out PythonIOModule.FileIO fstdout);
-            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out PythonIOModule.FileIO fstderr);
+            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out StreamBox sstdin);
+            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out StreamBox sstdout);
+            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out StreamBox sstderr);
 
-            FileManager.AddFile(0, fstdin);
+            FileManager.Add(0, sstdin);
             SetSystemStateValue("__stdin__", stdin);
             SetSystemStateValue("stdin", stdin);
 
-            FileManager.AddFile(1, fstdout);
+            FileManager.Add(1, sstdout);
             SetSystemStateValue("__stdout__", stdout);
             SetSystemStateValue("stdout", stdout);
 
-            FileManager.AddFile(2, fstderr);
+            FileManager.Add(2, sstderr);
             SetSystemStateValue("__stderr__", stderr);
             SetSystemStateValue("stderr", stderr);
         }

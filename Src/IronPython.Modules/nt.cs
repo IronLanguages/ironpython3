@@ -1802,13 +1802,12 @@ namespace IronPython.Modules {
 
         public static int write(CodeContext/*!*/ context, int fd, [NotNone] IBufferProtocol data) {
             try {
+                using var buffer = data.GetBuffer();
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                using var buffer = data.GetBuffer();
-                var bytes = buffer.AsReadOnlySpan();
                 if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(9, "Bad file descriptor");
 
-                return streams.Write(bytes);
+                return streams.Write(buffer);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }

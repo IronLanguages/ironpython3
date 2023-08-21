@@ -351,14 +351,7 @@ namespace IronPython.Modules {
 
                 _checkClosed();
 
-                var span = pythonBuffer.AsSpan();
-                for (int i = 0; i < span.Length; i++) {
-                    int b = _streams.ReadStream.ReadByte();
-                    if (b == -1) return i;
-                    span[i] = (byte)b;
-                }
-
-                return span.Length;
+                return _streams.ReadInto(pythonBuffer);
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
@@ -444,10 +437,9 @@ namespace IronPython.Modules {
             public override BigInteger write(CodeContext/*!*/ context, object b) {
                 var bufferProtocol = Converter.Convert<IBufferProtocol>(b);
                 using var buffer = bufferProtocol.GetBuffer();
-                var bytes = buffer.AsReadOnlySpan();
 
                 EnsureWritable();
-                return _streams.Write(bytes);
+                return _streams.Write(buffer);
             }
 
             #endregion

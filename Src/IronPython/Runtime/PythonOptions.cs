@@ -144,7 +144,7 @@ namespace IronPython.Runtime {
             Arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             WarningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
 
-            BytesWarning = GetOption(options, "BytesWarning", Severity.Ignore);
+            BytesWarning = GetEnumOption(options, "BytesWarning", Severity.Ignore);
             Debug = GetOption(options, "Debug", false);
             Inspect = GetOption(options, "Inspect", false);
             NoUserSite = GetOption(options, "NoUserSite", false);
@@ -165,7 +165,7 @@ namespace IronPython.Runtime {
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);
             Utf8Mode = GetOption(options, "Utf8Mode", false);
-            ConsoleSupportLevel = GetOption(options, "ConsoleSupportLevel", SharedIO.SupportLevel.Full);
+            ConsoleSupportLevel = GetEnumOption(options, "ConsoleSupportLevel", SharedIO.SupportLevel.Full);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {
@@ -175,6 +175,20 @@ namespace IronPython.Runtime {
                 options["SearchPaths"] = new [] { "." };
             } 
             return options;
+        }
+
+        private static T GetEnumOption<T>(IDictionary<string, object> options, string name, T defaultValue) where T : struct, Enum {
+            if (options != null && options.TryGetValue(name, out object value)) {
+                if (value is T variable) {
+                    return variable;
+                }
+                Type rettype = typeof(T);
+                if (value is string strval) {
+                    return (T)Enum.Parse(rettype, strval, ignoreCase: false);
+                }
+                return (T)Convert.ChangeType(value, Enum.GetUnderlyingType(rettype), CultureInfo.CurrentCulture);
+            }
+            return defaultValue;
         }
     }
 }

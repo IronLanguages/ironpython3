@@ -329,10 +329,14 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            private static TryGetProperty TryGetByJit(MethodInfo method) {
-                return method.DeclaringType!.IsAssignableFrom(typeof(TSelfType))
-                    ? TryGetByJitWithoutCast(method)
-                    : TryGetByJitRequiringCast(method);
+            private TryGetProperty TryGetByJit(MethodInfo method) {
+                try {
+                    return method.DeclaringType!.IsAssignableFrom(typeof(TSelfType))
+                        ? TryGetByJitWithoutCast(method)
+                        : TryGetByJitRequiringCast(method);
+                } catch (NotImplementedException) { // Mono can throw this...
+                    return TryGetByReflection;
+                }
             }
 
             private static TryGetProperty TryGetByJitWithoutCast(MethodInfo method) {
@@ -342,8 +346,6 @@ namespace IronPython.Runtime.Binding {
                 var returnTarget = Expression.Label(typeof(bool));
                 return Expression.Lambda<TryGetProperty>(
                     Expression.Block(new Expression[] {
-
-
                         Expression.IfThen(
                             // if (input != null)
                             Expression.NotEqual(input, Expression.Constant(null)),
@@ -482,8 +484,8 @@ namespace IronPython.Runtime.Binding {
                     case TrackerTypes.Property:
                         if (members.Count == 1) {
                             PropertyTracker pt = (PropertyTracker)members[0];
-                            if (!pt.IsStatic && pt.GetIndexParameters() is { Length: 0}) {
-                                if (pt.GetGetMethod() is {} prop && prop.GetParameters() is { Length: 0 }) {
+                            if (!pt.IsStatic && pt.GetIndexParameters() is { Length: 0 }) {
+                                if (pt.GetGetMethod() is { } prop && prop.GetParameters() is { Length: 0 }) {
                                     return new TieredJitPropertyGet<TSelfType>(type, prop).GetProperty;
                                 }
                             }

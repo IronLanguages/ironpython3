@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
@@ -125,6 +127,11 @@ namespace IronPython.Runtime {
 
         public bool Quiet { get; }
 
+        /// <summary>
+        /// On Basic level, console IO streams are emulated using console writer/reader.
+        /// </summary>
+        public SharedIO.SupportLevel ConsoleSupportLevel { get; }
+
         internal bool NoImportLib { get; } // TODO: get rid of me when we no longer bootstrap importlib
 
         public PythonOptions() 
@@ -137,7 +144,7 @@ namespace IronPython.Runtime {
             Arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             WarningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
 
-            BytesWarning = GetOption(options, "BytesWarning", Severity.Ignore);
+            BytesWarning = GetEnumOption(options, "BytesWarning", Severity.Ignore);
             Debug = GetOption(options, "Debug", false);
             Inspect = GetOption(options, "Inspect", false);
             NoUserSite = GetOption(options, "NoUserSite", false);
@@ -158,6 +165,7 @@ namespace IronPython.Runtime {
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);
             Utf8Mode = GetOption(options, "Utf8Mode", false);
+            ConsoleSupportLevel = GetEnumOption(options, "ConsoleSupportLevel", SharedIO.SupportLevel.Full);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {
@@ -167,6 +175,20 @@ namespace IronPython.Runtime {
                 options["SearchPaths"] = new [] { "." };
             } 
             return options;
+        }
+
+        private static T GetEnumOption<T>(IDictionary<string, object> options, string name, T defaultValue) where T : struct, Enum {
+            if (options != null && options.TryGetValue(name, out object value)) {
+                if (value is T variable) {
+                    return variable;
+                }
+                Type rettype = typeof(T);
+                if (value is string strval) {
+                    return (T)Enum.Parse(rettype, strval, ignoreCase: false);
+                }
+                return (T)Convert.ChangeType(value, Enum.GetUnderlyingType(rettype), CultureInfo.CurrentCulture);
+            }
+            return defaultValue;
         }
     }
 }

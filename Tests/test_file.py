@@ -501,6 +501,20 @@ class FileTest(IronPythonTestCase):
         f.close()
         self.assertRaises(OSError, os.fdopen, fd)
 
+    def test_file_manager_leak(self):
+        # the number of iterations should be larger than Microsoft.Scripting.Utils.HybridMapping.SIZE (currently 4K)
+        N = 5000
+        for i in range(N):
+            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT)
+            f = os.fdopen(fd, 'w', closefd=True)
+            f.close()
+
+        for i in range(N):
+            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT)
+            f = os.fdopen(fd, 'w', closefd=False)
+            g = os.fdopen(f.fileno(), 'w', closefd=True)
+            g.close()
+
     def test_sharing(self):
         modes = ['w', 'w+', 'a+', 'r', 'w']
         fname = self.temp_file
@@ -768,5 +782,11 @@ class FileTest(IronPythonTestCase):
         uncallable_opener = "uncallable_opener"
 
         self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
+
+    def test_open_abplus(self):
+        with open(self.temp_file, "ab+") as f:
+            f.write(b"abc")
+            f.seek(0)
+            self.assertEqual(f.read(), b"abc")
 
 run_test(__name__)

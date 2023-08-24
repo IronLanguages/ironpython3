@@ -48,7 +48,7 @@ internal sealed class PythonConsoleHost : ConsoleHost {
 
     protected override IConsole CreateConsole(ScriptEngine engine, CommandLine commandLine, ConsoleOptions options) {
         PythonConsoleOptions pyoptions = (PythonConsoleOptions)options;
-        return pyoptions.BasicConsole ? new BasicConsole(options.ColorfulConsole) : new SuperConsole(commandLine, options.ColorfulConsole);
+        return pyoptions.BasicConsole ? new BasicConsole(options) : new SuperConsole(commandLine, options);
     }
 
     protected override ConsoleOptions ParseOptions(string[] args, ScriptRuntimeSetup runtimeSetup, LanguageSetup languageSetup) {
@@ -84,7 +84,7 @@ internal sealed class PythonConsoleHost : ConsoleHost {
     public override void PrintLanguageHelp(StringBuilder output) {
         new PythonOptionsParser().GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments);
 
-        // only display language specific options if one or more optinos exists.
+        // only display language specific options if one or more options exist
         if (commandLine != null || options != null || environmentVariables != null || comments != null) {
             var appendLine = false;
 

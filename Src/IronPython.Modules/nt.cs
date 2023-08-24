@@ -349,17 +349,9 @@ namespace IronPython.Modules {
 #endif
 
         public static void close(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            PythonFileManager fileManager = pythonContext.FileManager;
-            if (fileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                fileManager.CloseIfLast(context, fd, file);
-            } else {
-                Stream? stream = fileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonOps.OSError(9, "Bad file descriptor");
-                }
-                fileManager.CloseIfLast(fd, stream);
-            }
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+            StreamBox streams = fileManager.GetStreams(fd);
+            streams.CloseStreams(fileManager);
         }
 
         public static void closerange(CodeContext/*!*/ context, int fd_low, int fd_high) {
@@ -374,65 +366,37 @@ namespace IronPython.Modules {
 
         public static object? cpu_count() => null; // TODO: implement me!
 
-        private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO _)) {
-                return true;
-            }
-            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object o)) {
-                if (o is Stream) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public static int dup(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                return pythonContext.FileManager.AddToStrongMapping(file);
-            } else {
-                Stream? stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-                if (stream == null) {
-                    throw PythonOps.OSError(9, "Bad file descriptor");
-                }
-                return pythonContext.FileManager.AddToStrongMapping(stream);
-            }
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+
+            StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
+            fileManager.EnsureRefStreams(streams);
+            fileManager.AddRefStreams(streams);
+            return fileManager.Add(new(streams));
         }
 
 
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
-            PythonContext pythonContext = context.LanguageContext;
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
 
-            if (!IsValidFd(context, fd)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-
-            if (!pythonContext.FileManager.ValidateFdRange(fd2)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-
-            bool fd2Valid = IsValidFd(context, fd2);
-
+            StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
             if (fd == fd2) {
-                if (fd2Valid) {
-                    return fd2;
-                }
+                return fd2;
+            }
+
+            if (!fileManager.ValidateFdRange(fd2)) {
                 throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
-            if (fd2Valid) {
+            if (fileManager.TryGetStreams(fd2, out _)) {
                 close(context, fd2);
             }
 
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                return pythonContext.FileManager.AddToStrongMapping(file, fd2);
-            }
-            var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-            if (stream == null) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
-            }
-            return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2
+
+            fileManager.EnsureRefStreams(streams);
+            fileManager.AddRefStreams(streams);
+            return fileManager.Add(fd2, new(streams));
         }
 
 #if FEATURE_PROCESS
@@ -455,16 +419,27 @@ namespace IronPython.Modules {
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
-                if (file.IsConsole) return new stat_result(8192);
-                if (file._readStream is PipeStream) return new stat_result(4096);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    if (IsUnixStream(file._readStream)) return new stat_result(4096);
-                }
-                if (file.name is string strName) return lstat(strName, new Dictionary<string, object>(1));
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+
+            if (fileManager.TryGetStreams(fd, out StreamBox? streams)) {
+                if (streams.IsConsoleStream()) return new stat_result(0x2000);
+                if (streams.IsStandardIOStream()) return new stat_result(0x1000);
+                if (StatStream(streams.ReadStream) is not null and var res) return res;
             }
-            throw PythonOps.OSError(9, "Bad file descriptor");
+            return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
+
+            static object? StatStream(Stream stream) {
+                if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
+#if FEATURE_PIPES
+                if (stream is PipeStream) return new stat_result(0x1000);
+#endif
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (IsUnixStream(stream)) return new stat_result(0x1000);
+                }
+                return null;
+            }
 
             static bool IsUnixStream(Stream stream) {
                 return stream is Mono.Unix.UnixStream;
@@ -472,11 +447,11 @@ namespace IronPython.Modules {
         }
 
         public static void fsync(CodeContext context, int fd) {
-            PythonContext pythonContext = context.LanguageContext;
-            var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+            PythonFileManager fileManager = context.LanguageContext.FileManager;
+            StreamBox streams = fileManager.GetStreams(fd);
             try {
-                pf.flush(context);
-            } catch (Exception ex) when (ex is ValueErrorException || ex is IOException) {
+                streams.Flush();
+            } catch (IOException) {
                 throw PythonOps.OSError(9, "Bad file descriptor");
             }
         }
@@ -532,8 +507,8 @@ namespace IronPython.Modules {
         }
 
         public static bool isatty(CodeContext context, int fd) {
-            if (context.LanguageContext.FileManager.TryGetFileFromId(context.LanguageContext, fd, out var file))
-                return file.isatty(context);
+            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams))
+                return streams.IsConsoleStream();
             return false;
         }
 
@@ -587,10 +562,10 @@ namespace IronPython.Modules {
         public static PythonList listdir(CodeContext context, [NotNone] object path)
             => listdir(context, ConvertToFsString(context, path, nameof(path), orType: "None"));
 
-        public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
-            var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
+        public static BigInteger lseek(CodeContext context, int fd, long offset, int whence) {
+            var streams = context.LanguageContext.FileManager.GetStreams(fd);
 
-            return file.seek(context, offset, whence);
+            return streams.ReadStream.Seek(offset, (SeekOrigin)whence);
         }
 
         [Documentation("lstat(path, *, dir_fd=None) -> stat_result\n\n" +
@@ -755,24 +730,34 @@ namespace IronPython.Modules {
         public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
 
-        public class uname_result : PythonTuple {
-            // TODO: posix: support constructor with a sequence, see construction of stat_result
-            public uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :
+        [PythonType]
+        public sealed class uname_result : PythonTuple {
+            public const int n_fields = 5;
+            public const int n_sequence_fields = 5;
+            public const int n_unnamed_fields = 0;
+
+            internal uname_result(object?[] sequence) : base(sequence) {
+                if (_data.Length != n_sequence_fields) {
+                    // TODO: CPython shows nt/posix instead of os...
+                    throw PythonOps.ValueError($"os.{nameof(uname_result)}() takes a 5-sequence ({_data.Length}-sequence given)");
+                }
+            }
+
+            internal uname_result(string? sysname, string? nodename, string? release, string? version, string? machine) :
                 base(new object?[] { sysname, nodename, release, version, machine }) { }
 
-            public string? sysname => (string?)this[0];
+            public static uname_result __new__(CodeContext context, [NotNone] PythonType cls, [NotNone] IEnumerable<object?> sequence) {
+                return new uname_result(sequence.ToArray());
+            }
 
-            public string? nodename => (string?)this[1];
+            public object? sysname => this[0];
+            public object? nodename => this[1];
+            public object? release => this[2];
+            public object? version => this[3];
+            public object? machine => this[4];
 
-            public string? release => (string?)this[2];
-
-            public string? version => (string?)this[3];
-
-            public string? machine => (string?)this[4];
-
-            public override string ToString() {
-                // TODO: posix: handle null values, see terminal_size.__repr__()
-                return $"posix.uname_result(sysname='{sysname}', nodename='{nodename}', release='{release}', version='{version}', machine='{machine}')";
+            public override string __repr__(CodeContext context) {
+                return $"os.{nameof(uname_result)}sysname={PythonOps.Repr(context, sysname)}, nodename={PythonOps.Repr(context, nodename)}, release={PythonOps.Repr(context, release)}, version={PythonOps.Repr(context, version)}, machine={PythonOps.Repr(context, machine)})";
             }
         }
 
@@ -861,8 +846,7 @@ namespace IronPython.Modules {
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
                 Stream fs;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(path, "nul", StringComparison.OrdinalIgnoreCase)
-                   || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && path == "/dev/null") {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
                     fs = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
@@ -876,16 +860,7 @@ namespace IronPython.Modules {
                     fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
-                string mode2;
-                if (fs.CanRead && fs.CanWrite) mode2 = "w+";
-                else if (fs.CanWrite) mode2 = "w";
-                else mode2 = "r";
-
-                if ((flags & O_BINARY) != 0) {
-                    mode2 += "b";
-                }
-
-                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = path });
+                return context.LanguageContext.FileManager.Add(new(fs));
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -901,14 +876,17 @@ namespace IronPython.Modules {
 
         private static FileOptions FileOptionsFromFlags(int flag) {
             FileOptions res = FileOptions.None;
-            if ((flag & O_TEMPORARY) != 0) {
-                res |= FileOptions.DeleteOnClose;
-            }
-            if ((flag & O_RANDOM) != 0) {
-                res |= FileOptions.RandomAccess;
-            }
-            if ((flag & O_SEQUENTIAL) != 0) {
-                res |= FileOptions.SequentialScan;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if ((flag & O_TEMPORARY) != 0) {
+                    res |= FileOptions.DeleteOnClose;
+                }
+                if ((flag & O_RANDOM) != 0) {
+                    res |= FileOptions.RandomAccess;
+                }
+                if ((flag & O_SEQUENTIAL) != 0) {
+                    res |= FileOptions.SequentialScan;
+                }
             }
 
             return res;
@@ -934,13 +912,11 @@ namespace IronPython.Modules {
 
         public static PythonTuple pipe(CodeContext context) {
             var pipeStreams = CreatePipeStreams();
-
-            var inFile = new PythonIOModule.FileIO(context, pipeStreams.Item1);
-            var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2);
+            var manager = context.LanguageContext.FileManager;
 
             return PythonTuple.MakeTuple(
-                context.LanguageContext.FileManager.AddToStrongMapping(inFile),
-                context.LanguageContext.FileManager.AddToStrongMapping(outFile)
+                manager.Add(new(pipeStreams.Item1)),
+                manager.Add(new(pipeStreams.Item2))
             );
         }
 #endif
@@ -962,8 +938,10 @@ namespace IronPython.Modules {
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                return (Bytes)pf.read(context, buffersize);
+                var streams = pythonContext.FileManager.GetStreams(fd);
+                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(9, "Bad file descriptor");
+
+                return Bytes.Make(streams.Read(buffersize));
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1451,7 +1429,9 @@ namespace IronPython.Modules {
                     int mode = 0;
                     long size;
 
-                    if (Directory.Exists(path)) {
+                    if (IsNulFile(path)) {
+                        return new stat_result(0x2000);
+                    } else if (Directory.Exists(path)) {
                         size = 0;
                         mode = 0x4000 | S_IEXEC;
                     } else if (File.Exists(path)) {
@@ -1623,7 +1603,7 @@ namespace IronPython.Modules {
             => ftruncate(context, fd, length);
 
         public static void ftruncate(CodeContext context, int fd, BigInteger length)
-            => context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd).truncate(context, length);
+            => context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
 
 #if FEATURE_FILESYSTEM
         public static object times() {
@@ -1850,8 +1830,12 @@ namespace IronPython.Modules {
         public static int write(CodeContext/*!*/ context, int fd, [NotNone] IBufferProtocol data) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                return (int)pf.write(context, data);
+                var streams = pythonContext.FileManager.GetStreams(fd);
+                using var buffer = data.GetBuffer();
+                var bytes = buffer.AsReadOnlySpan();
+                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(9, "Bad file descriptor");
+
+                return streams.Write(bytes);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1878,25 +1862,108 @@ are defined in the signal module.")]
 
 #endif
 
-        public const int O_APPEND = 0x8;
-        public const int O_CREAT = 0x100;
-        public const int O_TRUNC = 0x200;
+        #region Generated O_Flags
 
-        public const int O_EXCL = 0x400;
-        public const int O_NOINHERIT = 0x80;
+        // *** BEGIN GENERATED CODE ***
+        // generated by function: generate_all_O_flags from: generate_os_codes.py
 
-        public const int O_RANDOM = 0x10;
-        public const int O_SEQUENTIAL = 0x20;
 
-        public const int O_SHORT_LIVED = 0x1000;
-        public const int O_TEMPORARY = 0x40;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_ACCMODE => 0x3;
 
-        public const int O_WRONLY = 0x1;
-        public const int O_RDONLY = 0x0;
-        public const int O_RDWR = 0x2;
+        public static int O_APPEND => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x8 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x8 : 0x400;
 
-        public const int O_BINARY = 0x8000;
-        public const int O_TEXT = 0x4000;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_BINARY => 0x8000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000000 : 0x80000;
+
+        public static int O_CREAT => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x100 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x200 : 0x40;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_DSYNC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x400000 : 0x1000;
+
+        public static int O_EXCL => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x400 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x800 : 0x80;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
+        [SupportedOSPlatform("macos")]
+        public static int O_EXEC => 0x40000000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
+        [SupportedOSPlatform("linux")]
+        public static int O_LARGEFILE => 0x0;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_NDELAY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x4 : 0x800;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_NOCTTY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x20000 : 0x100;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_NOINHERIT => 0x80;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_NONBLOCK => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x4 : 0x800;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_RANDOM => 0x10;
+
+        public static int O_RDONLY => 0x0;
+
+        public static int O_RDWR => 0x2;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.MacOSX)]
+        [SupportedOSPlatform("linux")]
+        public static int O_RSYNC => 0x101000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
+        [SupportedOSPlatform("macos")]
+        public static int O_SEARCH => 0x40100000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_SEQUENTIAL => 0x20;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_SHORT_LIVED => 0x1000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static int O_SYNC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x80 : 0x101000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_TEMPORARY => 0x40;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        public static int O_TEXT => 0x4000;
+
+        public static int O_TRUNC => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x200 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x400 : 0x200;
+
+        public static int O_WRONLY => 0x1;
+
+        // *** END GENERATED CODE ***
+
+        #endregion
 
         public const int P_WAIT = 0;
         public const int P_NOWAIT = 1;
@@ -2296,6 +2363,13 @@ the 'status' value."),
         private static void VerifyPath(string path, string functionName, string argName) {
             if (path.IndexOf((char)0) != -1) throw PythonOps.ValueError($"{functionName}: embedded null character in {argName}");
         }
+
+        [SupportedOSPlatform("windows")]
+        private static bool IsNulFile(string path)
+            => path.StartsWith("nul", StringComparison.OrdinalIgnoreCase)
+                && (path.Length == 3
+                 || path.Length == 4 && path[3] == ':'
+                 || path.Length == 5 && path[3] == ':' && path[4] == ':');
 
         #endregion
     }

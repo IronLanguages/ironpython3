@@ -71,12 +71,9 @@ class FdTest(IronPythonTestCase):
         self.assertTrue(is_open(fd + 2))
 
         # Verify that dup2 closes the previous occupant of a fd.
-        if is_cli:
-            self.assertEqual(os.open(os.devnull, os.O_WRONLY, 0o600), fd + 1)
-        else:
-            self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
+        self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
         self.assertEqual(os.dup2(fd + 1, fd), fd if is_cli or sys.version_info >= (3,7) else None)
-        # null can not be stated on windows - but writes are ok
+
         self.assertTrue(is_open_nul(fd))
         self.assertTrue(is_open_nul(fd + 1))
         os.close(fd + 1)
@@ -119,9 +116,39 @@ class FdTest(IronPythonTestCase):
         fd3 = os.dup(fd2)
         self.assertEqual(fd3, fd1)
 
-        # cleanup
+        # writing though the duplicated fd writes to the same file
+        self.assertEqual(os.write(fd2, b"fd2"), 3)
+        self.assertEqual(os.write(fd3, b"fd3"), 3)
+        self.assertEqual(os.write(fd2, b"fd2-again"), 9)
         os.close(fd3)
+
+        self.assertEqual(os.lseek(fd2, 0, os.SEEK_SET), 0)
+        self.assertEqual(os.read(fd2, 15), b"fd2fd3fd2-again")
+
+        # cleanup
         os.close(fd2)
+        os.unlink(test_filename)
+
+    def test_dup_file(self):
+        test_filename = "tmp_%d.dup-file.test" % os.getpid()
+
+        file1 = open(test_filename, 'w+')
+        file1.write("file1")
+        file1.flush()
+
+        fd2 = os.dup(file1.fileno())
+        file2 = open(fd2, 'w+')
+        self.assertNotEqual(file1.fileno(), file2.fileno())
+
+        file2.write("file2")
+        file2.flush()
+        file1.write("file1-again")
+        file1.close()
+
+        file2.seek(0)
+        self.assertEqual(file2.read(), "file1file2file1-again")
+
+        file2.close()
         os.unlink(test_filename)
 
     def test_open(self):
@@ -149,6 +176,28 @@ class FdTest(IronPythonTestCase):
         for i in range(1, 5):
             os.unlink(test_filename + str(i))
 
+    def test_fileno(self):
+        test_filename = "tmp_%d.fileno.test" % os.getpid()
+
+        fd = os.open(test_filename, flags)
+        f = open(fd, closefd=False)
+        self.assertEqual(fd, f.fileno())
+
+        g = open(fd, closefd=True)
+        self.assertEqual(fd, g.fileno())
+
+        f.close()
+        g.close()
+
+        f = open(test_filename)
+        g = open(f.fileno(), closefd=False)
+        self.assertEqual(f.fileno(), g.fileno())
+
+        f.close()
+        g.close()
+
+        os.unlink(test_filename)
+
     def test_write(self):
         test_filename = "tmp_%d.write.test" % os.getpid()
 
@@ -166,7 +215,7 @@ class FdTest(IronPythonTestCase):
 
         # write to file with wrong permissions
         fd = os.open(test_filename, os.O_CREAT | os.O_TRUNC | os.O_RDONLY)
-        self.assertRaisesMessage(OSError, "File not open for writing" if is_cli else "[Errno 9] Bad file descriptor", os.write, fd, b"42") # IronPython is throwing an io.UnsupportedOperation which doesn't match CPython...
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.write, fd, b"42")
         os.close(fd)
         os.unlink(test_filename)
 
@@ -218,5 +267,37 @@ class FdTest(IronPythonTestCase):
         f.close()
         for i in range(1, 3):
             os.unlink(test_filename + str(i))
+
+    def test_stat_chdir(self):
+        test_filename = "tmp_%d.stat.test" % os.getpid()
+        fd = os.open(test_filename, os.O_CREAT | os.O_RDWR)
+        self.assertIsNotNone(os.fstat(fd))
+        cwd = os.getcwd()
+        os.chdir(os.sep)
+        try:
+            self.assertIsNotNone(os.fstat(fd))
+        finally:
+            os.chdir(cwd)
+        os.close(fd)
+        os.unlink(test_filename)
+
+    def test_stdio_fd(self):
+        for file, fd, mode in [(sys.stdin, 0, 'r'), (sys.stdout, 1, 'w'), (sys.stderr, 2, 'w')]:
+            with self.subTest(fd=fd):
+                self.assertEqual(file.fileno(), fd)
+                if os.fstat(fd).st_mode & 0x1000:
+                    continue # stdio stream redirected
+
+                self.assertFalse(file.buffer.raw.closefd)
+                with open(fd, mode=mode, closefd=True) as file2:
+                    self.assertFalse(file2.buffer.raw.closefd)
+                with open(fd, mode=mode, closefd=True) as file3:
+                    self.assertFalse(file3.buffer.raw.closefd)
+
+                fd2 = os.dup(fd)
+                self.assertNotEqual(fd2, fd)
+                with open(fd2, mode=mode, closefd=True) as file4:
+                    self.assertFalse(file4.buffer.raw.closefd)
+                os.close(fd2)
 
 run_test(__name__)

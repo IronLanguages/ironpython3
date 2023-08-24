@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_FULL_CONSOLE
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -87,21 +85,29 @@ namespace IronPython.Hosting {
                     return -1;
                 }
 
-                // get the run_module method
+                // get the _run_module_as_main method
                 try {
-                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, "run_module");
+                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, "_run_module_as_main");
                 } catch (Exception) {
-                    Console.WriteLine("Could not access runpy.run_module", Style.Error);
+                    Console.WriteLine("Could not access runpy._run_module_as_main", Style.Error);
                     return -1;
+                }
+
+                if (Scope == null) {
+                    Scope = CreateScope();
+                }
+
+                var argv = PythonContext.GetSystemStateValue("argv") as PythonList;
+                if (argv is not null) {
+                    argv[0] = "-m";
                 }
 
                 // call it with the name of the module to run
                 try {
-                    PythonCalls.CallWithKeywordArgs(
+                    PythonCalls.Call(
                         PythonContext.SharedContext,
                         runMod,
-                        new object[] { Options.ModuleToRun, "__main__", ScriptingRuntimeHelpers.True },
-                        new string[] { "run_name", "alter_sys" }
+                        Options.ModuleToRun
                     );
                 } catch (SystemExitException e) {
                     return GetEffectiveExitCode(e);
@@ -636,5 +642,3 @@ namespace IronPython.Hosting {
 
     }
 }
-
-#endif

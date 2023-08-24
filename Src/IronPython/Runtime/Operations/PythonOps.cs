@@ -2019,7 +2019,6 @@ namespace IronPython.Runtime.Operations {
             pc.CallWithContext(context, dispHook, value);
         }
 
-#if FEATURE_FULL_CONSOLE
         internal static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, object? console = null) {
             PythonContext pc = context.LanguageContext;
             PythonTuple exInfo = GetExceptionInfoLocal(context, exception);
@@ -2029,14 +2028,15 @@ namespace IronPython.Runtime.Operations {
 
             object exceptHook = pc.GetSystemStateValue("excepthook");
             if (exceptHook is BuiltinFunction bf && bf.DeclaringType == typeof(SysModule) && bf.Name == "excepthook") {
-                // builtin except hook, display it to the console which may do nice coloring
+                // builtin except hook
                 if (console is IConsole con) {
+                    // display it to the console which may do nice coloring
                     con.WriteLine(pc.FormatException(exception), Style.Error);
                 } else {
                     PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
                 }
             } else {
-                // user defined except hook or no console
+                // user defined except hook
                 try {
                     PythonCalls.Call(context, exceptHook, exInfo[0], exInfo[1], exInfo[2]);
                 } catch (Exception e) {
@@ -2049,7 +2049,6 @@ namespace IronPython.Runtime.Operations {
                 }
             }
         }
-#endif
 
         #endregion
 

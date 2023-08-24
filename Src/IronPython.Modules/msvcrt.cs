@@ -11,6 +11,7 @@ using System.IO;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
 
@@ -24,6 +25,7 @@ using System.IO.Pipes;
 [assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     [PythonType("msvcrt")]
+    [SupportedOSPlatform("windows")]
     public class PythonMsvcrt {
         public const string __doc__ = "Functions from the Microsoft Visual C Runtime.";
 
@@ -63,7 +65,7 @@ to os.fdopen() to create a file object.
         public static int open_osfhandle(CodeContext context, BigInteger os_handle, int flags) {
             if ((flags & O_TEXT) != 0) throw new NotImplementedException();
             FileStream stream = new FileStream(new SafeFileHandle(new IntPtr((long)os_handle), true), FileAccess.ReadWrite);
-            return context.LanguageContext.FileManager.AddToStrongMapping(stream);
+            return context.LanguageContext.FileManager.Add(new(stream));
         }
 
         private static bool TryGetFileHandle(Stream stream, out object handle) {
@@ -76,10 +78,6 @@ to os.fdopen() to create a file object.
                 handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
                 return true;
             }
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                handle = GetFileHandleUnix();
-                if (handle != null) return true;
-            }
 #endif
 
             // if all else fails try reflection
@@ -91,14 +89,6 @@ to os.fdopen() to create a file object.
 
             handle = null;
             return false;
-
-            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-            object GetFileHandleUnix() {
-                if (stream is Mono.Unix.UnixStream) {
-                    return ((Mono.Unix.UnixStream)stream).Handle;
-                }
-                return null;
-            }
         }
 
         [Documentation(@"get_osfhandle(fd) -> file handle
@@ -106,11 +96,10 @@ to os.fdopen() to create a file object.
 Return the file handle for the file descriptor fd. Raises IOError
 if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
-            // TODO: handle other FileManager types?
-            var pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
+            var sbox = context.LanguageContext.FileManager.GetStreams(fd);
 
             object handle;
-            if (TryGetFileHandle(pfile._readStream, out handle)) return handle;
+            if (TryGetFileHandle(sbox.ReadStream, out handle)) return handle;
 
             return -1;
         }

@@ -1302,11 +1302,9 @@ namespace IronPython.Runtime {
                     PythonCalls.Call(SharedContext, callable);
                 }
             } finally {
-#if FEATURE_BASIC_CONSOLE
                 if (PythonOptions.PerfStats) {
                     PerfTrack.DumpStats();
                 }
-#endif
             }
 
             Flush(SharedContext, SystemStandardOut);
@@ -1869,20 +1867,21 @@ namespace IronPython.Runtime {
 
         private void SetStandardIO() {
             SharedIO io = DomainManager.SharedIO;
+            io.ConsoleSupportLevel = PythonOptions.ConsoleSupportLevel;
 
-            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out PythonIOModule.FileIO fstdin);
-            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out PythonIOModule.FileIO fstdout);
-            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out PythonIOModule.FileIO fstderr);
+            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out StreamBox sstdin);
+            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out StreamBox sstdout);
+            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out StreamBox sstderr);
 
-            FileManager.AddToStrongMapping(fstdin, 0);
+            FileManager.Add(0, sstdin);
             SetSystemStateValue("__stdin__", stdin);
             SetSystemStateValue("stdin", stdin);
 
-            FileManager.AddToStrongMapping(fstdout, 1);
+            FileManager.Add(1, sstdout);
             SetSystemStateValue("__stdout__", stdout);
             SetSystemStateValue("stdout", stdout);
 
-            FileManager.AddToStrongMapping(fstderr, 2);
+            FileManager.Add(2, sstderr);
             SetSystemStateValue("__stderr__", stderr);
             SetSystemStateValue("stderr", stderr);
         }

@@ -147,8 +147,8 @@ namespace IronPython.Modules {
                     _offset = offset;
 
                     PythonContext pContext = context.LanguageContext;
-                    if (pContext.FileManager.TryGetFileFromId(pContext, fileno, out PythonIOModule.FileIO fileio)) {
-                        if ((_sourceStream = fileio._readStream as FileStream) == null) {
+                    if (pContext.FileManager.TryGetStreams(fileno, out StreamBox streams)) {
+                        if ((_sourceStream = streams.ReadStream as FileStream) == null) {
                             throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
                         }
                     } else {

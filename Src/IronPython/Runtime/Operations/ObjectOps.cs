@@ -215,7 +215,12 @@ namespace IronPython.Runtime.Operations {
         /// Returns a friendly string representation of the object. 
         /// </summary>
         public static string __str__(CodeContext/*!*/ context, object o) {
-            return PythonOps.Repr(context, o);
+            try {
+                PythonOps.FunctionPushFrame(context.LanguageContext);
+                return PythonOps.Repr(context, o);
+            } finally {
+                PythonOps.FunctionPopFrame();
+            }
         }
 
         public static NotImplementedType __subclasshook__(params object[] args) {

@@ -11,6 +11,7 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -282,39 +283,131 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private class FastPropertyGet<TSelfType> : BuiltinBase<TSelfType> {
+        /// <summary>
+        /// Property Getter that will JIT compile a getter
+        /// after 8 invocations, for faster gets.
+        /// </summary>
+        /// <typeparam name="TSelfType"></typeparam>
+        private class TieredJitPropertyGet<TSelfType> {
+            private const int ReflectionGetLimit = 8;
             private readonly Type _type;
-            private readonly Func<object, object> _propGetter;
+            private readonly MethodInfo _method;
 
-            public FastPropertyGet(Type type, Func<object, object> propGetter) {
+            private delegate bool TryGetProperty(TSelfType target, out object result);
+
+            private int _runCount;
+            private TryGetProperty _jitTryGetProperty;
+            private readonly CallInstruction _reflectionInvoke;
+
+            public TieredJitPropertyGet(Type type, MethodInfo method) {
                 _type = type;
-                _propGetter = propGetter;
+                _method = method;
+                _reflectionInvoke = CallInstruction.Create(method, Array.Empty<ParameterInfo>());
             }
 
             public object GetProperty(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
-                    return _propGetter(target);
+                if (_jitTryGetProperty == null) {
+                    if (Interlocked.Increment(ref _runCount) > ReflectionGetLimit) {
+                        _jitTryGetProperty = TryGetByJit(_method);
+                    }
                 }
+
+                var tryGetProperty = _jitTryGetProperty ?? TryGetByReflection;
+                if (tryGetProperty(target, out var result))
+                    return result;
 
                 return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
             }
 
-            public object GetPropertyBool(CallSite site, TSelfType target, CodeContext context) {
+            private bool TryGetByReflection(TSelfType target, out object result) {
                 if (target != null && target.GetType() == _type) {
-                    return ScriptingRuntimeHelpers.BooleanToObject((bool)_propGetter(target));
+                    result = _reflectionInvoke.Invoke(target);
+                    return true;
                 }
 
-                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
+                result = default;
+                return false;
             }
 
-            public object GetPropertyInt(CallSite site, TSelfType target, CodeContext context) {
-                if (target != null && target.GetType() == _type) {
-                    return ScriptingRuntimeHelpers.Int32ToObject((int)_propGetter(target));
+            private TryGetProperty TryGetByJit(MethodInfo method) {
+                try {
+                    return method.DeclaringType!.IsAssignableFrom(typeof(TSelfType))
+                        ? TryGetByJitWithoutCast(method)
+                        : TryGetByJitRequiringCast(method);
+                } catch (NotImplementedException) { // Mono can throw this...
+                    return TryGetByReflection;
+                }
+            }
+
+            private static TryGetProperty TryGetByJitWithoutCast(MethodInfo method) {
+                var input = Expression.Parameter(typeof(TSelfType));
+                var output = Expression.Parameter(typeof(object).MakeByRefType());
+
+                var returnTarget = Expression.Label(typeof(bool));
+                return Expression.Lambda<TryGetProperty>(
+                    Expression.Block(new Expression[] {
+                        Expression.IfThen(
+                            // if (input != null)
+                            Expression.NotEqual(input, Expression.Constant(null)),
+                            Expression.Block(
+                                // output = property.Invoke(input)
+                                Expression.Assign(output, Utils.Box(Expression.Call(input, method))),
+                                // return true
+                                Expression.Return(returnTarget, Expression.Constant(true)))
+                        ),
+                        Expression.Label(returnTarget, Expression.Constant(false)),
+                    }),
+                    input,
+                    output
+                ).Compile();
+            }
+
+            private static TryGetProperty TryGetByJitRequiringCast(MethodInfo method) {
+                var input = Expression.Parameter(typeof(TSelfType));
+                var output = Expression.Parameter(typeof(object).MakeByRefType());
+
+                var declaringType = method.DeclaringType!;
+                var isStruct = declaringType.IsValueType;
+                var isNullable = declaringType.IsGenericType &&
+                                 declaringType.GetGenericTypeDefinition() == typeof(Nullable<>);
+
+                var tryCastResult = Expression.Variable(isStruct && !isNullable
+                    ? typeof(Nullable<>).MakeGenericType(declaringType)
+                    : declaringType);
+                var returnTarget = Expression.Label(typeof(bool));
+
+                Expression UnwrapNullable(Expression expression) {
+                    if (isStruct && !isNullable) {
+                        return Expression.Property(expression, nameof(Nullable<int>.Value));
+                    }
+
+                    return expression;
                 }
 
-                return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
+                return Expression.Lambda<TryGetProperty>(
+                    Expression.Block(new[] { tryCastResult }, new Expression[] {
+                            // var tryCastResult = input as T;
+                            Expression.Assign(
+                                tryCastResult,
+                                Expression.TypeAs(input, tryCastResult.Type)),
+                            Expression.IfThen(
+                                // if (tryCastResult != null)
+                                Expression.NotEqual(tryCastResult, Expression.Constant(null)),
+                                Expression.Block(
+                                    // output = property.Invoke(tryCastResult)
+                                    Expression.Assign(output, Utils.Box(Expression.Call(UnwrapNullable(tryCastResult), method))),
+                                    // return true
+                                    Expression.Return(returnTarget, Expression.Constant(true)))
+                            ),
+                            Expression.Label(returnTarget, Expression.Constant(false)),
+                        }),
+                        input,
+                        output
+                ).Compile();
             }
         }
+
+
 
         private Func<CallSite, TSelfType, CodeContext, object> MakeGetMemberTarget<TSelfType>(string name, object target, CodeContext context) {
             Type type = CompilerHelpers.GetType(target);
@@ -391,18 +484,9 @@ namespace IronPython.Runtime.Binding {
                     case TrackerTypes.Property:
                         if (members.Count == 1) {
                             PropertyTracker pt = (PropertyTracker)members[0];
-                            if (!pt.IsStatic && pt.GetIndexParameters().Length == 0) {
-                                MethodInfo prop = pt.GetGetMethod();
-                                ParameterInfo[] parameters;
-
-                                if (prop != null && (parameters = prop.GetParameters()).Length == 0) {
-                                    if (prop.ReturnType == typeof(bool)) {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyBool;
-                                    } else if (prop.ReturnType == typeof(int)) {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyInt;
-                                    } else {
-                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetProperty;
-                                    }
+                            if (!pt.IsStatic && pt.GetIndexParameters() is { Length: 0 }) {
+                                if (pt.GetGetMethod() is { } prop && prop.GetParameters() is { Length: 0 }) {
+                                    return new TieredJitPropertyGet<TSelfType>(type, prop).GetProperty;
                                 }
                             }
                         }
@@ -580,7 +664,7 @@ namespace IronPython.Runtime.Binding {
             Type limitType = self.GetLimitType();
 
             if (limitType == typeof(DynamicNull) || PythonBinder.IsPythonType(limitType) || PythonBinder.IsPythonSupportingType(limitType)) {
-                // look up in the PythonType so that we can 
+                // look up in the PythonType so that we can
                 // get our custom method names (e.g. string.startswith)
                 PythonType argType = DynamicHelpers.GetPythonTypeFromType(limitType);
 
@@ -608,7 +692,7 @@ namespace IronPython.Runtime.Binding {
 
                 if (extMethods != null) {
                     // try again w/ the extension method binder
-                    res = extMethods.GetBinder(context).GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);                    
+                    res = extMethods.GetBinder(context).GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
                 }
 
                 // and add any restrictions (we need an empty restriction even if it's an error so later adds work)

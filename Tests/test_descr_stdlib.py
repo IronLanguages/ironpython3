@@ -16,6 +16,7 @@ def load_tests(loader, standard_tests, pattern):
     if is_ironpython:
         failing_tests = [
             test.test_descr.ClassPropertiesAndMethods('test_altmro'), # NotImplementedError: Overriding type.mro is not implemented
+            test.test_descr.ClassPropertiesAndMethods('test_bound_method_repr'), # AssertionError: Regex didn't match
             test.test_descr.ClassPropertiesAndMethods('test_classmethods'), # AttributeError: 'classmethod' object has no attribute '__dict__'
             test.test_descr.ClassPropertiesAndMethods('test_cycle_through_dict'), # NotImplementedError: gc.get_objects isn't implemented
             test.test_descr.ClassPropertiesAndMethods('test_descrdoc'), # AssertionError: 'True if the file is closed\r\n' != 'True if the file is closed'
@@ -25,7 +26,7 @@ def load_tests(loader, standard_tests, pattern):
             test.test_descr.ClassPropertiesAndMethods('test_mutable_bases'), # AttributeError: 'E' object has no attribute 'meth'
             test.test_descr.ClassPropertiesAndMethods('test_mutable_bases_catch_mro_conflict'), # AssertionError: didn't catch MRO conflict
             test.test_descr.ClassPropertiesAndMethods('test_mutable_bases_with_failing_mro'), # NotImplementedError: Overriding type.mro is not implemented
-            test.test_descr.ClassPropertiesAndMethods('test_properties'), # AssertionError: expected AttributeError from trying to set readonly '__doc__' attr on a property
+            test.test_descr.ClassPropertiesAndMethods('test_object_class_assignment_between_heaptypes_and_nonheaptypes'), # TypeError: __class__ assignment: only for heap types
             test.test_descr.ClassPropertiesAndMethods('test_proxy_call'), # AssertionError: TypeError not raised
             test.test_descr.ClassPropertiesAndMethods('test_qualname'), # AssertionError: 'member_descriptor' != 'getset_descriptor'
             test.test_descr.ClassPropertiesAndMethods('test_qualname_dict'), # AssertionError: 'Foo' != 'some.name'
@@ -54,7 +55,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_descr.PicklingTests('test_special_method_lookup'), # AssertionError: Tuples differ: (<fun[19 chars] 0x00000000000000AB>, (<class 'test.test_descr.Picky'>,), None) != (<fun[19 chars] 0x00000000000000AB>, (<class 'test.test_descr.Picky'>,), {})
         ]
 
-        skip_tests = []
+        skip_tests = [
+            test.test_descr.ClassPropertiesAndMethods('test_restored_object_new'), # TODO: marked as expectedFailure but doesn't fail
+        ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -118,14 +119,18 @@ namespace IronPython.Runtime {
                 return _readStream.Read(bytes, 0, buffer.NumBytes());
             }
 
-            const int chunkSize = 0x400; // 1 KiB
-            bytes = new byte[chunkSize];
             var span = buffer.AsSpan();
-            for (int pos = 0; pos < span.Length; pos += chunkSize) {
-                int toRead = Math.Min(chunkSize, span.Length - pos);
-                int hasRead = _readStream.Read(bytes, 0, toRead);
-                bytes.AsSpan(0, hasRead).CopyTo(span.Slice(pos));
-                if (hasRead < toRead) return pos + hasRead;
+            const int chunkSize = 0x1000; // 4 KiB, default buffer size of FileSteam
+            bytes = ArrayPool<byte>.Shared.Rent(chunkSize);
+            try {
+                for (int pos = 0; pos < span.Length; pos += chunkSize) {
+                    int toRead = Math.Min(chunkSize, span.Length - pos);
+                    int hasRead = _readStream.Read(bytes, 0, toRead);
+                    bytes.AsSpan(0, hasRead).CopyTo(span.Slice(pos));
+                    if (hasRead < toRead) return pos + hasRead;
+                }
+            } finally {
+                ArrayPool<byte>.Shared.Return(bytes);
             }
             return span.Length;
 #endif

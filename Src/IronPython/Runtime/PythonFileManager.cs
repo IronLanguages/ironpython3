@@ -109,17 +109,44 @@ namespace IronPython.Runtime {
             return buffer;
         }
 
-        public int Write(ReadOnlySpan<byte> bytes) {
+        public int ReadInto(IPythonBuffer buffer) {
 #if NETCOREAPP
+            return _readStream.Read(buffer.AsSpan());
+#else
+            byte[]? bytes = buffer.AsUnsafeWritableArray();
+            if (bytes is not null) {
+                return _readStream.Read(bytes, 0, buffer.NumBytes());
+            }
+
+            const int chunkSize = 0x400; // 1 KiB
+            bytes = new byte[chunkSize];
+            var span = buffer.AsSpan();
+            for (int pos = 0; pos < span.Length; pos += chunkSize) {
+                int toRead = Math.Min(chunkSize, span.Length - pos);
+                int hasRead = _readStream.Read(bytes, 0, toRead);
+                bytes.AsSpan(0, hasRead).CopyTo(span.Slice(pos));
+                if (hasRead < toRead) return pos + hasRead;
+            }
+            return span.Length;
+#endif
+        }
+
+        public int Write(IPythonBuffer buffer) {
+            int count;
+#if NETCOREAPP
+            ReadOnlySpan<byte> bytes = buffer.AsReadOnlySpan();
+            count = bytes.Length;
             _writeStream.Write(bytes);
 #else
-            _writeStream.Write(bytes.ToArray(), 0, bytes.Length);
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.AsUnsafeWritableArray() ?? buffer.ToArray();
+            count = buffer.NumBytes();
+            _writeStream.Write(bytes, 0, count);
 #endif
             _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush.
             if (!IsSingleStream) {
                 _readStream.Seek(_writeStream.Position, SeekOrigin.Begin);
             }
-            return bytes.Length;
+            return count;
         }
 
         public void Flush() {

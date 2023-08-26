@@ -118,11 +118,14 @@ namespace IronPython.Runtime {
                 return _readStream.Read(bytes, 0, buffer.NumBytes());
             }
 
+            const int chunkSize = 0x400; // 1 KiB
+            bytes = new byte[chunkSize];
             var span = buffer.AsSpan();
-            for (int i = 0; i < span.Length; i++) {
-                int b = _readStream.ReadByte();
-                if (b == -1) return i;
-                span[i] = (byte)b;
+            for (int pos = 0; pos < span.Length; pos += chunkSize) {
+                int toRead = Math.Min(chunkSize, span.Length - pos);
+                int hasRead = _readStream.Read(bytes, 0, toRead);
+                bytes.AsSpan(0, hasRead).CopyTo(span.Slice(pos));
+                if (hasRead < toRead) return pos + hasRead;
             }
             return span.Length;
 #endif

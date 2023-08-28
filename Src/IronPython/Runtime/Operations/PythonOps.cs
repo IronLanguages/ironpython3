@@ -1063,7 +1063,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (o is IMembersList memList) {
-                return new PythonList(memList.GetMemberNames());
+                return new PythonList(context, memList.GetMemberNames());
             }
 
             if (o is IPythonObject po) {
@@ -2637,8 +2637,8 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        public static PythonList CopyAndVerifyParamsList(PythonFunction function, object list) {
-            return new PythonList(list);
+        public static PythonList CopyAndVerifyParamsList(CodeContext context, PythonFunction function, object list) {
+            return new PythonList(context, list);
         }
 
         public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {

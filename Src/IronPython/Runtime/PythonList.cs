@@ -139,7 +139,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private PythonList(params object?[] items) {
+        private PythonList(object?[] items) {
             _data = items;
             _size = _data.Length;
         }
@@ -160,7 +160,7 @@ namespace IronPython.Runtime {
         }
 #endif
 
-        internal PythonList(object sequence) {
+        internal PythonList(CodeContext context, object sequence) {
             if (sequence is ICollection items) {
                 _data = new object[items.Count];
                 int i = 0;
@@ -169,12 +169,12 @@ namespace IronPython.Runtime {
                 }
                 _size = i;
             } else {
-                if (!PythonOps.TryInvokeLengthHint(DefaultContext.Default, sequence, out int len)) {
+                if (!PythonOps.TryInvokeLengthHint(context, sequence, out int len)) {
                     len = INITIAL_SIZE;
                 }
 
                 _data = new object[len];
-                ExtendNoLengthCheck(DefaultContext.Default, sequence);
+                ExtendNoLengthCheck(context, sequence);
             }
         }
 
@@ -186,6 +186,26 @@ namespace IronPython.Runtime {
                 _data[i++] = item;
             }
             _size = i;
+        }
+
+        internal static PythonList FromGenericCollection<T>(ICollection<T> items) {
+            var list = new PythonList(items.Count);
+
+            int i = 0;
+            foreach (object? item in items) {
+                list._data[i++] = item;
+            }
+            list._size = i;
+            return list;
+        }
+
+        internal static PythonList FromEnumerable(IEnumerable items) {
+            var enumerator = items.GetEnumerator();
+            try {
+                return new PythonList(enumerator);
+            } finally {
+                (enumerator as IDisposable)?.Dispose();
+            }
         }
 
         /// <summary>
@@ -445,7 +465,7 @@ namespace IronPython.Runtime {
             set {
                 if (slice.step != null && (!(slice.step is int) || !slice.step.Equals(_boxedOne))) {
                     // try to assign back to self: make a copy first
-                    if (this == value) value = new PythonList(value);
+                    if (this == value) value = new PythonList((ICollection)value);
 
                     if (ValueRequiresNoLocks(value)) {
                         // we don't need to worry about lock ordering of accesses to the 

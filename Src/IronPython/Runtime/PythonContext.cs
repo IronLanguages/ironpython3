@@ -1260,7 +1260,7 @@ namespace IronPython.Runtime {
         public override ICollection<string> GetSearchPaths() {
             List<string> result = new List<string>();
             if (TryGetSystemPath(out PythonList paths)) {
-                IEnumerator ie = PythonOps.GetEnumerator(paths);
+                IEnumerator ie = PythonOps.GetEnumerator(SharedContext, paths);
                 while (ie.MoveNext()) {
                     if (TryConvertToString(ie.Current, out string str)) {
                         result.Add(str);
@@ -1271,7 +1271,7 @@ namespace IronPython.Runtime {
         }
 
         public override void SetSearchPaths(ICollection<string> paths) {
-            SetSystemStateValue("path", new PythonList(paths));
+            SetSystemStateValue("path", new PythonList(SharedContext, paths));
         }
 
         public override void Shutdown() {

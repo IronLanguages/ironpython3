@@ -837,9 +837,9 @@ import Namespace.")]
         /// <summary>
         /// returns the result of dir(o) as-if "import clr" has not been performed.
         /// </summary>
-        public static PythonList Dir(object o) {
+        public static PythonList Dir(CodeContext context, object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.Default, o);
-            PythonList lret = new PythonList(ret);
+            PythonList lret = new PythonList(context, ret);
             lret.Sort(DefaultContext.Default);
             return lret;
         }
@@ -847,9 +847,9 @@ import Namespace.")]
         /// <summary>
         /// Returns the result of dir(o) as-if "import clr" has been performed.
         /// </summary>
-        public static PythonList DirClr(object o) {
+        public static PythonList DirClr(CodeContext context, object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, o);
-            PythonList lret = new PythonList(ret);
+            PythonList lret = new PythonList(context, ret);
             lret.Sort(DefaultContext.DefaultCLS);
             return lret;
         }

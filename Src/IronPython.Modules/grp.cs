@@ -76,7 +76,7 @@ or via the object attributes as named in the above tuple.
 
         private static struct_group Make(IntPtr pwd) {
             group g = (group)Marshal.PtrToStructure(pwd, typeof(group));
-            return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, new PythonList(MarshalStringArray(g.gr_mem)));
+            return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, PythonList.FromEnumerable(MarshalStringArray(g.gr_mem)));
         }
 
         private static IEnumerable<string> MarshalStringArray(IntPtr arrayPtr)

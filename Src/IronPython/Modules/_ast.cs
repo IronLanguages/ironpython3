@@ -1773,7 +1773,7 @@ namespace IronPython.Modules {
 
             internal Global(GlobalStatement stmt)
                 : this() {
-                names = new PythonList(stmt.Names);
+                names = PythonList.FromGenericCollection(stmt.Names);
             }
 
             internal override Statement Revert() {
@@ -2345,7 +2345,7 @@ namespace IronPython.Modules {
 
             internal Nonlocal(NonlocalStatement stmt)
                 : this() {
-                names = new PythonList(stmt.Names);
+                names = PythonList.FromGenericCollection(stmt.Names);
             }
 
             internal override Statement Revert() {

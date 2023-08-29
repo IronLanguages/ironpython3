@@ -136,7 +136,7 @@ namespace IronPython.Runtime {
             : this(0) {
         }
 
-        internal PythonList(CodeContext context, object sequence) {
+        public PythonList(CodeContext context, [NotNone] object sequence) {
             if (sequence is ICollection items) {
                 _data = new object[items.Count];
                 int i = 0;

@@ -33,6 +33,8 @@ namespace IronPython.Runtime {
         internal int _size;
         internal volatile object?[] _data;
 
+        #region Python Constructors and Initializers
+
         public void __init__() {
             _data = new object[8];
             _size = 0;
@@ -126,39 +128,13 @@ namespace IronPython.Runtime {
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, [NotNone] params object[] args\u00F8)
             => __new__(context, cls);
 
-        private PythonList(IEnumerator e)
-            : this(10) {
-            while (e.MoveNext()) AddNoLock(e.Current);
-        }
+        #endregion
 
-        internal PythonList(int capacity) {
-            if (capacity == 0) {
-                _data = ArrayUtils.EmptyObjects;
-            } else {
-                _data = new object[capacity];
-            }
-        }
-
-        private PythonList(object?[] items) {
-            _data = items;
-            _size = _data.Length;
-        }
+        #region C# Constructors and Factories
 
         public PythonList()
             : this(0) {
         }
-
-#if ALLOC_DEBUG
-        private static int total, totalSize, cnt, growthCnt, growthSize;
-        ~PythonList() {
-            total += _data.Length;
-            totalSize += _size;
-            cnt++;
-
-            Console.Error.WriteLine("PythonList: allocated {0} used {1} total wasted {2} - grand total wasted {3}", _data.Length, _size, total-totalSize, growthSize + total - totalSize);
-            Console.Error.WriteLine("       Growing {0} {1} avg {2}", growthCnt, growthSize, growthSize / growthCnt);
-        }
-#endif
 
         internal PythonList(CodeContext context, object sequence) {
             if (sequence is ICollection items) {
@@ -178,6 +154,14 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal PythonList(int capacity) {
+            if (capacity == 0) {
+                _data = ArrayUtils.EmptyObjects;
+            } else {
+                _data = new object[capacity];
+            }
+        }
+
         internal PythonList(ICollection items)
             : this(items.Count) {
 
@@ -187,6 +171,28 @@ namespace IronPython.Runtime {
             }
             _size = i;
         }
+
+        private PythonList(object?[] items) {
+            _data = items;
+            _size = _data.Length;
+        }
+
+        private PythonList(IEnumerator e)
+            : this(10) {
+            while (e.MoveNext()) AddNoLock(e.Current);
+        }
+
+#if ALLOC_DEBUG
+        private static int total, totalSize, cnt, growthCnt, growthSize;
+        ~PythonList() {
+            total += _data.Length;
+            totalSize += _size;
+            cnt++;
+
+            Console.Error.WriteLine("PythonList: allocated {0} used {1} total wasted {2} - grand total wasted {3}", _data.Length, _size, total-totalSize, growthSize + total - totalSize);
+            Console.Error.WriteLine("       Growing {0} {1} avg {2}", growthCnt, growthSize, growthSize / growthCnt);
+        }
+#endif
 
         internal static PythonList FromGenericCollection<T>(ICollection<T> items) {
             var list = new PythonList(items.Count);
@@ -216,6 +222,8 @@ namespace IronPython.Runtime {
         /// <param name="data">params array to use for lists storage</param>
         internal static PythonList FromArrayNoCopy(params object[] data)
             => new PythonList(data);
+
+        #endregion
 
         internal object?[] GetObjectArray() {
             lock (this) {

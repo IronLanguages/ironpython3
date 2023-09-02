@@ -743,11 +743,11 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class product : IterBase {
-            public product(params object[] iterables) {
-                InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new PythonList(PythonOps.GetEnumerator(x))));
+            public product(CodeContext context, params object[] iterables) {
+                InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new PythonList(context, PythonOps.GetEnumerator(x))));
             }
 
-            public product([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public product(CodeContext context, [ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
                 object repeat;
                 int iRepeat = 1;
                 if (paramDict.TryGetValue("repeat", out repeat)) {
@@ -768,7 +768,7 @@ namespace IronPython.Modules {
                 PythonList[] finalIterables = new PythonList[iterables.Length * iRepeat];
                 for (int i = 0; i < iRepeat; i++) {
                     for (int j = 0; j < iterables.Length; j++) {
-                        finalIterables[i * iterables.Length + j] = new PythonList(iterables[j]);
+                        finalIterables[i * iterables.Length + j] = new PythonList(context, iterables[j]);
                     }
                 }
                 InnerEnumerator = Yielder(finalIterables);
@@ -823,8 +823,8 @@ namespace IronPython.Modules {
         public class combinations : IterBase {
             private readonly PythonList _data;
 
-            public combinations(object iterable, object r) {
-                _data = new PythonList(iterable);
+            public combinations(CodeContext context, object iterable, object r) {
+                _data = new PythonList(context, iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -893,8 +893,8 @@ namespace IronPython.Modules {
         public class combinations_with_replacement : IterBase {
             private readonly PythonList _data;
 
-            public combinations_with_replacement(object iterable, object r) {
-                _data = new PythonList(iterable);
+            public combinations_with_replacement(CodeContext context, object iterable, object r) {
+                _data = new PythonList(context, iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -962,14 +962,14 @@ namespace IronPython.Modules {
         public class permutations : IterBase {
             private readonly PythonList _data;
 
-            public permutations(object iterable) {
-                _data = new PythonList(iterable);
+            public permutations(CodeContext context, object iterable) {
+                _data = new PythonList(context, iterable);
 
                 InnerEnumerator = Yielder(_data.Count);
             }
 
-            public permutations(object iterable, object r) {
-                _data = new PythonList(iterable);
+            public permutations(CodeContext context, object iterable, object r) {
+                _data = new PythonList(context, iterable);
                 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -1160,7 +1160,7 @@ namespace IronPython.Modules {
                             objargs[i] = args[i];
                         }
                     } else {
-                        PythonList argsList = new PythonList(PythonOps.GetEnumerator(iter.Current));
+                        PythonList argsList = new PythonList(context, PythonOps.GetEnumerator(iter.Current));
                         objargs = ArrayUtils.ToArray(argsList);
                     }
 

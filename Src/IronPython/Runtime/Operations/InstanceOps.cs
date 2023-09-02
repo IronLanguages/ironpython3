@@ -212,7 +212,7 @@ namespace IronPython.Runtime.Operations {
         /// __dir__(self) -> Returns the list of members defined on a foreign IDynamicMetaObjectProvider.
         /// </summary>
         public static PythonList DynamicDir(CodeContext/*!*/ context, IDynamicMetaObjectProvider self) {
-            PythonList res = new PythonList(self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
+            PythonList res = new PythonList(context, self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
 
             // add in the non-dynamic members from the dynamic objects base class.
             Type t = self.GetType();

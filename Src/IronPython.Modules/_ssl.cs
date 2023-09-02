@@ -208,7 +208,7 @@ namespace IronPython.Modules {
 
             public PythonList get_ca_certs(CodeContext context, bool binary_form = false) {
                 if (binary_form) throw new NotImplementedException(nameof(binary_form));
-                return new PythonList(_cert_store.Cast<X509Certificate2>().Select(c => CertificateToPython(context, c)));
+                return PythonList.FromEnumerable(_cert_store.Cast<X509Certificate2>().Select(c => CertificateToPython(context, c)));
             }
 
             public void load_verify_locations(CodeContext context, object cafile = null, string capath = null, object cadata = null) {

@@ -1747,7 +1747,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         ? context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context)
                         : _siteCache.GetDirSite(context);
 
-                    return new PythonList(dirSite.Target(dirSite, context, dir));
+                    return new PythonList(context, dirSite.Target(dirSite, context, dir));
                 }
             }
 
@@ -1790,7 +1790,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             List<string> strKeys = new List<string>(keys.Keys);
             strKeys.Sort();
-            res.extend(strKeys);
+            res.ExtendNoLock(strKeys);
 
             return res;
         }

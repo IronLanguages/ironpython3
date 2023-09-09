@@ -19,10 +19,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - name: Setup .NET Core 2.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '2.1.x'
     - name: Setup .NET Core 3.1
       uses: actions/setup-dotnet@v1
       with:
@@ -47,9 +43,6 @@ jobs:
         path: Package/Release/Packages
     - name: Test (net462)
       run: ./make.ps1 -frameworks net462 test-all
-      shell: pwsh
-    - name: Test (netcoreapp2.1)
-      run: ./make.ps1 -frameworks netcoreapp2.1 test-all
       shell: pwsh
     - name: Test (netcoreapp3.1)
       run: ./make.ps1 -frameworks netcoreapp3.1 test-all

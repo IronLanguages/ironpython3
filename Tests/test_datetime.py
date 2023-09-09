@@ -126,6 +126,11 @@ class TestDatetime(unittest.TestCase):
         ts = 5399410716.777882
         self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
 
+    def test_timestamp(self):
+        # https://github.com/IronLanguages/ironpython3/pull/1740
+        dt = datetime.datetime(2000, 1, 1)
+        self.assertEqual(datetime.datetime.fromtimestamp(dt.timestamp()), dt)
+
     @skipUnlessIronPython()
     def test_System_DateTime_conversion(self):
         import clr

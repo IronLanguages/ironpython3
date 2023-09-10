@@ -7,6 +7,12 @@
     <SQLiteCommonOmit>SQLITE_OMIT_AUTHORIZATION;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_GET_TABLE;SQLITE_OMIT_INCRBLOB;SQLITE_OMIT_LOOKASIDE;SQLITE_OMIT_SHARED_CACHE;SQLITE_OMIT_UTF16;SQLITE_OMIT_WAL</SQLiteCommonOmit>
     <NoWarn>$(NoWarn);0168;0169;0414;0618;0649;1587;219;1570</NoWarn>
     <StoreInDLLs>true</StoreInDLLs>
+
+    <!-- output to DLLs folder -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\DLLs</IntermediateOutputPath>
+    <OutputPath>$(BaseOutputPath)\$(TargetFramework)\DLLs</OutputPath>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -18,7 +24,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\IronPython\IronPython.csproj" Private="false" />
+    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
+    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

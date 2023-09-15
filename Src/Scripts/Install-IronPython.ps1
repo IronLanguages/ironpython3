@@ -112,7 +112,6 @@ dotnet (Join-Path $PSScriptRoot ipy.dll) @args
         chmod +x $ipyPath
         chmod +x (Join-Path $Path "ipy.sh")
         Move-Item -Path (Join-Path $Path "ipy.sh") -Destination (Join-Path $Path "ipy")
-        Remove-Item -Path (Join-Path $Path "ipy.bat")
     }
 } elseif ($IsMacOS -or $IsLinux) { # Mono
     $ipyPath = Join-Path $Path "ipy"

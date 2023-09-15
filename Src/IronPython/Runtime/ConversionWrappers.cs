@@ -123,10 +123,6 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-#if NETCOREAPP3_1  // In netcoreapp3.1, IDictionary<K, V> has constraint where K : notnull
-#nullable disable warnings
-#endif
-
     public class DictionaryGenericWrapper<K, V> : IDictionary<K, V> {
         private readonly IDictionary<object?, object?> self;
         // PEP 237: int/long unification (GH #52)
@@ -303,10 +299,6 @@ namespace IronPython.Runtime {
         }
     }
 
-#if NETCOREAPP3_1
-#nullable enable
-#endif
-
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
         private readonly IEnumerator enumerable;
         // PEP 237: int/long unification (GH #52)
@@ -327,7 +319,7 @@ namespace IronPython.Runtime {
                 try {
                     return (T)current!;
                 } catch (NullReferenceException nex) {
-                    throw new InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from null to {0}", typeof(T).ToString()), nex);    
+                    throw new InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from null to {0}", typeof(T).ToString()), nex);
                 } catch (InvalidCastException iex) {
                     throw new InvalidCastException(string.Format("Error in IEnumeratorOfTWrapper.Current. Could not cast: from {1} to {0}", typeof(T).ToString(), current!.GetType().ToString()), iex);
                 }

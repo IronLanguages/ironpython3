@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp2.1;netcoreapp3.1;net6.0</TargetFrameworks>
-    <!-- EOL netcoreapp2.1 is used to test netstandard2.0 assemblies -->
+    <TargetFrameworks>net462;netcoreapp3.1;net6.0</TargetFrameworks>
+    <!-- EOL netcoreapp3.1 is used to test netstandard2.0 assemblies -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <PreventStaging>true</PreventStaging>
   </PropertyGroup>
@@ -18,8 +18,8 @@
 
   <ItemGroup>
     <PackageReference Include="NUnitLite" Version="3.13.3" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +35,7 @@
 
   <Target Name="CopyRowanTestFiles" AfterTargets="AfterBuild">
     <ItemGroup>
-      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\net452\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net462' " />
+      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\net462\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net462' " />
       <RowanTestFiles Include="..\DLR\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net462' " />
     </ItemGroup>
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />

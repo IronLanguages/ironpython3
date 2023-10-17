@@ -29,11 +29,11 @@ https://ironpython.groups.io/g/users.
 
 ### Version Information
 
-If you are using the `ipy` console program, provide output of executing `ipy -VV`. If it is a local build, provide also the git hash of the commit used to build IronPython. Additionally, provide the type of the operating system used.
+If you are using the `ipy` console program, provide output of executing `ipy -VV`. If it is a local build, provide also the git hash of the commit used to build IronPython. In either case, provide the type of the operating system used.
 
 If you are using the IronPython engine embedded in a .NET application, provide the version number of the NuGet package used (or if it is a local build, the git hash of the commit used to build IronPython), and the following info:
 
-* .NET platform used (choice from: .NET, .NET Core, .NET Framework, Mono, Unity),
+* .NET platform used (choice from: .NET, .NET Core, .NET Framework, Mono, Unity, Xamarin),
 * Version of the .NET platform used,
 * Operating system used,
 * Value of `sys.version`, from imported module `sys`.

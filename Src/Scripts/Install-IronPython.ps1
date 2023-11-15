@@ -98,7 +98,7 @@ if (-not $unzipDir) {
 }
 
 # Copy files into place
-Copy-Item -Path (Join-Path $unzipDir $Framework "*") -Destination $Path -Recurse
+Copy-Item -Path (Join-Path $unzipDir (Join-Path $Framework "*")) -Destination $Path -Recurse
 Copy-Item -Path (Join-Path $unzipDir "lib") -Destination $Path -Recurse
 
 # Prepare startup scripts
@@ -108,6 +108,12 @@ if ($Framework -notlike "net4*") {
 #!/usr/bin/env pwsh
 dotnet (Join-Path $PSScriptRoot ipy.dll) @args
 '@
+    if ($PSVersionTable.PSEdition -eq "Desktop" -or $IsWindows) {
+        $ipyPath = Join-Path $Path "ipy.bat"
+    Set-Content -Path $ipyPath -Value @'
+@dotnet "%~dp0ipy.dll" %*
+'@
+    }
     if ($IsMacOS -or $IsLinux) {
         chmod +x $ipyPath
         chmod +x (Join-Path $Path "ipy.sh")

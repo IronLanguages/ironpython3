@@ -308,23 +308,56 @@ namespace IronPython.Runtime {
             }
         }
 
+        /// <summary>
+        /// Obtain the underlying array, if possible.
+        /// The returned array is unsafe because it should not be written to.
+        /// </summary>
         internal static byte[]? AsUnsafeArray(this IPythonBuffer buffer) {
             if (!buffer.IsCContiguous())
                 return null;
 
-            if (buffer.Object is Bytes b)
-                return b.UnsafeByteArray;
-
-            if (buffer.Object is Memory<byte> mem) {
-                if (MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> seg) && seg.Array != null && seg.Offset == 0 && seg.Count == seg.Array.Length)
+            ReadOnlySpan<byte> bufdata = buffer.AsReadOnlySpan();
+            if (buffer.Object is Bytes b) {
+                if (b.UnsafeByteArray.AsSpan() == bufdata)
+                    return b.UnsafeByteArray;
+            } else if (buffer.Object is ByteArray ba) {
+                byte[] arrdata = ba.UnsafeByteList.Data;
+                if (arrdata.AsSpan() == bufdata)
+                    return arrdata;
+            } else if (buffer.Object is Memory<byte> mem) {
+                if (MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> seg) && seg.Array is not null && seg.Array.AsSpan() == bufdata)
                     return seg.Array;
             } else if (buffer.Object is ReadOnlyMemory<byte> rom) {
-                if (MemoryMarshal.TryGetArray(rom, out ArraySegment<byte> seg) && seg.Array != null && seg.Offset == 0 && seg.Count == seg.Array.Length)
+                if (MemoryMarshal.TryGetArray(rom, out ArraySegment<byte> seg) && seg.Array is not null && seg.Array.AsSpan() == bufdata)
                     return seg.Array;
             }
 
             return null;
         }
+
+        /// <summary>
+        /// Obtain the underlying writable array, if possible.
+        /// The returned array is unsafe because it can be longer than the buffer.
+        /// </summary>
+        internal static byte[]? AsUnsafeWritableArray(this IPythonBuffer buffer) {
+            if (!buffer.IsCContiguous() || buffer.IsReadOnly)
+                return null;
+
+            Span<byte> bufdata = buffer.AsSpan();
+            if (buffer.Object is ByteArray ba) {
+                byte[] arrdata = ba.UnsafeByteList.Data;
+                if (UseSameMemory(arrdata, bufdata))
+                    return arrdata;
+            } else if (buffer.Object is Memory<byte> mem) {
+                if (MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> seg) && seg.Array is not null && UseSameMemory(seg.Array, bufdata))
+                    return seg.Array;
+            }
+
+            return null;
+        }
+
+        private static bool UseSameMemory(byte[] arr, ReadOnlySpan<byte> span)
+            => arr.Length >= span.Length && arr.AsSpan(0, span.Length) == span;
     }
 
     public ref struct BufferBytesEnumerator {

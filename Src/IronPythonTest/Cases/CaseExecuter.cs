@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -30,8 +31,6 @@ namespace IronPythonTest.Cases {
                 string runner;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     runner = Path.Combine(folder, "ipy.exe");
-                    if (File.Exists(runner)) return runner;
-                    runner = Path.Combine(folder, "ipy.bat");
                     if (File.Exists(runner)) return runner;
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     runner = Path.Combine(folder, "ipy");
@@ -82,7 +81,7 @@ namespace IronPythonTest.Cases {
 
         private static void AddSearchPaths(ScriptEngine engine) {
             var paths = new List<string>(engine.GetSearchPaths());
-            if (!paths.Any(x => x.ToLowerInvariant().Contains("stdlib"))) {
+            if (!paths.Any(x => x.Contains("stdlib", StringComparison.OrdinalIgnoreCase))) {
                 var root = FindRoot();
                 if (!string.IsNullOrEmpty(root)) {
                     paths.Insert(0, Path.Combine(root, "Src", "StdLib", "Lib"));
@@ -307,4 +306,12 @@ namespace IronPythonTest.Cases {
             }
         }
     }
+
+#if NETFRAMEWORK
+    internal static class StringExtensions {
+        public static bool Contains(this string s, string value, StringComparison comparisonType) {
+            return s.IndexOf(value, comparisonType) >= 0;
+        }
+    }
+#endif
 }

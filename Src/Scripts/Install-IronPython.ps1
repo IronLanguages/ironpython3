@@ -64,12 +64,13 @@ if (-not $ZipFile) {
         # Script run from within a checked out code base
         # Locate the zip archive in the standard location of the package target
         $projectRoot = $PSScriptRoot | Split-Path | Split-Path
-        $ZipFile = @(Resolve-Path (Join-Path $projectRoot "Package/Release/Packages/IronPython-*/IronPython.3.*.zip"))
-        if ($ZipFile.Count -gt 1) {
-            Write-Error "Ambiguous implicit project zip file: $ZipFile"
-        } elseif ($ZipFile.Count -lt 1) {
+        $zipFiles = @(Resolve-Path (Join-Path $projectRoot "Package/Release/Packages/IronPython-*/IronPython.3.*.zip"))
+        if ($zipFiles.Count -gt 1) {
+            Write-Error (@("Ambiguous implicit project zip files:") + $zipFiles -join "`n")
+        } elseif ($zipFiles.Count -lt 1) {
             Write-Error "Missing zip file. Have you run './make package'?"
         }
+        $ZipFile = $zipFiles
     } else {
         Write-Error "Cannot locate implicit zip file. Provide path to the zip file using '-ZipFile <path>'."
     }
@@ -98,7 +99,7 @@ if (-not $unzipDir) {
 }
 
 # Copy files into place
-Copy-Item -Path (Join-Path $unzipDir $Framework "*") -Destination $Path -Recurse
+Copy-Item -Path (Join-Path $unzipDir (Join-Path $Framework "*")) -Destination $Path -Recurse
 Copy-Item -Path (Join-Path $unzipDir "lib") -Destination $Path -Recurse
 
 # Prepare startup scripts
@@ -108,11 +109,16 @@ if ($Framework -notlike "net4*") {
 #!/usr/bin/env pwsh
 dotnet (Join-Path $PSScriptRoot ipy.dll) @args
 '@
+    if ($PSVersionTable.PSEdition -eq "Desktop" -or $IsWindows) {
+        $ipyPath = Join-Path $Path "ipy.bat"
+    Set-Content -Path $ipyPath -Value @'
+@dotnet "%~dp0ipy.dll" %*
+'@
+    }
     if ($IsMacOS -or $IsLinux) {
         chmod +x $ipyPath
         chmod +x (Join-Path $Path "ipy.sh")
         Move-Item -Path (Join-Path $Path "ipy.sh") -Destination (Join-Path $Path "ipy")
-        Remove-Item -Path (Join-Path $Path "ipy.bat")
     }
 } elseif ($IsMacOS -or $IsLinux) { # Mono
     $ipyPath = Join-Path $Path "ipy"

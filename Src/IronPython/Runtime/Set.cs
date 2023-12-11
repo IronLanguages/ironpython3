@@ -1477,7 +1477,7 @@ namespace IronPython.Runtime {
             context.TryLookupBuiltin("iter", out iter);
             if (_cnt < 0)
                 return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList()));
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList(_items)), _cnt);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new PythonList(context, _items)), _cnt);
         }
 
         public int __length_hint__() {

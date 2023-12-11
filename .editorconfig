@@ -82,6 +82,7 @@ dotnet_diagnostic.CA1846.severity = none        # CA1846: Prefer 'AsSpan' over '
 dotnet_diagnostic.CA1847.severity = none        # CA1847: Use char literal for a single character lookup
 dotnet_diagnostic.CA1852.severity = suggestion  # CA1852: Seal internal types
 dotnet_diagnostic.CA1859.severity = suggestion  # CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1861.severity = suggestion  # CA1861: Avoid constant arrays as arguments
 dotnet_diagnostic.CA2101.severity = suggestion  # CA2101: Specify marshaling for P/Invoke string arguments
 dotnet_diagnostic.CA2201.severity = none        # CA2201: Do not raise reserved exception types
 dotnet_diagnostic.CA2208.severity = suggestion  # CA2208: Instantiate argument exceptions correctly

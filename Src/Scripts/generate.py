@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import functools
 import re
 import sys
 import os
@@ -23,7 +24,8 @@ exclude_directories = [
     os.path.join(root_dir, "Src", "StdLib"),
 ]
 
-START = "#region Generated %s"
+START_COMMON = "#region Generated"
+START = START_COMMON + " %s"
 END =   "#endregion"
 PREFIX = r"^([ \t]*)"
 
@@ -131,6 +133,27 @@ class CodeWriter:
     def conditions(self):
         return ConditionWriter(self)
 
+@functools.lru_cache()
+def find_candidates(dirname):
+    def listdir(dirname):
+        if dirname in exclude_directories:
+            return
+
+        for file in os.listdir(dirname):
+            if file == "obj": continue # obj folders are not interesting...
+            filename = os.path.join(dirname, file)
+            if os.path.isdir(filename):
+                yield from listdir(filename)
+            elif filename.endswith(".cs") and not file == "StandardTestStrings.cs": # TODO: fix encoding of StandardTestStrings.cs
+                yield filename
+
+    res = []
+    for file in listdir(dirname):
+        with open(file, encoding='latin-1') as f:
+            if START_COMMON in f.read():
+                res.append(file)
+    return res
+
 class CodeGenerator:
     def __init__(self, name, generator):
         self.generator = generator
@@ -151,19 +174,10 @@ class CodeGenerator:
             result.append(g.generate())
         return result
 
-    def do_dir(self, dirname):
-        if dirname in exclude_directories:
-            return
-        for file in os.listdir(dirname):
-            filename = os.path.join(dirname, file)
-            if os.path.isdir(filename):
-                self.do_dir(filename)
-            elif filename.endswith(".cs") and not file == "StandardTestStrings.cs": # TODO: fix encoding of StandardTestStrings.cs
-                self.do_file(filename)
-
     def doit(self):
         for src_dir in source_directories:
-            self.do_dir(src_dir)
+            for file in find_candidates(src_dir):
+                self.do_file(file)
         for g in self.generators:
             g.collect_info()
         return self.do_generate()

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp2.1;netcoreapp3.1;net6.0</TargetFrameworks>
-    <!-- EOL netcoreapp2.1 is used to test netstandard2.0 assemblies -->
+    <TargetFrameworks>net462;netcoreapp3.1;net6.0</TargetFrameworks>
+    <!-- EOL netcoreapp3.1 is used to test netstandard2.0 assemblies -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonConsole</RootNamespace>
@@ -20,15 +20,12 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
-    <Content Include="ipy.bat" Condition=" '$(OS)' == 'Windows_NT' ">
+    <!-- add reference so it gets copied to the netcoreapp3.1 folder for testing -->
+    <ProjectReference Include="..\IronPython.SQLite\IronPython.SQLite.csproj" Condition="$(TargetFramework) == 'netcoreapp3.1'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ipy.sh" Condition=" '$(OS)' == 'Unix' ">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' AND !$([MSBuild]::IsOSPlatform('WINDOWS')) ">
@@ -38,7 +35,6 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
-    <StageItem Include="ipy.bat" />
     <StageItem Include="ipy.sh" />
   </ItemGroup>
 

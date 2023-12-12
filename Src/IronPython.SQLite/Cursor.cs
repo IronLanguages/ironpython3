@@ -121,7 +121,7 @@ namespace IronPython.SQLite
                 if(multiple)
                 {
                     if(args != null)
-                        parameters_iter = PythonOps.CreatePythonEnumerator(args);
+                        parameters_iter = PythonOps.CreatePythonEnumerator(context, args);
                 }
                 else
                 {

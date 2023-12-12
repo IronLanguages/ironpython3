@@ -1084,7 +1084,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (o is IMembersList memList) {
-                return new PythonList(memList.GetMemberNames());
+                return new PythonList(context, memList.GetMemberNames());
             }
 
             if (o is IPythonObject po) {
@@ -1782,7 +1782,7 @@ namespace IronPython.Runtime.Operations {
         /// LIST_EXTEND
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void ListExtend(PythonList list, object? o) => list.extend(o);
+        public static void ListExtend(PythonList list, object? o) => list.extend(DefaultContext.Default, o);
 
         /// <summary>
         /// LIST_TO_TUPLE
@@ -2655,8 +2655,8 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        public static PythonList CopyAndVerifyParamsList(PythonFunction function, object list) {
-            return new PythonList(list);
+        public static PythonList CopyAndVerifyParamsList(CodeContext context, PythonFunction function, object list) {
+            return new PythonList(context, list);
         }
 
         public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {
@@ -3259,24 +3259,24 @@ namespace IronPython.Runtime.Operations {
             return ((PythonGenerator)self).CheckThrowableAndReturnSendValue();
         }
 
-        public static ItemEnumerable CreateItemEnumerable(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerable(source, callable, site);
+        public static ItemEnumerable CreateItemEnumerable(CodeContext context, object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerable(context, source, callable, site);
         }
 
         public static DictionaryKeyEnumerator MakeDictionaryKeyEnumerator(PythonDictionary dict) {
             return new DictionaryKeyEnumerator(dict._storage);
         }
 
-        public static IEnumerable CreatePythonEnumerable(object baseObject) {
-            return PythonEnumerable.Create(baseObject);
+        public static IEnumerable CreatePythonEnumerable(CodeContext context, object baseObject) {
+            return PythonEnumerable.Create(context, baseObject);
         }
 
-        public static IEnumerator CreateItemEnumerator(object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
-            return new ItemEnumerator(source, callable, site);
+        public static IEnumerator CreateItemEnumerator(CodeContext context, object source, object callable, CallSite<Func<CallSite, CodeContext, object, int, object>> site) {
+            return new ItemEnumerator(context, source, callable, site);
         }
 
-        public static IEnumerator CreatePythonEnumerator(object baseObject) {
-            return PythonEnumerator.Create(baseObject);
+        public static IEnumerator CreatePythonEnumerator(CodeContext context, object baseObject) {
+            return PythonEnumerator.Create(context, baseObject);
         }
 
         public static bool ContainsFromEnumerable(CodeContext/*!*/ context, object enumerable, object value) {

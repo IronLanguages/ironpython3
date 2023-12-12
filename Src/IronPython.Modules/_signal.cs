@@ -118,13 +118,13 @@ anything else -- the callable Python object used as a handler")]
                 //Negative Scenarios
                 if (signalnum < 1 || signalnum > 22) {
                     throw PythonOps.ValueError("signal number out of range");
-                } else if (!GetPythonSignalState(context).PySignalToPyHandler.ContainsKey(signalnum)) {
+                } else if (GetPythonSignalState(context).PySignalToPyHandler.TryGetValue(signalnum, out object value)) {
+                    //Default
+                    return value;
+                } else {
                     //Handles the special case of SIG_IGN. This is not really a signal,
                     //but CPython returns null for it any ways
                     return null;
-                } else {
-                    //Default
-                    return GetPythonSignalState(context).PySignalToPyHandler[signalnum];
                 }
             }
         }

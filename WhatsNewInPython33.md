@@ -117,7 +117,7 @@ Deprecated Python modules, functions and methods
 - [ ] `platform.popen()`: use the `subprocess` module. Check especially the "Replacing Older Functions with the `subprocess` Module" section (issue 11377).
 - [ ] The Windows `bytes` API has been deprecated in the `os` module. Use Unicode filenames, instead of `bytes` filenames, to not depend on the ANSI code page anymore and to support any filename.
 - [x] The `xml.etree.cElementTree` module is deprecated. The accelerator is used automatically whenever available.
-- [ ] The behaviour of `time.clock()` depends on the platform: use the new `time.perf_counter()` or `time.process_time()` function instead, depending on your requirements, to have a well defined behaviour.
+- [x] The behaviour of `time.clock()` depends on the platform: use the new `time.perf_counter()` or `time.process_time()` function instead, depending on your requirements, to have a well defined behaviour.
 - [x] ~~The `os.stat_float_times()` function is deprecated.~~ (Never implemented, but removed in Python 3.7)
 - `abc` module:
     + [ ] `abc.abstractproperty` has been deprecated, use `property` with `abc.abstractmethod()` instead.

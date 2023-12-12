@@ -24,8 +24,8 @@ namespace IronPython.Modules {
                 : base() {
             }
 
-            public spamlist(object sequence)
-                : base(sequence) {
+            public spamlist(CodeContext context, object sequence)
+                : base(context, sequence) {
             }
 
             private int _state;

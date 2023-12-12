@@ -36,9 +36,9 @@ namespace IronPython.Hosting {
         protected override string Logo => PythonContext.PythonOptions.Quiet ? null : GetLogoDisplay();
 
         /// <summary>
-        /// Returns the display look for IronPython.  
-        /// 
-        /// The returned string uses This \n instead of Environment.NewLine for it's line seperator 
+        /// Returns the display look for IronPython.
+        ///
+        /// The returned string uses This \n instead of Environment.NewLine for it's line seperator
         /// because it is intended to be outputted through the Python I/O system.
         /// </summary>
         public static string GetLogoDisplay() {
@@ -265,6 +265,7 @@ namespace IronPython.Hosting {
                     if (File.Exists(runner)) {
                         executable = runner;
                     } else {
+                        // TODO: was for .NET Core 2.1, can we drop this?
                         runner = Path.Combine(prefix, name + ".bat");
                         if (File.Exists(runner)) executable = runner;
                     }
@@ -312,7 +313,7 @@ namespace IronPython.Hosting {
 
         /// <summary>
         /// Loads any extension DLLs present in sys.prefix\DLLs directory and adds references to them.
-        /// 
+        ///
         /// This provides an easy drop-in location for .NET assemblies which should be automatically referenced
         /// (exposed via import), COM libraries, and pre-compiled Python code.
         /// </summary>
@@ -433,7 +434,7 @@ namespace IronPython.Hosting {
         /// Attempts to run a single interaction and handle any language-specific
         /// exceptions.  Base classes can override this and call the base implementation
         /// surrounded with their own exception handling.
-        /// 
+        ///
         /// Returns null if successful and execution should continue, or an exit code.
         /// </summary>
         private int? TryInteractiveActionWorker() {
@@ -457,8 +458,8 @@ namespace IronPython.Hosting {
         }
 
         /// <summary>
-        /// Parses a single interactive command and executes it.  
-        /// 
+        /// Parses a single interactive command and executes it.
+        ///
         /// Returns null if successful and execution should continue, or the appropiate exit code.
         /// </summary>
         private int? RunOneInteraction() {

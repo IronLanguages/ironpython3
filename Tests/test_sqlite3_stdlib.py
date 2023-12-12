@@ -6,11 +6,7 @@
 ## Run selected tests from sqlite3.test from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_linux, is_netcoreapp21
-
-if is_netcoreapp21: raise SystemExit # no IronPython.SQLite.dll with .NET Core 2.1
-
-import test.test_sqlite
+from iptest import is_ironpython, generate_suite, run_test, is_linux
 
 import sqlite3.test.dbapi
 import sqlite3.test.dump
@@ -20,6 +16,8 @@ import sqlite3.test.regression
 import sqlite3.test.transactions
 import sqlite3.test.types
 import sqlite3.test.userfunctions
+
+import test.test_sqlite
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_sqlite, pattern=pattern)

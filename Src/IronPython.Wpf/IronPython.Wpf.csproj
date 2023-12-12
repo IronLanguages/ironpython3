@@ -1,14 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp3.1;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <StoreInDLLs>true</StoreInDLLs>
     <UseWPF>true</UseWPF>
+
+    <!-- output to DLLs folder -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(BaseOutputPath)\$(TargetFramework.Replace('-windows', ''))\DLLs</OutputPath>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\IronPython\IronPython.csproj" Private="false" />
+    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
+    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">

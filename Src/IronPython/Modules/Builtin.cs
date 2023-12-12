@@ -250,7 +250,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static PythonType dict => TypeCache.Dict;
 
         public static PythonList dir(CodeContext/*!*/ context) {
-            PythonList res = new PythonList(context.Dict.Keys);
+            PythonList res = new PythonList(context, context.Dict.Keys);
 
             res.Sort(context);
             return res;
@@ -258,7 +258,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonList dir(CodeContext/*!*/ context, object? o) {
             IList<object?> ret = PythonOps.GetAttrNames(context, o);
-            PythonList lret = new PythonList(ret);
+            PythonList lret = new PythonList(context, ret);
             lret.Sort(context);
             return lret;
         }

@@ -955,6 +955,7 @@ namespace IronPython.Runtime.Binding {
                         _params,
                         Ast.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.CopyAndVerifyParamsList)),
+                            _codeContext ?? AstUtils.Constant(DefaultContext.Default),
                             AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                             AstUtils.Convert(userList, typeof(object))
                         )

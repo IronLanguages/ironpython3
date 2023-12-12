@@ -19,8 +19,7 @@
   </Choose>
 
   <PropertyGroup>
-    <_TargetFramework>$(TargetFramework)</_TargetFramework>
-    <_TargetFramework Condition=" $(TargetFramework.EndsWith('-windows')) ">$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-windows'))))</_TargetFramework>
+    <_TargetFramework>$(TargetFramework.Replace('-windows', ''))</_TargetFramework>
     <MainStageDir>$(StageDir)\$(_TargetFramework)</MainStageDir>
     <MainStageDir Condition=" '$(StoreInDLLs)' == 'true' ">$(StageDir)\$(_TargetFramework)\DLLs</MainStageDir>
     <UnsignedItems>@(StageItem)</UnsignedItems>
@@ -44,9 +43,5 @@
     <Copy SourceFiles="$(UnsignedItems)" DestinationFolder="$(MainStageDir)" />
   </Target>
 
-  <Target Name="_StoreInDLLs" Condition=" '$(StoreInDLLs)' == 'true' ">
-    <Move SourceFiles="@(StageItem)" DestinationFolder="$(TargetDir)%(StageItem.RecursiveDir)DLLs" />
-  </Target>
-
-  <Target Name="Stage" DependsOnTargets="_LateStage;_MainStage;_StoreInDLLs" />
+  <Target Name="Stage" DependsOnTargets="_LateStage;_MainStage" />
 </Project>

@@ -33,6 +33,8 @@ namespace IronPython.Runtime {
         internal int _size;
         internal volatile object?[] _data;
 
+        #region Python Constructors and Initializers
+
         public void __init__() {
             _data = new object[8];
             _size = 0;
@@ -106,7 +108,7 @@ namespace IronPython.Runtime {
 
             _data = new object[len];
             _size = 0;
-            ExtendNoLengthCheck(sequence);
+            ExtendNoLengthCheck(context, sequence);
         }
 
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls) {
@@ -126,9 +128,30 @@ namespace IronPython.Runtime {
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, [NotNone] params object[] args\u00F8)
             => __new__(context, cls);
 
-        private PythonList(IEnumerator e)
-            : this(10) {
-            while (e.MoveNext()) AddNoLock(e.Current);
+        #endregion
+
+        #region C# Constructors and Factories
+
+        public PythonList()
+            : this(0) {
+        }
+
+        public PythonList(CodeContext context, [NotNone] object sequence) {
+            if (sequence is ICollection items) {
+                _data = new object[items.Count];
+                int i = 0;
+                foreach (object? item in items) {
+                    _data[i++] = item;
+                }
+                _size = i;
+            } else {
+                if (!PythonOps.TryInvokeLengthHint(context, sequence, out int len)) {
+                    len = INITIAL_SIZE;
+                }
+
+                _data = new object[len];
+                ExtendNoLengthCheck(context, sequence);
+            }
         }
 
         internal PythonList(int capacity) {
@@ -139,13 +162,24 @@ namespace IronPython.Runtime {
             }
         }
 
-        private PythonList(params object?[] items) {
+        internal PythonList(ICollection items)
+            : this(items.Count) {
+
+            int i = 0;
+            foreach (object? item in items) {
+                _data[i++] = item;
+            }
+            _size = i;
+        }
+
+        private PythonList(object?[] items) {
             _data = items;
             _size = _data.Length;
         }
 
-        public PythonList()
-            : this(0) {
+        private PythonList(IEnumerator e)
+            : this(10) {
+            while (e.MoveNext()) AddNoLock(e.Current);
         }
 
 #if ALLOC_DEBUG
@@ -160,32 +194,24 @@ namespace IronPython.Runtime {
         }
 #endif
 
-        internal PythonList(object sequence) {
-            if (sequence is ICollection items) {
-                _data = new object[items.Count];
-                int i = 0;
-                foreach (object? item in items) {
-                    _data[i++] = item;
-                }
-                _size = i;
-            } else {
-                if (!PythonOps.TryInvokeLengthHint(DefaultContext.Default, sequence, out int len)) {
-                    len = INITIAL_SIZE;
-                }
-
-                _data = new object[len];
-                ExtendNoLengthCheck(sequence);
-            }
-        }
-
-        internal PythonList(ICollection items)
-            : this(items.Count) {
+        internal static PythonList FromGenericCollection<T>(ICollection<T> items) {
+            var list = new PythonList(items.Count);
 
             int i = 0;
             foreach (object? item in items) {
-                _data[i++] = item;
+                list._data[i++] = item;
             }
-            _size = i;
+            list._size = i;
+            return list;
+        }
+
+        internal static PythonList FromEnumerable(IEnumerable items) {
+            var enumerator = items.GetEnumerator();
+            try {
+                return new PythonList(enumerator);
+            } finally {
+                (enumerator as IDisposable)?.Dispose();
+            }
         }
 
         /// <summary>
@@ -196,6 +222,8 @@ namespace IronPython.Runtime {
         /// <param name="data">params array to use for lists storage</param>
         internal static PythonList FromArrayNoCopy(params object[] data)
             => new PythonList(data);
+
+        #endregion
 
         internal object?[] GetObjectArray() {
             lock (this) {
@@ -445,7 +473,7 @@ namespace IronPython.Runtime {
             set {
                 if (slice.step != null && (!(slice.step is int) || !slice.step.Equals(_boxedOne))) {
                     // try to assign back to self: make a copy first
-                    if (this == value) value = new PythonList(value);
+                    if (this == value) value = new PythonList((ICollection)value);
 
                     if (ValueRequiresNoLocks(value)) {
                         // we don't need to worry about lock ordering of accesses to the 
@@ -743,19 +771,27 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend(object? seq) {
-            if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
+        public void extend(CodeContext context, object? seq) {
+            if (PythonOps.TryInvokeLengthHint(context, seq, out int len)) {
                 // CPython proceeds without resizing if the length overflows
                 if (int.MaxValue - len >= Count) {
                     EnsureSize(Count + len);
                 }
             }
 
-            ExtendNoLengthCheck(seq);
+            ExtendNoLengthCheck(context, seq);
         }
 
-        private void ExtendNoLengthCheck(object? seq) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+        internal void ExtendNoLock(ICollection seq) {
+            EnsureSize(Count + seq.Count);
+
+            foreach (var item in seq) {
+                AddNoLock(item);
+            }
+        }
+
+        private void ExtendNoLengthCheck(CodeContext context, object? seq) {
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             if (seq == (object)this) {
                 PythonList other = new PythonList(i);
                 i = ((IEnumerable)other).GetEnumerator();

@@ -2079,7 +2079,9 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding?>> kvp in d) {
                     // all codecs should be stored in lowercase because we only look up from lowercase strings
-                    Debug.Assert(kvp.Key.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
+                    #pragma warning disable CA1862 // disable warning about comparing with ToLower()
+                    Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
+                    #pragma warning restore
                     // all codec names should use underscores instead of dashes to match lookup values
                     Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }

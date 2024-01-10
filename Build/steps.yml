@@ -38,11 +38,11 @@ steps:
 
   # Set Mono version on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:
-    - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
+    - task: AzureCLI@2
       displayName: Set Mono Version
       inputs:
-        type: InlineScript
-        script: |
+        scriptType: inlineScript
+        inlineScript: |
           # use Mono 6.4.0 version
           SYMLINK=6.4.0
           MONOPREFIX=/Library/Frameworks/Mono.framework/Versions/$SYMLINK
@@ -52,11 +52,11 @@ steps:
 
   # Install mono when running on Linux
   - ${{ if eq(parameters.os, 'Linux') }}:
-    - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
+    - task: AzureCLI@2
       displayName: Version Information
       inputs:
-        type: InlineScript
-        script: |
+        scriptType: inlineScript
+        inlineScript: |
           # Testing and packaging tools
           sudo apt-get -yq install mono-vbnc dos2unix fakeroot
 
@@ -68,11 +68,11 @@ steps:
 
   # Dump version info on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:
-    - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
+    - task: AzureCLI@2
       displayName: Version Information
       inputs:
-        type: InlineScript
-        script: |
+        scriptType: inlineScript
+        inlineScript: |
           # Dump some info about the tools
           mono --version
           msbuild /version

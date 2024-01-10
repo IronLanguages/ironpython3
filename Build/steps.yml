@@ -41,7 +41,8 @@ steps:
     - task: AzureCLI@2
       displayName: Set Mono Version
       inputs:
-        scriptType: inlineScript
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
           # use Mono 6.4.0 version
           SYMLINK=6.4.0
@@ -55,7 +56,8 @@ steps:
     - task: AzureCLI@2
       displayName: Version Information
       inputs:
-        scriptType: inlineScript
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
           # Testing and packaging tools
           sudo apt-get -yq install mono-vbnc dos2unix fakeroot
@@ -71,7 +73,8 @@ steps:
     - task: AzureCLI@2
       displayName: Version Information
       inputs:
-        scriptType: inlineScript
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
           # Dump some info about the tools
           mono --version

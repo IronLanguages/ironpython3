@@ -5,6 +5,7 @@
 #if FEATURE_FULL_NET
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -593,26 +594,33 @@ namespace IronPython.Modules {
 
             [Documentation(@"read(size, [buffer])
 Read up to size bytes from the SSL socket.")]
-            public object read(CodeContext/*!*/ context, int size) {
+            public Bytes read(CodeContext/*!*/ context, int size) {
                 EnsureSslStream(true);
 
                 if (size < 0) throw PythonOps.ValueError("size should not be negative");
 
+                var buf = ArrayPool.Rent(size);
                 try {
-                    byte[] buf = new byte[size];
-                    var numRead = _sslStream.Read(buf, 0, buf.Length);
-                    if (numRead == buf.Length) {
-                        return Bytes.Make(buf);
+                    int numRead;
+                    try {
+                        numRead = _sslStream.Read(buf, 0, size);
+                    } catch (Exception e) {
+                        throw PythonSocket.MakeException(context, e);
                     }
-                    return Bytes.Make(buf.AsSpan(0, numRead).ToArray());
-                } catch (Exception e) {
-                    throw PythonSocket.MakeException(context, e);
+
+                    var bytes = new byte[numRead];
+                    Array.Copy(buf, bytes, bytes.Length);
+                    return Bytes.Make(bytes);
+                } finally {
+                    ArrayPool.Return(buf);
                 }
             }
 
+            private static ArrayPool<byte> ArrayPool => ArrayPool<byte>.Shared;
+
             [Documentation(@"read(size, [buffer])
 Read up to size bytes from the SSL socket.")]
-            public object read(CodeContext/*!*/ context, int size, [NotNone] IBufferProtocol buffer) {
+            public int read(CodeContext/*!*/ context, int size, [NotNone] IBufferProtocol buffer) {
                 EnsureSslStream(true);
 
                 using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
@@ -627,13 +635,15 @@ Read up to size bytes from the SSL socket.")]
 #else
                     var buf = pythonBuffer.AsUnsafeWritableArray();
                     if (buf is null) {
-                        buf = new byte[size];
-                        var numRead = _sslStream.Read(buf, 0, buf.Length);
-                        if (numRead == buf.Length) {
-                            return Bytes.Make(buf);
+                        buf = ArrayPool.Rent(size);
+                        try {
+                            var numRead = _sslStream.Read(buf, 0, size);
+                            buf.AsSpan(0, numRead).CopyTo(pythonBuffer.AsSpan());
+                            return numRead;
                         }
-                        buf.AsSpan(0, numRead).CopyTo(pythonBuffer.AsSpan());
-                        return numRead;
+                        finally {
+                            ArrayPool.Return(buf);
+                        }
                     }
                     else {
                         return _sslStream.Read(buf, 0, size);

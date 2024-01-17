@@ -593,30 +593,52 @@ namespace IronPython.Modules {
 
             [Documentation(@"read(size, [buffer])
 Read up to size bytes from the SSL socket.")]
-            public object read(CodeContext/*!*/ context, int size, ByteArray buffer = null) {
+            public object read(CodeContext/*!*/ context, int size) {
                 EnsureSslStream(true);
 
+                if (size < 0) throw PythonOps.ValueError("size should not be negative");
+
                 try {
-                    byte[] buf = new byte[2048];
-                    MemoryStream result = new MemoryStream(size);
-                    while (true) {
-                        int readLength = (size < buf.Length) ? size : buf.Length;
-                        int bytes = _sslStream.Read(buf, 0, readLength);
-                        if (bytes > 0) {
-                            result.Write(buf, 0, bytes);
-                            size -= bytes;
-                        }
-
-                        if (bytes == 0 || size == 0 || bytes < readLength) {
-                            var res = result.ToArray();
-                            if (buffer == null)
-                                return Bytes.Make(res);
-
-                            // TODO: get rid of the MemoryStream and write directly to the buffer
-                            buffer[new Slice(0, res.Length)] = res;
-                            return res.Length;
-                        }
+                    byte[] buf = new byte[size];
+                    var numRead = _sslStream.Read(buf, 0, buf.Length);
+                    if (numRead == buf.Length) {
+                        return Bytes.Make(buf);
                     }
+                    return Bytes.Make(buf.AsSpan(0, numRead).ToArray());
+                } catch (Exception e) {
+                    throw PythonSocket.MakeException(context, e);
+                }
+            }
+
+            [Documentation(@"read(size, [buffer])
+Read up to size bytes from the SSL socket.")]
+            public object read(CodeContext/*!*/ context, int size, [NotNone] IBufferProtocol buffer) {
+                EnsureSslStream(true);
+
+                using var pythonBuffer = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("read() argument 2 must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
+
+                var bufferLen = pythonBuffer.ItemCount;
+                if (size <= 0 || bufferLen < size) size = bufferLen;
+
+                try {
+#if NETCOREAPP
+                    return _sslStream.Read(pythonBuffer.AsSpan().Slice(0, size));
+#else
+                    var buf = pythonBuffer.AsUnsafeWritableArray();
+                    if (buf is null) {
+                        buf = new byte[size];
+                        var numRead = _sslStream.Read(buf, 0, buf.Length);
+                        if (numRead == buf.Length) {
+                            return Bytes.Make(buf);
+                        }
+                        buf.AsSpan(0, numRead).CopyTo(pythonBuffer.AsSpan());
+                        return numRead;
+                    }
+                    else {
+                        return _sslStream.Read(buf, 0, size);
+                    }
+#endif
                 } catch (Exception e) {
                     throw PythonSocket.MakeException(context, e);
                 }

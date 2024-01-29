@@ -648,6 +648,10 @@ class PurePath(object):
                                                   self._parts) or '.'
             return self._str
 
+    # ironpython: backport from 3.6
+    def __fspath__(self):
+        return str(self)
+
     def as_posix(self):
         """Return the string representation of the path with forward (/)
         slashes."""

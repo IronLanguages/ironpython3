@@ -107,7 +107,7 @@ Deprecated
 
 New Keywords
 ------------
-- [ ]`async` and `await` are not recommended to be used as variable, class, function or module names. Introduced by PEP 492 in Python 3.5, they will become proper keywords in Python 3.7. Starting in Python 3.6, the use of `async` or `await` as names will generate a `DeprecationWarning`.
+- [ ] `async` and `await` are not recommended to be used as variable, class, function or module names. Introduced by PEP 492 in Python 3.5, they will become proper keywords in Python 3.7. Starting in Python 3.6, the use of `async` or `await` as names will generate a `DeprecationWarning`.
 
 Deprecated Python Behavior
 --------------------------

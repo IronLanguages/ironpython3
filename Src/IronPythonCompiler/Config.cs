@@ -1,13 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using IKVM.Reflection;
-using IKVM.Reflection.Emit;
-using System.Resources;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+
 using Microsoft.Scripting.Runtime;
 
 namespace IronPythonCompiler {
@@ -16,8 +13,8 @@ namespace IronPythonCompiler {
         public Config() {
             Embed = false;
             Files = new List<string>();
-            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+            Platform = PortableExecutableKinds.ILOnly;
+            Machine = ImageFileMachine.AMD64;
             Standalone = false;
             Target = PEFileKinds.Dll;
             UseMta = false;
@@ -125,12 +122,12 @@ namespace IronPythonCompiler {
             internal set;
         }
 
-        public IKVM.Reflection.ImageFileMachine Machine {
+        public ImageFileMachine Machine {
             get;
             private set;
         }
 
-        public IKVM.Reflection.PortableExecutableKinds Platform {
+        public PortableExecutableKinds Platform {
             get;
             private set;
         }
@@ -169,16 +166,25 @@ namespace IronPythonCompiler {
                     string plat = arg.Substring(10).Trim('"');
                     switch (plat) {
                         case "x86":
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly | IKVM.Reflection.PortableExecutableKinds.Required32Bit;
-                            Machine = IKVM.Reflection.ImageFileMachine.I386;
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit;
+                            Machine = ImageFileMachine.I386;
                             break;
                         case "x64":
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly | IKVM.Reflection.PortableExecutableKinds.PE32Plus;
-                            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.PE32Plus;
+                            Machine = ImageFileMachine.AMD64;
+                            break;
+                        case "arm":
+                        case "arm32":
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit;
+                            Machine = ImageFileMachine.ARM;
+                            break;
+                        case "arm64":
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.PE32Plus;
+                            Machine = ImageFileMachine.ARM;
                             break;
                         default:
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-                            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = ImageFileMachine.I386;
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:", StringComparison.Ordinal)) {

@@ -2,6 +2,7 @@
 
 namespace IronPythonCompiler {
     public static class ConsoleOps {
+
         public static bool NoLogo { get; set; }
 
         public static void Error(string format, params object[] args) {

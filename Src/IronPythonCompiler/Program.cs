@@ -27,7 +27,7 @@ namespace IronPythonCompiler {
         private static void GenerateExe(AssemblyGen assemblyGen, Config config) {
             var ab = assemblyGen.AssemblyBuilder;
             var mb = assemblyGen.ModuleBuilder;
-            var tb = mb.DefineType("PythonMain", TypeAttributes.Public);
+            var tb = mb.DefineType("PythonMain", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
 
             if (!string.IsNullOrEmpty(config.Win32Icon)) {
                 //ab.DefineIconResource(File.ReadAllBytes(config.Win32Icon));
@@ -68,47 +68,67 @@ namespace IronPythonCompiler {
                 }
 
                 // we currently do no error checking on what is passed in to the assemblyresolve event handler
-                assemblyResolveMethod = tb.DefineMethod("AssemblyResolve", MethodAttributes.Public | MethodAttributes.Static, typeof(System.Reflection.Assembly), new Type[] { typeof(System.Object), typeof(System.ResolveEventArgs) });
+                assemblyResolveMethod = tb.DefineMethod("AssemblyResolve", MethodAttributes.Public | MethodAttributes.Static, typeof(Assembly), new Type[] { typeof(object), typeof(ResolveEventArgs) });
                 gen = assemblyResolveMethod.GetILGenerator();
-                var s = gen.DeclareLocal(typeof(Stream)); // resource stream
 
-                gen.Emit(OpCodes.Ldnull);
-                gen.Emit(OpCodes.Stloc, s);
-                var d = gen.DeclareLocal(typeof(byte[])); // data buffer;
-                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod("GetEntryAssembly"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.GetEntryAssembly)), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldstr, "Dll.");
                 gen.Emit(OpCodes.Ldarg_1);    // The event args
-                gen.EmitCall(OpCodes.Callvirt, typeof(ResolveEventArgs).GetMethod("get_Name"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(ResolveEventArgs).GetProperty(nameof(ResolveEventArgs.Name)).GetGetMethod(), Type.EmptyTypes);
+
+                var s = gen.DeclareLocal(typeof(Stream)); // resource stream
                 gen.Emit(OpCodes.Newobj, typeof(AssemblyName).GetConstructor(new Type[] { typeof(string) }));
-                gen.EmitCall(OpCodes.Call, typeof(AssemblyName).GetMethod("get_Name"), Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod("Concat", new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Assembly).GetMethod("GetManifestResourceStream", new Type[] { typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(AssemblyName).GetProperty(nameof(AssemblyName.Name)).GetGetMethod(), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Assembly).GetMethod(nameof(Assembly.GetManifestResourceStream), new Type[] { typeof(string) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, s);
+
+                gen.BeginExceptionBlock();
+
+                var d = gen.DeclareLocal(typeof(byte[])); // data buffer;
                 gen.Emit(OpCodes.Ldloc, s);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod("get_Length"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetProperty(nameof(Stream.Length)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Newarr, typeof(byte));
                 gen.Emit(OpCodes.Stloc, d);
+
                 gen.Emit(OpCodes.Ldloc, s);
                 gen.Emit(OpCodes.Ldloc, d);
                 gen.Emit(OpCodes.Ldc_I4_0);
                 gen.Emit(OpCodes.Ldloc, s);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod("get_Length"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetProperty(nameof(Stream.Length)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Conv_I4);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod("Read", new Type[] { typeof(byte[]), typeof(int), typeof(int) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod(nameof(Stream.Read), new Type[] { typeof(byte[]), typeof(int), typeof(int) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Pop);
+
+                var aa = gen.DeclareLocal(typeof(Assembly));
                 gen.Emit(OpCodes.Ldloc, d);
-                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod("Load", new Type[] { typeof(byte[]) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.Load), new Type[] { typeof(byte[]) }), Type.EmptyTypes);
+                gen.Emit(OpCodes.Stloc, aa);
+
+                gen.BeginFinallyBlock();
+
+                gen.Emit(OpCodes.Ldloc, s);
+                var offset = gen.ILOffset;
+                gen.Emit(OpCodes.Brfalse_S, (byte)6);
+
+                gen.Emit(OpCodes.Ldloc, s);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod(nameof(Stream.Dispose)), Type.EmptyTypes);
+
+                gen.EndExceptionBlock();
+
+                gen.Emit(OpCodes.Ldloc, aa);
                 gen.Emit(OpCodes.Ret);
 
                 // generate a static constructor to assign the AssemblyResolve handler (otherwise it tries to use IronPython before it adds the handler)
                 // the other way of handling this would be to move the call to InitializeModule into a separate method.
                 var staticConstructor = tb.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, Type.EmptyTypes);
                 gen = staticConstructor.GetILGenerator();
-                gen.EmitCall(OpCodes.Call, typeof(AppDomain).GetMethod("get_CurrentDomain"), Type.EmptyTypes);
+
+                gen.EmitCall(OpCodes.Call, typeof(AppDomain).GetProperty(nameof(AppDomain.CurrentDomain)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldnull);
                 gen.Emit(OpCodes.Ldftn, assemblyResolveMethod);
                 gen.Emit(OpCodes.Newobj, typeof(ResolveEventHandler).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) }));
-                gen.EmitCall(OpCodes.Callvirt, typeof(AppDomain).GetMethod("add_AssemblyResolve"), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(AppDomain).GetEvent(nameof(AppDomain.AssemblyResolve)).GetAddMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ret);
             }
 
@@ -121,14 +141,13 @@ namespace IronPythonCompiler {
 
             gen = mainMethod.GetILGenerator();
 
-            // variables for saving original working directory and return code of script
-            var strVar = gen.DeclareLocal(typeof(string));
+            // variables for saving return code of script
             var intVar = gen.DeclareLocal(typeof(int));
             LocalBuilder dictVar = null;
 
             if (config.PythonOptions.Count > 0) {
-                var True = typeof(ScriptingRuntimeHelpers).GetField("True");
-                var False = typeof(ScriptingRuntimeHelpers).GetField("False");
+                var True = typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.True));
+                var False = typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.False));
 
                 dictVar = gen.DeclareLocal(typeof(Dictionary<string, object>));
                 gen.Emit(OpCodes.Newobj, typeof(Dictionary<string, object>).GetConstructor(Type.EmptyTypes));
@@ -148,14 +167,16 @@ namespace IronPythonCompiler {
                     } else if (option.Value.Equals(ScriptingRuntimeHelpers.False)) {
                         gen.Emit(OpCodes.Ldsfld, False);
                     }
-                    gen.EmitCall(OpCodes.Callvirt, typeof(Dictionary<string, object>).GetMethod("Add", new Type[] { typeof(string), typeof(object) }), Type.EmptyTypes);
+                    gen.EmitCall(OpCodes.Callvirt, typeof(Dictionary<string, object>).GetMethod(nameof(Dictionary<string, object>.Add), new Type[] { typeof(string), typeof(object) }), Type.EmptyTypes);
                 }
             }
 
-            Label tryStart = gen.BeginExceptionBlock();
+            gen.BeginExceptionBlock();
 
             // get the ScriptCode assembly...
-            gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.GetExecutingAssembly), Type.EmptyTypes), Type.EmptyTypes);
+            gen.Emit(OpCodes.Ldtoken, tb);
+            gen.EmitCall(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)), new Type[] { typeof(RuntimeTypeHandle) });
+            gen.EmitCall(OpCodes.Callvirt, typeof(Type).GetProperty(nameof(Type.Assembly)).GetGetMethod(), Type.EmptyTypes);
 
             // emit module name
             gen.Emit(OpCodes.Ldstr, "__main__");  // main module name
@@ -176,22 +197,22 @@ namespace IronPythonCompiler {
             gen.Emit(OpCodes.Stloc, intVar);
             gen.BeginCatchBlock(typeof(Exception));
 
+            var strVar = gen.DeclareLocal(typeof(string));
+            gen.EmitCall(OpCodes.Callvirt, typeof(Exception).GetProperty(nameof(Exception.Message)).GetGetMethod(), Type.EmptyTypes);
+            gen.Emit(OpCodes.Stloc, strVar);
+
             if (config.Target == PEFileKinds.ConsoleApplication) {
-                gen.EmitCall(OpCodes.Callvirt, typeof(Exception).GetMethod("get_Message", Type.EmptyTypes), Type.EmptyTypes);
-                gen.Emit(OpCodes.Stloc, strVar);
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(Console).GetMethod(nameof(Console.WriteLine), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
             } else {
-                gen.EmitCall(OpCodes.Callvirt, typeof(Exception).GetMethod("get_Message", Type.EmptyTypes), Type.EmptyTypes);
-                gen.Emit(OpCodes.Stloc, strVar);
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldstr, "Error");
                 gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxButtons.OK);
                 gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxIcon.Error);
-                gen.EmitCall(OpCodes.Call, typeof(System.Windows.Forms.MessageBox).GetMethod("Show", new Type[] { typeof(string), typeof(string), typeof(System.Windows.Forms.MessageBoxButtons), typeof(System.Windows.Forms.MessageBoxIcon) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(System.Windows.Forms.MessageBox).GetMethod(nameof(System.Windows.Forms.MessageBox.Show), new Type[] { typeof(string), typeof(string), typeof(System.Windows.Forms.MessageBoxButtons), typeof(System.Windows.Forms.MessageBoxIcon) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Pop);
             }
 

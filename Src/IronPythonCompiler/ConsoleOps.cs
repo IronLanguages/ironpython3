@@ -2,6 +2,7 @@
 
 namespace IronPythonCompiler {
     public static class ConsoleOps {
+        public static bool NoLogo { get; set; }
 
         public static void Error(string format, params object[] args) {
             Error(false, format, args);
@@ -30,6 +31,7 @@ namespace IronPythonCompiler {
         }
 
         public static void Info(string format, params object[] args) {
+            if (NoLogo) { return; }
             Console.WriteLine(format, args);
         }
 
@@ -48,6 +50,7 @@ Options:
     /productname:<productname>                Sets the product name attribute for the generated assembly
     /productversion:<productversion>          Sets the product version attribute for the generated assembly
     /py:<option>                              Allows specifying options that modify the behavior of IronPython (e.g., -X:FullFrames)
+    /nologo                                   Suppress compiler copyright message
     @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
     /? /h                                     This message    
 

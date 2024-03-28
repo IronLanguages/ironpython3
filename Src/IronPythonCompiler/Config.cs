@@ -102,6 +102,11 @@ namespace IronPythonCompiler {
             private set;
         }
 
+        public bool NoLogo {
+            get;
+            private set;
+        }
+
         public List<string> Files {
             get;
             private set;
@@ -158,6 +163,8 @@ namespace IronPythonCompiler {
                         case "winexe":
                             Target = PEFileKinds.WindowApplication;
                             break;
+                        case "library":
+                        case "dll":
                         default:
                             Target = PEFileKinds.Dll;
                             break;
@@ -215,6 +222,8 @@ namespace IronPythonCompiler {
                     foreach (var f in Directory.EnumerateFiles(Environment.CurrentDirectory, pattern)) {
                         Files.Add(Path.GetFullPath(f));
                     }
+                } else if (arg.Equals("/nologo", StringComparison.Ordinal)) {
+                    NoLogo = true;
                 } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
                 } else if (arg.StartsWith("/py:", StringComparison.Ordinal)) {

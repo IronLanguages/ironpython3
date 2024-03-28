@@ -213,6 +213,7 @@ namespace IronPythonCompiler {
             if (!config.Validate()) {
                 ConsoleOps.Usage(true);
             }
+            ConsoleOps.NoLogo = config.NoLogo;
 
             // we don't use the engine, but we create it so we can have a default context.
             ScriptEngine engine = Python.CreateEngine(config.PythonOptions);

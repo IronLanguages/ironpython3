@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -14,7 +15,7 @@ namespace IronPythonCompiler {
             Embed = false;
             Files = new List<string>();
             Platform = PortableExecutableKinds.ILOnly;
-            Machine = ImageFileMachine.AMD64;
+            Machine = ImageFileMachine.I386;
             Standalone = false;
             Target = PEFileKinds.Dll;
             UseMta = false;
@@ -155,7 +156,7 @@ namespace IronPythonCompiler {
                 } else if (arg.StartsWith("/out:", StringComparison.Ordinal)) {
                     Output = arg.Substring(5).Trim('"');
                 } else if (arg.StartsWith("/target:", StringComparison.Ordinal)) {
-                    string tgt = arg.Substring(8).Trim('"');
+                    string tgt = arg.Substring(8).Trim('"').ToLowerInvariant();
                     switch (tgt) {
                         case "exe":
                             Target = PEFileKinds.ConsoleApplication;
@@ -170,28 +171,44 @@ namespace IronPythonCompiler {
                             break;
                     }
                 } else if (arg.StartsWith("/platform:", StringComparison.Ordinal)) {
-                    string plat = arg.Substring(10).Trim('"');
+                    string plat = arg.Substring(10).Trim('"').ToLowerInvariant();
                     switch (plat) {
                         case "x86":
+                        case "i386":
                             Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit;
                             Machine = ImageFileMachine.I386;
                             break;
                         case "x64":
+                        case "amd64":
                             Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.PE32Plus;
                             Machine = ImageFileMachine.AMD64;
                             break;
+                        case "ia64":
+                        case "itanium":
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = ImageFileMachine.IA64;
+                            break;
                         case "arm":
                         case "arm32":
-                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit;
+                            Platform = PortableExecutableKinds.ILOnly;
                             Machine = ImageFileMachine.ARM;
                             break;
                         case "arm64":
-                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.PE32Plus;
-                            Machine = ImageFileMachine.ARM;
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = (ImageFileMachine)0xAA64;
                             break;
-                        default:
+                        case "anycpu":
                             Platform = PortableExecutableKinds.ILOnly;
                             Machine = ImageFileMachine.I386;
+                            break;
+                        default:
+                            try {
+                                int machine = (int)new Int32Converter().ConvertFromInvariantString(plat);
+                                Platform = PortableExecutableKinds.ILOnly;
+                                Machine = (ImageFileMachine)machine;
+                            } catch {
+                                goto case "anycpu";
+                            }
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:", StringComparison.Ordinal)) {
@@ -348,7 +365,7 @@ namespace IronPythonCompiler {
             res.AppendLine($"Output:\n\t{Output}");
             res.AppendLine($"OutputPath:\n\t{OutputPath}");
             res.AppendLine($"Target:\n\t{Target}");
-            res.AppendLine($"Platform:\n\t{Machine}");
+            res.AppendLine($"Platform:\n\t{Machine} ({Platform})");
             if (Target == PEFileKinds.WindowApplication) {
                 res.AppendLine("Threading:");
                 if (UseMta) {

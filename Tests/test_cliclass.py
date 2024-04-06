@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -1421,7 +1421,7 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' not in clr.Dir('abc'))
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
-    @unittest.skipIf(is_net70, "TODO") # TODO: https://github.com/IronLanguages/ironpython3/issues/1485
+    @unittest.skipIf(is_net70 or is_net80, "TODO") # TODO: https://github.com/IronLanguages/ironpython3/issues/1485
     def test_int32_bigint_equivalence(self):
         import math
 

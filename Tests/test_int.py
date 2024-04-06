@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_net70, is_netstandard, is_mono, big, myint, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, is_net70, is_net80, is_netstandard, is_mono, big, myint, skipUnlessIronPython, run_test
 
 class IntNoClrTest(IronPythonTestCase):
     """Must be run before IntTest because it depends on CLR API not being visible."""
@@ -27,7 +27,7 @@ class IntTest(IronPythonTestCase):
             self.assertSetEqual(set(dir(j)) - set(dir(i)), {'GetByteCount', 'TryWriteBytes'})
             self.assertSetEqual(set(dir(int)) - set(dir(Int32)), {'GetByteCount', 'TryWriteBytes'})
 
-        if is_net70: # https://github.com/IronLanguages/ironpython3/issues/1485
+        if is_net70 or is_net80: # https://github.com/IronLanguages/ironpython3/issues/1485
             diff = {'TryConvertToChecked', 'MinValue', 'TryConvertFromChecked', 'MaxValue', 'TryConvertFromTruncating', 'WriteBigEndian', 'GetShortestBitLength', 'TryWriteLittleEndian', 'WriteLittleEndian', 'TryConvertToSaturating', 'TryConvertFromSaturating', 'TryWriteBigEndian', 'TryConvertToTruncating'}
             self.assertSetEqual(set(dir(i)) - set(dir(j)), diff)
             self.assertSetEqual(set(dir(Int32)) - set(dir(int)), diff)

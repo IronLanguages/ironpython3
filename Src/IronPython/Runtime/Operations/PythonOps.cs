@@ -4024,7 +4024,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception InvalidType(object o, RuntimeTypeHandle handle) {
-            return PythonOps.TypeErrorForTypeMismatch(DynamicHelpers.GetPythonTypeFromType(Type.GetTypeFromHandle(handle)).Name, o);
+            return PythonOps.TypeErrorForTypeMismatch(DynamicHelpers.GetPythonTypeFromType(Type.GetTypeFromHandle(handle)!).Name, o);
         }
 
         public static Exception ZeroDivisionError() {

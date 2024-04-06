@@ -22,7 +22,7 @@ namespace IronPython.Modules {
         private static extern IntPtr _CreateIoCompletionPort(IntPtr FileHandle, IntPtr ExistingCompletionPort, UIntPtr CompletionKey, uint NumberOfConcurrentThreads);
 
         public static BigInteger CreateIoCompletionPort(BigInteger handle, BigInteger port, BigInteger key, int concurrency) {
-            var res = _CreateIoCompletionPort((IntPtr)(long)handle, (IntPtr)(long)port, (UIntPtr)(ulong)key, (uint)concurrency);
+            var res = _CreateIoCompletionPort(checked((IntPtr)(long)handle), checked((IntPtr)(long)port), checked((UIntPtr)(ulong)key), (uint)concurrency);
             if (res == IntPtr.Zero) {
                 throw PythonNT.GetLastWin32Error();
             }

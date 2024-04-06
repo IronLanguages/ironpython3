@@ -504,7 +504,7 @@ namespace IronPython.Runtime.Types {
                 res.Append('}');
             } else {
                 if (pi != null) {
-                    if((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith("&", StringComparison.Ordinal)) {
+                    if((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith('&')) {
                         res.Append(curType.FullName.Replace("&", "@"));
                     } else {
                         res.Append(curType.FullName);

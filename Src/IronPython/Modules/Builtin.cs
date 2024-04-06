@@ -1294,7 +1294,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 line = PythonOps.ReadLineFromSrc(context, context.LanguageContext.SystemStandardIn) as string;
             }
 
-            if (line != null && line.EndsWith("\n", StringComparison.Ordinal)) return line.Substring(0, line.Length - 1);
+            if (line != null && line.EndsWith('\n')) return line.Substring(0, line.Length - 1);
             return line;
         }
 

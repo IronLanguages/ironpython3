@@ -546,10 +546,12 @@ namespace IronPython.Modules {
             lock (_nativeTypes) {
                 if (!_nativeTypes.TryGetValue(size, out Type res)) {
                     int sizeRemaining = size;
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
                     TypeBuilder tb = DynamicModule.DefineType("interop_type_size_" + size,
                         TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable,
                         typeof(ValueType),
                         size);
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
 
                     while (sizeRemaining > 8) {
                         tb.DefineField("field" + sizeRemaining, typeof(long), FieldAttributes.Private);

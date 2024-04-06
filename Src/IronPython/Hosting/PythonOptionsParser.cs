@@ -157,7 +157,7 @@ namespace IronPython.Hosting {
                 return;
             }
 
-            if (arg.StartsWith("-", StringComparison.Ordinal)) {
+            if (arg.StartsWith('-')) {
                 if (arg.StartsWith("-X:", StringComparison.Ordinal)) {
                     // old implementation specific options for compat
                     switch (arg) {

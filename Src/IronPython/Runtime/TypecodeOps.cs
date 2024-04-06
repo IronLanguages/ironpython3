@@ -138,6 +138,7 @@ namespace IronPython.Runtime {
             }
         }
 
+#pragma warning disable CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
         public static bool TryGetBytes(char typecode, object obj, Span<byte> dest) {
             switch (typecode) {
                 case 'c':
@@ -205,6 +206,7 @@ namespace IronPython.Runtime {
                     return false;
             }
         }
+#pragma warning restore CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
 
         /// <summary>
         /// Checks if the given value does overflow a single element field with the

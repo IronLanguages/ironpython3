@@ -95,3 +95,6 @@ dotnet_diagnostic.CA5350.severity = suggestion  # CA5350: Do Not Use Weak Crypto
 dotnet_diagnostic.CA5351.severity = suggestion  # CA5351: Do Not Use Broken Cryptographic Algorithms
 dotnet_diagnostic.CA5359.severity = suggestion  # CA5359: Do Not Disable Certificate Validation
 dotnet_diagnostic.CA5372.severity = suggestion  # CA5372: Use XmlReader For XPathDocument
+
+dotnet_diagnostic.SYSLIB1045.severity = suggestion # SYSLIB1045: Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time
+dotnet_diagnostic.SYSLIB1054.severity = suggestion # SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time

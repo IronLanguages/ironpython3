@@ -26,7 +26,7 @@ namespace IronPython.Modules {
                 throw new NotImplementedException();
             }
             else {
-                var result = ConnectNamedPipe((IntPtr)(long)handle, IntPtr.Zero);
+                var result = ConnectNamedPipe(checked((IntPtr)(long)handle), IntPtr.Zero);
 
                 if (!result) throw PythonNT.GetLastWin32Error();
 

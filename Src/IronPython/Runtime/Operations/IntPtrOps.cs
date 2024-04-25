@@ -59,6 +59,8 @@ namespace IronPython.Runtime.Operations {
 
         #region Unary Operations
 
+        public static PythonTuple __getnewargs__(IntPtr self) => PythonTuple.MakeTuple(unchecked((BigInteger)(nint)self));
+
         public static BigInteger __index__(IntPtr x) => unchecked((BigInteger)(nint)x);
 
         #endregion

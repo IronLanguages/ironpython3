@@ -95,6 +95,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(SByte x) => x.ToString(CultureInfo.InvariantCulture);
 
+        public static PythonTuple __getnewargs__(SByte self) => PythonTuple.MakeTuple(unchecked((int)self));
+
         public static SByte __trunc__(SByte x) => x;
 
         public static int __int__(SByte x) => unchecked((int)x);
@@ -365,6 +367,8 @@ namespace IronPython.Runtime.Operations {
         public static bool __bool__(Byte x) => (x != 0);
 
         public static string __repr__(Byte x) => x.ToString(CultureInfo.InvariantCulture);
+
+        public static PythonTuple __getnewargs__(Byte self) => PythonTuple.MakeTuple(unchecked((int)self));
 
         public static Byte __trunc__(Byte x) => x;
 
@@ -739,6 +743,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(Int16 x) => x.ToString(CultureInfo.InvariantCulture);
 
+        public static PythonTuple __getnewargs__(Int16 self) => PythonTuple.MakeTuple(unchecked((int)self));
+
         public static Int16 __trunc__(Int16 x) => x;
 
         public static int __int__(Int16 x) => unchecked((int)x);
@@ -1014,6 +1020,8 @@ namespace IronPython.Runtime.Operations {
         public static bool __bool__(UInt16 x) => (x != 0);
 
         public static string __repr__(UInt16 x) => x.ToString(CultureInfo.InvariantCulture);
+
+        public static PythonTuple __getnewargs__(UInt16 self) => PythonTuple.MakeTuple(unchecked((int)self));
 
         public static UInt16 __trunc__(UInt16 x) => x;
 
@@ -1398,6 +1406,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(Int32 x) => x.ToString(CultureInfo.InvariantCulture);
 
+        public static PythonTuple __getnewargs__(Int32 self) => PythonTuple.MakeTuple(unchecked((int)self));
+
         public static Int32 __trunc__(Int32 x) => x;
 
         public static int __int__(Int32 x) => unchecked((int)x);
@@ -1648,6 +1658,8 @@ namespace IronPython.Runtime.Operations {
         public static bool __bool__(UInt32 x) => (x != 0);
 
         public static string __repr__(UInt32 x) => x.ToString(CultureInfo.InvariantCulture);
+
+        public static PythonTuple __getnewargs__(UInt32 self) => PythonTuple.MakeTuple(unchecked((BigInteger)self));
 
         public static UInt32 __trunc__(UInt32 x) => x;
 
@@ -2032,6 +2044,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(Int64 x) => x.ToString(CultureInfo.InvariantCulture);
 
+        public static PythonTuple __getnewargs__(Int64 self) => PythonTuple.MakeTuple(unchecked((BigInteger)self));
+
         public static Int64 __trunc__(Int64 x) => x;
 
         public static BigInteger __int__(Int64 x) => unchecked((BigInteger)x);
@@ -2305,6 +2319,8 @@ namespace IronPython.Runtime.Operations {
         public static bool __bool__(UInt64 x) => (x != 0);
 
         public static string __repr__(UInt64 x) => x.ToString(CultureInfo.InvariantCulture);
+
+        public static PythonTuple __getnewargs__(UInt64 self) => PythonTuple.MakeTuple(unchecked((BigInteger)self));
 
         public static UInt64 __trunc__(UInt64 x) => x;
 

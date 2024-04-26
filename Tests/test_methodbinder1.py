@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, is_net70, is_netcoreapp, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 from System import Int32
@@ -102,7 +102,7 @@ class MethodBinder1Test(IronPythonTestCase):
 
 
         funcnames =     "M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400".split()
-        matrix = (
+        matrix = [
     ####                 M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
     ####                 int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
     (        "SByteMax", True,  True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
@@ -172,16 +172,17 @@ class MethodBinder1Test(IronPythonTestCase):
     (            (3+0j), TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
     (            (3+1j), TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  ),
     (        mycomplex1, TypeE, TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  )
-        )
+        ]
 
 
-        InvariantCulture = System.Globalization.CultureInfo.InvariantCulture
-        matrix = list(matrix)
+
+        ch2bi = True if is_net70 else TypeE # .NET 7 adds an implicit cast from Char to BigInteger
         ##################################################  pass in char    #########################################################
         ####                                     M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
         ####                                     int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
-        matrix.append((System.Char.Parse('A'),   TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  True, True,  ))
+        matrix.append((System.Char.Parse('A'),   TypeE, TypeE, TypeE, ch2bi, ch2bi, True,  True,  TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, TypeE, True,  True, True,  ))
 
+        InvariantCulture = System.Globalization.CultureInfo.InvariantCulture
         ##################################################  pass in float   #########################################################
         ####    single/double becomes Int32/BigInteger, but this does not apply to other primitive types
         ####                                                          M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
@@ -190,7 +191,6 @@ class MethodBinder1Test(IronPythonTestCase):
         matrix.append((System.Double.Parse("10.2", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
         matrix.append((System.Single.Parse("-8.1", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
         matrix.append((System.Double.Parse("-1.8", InvariantCulture), TypeE, TypeE, True,  TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, True,  TypeE, TypeE, TypeE, TypeE, TypeE, True,  True,  ))
-        matrix = tuple(matrix)
 
         for scenario in matrix:
             if isinstance(scenario[0], str):

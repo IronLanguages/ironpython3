@@ -606,7 +606,7 @@ namespace IronPython.Modules {
     /// <summary>
     /// Optimized encoding mapping that can be consumed by charmap_encode/EncodingMapEncoding.
     /// </summary>
-    [PythonHidden]
+    [PythonType, PythonHidden]
     public class EncodingMap {
         private readonly string _smap;
         [DisallowNull] private Dictionary<byte, int>? _dmap;

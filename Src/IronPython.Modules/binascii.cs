@@ -59,7 +59,7 @@ namespace IronPython.Modules {
                 }
 
                 using MemoryStream res = DecodeWorker(context, data, true, UuDecFunc);
-                if (suffix == null) {
+                if (suffix.IsEmpty) {
                     var pad = new byte[lenDec - res.Length];
                     res.Write(pad, 0, pad.Length);
                 } else {

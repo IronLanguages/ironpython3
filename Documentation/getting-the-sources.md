@@ -2,7 +2,7 @@ The main IronPython3 git repository is at [http://github.com/IronLanguages/ironp
 
 ## Downloading the sources
 
-You can [download a zipped copy](http://github.com/IronLanguages/ironpython3/zipball/master) of the latest IronPython3 sources as well.
+You can [download a zipped copy](http://github.com/IronLanguages/ironpython3/zipball/main) of the latest IronPython3 sources as well.
 
 ### Installing GIT
 
@@ -15,7 +15,7 @@ The following links include resources for installing and using GIT:
 
 ### Creating a local GIT repository
 
-You will first need to fork the IronPython3 project. [Creating a fork](https://help.github.com/fork-a-repo/) is recommended as it will allow you to contribute patches back easily. Click the "Fork" button on [https://github.com/IronLanguages/ironpython3/](https://github.com/IronLanguages/ironpython3/). This should create your personal fork, with a web URL like http://github.com/janedoe/ironpython3 (where janedoe is your github username). 
+You will first need to fork the IronPython3 project. [Creating a fork](https://help.github.com/fork-a-repo/) is recommended as it will allow you to contribute patches back easily. Click the "Fork" button on [https://github.com/IronLanguages/ironpython3/](https://github.com/IronLanguages/ironpython3/). This should create your personal fork, with a web URL like http://github.com/janedoe/ironpython3 (where janedoe is your github username).
 
 You can now use the git command-line client with many Linux distributions, Mac OS, Cygwin, and Windows (msysgit) to get the sources onto your local computer using the following commands:
 
@@ -27,13 +27,13 @@ git config --global user.email janedoe@example.com
 git clone git@github.com:janedoe/ironpython3.git
 cd ironpython3
 git remote add ironpython3 git://github.com/IronLanguages/ironpython3.git
-git pull ironpython3 master
+git pull ironpython3 main
 ```
 
 At a later date, to get the latest updates from the IronPython3 project, run the following command in the ironpython3 directory created above:
 
 ```
-git pull ironpython3 master
+git pull ironpython3 main
 ```
 
 If there is a merge conflict, edit the unmerged files to remove the conflict markers, and then run the following command:

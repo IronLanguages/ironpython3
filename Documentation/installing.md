@@ -87,7 +87,7 @@ Use Powershell's `help` command on the script for information about available op
 The script is also available online, so it can be downloaded and invoked without unzipping the archive first.
 
 ```
-PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/master/Src/Scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
+PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/main/Src/Scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
 PS> ./Install-IronPython ~/ipyenv ~/Downloads/IronPython.3.X.Y.zip
 PS> ~/ipyenv/Enter-IronPythonEnvironment
 «ipyenv» PS> ipy
@@ -146,7 +146,7 @@ It is recommended to create one's own launcher script launching the newer IronPy
 
 After a release, the development of IronPython continues so it is possible that a bug or a feature that is important to you was handled after the latest release. As each commit to the main project branch creates precompiled artifacts, it is still possible to install the relevant (or latest development) version of IronPython without the need to compile the whole project from scratch.
 
-Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `master` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
+Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython3/actions) and find the commit you are interested in. Or simply find the topmost commit to `main` that has all tests passing. The _Status_ and _Branch_ filters in the top bar are helpful to narrow the list down. Then click on the commit hyperlink to access the CI run summary. At the bottom of that page there is artifact `packages`, which contains all binary artifacts the project produces. Download it and unzip. Choose the right package for your needs and follow instructions above for the officially released artifacts. For convenience, here is a table with usable packages:
 
 | Artifact             | Framework                      | Operating System                    |
 | -------------------- | ------------------------------ | ----------------------------------- |
@@ -158,7 +158,7 @@ Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython
 
 # Installing from Sources
 
-To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/master/Documentation/building.md).
+To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/building.md).
 
 When the command `./make.ps1 debug` completes successfully, runnable and usable `ipy` executables are available in subdirectories of `./bin/Debug`. To run executables from the release configuration (produced by a successful run of `./make.ps1`), first set environment variable `IRONPYTHONPATH`.
 
@@ -170,7 +170,7 @@ If those executables test out successfully, the binaries can be installed outsid
 
 The artifacts are placed in directory `./Package/Release/Packages/IronPython-3.X.Y`. Pick a package suitable for your installation target and follow instructions above for the officially released packages.
 
-Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./Src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path. 
+Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./Src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
 
 Installation example:
 

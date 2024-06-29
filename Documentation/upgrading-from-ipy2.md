@@ -57,7 +57,7 @@ Another way of achieving the redirection behavior similar to IronPython 2 is to 
 
 ```c#
 // IronPython 3
-var engine = Python.CreateEngine(new Dictionary<string, object> { 
+var engine = Python.CreateEngine(new Dictionary<string, object> {
     { "ConsoleSupportLevel", Microsoft.Scripting.Runtime.SharedIO.SupportLevel.Basic },
 });
 var textWriter = new MyTextWriter();
@@ -70,14 +70,14 @@ This method is particularly useful when embedding the IronPython 3 engine in a h
 
 ```c#
 // IronPython 3 in LINQPad
-var engine = Python.CreateEngine(new Dictionary<string, object> { 
+var engine = Python.CreateEngine(new Dictionary<string, object> {
     { "ConsoleSupportLevel", Microsoft.Scripting.Runtime.SharedIO.SupportLevel.Basic },
 });
 engine.Execute("print('abc')"); // shows output in the "Results" pane
 dynamic ans = engine.Execute("input()"); // pauses the script and asks for input at the bottom of the "Results" pane; terminate your input with Ctrl+Z, Enter
 ```
 
-[TextStream]: https://github.com/IronLanguages/dlr/blob/master/Src/Microsoft.Scripting/Utils/TextStream.cs
+[TextStream]: https://github.com/IronLanguages/dlr/blob/main/Src/Microsoft.Scripting/Utils/TextStream.cs
 [LINQPad]: https://www.linqpad.net/
 
 ## `int` Type

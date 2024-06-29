@@ -48,7 +48,7 @@ namespace IronPythonTest.Stress {
                 ScriptScope scope = _pe.CreateScope();
                 scope.SetVariable("x", "Hello");
                 _pe.CreateScriptSourceFromFile(System.IO.Path.Combine(Common.InputTestDirectory, "simpleCommand.py")).Execute(scope);
-                Assert.AreEqual(_pe.CreateScriptSourceFromString("x").Execute<int>(scope), 1);
+                Assert.That(1, Is.EqualTo(_pe.CreateScriptSourceFromString("x").Execute<int>(scope)));
                 scope = null;
             }
 

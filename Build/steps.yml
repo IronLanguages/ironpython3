@@ -43,17 +43,10 @@ steps:
       version: '7.0.x'
 
   - task: UseDotNet@2
-    displayName: Install .NET 8.0 runtime for testing
-    inputs:
-      packageType: 'runtime'
-      version: '8.0.x'
-
-  - task: UseDotNet@2
-    displayName: Install .NET 9.0 SDK for build
+    displayName: Install .NET 8.0 SDK for build
     inputs:
       packageType: 'sdk'
-      version: '9.0.x'
-      includePreviewVersions: true
+      version: '8.0.x'
 
   # Set Mono version on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:

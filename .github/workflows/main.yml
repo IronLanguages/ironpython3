@@ -35,11 +35,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '8.0.x'
-    - name: Setup .NET 9.0
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '9.0.x'
-        include-prerelease: true
     - name: Version Information
       run: |
         dotnet --info

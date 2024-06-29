@@ -84,6 +84,7 @@ dotnet_diagnostic.CA1845.severity = none        # CA1845: Use span-based 'string
 dotnet_diagnostic.CA1846.severity = none        # CA1846: Prefer 'AsSpan' over 'Substring'
 dotnet_diagnostic.CA1847.severity = none        # CA1847: Use char literal for a single character lookup
 dotnet_diagnostic.CA1852.severity = suggestion  # CA1852: Seal internal types
+dotnet_diagnostic.CA1854.severity = suggestion  # CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
 dotnet_diagnostic.CA1859.severity = suggestion  # CA1859: Use concrete types when possible for improved performance
 dotnet_diagnostic.CA1861.severity = suggestion  # CA1861: Avoid constant arrays as arguments
 dotnet_diagnostic.CA1863.severity = none        # CA1863: Use 'CompositeFormat'

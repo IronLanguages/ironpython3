@@ -1,9 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <IntermediateOutputPath Condition=" '$(TargetFramework)' == 'net7.0-windows' ">$(BaseIntermediateOutputPath)$(Configuration)\net7.0</IntermediateOutputPath>
-    <OutputPath Condition=" '$(TargetFramework)' == 'net7.0-windows' ">$(BaseOutputPath)\net7.0</OutputPath>
-  </PropertyGroup>
-
-  <Import Project="net7.0.props" />
-</Project>

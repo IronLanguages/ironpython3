@@ -1,3 +1,5 @@
+#pragma warning disable CA1865 // Use char overload
+
 namespace Community.CsharpSqlite
 {
   using sqlite3_value = Sqlite3.Mem;

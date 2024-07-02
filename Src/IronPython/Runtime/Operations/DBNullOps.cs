@@ -6,8 +6,15 @@
 
 using System;
 
+using Microsoft.Scripting.Runtime;
+
 namespace IronPython.Runtime.Operations {
     public static class DBNullOps {
+        [StaticExtensionMethod]
+        public static object __new__(object cls) {
+            return DBNull.Value;
+        }
+
         public static bool __bool__(DBNull value) {            
             return false;
         }

@@ -17,6 +17,13 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(decimal x) => x.ToString(CultureInfo.InvariantCulture);
 
+        public static PythonTuple __getnewargs__(decimal self) {
+            var bits = decimal.GetBits(self);
+            var sign = bits[3] < 0;
+            var scale = unchecked((byte)(bits[3] >> 16));
+            return PythonTuple.MakeTuple(bits[0], bits[1], bits[2], sign, scale);
+        }
+
         [SpecialName]
         public static bool LessThan(decimal x, decimal y) => x < y;
         [SpecialName]

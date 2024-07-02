@@ -580,6 +580,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 pts.TryGetValue(context, self, DynamicHelpers.GetPythonType(self), out res)) {
                 return res;
             }
+            if (self.IsSystemType && !self.IsPythonType) return self.UnderlyingSystemType.Namespace;
             return PythonTypeOps.GetModuleName(context, self.UnderlyingSystemType);
         }
 

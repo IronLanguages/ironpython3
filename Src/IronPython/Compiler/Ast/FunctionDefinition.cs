@@ -696,6 +696,7 @@ namespace IronPython.Compiler.Ast {
             // wrap a scope if needed
             bodyStmt = Ast.Block(locals.ToReadOnlyCollection(), bodyStmt);
 
+#pragma warning disable CA2263 // Prefer generic overload when type is known
             return AstUtils.LightLambda(
                 typeof(object),
                 delegateType,
@@ -703,6 +704,7 @@ namespace IronPython.Compiler.Ast {
                 Name + "$" + Interlocked.Increment(ref _lambdaId),
                 parameters
             );
+#pragma warning restore CA2263 // Prefer generic overload when type is known
         }
 
         internal override LightLambdaExpression GetLambda() => EnsureFunctionLambda();

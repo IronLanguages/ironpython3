@@ -391,7 +391,7 @@ namespace IronPython.Modules {
             private void BuildNameLookup() {
                 var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 foreach (var c in database) {
-                    if (c.Value.Name.StartsWith("<", StringComparison.Ordinal)) continue;
+                    if (c.Value.Name.StartsWith('<')) continue;
                     lookup[c.Value.Name] = c.Key;
                     foreach (var alias in c.Value.Aliases) {
                         lookup[alias] = c.Key;

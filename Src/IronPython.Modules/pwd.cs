@@ -106,10 +106,10 @@ or via the object attributes as named in the above tuple.")]
         private static struct_passwd Make(IntPtr pwd) {
             struct_passwd res = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                passwd_osx p = (passwd_osx)Marshal.PtrToStructure(pwd, typeof(passwd_osx));
+                passwd_osx p = Marshal.PtrToStructure<passwd_osx>(pwd);
                 res = new struct_passwd(p.pw_name, p.pw_passwd, p.pw_uid, p.pw_gid, p.pw_gecos, p.pw_dir, p.pw_shell);
             } else {
-                passwd_linux p = (passwd_linux)Marshal.PtrToStructure(pwd, typeof(passwd_linux));
+                passwd_linux p = Marshal.PtrToStructure<passwd_linux>(pwd);
                 res = new struct_passwd(p.pw_name, p.pw_passwd, p.pw_uid, p.pw_gid, p.pw_gecos, p.pw_dir, p.pw_shell);
             }
 

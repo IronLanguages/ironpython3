@@ -65,7 +65,9 @@ namespace IronPython.Runtime.Binding {
                 Type[] inferredTypes = new Type[genArgs.Length];
 
                 for (int i = 0; i < genArgs.Length; i++) {
-                    if ((inferredTypes[i] = TypeInferer.GetInferedType(genArgs[i], extensionMethodThisType, instanceType, instanceType, binding)) == null) {
+                    var genArg = genArgs[i];
+                    // https://github.com/IronLanguages/ironpython3/issues/1796
+                    if (!genArg.IsGenericParameter || (inferredTypes[i] = TypeInferer.GetInferedType(genArg, extensionMethodThisType, instanceType, instanceType, binding)) == null) {
                         inferredTypes = null;
                         break;
                     }

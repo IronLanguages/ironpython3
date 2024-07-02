@@ -627,7 +627,7 @@ namespace Community.CsharpSqlite
         }
       }
 abort_parse:
-      pParse.zTail = new StringBuilder( zSql.Length <= i ? "" : zSql.Substring( i, zSql.Length - i ) );
+      pParse.zTail = new StringBuilder( zSql.Length <= i ? "" : zSql.Substring( i ) );
       if ( zSql.Length >= i && nErr == 0 && pParse.rc == SQLITE_OK )
       {
         if ( lastTokenParsed != TK_SEMI )

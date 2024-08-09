@@ -20,7 +20,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("00020400-0000-0000-C000-000000000046")]
+#pragma warning disable SYSLIB1096 // Convert to 'GeneratedComInterface'
         private interface IDispatch {
+#pragma warning restore SYSLIB1096 // Convert to 'GeneratedComInterface'
             int GetTypeInfoCount();
             [return: MarshalAs(UnmanagedType.Interface)]
             ITypeInfo GetTypeInfo([In, MarshalAs(UnmanagedType.U4)] int iTInfo, [In, MarshalAs(UnmanagedType.U4)] int lcid);

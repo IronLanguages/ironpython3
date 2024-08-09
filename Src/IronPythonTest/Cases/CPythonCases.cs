@@ -18,11 +18,12 @@ namespace IronPythonTest.Cases {
 
     internal class CPythonCaseGenerator : CommonCaseGenerator<CPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
+            var libFolder = Path.Combine("Src", "StdLib", "Lib");
             return GetFilenames(new [] {
-                System.Tuple.Create(category, Path.Combine("Src", "StdLib", "Lib", "test")),
-                System.Tuple.Create($"{category}.ctypes", Path.Combine("Src", "StdLib", "Lib", "ctypes", "test")),
-                System.Tuple.Create($"{category}.distutils", Path.Combine("Src", "StdLib", "Lib", "distutils", "tests")),
-                System.Tuple.Create($"{category}.unittest", Path.Combine("Src", "StdLib", "Lib", "unittest", "test")),
+                System.Tuple.Create(category, Path.Combine(libFolder, "test")),
+                System.Tuple.Create($"{category}.ctypes", Path.Combine(libFolder, "ctypes", "test")),
+                System.Tuple.Create($"{category}.distutils", Path.Combine(libFolder, "distutils", "tests")),
+                System.Tuple.Create($"{category}.unittest", Path.Combine(libFolder, "unittest", "test")),
             })
             .OrderBy(testcase => testcase.Name);
 

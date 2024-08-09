@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath Condition=" '$(TargetFramework)' == 'net8.0-windows' ">$(BaseIntermediateOutputPath)$(Configuration)\net8.0</IntermediateOutputPath>
+    <OutputPath Condition=" '$(TargetFramework)' == 'net8.0-windows' ">$(BaseOutputPath)\net8.0</OutputPath>
+  </PropertyGroup>
+
+  <Import Project="net8.0.props" />
+</Project>

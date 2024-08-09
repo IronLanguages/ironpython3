@@ -252,7 +252,7 @@ namespace IronPython.Modules {
             }
 
             public void byteswap() {
-                Stream s = ToStream();
+                MemoryStream s = ToStream();
                 byte[] bytes = new byte[s.Length];
                 s.Read(bytes, 0, bytes.Length);
 
@@ -618,7 +618,7 @@ namespace IronPython.Modules {
             }
 
             public Bytes tobytes() {
-                Stream s = ToStream();
+                MemoryStream s = ToStream();
                 byte[] bytes = new byte[s.Length];
                 s.Read(bytes, 0, (int)s.Length);
                 return Bytes.Make(bytes);

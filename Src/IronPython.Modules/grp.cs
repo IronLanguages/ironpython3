@@ -75,7 +75,7 @@ or via the object attributes as named in the above tuple.
         }
 
         private static struct_group Make(IntPtr pwd) {
-            group g = (group)Marshal.PtrToStructure(pwd, typeof(group));
+            group g = Marshal.PtrToStructure<group>(pwd);
             return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, PythonList.FromEnumerable(MarshalStringArray(g.gr_mem)));
         }
 

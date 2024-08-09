@@ -32,6 +32,8 @@ namespace IronPython.Runtime.Operations {
 
         public static bool __bool__(Single x) => (x != 0);
 
+        public static PythonTuple __getnewargs__(Single self) => PythonTuple.MakeTuple(unchecked((double)self));
+
         public static object __trunc__(Single x) {
             if (x >= int.MaxValue || x <= int.MinValue) {
                 return (BigInteger)x;

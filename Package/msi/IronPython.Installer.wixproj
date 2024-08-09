@@ -1,4 +1,4 @@
-<Project Sdk="WixToolset.Sdk/4.0.0-rc.1" DefaultTargets="Build">
+<Project Sdk="WixToolset.Sdk/4.0.5" DefaultTargets="Build">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProductVersion>3.4</ProductVersion>
@@ -44,10 +44,10 @@
     <Content Include="Version.wxi" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.0-rc.1" />
-    <PackageReference Include="WixToolset.NetFx.wixext" Version="4.0.0-rc.1" />
-    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.0-rc.1" />
-    <PackageReference Include="WixToolset.Heat" Version="4.0.0-rc.1" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.5" />
+    <PackageReference Include="WixToolset.NetFx.wixext" Version="4.0.5" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.5" />
+    <PackageReference Include="WixToolset.Heat" Version="4.0.5" />
   </ItemGroup>
   <ItemGroup>
     <HarvestDirectory Include="$(BindInputPaths)\Lib">

@@ -260,7 +260,7 @@ namespace IronPythonTest {
 
         private void TestEngine(ScriptEngine scriptEngine, Dictionary<string, object> options) {
             // basic smoke tests that the engine is alive and working
-            Assert.AreEqual((int)(object)scriptEngine.Execute("42"), 42);
+            Assert.That(42, Is.EqualTo((int)(object)scriptEngine.Execute("42")));
 
             if (options != null) {
                 // TODO:
@@ -272,18 +272,18 @@ namespace IronPythonTest {
                 );
 #pragma warning restore 618
 
-                Assert.AreEqual(po.StripDocStrings, true);
-                Assert.AreEqual(po.Optimize, true);
-                Assert.AreEqual(po.RecursionLimit, 42);
-                Assert.AreEqual(po.WarningFilters[0], "warnonme");
+                Assert.That(true, Is.EqualTo(po.StripDocStrings));
+                Assert.That(true, Is.EqualTo(po.Optimize));
+                Assert.That(42, Is.EqualTo(po.RecursionLimit));
+                Assert.That("warnonme", Is.EqualTo(po.WarningFilters[0]));
             }
 
-            Assert.AreEqual(Python.GetSysModule(scriptEngine).GetVariable<string>("platform"), "cli");
-            Assert.AreEqual(Python.GetBuiltinModule(scriptEngine).GetVariable<bool>("True"), true);
+            Assert.That("cli", Is.EqualTo(Python.GetSysModule(scriptEngine).GetVariable<string>("platform")));
+            Assert.That(true, Is.EqualTo(Python.GetBuiltinModule(scriptEngine).GetVariable<bool>("True")));
             if (System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
-                Assert.AreEqual(Python.ImportModule(scriptEngine, "posix").GetVariable<int>("F_OK"), 0);
+                Assert.That(0, Is.EqualTo(Python.ImportModule(scriptEngine, "posix").GetVariable<int>("F_OK")));
             } else {
-                Assert.AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
+                Assert.That(0, Is.EqualTo(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK")));
             }
             Assert.Throws<ImportException>(() => {
                 Python.ImportModule(scriptEngine, "non_existant_module");
@@ -293,19 +293,19 @@ namespace IronPythonTest {
         private void TestRuntime(ScriptRuntime runtime, Dictionary<string, object> options) {
             // basic smoke tests that the runtime is alive and working
             runtime.Globals.SetVariable("hello", 42);
-            Assert.NotNull(runtime.GetEngine("py"));
+            Assert.That(runtime.GetEngine("py"), Is.Not.Null);
 
             if (options != null) {
-                Assert.AreEqual(runtime.Setup.DebugMode, true);
-                Assert.AreEqual(runtime.Setup.PrivateBinding, true);
+                Assert.That(true, Is.EqualTo(runtime.Setup.DebugMode));
+                Assert.That(true, Is.EqualTo(runtime.Setup.PrivateBinding));
             }
 
-            Assert.AreEqual(Python.GetSysModule(runtime).GetVariable<string>("platform"), "cli");
-            Assert.AreEqual(Python.GetBuiltinModule(runtime).GetVariable<bool>("True"), true);
+            Assert.That("cli", Is.EqualTo(Python.GetSysModule(runtime).GetVariable<string>("platform")));
+            Assert.That(true, Is.EqualTo(Python.GetBuiltinModule(runtime).GetVariable<bool>("True")));
             if (System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
-                Assert.AreEqual(Python.ImportModule(runtime, "posix").GetVariable<int>("F_OK"), 0);
+                Assert.That(0, Is.EqualTo(Python.ImportModule(runtime, "posix").GetVariable<int>("F_OK")));
             } else {
-                Assert.AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
+                Assert.That(0, Is.EqualTo(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK")));
             }
 
             Assert.Throws<ImportException>(() => {
@@ -388,14 +388,14 @@ x = 42", scope);
                 var source = engine.CreateScriptSourceFromString("x = 42", SourceCodeKind.File);
                 source.Compile().Execute(scope);
 
-                Assert.AreEqual(myScope._members.ContainsKey("__doc__"), true);
-                Assert.AreEqual(myScope._members.ContainsKey("x"), true);
-                Assert.AreEqual(myScope._members.ContainsKey("__file__"), true);
+                Assert.That(true, Is.EqualTo(myScope._members.ContainsKey("__doc__")));
+                Assert.That(true, Is.EqualTo(myScope._members.ContainsKey("x")));
+                Assert.That(true, Is.EqualTo(myScope._members.ContainsKey("__file__")));
 
                 source = engine.CreateScriptSourceFromString("'hello world'", SourceCodeKind.File);
                 source.Compile().Execute(scope);
 
-                Assert.AreEqual(myScope._members["__doc__"], "hello world");
+                Assert.That("hello world", Is.EqualTo(myScope._members["__doc__"]));
             }
 
             // tests where __doc__ gets assigned into a field/property
@@ -406,13 +406,13 @@ x = 42", scope);
                 var source = engine.CreateScriptSourceFromString("'hello world'\nx=42\n", SourceCodeKind.File);
                 source.Compile().Execute(scope);
 
-                Assert.AreEqual(((ScopeDynamicObject4)myScope).__doc__, "hello world");
+                Assert.That("hello world", Is.EqualTo(((ScopeDynamicObject4)myScope).__doc__));
 
                 myScope = new ScopeDynamicObject5();
                 scope = engine.CreateScope(myScope);
 
                 source.Compile().Execute(scope);
-                Assert.AreEqual(((ScopeDynamicObject5)myScope).__doc__, "hello world");
+                Assert.That("hello world", Is.EqualTo(((ScopeDynamicObject5)myScope).__doc__));
             }
         }
 
@@ -435,7 +435,7 @@ x = 42", scope);
             // Opening the file with explicitly specifying the correct encoding should work
             CompiledCode prog = _pe.CreateScriptSourceFromFile(fileName, Encoding.GetEncoding(1251)).Compile();
             prog.Execute();
-            Assert.AreEqual(prog.DefaultScope.GetVariable("s"), "\u041F\u0436\u0451");
+            Assert.That(prog.DefaultScope.GetVariable("s"), Is.EqualTo("\u041F\u0436\u0451"));
         }
 
         [Test]
@@ -449,7 +449,7 @@ x = 42", scope);
             );
 
             var vars = CompilerHelpers.LightCompile(argBody)(42);
-            Assert.AreEqual(vars[0], 42);
+            Assert.That(42, Is.EqualTo(vars[0]));
 
             ParameterExpression tmp = Expression.Parameter(typeof(object), "tmp");
             var body = Expression.Lambda<Func<object>>(
@@ -465,8 +465,8 @@ x = 42", scope);
                 )
             );
 
-            Assert.AreEqual(body.Compile()(), ClrModule.IsNetCoreApp || ClrModule.IsMono ? (object)42 : null); // https://github.com/IronLanguages/ironpython3/issues/908
-            Assert.AreEqual(CompilerHelpers.LightCompile(body)(), null);
+            Assert.That(ClrModule.IsNetCoreApp || ClrModule.IsMono ? (object)42 : null, Is.EqualTo(body.Compile()())); // https://github.com/IronLanguages/ironpython3/issues/908
+            Assert.That(null, Is.EqualTo(CompilerHelpers.LightCompile(body)()));
 
             body = Expression.Lambda<Func<object>>(
                 Expression.Block(
@@ -482,8 +482,8 @@ x = 42", scope);
                     )
                 )
             );
-            Assert.AreEqual(CompilerHelpers.LightCompile(body)(), null);
-            Assert.AreEqual(body.Compile()(), null);
+            Assert.That(null, Is.EqualTo(CompilerHelpers.LightCompile(body)()));
+            Assert.That(null, Is.EqualTo(body.Compile()()));
         }
 
         public class TestCodePlex23562 {
@@ -506,7 +506,7 @@ test.TestMethod()
             _pe.Execute(pyCode, scope);
 
             TestCodePlex23562 temp = scope.GetVariable<TestCodePlex23562>("test");
-            Assert.True(temp.MethodCalled);
+            Assert.That(temp.MethodCalled);
         }
 
         [Test]
@@ -524,12 +524,12 @@ def py_func():
             _pe.Execute(pyCode, scope);
 
             IList<string> str_tuple = scope.GetVariable<IList<string>>("str_tuple");
-            Assert.AreEqual(str_tuple.Count, 2);
+            Assert.That(2, Is.EqualTo(str_tuple.Count));
             IList<string> str_list = scope.GetVariable<IList<string>>("str_list");
-            Assert.AreEqual(str_list.Count, 3);
+            Assert.That(3, Is.EqualTo(str_list.Count));
             VoidDelegate py_func = scope.GetVariable<VoidDelegate>("py_func");
             py_func();
-            Assert.AreEqual(scope.GetVariable<bool>("py_func_called"), true);
+            Assert.That(true, Is.EqualTo(scope.GetVariable<bool>("py_func_called")));
         }
 
         [Test]
@@ -547,7 +547,7 @@ class K(object):
             object KKlass = scope.GetVariable("K");
             object[] Kparams = new object[] { 1, 3.14, "abc" };
             _pe.Operations.CreateInstance(KKlass, Kparams);
-            Assert.AreEqual(scope.GetVariable<int>("A"), 1);
+            Assert.That(1, Is.EqualTo(scope.GetVariable<int>("A")));
         }
 
         // Execute
@@ -562,12 +562,12 @@ class K(object):
             // field: assign and get back
             _pe.Execute("clsPart.Field = 100", scope);
             _pe.Execute("if 100 != clsPart.Field: raise AssertionError('test failed')", scope);
-            Assert.AreEqual(100, clsPart.Field);
+            Assert.That(clsPart.Field, Is.EqualTo(100));
 
             // property: assign and get back
             _pe.Execute("clsPart.Property = clsPart.Field", scope);
             _pe.Execute("if 100 != clsPart.Property: raise AssertionError('test failed')", scope);
-            Assert.AreEqual(100, clsPart.Property);
+            Assert.That(clsPart.Property, Is.EqualTo(100));
 
             // method: Event not set yet
             _pe.Execute("a = clsPart.Method(2)", scope);
@@ -596,7 +596,7 @@ class K(object):
             // reset the same variable with integer
             scope.SetVariable(clspartName, 1);
             _pe.Execute("if 1 != clsPart: raise AssertionError('test failed')", scope);
-            Assert.AreEqual((int)(object)scope.GetVariable(clspartName), 1);
+            Assert.That(1, Is.EqualTo((int)(object)scope.GetVariable(clspartName)));
 
             ScriptSource su = _pe.CreateScriptSourceFromString("");
             Assert.Throws<ArgumentNullException>(() => {
@@ -609,8 +609,8 @@ class K(object):
             var engine = Python.CreateEngine();
             var str = ClrModule.GetPythonType(typeof(string));
             object result;
-            Assert.AreEqual(engine.Operations.TryGetMember(str, "Equals", out result), true);
-            Assert.AreEqual(result.ToString(), "IronPython.Runtime.Types.BuiltinFunction");
+            Assert.That(true, Is.EqualTo(engine.Operations.TryGetMember(str, "Equals", out result)));
+            Assert.That("IronPython.Runtime.Types.BuiltinFunction", Is.EqualTo(result.ToString()));
         }
 
         [Test]
@@ -640,7 +640,7 @@ class K(object):
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
-            Assert.AreEqual((object)src.Execute(scope), "Bar Called");
+            Assert.That("Bar Called", Is.EqualTo((object)src.Execute(scope)));
         }
 
         private class MyInvokeMemberBinder : InvokeMemberBinder {
@@ -939,20 +939,20 @@ i = int
 
             foreach (var test in tests) {
                 var result = new List<OverloadDoc>(doc.GetOverloads(test.Obj));
-                Assert.AreEqual(result.Count, test.Result.Length);
+                Assert.That(test.Result.Length, Is.EqualTo(result.Count));
 
                 for (int i = 0; i < result.Count; i++) {
                     var received = result[i]; ;
                     var expected = test.Result[i];
-                    Assert.AreEqual(received.Parameters.Count, expected.Length);
+                    Assert.That(expected.Length, Is.EqualTo(received.Parameters.Count));
                     var recvParams = new List<ParameterDoc>(received.Parameters);
 
                     for (int j = 0; j < expected.Length; j++) {
                         var receivedParam = recvParams[j];
                         var expectedParam = expected[j];
 
-                        Assert.AreEqual(receivedParam.Flags, expectedParam.ParamAttrs);
-                        Assert.AreEqual(receivedParam.Name, expectedParam.ParamName);
+                        Assert.That(expectedParam.ParamAttrs, Is.EqualTo(receivedParam.Flags));
+                        Assert.That(expectedParam.ParamName, Is.EqualTo(receivedParam.Name));
                     }
                 }
             }
@@ -996,7 +996,7 @@ i = int
         private void ContainsMemberName(ICollection<MemberDoc> members, string name, MemberKind kind) {
             foreach (var member in members) {
                 if (member.Name == name) {
-                    Assert.AreEqual(member.Kind, kind);
+                    Assert.That(kind, Is.EqualTo(member.Kind));
                     return;
                 }
             }
@@ -1284,74 +1284,74 @@ range = range
 
             // if it lives on a system type we should do a fallback invoke member
             var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new CallInfo(0)));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("alinst")), "FallbackInvokeMember");
+            Assert.That("FallbackInvokeMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("alinst"))));
 
             // invoke a function that's a member on an object
             foreach (object inst in allObjects) {
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "TestFunc");
+                Assert.That("TestFunc", Is.EqualTo(site.Target(site, inst)));
             }
 
             // invoke a field / property that's on an object
             foreach (object inst in allObjects) {
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
+                Assert.That("FallbackInvokeInstVal", Is.EqualTo(site.Target(site, inst)));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
+                Assert.That("FallbackInvokeClassVal", Is.EqualTo(site.Target(site, inst)));
 
 
                 if (!(inst is PythonFunction)) {
                     site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("SomeMethodThatNeverExists", new CallInfo(0)));
-                    Assert.AreEqual(site.Target(site, inst), "FallbackInvokeMember");
+                    Assert.That("FallbackInvokeMember", Is.EqualTo(site.Target(site, inst)));
                 }
             }
 
             // invoke a field / property that's not defined on objects w/ __getattr__
             foreach (object inst in getattrObjects) {
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
+                Assert.That("FallbackInvokeDoesNotExist", Is.EqualTo(site.Target(site, inst)));
             }
 
             // invoke a field / property that's not defined on objects w/ __getattribute__
             foreach (object inst in getattributeObjects) {
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
+                Assert.That("FallbackInvokeDoesNotExist", Is.EqualTo(site.Target(site, inst)));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeCount");
+                Assert.That("FallbackInvokeCount", Is.EqualTo(site.Target(site, inst)));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeTestFunc");
+                Assert.That("FallbackInvokeTestFunc", Is.EqualTo(site.Target(site, inst)));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
+                Assert.That("FallbackInvokeInstVal", Is.EqualTo(site.Target(site, inst)));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new CallInfo(0)));
-                Assert.AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
+                Assert.That("FallbackInvokeClassVal", Is.EqualTo(site.Target(site, inst)));
             }
 
             foreach (object inst in indexableObjects) {
                 var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyGetIndexBinder(new CallInfo(1)));
-                Assert.AreEqual(site2.Target(site2, inst, "index"), "index");
+                Assert.That("index", Is.EqualTo(site2.Target(site2, inst, "index")));
 
                 var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MySetIndexBinder(new CallInfo(1)));
-                Assert.AreEqual(site3.Target(site3, inst, "index", "value"), "value");
+                Assert.That("value", Is.EqualTo(site3.Target(site3, inst, "index", "value")));
 
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("LastSetItem"));
                 IList<object> res = (IList<object>)site.Target(site, inst);
-                Assert.AreEqual(res.Count, 2);
-                Assert.AreEqual(res[0], "index");
-                Assert.AreEqual(res[1], "value");
+                Assert.That(2, Is.EqualTo(res.Count));
+                Assert.That("index", Is.EqualTo(res[0]));
+                Assert.That("value", Is.EqualTo(res[1]));
             }
 
             foreach (object inst in unindexableObjects) {
                 var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyGetIndexBinder(new CallInfo(1)));
                 //Console.WriteLine(inst);
-                Assert.AreEqual(site2.Target(site2, inst, "index"), "FallbackGetIndexindex");
+                Assert.That("FallbackGetIndexindex", Is.EqualTo(site2.Target(site2, inst, "index")));
 
                 var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MySetIndexBinder(new CallInfo(1)));
-                Assert.AreEqual(site3.Target(site3, inst, "index", "value"), "FallbackSetIndexindexvalue");
+                Assert.That("FallbackSetIndexindexvalue", Is.EqualTo(site3.Target(site3, inst, "index", "value")));
             }
 
             foreach (object inst in invokableObjects) {
@@ -1374,7 +1374,7 @@ range = range
             foreach (object inst in convertableObjects) {
                 // These may be invalid according to the DLR (wrong ret type) but currently work today.
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
-                Assert.AreEqual(site.Target(site, inst), "Python");
+                Assert.That("Python", Is.EqualTo(site.Target(site, inst)));
 
                 var dlgsiteo = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
                 VerifyFunction(new[] { "foo" }, Array.Empty<string>(), ((Func<object, object>)(dlgsiteo.Target(dlgsiteo, inst)))("foo"));
@@ -1384,24 +1384,24 @@ range = range
 
                 // strongly typed return versions
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
-                Assert.AreEqual(ssite.Target(ssite, inst), "Python");
+                Assert.That("Python", Is.EqualTo(ssite.Target(ssite, inst)));
 
                 // this call site works only if __int__ happens to return an Int32 instance or a BigInteger instance that fits in 32 bits
                 var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
-                Assert.AreEqual(isite.Target(isite, inst), 42);
+                Assert.That(42, Is.EqualTo(isite.Target(isite, inst)));
 
                 var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
-                Assert.AreEqual(dsite.Target(dsite, inst), 42.0);
+                Assert.That(42.0, Is.EqualTo(dsite.Target(dsite, inst)));
 
                 var csite = CallSite<Func<CallSite, object, Complex>>.Create(new MyConvertBinder(typeof(Complex), new Complex(0, 23)));
-                Assert.AreEqual(csite.Target(csite, inst), new Complex(0, 42));
+                Assert.That(new Complex(0, 42), Is.EqualTo(csite.Target(csite, inst)));
 
                 var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
-                Assert.AreEqual(bsite.Target(bsite, inst), false);
+                Assert.That(false, Is.EqualTo(bsite.Target(bsite, inst)));
 
                 // this call site works regardless whether __int__ returns a BigInteger or Int32 instance
                 var bisite = CallSite<Func<CallSite, object, BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
-                Assert.AreEqual(bisite.Target(bisite, inst), (BigInteger)42);
+                Assert.That((BigInteger)42, Is.EqualTo(bisite.Target(bisite, inst)));
 
                 var dlgsite = CallSite<Func<CallSite, object, Func<object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
                 VerifyFunction(new[] { "foo" }, Array.Empty<string>(), dlgsite.Target(dlgsite, inst)("foo"));
@@ -1413,26 +1413,26 @@ range = range
             foreach (object inst in unconvertableObjects) {
                 // These may be invalid according to the DLR (wrong ret type) but currently work today.
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
-                Assert.AreEqual(site.Target(site, inst), "Converted");
+                Assert.That("Converted", Is.EqualTo(site.Target(site, inst)));
 
                 // strongly typed return versions
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
-                Assert.AreEqual(ssite.Target(ssite, inst), "Converted");
+                Assert.That("Converted", Is.EqualTo(ssite.Target(ssite, inst)));
 
                 var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
-                Assert.AreEqual(isite.Target(isite, inst), 23);
+                Assert.That(23, Is.EqualTo(isite.Target(isite, inst)));
 
                 var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
-                Assert.AreEqual(dsite.Target(dsite, inst), 23.0);
+                Assert.That(23.0, Is.EqualTo(dsite.Target(dsite, inst)));
 
                 var csite = CallSite<Func<CallSite, object, Complex>>.Create(new MyConvertBinder(typeof(Complex), new Complex(0, 23.0)));
-                Assert.AreEqual(csite.Target(csite, inst), new Complex(0, 23.0));
+                Assert.That(new Complex(0, 23.0), Is.EqualTo(csite.Target(csite, inst)));
 
                 var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
-                Assert.AreEqual(bsite.Target(bsite, inst), true);
+                Assert.That(true, Is.EqualTo(bsite.Target(bsite, inst)));
 
                 var bisite = CallSite<Func<CallSite, object, BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
-                Assert.AreEqual(bisite.Target(bisite, inst), (BigInteger)23);
+                Assert.That((BigInteger)23, Is.EqualTo(bisite.Target(bisite, inst)));
             }
 
             // get on .NET member should fallback
@@ -1440,84 +1440,84 @@ range = range
             if (!ClrModule.IsMono && !ClrModule.IsNetCoreApp) {
                 // property
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
-                Assert.AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                Assert.That("FallbackGetMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("controlinst"))));
 
                 // method
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
-                Assert.AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                Assert.That("FallbackGetMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("controlinst"))));
 
                 // protected method
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
-                Assert.AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                Assert.That("FallbackGetMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("controlinst"))));
 
                 // event
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
-                Assert.AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                Assert.That("FallbackGetMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("controlinst"))));
             }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
+            Assert.That("FallbackInvokegetattrsomething", Is.EqualTo(site.Target(site, (object)scope.GetVariable("ns_getattrinst"))));
 
             foreach (object inst in iterableObjects) {
                 // converting a type which implements __iter__
                 var enumsite = CallSite<Func<CallSite, object, IEnumerable>>.Create(new MyConvertBinder(typeof(IEnumerable)));
                 IEnumerable ie = enumsite.Target(enumsite, inst);
                 IEnumerator ator = ie.GetEnumerator();
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 1);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 2);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 3);
-                Assert.AreEqual(ator.MoveNext(), false);
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(1, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(2, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(3, Is.EqualTo(ator.Current));
+                Assert.That(false, Is.EqualTo(ator.MoveNext()));
 
                 var enumobjsite = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(IEnumerable)));
                 ie = (IEnumerable)enumobjsite.Target(enumobjsite, inst);
                 ator = ie.GetEnumerator();
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 1);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 2);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 3);
-                Assert.AreEqual(ator.MoveNext(), false);
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(1, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(2, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(3, Is.EqualTo(ator.Current));
+                Assert.That(false, Is.EqualTo(ator.MoveNext()));
 
                 var enumatorsite = CallSite<Func<CallSite, object, IEnumerator>>.Create(new MyConvertBinder(typeof(IEnumerator)));
                 ator = enumatorsite.Target(enumatorsite, inst);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 1);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 2);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 3);
-                Assert.AreEqual(ator.MoveNext(), false);
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(1, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(2, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(3, Is.EqualTo(ator.Current));
+                Assert.That(false, Is.EqualTo(ator.MoveNext()));
 
                 var enumatorobjsite = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(IEnumerator)));
                 ator = (IEnumerator)enumatorobjsite.Target(enumatorobjsite, inst);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 1);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 2);
-                Assert.AreEqual(ator.MoveNext(), true);
-                Assert.AreEqual(ator.Current, 3);
-                Assert.AreEqual(ator.MoveNext(), false);
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(1, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(2, Is.EqualTo(ator.Current));
+                Assert.That(true, Is.EqualTo(ator.MoveNext()));
+                Assert.That(3, Is.EqualTo(ator.Current));
+                Assert.That(false, Is.EqualTo(ator.MoveNext()));
             }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyUnaryBinder(ExpressionType.Not));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("nsinst")), true);
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("ns_nonzero_inst")), false);
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("ns_len0_inst")), true);
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("ns_len1_inst")), false);
+            Assert.That(true, Is.EqualTo(site.Target(site, (object)scope.GetVariable("nsinst"))));
+            Assert.That(false, Is.EqualTo(site.Target(site, (object)scope.GetVariable("ns_nonzero_inst"))));
+            Assert.That(true, Is.EqualTo(site.Target(site, (object)scope.GetVariable("ns_len0_inst"))));
+            Assert.That(false, Is.EqualTo(site.Target(site, (object)scope.GetVariable("ns_len1_inst"))));
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ToString", new CallInfo(0)));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("range")), "FallbackInvokeMember");
+            Assert.That("FallbackInvokeMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("range"))));
 
             // invoke a function defined as a member of a function
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("SubFunc", new CallInfo(0)));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("TestFunc")), "TestFunc");
+            Assert.That("TestFunc", Is.EqualTo(site.Target(site, (object)scope.GetVariable("TestFunc"))));
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
-            Assert.AreEqual(site.Target(site, (object)scope.GetVariable("TestFunc")), "FallbackInvokeMember");
+            Assert.That("FallbackInvokeMember", Is.EqualTo(site.Target(site, (object)scope.GetVariable("TestFunc"))));
         }
 
         private class MyDynamicObject : DynamicObject {
@@ -1626,7 +1626,7 @@ range = range
 
             };
             foreach (var test in tests) {
-                Assert.AreEqual(test.Result, (object)_pe.Execute(test.TestCase, scope));
+                Assert.That((object)_pe.Execute(test.TestCase, scope), Is.EqualTo(test.Result));
             }
 
             var tests2 = new[] {
@@ -1638,22 +1638,22 @@ range = range
 
             foreach (var test in tests2) {
                 _pe.Execute(test.TestCase, scope);
-                Assert.AreEqual(test.Last, dynObj.Last);
+                Assert.That(dynObj.Last, Is.EqualTo(test.Last));
             }
         }
 
         private void VerifyFunction(object[] results, string[] names, object value) {
             IList<object> res = (IList<object>)value;
-            Assert.AreEqual(res.Count, 2);
+            Assert.That(2, Is.EqualTo(res.Count));
             IList<object> positional = (IList<object>)res[0];
             IDictionary<object, object> kwargs = (IDictionary<object, object>)res[1];
 
             for (int i = 0; i < positional.Count; i++) {
-                Assert.AreEqual(positional[i], results[i]);
+                Assert.That(results[i], Is.EqualTo(positional[i]));
             }
 
             for (int i = positional.Count; i < results.Length; i++) {
-                Assert.AreEqual(kwargs[names[i - positional.Count]], results[i]);
+                Assert.That(results[i], Is.EqualTo(kwargs[names[i - positional.Count]]));
             }
 
         }
@@ -1669,24 +1669,24 @@ range = range
 
             scope3.SetVariable("x", 2);
 
-            Assert.AreEqual(0, _pe.Execute<int>("x", scope1));
-            Assert.AreEqual(0, (int)(object)scope1.GetVariable("x"));
+            Assert.That(_pe.Execute<int>("x", scope1), Is.EqualTo(0));
+            Assert.That((int)(object)scope1.GetVariable("x"), Is.EqualTo(0));
 
-            Assert.AreEqual(1, _pe.Execute<int>("x", scope2));
-            Assert.AreEqual(1, (int)(object)scope2.GetVariable("x"));
+            Assert.That(_pe.Execute<int>("x", scope2), Is.EqualTo(1));
+            Assert.That((int)(object)scope2.GetVariable("x"), Is.EqualTo(1));
 
-            Assert.AreEqual(2, _pe.Execute<int>("x", scope3));
-            Assert.AreEqual(2, (int)(object)scope3.GetVariable("x"));
+            Assert.That(_pe.Execute<int>("x", scope3), Is.EqualTo(2));
+            Assert.That((int)(object)scope3.GetVariable("x"), Is.EqualTo(2));
         }
 
         [Test]
         public void ScenarioObjectOperations() {
             var ops = _pe.Operations;
-            Assert.AreEqual("(1, 2, 3)", ops.Format(new PythonTuple(new object[] { 1, 2, 3 })));
+            Assert.That(ops.Format(new PythonTuple(new object[] { 1, 2, 3 })), Is.EqualTo("(1, 2, 3)"));
 
             var scope = _pe.CreateScope();
             scope.SetVariable("ops", ops);
-            Assert.AreEqual("[1, 2, 3]", _pe.Execute<string>("ops.Format([1,2,3])", scope));
+            Assert.That(_pe.Execute<string>("ops.Format([1,2,3])", scope), Is.EqualTo("[1, 2, 3]"));
 
             ScriptSource src = _pe.CreateScriptSourceFromString("def f(*args): return args", SourceCodeKind.Statements);
             src.Execute(scope);
@@ -1698,7 +1698,7 @@ range = range
                     inp[j] = j;
                 }
 
-                Assert.AreEqual((object)ops.Invoke(f, inp), PythonTuple.MakeTuple(inp));
+                Assert.That(PythonTuple.MakeTuple(inp), Is.EqualTo((object)ops.Invoke(f, inp)));
             }
 
             ScriptScope mod = _env.CreateScope();
@@ -1717,9 +1717,9 @@ class foo(object):
 
             object foo = ops.CreateInstance(klass, 123, 444);
 
-            Assert.AreEqual(ops.GetMember<int>(foo, "abc"), 3);
-            Assert.AreEqual(ops.GetMember<int>(foo, "x"), 123);
-            Assert.AreEqual(ops.GetMember<int>(foo, "y"), 444);
+            Assert.That(3, Is.EqualTo(ops.GetMember<int>(foo, "abc")));
+            Assert.That(123, Is.EqualTo(ops.GetMember<int>(foo, "x")));
+            Assert.That(444, Is.EqualTo(ops.GetMember<int>(foo, "y")));
         }
 
         [Test]
@@ -1737,7 +1737,7 @@ class foo(object):
         public void ScenarioCP24784() {
             var code = _pe.CreateScriptSourceFromString("def f():\r\n \r\n print(1)", SourceCodeKind.InteractiveCode);
 
-            Assert.AreEqual(code.GetCodeProperties(), ScriptCodeParseResult.IncompleteStatement);
+            Assert.That(ScriptCodeParseResult.IncompleteStatement, Is.EqualTo(code.GetCodeProperties()));
         }
 
         public delegate int CP19724Delegate(double p1);
@@ -1756,8 +1756,8 @@ k = KNew()", SourceCodeKind.Statements);
             src.Execute(scope1);
 
             CP19724Delegate tDelegate = scope1.GetVariable<CP19724Delegate>("k");
-            Assert.AreEqual(7, tDelegate(3.14));
-            Assert.AreEqual(42, scope1.GetVariable<int>("X"));
+            Assert.That(tDelegate(3.14), Is.EqualTo(7));
+            Assert.That(scope1.GetVariable<int>("X"), Is.EqualTo(42));
         }
 
         [Test]
@@ -1775,17 +1775,17 @@ k = KNew()", SourceCodeKind.Statements);
 
             // Ensure that the default EngineModule is not affected
             x = pc.CreateSnippet("x", SourceCodeKind.Expression).Execute(otherModule.Scope);
-            Assert.AreEqual(0, (int)x);
+            Assert.That((int)x, Is.EqualTo(0));
             // Ensure that the published context has been updated as expected
             x = pc.CreateSnippet("x", SourceCodeKind.Expression).Execute(publishedModule.Scope);
-            Assert.AreEqual(1, (int)x);
+            Assert.That((int)x, Is.EqualTo(1));
 
             // Ensure that the published context is accessible from other contexts using sys.modules
             // TODO: do better:
             // pe.Import("sys", ScriptDomainManager.CurrentManager.DefaultModule);
             pc.CreateSnippet("from published_context_test import x", SourceCodeKind.Statements).Execute(otherModule.Scope);
             x = pc.CreateSnippet("x", SourceCodeKind.Expression).Execute(otherModule.Scope);
-            Assert.AreEqual(1, (int)x);
+            Assert.That((int)x, Is.EqualTo(1));
         }
 
         private class CustomDictionary : IDictionary<string, object> {
@@ -1909,19 +1909,19 @@ k = KNew()", SourceCodeKind.Statements);
             ScriptScope customModule = _pe.Runtime.CreateScope(new ObjectDictionaryExpando(customGlobals));
 
             // Evaluate
-            Assert.AreEqual(_pe.Execute<int>("customSymbol + 1", customModule), CustomDictionary.customSymbolValue + 1);
+            Assert.That(CustomDictionary.customSymbolValue + 1, Is.EqualTo(_pe.Execute<int>("customSymbol + 1", customModule)));
 
             // Execute
             _pe.Execute("customSymbolPlusOne = customSymbol + 1", customModule);
-            Assert.AreEqual(_pe.Execute<int>("customSymbolPlusOne", customModule), CustomDictionary.customSymbolValue + 1);
-            Assert.AreEqual(customModule.GetVariable<int>("customSymbolPlusOne"), CustomDictionary.customSymbolValue + 1);
+            Assert.That(CustomDictionary.customSymbolValue + 1, Is.EqualTo(_pe.Execute<int>("customSymbolPlusOne", customModule)));
+            Assert.That(CustomDictionary.customSymbolValue + 1, Is.EqualTo(customModule.GetVariable<int>("customSymbolPlusOne")));
 
             // Compile
             CompiledCode compiledCode = _pe.CreateScriptSourceFromString("customSymbolPlusTwo = customSymbol + 2").Compile();
 
             compiledCode.Execute(customModule);
-            Assert.AreEqual(_pe.Execute<int>("customSymbolPlusTwo", customModule), CustomDictionary.customSymbolValue + 2);
-            Assert.AreEqual(customModule.GetVariable<int>("customSymbolPlusTwo"), CustomDictionary.customSymbolValue + 2);
+            Assert.That(CustomDictionary.customSymbolValue + 2, Is.EqualTo(_pe.Execute<int>("customSymbolPlusTwo", customModule)));
+            Assert.That(CustomDictionary.customSymbolValue + 2, Is.EqualTo(customModule.GetVariable<int>("customSymbolPlusTwo")));
 
             // check overriding of Add
             try {
@@ -1949,7 +1949,7 @@ del customSymbol", customModule);
 
             // vars()
             IDictionary vars = _pe.Execute<IDictionary>("vars()", customModule);
-            Assert.AreEqual(true, vars.Contains("customSymbol"));
+            Assert.That(vars.Contains("customSymbol"), Is.EqualTo(true));
 
             // Miscellaneous APIs
             //IntIntDelegate d = pe.CreateLambda<IntIntDelegate>("customSymbol + arg", customModule);
@@ -1973,8 +1973,8 @@ class Y:
 b = Y()", SourceCodeKind.Statements).Execute(scope);
             var a = scope.GetVariable<Func<object, int>>("a");
             var b = scope.GetVariable<Func<object, int>>("b");
-            Assert.AreEqual(a(42), 42);
-            Assert.AreEqual(b(42), 42);
+            Assert.That(42, Is.EqualTo(a(42)));
+            Assert.That(42, Is.EqualTo(b(42)));
         }
 
         // Evaluate
@@ -1982,43 +1982,43 @@ b = Y()", SourceCodeKind.Statements).Execute(scope);
         public void ScenarioEvaluate() {
             ScriptScope scope = _env.CreateScope();
 
-            Assert.AreEqual(10, _pe.CreateScriptSourceFromString("4+6").Execute<int>(scope));
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass").Execute(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("4+6").Execute<int>(scope), Is.EqualTo(10));
+            Assert.That((object)_pe.CreateScriptSourceFromString("if True: pass").Execute(scope), Is.EqualTo(null));
 
-            Assert.AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.AutoDetect).Execute<int>(scope));
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.AutoDetect).Execute<int>(scope), Is.EqualTo(10));
+            Assert.That((object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope), Is.EqualTo(null));
 
-            Assert.AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Expression).Execute<int>(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Expression).Execute<int>(scope), Is.EqualTo(10));
             Assert.Throws<SyntaxErrorException>(() => _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Expression).Execute(scope));
 
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope));
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope));
+            Assert.That((object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope), Is.EqualTo(null));
+            Assert.That((object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope), Is.EqualTo(null));
 
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope));
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope));
+            Assert.That((object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope), Is.EqualTo(null));
+            Assert.That((object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope), Is.EqualTo(null));
 
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope));
-            Assert.AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope));
+            Assert.That((object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope), Is.EqualTo(null));
+            Assert.That((object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope), Is.EqualTo(null));
 
-            Assert.AreEqual(10, (int)(object)_pe.Execute("4+6", scope));
-            Assert.AreEqual(10, _pe.Execute<int>("4+6", scope));
+            Assert.That((int)(object)_pe.Execute("4+6", scope), Is.EqualTo(10));
+            Assert.That(_pe.Execute<int>("4+6", scope), Is.EqualTo(10));
 
-            Assert.AreEqual("abab", (string)(object)_pe.Execute("'ab' * 2", scope));
-            Assert.AreEqual("abab", _pe.Execute<string>("'ab' * 2", scope));
+            Assert.That((string)(object)_pe.Execute("'ab' * 2", scope), Is.EqualTo("abab"));
+            Assert.That(_pe.Execute<string>("'ab' * 2", scope), Is.EqualTo("abab"));
 
             ClsPart clsPart = new ClsPart();
             scope.SetVariable(clspartName, clsPart);
-            Assert.AreEqual(clsPart, ((object)_pe.Execute("clsPart", scope)) as ClsPart);
-            Assert.AreEqual(clsPart, _pe.Execute<ClsPart>("clsPart", scope));
+            Assert.That(((object)_pe.Execute("clsPart", scope)) as ClsPart, Is.EqualTo(clsPart));
+            Assert.That(_pe.Execute<ClsPart>("clsPart", scope), Is.EqualTo(clsPart));
 
             _pe.Execute("clsPart.Field = 100", scope);
-            Assert.AreEqual(100, (int)(object)_pe.Execute("clsPart.Field", scope));
-            Assert.AreEqual(100, _pe.Execute<int>("clsPart.Field", scope));
+            Assert.That((int)(object)_pe.Execute("clsPart.Field", scope), Is.EqualTo(100));
+            Assert.That(_pe.Execute<int>("clsPart.Field", scope), Is.EqualTo(100));
 
             // Ensure that we can get back a delegate to a Python method
             _pe.Execute("def IntIntMethod(a): return a * 100", scope);
             IntIntDelegate d = _pe.Execute<IntIntDelegate>("IntIntMethod", scope);
-            Assert.AreEqual(d(2), 2 * 100);
+            Assert.That(2 * 100, Is.EqualTo(d(2)));
         }
 
         [Test]
@@ -2057,10 +2057,10 @@ f.foo = 3
             ncinstnames.Sort();
             fnames.Sort();
 
-            Assert.AreEqual(ncnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" });
-            Assert.AreEqual(ncinstnames.ToArray(), new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" });
+            Assert.That(new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" }, Is.EqualTo(ncnames.ToArray()));
+            Assert.That(new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__gt__", "__hash__", "__init__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" }, Is.EqualTo(ncinstnames.ToArray()));
 
-            Assert.AreEqual(fnames.ToArray(), new[] { "foo" });
+            Assert.That(new[] { "foo" }, Is.EqualTo(fnames.ToArray()));
         }
 
         [Test]
@@ -2070,19 +2070,19 @@ f.foo = 3
             categorizer.Initialize(null, source, SourceLocation.MinValue);
 
             TokenInfo token = categorizer.ReadToken();
-            Assert.AreEqual(token.Category, TokenCategory.Identifier);
+            Assert.That(TokenCategory.Identifier, Is.EqualTo(token.Category));
 
             token = categorizer.ReadToken();
-            Assert.AreEqual(token.Category, TokenCategory.EndOfStream);
+            Assert.That(TokenCategory.EndOfStream, Is.EqualTo(token.Category));
 
             source = _pe.CreateScriptSourceFromString("\"sys\"", SourceCodeKind.Statements);
             categorizer.Initialize(null, source, SourceLocation.MinValue);
 
             token = categorizer.ReadToken();
-            Assert.AreEqual(token.Category, TokenCategory.StringLiteral);
+            Assert.That(TokenCategory.StringLiteral, Is.EqualTo(token.Category));
 
             token = categorizer.ReadToken();
-            Assert.AreEqual(token.Category, TokenCategory.EndOfStream);
+            Assert.That(TokenCategory.EndOfStream, Is.EqualTo(token.Category));
         }
 
         private static string ListsToString<T>(IList<T> left, IList<T> right) {
@@ -2118,10 +2118,10 @@ instOC = TestOC()
             src.Execute(scope);
 
             Func<int> t = scope.GetVariable<Func<int>>("inst");
-            Assert.AreEqual(42, t());
+            Assert.That(t(), Is.EqualTo(42));
 
             t = scope.GetVariable<Func<int>>("instOC");
-            Assert.AreEqual(42, t());
+            Assert.That(t(), Is.EqualTo(42));
         }
 
         // ExecuteFile
@@ -2184,22 +2184,22 @@ instOC = TestOC()
 
             tempFile1.Execute(scope);
 
-            Assert.AreEqual(-1, _pe.CreateScriptSourceFromString("M1()").Execute<int>(scope));
-            Assert.AreEqual(+1, _pe.CreateScriptSourceFromString("M2()").Execute<int>(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("M1()").Execute<int>(scope), Is.EqualTo(-1));
+            Assert.That(_pe.CreateScriptSourceFromString("M2()").Execute<int>(scope), Is.EqualTo(+1));
 
-            Assert.AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("M1()").Execute(scope));
-            Assert.AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("M2()").Execute(scope));
+            Assert.That((int)(object)_pe.CreateScriptSourceFromString("M1()").Execute(scope), Is.EqualTo(-1));
+            Assert.That((int)(object)_pe.CreateScriptSourceFromString("M2()").Execute(scope), Is.EqualTo(+1));
 
             _pe.CreateScriptSourceFromString("if M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
 
 
             _pe.CreateScriptSourceFromString("c = C()", SourceCodeKind.SingleStatement).Execute(scope);
-            Assert.AreEqual(-1, _pe.CreateScriptSourceFromString("c.M1()").Execute<int>(scope));
-            Assert.AreEqual(+1, _pe.CreateScriptSourceFromString("c.M2()").Execute<int>(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("c.M1()").Execute<int>(scope), Is.EqualTo(-1));
+            Assert.That(_pe.CreateScriptSourceFromString("c.M2()").Execute<int>(scope), Is.EqualTo(+1));
 
-            Assert.AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope));
-            Assert.AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope));
+            Assert.That((int)(object)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope), Is.EqualTo(-1));
+            Assert.That((int)(object)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope), Is.EqualTo(+1));
 
             _pe.CreateScriptSourceFromString("if c.M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if c.M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
@@ -2220,8 +2220,8 @@ instOC = TestOC()
         public void Scenario167() {
             ScriptScope scope = _env.CreateScope();
             _pe.CreateScriptSourceFromString("a=1\r\nb=-1", SourceCodeKind.Statements).Execute(scope);
-            Assert.AreEqual(1, _pe.CreateScriptSourceFromString("a").Execute<int>(scope));
-            Assert.AreEqual(-1, _pe.CreateScriptSourceFromString("b").Execute<int>(scope));
+            Assert.That(_pe.CreateScriptSourceFromString("a").Execute<int>(scope), Is.EqualTo(1));
+            Assert.That(_pe.CreateScriptSourceFromString("b").Execute<int>(scope), Is.EqualTo(-1));
         }
 
         // AddToPath
@@ -2279,7 +2279,7 @@ instOC = TestOC()
             // execute some simple code
             ScriptScope scope = engine.CreateScope();
             ScriptSource source = engine.CreateScriptSourceFromString("2 + 2");
-            Assert.AreEqual(source.Execute<int>(scope), 4);
+            Assert.That(4, Is.EqualTo(source.Execute<int>(scope)));
 
             // import all of the built-in modules & make sure we can reflect on them...
             source = engine.CreateScriptSourceFromString(@"
@@ -2356,7 +2356,7 @@ if id(a) == id(b):
             TestLineInfo(scope, lineNumber);
 
             // Ensure that all APIs work
-            Assert.AreEqual(scope.GetVariable<int>("x"), 1);
+            Assert.That(1, Is.EqualTo(scope.GetVariable<int>("x")));
 
             //IntIntDelegate d = pe.CreateLambda<IntIntDelegate>("arg + x");
             // Assert.AreEqual(d(100), 101);
@@ -2389,9 +2389,9 @@ if id(a) == id(b):
 
             compiledCode = _pe.CreateScriptSourceFromString("f()").Compile();
             compiledCode.Execute(scope);
-            Assert.AreEqual(10, clsPart.Field);
+            Assert.That(clsPart.Field, Is.EqualTo(10));
             compiledCode.Execute(scope);
-            Assert.AreEqual(20, clsPart.Field);
+            Assert.That(clsPart.Field, Is.EqualTo(20));
         }
 
         // [Test] // https://github.com/IronLanguages/ironpython3/issues/906
@@ -2415,7 +2415,7 @@ if id(a) == id(b):
                 stdin.Write(bytes, 0, bytes.Length);
                 stdin.Position = 0;
                 _pe.CreateScriptSourceFromString("output = sys.__stdin__.readline()", SourceCodeKind.Statements).Execute(scope);
-                Assert.AreEqual(str, _pe.CreateScriptSourceFromString("output").Execute<string>(scope));
+                Assert.That(_pe.CreateScriptSourceFromString("output").Execute<string>(scope), Is.EqualTo(str));
 
                 _pe.CreateScriptSourceFromString("sys.__stdout__.write(output)", SourceCodeKind.Statements).Execute(scope);
                 stdout.Flush();
@@ -2424,7 +2424,7 @@ if id(a) == id(b):
                 // deals with BOM:
                 using (StreamReader reader = new StreamReader(stdout, true)) {
                     string s = reader.ReadToEnd();
-                    Assert.AreEqual(str, s);
+                    Assert.That(s, Is.EqualTo(str));
                 }
 
                 _pe.CreateScriptSourceFromString("sys.__stderr__.write(\"This is stderr\")", SourceCodeKind.Statements).Execute(scope);
@@ -2435,7 +2435,7 @@ if id(a) == id(b):
                 // deals with BOM:
                 using (StreamReader reader = new StreamReader(stderr, true)) {
                     string s = reader.ReadToEnd();
-                    Assert.AreEqual("This is stderr", s);
+                    Assert.That(s, Is.EqualTo("This is stderr"));
                 }
             } finally {
                 _pe.Runtime.IO.RedirectToConsole();
@@ -2616,14 +2616,14 @@ if id(a) == id(b):
                 if (!dict.Contains(key)) {
                     Console.WriteLine(PythonOps.Repr(DefaultContext.Default, dict));
                 }
-                Assert.True(dict.Contains(key));
-                Assert.AreEqual((string)dict[key], key);
+                Assert.That(dict.Contains(key));
+                Assert.That(key, Is.EqualTo((string)dict[key]));
             };
         }
 
         private static Action<PythonDictionary> VerifyNoKeys(int value) {
             return (dict) => {
-                Assert.AreEqual(dict.Count, 0);
+                Assert.That(0, Is.EqualTo(dict.Count));
             };
         }
 
@@ -2765,7 +2765,7 @@ if r.sum != 110:
                 var engine = Python.CreateEngine();
                 engine.Runtime.IO.SetOutput(memoryStream, Encoding.UTF8);
                 engine.Execute("print('Hello world')");
-                Assert.AreEqual(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim(), "Hello world");
+                Assert.That("Hello world", Is.EqualTo(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim()));
             }
 
             void Test2() {
@@ -2774,7 +2774,7 @@ if r.sum != 110:
                 var engine = Python.CreateEngine();
                 engine.Runtime.IO.SetOutput(memoryStream, writer);
                 engine.Execute("print('Hello world')");
-                Assert.AreEqual(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim(), "Hello world");
+                Assert.That("Hello world", Is.EqualTo(Encoding.UTF8.GetString(memoryStream.ToArray()).Trim()));
             }
         }
     }

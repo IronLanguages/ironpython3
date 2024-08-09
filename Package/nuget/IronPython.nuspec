@@ -33,12 +33,16 @@ This package contains the IronPython interpreter engine.</description>
         <dependency id="DynamicLanguageRuntime" version="1.3.4" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
+      <group targetFramework="net8.0">
+        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
+        <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
+      </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp3.1\**\*;net7.0*\**\*;net8.0*\**\*" />
-    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp3.1\**\*;net7.0*\**\*;net8.0*\**\*" />
-    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp3.1\**\*;net7.0*\**\*;net8.0*\**\*" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp3.1\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp3.1\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp3.1\**\*;net9.0*\**\*" />
     <file src="LICENSE" />
     <file src="..\..\..\nuget\README.md" target="" />
     <file src="..\..\..\..\Documentation\logo.png" target="" />

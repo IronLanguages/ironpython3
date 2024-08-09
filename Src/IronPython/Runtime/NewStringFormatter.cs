@@ -131,7 +131,7 @@ namespace IronPython.Runtime {
                     if (_index == -1) {
                         // no more formats, send the remaining text.
                         yield return PythonTuple.MakeTuple(
-                            _str.Substring(lastTextStart, _str.Length - lastTextStart),
+                            _str.Substring(lastTextStart),
                             null,
                             null,
                             null);

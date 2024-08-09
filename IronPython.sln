@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28917.181
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "Src\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
@@ -37,8 +37,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\net462.props = Build\net462.props
 		Build\net6.0-windows.props = Build\net6.0-windows.props
 		Build\net6.0.props = Build\net6.0.props
-		Build\net7.0-windows.props = Build\net7.0-windows.props
-		Build\net7.0.props = Build\net7.0.props
+		Build\net8.0-windows.props = Build\net8.0-windows.props
+		Build\net8.0.props = Build\net8.0.props
+		Build\net9.0-windows.props = Build\net9.0-windows.props
+		Build\net9.0.props = Build\net9.0.props
 		Build\netcoreapp3.1.props = Build\netcoreapp3.1.props
 		Build\netstandard2.0.props = Build\netstandard2.0.props
 		Build\steps.yml = Build\steps.yml

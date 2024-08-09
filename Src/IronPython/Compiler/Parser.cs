@@ -274,7 +274,7 @@ namespace IronPython.Compiler {
             int autoIndentSize = startingSpaces;
             // Increase the indent if this looks like the start of a compounds statement.
             // Ideally, we would ask the parser to tell us the exact indentation level
-            if (lastLine.TrimEnd(whiteSpace).EndsWith(":", StringComparison.Ordinal))
+            if (lastLine.TrimEnd(whiteSpace).EndsWith(':'))
                 autoIndentSize += autoIndentTabWidth;
 
             return autoIndentSize;

@@ -337,12 +337,25 @@ namespace IronPythonCompiler {
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(Output) && !string.IsNullOrWhiteSpace(MainName)) {
-                Output = Path.GetFileNameWithoutExtension(MainName);
-                OutputPath = Path.GetDirectoryName(MainName);
-            } else if (string.IsNullOrWhiteSpace(Output) && Files != null && Files.Count > 0) {
-                Output = Path.GetFileNameWithoutExtension(Files[0]);
-                OutputPath = Path.GetDirectoryName(Files[0]);
+            if (string.IsNullOrWhiteSpace(Output)) {
+                if (!string.IsNullOrWhiteSpace(MainName)) {
+                    Output = Path.GetFileNameWithoutExtension(MainName);
+                    OutputPath = Path.GetDirectoryName(MainName);
+                } else if (Files != null && Files.Count > 0) {
+                    Output = Path.GetFileNameWithoutExtension(Files[0]);
+                    OutputPath = Path.GetDirectoryName(Files[0]);
+                }
+            }
+            else {
+                OutputPath = Path.GetDirectoryName(Output);
+                Output = Path.GetFileName(Output);
+                if (string.IsNullOrWhiteSpace(Output)) {
+                    if (!string.IsNullOrWhiteSpace(MainName)) {
+                        Output = Path.GetFileNameWithoutExtension(MainName);
+                    } else if (Files != null && Files.Count > 0) {
+                        Output = Path.GetFileNameWithoutExtension(Files[0]);
+                    }
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(Win32Icon) && Target == PEFileKinds.Dll) {

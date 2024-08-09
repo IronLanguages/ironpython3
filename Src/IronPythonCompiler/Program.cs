@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 using IronPython.Hosting;
 using IronPython.Runtime;
@@ -28,10 +29,6 @@ namespace IronPythonCompiler {
             var ab = assemblyGen.AssemblyBuilder;
             var mb = assemblyGen.ModuleBuilder;
             var tb = mb.DefineType("PythonMain", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
-
-            if (!string.IsNullOrEmpty(config.Win32Icon)) {
-                //ab.DefineIconResource(File.ReadAllBytes(config.Win32Icon));
-            }
 
             MethodBuilder assemblyResolveMethod = null;
             ILGenerator gen = null;
@@ -127,7 +124,7 @@ namespace IronPythonCompiler {
                 gen.EmitCall(OpCodes.Call, typeof(AppDomain).GetProperty(nameof(AppDomain.CurrentDomain)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldnull);
                 gen.Emit(OpCodes.Ldftn, assemblyResolveMethod);
-                gen.Emit(OpCodes.Newobj, typeof(ResolveEventHandler).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) }));
+                gen.Emit(OpCodes.Newobj, typeof(ResolveEventHandler).GetConstructor(new Type[] { typeof(object), typeof(nint) }));
                 gen.EmitCall(OpCodes.Callvirt, typeof(AppDomain).GetEvent(nameof(AppDomain.AssemblyResolve)).GetAddMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ret);
             }
@@ -252,16 +249,16 @@ namespace IronPythonCompiler {
             };
 
             try {
-                string outputfilename = Path.Combine(config.OutputPath, config.Output);
+                string outputFileName = Path.Combine(config.OutputPath, config.Output);
 
-                if (!Path.HasExtension(outputfilename)) {
-                    outputfilename = config.Target == PEFileKinds.Dll
-                        ? Path.ChangeExtension(outputfilename, ".dll")
-                        : Path.ChangeExtension(outputfilename, ".exe");
+                if (!Path.HasExtension(outputFileName)) {
+                    outputFileName = config.Target == PEFileKinds.Dll
+                        ? Path.ChangeExtension(outputFileName, ".dll")
+                        : Path.ChangeExtension(outputFileName, ".exe");
                 }
 
                 var ag = ClrModule.CreateAssemblyGen(DefaultContext.DefaultCLS,
-                    outputfilename,
+                    outputFileName,
                     compileOptions,
                     config.Files.ToArray());
 
@@ -269,14 +266,38 @@ namespace IronPythonCompiler {
                     GenerateExe(ag, config);
                 }
 
-                ag.AssemblyBuilder.Save(Path.GetFileName(outputfilename), config.Platform, config.Machine);
+                ag.AssemblyBuilder.Save(Path.GetFileName(outputFileName), config.Platform, config.Machine);
 
-                ConsoleOps.Info($"Saved to {outputfilename}");
+                if (config.Target != PEFileKinds.Dll && !string.IsNullOrEmpty(config.Win32Icon)) {
+                    byte[] data = File.ReadAllBytes(config.Win32Icon);
+                    nint hUpdate = BeginUpdateResource(outputFileName, false);
+                    UpdateResource(hUpdate, RT_ICON, 1, LANG_SYSTEM_DEFAULT,
+                                   data, data.Length);
+                    EndUpdateResource(hUpdate, false);
+                }
+
+                ConsoleOps.Info($"Saved to {outputFileName}");
             } catch (Exception e) {
                 Console.WriteLine();
                 ConsoleOps.Error(true, e.Message);
             }
             return 0;
         }
+
+        private const nint RT_ICON = 3;
+        private const short LANG_SYSTEM_DEFAULT = unchecked((0x02 << 10) | 0x00);
+
+        private static nint MAKEINTRESOURCE(int i) => i & 0xFFFF;
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode)]
+        private static extern nint BeginUpdateResource(string fileName, [MarshalAs(UnmanagedType.Bool)] bool deleteExistingResources);
+
+        [DllImport("kernel32")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UpdateResource(nint hUpdate, nint type, nint name, short language, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)] byte[] data, int dataSize);
+
+        [DllImport("kernel32")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EndUpdateResource(nint hUpdate, [MarshalAs(UnmanagedType.Bool)] bool discard);
     }
 }

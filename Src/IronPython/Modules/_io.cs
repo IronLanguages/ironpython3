@@ -32,7 +32,7 @@ namespace IronPython.Modules {
         private static readonly object _unsupportedOperationKey = new object();
 
         // Values of the O_flags below has to be identical with flags defined in PythonNT
-        
+
         #region Generated Common O_Flags
 
         // *** BEGIN GENERATED CODE ***
@@ -93,11 +93,13 @@ namespace IronPython.Modules {
                 close(context);
             }
 
+#nullable enable
+
             public void _checkClosed() {
                 _checkClosed(null);
             }
 
-            public void _checkClosed(string msg) {
+            public void _checkClosed(string? msg) {
                 if (closed) {
                     throw PythonOps.ValueError(msg ?? "I/O operation on closed file.");
                 }
@@ -107,7 +109,7 @@ namespace IronPython.Modules {
                 _checkReadable(null);
             }
 
-            public void _checkReadable(string msg) {
+            public void _checkReadable(string? msg) {
                 if (!readable(context)) {
                     throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not readable.");
                 }
@@ -117,7 +119,7 @@ namespace IronPython.Modules {
                 _checkSeekable(null);
             }
 
-            public void _checkSeekable(string msg) {
+            public void _checkSeekable(string? msg) {
                 if (!seekable(context)) {
                     throw PythonOps.ValueError(msg ?? "File or stream is not seekable.");
                 }
@@ -127,11 +129,13 @@ namespace IronPython.Modules {
                 _checkWritable(null);
             }
 
-            public void _checkWritable(string msg) {
+            public void _checkWritable(string? msg) {
                 if (!writable(context)) {
                     throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not writable.");
                 }
             }
+
+#nullable restore
 
             public virtual void close(CodeContext/*!*/ context) {
                 try {
@@ -161,18 +165,18 @@ namespace IronPython.Modules {
             }
 
             [PythonHidden]
-            public virtual Bytes peek(CodeContext/*!*/ context, int length=0) {
+            public virtual Bytes peek(CodeContext/*!*/ context, int length = 0) {
                 _checkClosed();
                 throw AttributeError("peek");
             }
 
             [PythonHidden]
-            public virtual object read(CodeContext/*!*/ context, object length=null) {
+            public virtual object read(CodeContext/*!*/ context, object length = null) {
                 throw AttributeError("read");
             }
 
             [PythonHidden]
-            public virtual Bytes read1(CodeContext/*!*/ context, int length=0) {
+            public virtual Bytes read1(CodeContext/*!*/ context, int length = 0) {
                 throw AttributeError("read1");
             }
 
@@ -190,7 +194,7 @@ namespace IronPython.Modules {
                     if (cur == null) {
                         break;
                     }
-                    
+
                     Bytes curBytes = GetBytes(cur, "read()");
                     if (curBytes.Count == 0) {
                         break;
@@ -206,7 +210,7 @@ namespace IronPython.Modules {
                 return Bytes.Concat(res, count);
             }
 
-            public object readline(CodeContext/*!*/ context, object limit=null) {
+            public object readline(CodeContext/*!*/ context, object limit = null) {
                 return readline(context, GetInt(limit, -1));
             }
 
@@ -214,7 +218,7 @@ namespace IronPython.Modules {
                 return readlines(null);
             }
 
-            public virtual PythonList readlines(object hint=null) {
+            public virtual PythonList readlines(object hint = null) {
                 int size = GetInt(hint, -1);
 
                 PythonList res = new PythonList();
@@ -251,7 +255,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public virtual BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
+            public virtual BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object whence) {
                 throw UnsupportedOperation(context, "seek");
             }
 
@@ -263,7 +267,7 @@ namespace IronPython.Modules {
                 return seek(context, 0, 1);
             }
 
-            public virtual BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public virtual BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 throw UnsupportedOperation(context, "truncate");
             }
 
@@ -402,7 +406,7 @@ namespace IronPython.Modules {
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
                 return new MetaExpandable<_IOBase>(parameter, this);
             }
-            
+
             #endregion
 
             #region Private implementation details
@@ -424,7 +428,7 @@ namespace IronPython.Modules {
             internal Exception InvalidPosition(BigInteger pos) {
                 return PythonOps.IOError("Raw stream returned invalid position {0}", pos);
             }
-            
+
             #endregion
         }
 
@@ -434,7 +438,7 @@ namespace IronPython.Modules {
 
             #region Public API
 
-            public override object read(CodeContext/*!*/ context, object size=null) {
+            public override object read(CodeContext/*!*/ context, object size = null) {
                 int sizeInt = GetInt(size, -1);
                 if (sizeInt < 0) {
                     return readall(context);
@@ -453,7 +457,8 @@ namespace IronPython.Modules {
             public Bytes readall(CodeContext/*!*/ context) {
                 List<Bytes> res = new List<Bytes>();
                 int count = 0;
-                for (; ; ) {
+                for (; ; )
+                {
                     object cur = read(context, DEFAULT_BUFFER_SIZE);
                     if (cur == null) {
                         break;
@@ -480,7 +485,7 @@ namespace IronPython.Modules {
             }
 
             #endregion
-            
+
             #region IDynamicMetaObjectProvider Members
 
             DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
@@ -500,7 +505,7 @@ namespace IronPython.Modules {
                 throw UnsupportedOperation(context, "detach");
             }
 
-            public override object read(CodeContext/*!*/ context, object length=null) {
+            public override object read(CodeContext/*!*/ context, object length = null) {
                 throw UnsupportedOperation(context, "read");
             }
 
@@ -573,15 +578,15 @@ namespace IronPython.Modules {
                 get { return null; }
             }
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(-1)]object length) {
+            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(-1)] object length) {
                 throw UnsupportedOperation(context, "read");
             }
 
-            public override object readline(CodeContext/*!*/ context, int limit=-1) {
+            public override object readline(CodeContext/*!*/ context, int limit = -1) {
                 throw UnsupportedOperation(context, "readline");
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 throw UnsupportedOperation(context, "truncate");
             }
 
@@ -609,7 +614,7 @@ namespace IronPython.Modules {
             private Bytes _readBuf;
             private int _readBufPos;
 
-            internal static BufferedReader Create(CodeContext/*!*/ context, object raw, int buffer_size=DEFAULT_BUFFER_SIZE) {
+            internal static BufferedReader Create(CodeContext/*!*/ context, object raw, int buffer_size = DEFAULT_BUFFER_SIZE) {
                 var res = new BufferedReader(context, raw, buffer_size);
                 res.__init__(context, raw, buffer_size);
                 return res;
@@ -624,7 +629,7 @@ namespace IronPython.Modules {
             public void __init__(
                 CodeContext/*!*/ context,
                 object raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE
+                int buffer_size = DEFAULT_BUFFER_SIZE
             ) {
                 this.raw = raw;
 
@@ -659,7 +664,7 @@ namespace IronPython.Modules {
 
             #region _BufferedIOMixin
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 if (_rawIO != null) {
                     return _rawIO.truncate(context, pos);
                 }
@@ -756,7 +761,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public override object read(CodeContext/*!*/ context, object length=null) {
+            public override object read(CodeContext/*!*/ context, object length = null) {
                 int len = GetInt(length, -1);
 
                 if (len < -1) {
@@ -780,7 +785,8 @@ namespace IronPython.Modules {
                         chunks.Add(ResetReadBuf());
                         count += chunks[0].Count;
                     }
-                    for (; ; ) {
+                    for (; ; )
+                    {
                         object chunkObj;
                         if (_rawIO != null) {
                             chunkObj = _rawIO.read(context, -1);
@@ -795,7 +801,7 @@ namespace IronPython.Modules {
                             }
                             break;
                         }
-                        chunks.Add(chunk); 
+                        chunks.Add(chunk);
                         count += chunk.Count;
                         if (read1) break;
                     }
@@ -856,7 +862,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
+            public override Bytes peek(CodeContext/*!*/ context, int length = 0) {
                 _checkClosed();
 
                 if (length <= 0 || length > _bufSize) {
@@ -890,7 +896,7 @@ namespace IronPython.Modules {
                 return _readBuf;
             }
 
-            public override Bytes read1(CodeContext/*!*/ context, int length=0) {
+            public override Bytes read1(CodeContext/*!*/ context, int length = 0) {
                 if (length == 0) {
                     return Bytes.Empty;
                 } else if (length < 0) {
@@ -990,13 +996,13 @@ namespace IronPython.Modules {
                 return res - _readBuf.Count + _readBufPos;
             }
 
-            public BigInteger seek(double offset, [Optional]object whence) {
+            public BigInteger seek(double offset, [Optional] object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -1018,7 +1024,7 @@ namespace IronPython.Modules {
                     ResetReadBuf();
                     if (pos < 0) {
                         throw InvalidPosition(pos);
-                    } 
+                    }
                     GC.KeepAlive(this);
 
                     return pos;
@@ -1056,7 +1062,7 @@ namespace IronPython.Modules {
                     _readBufPos = 0;
                 }
                 _readBuf = Bytes.Empty;
-                
+
                 return res;
             }
 
@@ -1073,8 +1079,8 @@ namespace IronPython.Modules {
 
             internal static BufferedWriter Create(CodeContext/*!*/ context,
                 object raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null) {
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null) {
 
                 var res = new BufferedWriter(context, raw, buffer_size, max_buffer_size);
                 res.__init__(context, raw, buffer_size, max_buffer_size);
@@ -1084,8 +1090,8 @@ namespace IronPython.Modules {
             public BufferedWriter(
                 CodeContext/*!*/ context,
                 object raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             )
                 : base(context) {
             }
@@ -1093,8 +1099,8 @@ namespace IronPython.Modules {
             public void __init__(
                 CodeContext/*!*/ context,
                 object raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1260,7 +1266,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 lock (this) {
                     FlushNoLock(context);
                     if (pos == null) {
@@ -1342,13 +1348,13 @@ namespace IronPython.Modules {
                 return res + _writeBuf.Count;
             }
 
-            public BigInteger seek(double offset, [Optional]object whence) {
+            public BigInteger seek(double offset, [Optional] object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -1392,7 +1398,7 @@ namespace IronPython.Modules {
         [PythonType]
         public class BufferedRandom : _BufferedIOBase, IDynamicMetaObjectProvider {
             private _IOBase _inner;
-            
+
             private int _bufSize;
             private Bytes _readBuf;
             private int _readBufPos;
@@ -1400,8 +1406,8 @@ namespace IronPython.Modules {
 
             internal static BufferedRandom Create(CodeContext/*!*/ context,
                 _IOBase raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null) {
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null) {
                 var res = new BufferedRandom(context, raw, buffer_size, max_buffer_size);
                 res.__init__(context, raw, buffer_size, max_buffer_size);
                 return res;
@@ -1410,16 +1416,16 @@ namespace IronPython.Modules {
             public BufferedRandom(
                 CodeContext/*!*/ context,
                 _IOBase raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             ) : base(context) {
             }
 
             public void __init__(
                 CodeContext/*!*/ context,
                 _IOBase raw,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1521,7 +1527,7 @@ namespace IronPython.Modules {
 
             #region BufferedReader
 
-            public override object read(CodeContext/*!*/ context, object length=null) {
+            public override object read(CodeContext/*!*/ context, object length = null) {
                 flush(context);
                 int len = GetInt(length, -1);
 
@@ -1546,7 +1552,8 @@ namespace IronPython.Modules {
                         chunks.Add(ResetReadBuf());
                         count += chunks[0].Count;
                     }
-                    for (; ; ) {
+                    for (; ; )
+                    {
                         Bytes chunk = (Bytes)_inner.read(context, -1);
                         if (chunk == null || chunk.Count == 0) {
                             if (count == 0) {
@@ -1602,7 +1609,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
+            public override Bytes peek(CodeContext/*!*/ context, int length = 0) {
                 _checkClosed();
 
                 flush(context);
@@ -1630,7 +1637,7 @@ namespace IronPython.Modules {
                 return _readBuf;
             }
 
-            public override Bytes read1(CodeContext/*!*/ context, int length=0) {
+            public override Bytes read1(CodeContext/*!*/ context, int length = 0) {
                 flush(context);
                 if (length == 0) {
                     return Bytes.Empty;
@@ -1747,13 +1754,13 @@ namespace IronPython.Modules {
                 return base.readinto(context, buf);
             }
 
-            public BigInteger seek(double offset, [Optional]object whence) {
+            public BigInteger seek(double offset, [Optional] object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional] object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -1777,7 +1784,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 lock (this) {
                     FlushNoLock(context);
                     if (pos == null) {
@@ -1822,8 +1829,8 @@ namespace IronPython.Modules {
                 CodeContext/*!*/ context,
                 object reader,
                 object writer,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             ) : base(context) {
             }
 
@@ -1831,8 +1838,8 @@ namespace IronPython.Modules {
                 CodeContext/*!*/ context,
                 object reader,
                 object writer,
-                int buffer_size=DEFAULT_BUFFER_SIZE,
-                object max_buffer_size=null
+                int buffer_size = DEFAULT_BUFFER_SIZE,
+                object max_buffer_size = null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1870,7 +1877,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override object read(CodeContext/*!*/ context, object length=null) {
+            public override object read(CodeContext/*!*/ context, object length = null) {
                 var res = _reader.read(context, length);
                 GC.KeepAlive(this);
                 return res;
@@ -1888,7 +1895,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
+            public override Bytes peek(CodeContext/*!*/ context, int length = 0) {
                 var res = _reader.peek(context, length);
                 GC.KeepAlive(this);
                 return res;
@@ -1997,7 +2004,7 @@ namespace IronPython.Modules {
                 bool line_buffering = false,
                 bool write_through = false
             ) {
-                switch(newline) {
+                switch (newline) {
                     case null:
                     case "":
                     case "\n":
@@ -2199,7 +2206,7 @@ namespace IronPython.Modules {
 
                 // skip backwards to snapshot point
                 pos -= _nextInput.Count;
-                
+
                 // determine number of decoded chars used up after snapshot
                 int skip = _decodedCharsUsed;
                 if (skip == 0) {
@@ -2279,7 +2286,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
                 flush(context);
                 if (pos == null) {
                     pos = tell(context);
@@ -2317,9 +2324,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public BigInteger seek(double offset, [Optional]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
+            public BigInteger seek(double offset, [Optional] object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger cookie, [Optional]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger cookie, [Optional] object whence) {
                 int whenceInt = GetInt(whence);
                 if (closed) {
                     throw PythonOps.ValueError("tell on closed file");
@@ -2451,7 +2458,7 @@ namespace IronPython.Modules {
                 return cookie;
             }
 
-            public override object read(CodeContext/*!*/ context, object length=null) {
+            public override object read(CodeContext/*!*/ context, object length = null) {
                 _checkClosed();
                 if (!readable(context)) {
                     throw UnsupportedOperationWithMessage(context, "not readable");
@@ -2497,7 +2504,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override object readline(CodeContext/*!*/ context, int limit=-1) {
+            public override object readline(CodeContext/*!*/ context, int limit = -1) {
                 _checkClosed("read from closed file");
                 if (!readable(context)) {
                     throw UnsupportedOperationWithMessage(context, "not readable");
@@ -2511,7 +2518,8 @@ namespace IronPython.Modules {
                 }
 
                 int pos, endPos;
-                for (; ; ) {
+                for (; ; )
+                {
                     if (_readTranslate) {
                         // Newlines have already been translated into "\n"
                         pos = line.IndexOf('\n', start);
@@ -2577,7 +2585,7 @@ namespace IronPython.Modules {
             }
 
             #endregion
-            
+
             #region IEnumerator<object> Members
 
             private object _current;
@@ -2795,13 +2803,13 @@ namespace IronPython.Modules {
         public static _IOBase open(
             CodeContext/*!*/ context,
             object file,
-            string mode="r",
-            int buffering=-1,
-            string encoding=null,
-            string errors=null,
-            string newline=null,
-            bool closefd=true,
-            object opener=null
+            string mode = "r",
+            int buffering = -1,
+            string encoding = null,
+            string errors = null,
+            string newline = null,
+            bool closefd = true,
+            object opener = null
         ) {
             string fname = null;
             if (!Converter.TryConvertToIndex(file, out int fd, false, false)) {
@@ -2898,15 +2906,13 @@ namespace IronPython.Modules {
                 var fio = new FileIO(cc, sio) { name = name };
                 var buffer = BufferedReader.Create(cc, fio, DEFAULT_BUFFER_SIZE);
                 return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
-            }
-            else if (type == ConsoleStreamType.Output) {
+            } else if (type == ConsoleStreamType.Output) {
                 var encoding = StringOps.GetEncodingName(io.OutputEncoding);
                 sio = new StreamBox(io.GetStreamProxy(type), type);
                 var fio = new FileIO(cc, sio) { name = name };
                 var buffer = BufferedWriter.Create(cc, fio, DEFAULT_BUFFER_SIZE, null);
                 return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
-            }
-            else {
+            } else {
                 Debug.Assert(type == ConsoleStreamType.ErrorOutput);
                 var encoding = StringOps.GetEncodingName(io.ErrorEncoding);
                 sio = new StreamBox(io.GetStreamProxy(type), type);
@@ -2936,13 +2942,13 @@ namespace IronPython.Modules {
             private string _errors;
 #pragma warning restore 414
 
-            public IncrementalNewlineDecoder(object decoder, bool translate, string errors="strict") {
+            public IncrementalNewlineDecoder(object decoder, bool translate, string errors = "strict") {
                 _decoder = decoder;
                 _translate = translate;
                 _errors = errors;
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNone] IList<byte> input, bool final=false) {
+            public string decode(CodeContext/*!*/ context, [NotNone] IList<byte> input, bool final = false) {
                 object output;
                 if (_decoder == null) {
                     output = input.MakeString();
@@ -2966,7 +2972,7 @@ namespace IronPython.Modules {
                 return DecodeWorker(context, decoded, final);
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNone] string input, bool final=false) {
+            public string decode(CodeContext/*!*/ context, [NotNone] string input, bool final = false) {
                 if (_decoder == null) {
                     return DecodeWorker(context, input, final);
                 }
@@ -3150,7 +3156,7 @@ namespace IronPython.Modules {
             if (msg == null) {
                 throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(i));
             }
-            
+
             throw PythonOps.TypeError(msg, args);
         }
 
@@ -3185,7 +3191,7 @@ namespace IronPython.Modules {
         /// Convert string or bytes into bytes
         /// </summary>
         private static Bytes GetBytes(object o, string name) {
-            if(o == null)
+            if (o == null)
                 return null;
 
             if (o is Bytes bytes) {

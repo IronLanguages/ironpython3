@@ -613,6 +613,7 @@ namespace IronPython.Modules {
             private int _bufSize;
             private Bytes _readBuf;
             private int _readBufPos;
+            private long _absPos = -1;
 
             internal static BufferedReader Create(CodeContext/*!*/ context, object raw, int buffer_size = DEFAULT_BUFFER_SIZE) {
                 var res = new BufferedReader(context, raw, buffer_size);
@@ -714,12 +715,7 @@ namespace IronPython.Modules {
                 return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "readable"));
             }
 
-            public override bool writable(CodeContext/*!*/ context) {
-                if (_rawIO != null) {
-                    return _rawIO.writable(context);
-                }
-                return PythonOps.IsTrue(PythonOps.Invoke(context, _raw, "writable"));
-            }
+            public override bool writable(CodeContext/*!*/ context) => false;
 
             public override bool closed {
                 get {
@@ -773,7 +769,19 @@ namespace IronPython.Modules {
                 }
             }
 
-            private Bytes ReadNoLock(CodeContext/*!*/ context, int length, bool read1 = false) {
+#nullable enable
+
+            private Bytes? CallRawRead(CodeContext/*!*/ context, object length) {
+                object? obj = _rawIO != null ? _rawIO.read(context, length) : PythonOps.Invoke(context, _raw, "read", length);
+                if (obj is null) return null;
+                if (obj is Bytes bytes) {
+                    _absPos += bytes.Count;
+                    return bytes;
+                }
+                throw PythonOps.TypeError("'read()' should have returned bytes");
+            }
+
+            private Bytes? ReadNoLock(CodeContext/*!*/ context, int length, bool read1 = false) {
                 if (length == 0) {
                     return Bytes.Empty;
                 }
@@ -781,20 +789,13 @@ namespace IronPython.Modules {
                 if (length < 0) {
                     List<Bytes> chunks = new List<Bytes>();
                     int count = 0;
-                    if (_readBuf.Count > 0) {
-                        chunks.Add(ResetReadBuf());
+                    if (TryResetReadBuf(out Bytes res)) {
+                        chunks.Add(res);
                         count += chunks[0].Count;
                     }
                     for (; ; )
                     {
-                        object chunkObj;
-                        if (_rawIO != null) {
-                            chunkObj = _rawIO.read(context, -1);
-                        } else {
-                            chunkObj = PythonOps.Invoke(context, _raw, "read", -1);
-                        }
-
-                        Bytes chunk = GetBytes(chunkObj, "read()");
+                        var chunk = CallRawRead(context, -1);
                         if (chunk == null || chunk.Count == 0) {
                             if (count == 0) {
                                 return chunk;
@@ -825,20 +826,13 @@ namespace IronPython.Modules {
                     // a read is required to provide requested amount of data
                     List<Bytes> chunks = new List<Bytes>();
                     int remaining = length;
-                    if (_readBuf.Count > 0) {
-                        chunks.Add(ResetReadBuf());
+                    if (_readBuf.Count > 0 && TryResetReadBuf(out Bytes res)) {
+                        chunks.Add(res);
                         remaining -= chunks[0].Count;
                     }
 
                     while (remaining > 0) {
-                        object chunkObj;
-                        if (_rawIO != null) {
-                            chunkObj = _rawIO.read(context, _bufSize);
-                        } else {
-                            chunkObj = PythonOps.Invoke(context, _raw, "read", _bufSize);
-                        }
-
-                        Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
+                        var chunk = CallRawRead(context, _bufSize) ?? Bytes.Empty;
 
                         _readBuf = chunk;
                         if (_readBuf.Count == 0) {
@@ -846,7 +840,9 @@ namespace IronPython.Modules {
                         }
                         if (remaining >= _readBuf.Count - _readBufPos) {
                             remaining -= _readBuf.Count - _readBufPos;
-                            chunks.Add(ResetReadBuf());
+                            if (TryResetReadBuf(out Bytes res2)) {
+                                chunks.Add(res2);
+                            }
                         } else {
                             byte[] bytes = new byte[remaining];
                             Array.Copy(_readBuf.UnsafeByteArray, 0, bytes, 0, remaining);
@@ -861,6 +857,8 @@ namespace IronPython.Modules {
                     return Bytes.Concat(chunks, length - remaining);
                 }
             }
+
+#nullable restore
 
             public override Bytes peek(CodeContext/*!*/ context, int length = 0) {
                 _checkClosed();
@@ -883,16 +881,13 @@ namespace IronPython.Modules {
                     return Bytes.Make(bytes);
                 }
 
-                object nextObj;
-                if (_rawIO != null) {
-                    nextObj = _rawIO.read(context, length - _readBuf.Count + _readBufPos);
+                var next = CallRawRead(context, length - _readBuf.Count + _readBufPos) ?? Bytes.Empty;
+
+                if (TryResetReadBuf(out Bytes res)) {
+                    _readBuf = res + next;
                 } else {
-                    nextObj = PythonOps.Invoke(context, _raw, "read", length - _readBuf.Count + _readBufPos);
+                    _readBuf = next;
                 }
-
-                Bytes next = nextObj != null ? GetBytes(nextObj, "read()") : Bytes.Empty;
-
-                _readBuf = ResetReadBuf() + next;
                 return _readBuf;
             }
 
@@ -952,7 +947,9 @@ namespace IronPython.Modules {
                                 return Bytes.Concat(chunks, cnt);
                             }
 
-                            (chunks ??= new List<Bytes>()).Add(ResetReadBuf());
+                            if (TryResetReadBuf(out Bytes res)) {
+                                (chunks ??= new List<Bytes>()).Add(res);
+                            }
                             cnt += buf.Length;
                         }
 
@@ -968,22 +965,14 @@ namespace IronPython.Modules {
                 }
 
                 bool TryReadNextChunk(CodeContext context) {
-                    object chunkObj;
-                    if (_rawIO != null) {
-                        chunkObj = _rawIO.read(context, _bufSize);
-                    } else {
-                        chunkObj = PythonOps.Invoke(context, _raw, "read", _bufSize);
-                    }
-
-                    Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
-
+                    var chunk = CallRawRead(context, _bufSize) ?? Bytes.Empty;
                     _readBuf = chunk;
                     return chunk.Count != 0;
                 }
             }
 
             public override BigInteger tell(CodeContext/*!*/ context) {
-                BigInteger res = _rawIO != null ?
+                var res = _rawIO != null ?
                     _rawIO.tell(context) :
                     GetBigInt(
                         PythonOps.Invoke(context, _raw, "tell"),
@@ -993,6 +982,7 @@ namespace IronPython.Modules {
                     throw InvalidPosition(res);
                 }
 
+                _absPos = checked((long)res);
                 return res - _readBuf.Count + _readBufPos;
             }
 
@@ -1009,6 +999,23 @@ namespace IronPython.Modules {
                 }
 
                 lock (this) {
+                    // fast-path to seek within the buffer
+                    if (_readBuf.Count > 0 && _absPos != -1) {
+                        if (whenceInt == 0) {
+                            var readBufPos = pos - _absPos + _readBuf.Count;
+                            if (0 <= readBufPos && readBufPos < _readBuf.Count) {
+                                _readBufPos = unchecked((int)readBufPos);
+                                return _absPos - _readBuf.Count + _readBufPos;
+                            }
+                        } else if (whenceInt == 1) {
+                            var readBufPos = _readBufPos + pos;
+                            if (0 <= readBufPos && readBufPos < _readBuf.Count) {
+                                _readBufPos = unchecked((int)readBufPos);
+                                return _absPos - _readBuf.Count + _readBufPos;
+                            }
+                        }
+                    }
+
                     if (whenceInt == 1) {
                         pos -= _readBuf.Count - _readBufPos;
                     }
@@ -1021,6 +1028,7 @@ namespace IronPython.Modules {
                     }
 
                     pos = GetBigInt(posObj, "seek() should return integer");
+                    _absPos = checked((long)pos);
                     ResetReadBuf();
                     if (pos < 0) {
                         throw InvalidPosition(pos);
@@ -1051,8 +1059,12 @@ namespace IronPython.Modules {
 
             #region Private implementation details
 
-            private Bytes ResetReadBuf() {
-                Bytes res;
+            private void ResetReadBuf() {
+                _readBufPos = 0;
+                _readBuf = Bytes.Empty;
+            }
+
+            private bool TryResetReadBuf(out Bytes res) {
                 if (_readBufPos == 0) {
                     res = _readBuf;
                 } else {
@@ -1063,7 +1075,7 @@ namespace IronPython.Modules {
                 }
                 _readBuf = Bytes.Empty;
 
-                return res;
+                return res.Count > 0;
             }
 
             #endregion
@@ -3093,6 +3105,8 @@ namespace IronPython.Modules {
 
         #region Private implementation details
 
+#nullable enable
+
         private static readonly HashSet<char> _validModes = MakeSet("abrtwxU+");
 
         private static HashSet<char> MakeSet(string chars) {
@@ -3104,8 +3118,7 @@ namespace IronPython.Modules {
         }
 
         private static BigInteger GetBigInt(object i, string msg) {
-            BigInteger res;
-            if (TryGetBigInt(i, out res)) {
+            if (TryGetBigInt(i, out BigInteger res)) {
                 return res;
             }
 
@@ -3137,15 +3150,7 @@ namespace IronPython.Modules {
             return false;
         }
 
-        private static int GetInt(object i) {
-            return GetInt(i, null, null);
-        }
-
-        private static int GetInt(object i, int defaultValue) {
-            return GetInt(i, defaultValue, null, null);
-        }
-
-        private static int GetInt(object i, string msg, params object[] args) {
+        private static int GetInt(object? i, string? msg = null) {
             if (i == Missing.Value) return 0;
 
             int res;
@@ -3157,18 +3162,18 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(i));
             }
 
-            throw PythonOps.TypeError(msg, args);
+            throw PythonOps.TypeError(msg);
         }
 
-        private static int GetInt(object i, int defaultValue, string msg, params object[] args) {
+        private static int GetInt(object? i, int defaultValue, string? msg = null) {
             if (i == null) {
                 return defaultValue;
             }
 
-            return GetInt(i, msg, args);
+            return GetInt(i, msg);
         }
 
-        private static bool TryGetInt(object i, out int value) {
+        private static bool TryGetInt(object? i, out int value) {
             if (i == null) {
                 value = int.MinValue;
                 return false;
@@ -3190,7 +3195,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Convert string or bytes into bytes
         /// </summary>
-        private static Bytes GetBytes(object o, string name) {
+        private static Bytes? GetBytes(object? o, string name) {
             if (o == null)
                 return null;
 
@@ -3198,7 +3203,7 @@ namespace IronPython.Modules {
                 return bytes;
             }
 
-            string s = o as string;
+            string? s = o as string;
             if (s == null) {
                 if (o is Extensible<string> es) {
                     s = es.Value;
@@ -3211,6 +3216,8 @@ namespace IronPython.Modules {
 
             throw PythonOps.TypeError("'" + name + "' should have returned bytes");
         }
+
+#nullable restore
 
         #endregion
     }

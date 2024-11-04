@@ -99,7 +99,7 @@ namespace IronPython.Modules {
                 _checkClosed(null);
             }
 
-            public void _checkClosed(string? msg) {
+            internal void _checkClosed(string? msg) {
                 if (closed) {
                     throw PythonOps.ValueError(msg ?? "I/O operation on closed file.");
                 }
@@ -109,7 +109,7 @@ namespace IronPython.Modules {
                 _checkReadable(null);
             }
 
-            public void _checkReadable(string? msg) {
+            internal void _checkReadable(string? msg) {
                 if (!readable(context)) {
                     throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not readable.");
                 }
@@ -119,9 +119,9 @@ namespace IronPython.Modules {
                 _checkSeekable(null);
             }
 
-            public void _checkSeekable(string? msg) {
+            internal void _checkSeekable(string? msg) {
                 if (!seekable(context)) {
-                    throw PythonOps.ValueError(msg ?? "File or stream is not seekable.");
+                    throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not seekable.");
                 }
             }
 
@@ -129,7 +129,7 @@ namespace IronPython.Modules {
                 _checkWritable(null);
             }
 
-            public void _checkWritable(string? msg) {
+            internal void _checkWritable(string? msg) {
                 if (!writable(context)) {
                     throw UnsupportedOperationWithMessage(context, msg ?? "File or stream is not writable.");
                 }
@@ -997,6 +997,8 @@ namespace IronPython.Modules {
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
                 }
+
+                _checkSeekable();
 
                 lock (this) {
                     // fast-path to seek within the buffer

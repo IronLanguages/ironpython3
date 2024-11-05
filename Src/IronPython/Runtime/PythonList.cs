@@ -868,8 +868,8 @@ namespace IronPython.Runtime {
 
         public object? pop(int index) {
             lock (this) {
-                index = PythonOps.FixIndex(index, _size);
                 if (_size == 0) throw PythonOps.IndexError("pop off of empty list");
+                index = PythonOps.FixIndex(index, _size);
 
                 object? ret = _data[index];
                 _size -= 1;

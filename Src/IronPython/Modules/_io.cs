@@ -457,8 +457,7 @@ namespace IronPython.Modules {
             public Bytes readall(CodeContext/*!*/ context) {
                 List<Bytes> res = new List<Bytes>();
                 int count = 0;
-                for (; ; )
-                {
+                for (; ; ) {
                     object cur = read(context, DEFAULT_BUFFER_SIZE);
                     if (cur == null) {
                         break;
@@ -665,17 +664,6 @@ namespace IronPython.Modules {
 
             #region _BufferedIOMixin
 
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
-                if (_rawIO != null) {
-                    return _rawIO.truncate(context, pos);
-                }
-
-                return GetBigInt(
-                    PythonOps.Invoke(context, _raw, "truncate", pos),
-                    "truncate() should return integer"
-                );
-            }
-
             public override void close(CodeContext/*!*/ context) {
                 if (!closed) {
                     try {
@@ -775,7 +763,9 @@ namespace IronPython.Modules {
                 object? obj = _rawIO != null ? _rawIO.read(context, length) : PythonOps.Invoke(context, _raw, "read", length);
                 if (obj is null) return null;
                 if (obj is Bytes bytes) {
-                    _absPos += bytes.Count;
+                    if (_absPos != -1) {
+                        _absPos += bytes.Count;
+                    }
                     return bytes;
                 }
                 throw PythonOps.TypeError("'read()' should have returned bytes");
@@ -789,12 +779,11 @@ namespace IronPython.Modules {
                 if (length < 0) {
                     List<Bytes> chunks = new List<Bytes>();
                     int count = 0;
-                    if (TryResetReadBuf(out Bytes res)) {
+                    if (_readBuf.Count > 0 && TryResetReadBuf(out Bytes res)) {
                         chunks.Add(res);
                         count += chunks[0].Count;
                     }
-                    for (; ; )
-                    {
+                    for (; ; ) {
                         var chunk = CallRawRead(context, -1);
                         if (chunk == null || chunk.Count == 0) {
                             if (count == 0) {
@@ -840,8 +829,8 @@ namespace IronPython.Modules {
                         }
                         if (remaining >= _readBuf.Count - _readBufPos) {
                             remaining -= _readBuf.Count - _readBufPos;
-                            if (TryResetReadBuf(out Bytes res2)) {
-                                chunks.Add(res2);
+                            if (TryResetReadBuf(out res)) {
+                                chunks.Add(res);
                             }
                         } else {
                             byte[] bytes = new byte[remaining];
@@ -1566,8 +1555,7 @@ namespace IronPython.Modules {
                         chunks.Add(ResetReadBuf());
                         count += chunks[0].Count;
                     }
-                    for (; ; )
-                    {
+                    for (; ; ) {
                         Bytes chunk = (Bytes)_inner.read(context, -1);
                         if (chunk == null || chunk.Count == 0) {
                             if (count == 0) {
@@ -2532,8 +2520,7 @@ namespace IronPython.Modules {
                 }
 
                 int pos, endPos;
-                for (; ; )
-                {
+                for (; ; ) {
                     if (_readTranslate) {
                         // Newlines have already been translated into "\n"
                         pos = line.IndexOf('\n', start);
@@ -3119,7 +3106,7 @@ namespace IronPython.Modules {
             return res;
         }
 
-        private static BigInteger GetBigInt(object i, string msg) {
+        private static BigInteger GetBigInt(object? i, string msg) {
             if (TryGetBigInt(i, out BigInteger res)) {
                 return res;
             }
@@ -3127,7 +3114,7 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError(msg);
         }
 
-        private static bool TryGetBigInt(object i, out BigInteger res) {
+        private static bool TryGetBigInt(object? i, out BigInteger res) {
             if (i is BigInteger bi) {
                 res = bi;
                 return true;

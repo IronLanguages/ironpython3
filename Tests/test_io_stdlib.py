@@ -6,7 +6,7 @@
 ## Run selected tests from test_io from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_netcoreapp, generate_suite, run_test
 
 import test.test_io
 
@@ -108,6 +108,15 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.CMiscIOTest('test_attributes'), # AssertionError: 'r' != 'U'
             test.test_io.PyMiscIOTest('test_attributes'), # AssertionError: 'wb+' != 'rb+'
         ]
+
+        if is_netcoreapp:
+            # __del__ not getting called on shutdown
+            skip_tests += [
+                test.test_io.CTextIOWrapperTest('test_create_at_shutdown_with_encoding'), # AssertionError: 'ok' != ''
+                test.test_io.CTextIOWrapperTest('test_create_at_shutdown_without_encoding'), # AssertionError: 'ok' != ''
+                test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_with_encoding'), # AssertionError: 'ok' != ''
+                test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_without_encoding'), # AssertionError: 'ok' != ''
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

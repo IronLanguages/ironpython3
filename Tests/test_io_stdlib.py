@@ -87,35 +87,18 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyTextIOWrapperTest('test_nonnormalized_close_error_on_close'), # AssertionError: None is not an instance of <class 'NameError'>
             test.test_io.PyTextIOWrapperTest('test_seek_append_bom'), # OSError: [Errno -2146232800] Unable seek backward to overwrite data that previously existed in a file opened in Append mode.
             test.test_io.CMiscIOTest('test_io_after_close'), # AttributeError: 'TextIOWrapper' object has no attribute 'read1'
+            test.test_io.CMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.CMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
             test.test_io.CMiscIOTest('test_pickling'), # AssertionError: TypeError not raised by _dumps
             test.test_io.CMiscIOTest('test_readinto_buffer_overflow'), # IndexError: Index was outside the bounds of the array.
             test.test_io.CMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
             test.test_io.CMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
             test.test_io.PyMiscIOTest('test_io_after_close'), # AttributeError: 'FileIO' object has no attribute 'read1'
+            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
             test.test_io.PyMiscIOTest('test_pickling'), # AssertionError: TypeError not raised by _dumps
             test.test_io.PyMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
             test.test_io.PyMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
-
-            test.test_io.CMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
-            test.test_io.CMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
-            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
-            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
-            test.test_io.CSignalsTest('test_interrupted_read_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_read_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_write_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_write_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_interrupted_write_unbuffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_reentrant_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.CSignalsTest('test_reentrant_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_read_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_read_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_write_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_write_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
-            test.test_io.PySignalsTest('test_interrupted_write_unbuffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
         ]
 
         skip_tests = [
@@ -131,6 +114,24 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_without_encoding'),
             test.test_io.CMiscIOTest('test_daemon_threads_shutdown_stderr_deadlock'),
             test.test_io.CMiscIOTest('test_daemon_threads_shutdown_stdout_deadlock'),
+
+            # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_read_retry_buffered'),
+            test.test_io.CSignalsTest('test_interrupted_read_retry_text'),
+            test.test_io.CSignalsTest('test_interrupted_write_buffered'),
+            test.test_io.CSignalsTest('test_interrupted_write_retry_buffered'),
+            test.test_io.CSignalsTest('test_interrupted_write_retry_text'),
+            test.test_io.CSignalsTest('test_interrupted_write_text'),
+            test.test_io.CSignalsTest('test_interrupted_write_unbuffered'),
+            test.test_io.CSignalsTest('test_reentrant_write_buffered'),
+            test.test_io.CSignalsTest('test_reentrant_write_text'),
+            test.test_io.PySignalsTest('test_interrupted_read_retry_buffered'),
+            test.test_io.PySignalsTest('test_interrupted_read_retry_text'),
+            test.test_io.PySignalsTest('test_interrupted_write_buffered'),
+            test.test_io.PySignalsTest('test_interrupted_write_retry_buffered'),
+            test.test_io.PySignalsTest('test_interrupted_write_retry_text'),
+            test.test_io.PySignalsTest('test_interrupted_write_text'),
+            test.test_io.PySignalsTest('test_interrupted_write_unbuffered'),
 
             # failure prevents files from closing
             test.test_io.CTextIOWrapperTest('test_seek_and_tell'), # TypeError: NoneType is not callable

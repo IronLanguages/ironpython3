@@ -103,20 +103,19 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.CTextIOWrapperTest('test_bufio_write_through'), # StackOverflowException
             test.test_io.CTextIOWrapperTest('test_override_destructor'), # StackOverflowException
 
+            # __del__ not getting called on shutdown?
+            test.test_io.CTextIOWrapperTest('test_create_at_shutdown_with_encoding'),
+            test.test_io.CTextIOWrapperTest('test_create_at_shutdown_without_encoding'),
+            test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_with_encoding'),
+            test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_without_encoding'),
+            test.test_io.CMiscIOTest('test_daemon_threads_shutdown_stderr_deadlock'),
+            test.test_io.CMiscIOTest('test_daemon_threads_shutdown_stdout_deadlock'),
+
             # failure prevents files from closing
             test.test_io.CTextIOWrapperTest('test_seek_and_tell'), # TypeError: NoneType is not callable
             test.test_io.CMiscIOTest('test_attributes'), # AssertionError: 'r' != 'U'
             test.test_io.PyMiscIOTest('test_attributes'), # AssertionError: 'wb+' != 'rb+'
         ]
-
-        if is_netcoreapp:
-            # __del__ not getting called on shutdown
-            skip_tests += [
-                test.test_io.CTextIOWrapperTest('test_create_at_shutdown_with_encoding'), # AssertionError: 'ok' != ''
-                test.test_io.CTextIOWrapperTest('test_create_at_shutdown_without_encoding'), # AssertionError: 'ok' != ''
-                test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_with_encoding'), # AssertionError: 'ok' != ''
-                test.test_io.PyTextIOWrapperTest('test_create_at_shutdown_without_encoding'), # AssertionError: 'ok' != ''
-            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

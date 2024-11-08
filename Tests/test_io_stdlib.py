@@ -95,6 +95,27 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyMiscIOTest('test_pickling'), # AssertionError: TypeError not raised by _dumps
             test.test_io.PyMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
             test.test_io.PyMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
+
+            test.test_io.CMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.CMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.PyMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
+            test.test_io.CSignalsTest('test_interrupted_read_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_read_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_write_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_write_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_interrupted_write_unbuffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_reentrant_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.CSignalsTest('test_reentrant_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_read_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_read_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_write_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_write_retry_buffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_write_retry_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_write_text'), # AttributeError: 'module' object has no attribute 'SIGALRM'
+            test.test_io.PySignalsTest('test_interrupted_write_unbuffered'), # AttributeError: 'module' object has no attribute 'SIGALRM'
         ]
 
         skip_tests = [

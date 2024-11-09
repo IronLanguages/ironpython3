@@ -6,7 +6,7 @@
 ## Run selected tests from test_io from StdLib
 ##
 
-from iptest import is_ironpython, is_netcoreapp, generate_suite, run_test
+from iptest import is_ironpython, is_mono, generate_suite, run_test
 
 import test.test_io
 
@@ -100,6 +100,11 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
             test.test_io.PyMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
         ]
+
+        if is_mono:
+            failing_tests += [
+                test.test_io.CBufferedRandomTest('test_destructor'), # IndexError: index out of range: 0
+            ]
 
         skip_tests = [
             test.test_io.CBufferedWriterTest('test_override_destructor'), # StackOverflowException

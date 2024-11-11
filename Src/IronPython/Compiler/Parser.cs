@@ -3090,7 +3090,10 @@ namespace IronPython.Compiler {
             while (true) {
                 if (MaybeEat(TokenKind.EndOfFile)) break;
                 if (MaybeEatNewLine()) continue;
-
+                if (l.Count == 0)
+                {
+                    l.Add(new EmptyStatement());
+                }
                 Statement s = ParseStmt();
                 l.Add(s);
             }

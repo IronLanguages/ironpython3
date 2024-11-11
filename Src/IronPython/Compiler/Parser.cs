@@ -3095,6 +3095,7 @@ namespace IronPython.Compiler {
                 l.Add(s);
             }
 
+            l.Insert(0, new EmptyStatement());
             Statement[] stmts = l.ToArray();
 
             if (returnValue && stmts.Length > 0) {

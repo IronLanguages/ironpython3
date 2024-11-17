@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>IronPythonConsole</RootNamespace>
+    <AssemblyName>ipy32</AssemblyName>
+    <ApplicationIcon>..\Console\ipy.ico</ApplicationIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\Modules\IronPython.Modules.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Console\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\Console\Console.cs" Link="Console.cs" />
+  </ItemGroup>
+
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
+</Project>

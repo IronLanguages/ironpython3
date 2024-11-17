@@ -1,22 +1,29 @@
-IronPython 3
-============
-**There is still much that needs to be done to support Python 3.x. We are working on it, albeit slowly. We welcome all those who would like to help!**
+<p align="center">
+  <img alt="IronPython Console" src="https://github.com/user-attachments/assets/ea038aa3-36fa-42c3-b72f-a79ae06fdada" />
+</p>
 
-[Official Website](https://ironpython.net)
+<p align="center">
+  <a style="text-decoration:none" href="https://ironpython.net/">
+    <img src="https://img.shields.io/badge/IronPython-Website-darkgreen" alt="IronPython Website" /></a>
+  <a style="text-decoration:none" href="https://github.com/IronLanguages/ironpython3/actions?workflow=CI">
+    <img src="https://github.com/IronLanguages/ironpython3/workflows/CI/badge.svg" alt="GitHub CI Status" /></a>
+  <a style="text-decoration:none" href="https://dotnet.visualstudio.com/IronLanguages/_build/latest?definitionId=43">
+    <img src="https://dotnet.visualstudio.com/IronLanguages/_apis/build/status/ironpython3" alt="Azure CI Status" /></a>
+  <a style="text-decoration:none" href="https://gitter.im/IronLanguages/ironpython">
+    <img src="https://badges.gitter.im/IronLanguages/ironpython.svg" alt="Gitter" /></a>
+</p>
+
+**IronPython** is a popular, open-source implementation of Python 3.x for .NET that is built on top of its very own [Dynamic Language Runtime](https://github.com/IronLanguages/dlr).
+
+> [!NOTE]
+> There is still much that needs to be done to support Python 3. We are working on it, albeit slowly.
+> We welcome all those who would like to help! ❤️
 
 IronPython is an open-source implementation of the Python programming language that is tightly integrated with .NET. IronPython can use .NET and Python libraries, and other .NET languages can use Python code just as easily.
 
 IronPython 3 targets Python 3, including the re-organized standard library, Unicode strings, and all of the other new features.
 
-
-| **What?** | **Where?** |
-| --------: | :------------: |
-| **Windows/Linux/macOS Builds** | [![Build status](https://dotnet.visualstudio.com/IronLanguages/_apis/build/status/ironpython3)](https://dotnet.visualstudio.com/IronLanguages/_build/latest?definitionId=43) [![Github build status](https://github.com/IronLanguages/ironpython3/workflows/CI/badge.svg)](https://github.com/IronLanguages/ironpython3/actions?workflow=CI) |
-| **Downloads** | [![NuGet](https://img.shields.io/nuget/vpre/IronPython.svg)](https://www.nuget.org/packages/IronPython/3.4.0) [![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg?include_prereleases)](https://github.com/IronLanguages/ironpython3/releases/latest)|
-| **Help** | [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython) [![StackExchange](https://img.shields.io/badge/stack%20overflow-ironpython-informational?logo=stack-overflow&logoColor=white)](https://stackoverflow.com/questions/tagged/ironpython) |
-
-
-## Examples
+## ✍️ Examples
 
 The following C# program:
 
@@ -48,13 +55,15 @@ def greetings(name):
 dynamic greetings = scope.GetVariable("greetings");
 System.Console.WriteLine(greetings("world"));
 ```
-This example assumes that `IronPython` has been added to the C# project as a NuGet package.
 
-## Code of Conduct
+> This example assumes that `IronPython` has been added to the C# project as a NuGet package.
+
+## ⚖️ Code of Conduct
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
-## State of the Project
+## 🐍 State of the Project
+
 The current target is Python 3.4, although features and behaviors from later versions may be included.
 
 See the following lists for features from each version of CPython that have been implemented:
@@ -67,22 +76,22 @@ See the following lists for features from each version of CPython that have been
 - [`Python3.5`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.5)
 - [`Python3.6`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.6)
 
-## Contributing
+## 🙋 Contributing
 For details on contributing see the [Contributing](CONTRIBUTING.md) article.
 
-## Upgrading from IronPython 2
+## ⬆️ Upgrading from IronPython 2
 For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](https://github.com/IronLanguages/ironpython3/wiki/Upgrading-from-IronPython2) article.
 
-## Differences with CPython
+## 🧭 Differences with CPython
 While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/wiki/Differences-from-CPython) for details.
 
-## Package compatibility
+## 📦 Package compatibility
 See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wiki/Package-compatibility) document for information on compatibility with popular packages.
 
-## Installation
+## 🎁 Installation
 Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
 
-## Build
+## 🛠️ Build
 See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Building). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
 
 ## Supported Platforms

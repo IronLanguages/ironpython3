@@ -1,0 +1,74 @@
+name: Spec
+description: An official specification for enhancements.
+labels: ["enhancement"]
+assignees: []
+title: "Spec: "
+type: Spec
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to provide us with a detailed specification of your idea.
+
+        In a spec you will give a detailed and complete representation of the (public) APIs that are implemented as part of this change. Additionally please think about backwards compatibility, breaking changes, supported platforms and the difficulty.
+  - type: textarea
+    id: description
+    attributes:
+      label: 📄 Description
+      description: Provide a concise description of the feature and the motivation for adding it. This can be a modified version from the feature request prior to this.
+    validations:
+      required: true
+  - type: textarea
+    id: api-changes
+    attributes:
+      label: ⚡ API Changes
+      description: Include a complete list of all API changes, additions, subtractions as would be required by your proposal.
+      value: |
+        ## `[ class ]`
+
+        | API | Description |
+        | ------------- | ------------- |
+        | [name] | Gets or sets [description]. |
+    validations:
+      required: true
+  - type: textarea
+    id: usage-scenarios
+    attributes:
+      label: 👥 Usage scenarios
+      description: Give us a couple of scenarios that demonstrate how developers would consume the above APIs.
+      placeholder: |
+        # C# Example
+        ```csharp
+        var thing = new MyNewControl();
+        thing.BeAwesome = true;
+        thing.Color = Colors.Cornsilk;
+        ```
+
+        # XAML Example
+        ```xaml
+        <MyNewControl x:Name="thing" BeAwesome="true" Color="Cornsilk" />
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: backwards-compatibility
+    attributes:
+      label: 🔙 Backward Compatibility
+      description: Please describe here anything in terms of backwards compatibility. Will there be breaking changes? Do we need to update dependencies to support this? What are the minimum supported API/OS levels? And lastly, are there any platforms that can't support this and why?
+      placeholder: |
+        Minimum API levels?
+        Breaking changes?
+        Unsupported platforms?
+    validations:
+      required: false
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: 🤔 Difficulty
+      description: What do you feel will be the difficulty of this change all things considering? No exact science, just your gut feeling.
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true

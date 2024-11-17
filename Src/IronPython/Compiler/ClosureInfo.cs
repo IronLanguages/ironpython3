@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using Microsoft.Scripting;
-
 using IronPython.Compiler.Ast;
 
-using MSAst = System.Linq.Expressions;
-
 using Microsoft.Scripting.Utils;
+
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler {
     /// <summary>

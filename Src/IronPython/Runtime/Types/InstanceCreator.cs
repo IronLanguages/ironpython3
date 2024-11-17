@@ -5,8 +5,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using IronPython.Runtime.Binding;
+
 using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 

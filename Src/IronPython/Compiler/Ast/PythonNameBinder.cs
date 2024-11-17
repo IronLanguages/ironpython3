@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
-
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using IronPython.Runtime;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime;
+using MSAst = System.Linq.Expressions;
 
 /*
  * The name binding:
@@ -589,14 +589,14 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(BreakStatement node) {
             node.Parent = _currentScope;
             node.LoopStatement = _loops[_loops.Count - 1];
-            
+
             return base.Walk(node);
         }
 
         public override bool Walk(ContinueStatement node) {
             node.Parent = _currentScope;
             node.LoopStatement = _loops[_loops.Count - 1];
-            
+
             return base.Walk(node);
         }
 

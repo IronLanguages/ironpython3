@@ -3,16 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
+
+using IronPython.Hosting;
+
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
-using IronPython.Hosting;
 
 using NUnit.Framework;
 
 namespace IronPythonTest.Stress {
 
-    [TestFixture(Category="IronPython")]
+    [TestFixture(Category = "IronPython")]
     public class Engine
 #if FEATURE_REMOTING
         : MarshalByRefObject
@@ -60,13 +61,11 @@ namespace IronPythonTest.Stress {
             const long memoryThreshold = 100000;
 
             bool emitsUncollectibleCode = Snippets.Shared.SaveSnippets || _env.Setup.DebugMode;
-            if (!emitsUncollectibleCode)
-            {
+            if (!emitsUncollectibleCode) {
                 System.Console.WriteLine("ScenarioGC used {0} bytes of memory.", memoryUsed);
                 if (memoryUsed > memoryThreshold)
                     throw new Exception(String.Format("ScenarioGC used {0} bytes of memory. The threshold is {1} bytes", memoryUsed, memoryThreshold));
-            }
-            else {
+            } else {
                 System.Console.WriteLine("Skipping memory usage test under SaveSnippets and/or Debug mode.");
             }
         }

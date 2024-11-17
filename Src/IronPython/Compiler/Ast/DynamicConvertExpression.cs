@@ -4,14 +4,12 @@
 
 using System;
 
-using Microsoft.Scripting.Interpreter;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 
-using MSAst = System.Linq.Expressions;
+using Microsoft.Scripting.Interpreter;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     internal class DynamicConvertExpression : MSAst.Expression, IInstructionProvider {

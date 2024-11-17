@@ -5,8 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Microsoft.Scripting.Runtime;
+
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Exceptions {
     #region Generated TypeErrorException
@@ -44,7 +45,7 @@ namespace IronPython.Runtime.Exceptions {
                     newEx.InitializeFromClr(this);
                     _pyExceptionObject = newEx;
                 }
-                return _pyExceptionObject; 
+                return _pyExceptionObject;
             }
             set { _pyExceptionObject = value; }
         }

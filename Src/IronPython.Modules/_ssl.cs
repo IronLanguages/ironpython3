@@ -640,12 +640,10 @@ Read up to size bytes from the SSL socket.")]
                             var numRead = _sslStream.Read(buf, 0, size);
                             buf.AsSpan(0, numRead).CopyTo(pythonBuffer.AsSpan());
                             return numRead;
-                        }
-                        finally {
+                        } finally {
                             ArrayPool.Return(buf);
                         }
-                    }
-                    else {
+                    } else {
                         return _sslStream.Read(buf, 0, size);
                     }
 #endif

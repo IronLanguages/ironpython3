@@ -47,19 +47,19 @@ namespace IronPython.Runtime {
         private static readonly CallSite<Func<CallSite, object, float>> _floatSite = MakeExplicitConvertSite<float>();
 
         private static readonly CallSite<Func<CallSite, object, object>>
-            _tryByteSite       = MakeExplicitTrySite<byte>(),
-            _trySByteSite      = MakeExplicitTrySite<sbyte>(),
-            _tryInt16Site      = MakeExplicitTrySite<short>(),
-            _tryInt32Site      = MakeExplicitTrySite<int>(),
-            _tryInt64Site      = MakeExplicitTrySite<long>(),
-            _tryUInt16Site     = MakeExplicitTrySite<ushort>(),
-            _tryUInt32Site     = MakeExplicitTrySite<uint>(),
-            _tryUInt64Site     = MakeExplicitTrySite<ulong>(),
-            _tryDoubleSite     = MakeExplicitTrySite<double>(),
-            _tryCharSite       = MakeExplicitTrySite<char>(),
+            _tryByteSite = MakeExplicitTrySite<byte>(),
+            _trySByteSite = MakeExplicitTrySite<sbyte>(),
+            _tryInt16Site = MakeExplicitTrySite<short>(),
+            _tryInt32Site = MakeExplicitTrySite<int>(),
+            _tryInt64Site = MakeExplicitTrySite<long>(),
+            _tryUInt16Site = MakeExplicitTrySite<ushort>(),
+            _tryUInt32Site = MakeExplicitTrySite<uint>(),
+            _tryUInt64Site = MakeExplicitTrySite<ulong>(),
+            _tryDoubleSite = MakeExplicitTrySite<double>(),
+            _tryCharSite = MakeExplicitTrySite<char>(),
             _tryBigIntegerSite = MakeExplicitTrySite<BigInteger>(),
-            _tryComplexSite    = MakeExplicitTrySite<Complex>(),
-            _tryStringSite     = MakeExplicitTrySite<string>();
+            _tryComplexSite = MakeExplicitTrySite<Complex>(),
+            _tryStringSite = MakeExplicitTrySite<string>();
 
         private static CallSite<Func<CallSite, object, T>> MakeImplicitConvertSite<T>() {
             return MakeConvertSite<T>(ConversionResultKind.ImplicitCast);

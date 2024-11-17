@@ -5,13 +5,11 @@
 using System;
 using System.Linq;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -29,7 +27,7 @@ namespace IronPython.Modules {
         private static readonly object _threadholdKey = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {            
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.SetModuleState(_threadholdKey, PythonTuple.MakeTuple(64 * 1024, 256 * 1024, 1024 * 1024));
         }
 
@@ -65,19 +63,19 @@ namespace IronPython.Modules {
         }
 
         public static void set_threshold(CodeContext/*!*/ context, params object[] args) {
-            if(args.Length == 0) {
+            if (args.Length == 0) {
                 throw PythonOps.TypeError("set_threshold() takes at least 1 argument (0 given)");
             }
 
-            if(args.Length > 3) {
+            if (args.Length > 3) {
                 throw PythonOps.TypeError("set_threshold() takes at most 3 arguments ({0} given)", args.Length);
             }
 
-            if(args.Any(x => x is double)) {
+            if (args.Any(x => x is double)) {
                 throw PythonOps.TypeError("integer argument expected, got float");
             }
 
-            if(!args.All(x => x is int)) {
+            if (!args.All(x => x is int)) {
                 throw PythonOps.TypeError("an integer is required");
             }
 

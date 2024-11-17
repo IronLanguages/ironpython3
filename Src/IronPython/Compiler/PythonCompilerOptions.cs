@@ -4,9 +4,9 @@
 
 using System;
 
-using Microsoft.Scripting;
-
 using IronPython.Runtime;
+
+using Microsoft.Scripting;
 
 namespace IronPython.Compiler {
     [Serializable]

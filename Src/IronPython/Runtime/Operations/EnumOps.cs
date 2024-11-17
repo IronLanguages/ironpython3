@@ -44,7 +44,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-         public static object OnesComplement(object self) {
+        public static object OnesComplement(object self) {
             object result = EnumUtils.OnesComplement(self);
             if (result != null) {
                 return result;

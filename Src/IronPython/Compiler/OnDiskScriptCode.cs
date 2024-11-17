@@ -4,15 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
+
+using IronPython.Runtime;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
     /// <summary>

@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -24,7 +23,7 @@ namespace IronPython.Runtime {
     /// around large operations and call lock free functions.
     /// </remarks>
     [Serializable]
-    internal abstract class DictionaryStorage  {
+    internal abstract class DictionaryStorage {
         public abstract void Add(ref DictionaryStorage storage, object? key, object? value);
 
         public virtual void AddNoLock(ref DictionaryStorage storage, object? key, object? value) {
@@ -123,7 +122,7 @@ namespace IronPython.Runtime {
         public virtual IEnumerator<KeyValuePair<object?, object?>> GetEnumerator() {
             return GetItems().GetEnumerator();
         }
-        
+
         /// <summary>
         /// Provides fast access to the __path__ attribute if the dictionary storage supports caching it.
         /// </summary>

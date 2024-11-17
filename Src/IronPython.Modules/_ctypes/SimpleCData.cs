@@ -9,11 +9,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -36,9 +36,8 @@ namespace IronPython.Modules {
             }
 
             public void __init__(CodeContext/*!*/ context, object value) {
-                switch(((SimpleType)NativeType)._type) {
-                    case SimpleTypeKind.Char:
-                        {
+                switch (((SimpleType)NativeType)._type) {
+                    case SimpleTypeKind.Char: {
                             if (value is IList<byte> t && t.Count == 1) {
                                 value = Bytes.FromByte(t[0]);
                             } else if (value is int i) {

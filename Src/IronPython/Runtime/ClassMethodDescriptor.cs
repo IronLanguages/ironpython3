@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -23,7 +25,7 @@ namespace IronPython.Runtime {
         }
 
         #region Descriptor Protocol
-        
+
         private PythonType CheckGetArgs(CodeContext context, object instance, PythonType owner) {
             if (owner == null) {
                 if (instance == null) throw PythonOps.TypeError("__get__(None, None) is invalid");
@@ -68,5 +70,5 @@ namespace IronPython.Runtime {
         public override int GetHashCode() {
             return ~_func.GetHashCode();
         }
-    } 
+    }
 }

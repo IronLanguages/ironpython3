@@ -319,7 +319,7 @@ The Dialect type records CSV parsing and generation options.")]
             public void DeleteMember(CodeContext/*!*/ context, string name) {
                 if (string.Equals(name, "delimiter") ||
                     string.Equals(name, "skipinitialspace") ||
-                    string.Equals(name, "doublequote")||
+                    string.Equals(name, "doublequote") ||
                     string.Equals(name, "strict") ||
                     string.Equals(name, "escapechar") ||
                     string.Equals(name, "lineterminator") ||

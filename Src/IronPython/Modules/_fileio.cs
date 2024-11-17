@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq.Expressions;
@@ -19,7 +18,6 @@ using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 // TODO: Documentation copied from CPython is inadequate in some places and wrong in others.
 
@@ -127,8 +125,7 @@ namespace IronPython.Modules {
                         default:
                             throw new InvalidOperationException();
                     }
-                }
-                else {
+                } else {
                     object fdobj = PythonOps.CallWithContext(context, opener, name, flags);
                     if (fdobj is int fd) {
                         if (fd < 0) {

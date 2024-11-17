@@ -11,14 +11,14 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -409,8 +409,7 @@ namespace IronPython.Runtime.Types {
                                     if ((opInfo.Operator & PythonOperationKind.Comparison) != 0) {
                                         // we override these with our own comparisons
                                         continue;
-                                    }
-                                    else if (opInfo.Operator == PythonOperationKind.TrueDivide) {
+                                    } else if (opInfo.Operator == PythonOperationKind.TrueDivide) {
                                         // we override this with our own division PythonOperationKind which is different from .NET Complex.
                                         continue;
                                     }
@@ -662,7 +661,7 @@ namespace IronPython.Runtime.Types {
                 
                 EqualityResolver.Instance,
                 new ComparisonResolver(typeof(IStructuralComparable), "StructuralComparable"),
-                
+
                 new OneOffResolver("__all__", AllResolver),
                 new OneOffResolver("__contains__", ContainsResolver),
                 new OneOffResolver("__dir__", DirResolver),
@@ -1011,7 +1010,7 @@ namespace IronPython.Runtime.Types {
                     return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForEnumerator));
                 }
             }
-            
+
             return MemberGroup.EmptyGroup;
         }
 
@@ -1030,7 +1029,7 @@ namespace IronPython.Runtime.Types {
             }
 
             MemberGroup res = binder.GetMember(type, "GetMemberNames");
-            if (res == MemberGroup.EmptyGroup && 
+            if (res == MemberGroup.EmptyGroup &&
                 !typeof(IPythonObject).IsAssignableFrom(type) &&
                 typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type)) {
                 res = GetInstanceOpsMethod(type, nameof(InstanceOps.DynamicDir));
@@ -1653,7 +1652,7 @@ namespace IronPython.Runtime.Types {
         /// Helper for creating a typecast resolver
         /// </summary>
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ MakeConversionResolver(List<Type> castPrec) {
-            return delegate(MemberBinder/*!*/ binder, Type/*!*/ type) {
+            return delegate (MemberBinder/*!*/ binder, Type/*!*/ type) {
                 MethodInfo cast = FindCastMethod(binder, type, castPrec);
                 if (cast != null) {
                     MethodTracker tracker = (MethodTracker)MemberTracker.FromMemberInfo(cast, type);
@@ -1668,7 +1667,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         /// <param name="set">false for a getter, true for a setter</param>
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ MakeIndexerResolver(bool set) {
-            return delegate(MemberBinder/*!*/ binder, Type/*!*/ type) {
+            return delegate (MemberBinder/*!*/ binder, Type/*!*/ type) {
                 List<MemberInfo> members = null;
 
                 foreach (MemberInfo member in type.GetDefaultMembers()) {
@@ -2002,7 +2001,7 @@ namespace IronPython.Runtime.Types {
             return group;
         }
 
-        private static bool IsPropertyWithParameters(MethodTracker/*!*/ meth) {            
+        private static bool IsPropertyWithParameters(MethodTracker/*!*/ meth) {
             if (meth.Method.Name.StartsWith("get_", StringComparison.Ordinal)) {
                 if (!IsMethodDefaultMember(meth)) {
                     ParameterInfo[] args = meth.Method.GetParameters();
@@ -2046,7 +2045,7 @@ namespace IronPython.Runtime.Types {
             if (oi != null) {
                 EnsureOperatorTable();
 
-                if(_pythonOperatorTable.ContainsValue(oi.Operator)) {
+                if (_pythonOperatorTable.ContainsValue(oi.Operator)) {
                     isPythonRecognizedOperator = true;
                 }
             }
@@ -2082,7 +2081,7 @@ namespace IronPython.Runtime.Types {
             }
             return mts;
         }
-        
+
         private static MethodInfo[] GetMethodSet(string name, int expected) {
             MethodInfo[] methods = typeof(InstanceOps).GetMethods();
             MethodInfo[] filtered = new MethodInfo[expected];

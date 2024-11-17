@@ -4,11 +4,13 @@
 
 #pragma warning disable SYSLIB0001 // UTF-7 code paths are obsolete in .NET 5
 
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
-using NUnit.Framework;
 using System.Linq;
 using System.Text;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
+using NUnit.Framework;
 
 namespace IronPythonTest {
 

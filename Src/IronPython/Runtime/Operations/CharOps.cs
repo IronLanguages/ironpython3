@@ -6,8 +6,9 @@
 
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 
 namespace IronPython.Runtime.Operations {

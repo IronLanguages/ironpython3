@@ -102,7 +102,7 @@ namespace IronPython.Modules {
 
             [DllImport("Kernel32")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            internal static extern bool SetConsoleCtrlHandler(WinSignalsHandler Handler, [MarshalAs(UnmanagedType.Bool)]bool Add);
+            internal static extern bool SetConsoleCtrlHandler(WinSignalsHandler Handler, [MarshalAs(UnmanagedType.Bool)] bool Add);
 
             [DllImport("Kernel32")]
             [return: MarshalAs(UnmanagedType.Bool)]

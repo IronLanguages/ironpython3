@@ -8,14 +8,15 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 using IronPython.Runtime;
 
 namespace IronPythonTest {
 
     public interface IOverrideTestInterface {
-        object x { get;set;}
+        object x { get; set; }
         string Method();
-        string y { get;set;}
+        string y { get; set; }
         string MethodOverridden();
 
         object this[int index] {
@@ -27,9 +28,9 @@ namespace IronPythonTest {
     public class OverrideTestDerivedClass : IOverrideTestInterface {
         public static string Value;
 
-        object IOverrideTestInterface.x { get { return "IOverrideTestInterface.x invoked"; } set { Value = value.ToString() + "x";  } }
+        object IOverrideTestInterface.x { get { return "IOverrideTestInterface.x invoked"; } set { Value = value.ToString() + "x"; } }
         string IOverrideTestInterface.Method() { return "IOverrideTestInterface.method() invoked"; }
-        string IOverrideTestInterface.y { get { return "IOverrideTestInterface.y invoked"; } set { Value = value.ToString() + "y";  } }
+        string IOverrideTestInterface.y { get { return "IOverrideTestInterface.y invoked"; } set { Value = value.ToString() + "y"; } }
         public string y { get { return "OverrideTestDerivedClass.y invoked"; } }
         string IOverrideTestInterface.MethodOverridden() { return "IOverrideTestInterface.MethodOverridden() invoked"; }
         public string MethodOverridden() { return "OverrideTestDerivedClass.MethodOverridden() invoked"; }
@@ -182,7 +183,7 @@ namespace IronPythonTest {
 
         public new virtual MySize Size {
             get {
-                return new MySize(size.width+1, size.height+1);
+                return new MySize(size.width + 1, size.height + 1);
             }
             set {
                 size = value;
@@ -191,19 +192,19 @@ namespace IronPythonTest {
 
         public new virtual int Height {
             get {
-                return size.height*2 + 1;
+                return size.height * 2 + 1;
             }
             set {
-                size.height = value/2 + 1;
+                size.height = value / 2 + 1;
             }
         }
 
         public new virtual int Width {
             get {
-                return size.width*2 + 1;
+                return size.width * 2 + 1;
             }
             set {
-                size.width = value/2 + 1;
+                size.width = value / 2 + 1;
             }
         }
     }
@@ -932,7 +933,7 @@ namespace IronPythonTest {
             return ParamsMethodWithContext(context, arg);
         }
 
-        public object CallIntParamsWithContext(CodeContext  context, params int[] arg) {
+        public object CallIntParamsWithContext(CodeContext context, params int[] arg) {
             return ParamsIntMethodWithContext(context, arg);
         }
     }
@@ -1127,7 +1128,7 @@ namespace IronPythonTest {
 
     public class FamilyOrAssembly {
         private object _value;
-        
+
         protected internal int Method() {
             return 42;
         }

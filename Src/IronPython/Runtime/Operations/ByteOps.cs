@@ -7,10 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
     public static partial class ByteOps {

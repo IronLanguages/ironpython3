@@ -15,7 +15,6 @@ using System.Threading;
 using IronPython.Runtime;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;

@@ -8,14 +8,13 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using MSAst = System.Linq.Expressions;
+using Microsoft.Scripting;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -345,7 +344,7 @@ namespace IronPython.Compiler.Ast {
             body.Add(expression);
 
             return Expression.Block(
-                locals, 
+                locals,
                 body
             );
         }

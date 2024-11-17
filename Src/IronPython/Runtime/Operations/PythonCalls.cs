@@ -4,9 +4,7 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace IronPython.Runtime.Operations {
     public static partial class PythonCalls {

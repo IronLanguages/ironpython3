@@ -11,8 +11,10 @@ using MarshalByRefObject = System.Object;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Utils;
@@ -76,7 +78,7 @@ namespace IronPython.Hosting {
             _context.PublishModule(name, module);
             module.__init__(name, docString);
             module.__dict__["__file__"] = filename;
-            
+
             return HostingHelpers.CreateScriptScope(_engine, module.Scope);
         }
 
@@ -114,7 +116,7 @@ namespace IronPython.Hosting {
             if (res != null) {
                 return new ObjectHandle(res);
             }
-                        
+
             return null;
         }
 

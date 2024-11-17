@@ -7,12 +7,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
     internal static class AstMethods {

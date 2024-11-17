@@ -5,16 +5,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Net.NetworkInformation;
-using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
 
 namespace IronPythonTest {
     public static class DefaultParams {
-        public static int FuncWithDefaults(int x=1,
-           int y=2,
-           int z=3) {
+        public static int FuncWithDefaults(int x = 1,
+           int y = 2,
+           int z = 3) {
             return x + y + z;
         }
     }

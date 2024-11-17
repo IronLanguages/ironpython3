@@ -9,12 +9,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("math", typeof(IronPython.Modules.PythonMath))]
 namespace IronPython.Modules {

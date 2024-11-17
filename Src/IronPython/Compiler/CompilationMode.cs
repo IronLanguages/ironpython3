@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
-
-
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+
+using IronPython.Compiler.Ast;
+using IronPython.Runtime;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Compiler.Ast;
-using IronPython.Runtime;
-using System.Collections;
-using System.Reflection;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler {
     public delegate object LookupCompilationDelegate(CodeContext context, FunctionCode code);
@@ -32,20 +30,20 @@ namespace IronPython.Compiler {
         /// Compilation will proceed in a manner in which the resulting AST can be serialized to disk.
         /// </summary>
         public static readonly CompilationMode ToDisk = new ToDiskCompilationMode();
-        
+
         /// <summary>
         /// Compilation will use a type and declare static fields for globals.  The resulting type
         /// is uncollectible and therefore extended use of this will cause memory leaks.
         /// </summary>
         public static readonly CompilationMode Uncollectable = new UncollectableCompilationMode();
 #endif
-        
+
         /// <summary>
         /// Compilation will use an array for globals.  The resulting code will be fully collectible
         /// and once all references are released will be collected.
         /// </summary>
         public static readonly CompilationMode Collectable = new CollectableCompilationMode();
-        
+
         /// <summary>
         /// Compilation will force all global accesses to do a full lookup.  This will also happen for
         /// any unbound local references.  This is the slowest form of code generation and is only
@@ -122,7 +120,7 @@ namespace IronPython.Compiler {
         public MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
-            
+
             switch (args.Length) {
                 case 1: return Dynamic(binder, retType, args[0]);
                 case 2: return Dynamic(binder, retType, args[0], args[1]);

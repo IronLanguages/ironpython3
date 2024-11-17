@@ -7,10 +7,10 @@
 using System;
 using System.Collections;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 

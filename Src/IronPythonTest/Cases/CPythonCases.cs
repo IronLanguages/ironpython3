@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
@@ -19,7 +20,7 @@ namespace IronPythonTest.Cases {
     internal class CPythonCaseGenerator : CommonCaseGenerator<CPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var libFolder = Path.Combine("Src", "StdLib", "Lib");
-            return GetFilenames(new [] {
+            return GetFilenames(new[] {
                 System.Tuple.Create(category, Path.Combine(libFolder, "test")),
                 System.Tuple.Create($"{category}.ctypes", Path.Combine(libFolder, "ctypes", "test")),
                 System.Tuple.Create($"{category}.distutils", Path.Combine(libFolder, "distutils", "tests")),

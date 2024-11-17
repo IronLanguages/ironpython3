@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 
 namespace IronPythonTest.Util {
-    using Section = Dictionary<string, string>;
     using OptionStore = Dictionary<string, Dictionary<string, string>>;
+    using Section = Dictionary<string, string>;
 
     public class IniParser {
         private OptionStore options;
@@ -68,7 +68,7 @@ namespace IronPythonTest.Util {
             Section currentSection = new Section();
             OptionStore options = new OptionStore(StringComparer.OrdinalIgnoreCase) { { "DEFAULT", currentSection } };
             foreach (var rawline in lines) {
-                string line = rawline.Split(new [] { ';', '#' }, 2)[0].Trim();
+                string line = rawline.Split(new[] { ';', '#' }, 2)[0].Trim();
 
                 if (string.IsNullOrEmpty(line)) continue;
 
@@ -78,9 +78,9 @@ namespace IronPythonTest.Util {
                     if (!options.TryGetValue(sectionName, out currentSection)) {
                         currentSection = new Section();
                         options.Add(sectionName, currentSection);
-                    } 
+                    }
                 } else {
-                    var result = line.Split(new [] {'='}, 2);
+                    var result = line.Split(new[] { '=' }, 2);
                     var key = result[0].Trim();
                     var value = result.Length > 1 ? result[1] : "1";
 
@@ -122,7 +122,7 @@ namespace IronPythonTest.Util {
         }
 
         public static int AsInt(this string s) {
-            if(s == null) {
+            if (s == null) {
                 throw new ArgumentNullException(nameof(s));
             }
 

@@ -7,11 +7,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime.Types {
     /// <summary>

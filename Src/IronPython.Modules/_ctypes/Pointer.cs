@@ -44,7 +44,7 @@ namespace IronPython.Modules {
 
                     CData res = (CData)elementType.CreateInstance(elementType.Context.SharedContext);
                     res.MemHolder = MemHolder.ReadMemoryHolder(0);
-                    if(res.MemHolder.UnsafeAddress == IntPtr.Zero) {
+                    if (res.MemHolder.UnsafeAddress == IntPtr.Zero) {
                         throw PythonOps.ValueError("NULL value access");
                     }
                     return res;

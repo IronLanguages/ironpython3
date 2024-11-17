@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+using IronPython.Runtime.Binding;
 
 using Microsoft.Scripting;
 
-using IronPython.Runtime.Binding;
-
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -78,7 +77,7 @@ namespace IronPython.Compiler.Ast {
                 assignment = Ast.Call(
                     null,
                     AstMethods.SetName,
-                    Parent.LocalContext, 
+                    Parent.LocalContext,
                     Ast.Constant(Name),
                     AstUtils.Convert(right, typeof(object))
                 );

@@ -4,20 +4,11 @@
 
 #nullable enable
 
-using MSAst = System.Linq.Expressions;
-
-using System;
 using System.Diagnostics;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime;
-
 namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-
     [DebuggerDisplay("{Kind} {Name} from {Scope.Name}")]
     public class PythonVariable {
 

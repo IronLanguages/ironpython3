@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category = "IronPython")]
-    public class IronPythonCases : CommonCases {        
+    public class IronPythonCases : CommonCases {
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public override int Test(TestInfo testcase) {
             return TestImpl(testcase);

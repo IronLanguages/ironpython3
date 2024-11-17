@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;

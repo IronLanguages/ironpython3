@@ -2,26 +2,25 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using Microsoft.Scripting.Ast;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using IronPython.Compiler;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Compiler;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -772,7 +771,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        
+
         /// <summary>
         /// Gets the correct final LambdaExpression for this piece of code.
         /// 
@@ -784,8 +783,8 @@ namespace IronPython.Runtime {
                 finalCode = Code;
             } else {
                 finalCode = Code.ToGenerator(
-                    _lambda.ShouldInterpret, 
-                    _lambda.EmitDebugSymbols, 
+                    _lambda.ShouldInterpret,
+                    _lambda.EmitDebugSymbols,
                     _lambda.GlobalParent.PyContext.Options.CompilationThreshold
                 );
             }
@@ -838,7 +837,7 @@ namespace IronPython.Runtime {
 
         internal Delegate AddRecursionCheck(PythonContext context, Delegate finalTarget) {
             if (context.RecursionLimit != Int32.MaxValue) {
-                if (finalTarget is Func<CodeContext, CodeContext> || 
+                if (finalTarget is Func<CodeContext, CodeContext> ||
                     finalTarget is Func<FunctionCode, object> ||
                     finalTarget is LookupCompilationDelegate) {
                     // no recursion enforcement on classes or modules

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IronPython.Runtime.Binding {
+﻿namespace IronPython.Runtime.Binding {
     /// <summary>
     /// Custom dynamic site kinds for simple sites that just take a fixed set of parameters.
     /// </summary>
@@ -201,8 +197,8 @@ namespace IronPython.Runtime.Binding {
         ///<summary>Operator for performing reverse divmod</summary>
         ReverseDivMod = DivMod | Reversed,
 
-        InPlace       = 0x20000000,
-        Reversed      = 0x10000000,
-        Comparison    = 0x08000000,
+        InPlace = 0x20000000,
+        Reversed = 0x10000000,
+        Comparison = 0x08000000,
     }
 }

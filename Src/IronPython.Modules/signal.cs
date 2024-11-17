@@ -160,7 +160,7 @@ the first is the signal number, the second is the interrupted stack frame.")]
                 PythonFunction result = action as PythonFunction;
                 if (result == null) {
                     //It could still be something like a type that implements __call__
-                    if (! PythonOps.IsCallable(context, action)) {
+                    if (!PythonOps.IsCallable(context, action)) {
                         throw PythonOps.TypeError("signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object");
                     }
                 }
@@ -191,11 +191,11 @@ The fd must be non-blocking.")]
         }
 
         private static readonly object _PythonSignalStateKey = new object();
-        
+
         private static PythonSignalState GetPythonSignalState(CodeContext/*!*/ context) {
             return (PythonSignalState)context.LanguageContext.GetModuleState(_PythonSignalStateKey);
         }
-        
+
         private static void SetPythonSignalState(CodeContext/*!*/ context, PythonSignalState pss) {
             context.LanguageContext.SetModuleState(_PythonSignalStateKey, pss);
         }

@@ -148,7 +148,7 @@ namespace IronPython.Modules {
                 get {
                     return EnsureDict();
                 }
-                [param: NotNone] 
+                [param: NotNone]
                 set {
                     _dict = value;
                 }

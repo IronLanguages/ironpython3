@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using Microsoft.Scripting.Ast;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -260,7 +258,7 @@ namespace IronPython.Runtime.Binding {
                         throw new InvalidOperationException();
                 }
             }
-            
+
             callInfo = new CallInfo(metaArgs.Count - 1, namedArgNames.ToArray());
 
             test = splatArgTest;
@@ -297,7 +295,7 @@ namespace IronPython.Runtime.Binding {
             get { return false; }
         }
 
-        public virtual CallSiteBinder GetLightExceptionBinder() {            
+        public virtual CallSiteBinder GetLightExceptionBinder() {
             if (_lightThrowBinder == null) {
                 _lightThrowBinder = new LightThrowBinder(_context, _signature);
             }

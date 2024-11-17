@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Dynamic;
 using System.Linq.Expressions;
 
-using System;
-using Microsoft.Scripting;
-using System.Dynamic;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;

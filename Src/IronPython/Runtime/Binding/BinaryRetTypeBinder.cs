@@ -4,14 +4,12 @@
 
 using System;
 using System.Dynamic;
-using System.Runtime.CompilerServices;
-
 using System.Linq.Expressions;
 
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
     internal partial class BinaryRetTypeBinder : ComboBinder, IExpressionSerializable {
@@ -42,7 +40,7 @@ namespace IronPython.Runtime.Binding {
         #region IExpressionSerializable Members
 
         public Expression CreateExpression() {
-            
+
             return Expression.Call(
                 typeof(PythonOps).GetMethod(nameof(PythonOps.MakeComboAction)),
                 BindingHelpers.CreateBinderStateExpression(),

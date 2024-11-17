@@ -10,8 +10,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Utils;
-
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
     public static class PythonImport {
@@ -59,7 +57,7 @@ namespace IronPython.Modules {
                     throw PythonOps.RuntimeError("not holding the import lock");
                 }
                 SetLockCount(context, lockCount - 1);
-            }            
+            }
         }
 
         public static object init_builtin(CodeContext/*!*/ context, [NotNone] string/*!*/ name) {
@@ -107,7 +105,7 @@ namespace IronPython.Modules {
                     return -1;
                 }
 
-                
+
                 return 1;
             }
             return 0;

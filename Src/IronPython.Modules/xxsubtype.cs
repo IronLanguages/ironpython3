@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-
-using Microsoft.Scripting;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using Microsoft.Scripting;
+
 [assembly: PythonModule("xxsubtype", typeof(IronPython.Modules.xxsubtype))]
-namespace IronPython.Modules {    
+namespace IronPython.Modules {
     /// <summary>
     /// Samples on how to subtype built-in types from C#
     /// </summary>
@@ -50,12 +49,12 @@ namespace IronPython.Modules {
                 state = value;
             }
 
-            public static object staticmeth([ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public static object staticmeth([ParamDictionary] IDictionary<object, object> dict, params object[] args) {
                 return PythonTuple.MakeTuple(null, PythonTuple.MakeTuple(args), dict);
             }
 
             [ClassMethod]
-            public static object classmeth(PythonType cls, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public static object classmeth(PythonType cls, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
                 return PythonTuple.MakeTuple(cls, PythonTuple.MakeTuple(args), dict);
             }
         }

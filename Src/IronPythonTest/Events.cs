@@ -37,7 +37,7 @@ namespace IronPythonTest {
 
         private bool _marker = false;
 
-        public bool Marker { 
+        public bool Marker {
             get { return _marker; }
             set { _marker = value; }
         }

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 
 using IronPython.Runtime;
@@ -10,7 +10,6 @@ using IronPython.Runtime.Types;
 using IronPython.Zlib;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("zipimport", typeof(IronPython.Runtime.ZipImportModule))]

@@ -7,8 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Generation;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -136,8 +137,8 @@ namespace IronPython.Runtime.Types {
                 }
 
                 foreach (MethodInfo mi in mis) {
-                    if (!mi.IsStatic || 
-                        (mi.IsDefined(typeof(PropertyMethodAttribute), true) && 
+                    if (!mi.IsStatic ||
+                        (mi.IsDefined(typeof(PropertyMethodAttribute), true) &&
                         !mi.IsDefined(typeof(StaticExtensionMethodAttribute), true)) &&
                         !mi.IsDefined(typeof(WrapperDescriptorAttribute), true)) {
                         return true;
@@ -163,7 +164,7 @@ namespace IronPython.Runtime.Types {
             if (args.Length != 0) {
                 _setfunc.Call(context, storage, instance, ArrayUtils.Append(args, value));
             } else {
-                _setfunc.Call(context, storage, instance, new [] { value });
+                _setfunc.Call(context, storage, instance, new[] { value });
             }
 
             return true;

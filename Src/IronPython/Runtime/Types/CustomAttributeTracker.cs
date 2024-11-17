@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace IronPython.Runtime.Types {
     using Ast = Expression;
@@ -131,10 +129,10 @@ namespace IronPython.Runtime.Types {
 
     internal class ClassMethodTracker : PythonCustomTracker {
         private MethodTracker/*!*/[]/*!*/ _trackers;
-        
+
         public ClassMethodTracker(MemberGroup/*!*/ group) {
             List<MethodTracker> trackers = new List<MethodTracker>(group.Count);
-            
+
             foreach (MethodTracker mt in group) {
                 trackers.Add(mt);
             }
@@ -185,8 +183,8 @@ namespace IronPython.Runtime.Types {
             _reversed = reversed;
             _trackers = members;
             _name = name;
-        }        
-        
+        }
+
         public override PythonTypeSlot/*!*/ GetSlot() {
             List<MethodBase> meths = new List<MethodBase>();
             foreach (MethodTracker mt in _trackers) {
@@ -209,7 +207,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            return PythonTypeOps.GetFinalSlotForFunction(PythonTypeOps.GetBuiltinFunction(DeclaringType, 
+            return PythonTypeOps.GetFinalSlotForFunction(PythonTypeOps.GetBuiltinFunction(DeclaringType,
                         Name,
                         ft,
                         meths.ToArray()

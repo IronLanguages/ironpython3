@@ -4,10 +4,9 @@
 
 using System;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Modules;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     internal class BuiltinsDictionaryStorage : ModuleDictionaryStorage {
@@ -28,7 +27,7 @@ namespace IronPython.Runtime {
             }
             base.Add(ref storage, key, value);
         }
-        
+
         protected override void LazyAdd(object name, object value) {
             base.Add(name, value);
         }

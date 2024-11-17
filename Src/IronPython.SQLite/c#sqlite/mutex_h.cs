@@ -1,72 +1,70 @@
 #define SQLITE_OS_WIN
 
-namespace Community.CsharpSqlite
-{
-  public partial class Sqlite3
-  {
-    /*
-    ** 2007 August 28
-    **
-    ** The author disclaims copyright to this source code.  In place of
-    ** a legal notice, here is a blessing:
-    **
-    **    May you do good and not evil.
-    **    May you find forgiveness for yourself and forgive others.
-    **    May you share freely, never taking more than you give.
-    **
-    *************************************************************************
-    **
-    ** This file contains the common header for all mutex implementations.
-    ** The sqliteInt.h header #includes this file so that it is available
-    ** to all source files.  We break it out in an effort to keep the code
-    ** better organized.
-    **
-    ** NOTE:  source files should *not* #include this header file directly.
-    ** Source files should #include the sqliteInt.h file and let that file
-    ** include this one indirectly.
-    *************************************************************************
-    **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
-    **  C#-SQLite is an independent reimplementation of the SQLite software library
-    **
-    **  SQLITE_SOURCE_ID: 2010-12-07 20:14:09 a586a4deeb25330037a49df295b36aaf624d0f45
-    **
-    *************************************************************************
-    */
+namespace Community.CsharpSqlite {
+    public partial class Sqlite3 {
+        /*
+        ** 2007 August 28
+        **
+        ** The author disclaims copyright to this source code.  In place of
+        ** a legal notice, here is a blessing:
+        **
+        **    May you do good and not evil.
+        **    May you find forgiveness for yourself and forgive others.
+        **    May you share freely, never taking more than you give.
+        **
+        *************************************************************************
+        **
+        ** This file contains the common header for all mutex implementations.
+        ** The sqliteInt.h header #includes this file so that it is available
+        ** to all source files.  We break it out in an effort to keep the code
+        ** better organized.
+        **
+        ** NOTE:  source files should *not* #include this header file directly.
+        ** Source files should #include the sqliteInt.h file and let that file
+        ** include this one indirectly.
+        *************************************************************************
+        **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
+        **  C#-SQLite is an independent reimplementation of the SQLite software library
+        **
+        **  SQLITE_SOURCE_ID: 2010-12-07 20:14:09 a586a4deeb25330037a49df295b36aaf624d0f45
+        **
+        *************************************************************************
+        */
 
 
-    /*
-    ** Figure out what version of the code to use.  The choices are
-    **
-    **   SQLITE_MUTEX_OMIT         No mutex logic.  Not even stubs.  The
-    **                             mutexes implemention cannot be overridden
-    **                             at start-time.
-    **
-    **   SQLITE_MUTEX_NOOP         For single-threaded applications.  No
-    **                             mutual exclusion is provided.  But this
-    **                             implementation can be overridden at
-    **                             start-time.
-    **
-    **   SQLITE_MUTEX_PTHREADS     For multi-threaded applications on Unix.
-    **
-    **   SQLITE_MUTEX_W32          For multi-threaded applications on Win32.
-    **
-    **   SQLITE_MUTEX_OS2          For multi-threaded applications on OS/2.
-    */
+        /*
+        ** Figure out what version of the code to use.  The choices are
+        **
+        **   SQLITE_MUTEX_OMIT         No mutex logic.  Not even stubs.  The
+        **                             mutexes implemention cannot be overridden
+        **                             at start-time.
+        **
+        **   SQLITE_MUTEX_NOOP         For single-threaded applications.  No
+        **                             mutual exclusion is provided.  But this
+        **                             implementation can be overridden at
+        **                             start-time.
+        **
+        **   SQLITE_MUTEX_PTHREADS     For multi-threaded applications on Unix.
+        **
+        **   SQLITE_MUTEX_W32          For multi-threaded applications on Win32.
+        **
+        **   SQLITE_MUTEX_OS2          For multi-threaded applications on OS/2.
+        */
 
-    //#if !SQLITE_THREADSAFE
-    //# define SQLITE_MUTEX_OMIT
-    //#endif
-    //#if SQLITE_THREADSAFE && !defined(SQLITE_MUTEX_NOOP)
-    //#  if SQLITE_OS_UNIX
-    //#    define SQLITE_MUTEX_PTHREADS
-    //#  elif SQLITE_OS_WIN
-    //#    define SQLITE_MUTEX_W32
-    //#  elif SQLITE_OS_OS2
-    //#    define SQLITE_MUTEX_OS2
-    //#  else
-    //#    define SQLITE_MUTEX_NOOP
-    //#  endif
-    //#endif
+        //#if !SQLITE_THREADSAFE
+        //# define SQLITE_MUTEX_OMIT
+        //#endif
+        //#if SQLITE_THREADSAFE && !defined(SQLITE_MUTEX_NOOP)
+        //#  if SQLITE_OS_UNIX
+        //#    define SQLITE_MUTEX_PTHREADS
+        //#  elif SQLITE_OS_WIN
+        //#    define SQLITE_MUTEX_W32
+        //#  elif SQLITE_OS_OS2
+        //#    define SQLITE_MUTEX_OS2
+        //#  else
+        //#    define SQLITE_MUTEX_NOOP
+        //#  endif
+        //#endif
 
 #if WINDOWS_PHONE && SQLITE_THREADSAFE
 #error  Cannot compile with both WINDOWS_PHONE and SQLITE_THREADSAFE
@@ -145,5 +143,5 @@ namespace Community.CsharpSqlite
     {
     }                                //#define sqlite3MutexEnd()
 #endif //* defined(SQLITE_MUTEX_OMIT) */
-  }
+    }
 }

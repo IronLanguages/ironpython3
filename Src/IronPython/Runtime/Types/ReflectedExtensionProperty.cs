@@ -4,8 +4,10 @@
 
 using System;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
+
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     /// <summary>

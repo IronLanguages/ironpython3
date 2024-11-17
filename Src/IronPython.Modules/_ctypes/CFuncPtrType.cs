@@ -12,14 +12,13 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -187,7 +186,7 @@ namespace IronPython.Modules {
                 return _reverseDelegate.CreateDelegate(_reverseDelegateType, constantPool);
             }
 
-           
+
             private void MakeReverseDelegateWorker(CodeContext context) {
                 Type[] sigTypes;
                 Type[] callSiteType;
@@ -223,7 +222,7 @@ namespace IronPython.Modules {
                 // load code context
                 int contextIndex = constantPool.Count;
                 Debug.Assert(pc.SharedContext != null);
-                constantPool.Add(pc.SharedContext);                
+                constantPool.Add(pc.SharedContext);
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
                 ilGen.Emit(OpCodes.Ldelem_Ref);

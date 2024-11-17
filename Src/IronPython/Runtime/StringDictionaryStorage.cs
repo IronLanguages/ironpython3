@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -202,6 +201,6 @@ namespace IronPython.Runtime {
 
         private object ToNonNullKey(object? key) => key is null ? _nullkey : key;
 
-        private object? FromNonNullKey(object key) => key == _nullkey? null : key;
+        private object? FromNonNullKey(object key) => key == _nullkey ? null : key;
     }
 }

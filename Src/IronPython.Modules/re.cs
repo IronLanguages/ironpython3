@@ -74,14 +74,14 @@ namespace IronPython.Modules {
         public const int A = (int)ReFlags.ASCII;
 
         // long forms
-        public const int TEMPLATE   = (int)ReFlags.TEMPLATE;
+        public const int TEMPLATE = (int)ReFlags.TEMPLATE;
         public const int IGNORECASE = (int)ReFlags.IGNORECASE;
-        public const int LOCALE     = (int)ReFlags.LOCALE;
-        public const int MULTILINE  = (int)ReFlags.MULTILINE;
-        public const int DOTALL     = (int)ReFlags.DOTALL;
-        public const int UNICODE    = (int)ReFlags.UNICODE;
-        public const int VERBOSE    = (int)ReFlags.VERBOSE;
-        public const int ASCII      = (int)ReFlags.ASCII;
+        public const int LOCALE = (int)ReFlags.LOCALE;
+        public const int MULTILINE = (int)ReFlags.MULTILINE;
+        public const int DOTALL = (int)ReFlags.DOTALL;
+        public const int UNICODE = (int)ReFlags.UNICODE;
+        public const int VERBOSE = (int)ReFlags.VERBOSE;
+        public const int ASCII = (int)ReFlags.ASCII;
 
         #endregion
 

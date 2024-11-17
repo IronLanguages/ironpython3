@@ -25,12 +25,12 @@ namespace IronPython.Runtime {
         /// <summary>
         /// The error was a general syntax error
         /// </summary>
-        public const int SyntaxError = 0x0010;              
+        public const int SyntaxError = 0x0010;
 
         /// <summary>
         /// The error was an indentation error.
         /// </summary>
-        public const int IndentationError = 0x0020;      
+        public const int IndentationError = 0x0020;
 
         /// <summary>
         /// The error was a tab error.

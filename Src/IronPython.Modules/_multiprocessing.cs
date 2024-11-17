@@ -7,8 +7,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-using Microsoft.Win32.SafeHandles;
-
 using IronPython.Runtime;
 
 [assembly: PythonModule("_multiprocessing", typeof(IronPython.Modules.MultiProcessing))]

@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using Microsoft.Scripting.Actions;
+using System.Linq.Expressions;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Types;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -37,7 +37,7 @@ namespace IronPython.Runtime.Binding {
         internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
             return MakeTryGetTypeMember(
                 PythonContext,
-                dts, 
+                dts,
                 tmp,
                 self,
                 Ast.Property(
@@ -100,7 +100,7 @@ namespace IronPython.Runtime.Binding {
 
             PythonContext state = PythonContext.GetPythonContext(action);
             CodeContext context = state != null ? state.SharedContext : DefaultContext.Default;
-            
+
             return new DynamicMetaObject(
                 Ast.Convert(
                     Ast.Call(

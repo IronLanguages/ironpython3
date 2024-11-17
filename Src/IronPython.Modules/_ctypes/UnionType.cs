@@ -5,11 +5,8 @@
 #if FEATURE_CTYPES
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-
-using Microsoft.Scripting;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;

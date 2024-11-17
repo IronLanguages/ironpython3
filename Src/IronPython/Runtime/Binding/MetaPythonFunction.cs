@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Reflection;
+
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -218,7 +216,7 @@ namespace IronPython.Runtime.Binding {
                             Expression.Convert(Expression, typeof(PythonFunction))
                         ),
                         BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
-                    ); 
+                    );
             }
 
             // first get the default binder value
@@ -346,9 +344,9 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 return BindingHelpers.AddDynamicTestAndDefer(
-                    _call, 
-                    res, 
-                    deferArgs, 
+                    _call,
+                    res,
+                    deferArgs,
                     new ValidationInfo(_deferTest),
                     res.Expression.Type     // force defer to our return type, our restrictions guarantee this to be true (only defaults can change, and we restrict to the delegate type)
                 );
@@ -891,7 +889,7 @@ namespace IronPython.Runtime.Binding {
                 Type target = _func.Value.__code__.Target.GetType();
                 if (target == typeof(Func<PythonFunction, object[], object>)) {
                     exprArgs = new Expression[] {
-                        AstUtils.NewArrayHelper(typeof(object), exprArgs) 
+                        AstUtils.NewArrayHelper(typeof(object), exprArgs)
                     };
                 }
 
@@ -913,7 +911,7 @@ namespace IronPython.Runtime.Binding {
                 Debug.Assert(_dict == null);
 
                 userDict = userDict.Restrict(userDict.GetLimitType());
-                _temps.Add(_dict = Ast.Variable(typeof(PythonDictionary), "$dict"));                
+                _temps.Add(_dict = Ast.Variable(typeof(PythonDictionary), "$dict"));
 
                 EnsureInit();
 
@@ -1037,7 +1035,7 @@ namespace IronPython.Runtime.Binding {
                 // If calling generator, create the instance of PythonGenerator first
                 // and add it into the list of arguments
                 invokeArgs = ArrayUtils.Insert(GetFunctionParam(), invokeArgs);
-                
+
                 Expression invoke = AstUtils.SimpleCallHelper(
                     Ast.Convert(
                         Ast.Call(
@@ -1085,7 +1083,7 @@ namespace IronPython.Runtime.Binding {
                     ),
                     typeof(PythonOps)
                 );
-            }            
+            }
 
             private void EnsureInit() {
                 if (_init == null) _init = new List<Expression>();

@@ -4,13 +4,12 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_heapq", typeof(IronPython.Modules.PythonHeapq))]
 namespace IronPython.Modules {

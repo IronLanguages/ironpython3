@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Microsoft.Scripting.Hosting.Shell; 
+
+using Microsoft.Scripting.Hosting.Shell;
 
 namespace IronPython.Hosting {
     [CLSCompliant(true)]

@@ -10,15 +10,15 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
 
@@ -576,7 +576,7 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        private static string [] SubArray(string[] t, int len) {
+        private static string[] SubArray(string[] t, int len) {
             var ret = new string[len];
             Array.Copy(t, ret, len);
             return ret;
@@ -914,7 +914,7 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            if(context.LanguageContext.DomainManager.Platform.DirectoryExists(path) && !context.LanguageContext.DomainManager.Platform.FileExists(context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"))) {
+            if (context.LanguageContext.DomainManager.Platform.DirectoryExists(path) && !context.LanguageContext.DomainManager.Platform.FileExists(context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"))) {
                 PythonOps.Warn(context, PythonExceptions.ImportWarning, "Not importing directory '{0}': missing __init__.py", path);
             }
 

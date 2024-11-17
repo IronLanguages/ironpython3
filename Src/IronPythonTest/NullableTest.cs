@@ -4,8 +4,8 @@
 
 namespace IronPythonTest {
     public class NullableTest {
-        public enum NullableEnums { NE1=1, NE3=3 };
-        
+        public enum NullableEnums { NE1 = 1, NE3 = 3 };
+
         private double? _dvalue;
         private long? _lvalue;
         private bool? _bvalue;
@@ -16,20 +16,17 @@ namespace IronPythonTest {
             set { _dvalue = value; }
         }
 
-        public long? LProperty
-        {
+        public long? LProperty {
             get { return _lvalue; }
             set { _lvalue = value; }
         }
 
-        public bool? BProperty
-        {
+        public bool? BProperty {
             get { return _bvalue; }
             set { _bvalue = value; }
         }
 
-        public NullableEnums? EProperty
-        {
+        public NullableEnums? EProperty {
             get { return _evalue; }
             set { _evalue = value; }
         }

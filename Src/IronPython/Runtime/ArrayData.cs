@@ -20,7 +20,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     internal interface ArrayData : IList {
         Type StorageType { get; }
-        bool CanStore([NotNullWhen(true)]object? item);
+        bool CanStore([NotNullWhen(true)] object? item);
         int CountItems(object? item);
         IntPtr GetAddress();
         void AddRange(ArrayData value);
@@ -131,7 +131,7 @@ namespace IronPython.Runtime {
         void ArrayData.AddRange(ArrayData value)
             => AddRange((ArrayData<T>)value);
 
-        bool ArrayData.CanStore([NotNullWhen(true)]object? item)
+        bool ArrayData.CanStore([NotNullWhen(true)] object? item)
             => TryConvert(item, out _);
 
         public void Clear() {
@@ -144,7 +144,7 @@ namespace IronPython.Runtime {
         public bool Contains(T item)
             => _size != 0 && IndexOf(item) != -1;
 
-        bool IList.Contains([NotNullWhen(true)]object? item)
+        bool IList.Contains([NotNullWhen(true)] object? item)
             => TryConvert(item, out T value) && Contains(value);
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -368,7 +368,7 @@ namespace IronPython.Runtime {
         public Span<byte> AsByteSpan()
             => MemoryMarshal.AsBytes(_items.AsSpan(0, _size));
 
-        private static bool TryConvert([NotNullWhen(true)]object? value, out T result) {
+        private static bool TryConvert([NotNullWhen(true)] object? value, out T result) {
             if (value is null) {
                 result = default;
                 return false;
@@ -433,7 +433,7 @@ namespace IronPython.Runtime {
 
             public int Offset => 0;
 
-            public string? Format => _flags.HasFlag(BufferFlags.Format)? _format : null;
+            public string? Format => _flags.HasFlag(BufferFlags.Format) ? _format : null;
 
             public int ItemCount => _arrayData.Count;
 

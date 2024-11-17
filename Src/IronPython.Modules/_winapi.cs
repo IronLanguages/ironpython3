@@ -24,8 +24,7 @@ namespace IronPython.Modules {
 
             if (overlapped) {
                 throw new NotImplementedException();
-            }
-            else {
+            } else {
                 var result = ConnectNamedPipe(checked((IntPtr)(long)handle), IntPtr.Zero);
 
                 if (!result) throw PythonNT.GetLastWin32Error();
@@ -169,7 +168,7 @@ namespace IronPython.Modules {
             int desired_access,
             bool inherit_handle,
             object? DUPLICATE_SAME_ACCESS) {
-            
+
             IntPtr currentProcessIntPtr = new IntPtr((long)source_process_handle);
             IntPtr handleIntPtr = new IntPtr((long)source_handle);
             IntPtr currentProcess2IntPtr = new IntPtr((long)target_process_handle);
@@ -303,7 +302,7 @@ namespace IronPython.Modules {
         [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true)]
         private static extern bool CreateProcessPI(string? lpApplicationName,
             string? lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
-            ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)]bool bInheritHandles,
+            ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
             uint dwCreationFlags, string? lpEnvironment, string? lpCurrentDirectory,
             [In] ref STARTUPINFO lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);

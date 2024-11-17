@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [PythonType]
@@ -25,7 +22,7 @@ namespace IronPython.Runtime {
 
         public void __init__(CodeContext/*!*/ context, object func) {
             _func = func;
-        }            
+        }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             value = __get__(instance, owner);
@@ -156,7 +153,7 @@ namespace IronPython.Runtime {
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             if (instance == null) {
                 return false;
-            } 
+            }
             __delete__(context, instance);
             return true;
         }
@@ -166,9 +163,9 @@ namespace IronPython.Runtime {
                 object isabstract;
                 if (PythonOps.TryGetBoundAttr(_fget, "__isabstractmethod__", out isabstract)) {
                     return PythonOps.IsTrue(isabstract);
-                } else if(PythonOps.TryGetBoundAttr(_fset, "__isabstractmethod__", out isabstract)) {
+                } else if (PythonOps.TryGetBoundAttr(_fset, "__isabstractmethod__", out isabstract)) {
                     return PythonOps.IsTrue(isabstract);
-                } else if(PythonOps.TryGetBoundAttr(_fdel, "__isabstractmethod__", out isabstract)) {
+                } else if (PythonOps.TryGetBoundAttr(_fdel, "__isabstractmethod__", out isabstract)) {
                     return PythonOps.IsTrue(isabstract);
                 }
                 return false;
@@ -207,7 +204,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override object __get__(CodeContext/*!*/ context, object instance, object owner=null) {
+        public override object __get__(CodeContext/*!*/ context, object instance, object owner = null) {
             if (instance == null) {
                 return this;
             } else if (fget != null) {

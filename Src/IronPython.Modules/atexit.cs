@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
-
 using IronPython.Runtime;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Operations;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("atexit", typeof(IronPython.Modules.PythonAtExit))]
 namespace IronPython.Modules {
@@ -28,15 +27,15 @@ Two public functions, register and unregister, are defined.
             }
 
             public object Func {
-                get; 
+                get;
             }
 
             public IDictionary<object, object> KeywordArgs {
-                get; 
+                get;
             }
 
             public object[] Args {
-                get; 
+                get;
             }
         }
 
@@ -57,7 +56,7 @@ Register a function to be executed upon normal program termination\n\
     kwargs - optional keyword arguments to pass to func
 
     func is returned to facilitate usage as a decorator.")]
-        public static object register(CodeContext context, object func, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+        public static object register(CodeContext context, object func, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
             if (!PythonOps.IsCallable(context, func)) {
                 throw PythonOps.TypeError("the first argument must be callable");
             }

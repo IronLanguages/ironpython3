@@ -5,8 +5,9 @@
 using System;
 using System.IO;
 using System.Text;
+
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {

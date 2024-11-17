@@ -83,14 +83,12 @@ using System;
 using System.IO;
 
 
-namespace Ionic.BZip2
-{
+namespace Ionic.BZip2 {
     /// <summary>
     ///   A write-only decorator stream that compresses data as it is
     ///   written using the BZip2 algorithm.
     /// </summary>
-    public class BZip2OutputStream : System.IO.Stream
-    {
+    public class BZip2OutputStream : System.IO.Stream {
         private int totalBytesWrittenIn;
         private bool leaveOpen;
         private BZip2Compressor compressor;
@@ -136,8 +134,7 @@ namespace Ionic.BZip2
         ///   </code>
         /// </example>
         public BZip2OutputStream(Stream output)
-            : this(output, BZip2.MaxBlockSize, false)
-        {
+            : this(output, BZip2.MaxBlockSize, false) {
         }
 
 
@@ -150,8 +147,7 @@ namespace Ionic.BZip2
         ///   The valid range is 1..9.
         /// </param>
         public BZip2OutputStream(Stream output, int blockSize)
-            : this(output, blockSize, false)
-        {
+            : this(output, blockSize, false) {
         }
 
 
@@ -163,8 +159,7 @@ namespace Ionic.BZip2
         ///   whether to leave the captive stream open upon closing this stream.
         /// </param>
         public BZip2OutputStream(Stream output, bool leaveOpen)
-            : this(output, BZip2.MaxBlockSize, leaveOpen)
-        {
+            : this(output, BZip2.MaxBlockSize, leaveOpen) {
         }
 
 
@@ -181,11 +176,9 @@ namespace Ionic.BZip2
         /// <param name = "leaveOpen">
         ///   whether to leave the captive stream open upon closing this stream.
         /// </param>
-        public BZip2OutputStream(Stream output, int blockSize, bool leaveOpen)
-        {
+        public BZip2OutputStream(Stream output, int blockSize, bool leaveOpen) {
             if (blockSize < BZip2.MinBlockSize ||
-                blockSize > BZip2.MaxBlockSize)
-            {
+                blockSize > BZip2.MaxBlockSize) {
                 var msg = String.Format("blockSize={0} is out of range; must be between {1} and {2}",
                                         blockSize,
                                         BZip2.MinBlockSize, BZip2.MaxBlockSize);
@@ -216,10 +209,8 @@ namespace Ionic.BZip2
         ///     constructors that accept a bool value.
         ///   </para>
         /// </remarks>
-        public override void Close()
-        {
-            if (output != null)
-            {
+        public override void Close() {
+            if (output != null) {
                 Stream o = this.output;
                 Finish();
                 if (!leaveOpen)
@@ -231,17 +222,14 @@ namespace Ionic.BZip2
         /// <summary>
         ///   Flush the stream.
         /// </summary>
-        public override void Flush()
-        {
-            if (this.output != null)
-            {
+        public override void Flush() {
+            if (this.output != null) {
                 this.bw.Flush();
                 this.output.Flush();
             }
         }
 
-        private void EmitHeader()
-        {
+        private void EmitHeader() {
             var magic = new byte[] {
                 (byte) 'B',
                 (byte) 'Z',
@@ -253,8 +241,7 @@ namespace Ionic.BZip2
             this.output.Write(magic, 0, magic.Length);
         }
 
-        private void EmitTrailer()
-        {
+        private void EmitTrailer() {
             // A magic 48-bit number, 0x177245385090, to indicate the end
             // of the last block. (sqrt(pi), if you want to know)
 
@@ -277,30 +264,26 @@ namespace Ionic.BZip2
                         this.bw.TotalBytesWrittenOut);
         }
 
-        private void Finish()
-        {
+        private void Finish() {
             // Console.WriteLine("BZip2:Finish");
 
-            try
-            {
+            try {
                 var totalBefore = this.bw.TotalBytesWrittenOut;
                 this.compressor.CompressAndWrite();
-                TraceOutput(TraceBits.Write,"out block length (bytes): {0} (0x{0:X})",
+                TraceOutput(TraceBits.Write, "out block length (bytes): {0} (0x{0:X})",
                             this.bw.TotalBytesWrittenOut - totalBefore);
 
                 TraceOutput(TraceBits.Crc, " combined CRC (before): {0:X8}",
                             this.combinedCRC);
                 this.combinedCRC = (this.combinedCRC << 1) | (this.combinedCRC >> 31);
-                this.combinedCRC ^= (uint) compressor.Crc32;
+                this.combinedCRC ^= (uint)compressor.Crc32;
                 TraceOutput(TraceBits.Crc, " block    CRC         : {0:X8}",
                             this.compressor.Crc32);
                 TraceOutput(TraceBits.Crc, " combined CRC (final) : {0:X8}",
                             this.combinedCRC);
 
                 EmitTrailer();
-            }
-            finally
-            {
+            } finally {
                 this.output = null;
                 this.compressor = null;
                 this.bw = null;
@@ -311,8 +294,7 @@ namespace Ionic.BZip2
         /// <summary>
         ///   The blocksize parameter specified at construction time.
         /// </summary>
-        public int BlockSize
-        {
+        public int BlockSize {
             get { return this.blockSize100k; }
         }
 
@@ -339,8 +321,7 @@ namespace Ionic.BZip2
         /// <param name="buffer">The buffer holding data to write to the stream.</param>
         /// <param name="offset">the offset within that data array to find the first byte to write.</param>
         /// <param name="count">the number of bytes to write.</param>
-        public override void Write(byte[] buffer, int offset, int count)
-        {
+        public override void Write(byte[] buffer, int offset, int count) {
             if (offset < 0)
                 throw new IndexOutOfRangeException(String.Format("offset ({0}) must be > 0", offset));
             if (count < 0)
@@ -356,30 +337,28 @@ namespace Ionic.BZip2
             int bytesWritten = 0;
             int bytesRemaining = count;
 
-            do
-            {
+            do {
                 int n = compressor.Fill(buffer, offset, bytesRemaining);
-                if (n != bytesRemaining)
-                {
+                if (n != bytesRemaining) {
                     // The compressor data block is full.  Compress and
                     // write out the compressed data, then reset the
                     // compressor and continue.
 
                     var totalBefore = this.bw.TotalBytesWrittenOut;
                     this.compressor.CompressAndWrite();
-                    TraceOutput(TraceBits.Write,"out block length (bytes): {0} (0x{0:X})",
+                    TraceOutput(TraceBits.Write, "out block length (bytes): {0} (0x{0:X})",
                                 this.bw.TotalBytesWrittenOut - totalBefore);
 
-                            // and now any remaining bits
-                            TraceOutput(TraceBits.Write,
-                                        " remaining: {0} 0x{1:X}",
-                                        this.bw.NumRemainingBits,
-                                        this.bw.RemainingBits);
+                    // and now any remaining bits
+                    TraceOutput(TraceBits.Write,
+                                " remaining: {0} 0x{1:X}",
+                                this.bw.NumRemainingBits,
+                                this.bw.RemainingBits);
 
                     TraceOutput(TraceBits.Crc, " combined CRC (before): {0:X8}",
                                 this.combinedCRC);
                     this.combinedCRC = (this.combinedCRC << 1) | (this.combinedCRC >> 31);
-                    this.combinedCRC ^= (uint) compressor.Crc32;
+                    this.combinedCRC ^= (uint)compressor.Crc32;
                     TraceOutput(TraceBits.Crc, " block    CRC         : {0:X8}",
                                 compressor.Crc32);
                     TraceOutput(TraceBits.Crc, " combined CRC (after) : {0:X8}",
@@ -402,8 +381,7 @@ namespace Ionic.BZip2
         /// <remarks>
         /// The return value is always false.
         /// </remarks>
-        public override bool CanRead
-        {
+        public override bool CanRead {
             get { return false; }
         }
 
@@ -413,8 +391,7 @@ namespace Ionic.BZip2
         /// <remarks>
         /// Always returns false.
         /// </remarks>
-        public override bool CanSeek
-        {
+        public override bool CanSeek {
             get { return false; }
         }
 
@@ -425,10 +402,8 @@ namespace Ionic.BZip2
         /// The return value should always be true, unless and until the
         /// object is disposed and closed.
         /// </remarks>
-        public override bool CanWrite
-        {
-            get
-            {
+        public override bool CanWrite {
+            get {
                 if (this.output == null) throw new ObjectDisposedException("BZip2Stream");
                 return this.output.CanWrite;
             }
@@ -437,8 +412,7 @@ namespace Ionic.BZip2
         /// <summary>
         /// Reading this property always throws a <see cref="NotImplementedException"/>.
         /// </summary>
-        public override long Length
-        {
+        public override long Length {
             get { throw new NotImplementedException(); }
         }
 
@@ -451,10 +425,8 @@ namespace Ionic.BZip2
         ///   cref="NotImplementedException"/>. Reading will return the
         ///   total number of uncompressed bytes written through.
         /// </remarks>
-        public override long Position
-        {
-            get
-            {
+        public override long Position {
+            get {
                 return this.totalBytesWrittenIn;
             }
             set { throw new NotImplementedException(); }
@@ -466,8 +438,7 @@ namespace Ionic.BZip2
         /// <param name="offset">this is irrelevant, since it will always throw!</param>
         /// <param name="origin">this is irrelevant, since it will always throw!</param>
         /// <returns>irrelevant!</returns>
-        public override long Seek(long offset, System.IO.SeekOrigin origin)
-        {
+        public override long Seek(long offset, System.IO.SeekOrigin origin) {
             throw new NotImplementedException();
         }
 
@@ -475,8 +446,7 @@ namespace Ionic.BZip2
         /// Calling this method always throws a <see cref="NotImplementedException"/>.
         /// </summary>
         /// <param name="value">this is irrelevant, since it will always throw!</param>
-        public override void SetLength(long value)
-        {
+        public override void SetLength(long value) {
             throw new NotImplementedException();
         }
 
@@ -487,32 +457,28 @@ namespace Ionic.BZip2
         /// <param name='offset'>this parameter is never used</param>
         /// <param name='count'>this parameter is never used</param>
         /// <returns>never returns anything; always throws</returns>
-        public override int Read(byte[] buffer, int offset, int count)
-        {
+        public override int Read(byte[] buffer, int offset, int count) {
             throw new NotImplementedException();
         }
 
 
         // used only when Trace is defined
         [Flags]
-        private enum TraceBits : uint
-        {
-            None         = 0,
-            Crc          = 1,
-            Write        = 2,
-            All          = 0xffffffff,
+        private enum TraceBits : uint {
+            None = 0,
+            Crc = 1,
+            Write = 2,
+            All = 0xffffffff,
         }
 
 
         [System.Diagnostics.ConditionalAttribute("Trace")]
-        private void TraceOutput(TraceBits bits, string format, params object[] varParams)
-        {
-            if ((bits & this.desiredTrace) != 0)
-            {
+        private void TraceOutput(TraceBits bits, string format, params object[] varParams) {
+            if ((bits & this.desiredTrace) != 0) {
                 //lock(outputLock)
                 {
                     int tid = System.Threading.Thread.CurrentThread.GetHashCode();
-                    Console.ForegroundColor = (ConsoleColor) (tid % 8 + 10);
+                    Console.ForegroundColor = (ConsoleColor)(tid % 8 + 10);
                     Console.Write("{0:000} PBOS ", tid);
                     Console.WriteLine(format, varParams);
                     Console.ResetColor();

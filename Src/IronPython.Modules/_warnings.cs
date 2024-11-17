@@ -3,20 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_warnings", typeof(IronPython.Modules.PythonWarnings))]
 namespace IronPython.Modules {
@@ -54,7 +52,7 @@ namespace IronPython.Modules {
 
         public static void _filters_mutated() { } // TODO: do something with this
 
-        public static void warn(CodeContext context, object message, PythonType category=null, int stacklevel=1) {
+        public static void warn(CodeContext context, object message, PythonType category = null, int stacklevel = 1) {
             PythonContext pContext = context.LanguageContext;
             PythonList argv = pContext.GetSystemStateValue("argv") as PythonList;
 
@@ -111,7 +109,7 @@ namespace IronPython.Modules {
             warn_explicit(context, message, category, filename, lineno, module, registry, globals);
         }
 
-        public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, string module=null, PythonDictionary registry=null, object module_globals=null) {
+        public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, string module = null, PythonDictionary registry = null, object module_globals = null) {
             PythonContext pContext = context.LanguageContext;
             PythonDictionary fields = (PythonDictionary)pContext.GetModuleState(_keyFields);
             object warnings = pContext.GetWarningsModule();
@@ -148,7 +146,7 @@ namespace IronPython.Modules {
             PythonList filters = (PythonList)fields[_keyFilters];
             if (warnings != null) {
                 filters = PythonOps.GetBoundAttr(context, warnings, "filters") as PythonList;
-                if(filters == null) {
+                if (filters == null) {
                     throw PythonOps.ValueError("_warnings.filters must be a list");
                 }
             }
@@ -212,7 +210,7 @@ namespace IronPython.Modules {
 
             if (warnings != null) {
                 object show_fxn = PythonOps.GetBoundAttr(context, warnings, "showwarning");
-                if(show_fxn != null) {
+                if (show_fxn != null) {
                     PythonCalls.Call(
                         context,
                         show_fxn,
@@ -225,7 +223,7 @@ namespace IronPython.Modules {
             }
         }
 
-        internal static string formatwarning(object message, PythonType category, string filename, int lineno, string line=null) {
+        internal static string formatwarning(object message, PythonType category, string filename, int lineno, string line = null) {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("{0}:{1}: {2}: {3}\n", filename, lineno, category.Name, message);
             if (line == null && lineno > 0 && File.Exists(filename)) {
@@ -241,7 +239,7 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
-        internal static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, object file=null, string line=null) {
+        internal static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, object file = null, string line = null) {
             string text = formatwarning(message, category, filename, lineno, line);
 
             try {

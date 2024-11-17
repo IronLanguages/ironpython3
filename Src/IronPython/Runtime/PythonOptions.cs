@@ -134,7 +134,7 @@ namespace IronPython.Runtime {
 
         internal bool NoImportLib { get; } // TODO: get rid of me when we no longer bootstrap importlib
 
-        public PythonOptions() 
+        public PythonOptions()
             : this(null) {
         }
 
@@ -172,8 +172,8 @@ namespace IronPython.Runtime {
             if (options == null) {
                 return new Dictionary<string, object>() { { "SearchPaths", new[] { "." } } };
             } else if (!options.ContainsKey("SearchPaths")) {
-                options["SearchPaths"] = new [] { "." };
-            } 
+                options["SearchPaths"] = new[] { "." };
+            }
             return options;
         }
 

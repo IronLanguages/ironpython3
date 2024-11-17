@@ -11,16 +11,15 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
+using IronPython.Runtime;
+
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime;
-
-using MSAst = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 
 namespace IronPython.Compiler.Ast {
@@ -49,7 +48,7 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression/*!*/ GetConstant(object value) {
             // if we can emit the value and we won't be continiously boxing/unboxing
             // then don't bother caching the value in a static field.
-            
+
             // TODO: Sometimes we don't want to pre-box the values, such as if it's an int
             // going to a call site which can be strongly typed.  We need to coordinate 
             // more with whoever consumes the values.
@@ -177,7 +176,7 @@ namespace IronPython.Compiler.Ast {
         public static SiteInfo/*!*/ NextSite<T>(DynamicMetaObjectBinder/*!*/ binder) where T : class {
             lock (StorageData.SiteLockObj) {
                 int index = SiteStorage<T>.SiteCount++;
-                
+
                 int arrIndex = index - StorageData.SiteTypes * StorageData.StaticFields;
                 Type storageType = SiteStorage<T>.SiteStorageType(index);
 
@@ -239,7 +238,7 @@ namespace IronPython.Compiler.Ast {
 
             ((CodeContextExpression)codeContextInfo.Expression).Context = context;
         }
-        
+
         private static void PublishConstant(object constant, ConstantInfo info) {
             StorageData.ConstantStorageType(info.Offset);
 
@@ -309,7 +308,7 @@ namespace IronPython.Compiler.Ast {
 
             public DelegateCache NextCacheNode(Type/*!*/ argType) {
                 Assert.NotNull(argType);
-                
+
                 DelegateCache nextCacheNode;
                 if (TypeChain == null) {
                     TypeChain = new Dictionary<Type, DelegateCache>();
@@ -332,7 +331,7 @@ namespace IronPython.Compiler.Ast {
             private readonly int _offset;
             private int _start = -1;
             private FieldInfo _fieldInfo;
-            
+
             public ReducibleExpression(int offset) {
                 _offset = offset;
             }
@@ -341,7 +340,7 @@ namespace IronPython.Compiler.Ast {
             public abstract int FieldCount { get; }
             public abstract override Type/*!*/ Type { get; }
             protected abstract Type/*!*/ GetStorageType(int index);
-            
+
             public FieldInfo FieldInfo {
                 get {
                     return _fieldInfo;
@@ -432,7 +431,7 @@ namespace IronPython.Compiler.Ast {
                         return returnType;
                     } else {
                         return typeof(object);
-                    }                    
+                    }
                 }
             }
 

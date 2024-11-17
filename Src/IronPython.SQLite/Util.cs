@@ -7,13 +7,10 @@
 
 using Community.CsharpSqlite;
 
-namespace IronPython.SQLite
-{
-    internal static class Util
-    {
-        public static int Step(Sqlite3.Vdbe statement)
-        {
-            if(statement == null)
+namespace IronPython.SQLite {
+    internal static class Util {
+        public static int Step(Sqlite3.Vdbe statement) {
+            if (statement == null)
                 return Sqlite3.SQLITE_OK;
             else
                 return Sqlite3.sqlite3_step(statement);

@@ -80,21 +80,17 @@
 //
 
 
-using System;
 using System.IO;
 
-namespace Ionic.BZip2
-{
+namespace Ionic.BZip2 {
 
-    internal class BitWriter
-    {
+    internal class BitWriter {
         private uint accumulator;
         private int nAccumulatedBits;
         private Stream output;
         private int totalBytesWrittenOut;
 
-        public BitWriter(Stream s)
-        {
+        public BitWriter(Stream s) {
             this.output = s;
         }
 
@@ -107,26 +103,20 @@ namespace Ionic.BZip2
         ///     in other words it is valid only after a call to Flush().
         ///   </para>
         /// </remarks>
-        public byte RemainingBits
-        {
-            get
-            {
-                return (byte) (this.accumulator >> (32 - this.nAccumulatedBits) & 0xff);
+        public byte RemainingBits {
+            get {
+                return (byte)(this.accumulator >> (32 - this.nAccumulatedBits) & 0xff);
             }
         }
 
-        public int NumRemainingBits
-        {
-            get
-            {
+        public int NumRemainingBits {
+            get {
                 return this.nAccumulatedBits;
             }
         }
 
-        public int TotalBytesWrittenOut
-        {
-            get
-            {
+        public int TotalBytesWrittenOut {
+            get {
                 return this.totalBytesWrittenOut;
             }
         }
@@ -141,8 +131,7 @@ namespace Ionic.BZip2
         ///     distinct data blocks.
         ///   </para>
         /// </remarks>
-        public void Reset()
-        {
+        public void Reset() {
             this.accumulator = 0;
             this.nAccumulatedBits = 0;
             this.totalBytesWrittenOut = 0;
@@ -159,14 +148,12 @@ namespace Ionic.BZip2
         ///     reasons, this method does not check!
         ///   </para>
         /// </remarks>
-        public void WriteBits(int nbits, uint value)
-        {
+        public void WriteBits(int nbits, uint value) {
             int nAccumulated = this.nAccumulatedBits;
             uint u = this.accumulator;
 
-            while (nAccumulated >= 8)
-            {
-                this.output.WriteByte ((byte)(u >> 24 & 0xff));
+            while (nAccumulated >= 8) {
+                this.output.WriteByte((byte)(u >> 24 & 0xff));
                 this.totalBytesWrittenOut++;
                 u <<= 8;
                 nAccumulated -= 8;
@@ -187,16 +174,14 @@ namespace Ionic.BZip2
         /// <summary>
         ///   Write a full 8-bit byte into the output.
         /// </summary>
-        public void WriteByte(byte b)
-        {
+        public void WriteByte(byte b) {
             WriteBits(8, b);
         }
 
         /// <summary>
         ///   Write four 8-bit bytes into the output.
         /// </summary>
-        public void WriteInt(uint u)
-        {
+        public void WriteInt(uint u) {
             WriteBits(8, (u >> 24) & 0xff);
             WriteBits(8, (u >> 16) & 0xff);
             WriteBits(8, (u >> 8) & 0xff);
@@ -220,9 +205,8 @@ namespace Ionic.BZip2
         ///     parent BZip2OutputStream.
         ///   </para>
         /// </remarks>
-        public void Flush()
-        {
-            WriteBits(0,0);
+        public void Flush() {
+            WriteBits(0, 0);
         }
 
 
@@ -231,12 +215,10 @@ namespace Ionic.BZip2
         ///   necessary. This must be the last method invoked on an instance of
         ///   BitWriter.
         /// </summary>
-        public void FinishAndPad()
-        {
+        public void FinishAndPad() {
             Flush();
 
-            if (this.NumRemainingBits > 0)
-            {
+            if (this.NumRemainingBits > 0) {
                 byte b = (byte)((this.accumulator >> 24) & 0xff);
                 this.output.WriteByte(b);
                 this.totalBytesWrittenOut++;

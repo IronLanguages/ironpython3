@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
-
 using Microsoft.Scripting.Actions;
+
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -31,7 +31,7 @@ namespace IronPython.Compiler.Ast {
 
             return Ast.Condition(
                 GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, Test),
-                ifTrue, 
+                ifTrue,
                 ifFalse
             );
         }

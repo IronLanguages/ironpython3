@@ -10,13 +10,12 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -92,7 +91,7 @@ namespace IronPython.Modules {
             bool valid = true;
             // if we have an array, we can also send a pointer as long as the element types
             // for the pointer and array are the same
-            if(res != null && res.NativeType is CTypes.ArrayType at) {
+            if (res != null && res.NativeType is CTypes.ArrayType at) {
                 valid = ((type is CTypes.ArrayType t) && (t.ElementType == at.ElementType)) ||
                     ((type is CTypes.PointerType p) && (p._type == at.ElementType));
             }
@@ -109,7 +108,7 @@ namespace IronPython.Modules {
             if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out object asParam)) {
                 res = asParam as CTypes._CFuncPtr;
             }
-            
+
             if (res == null || res.NativeType != type) {
                 throw ArgumentError(type, ((PythonType)type).Name, o);
             }
@@ -297,14 +296,14 @@ namespace IronPython.Modules {
             }
 
             if (value is int iVal) {
-                if(iVal > int.MaxValue) {
+                if (iVal > int.MaxValue) {
                     iVal = -1;
                 }
                 return new IntPtr(iVal);
             }
 
             if (value is BigInteger bigVal) {
-                if(bigVal > long.MaxValue) {
+                if (bigVal > long.MaxValue) {
                     bigVal = -1;
                 }
                 return new IntPtr((long)bigVal);

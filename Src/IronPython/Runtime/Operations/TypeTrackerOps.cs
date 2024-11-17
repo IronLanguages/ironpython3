@@ -7,10 +7,10 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
     public static class TypeTrackerOps {

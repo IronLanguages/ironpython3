@@ -9,8 +9,8 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Linq;
+using System.Threading;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -57,7 +57,7 @@ namespace IronPython.Runtime {
 
             ReadOnlySpan<byte> memblock = _buffer.AsReadOnlySpan();
 
-            if (   (_buffer.ItemCount != 0 && !VerifyStructure(memblock.Length, _buffer.ItemSize, _buffer.NumOfDims, _buffer.Shape, _buffer.Strides, _buffer.Offset))
+            if ((_buffer.ItemCount != 0 && !VerifyStructure(memblock.Length, _buffer.ItemSize, _buffer.NumOfDims, _buffer.Shape, _buffer.Strides, _buffer.Offset))
                 || (_buffer.Shape == null && (_buffer.Offset != 0 || _buffer.NumBytes() != memblock.Length))
                ) {
                 throw PythonOps.BufferError("memoryview: invalid buffer exported from object of type {0}", PythonOps.GetPythonTypeName(@object));
@@ -100,19 +100,19 @@ namespace IronPython.Runtime {
         }
 
         public MemoryView([NotNone] MemoryView @object) {
-            _exporter    = @object._exporter;
-            _flags       = BufferFlags.RecordsRO;
-            _buffer      = _exporter.GetBuffer(_flags);
-            _offset      = @object._offset;
-            _isReadOnly  = @object._isReadOnly;
-            _numDims     = @object._numDims;
-            _format      = @object._format;
-            _itemSize    = @object._itemSize;
-            _shape       = @object._shape;
-            _strides     = @object._strides;
-            _isCContig   = @object._isCContig;
-            _isFContig   = @object._isFContig;
-            _numItems    = @object._numItems;
+            _exporter = @object._exporter;
+            _flags = BufferFlags.RecordsRO;
+            _buffer = _exporter.GetBuffer(_flags);
+            _offset = @object._offset;
+            _isReadOnly = @object._isReadOnly;
+            _numDims = @object._numDims;
+            _format = @object._format;
+            _itemSize = @object._itemSize;
+            _shape = @object._shape;
+            _strides = @object._strides;
+            _isCContig = @object._isCContig;
+            _isFContig = @object._isFContig;
+            _numItems = @object._numItems;
         }
 
         internal MemoryView(IBufferProtocol @object, bool readOnly) : this(@object) {
@@ -180,7 +180,7 @@ namespace IronPython.Runtime {
                 if (_buffer != null) {
                     _buffer.Dispose();
                 }
-            } catch {}
+            } catch { }
         }
 
         [MemberNotNull(nameof(_buffer))]
@@ -385,8 +385,7 @@ namespace IronPython.Runtime {
 
             if (_isCContig) {
                 return Bytes.ToHex(_buffer.AsReadOnlySpan().Slice(_offset, _numItems * _itemSize));
-            }
-            else {
+            } else {
                 var builder = new System.Text.StringBuilder(_numItems * _itemSize * 2);
                 foreach (byte b in this.EnumerateBytes()) {
                     builder.Append(ToAscii(b >> 4));
@@ -447,7 +446,7 @@ namespace IronPython.Runtime {
             return cast(format, null);
         }
 
-        public MemoryView cast([NotNone] string format, [NotNone, AllowNull]object shape) {
+        public MemoryView cast([NotNone] string format, [NotNone, AllowNull] object shape) {
             if (!_isCContig) {
                 throw PythonOps.TypeError("memoryview: casts are restricted to C-contiguous views");
             }
@@ -475,7 +474,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if ( !TypecodeOps.TryDecomposeTypecode(format, out char byteorder, out char typecode)
+            if (!TypecodeOps.TryDecomposeTypecode(format, out char byteorder, out char typecode)
               || !IsSupportedTypecode(typecode)
               || byteorder != '@'
             ) {

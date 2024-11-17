@@ -42,27 +42,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * and contributors of zlib.
 */
 
-namespace ComponentAce.Compression.Libs.ZLib
-{
-	/// <summary>
-	/// Exceptions that occur in ZStream
-	/// </summary>
-	public class ZStreamException : System.IO.IOException
-	{
+namespace ComponentAce.Compression.Libs.ZLib {
+    /// <summary>
+    /// Exceptions that occur in ZStream
+    /// </summary>
+    public class ZStreamException : System.IO.IOException {
         /// <summary>
         /// Default constructor.
         /// </summary>
 		public ZStreamException()
-            :base()
-		{
-		}
-        
+            : base() {
+        }
+
         /// <summary>
         /// Constructor which takes one parameter - an error message
         /// </summary>
-		public ZStreamException(System.String s)
-            :base(s)
-		{
-		}
-	}
+        public ZStreamException(System.String s)
+            : base(s) {
+        }
+    }
 }

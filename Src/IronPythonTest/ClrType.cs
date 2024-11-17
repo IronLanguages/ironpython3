@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using IronPython.Runtime.Types;
-using Microsoft.Scripting;
-using IronPython.Runtime.Exceptions;
+
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 
 namespace IronPythonTest.interop.net.type.clrtype {

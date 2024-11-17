@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Microsoft.Scripting;
-
 namespace IronPython.Runtime.Types {
     /// <summary>
     /// This interface is used for implementing parts of the IronPython type system.  It

@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using Microsoft.Scripting.Ast;
-using MSAst = System.Linq.Expressions;
-
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Linq.Expressions;
 
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler {
 
@@ -48,7 +46,7 @@ namespace IronPython.Compiler {
 
         public override object Run(Scope scope) {
             CodeContext ctx = GetContextForScope(scope, SourceUnit);
-            
+
             if (SourceUnit.Kind == SourceCodeKind.Expression) {
                 return EvalWrapper(ctx);
             }
@@ -127,10 +125,10 @@ namespace IronPython.Compiler {
         }
 
         private static PythonConstantExpression ExtractConstant(LightExpression<LookupCompilationDelegate> lambda) {
-            if (!(lambda.Body is BlockExpression body) || 
-                body.Expressions.Count != 2 || 
-                !(body.Expressions[0] is DebugInfoExpression) || 
-                body.Expressions[1].NodeType  != ExpressionType.Convert ||
+            if (!(lambda.Body is BlockExpression body) ||
+                body.Expressions.Count != 2 ||
+                !(body.Expressions[0] is DebugInfoExpression) ||
+                body.Expressions[1].NodeType != ExpressionType.Convert ||
                 !(((MSAst.UnaryExpression)body.Expressions[1]).Operand is PythonConstantExpression)) {
                 return null;
             }

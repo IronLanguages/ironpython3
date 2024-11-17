@@ -1,40 +1,38 @@
-namespace Community.CsharpSqlite
-{
-  public partial class Sqlite3
-  {
-    /*
-    ** 2007 August 22
-    **
-    ** The author disclaims copyright to this source code.  In place of
-    ** a legal notice, here is a blessing:
-    **
-    **    May you do good and not evil.
-    **    May you find forgiveness for yourself and forgive others.
-    **    May you share freely, never taking more than you give.
-    **
-    *************************************************************************
-    **
-    ** This file implements a special kind of sqlite3_file object used
-    ** by SQLite to create journal files if the atomic-write optimization
-    ** is enabled.
-    **
-    ** The distinctive characteristic of this sqlite3_file is that the
-    ** actual on disk file is created lazily. When the file is created,
-    ** the caller specifies a buffer size for an in-memory buffer to
-    ** be used to service read() and write() requests. The actual file
-    ** on disk is not created or populated until either:
-    **
-    **   1) The in-memory representation grows too large for the allocated
-    **      buffer, or
-    **   2) The sqlite3JournalCreate() function is called.
-    *************************************************************************
-    **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
-    **  C#-SQLite is an independent reimplementation of the SQLite software library
-    **
-    **  SQLITE_SOURCE_ID: 2010-08-23 18:52:01 42537b60566f288167f1b5864a5435986838e3a3
-    **
-    *************************************************************************
-    */
+namespace Community.CsharpSqlite {
+    public partial class Sqlite3 {
+        /*
+        ** 2007 August 22
+        **
+        ** The author disclaims copyright to this source code.  In place of
+        ** a legal notice, here is a blessing:
+        **
+        **    May you do good and not evil.
+        **    May you find forgiveness for yourself and forgive others.
+        **    May you share freely, never taking more than you give.
+        **
+        *************************************************************************
+        **
+        ** This file implements a special kind of sqlite3_file object used
+        ** by SQLite to create journal files if the atomic-write optimization
+        ** is enabled.
+        **
+        ** The distinctive characteristic of this sqlite3_file is that the
+        ** actual on disk file is created lazily. When the file is created,
+        ** the caller specifies a buffer size for an in-memory buffer to
+        ** be used to service read() and write() requests. The actual file
+        ** on disk is not created or populated until either:
+        **
+        **   1) The in-memory representation grows too large for the allocated
+        **      buffer, or
+        **   2) The sqlite3JournalCreate() function is called.
+        *************************************************************************
+        **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
+        **  C#-SQLite is an independent reimplementation of the SQLite software library
+        **
+        **  SQLITE_SOURCE_ID: 2010-08-23 18:52:01 42537b60566f288167f1b5864a5435986838e3a3
+        **
+        *************************************************************************
+        */
 #if SQLITE_ENABLE_ATOMIC_WRITE
     //#include "sqliteInt.h"
 
@@ -246,5 +244,5 @@ int sqlite3JournalSize(sqlite3_vfs pVfs){
 return (pVfs->szOsFile+sizeof(JournalFile));
 }
 #endif
-  }
+    }
 }

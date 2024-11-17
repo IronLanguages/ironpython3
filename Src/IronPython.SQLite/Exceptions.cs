@@ -6,18 +6,17 @@
 //
 
 using System;
+
 using Community.CsharpSqlite;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-namespace IronPython.SQLite
-{
-    public static partial class PythonSQLite
-    {
-        private static void InitModuleExceptions(PythonContext context, PythonDictionary dict)
-        {
+namespace IronPython.SQLite {
+    public static partial class PythonSQLite {
+        private static void InitModuleExceptions(PythonContext context, PythonDictionary dict) {
             Warning = context.EnsureModuleException("sqlite.Warning", PythonExceptions.Warning, dict, "Warning", "_sqlite3");
             Error = context.EnsureModuleException("sqlite.Error", PythonExceptions.Exception, dict, "Error", "_sqlite3");
             InterfaceError = context.EnsureModuleException("sqlite.InterfaceError", Error, dict, "InterfaceError", "_sqlite3");
@@ -31,78 +30,65 @@ namespace IronPython.SQLite
         }
 
         public static PythonType Warning;
-        internal static Exception MakeWarning(params object[] args)
-        {
+        internal static Exception MakeWarning(params object[] args) {
             return CreateThrowable(Warning, args);
         }
 
         public static PythonType Error;
-        internal static Exception MakeError(params object[] args)
-        {
+        internal static Exception MakeError(params object[] args) {
             return CreateThrowable(Error, args);
         }
 
         public static PythonType InterfaceError;
-        internal static Exception MakeInterfaceError(params object[] args)
-        {
+        internal static Exception MakeInterfaceError(params object[] args) {
             return CreateThrowable(InterfaceError, args);
         }
 
         public static PythonType DatabaseError;
-        internal static Exception MakeDatabaseError(params object[] args)
-        {
+        internal static Exception MakeDatabaseError(params object[] args) {
             return CreateThrowable(DatabaseError, args);
         }
 
         public static PythonType DataError;
-        internal static Exception MakeDataError(params object[] args)
-        {
+        internal static Exception MakeDataError(params object[] args) {
             return CreateThrowable(DataError, args);
         }
 
         public static PythonType OperationalError;
-        internal static Exception MakeOperationalError(params object[] args)
-        {
+        internal static Exception MakeOperationalError(params object[] args) {
             return CreateThrowable(OperationalError, args);
         }
 
         public static PythonType IntegrityError;
-        internal static Exception MakeIntegrityError(params object[] args)
-        {
+        internal static Exception MakeIntegrityError(params object[] args) {
             return CreateThrowable(IntegrityError, args);
         }
 
         public static PythonType InternalError;
-        internal static Exception MakeInternalError(params object[] args)
-        {
+        internal static Exception MakeInternalError(params object[] args) {
             return CreateThrowable(InternalError, args);
         }
 
         public static PythonType ProgrammingError;
-        internal static Exception MakeProgrammingError(params object[] args)
-        {
+        internal static Exception MakeProgrammingError(params object[] args) {
             return CreateThrowable(ProgrammingError, args);
         }
 
         public static PythonType NotSupportedError;
-        internal static Exception MakeNotSupportedError(params object[] args)
-        {
+        internal static Exception MakeNotSupportedError(params object[] args) {
             return CreateThrowable(NotSupportedError, args);
         }
 
-        internal static Exception GetSqliteError(Sqlite3.sqlite3 db, Sqlite3.Vdbe st)
-        {
+        internal static Exception GetSqliteError(Sqlite3.sqlite3 db, Sqlite3.Vdbe st) {
             /* SQLite often doesn't report anything useful, unless you reset the statement first */
-            if(st != null)
-            {
+            if (st != null) {
                 Sqlite3.sqlite3_reset(st);
             }
 
             int errorcode = Sqlite3.sqlite3_errcode(db);
             string errmsg = Sqlite3.sqlite3_errmsg(db);
 
-            switch(errorcode)
-            {
+            switch (errorcode) {
                 case SQLITE_OK:
                     return null;
 
@@ -146,8 +132,7 @@ namespace IronPython.SQLite
             }
         }
 
-        private static Exception CreateThrowable(PythonType type, params object[] args)
-        {
+        private static Exception CreateThrowable(PythonType type, params object[] args) {
             return PythonOps.CreateThrowable(type, args);
         }
     }

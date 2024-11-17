@@ -4,8 +4,6 @@
 
 #if FEATURE_REGISTRY
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -21,6 +19,9 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
+
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 [assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {

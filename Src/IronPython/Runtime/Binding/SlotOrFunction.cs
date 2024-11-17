@@ -2,20 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Reflection;
+
 using IronPython.Runtime.Types;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -240,9 +239,9 @@ namespace IronPython.Runtime.Binding {
             }
 
             var mc = new PythonOverloadResolver(
-                state.Binder, 
+                state.Binder,
                 types,
-                new CallSignature(types.Length),                
+                new CallSignature(types.Length),
                 AstUtils.Constant(state.SharedContext)
             );
 

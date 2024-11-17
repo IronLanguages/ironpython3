@@ -8,10 +8,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Operations;
 
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "IronPython.Runtime.Exceptions.TraceBackFrame..ctor(System.Object,System.Object,System.Object)", MessageId = "0#globals")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "IronPython.Runtime.Exceptions.TraceBackFrame.Globals", MessageId = "Globals")]
@@ -118,11 +118,11 @@ namespace IronPython.Runtime.Exceptions {
 
         [SpecialName, PropertyMethod]
         public object Getf_trace() {
-                if (_traceAdapter != null) {
-                    return _traceObject;
-                } else {
-                    return null;
-                }
+            if (_traceAdapter != null) {
+                return _traceObject;
+            } else {
+                return null;
+            }
         }
 
         [SpecialName, PropertyMethod]
@@ -230,7 +230,7 @@ namespace IronPython.Runtime.Exceptions {
 
             Dictionary<int, bool> currentLoopIds = null;
             bool inForLoopOrFinally = loopAndFinallyLocations != null && loopAndFinallyLocations.TryGetValue(_lineNo, out currentLoopIds);
-            
+
             int originalNewLine = newLineNum;
 
             if (newLineNum < funcCode.Span.Start.Line) {
@@ -246,7 +246,7 @@ namespace IronPython.Runtime.Exceptions {
                 // Check if we're jumping onto a handler
                 bool handlerIsFinally;
                 if (handlerLocations != null && handlerLocations.TryGetValue(newLineNum, out handlerIsFinally)) {
-                    throw PythonOps.ValueError("can't jump to 'except' line");                    
+                    throw PythonOps.ValueError("can't jump to 'except' line");
                 }
 
                 // Check if we're jumping into a for-loop

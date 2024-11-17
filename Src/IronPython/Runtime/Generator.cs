@@ -10,13 +10,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
@@ -76,7 +76,7 @@ namespace IronPython.Runtime {
             if (Closed) {
                 return LightExceptions.Throw(PythonOps.StopIteration());
             }
-            
+
             object res = NextWorker();
             if (res == OperationFailed.Value) {
                 if (FinalValue is null)
@@ -365,8 +365,7 @@ namespace IronPython.Runtime {
                 stack.RemoveAt(stack.Count - 1);
                 Debug.Assert(functionStack.Context is not null);
                 fnStack = new FunctionStack(functionStack.Context!, functionStack.Code); // don't keep the frame since f_back may be invalid
-            }
-            else {
+            } else {
                 fnStack = null;
             }
         }

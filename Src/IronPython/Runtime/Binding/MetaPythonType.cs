@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Dynamic;
 using System.Linq.Expressions;
 
-using System;
-using System.Collections.Generic;
-using System.Dynamic;
+using IronPython.Runtime.Types;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Types;
-    
 namespace IronPython.Runtime.Binding {
-    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     internal partial class MetaPythonType : MetaPythonObject, IPythonConvertible {

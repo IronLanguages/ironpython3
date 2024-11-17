@@ -6,10 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-using Microsoft.Scripting;
-
 using IronPython.Compiler;
-using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
 
 namespace IronPython.Runtime {
     public class CompiledLoader {

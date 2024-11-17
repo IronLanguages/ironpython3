@@ -8,14 +8,14 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using System.Diagnostics;
 
 namespace IronPython.Runtime {
 
@@ -96,7 +96,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public long Truncate(long  size) {
+        public long Truncate(long size) {
             long pos = _readStream.Position;
             _writeStream.SetLength(size);
             _readStream.Seek(pos, SeekOrigin.Begin);
@@ -268,7 +268,7 @@ namespace IronPython.Runtime {
 
         public StreamBox GetStreams(int id) {
             if (TryGetStreams(id, out StreamBox? streams)) {
-               return streams;
+                return streams;
             }
             throw PythonOps.OSError(9, "Bad file descriptor");
         }
@@ -290,7 +290,7 @@ namespace IronPython.Runtime {
 
         public void AddRefStreams(StreamBox streams) {
             Debug.Assert(streams.Id >= 0);
-            _refs.AddOrUpdate(streams.ReadStream, 1, (_,  v) => v + 1);
+            _refs.AddOrUpdate(streams.ReadStream, 1, (_, v) => v + 1);
         }
 
         public bool DerefStreamsAndCloseIfLast(StreamBox streams) {

@@ -4,11 +4,6 @@
 
 #nullable enable
 
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting.Runtime;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,6 +11,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
@@ -953,7 +953,7 @@ namespace IronPython.Runtime {
                 if ((runeUnknown & ~0xff) != LoneSurrogateBase) {
                     // EncoderFallbackException(string, char, int) is not accessible here
                     throw PythonOps.UnicodeEncodeError(
-                        $"'surrogateescape' error handler: value not in range(0x{LoneSurrogateBase:x4}, 0x{LoneSurrogateBase+0x100:x4})",
+                        $"'surrogateescape' error handler: value not in range(0x{LoneSurrogateBase:x4}, 0x{LoneSurrogateBase + 0x100:x4})",
                         runeUnknown,
                         index
                     );
@@ -1262,7 +1262,7 @@ namespace IronPython.Runtime {
                 _buffer = null;
             }
 
-            protected void Throw(byte[] bytesUnknown, int index) 
+            protected void Throw(byte[] bytesUnknown, int index)
                 => throw new DecoderFallbackException($"'surrogatepass' error handler: not a surrogate character", bytesUnknown, index);
         }
     }
@@ -1453,7 +1453,7 @@ namespace IronPython.Runtime {
                             int retain = _previousData.Length - span.Length;
                             if (retain <= 0) {
                                 _previousDataLen = 0;
-                            }  else if (retain < _previousDataLen) {
+                            } else if (retain < _previousDataLen) {
                                 Array.Copy(_previousData, _previousDataLen - retain, _previousData, 0, retain);
                                 _previousDataLen = retain;
                             }

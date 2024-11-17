@@ -8,15 +8,15 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("itertools", typeof(IronPython.Modules.PythonIterTools))]
 namespace IronPython.Modules {
@@ -219,7 +219,7 @@ namespace IronPython.Modules {
                 if (iter == null ||
                     !PythonOps.HasAttr(context, iter, "__iter__") &&
                     !PythonOps.HasAttr(context, iter, "__getitem__")) {
-                        throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(iter));
+                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(iter));
                 }
             }
 
@@ -262,13 +262,13 @@ namespace IronPython.Modules {
                 InnerEnumerator = BigIntYielder(this, start, 1);
             }
 
-            public count(int start=0, int step=1) {
+            public count(int start = 0, int step = 1) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);
             }
 
-            public count([DefaultParameterValue(0)]int start, BigInteger step) {
+            public count([DefaultParameterValue(0)] int start, BigInteger step) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);
@@ -286,7 +286,7 @@ namespace IronPython.Modules {
                 InnerEnumerator = BigIntYielder(this, start, step);
             }
 
-            public count(CodeContext/*!*/ context, [DefaultParameterValue(0)]object start, [DefaultParameterValue(1)]object step) {
+            public count(CodeContext/*!*/ context, [DefaultParameterValue(0)] object start, [DefaultParameterValue(1)] object step) {
                 EnsureNumeric(context, start);
                 EnsureNumeric(context, step);
                 _cur = start;
@@ -301,7 +301,7 @@ namespace IronPython.Modules {
                 if (num == null ||
                     !PythonOps.HasAttr(context, num, "__int__") &&
                     !PythonOps.HasAttr(context, num, "__float__")) {
-                        throw PythonOps.TypeError("a number is required");
+                    throw PythonOps.TypeError("a number is required");
                 }
             }
 
@@ -517,9 +517,9 @@ namespace IronPython.Modules {
                 if (MoveNextHelper(iter)) {
                     while (!_fFinished) {
                         while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
-                            if (!MoveNextHelper(iter)) { 
-                                _fFinished = true; 
-                                yield break; 
+                            if (!MoveNextHelper(iter)) {
+                                _fFinished = true;
+                                yield break;
                             }
                         }
                         curKey = GetKey(iter.Current);
@@ -531,9 +531,9 @@ namespace IronPython.Modules {
             private IEnumerator<object> Grouper(IEnumerator iter, object curKey) {
                 while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                     yield return iter.Current;
-                    if (!MoveNextHelper(iter)) { 
-                        _fFinished = true; 
-                        yield break; 
+                    if (!MoveNextHelper(iter)) {
+                        _fFinished = true;
+                        yield break;
                     }
                 }
             }
@@ -658,7 +658,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public zip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public zip_longest([ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
                 object fill;
 
                 if (paramDict.TryGetValue("fillvalue", out fill)) {
@@ -747,7 +747,7 @@ namespace IronPython.Modules {
                 InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new PythonList(context, PythonOps.GetEnumerator(x))));
             }
 
-            public product(CodeContext context, [ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public product(CodeContext context, [ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
                 object repeat;
                 int iRepeat = 1;
                 if (paramDict.TryGetValue("repeat", out repeat)) {
@@ -970,7 +970,7 @@ namespace IronPython.Modules {
 
             public permutations(CodeContext context, object iterable, object r) {
                 _data = new PythonList(context, iterable);
-                
+
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
 
@@ -1133,9 +1133,9 @@ namespace IronPython.Modules {
 
             #endregion
         }
-        
+
         [PythonType]
-        public class starmap : IterBase {            
+        public class starmap : IterBase {
             public starmap(CodeContext context, object function, object iterable) {
                 InnerEnumerator = Yielder(context, function, PythonOps.GetEnumerator(iterable));
             }
@@ -1194,7 +1194,7 @@ namespace IronPython.Modules {
 
             private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {
                 while (MoveNextHelper(iter)) {
-                    if(!Converter.ConvertToBoolean(
+                    if (!Converter.ConvertToBoolean(
                         _context.LanguageContext.CallSplat(predicate, iter.Current)
                     )) {
                         break;

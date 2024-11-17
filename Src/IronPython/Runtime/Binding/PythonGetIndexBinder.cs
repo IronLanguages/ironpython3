@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Dynamic;
-using System.Reflection;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
-
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -107,7 +105,7 @@ namespace IronPython.Runtime.Binding {
             if (target is PythonTuple lst && index != null && index.GetType() == typeof(int)) {
                 return lst[(int)index];
             }
-            
+
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, target, index);
         }
 

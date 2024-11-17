@@ -10,12 +10,12 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 
+using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
     internal sealed class PythonOverloadResolverFactory : OverloadResolverFactory {
@@ -242,10 +242,10 @@ namespace IronPython.Runtime.Binding {
             if (GetUnmanagedNumericTypeWidth(candidateTwoType) is not int candidateTwoWidth) return Candidate.Ambiguous;
 
             Candidate preferred = Comparer<int>.Default.Compare(candidateOneWidth, candidateTwoWidth) switch {
-                 1 => Candidate.One,
-                 0 => Candidate.Equivalent,
+                1 => Candidate.One,
+                0 => Candidate.Equivalent,
                 -1 => Candidate.Two,
-                 _ => throw new InvalidOperationException()
+                _ => throw new InvalidOperationException()
             };
 
             if (preferred == Candidate.One && Converter.IsUnsignedInt(candidateOneType) && !Converter.IsUnsignedInt(candidateTwoType)) {

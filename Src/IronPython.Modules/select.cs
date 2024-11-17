@@ -40,7 +40,7 @@ namespace IronPython.Modules {
             + "Note that select() on IronPython works only with sockets; it will not work with\n"
             + "files or other objects."
             )]
-        public static PythonTuple select(CodeContext/*!*/ context, object iwtd, object owtd, object ewtd, object timeout=null) {
+        public static PythonTuple select(CodeContext/*!*/ context, object iwtd, object owtd, object ewtd, object timeout = null) {
             PythonList readerList, writerList, errorList;
             Dictionary<Socket, object> readerOriginals, writerOriginals, errorOriginals;
             ProcessSocketSequence(context, iwtd, out readerList, out readerOriginals);
@@ -57,7 +57,7 @@ namespace IronPython.Modules {
                 if (!Converter.TryConvertToDouble(timeout, out timeoutSeconds)) {
                     throw PythonOps.TypeErrorForTypeMismatch("float or None", timeout);
                 }
-                timeoutMicroseconds = (int) (1000000 * timeoutSeconds);
+                timeoutMicroseconds = (int)(1000000 * timeoutSeconds);
             }
 
             try {

@@ -1,4 +1,5 @@
 ﻿using System;
+
 using IronPython.Runtime;
 
 namespace IronPythonTest {
@@ -20,7 +21,7 @@ namespace IronPythonTest {
         public void SetMember(CodeContext context, string name, object value) {
             throw new InvalidOperationException("Do not call SetMember1");
         }
-        
+
         public object GetBoundMember(string name) {
             throw new InvalidOperationException("Do not call GetBoundMember0");
         }
@@ -28,7 +29,7 @@ namespace IronPythonTest {
         public object GetBoundMember(CodeContext context, string name) {
             throw new InvalidOperationException("Do not call GetBoundMember1");
         }
-        
+
         public object GetCustomMember(string name) {
             throw new InvalidOperationException("Do not call GetCustomMember0");
         }
@@ -36,7 +37,7 @@ namespace IronPythonTest {
         public object GetCustomMember(CodeContext context, string name) {
             throw new InvalidOperationException("Do not call GetCustomMember1");
         }
-        
+
         public void DeleteMember(string name) {
             throw new InvalidOperationException("Do not call DeleteMember0");
         }

@@ -129,22 +129,19 @@
 //
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
-namespace Ionic.BZip2
-{
-    internal class WorkItem
-    {
+namespace Ionic.BZip2 {
+    internal class WorkItem {
         public int index;
         public BZip2Compressor Compressor { get; private set; }
         public MemoryStream ms;
         public int ordinal;
         public BitWriter bw;
 
-        public WorkItem(int ix, int blockSize)
-        {
+        public WorkItem(int ix, int blockSize) {
             // compressed data gets written to a MemoryStream
             this.ms = new MemoryStream();
             this.bw = new BitWriter(ms);
@@ -184,8 +181,7 @@ namespace Ionic.BZip2
     /// </para>
     ///
     /// <seealso cref="Ionic.BZip2.BZip2OutputStream" />
-    public class ParallelBZip2OutputStream : System.IO.Stream
-    {
+    public class ParallelBZip2OutputStream : System.IO.Stream {
         private static readonly int BufferPairsPerCore = 4;
         private int _maxWorkers;
         private bool firstWriteDone;
@@ -196,8 +192,8 @@ namespace Ionic.BZip2
         private volatile Exception pendingException;
         private bool handlingException;
         private bool emitting;
-        private System.Collections.Generic.Queue<int>     toWrite;
-        private System.Collections.Generic.Queue<int>     toFill;
+        private System.Collections.Generic.Queue<int> toWrite;
+        private System.Collections.Generic.Queue<int> toFill;
         private System.Collections.Generic.List<WorkItem> pool;
         private object latestLock = new object();
         private object eLock = new object(); // for exceptions
@@ -248,8 +244,7 @@ namespace Ionic.BZip2
         ///   </code>
         /// </example>
         public ParallelBZip2OutputStream(Stream output)
-            : this(output, BZip2.MaxBlockSize, false)
-        {
+            : this(output, BZip2.MaxBlockSize, false) {
         }
 
         /// <summary>
@@ -261,8 +256,7 @@ namespace Ionic.BZip2
         ///   The valid range is 1..9.
         /// </param>
         public ParallelBZip2OutputStream(Stream output, int blockSize)
-            : this(output, blockSize, false)
-        {
+            : this(output, blockSize, false) {
         }
 
         /// <summary>
@@ -273,8 +267,7 @@ namespace Ionic.BZip2
         ///   whether to leave the captive stream open upon closing this stream.
         /// </param>
         public ParallelBZip2OutputStream(Stream output, bool leaveOpen)
-            : this(output, BZip2.MaxBlockSize, leaveOpen)
-        {
+            : this(output, BZip2.MaxBlockSize, leaveOpen) {
         }
 
         /// <summary>
@@ -290,10 +283,8 @@ namespace Ionic.BZip2
         /// <param name = "leaveOpen">
         ///   whether to leave the captive stream open upon closing this stream.
         /// </param>
-        public ParallelBZip2OutputStream(Stream output, int blockSize, bool leaveOpen)
-        {
-            if (blockSize < BZip2.MinBlockSize || blockSize > BZip2.MaxBlockSize)
-            {
+        public ParallelBZip2OutputStream(Stream output, int blockSize, bool leaveOpen) {
+            if (blockSize < BZip2.MinBlockSize || blockSize > BZip2.MaxBlockSize) {
                 var msg = String.Format("blockSize={0} is out of range; must be between {1} and {2}",
                                         blockSize,
                                         BZip2.MinBlockSize, BZip2.MaxBlockSize);
@@ -313,15 +304,13 @@ namespace Ionic.BZip2
         }
 
 
-        private void InitializePoolOfWorkItems()
-        {
+        private void InitializePoolOfWorkItems() {
             this.toWrite = new Queue<int>();
             this.toFill = new Queue<int>();
             this.pool = new System.Collections.Generic.List<WorkItem>();
             int nWorkers = BufferPairsPerCore * Environment.ProcessorCount;
             nWorkers = Math.Min(nWorkers, this.MaxWorkers);
-            for(int i=0; i < nWorkers; i++)
-            {
+            for (int i = 0; i < nWorkers; i++) {
                 this.pool.Add(new WorkItem(i, this.blockSize100k));
                 this.toFill.Enqueue(i);
             }
@@ -395,14 +384,11 @@ namespace Ionic.BZip2
         ///   allocated.
         /// </para>
         /// </remarks>
-        public int MaxWorkers
-        {
-            get
-            {
+        public int MaxWorkers {
+            get {
                 return _maxWorkers;
             }
-            set
-            {
+            set {
                 if (value < 4)
                     throw new ArgumentException("MaxWorkers",
                                                 "Value must be 4 or greater.");
@@ -419,10 +405,8 @@ namespace Ionic.BZip2
         ///     constructors that accept a bool value.
         ///   </para>
         /// </remarks>
-        public override void Close()
-        {
-            if (this.pendingException != null)
-            {
+        public override void Close() {
+            if (this.pendingException != null) {
                 this.handlingException = true;
                 var pe = this.pendingException;
                 this.pendingException = null;
@@ -437,12 +421,9 @@ namespace Ionic.BZip2
 
             Stream o = this.output;
 
-            try
-            {
+            try {
                 FlushOutput(true);
-            }
-            finally
-            {
+            } finally {
                 this.output = null;
                 this.bw = null;
             }
@@ -452,25 +433,20 @@ namespace Ionic.BZip2
         }
 
 
-        private void FlushOutput(bool lastInput)
-        {
+        private void FlushOutput(bool lastInput) {
             if (this.emitting) return;
 
             // compress and write whatever is ready
-            if (this.currentlyFilling >= 0)
-            {
+            if (this.currentlyFilling >= 0) {
                 WorkItem workitem = this.pool[this.currentlyFilling];
                 CompressOne(workitem);
                 this.currentlyFilling = -1; // get a new buffer next Write()
             }
 
-            if (lastInput)
-            {
+            if (lastInput) {
                 EmitPendingBuffers(true, false);
                 EmitTrailer();
-            }
-            else
-            {
+            } else {
                 EmitPendingBuffers(false, false);
             }
         }
@@ -480,18 +456,15 @@ namespace Ionic.BZip2
         /// <summary>
         ///   Flush the stream.
         /// </summary>
-        public override void Flush()
-        {
-            if (this.output != null)
-            {
+        public override void Flush() {
+            if (this.output != null) {
                 FlushOutput(false);
                 this.bw.Flush();
                 this.output.Flush();
             }
         }
 
-        private void EmitHeader()
-        {
+        private void EmitHeader() {
             var magic = new byte[] {
                 (byte) 'B',
                 (byte) 'Z',
@@ -503,8 +476,7 @@ namespace Ionic.BZip2
             this.output.Write(magic, 0, magic.Length);
         }
 
-        private void EmitTrailer()
-        {
+        private void EmitTrailer() {
             // A magic 48-bit number, 0x177245385090, to indicate the end
             // of the last block. (sqrt(pi), if you want to know)
 
@@ -531,8 +503,7 @@ namespace Ionic.BZip2
         /// <summary>
         ///   The blocksize parameter specified at construction time.
         /// </summary>
-        public int BlockSize
-        {
+        public int BlockSize {
             get { return this.blockSize100k; }
         }
 
@@ -561,8 +532,7 @@ namespace Ionic.BZip2
         /// <param name="buffer">The buffer holding data to write to the stream.</param>
         /// <param name="offset">the offset within that data array to find the first byte to write.</param>
         /// <param name="count">the number of bytes to write.</param>
-        public override void Write(byte[] buffer, int offset, int count)
-        {
+        public override void Write(byte[] buffer, int offset, int count) {
             bool mustWait = false;
 
             // This method does this:
@@ -575,8 +545,7 @@ namespace Ionic.BZip2
                 throw new IOException("the stream is not open");
 
             // dispense any exceptions that occurred on the BG threads
-            if (this.pendingException != null)
-            {
+            if (this.pendingException != null) {
                 this.handlingException = true;
                 var pe = this.pendingException;
                 this.pendingException = null;
@@ -595,8 +564,7 @@ namespace Ionic.BZip2
             if (count == 0) return;  // nothing to do
 
 
-            if (!this.firstWriteDone)
-            {
+            if (!this.firstWriteDone) {
                 // Want to do this on first Write, first session, and not in the
                 // constructor.  Must allow the MaxWorkers to change after
                 // construction, but before first Write().
@@ -607,8 +575,7 @@ namespace Ionic.BZip2
             int bytesWritten = 0;
             int bytesRemaining = count;
 
-            do
-            {
+            do {
                 // may need to make buffers available
                 EmitPendingBuffers(false, mustWait);
 
@@ -616,14 +583,10 @@ namespace Ionic.BZip2
 
                 // get a compressor to fill
                 int ix = -1;
-                if (this.currentlyFilling >= 0)
-                {
+                if (this.currentlyFilling >= 0) {
                     ix = this.currentlyFilling;
-                }
-                else
-                {
-                    if (this.toFill.Count == 0)
-                    {
+                } else {
+                    if (this.toFill.Count == 0) {
                         // No compressors available to fill, so... need to emit
                         // compressed buffers.
                         mustWait = true;
@@ -638,15 +601,13 @@ namespace Ionic.BZip2
                 workitem.ordinal = this.lastFilled;
 
                 int n = workitem.Compressor.Fill(buffer, offset, bytesRemaining);
-                if (n != bytesRemaining)
-                {
-                    if (!ThreadPool.QueueUserWorkItem( CompressOne, workitem ))
+                if (n != bytesRemaining) {
+                    if (!ThreadPool.QueueUserWorkItem(CompressOne, workitem))
                         throw new Exception("Cannot enqueue workitem");
 
                     this.currentlyFilling = -1; // will get a new buffer next time
                     offset += n;
-                }
-                else
+                } else
                     this.currentlyFilling = ix;
 
                 bytesRemaining -= n;
@@ -660,8 +621,7 @@ namespace Ionic.BZip2
 
 
 
-        private void EmitPendingBuffers(bool doAll, bool mustWait)
-        {
+        private void EmitPendingBuffers(bool doAll, bool mustWait) {
             // When combining parallel compression with a ZipSegmentedStream, it's
             // possible for the ZSS to throw from within this method.  In that
             // case, Close/Dispose will be called on this stream, if this stream
@@ -676,47 +636,36 @@ namespace Ionic.BZip2
             if (doAll || mustWait)
                 this.newlyCompressedBlob.WaitOne();
 
-            do
-            {
+            do {
                 int firstSkip = -1;
                 int millisecondsToWait = doAll ? 200 : (mustWait ? -1 : 0);
                 int nextToWrite = -1;
 
-                do
-                {
-                    if (Monitor.TryEnter(this.toWrite, millisecondsToWait))
-                    {
+                do {
+                    if (Monitor.TryEnter(this.toWrite, millisecondsToWait)) {
                         nextToWrite = -1;
-                        try
-                        {
+                        try {
                             if (this.toWrite.Count > 0)
                                 nextToWrite = this.toWrite.Dequeue();
-                        }
-                        finally
-                        {
+                        } finally {
                             Monitor.Exit(this.toWrite);
                         }
 
-                        if (nextToWrite >= 0)
-                        {
+                        if (nextToWrite >= 0) {
                             WorkItem workitem = this.pool[nextToWrite];
-                            if (workitem.ordinal != this.lastWritten + 1)
-                            {
+                            if (workitem.ordinal != this.lastWritten + 1) {
                                 // out of order. requeue and try again.
-                                lock(this.toWrite)
-                                {
+                                lock (this.toWrite) {
                                     this.toWrite.Enqueue(nextToWrite);
                                 }
 
-                                if (firstSkip == nextToWrite)
-                                {
+                                if (firstSkip == nextToWrite) {
                                     // We went around the list once.
                                     // None of the items in the list is the one we want.
                                     // Now wait for a compressor to signal again.
                                     this.newlyCompressedBlob.WaitOne();
                                     firstSkip = -1;
-                                }
-                                else if (firstSkip == -1)
+                                } else if (firstSkip == -1)
                                     firstSkip = nextToWrite;
 
                                 continue;
@@ -731,7 +680,7 @@ namespace Ionic.BZip2
                             var bw2 = workitem.bw;
                             bw2.Flush(); // not bw2.FinishAndPad()!
                             var ms = workitem.ms;
-                            ms.Seek(0,SeekOrigin.Begin);
+                            ms.Seek(0, SeekOrigin.Begin);
 
                             // cannot dump bytes!!
                             // ms.WriteTo(this.output);
@@ -741,8 +690,7 @@ namespace Ionic.BZip2
                             int y = -1;
                             long totOut = 0;
                             var buffer = new byte[1024];
-                            while ((n = ms.Read(buffer,0,buffer.Length)) > 0)
-                            {
+                            while ((n = ms.Read(buffer, 0, buffer.Length)) > 0) {
 #if Trace
                                 if (y == -1) // diagnostics only
                                 {
@@ -754,8 +702,7 @@ namespace Ionic.BZip2
                                 }
 #endif
                                 y = n;
-                                for (int k=0; k < n; k++)
-                                {
+                                for (int k = 0; k < n; k++) {
                                     this.bw.WriteByte(buffer[k]);
                                 }
                                 totOut += n;
@@ -774,15 +721,14 @@ namespace Ionic.BZip2
                                         " remaining bits: {0} 0x{1:X}",
                                         bw2.NumRemainingBits,
                                         bw2.RemainingBits);
-                            if (bw2.NumRemainingBits > 0)
-                            {
+                            if (bw2.NumRemainingBits > 0) {
                                 this.bw.WriteBits(bw2.NumRemainingBits, bw2.RemainingBits);
                             }
 
-                            TraceOutput(TraceBits.Crc," combined CRC (before): {0:X8}",
+                            TraceOutput(TraceBits.Crc, " combined CRC (before): {0:X8}",
                                         this.combinedCRC);
                             this.combinedCRC = (this.combinedCRC << 1) | (this.combinedCRC >> 31);
-                            this.combinedCRC ^= (uint) workitem.Compressor.Crc32;
+                            this.combinedCRC ^= (uint)workitem.Compressor.Crc32;
 
                             TraceOutput(TraceBits.Crc,
                                         " block    CRC         : {0:X8}",
@@ -805,16 +751,14 @@ namespace Ionic.BZip2
                             // don't wait next time through
                             if (millisecondsToWait == -1) millisecondsToWait = 0;
                         }
-                    }
-                    else
+                    } else
                         nextToWrite = -1;
 
                 } while (nextToWrite >= 0);
 
             } while (doAll && (this.lastWritten != this.latestCompressed));
 
-            if (doAll)
-            {
+            if (doAll) {
                 TraceOutput(TraceBits.Crc,
                             " combined CRC (final) : {0:X8}", this.combinedCRC);
             }
@@ -823,32 +767,25 @@ namespace Ionic.BZip2
         }
 
 
-        private void CompressOne(Object wi)
-        {
+        private void CompressOne(Object wi) {
             // compress and one buffer
-            WorkItem workitem = (WorkItem) wi;
-            try
-            {
+            WorkItem workitem = (WorkItem)wi;
+            try {
                 // compress and write to the compressor's MemoryStream
                 workitem.Compressor.CompressAndWrite();
 
-                lock(this.latestLock)
-                {
+                lock (this.latestLock) {
                     if (workitem.ordinal > this.latestCompressed)
                         this.latestCompressed = workitem.ordinal;
                 }
-                lock (this.toWrite)
-                {
+                lock (this.toWrite) {
                     this.toWrite.Enqueue(workitem.index);
                 }
                 this.newlyCompressedBlob.Set();
-            }
-            catch (System.Exception exc1)
-            {
-                lock(this.eLock)
-                {
+            } catch (System.Exception exc1) {
+                lock (this.eLock) {
                     // expose the exception to the main thread
-                    if (this.pendingException!=null)
+                    if (this.pendingException != null)
                         this.pendingException = exc1;
                 }
             }
@@ -863,8 +800,7 @@ namespace Ionic.BZip2
         /// <remarks>
         /// The return value is always false.
         /// </remarks>
-        public override bool CanRead
-        {
+        public override bool CanRead {
             get { return false; }
         }
 
@@ -874,8 +810,7 @@ namespace Ionic.BZip2
         /// <remarks>
         /// Always returns false.
         /// </remarks>
-        public override bool CanSeek
-        {
+        public override bool CanSeek {
             get { return false; }
         }
 
@@ -885,10 +820,8 @@ namespace Ionic.BZip2
         /// <remarks>
         /// The return value depends on whether the captive stream supports writing.
         /// </remarks>
-        public override bool CanWrite
-        {
-            get
-            {
+        public override bool CanWrite {
+            get {
                 if (this.output == null) throw new ObjectDisposedException("BZip2Stream");
                 return this.output.CanWrite;
             }
@@ -897,8 +830,7 @@ namespace Ionic.BZip2
         /// <summary>
         /// Reading this property always throws a <see cref="NotImplementedException"/>.
         /// </summary>
-        public override long Length
-        {
+        public override long Length {
             get { throw new NotImplementedException(); }
         }
 
@@ -911,10 +843,8 @@ namespace Ionic.BZip2
         ///   cref="NotImplementedException"/>. Reading will return the
         ///   total number of uncompressed bytes written through.
         /// </remarks>
-        public override long Position
-        {
-            get
-            {
+        public override long Position {
+            get {
                 return this.totalBytesWrittenIn;
             }
             set { throw new NotImplementedException(); }
@@ -934,8 +864,7 @@ namespace Ionic.BZip2
         /// <param name="offset">this is irrelevant, since it will always throw!</param>
         /// <param name="origin">this is irrelevant, since it will always throw!</param>
         /// <returns>irrelevant!</returns>
-        public override long Seek(long offset, System.IO.SeekOrigin origin)
-        {
+        public override long Seek(long offset, System.IO.SeekOrigin origin) {
             throw new NotImplementedException();
         }
 
@@ -943,8 +872,7 @@ namespace Ionic.BZip2
         /// Calling this method always throws a <see cref="NotImplementedException"/>.
         /// </summary>
         /// <param name="value">this is irrelevant, since it will always throw!</param>
-        public override void SetLength(long value)
-        {
+        public override void SetLength(long value) {
             throw new NotImplementedException();
         }
 
@@ -955,32 +883,27 @@ namespace Ionic.BZip2
         /// <param name='offset'>this parameter is never used</param>
         /// <param name='count'>this parameter is never used</param>
         /// <returns>never returns anything; always throws</returns>
-        public override int Read(byte[] buffer, int offset, int count)
-        {
+        public override int Read(byte[] buffer, int offset, int count) {
             throw new NotImplementedException();
         }
 
 
         // used only when Trace is defined
         [Flags]
-        private enum TraceBits : uint
-        {
-            None         = 0,
-            Crc          = 1,
-            Write        = 2,
-            All          = 0xffffffff,
+        private enum TraceBits : uint {
+            None = 0,
+            Crc = 1,
+            Write = 2,
+            All = 0xffffffff,
         }
 
 
         [System.Diagnostics.ConditionalAttribute("Trace")]
-        private void TraceOutput(TraceBits bits, string format, params object[] varParams)
-        {
-            if ((bits & this.desiredTrace) != 0)
-            {
-                lock(outputLock)
-                {
+        private void TraceOutput(TraceBits bits, string format, params object[] varParams) {
+            if ((bits & this.desiredTrace) != 0) {
+                lock (outputLock) {
                     int tid = Thread.CurrentThread.GetHashCode();
-                    Console.ForegroundColor = (ConsoleColor) (tid % 8 + 10);
+                    Console.ForegroundColor = (ConsoleColor)(tid % 8 + 10);
                     Console.Write("{0:000} PBOS ", tid);
                     Console.WriteLine(format, varParams);
                     Console.ResetColor();

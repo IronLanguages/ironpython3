@@ -5,17 +5,13 @@
 // Copyright (c) Jeff Hardy 2010-2012.
 //
 
-namespace IronPython.SQLite
-{
-    internal static class StringExtensions
-    {
-        public static string Format(this string format, params object[] args)
-        {
+namespace IronPython.SQLite {
+    internal static class StringExtensions {
+        public static string Format(this string format, params object[] args) {
             return string.Format(format, args);
         }
 
-        public static bool IsNullOrEmpty(this string value)
-        {
+        public static bool IsNullOrEmpty(this string value) {
             return string.IsNullOrEmpty(value);
         }
     }

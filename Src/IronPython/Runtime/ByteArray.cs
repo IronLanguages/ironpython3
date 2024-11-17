@@ -9,15 +9,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -295,7 +294,7 @@ namespace IronPython.Runtime {
             int istart = start != null ? Converter.ConvertToIndex(start) : 0;
             lock (this) {
                 int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
-                return _bytes.CountOf(sub, istart, iend); 
+                return _bytes.CountOf(sub, istart, iend);
             }
         }
 
@@ -660,7 +659,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray lstrip([BytesLike]IList<byte>? chars) {
+        public ByteArray lstrip([BytesLike] IList<byte>? chars) {
             if (chars == null) return lstrip();
             lock (this) {
                 var res = _bytes.LeftStrip(chars);
@@ -844,7 +843,7 @@ namespace IronPython.Runtime {
         }
 
         [return: SequenceTypeInfo(typeof(ByteArray))]
-        public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
+        public PythonList rsplit([BytesLike] IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
                 return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
             }
@@ -857,7 +856,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray rstrip([BytesLike]IList<byte>? chars) {
+        public ByteArray rstrip([BytesLike] IList<byte>? chars) {
             if (chars == null) return rstrip();
             lock (this) {
                 var res = _bytes.RightStrip(chars);
@@ -866,7 +865,7 @@ namespace IronPython.Runtime {
         }
 
         [return: SequenceTypeInfo(typeof(ByteArray))]
-        public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
+        public PythonList split([BytesLike] IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }
@@ -962,7 +961,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray strip([BytesLike]IList<byte>? chars) {
+        public ByteArray strip([BytesLike] IList<byte>? chars) {
             if (chars == null) return strip();
             lock (this) {
                 var res = _bytes.Strip(chars);
@@ -989,7 +988,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray translate([BytesLike]IList<byte>? table) {
+        public ByteArray translate([BytesLike] IList<byte>? table) {
             ValidateTable(table);
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, null));
@@ -997,14 +996,14 @@ namespace IronPython.Runtime {
         }
 
 
-        public ByteArray translate([BytesLike]IList<byte>? table, [BytesLike, NotNone] IList<byte> delete) {
+        public ByteArray translate([BytesLike] IList<byte>? table, [BytesLike, NotNone] IList<byte> delete) {
             ValidateTable(table);
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, delete));
             }
         }
 
-        public ByteArray translate([BytesLike]IList<byte>? table, object? delete) {
+        public ByteArray translate([BytesLike] IList<byte>? table, object? delete) {
             if (delete is IBufferProtocol bufferProtocol) {
                 using var buffer = bufferProtocol.GetBuffer();
                 return translate(table, buffer.AsReadOnlySpan().ToArray());

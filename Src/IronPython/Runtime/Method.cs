@@ -8,11 +8,11 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [PythonType("method"), DontMapGetMemberNamesToDir]
@@ -49,7 +49,7 @@ namespace IronPython.Runtime {
             => context.LanguageContext.CallSplat(this, args);
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)
+        public object Call(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args)
             => context.LanguageContext.CallWithKeywords(this, args, kwArgs);
 
         #region Object Overrides
@@ -117,11 +117,11 @@ namespace IronPython.Runtime {
 
             if (__func__ is PythonFunction pf) {
                 PythonDictionary dict = pf.__dict__;
-                
+
                 // Check the func
                 foreach (KeyValuePair<object, object> kvp in dict) {
                     ret.AddNoLockNoDups(kvp.Key);
-                }                
+                }
             }
 
             return ret;

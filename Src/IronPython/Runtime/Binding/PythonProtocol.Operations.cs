@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using System.Numerics;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -20,9 +22,6 @@ using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -266,7 +265,7 @@ namespace IronPython.Runtime.Binding {
                                     null,                                                     // test
                                     Ast.Assign(curIndex, Ast.Add(curIndex, AstUtils.Constant(1))), // increment
                                     Ast.Block(                                            // body
-                            // getItemRes = param0.__getitem__(curIndex)
+                                                                                          // getItemRes = param0.__getitem__(curIndex)
                                         Utils.Try(
                                             Ast.Block(
                                                 Ast.Assign(
@@ -276,11 +275,11 @@ namespace IronPython.Runtime.Binding {
                                                 Ast.Empty()
                                             )
                                         ).Catch(
-                            // end of indexes, return false
+                                            // end of indexes, return false
                                             typeof(IndexOutOfRangeException),
                                             Ast.Break(target)
                                         ),
-                            // if(getItemRes == param1) return true
+                                        // if(getItemRes == param1) return true
                                         Utils.If(
                                             DynamicExpression.Dynamic(
                                                 state.BinaryOperationRetType(
@@ -554,8 +553,7 @@ namespace IronPython.Runtime.Binding {
                 } else {
                     notExpr = errorSuggestion.Expression;
                 }
-            }
-            else {
+            } else {
                 Debug.Assert(res.Expression.Type == typeof(bool));
                 notExpr = Ast.IsFalse(res.Expression);
                 self = res;
@@ -991,7 +989,7 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction.GetCombinedTargets(fop, rop, out fop, out rop);
 
             bool shouldWarn = false;
-            
+
             // if the left operand is an instance of a built-in type or a new-style class, and the right operand is an instance of a proper subclass of that type or class
             // and overrides the base's __rop__() method, the right operand's __rop__() method is tried before the left operand's __op__() method.
             PythonType xPythonType = MetaPythonObject.GetPythonType(xType);
@@ -1143,15 +1141,15 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/[]/*!*/ GetItemSliceArguments(PythonContext state, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types) {
             DynamicMetaObject[] args;
             if (op == PythonIndexType.SetSlice) {
-                args = new DynamicMetaObject[] { 
+                args = new DynamicMetaObject[] {
                     types[0].Restrict(types[0].GetLimitType()),
-                    GetSetSlice(state, types), 
+                    GetSetSlice(state, types),
                     types[types.Length- 1].Restrict(types[types.Length - 1].GetLimitType())
                 };
             } else {
                 Debug.Assert(op == PythonIndexType.GetSlice || op == PythonIndexType.DeleteSlice);
 
-                args = new DynamicMetaObject[] { 
+                args = new DynamicMetaObject[] {
                     types[0].Restrict(types[0].GetLimitType()),
                     GetGetOrDeleteSlice(state, types)
                 };
@@ -1417,7 +1415,7 @@ namespace IronPython.Runtime.Binding {
 
             public override DynamicMetaObject/*!*/ MakeRule(DynamicMetaObjectBinder/*!*/ metaBinder, PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 DynamicMetaObject[] tupleArgs = Callable.GetTupleArguments(args);
-                return Callable.CompleteRuleTarget(metaBinder, tupleArgs, delegate() {
+                return Callable.CompleteRuleTarget(metaBinder, tupleArgs, delegate () {
                     if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.SharedContext, "__index__", out _)) {
                         args[1] = new DynamicMetaObject(
                             DynamicExpression.Dynamic(
@@ -1742,7 +1740,7 @@ namespace IronPython.Runtime.Binding {
 
                 Expression error = action.Throw(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.SimpleTypeError)),   
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SimpleTypeError)),
                         Ast.Constant(message)
                     ),
                     typeof(object)

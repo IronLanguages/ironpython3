@@ -6,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-using Microsoft.Scripting;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     internal class PythonDocumentationProvider : DocumentationProvider {
@@ -79,7 +77,7 @@ namespace IronPython.Runtime {
             if (value is BuiltinFunction) {
                 kind = MemberKind.Function;
             } else if (value is NamespaceTracker) {
-                kind = MemberKind.Namespace;            
+                kind = MemberKind.Namespace;
             } else if (value is PythonFunction) {
                 kind = fromClass ? MemberKind.Method : MemberKind.Function;
             } else if (value is BuiltinMethodDescriptor || value is Method) {
@@ -123,7 +121,7 @@ namespace IronPython.Runtime {
             }
 
             if (value is PythonFunction pf) {
-                return new[] { 
+                return new[] {
                     new OverloadDoc(
                         pf.__name__,
                         pf.__doc__ as string,

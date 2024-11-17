@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
-using System.Collections;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -16,9 +16,6 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -124,9 +121,9 @@ namespace IronPython.Runtime.Binding {
                             newArgs,
                             BindingHelpers.GetCallSignature(call),
                             codeContext
-                        ), 
-                        Value.Targets, 
-                        selfRestrict, 
+                        ),
+                        Value.Targets,
+                        selfRestrict,
                         Value.Name,
                         PythonNarrowing.None,
                         Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
@@ -161,48 +158,48 @@ namespace IronPython.Runtime.Binding {
             );
 
             DynamicMetaObject self = GetInstance(instance, CompilerHelpers.GetType(Value.BindingSelf));
-                return Value.MakeBuiltinFunctionCall(
-                call,
-                codeContext,
-                this,
-                ArrayUtils.Insert(self, args),
-                true,   // has self
-                selfRestrict,
-                (newArgs) => {
-                    CallSignature signature = BindingHelpers.GetCallSignature(call);
-                    PythonContext state = PythonContext.GetPythonContext(call);
-                    BindingTarget target;
-                    PythonOverloadResolver resolver;
-                    if (Value.IsReversedOperator) {
-                        resolver = new PythonOverloadResolver(
-                            state.Binder,
-                            newArgs,
-                            GetReversedSignature(signature),
-                            codeContext
-                        );
-                    } else {
-                        resolver = new PythonOverloadResolver(
-                            state.Binder,
-                            self,
-                            args,
-                            signature,
-                            codeContext
-                        );
-                    }
-
-                    DynamicMetaObject res = state.Binder.CallMethod(
-                        resolver,
-                        Value.Targets,
-                        self.Restrictions,
-                        Value.Name,
-                        NarrowingLevel.None,
-                        Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
-                        out target
+            return Value.MakeBuiltinFunctionCall(
+            call,
+            codeContext,
+            this,
+            ArrayUtils.Insert(self, args),
+            true,   // has self
+            selfRestrict,
+            (newArgs) => {
+                CallSignature signature = BindingHelpers.GetCallSignature(call);
+                PythonContext state = PythonContext.GetPythonContext(call);
+                BindingTarget target;
+                PythonOverloadResolver resolver;
+                if (Value.IsReversedOperator) {
+                    resolver = new PythonOverloadResolver(
+                        state.Binder,
+                        newArgs,
+                        GetReversedSignature(signature),
+                        codeContext
                     );
-
-                    return BindingHelpers.CheckLightThrow(call, res, target);
+                } else {
+                    resolver = new PythonOverloadResolver(
+                        state.Binder,
+                        self,
+                        args,
+                        signature,
+                        codeContext
+                    );
                 }
-            );
+
+                DynamicMetaObject res = state.Binder.CallMethod(
+                    resolver,
+                    Value.Targets,
+                    self.Restrictions,
+                    Value.Name,
+                    NarrowingLevel.None,
+                    Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                    out target
+                );
+
+                return BindingHelpers.CheckLightThrow(call, res, target);
+            }
+        );
         }
 
         private DynamicMetaObject/*!*/ GetInstance(Expression/*!*/ instance, Type/*!*/ testType) {

@@ -6,10 +6,11 @@
 
 using System.Collections;
 using System.Collections.Generic;
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
-    internal class ObjectAttributesAdapter  : DictionaryStorage {
+    internal class ObjectAttributesAdapter : DictionaryStorage {
         private readonly object _backing;
         private readonly CodeContext/*!*/ _context;
 
@@ -55,7 +56,7 @@ namespace IronPython.Runtime {
         }
 
         public override int Count {
-            get { return PythonOps.Length(_backing);  }
+            get { return PythonOps.Length(_backing); }
         }
 
         public override void Clear(ref DictionaryStorage storage) {

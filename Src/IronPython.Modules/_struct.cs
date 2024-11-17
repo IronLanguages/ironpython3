@@ -9,14 +9,14 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_struct", typeof(IronPython.Modules.PythonStruct))]
 namespace IronPython.Modules {
@@ -60,7 +60,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct([ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+            public Struct([ParamDictionary] IDictionary<object, object> kwArgs, params object[] args) {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]

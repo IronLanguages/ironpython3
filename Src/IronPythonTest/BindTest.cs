@@ -8,11 +8,10 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPythonTest {
     [Flags]
@@ -275,7 +274,7 @@ namespace IronPythonTest {
 
             Flag = 198;
         }
-        
+
         public Single P01 {
             get; set;
         }
@@ -464,55 +463,55 @@ namespace IronPythonTest {
     }
 
     public class DefaultValueTest {
-        public BindResult Test_Enum(BindResult param=BindResult.Bool) {
+        public BindResult Test_Enum(BindResult param = BindResult.Bool) {
             return param;
         }
 
-        public BigEnum Test_BigEnum(BigEnum param=BigEnum.BigValue) {
+        public BigEnum Test_BigEnum(BigEnum param = BigEnum.BigValue) {
             return param;
         }
 
-        public string Test_String(string param="Hello World") {
+        public string Test_String(string param = "Hello World") {
             return param;
         }
 
-        public int Test_Int(int param=5) {
+        public int Test_Int(int param = 5) {
             return param;
         }
 
-        public uint Test_UInt(uint param=uint.MaxValue) {
+        public uint Test_UInt(uint param = uint.MaxValue) {
             return param;
         }
 
-        public bool Test_Bool(bool param=true) {
+        public bool Test_Bool(bool param = true) {
             return param;
         }
 
-        public char Test_Char(char param='A') {
+        public char Test_Char(char param = 'A') {
             return param;
         }
 
-        public byte Test_Byte(byte param=2) {
+        public byte Test_Byte(byte param = 2) {
             return param;
         }
 
-        public sbyte Test_SByte(sbyte param=2) {
+        public sbyte Test_SByte(sbyte param = 2) {
             return param;
         }
 
-        public short Test_Short(short param=2) {
+        public short Test_Short(short param = 2) {
             return param;
         }
 
-        public ushort Test_UShort(ushort param=2) {
+        public ushort Test_UShort(ushort param = 2) {
             return param;
         }
 
-        public long Test_Long(long param=long.MaxValue) {
+        public long Test_Long(long param = long.MaxValue) {
             return param;
         }
 
-        public ulong Test_ULong(ulong param=ulong.MaxValue) {
+        public ulong Test_ULong(ulong param = ulong.MaxValue) {
             return param;
         }
 
@@ -526,7 +525,7 @@ namespace IronPythonTest {
             return o == null ? "(null)" : o.ToString();
         }
 
-        public string Test_Default_Cast([Optional, DefaultParameterValue(1)]ref object o) {
+        public string Test_Default_Cast([Optional, DefaultParameterValue(1)] ref object o) {
             return o == null ? "(null)" : o.ToString();
         }
     }
@@ -883,7 +882,7 @@ namespace IronPythonTest {
             return DynamicHelpers.GetPythonTypeFromType(typeof(T));
         }
 
-        
+
         public static PythonType M18<T>(T x) where T : IEnumerable<T> {
             return DynamicHelpers.GetPythonTypeFromType(typeof(T));
         }

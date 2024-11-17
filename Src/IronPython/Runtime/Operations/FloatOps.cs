@@ -869,7 +869,7 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > spec.Precision.Value && digitCnt != 1) {
                             // first round off the decimal value
-                            self = MathUtils.Round(self, 0 , MidpointRounding.ToEven);
+                            self = MathUtils.Round(self, 0, MidpointRounding.ToEven);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
@@ -1043,7 +1043,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
-            
+
             if (double.IsInfinity(result)) {
                 throw PythonOps.OverflowError("rounded value too large to represent");
             }
@@ -1065,8 +1065,7 @@ namespace IronPython.Runtime.Operations {
 
         public static double __round__(double self, object ndigits) {
             var index = PythonOps.Index(ndigits);
-            switch (index)
-            {
+            switch (index) {
                 case int i:
                     return __round__(self, i);
 

@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Dynamic;
+using System.Linq.Expressions;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -63,7 +61,7 @@ namespace IronPython.Runtime.Binding {
                     condition);
             }
         }
-        
+
         /// <summary>
         /// Adds the non-conditional terminating node.
         /// </summary>

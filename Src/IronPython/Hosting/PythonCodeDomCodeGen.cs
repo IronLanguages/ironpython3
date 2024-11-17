@@ -4,6 +4,7 @@
 
 using System.CodeDom;
 using System.Collections.Generic;
+
 using Microsoft.Scripting.Runtime;
 
 #if FEATURE_CODEDOM
@@ -44,8 +45,7 @@ namespace IronPython.Hosting {
                 int indentLen = lastLine.Length;
                 if (indentLen > _indents.Peek()) {
                     _indents.Push(indentLen);
-                }
-                else {
+                } else {
                     while (indentLen < _indents.Peek()) {
                         _indents.Pop();
                     }

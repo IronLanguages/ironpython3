@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Types {
 
@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Types {
 
             if (wrapCtors) {
                 return GetTargetFunction(bf);
-            } 
+            }
 
             return bf;
         }

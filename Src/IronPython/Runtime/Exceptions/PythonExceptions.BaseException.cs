@@ -87,8 +87,7 @@ namespace IronPython.Runtime.Exceptions {
                 BaseException res;
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     res = new BaseException(cls);
-                }
-                else {
+                } else {
                     res = (BaseException)Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
                 }
                 res._args = new PythonTuple(args\u00F8);
@@ -180,8 +179,7 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public override string/*!*/ ToString() {
-                return (_args.__len__()) switch
-                {
+                return (_args.__len__()) switch {
                     0 => string.Empty,
                     1 => PythonOps.ToString(_args[0]),
                     _ => _args.ToString(),

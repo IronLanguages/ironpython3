@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting.Runtime;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -33,7 +31,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            
+
             DynamicMetaObject[] finalArgs = new DynamicMetaObject[indexes.Length + 2];
             finalArgs[0] = target;
             for (int i = 0; i < indexes.Length; i++) {
@@ -53,7 +51,7 @@ namespace IronPython.Runtime.Binding {
 
             return base.BindDelegate(site, args);
         }
-        
+
         private object DictAssign(CallSite site, object dict, object key, object value) {
             if (dict != null && dict.GetType() == typeof(PythonDictionary)) {
                 ((PythonDictionary)dict)[key] = value;

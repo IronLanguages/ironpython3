@@ -105,7 +105,7 @@ namespace IronPythonTest {
     public interface IClassFactory {
         [return: MarshalAs(UnmanagedType.Interface)]
         object CreateInstance(
-            [MarshalAs(UnmanagedType.IUnknown)]object pOuterUnk,
+            [MarshalAs(UnmanagedType.IUnknown)] object pOuterUnk,
             ref Guid iid);
 
         void LockServer(bool Lock);

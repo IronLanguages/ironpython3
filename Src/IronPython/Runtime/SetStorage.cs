@@ -9,13 +9,11 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Threading;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -189,7 +187,7 @@ namespace IronPython.Runtime {
         private void AddOrRemoveWorker(object/*!*/ item, int hashCode) {
             Debug.Assert(_buckets != null);
             Debug.Assert(item != null);
-            
+
             for (int index = hashCode & (_buckets.Length - 1); ; ProbeNext(_buckets, ref index)) {
                 Bucket bucket = _buckets[index];
                 if (bucket.Item == null) {
@@ -318,7 +316,7 @@ namespace IronPython.Runtime {
                 hashCode = _genericHash(item);
                 eqFunc = _genericEquals;
             }
-            
+
             return _count > 0 && ContainsWorker(_buckets, item, hashCode, eqFunc);
         }
 
@@ -535,7 +533,7 @@ namespace IronPython.Runtime {
 
         public static bool IsDisjoint(SetStorage self, SetStorage other) {
             SortBySize(ref self, ref other);
-            
+
             if (self._hasNull && other._hasNull) {
                 return false;
             }
@@ -625,7 +623,7 @@ namespace IronPython.Runtime {
             Bucket[] otherBuckets = other._buckets;
             UpdateHelperFunctions(other);
 
-                
+
             for (int i = 0; i < otherBuckets.Length; i++) {
                 Bucket bucket = otherBuckets[i];
                 if (bucket.Item != null && bucket.Item != Removed) {
@@ -711,7 +709,7 @@ namespace IronPython.Runtime {
                     Bucket bucket = buckets[i];
                     if (bucket.Item != null && bucket.Item != Removed &&
                         ContainsWorker(otherBuckets, bucket.Item, bucket.HashCode, eqFunc)) {
-                            RemoveWorker(bucket.Item, bucket.HashCode, eqFunc);
+                        RemoveWorker(bucket.Item, bucket.HashCode, eqFunc);
                     }
                 }
             } else {
@@ -837,7 +835,7 @@ namespace IronPython.Runtime {
             if (object.ReferenceEquals(x, y)) {
                 return true;
             }
-            
+
             if (x._count != y._count || (x._hasNull ^ y._hasNull)) {
                 return false;
             }
@@ -1138,9 +1136,9 @@ namespace IronPython.Runtime {
         internal static void SortBySize(ref SetStorage x, ref SetStorage y) {
             if (x._count > 0 &&
                 ((y._count > 0 && x._buckets.Length > y._buckets.Length) || y._count == 0)) {
-                    SetStorage temp = x;
-                    x = y;
-                    y = temp;
+                SetStorage temp = x;
+                x = y;
+                y = temp;
             }
         }
 

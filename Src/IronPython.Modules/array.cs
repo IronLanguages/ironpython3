@@ -13,19 +13,18 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using NotNull = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -69,16 +68,14 @@ namespace IronPython.Modules {
 
             static string MachineFormatToTypeCode(int machineFormat, out bool isBigEndian, out string? encoding) {
                 isBigEndian = machineFormat % 2 == 1;
-                encoding = machineFormat switch
-                {
+                encoding = machineFormat switch {
                     18 => "UTF-16-LE",
                     19 => "UTF-16-BE",
                     20 => "UTF-32-LE",
                     21 => "UTF-32-BE",
                     _ => null,
                 };
-                return machineFormat switch
-                {
+                return machineFormat switch {
                     0 => "B",
                     1 => "b",
                     2 => "H",
@@ -157,8 +154,7 @@ namespace IronPython.Modules {
             }
 
             private static ArrayData CreateData(char typecode) {
-                return (typecode) switch
-                {
+                return (typecode) switch {
                     'b' => new ArrayData<sbyte>(),
                     'B' => new ArrayData<byte>(),
                     'u' => new ArrayData<char>(),
@@ -581,8 +577,7 @@ namespace IronPython.Modules {
                     dict);
 
                 static int TypeCodeToMachineFormat(char typeCode) {
-                    return typeCode switch
-                    {
+                    return typeCode switch {
                         'b' => 1,
                         'B' => 0,
                         'u' => 18,

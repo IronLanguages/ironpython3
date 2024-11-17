@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Dynamic;
+
 using Microsoft.Scripting;
 
 namespace IronPython.Compiler {

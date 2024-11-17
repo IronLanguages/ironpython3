@@ -1588,40 +1588,40 @@ namespace IronPython.Modules {
         // Darwin: man 3 gai_strerror
         // The specified network host does not have any network addresses in the requested address family.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EAI_ADDRFAMILY  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : -9;
+        public static int EAI_ADDRFAMILY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : -9;
         // The name server returned a temporary failure indication. Try again later.
-        public static int EAI_AGAIN       => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 2 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -3 : (int)SocketError.TryAgain;
+        public static int EAI_AGAIN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 2 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -3 : (int)SocketError.TryAgain;
         // hints.ai_flags contains invalid flags.
-        public static int EAI_BADFLAGS    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 3 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -1 : (int)SocketError.InvalidArgument;
+        public static int EAI_BADFLAGS => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 3 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -1 : (int)SocketError.InvalidArgument;
         // The name server returned a permanent failure indication.
-        public static int EAI_FAIL        => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -4 : (int)SocketError.NoRecovery;
+        public static int EAI_FAIL => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -4 : (int)SocketError.NoRecovery;
         // The requested address family is not supported.
-        public static int EAI_FAMILY      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 5 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -6 : (int)SocketError.AddressFamilyNotSupported;
+        public static int EAI_FAMILY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 5 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -6 : (int)SocketError.AddressFamilyNotSupported;
         // Out of memory.
-        public static int EAI_MEMORY      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 6 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -10 : (int)SocketError.NoBufferSpaceAvailable;
+        public static int EAI_MEMORY => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 6 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -10 : (int)SocketError.NoBufferSpaceAvailable;
         // The specified network host exists, but does not have any network addresses defined.
-        public static int EAI_NODATA      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 7 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -5 : (int)SocketError.HostNotFound; // not SocketError.NoData, like you would think
+        public static int EAI_NODATA => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 7 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -5 : (int)SocketError.HostNotFound; // not SocketError.NoData, like you would think
         // The node or service is not known.
-        public static int EAI_NONAME      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 8 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -2 : (int)SocketError.HostNotFound;
+        public static int EAI_NONAME => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 8 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -2 : (int)SocketError.HostNotFound;
         // The requested service is not available for the requested socket type.
-        public static int EAI_SERVICE     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 9 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -8 : (int)SocketError.TypeNotFound;
+        public static int EAI_SERVICE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 9 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -8 : (int)SocketError.TypeNotFound;
         // The requested socket type is not supported.
-        public static int EAI_SOCKTYPE    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 10 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -7 : (int)SocketError.SocketNotSupported;
+        public static int EAI_SOCKTYPE => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 10 : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? -7 : (int)SocketError.SocketNotSupported;
         // Other system error, check errno for details.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EAI_SYSTEM      => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : -11;
+        public static int EAI_SYSTEM => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 11 : -11;
         // Invalid value for hints.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EAI_BADHINTS    => 12;
+        public static int EAI_BADHINTS => 12;
         // Resolved protocol is unknown.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EAI_PROTOCOL    => 13;
+        public static int EAI_PROTOCOL => 13;
         // Argument buffer overflow.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static int EAI_OVERFLOW    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 14 : -12;
+        public static int EAI_OVERFLOW => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 14 : -12;
         // Maximum value of EAI_* erors plus one.
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows, PlatformID.Unix)]
-        public static int EAI_MAX         => 15;
+        public static int EAI_MAX => 15;
 
         public const int INADDR_ALLHOSTS_GROUP = unchecked((int)0xe0000001);
         public const int INADDR_ANY = (int)0x00000000;
@@ -1739,9 +1739,9 @@ namespace IronPython.Modules {
         #region Private implementation
 
         private static int HERROR_HOST_NOT_FOUND = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.HostNotFound : 1;
-        private static int HERROR_TRY_AGAIN      = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.TryAgain     : 2;
-        private static int HERROR_NO_RECOVERY    = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoRecovery   : 3;
-        private static int HERROR_NO_DATA        = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoData       : 4;
+        private static int HERROR_TRY_AGAIN = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.TryAgain : 2;
+        private static int HERROR_NO_RECOVERY = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoRecovery : 3;
+        private static int HERROR_NO_DATA = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (int)SocketError.NoData : 4;
 
         /// <summary>
         /// Return a socket exception (socket.error, socket.timeout, socket.herror) based on the information in the existing exception.
@@ -1842,7 +1842,7 @@ namespace IronPython.Modules {
                     return PythonExceptions.CreateThrowable(gaierror(context), EAI_BADHINTS, "Bad hints");
                 }
                 return MakeGaiException(context, EAI_SERVICE);
-            // TODO: Handle other defined codes (currently unused). Remap codes that are not available on a specific system.
+                // TODO: Handle other defined codes (currently unused). Remap codes that are not available on a specific system.
             } else {
                 // fallback to generic error
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -2033,7 +2033,7 @@ namespace IronPython.Modules {
                     if (addrs.Count > 0) return addrs.ToArray();
                 }
                 throw MakeGaiException(context, EAI_NODATA);
-            } catch  (SocketException ex) {
+            } catch (SocketException ex) {
                 throw MakeGaiException(context, ex);
             }
         }

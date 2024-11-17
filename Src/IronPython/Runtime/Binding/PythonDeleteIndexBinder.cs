@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Dynamic;
 using System.Linq.Expressions;
 
-using System;
-using System.Dynamic;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-using IronPython.Runtime.Operations;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -25,7 +24,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion) {
-            return PythonProtocol.Index(this, PythonIndexType.DeleteItem, ArrayUtils.Insert(target, indexes),errorSuggestion);
+            return PythonProtocol.Index(this, PythonIndexType.DeleteItem, ArrayUtils.Insert(target, indexes), errorSuggestion);
         }
 
         public override int GetHashCode() {

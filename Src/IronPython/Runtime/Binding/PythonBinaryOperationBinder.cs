@@ -2,25 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using Microsoft.Scripting.Ast;
-
 using System;
 using System.Dynamic;
-using System.Reflection;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
 namespace IronPython.Runtime.Binding {
+    using Microsoft.Scripting.Actions;
+
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using Microsoft.Scripting.Actions;
 
     internal class PythonBinaryOperationBinder : BinaryOperationBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
         private readonly PythonContext/*!*/ _context;
@@ -30,7 +27,7 @@ namespace IronPython.Runtime.Binding {
             : base(operation) {
             _context = context;
         }
-       
+
         public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
             return PythonProtocol.Operation(this, target, arg, errorSuggestion);
         }
@@ -75,7 +72,7 @@ namespace IronPython.Runtime.Binding {
                         return BindModulo<T>(site, args);
                 }
             } else {
-                switch(Operation) {
+                switch (Operation) {
                     case ExpressionType.Modulo:
                         return BindModulo<T>(site, args);
                     case ExpressionType.Multiply:
@@ -275,7 +272,7 @@ namespace IronPython.Runtime.Binding {
             } else if (!t.IsEnum) {
                 switch (t.GetTypeCode()) {
                     case TypeCode.Double:
-                        if(typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object, object>(DoubleAdd);
                         }
                         break;
@@ -395,7 +392,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object DoubleAdd(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(double) && 
+            if (self != null && self.GetType() == typeof(double) &&
                 other != null && other.GetType() == typeof(double)) {
                 return (double)self + (double)other;
             }
@@ -404,7 +401,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object IntAdd(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(int) && 
+            if (self != null && self.GetType() == typeof(int) &&
                 other != null && other.GetType() == typeof(int)) {
                 return Int32Ops.Add((int)self, (int)other);
             }
@@ -583,7 +580,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object StringAdd(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(string) && 
+            if (self != null && self.GetType() == typeof(string) &&
                 other != null && other.GetType() == typeof(string)) {
                 return StringOps.Add((string)self, (string)other);
             }
@@ -592,7 +589,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object StringAdd(CallSite site, string self, object other) {
-            if (self != null && 
+            if (self != null &&
                 other != null && other.GetType() == typeof(string)) {
                 return StringOps.Add(self, (string)other);
             }
@@ -608,7 +605,7 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
         }
-        
+
         private object DoubleSubtract(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(double) &&
                 other != null && other.GetType() == typeof(double)) {
@@ -687,7 +684,7 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, string, object>>)site).Update(site, self, other);
         }
-        
+
         private object DoubleNotEqual(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(double) &&
                 other != null && other.GetType() == typeof(double)) {

@@ -13,7 +13,7 @@ namespace IronPython.Runtime {
 
     public interface ICodeFormattable {
         string/*!*/ __repr__(CodeContext/*!*/ context);
-    }    
+    }
 
     /// <summary>
     /// Defines the internal interface used for accessing weak references and adding finalizers

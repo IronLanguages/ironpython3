@@ -5,6 +5,7 @@
 #if FEATURE_NATIVE
 
 using Microsoft.Win32.SafeHandles;
+
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -195,34 +196,34 @@ Wide char variant of ungetch(), accepting a Unicode value.")]
         private static int EOF = -1;
         private static ushort WEOF = 0xFFFF;
 
-        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern int _heapmin();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern int _kbhit();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern int _getch();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern int _getche();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern int _putch(int c);
 
-        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern int _ungetch(int c);
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern ushort _getwch();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern ushort _getwche();
 
-        [DllImport("msvcr100", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", CallingConvention = CallingConvention.Cdecl)]
         private static extern ushort _putwch(char c);
 
-        [DllImport("msvcr100", SetLastError=true, CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcr100", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern ushort _ungetwch(ushort c);
 
         #endregion

@@ -13,7 +13,6 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Text;
 
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -29,7 +28,7 @@ namespace IronPython.Runtime {
 
         internal static readonly PythonTuple EMPTY = new PythonTuple();
 
-        public PythonTuple([AllowNull]object o) {
+        public PythonTuple([AllowNull] object o) {
             _data = MakeItems(o);
         }
 

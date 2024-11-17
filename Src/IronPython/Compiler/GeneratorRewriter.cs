@@ -2,21 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -56,7 +55,7 @@ namespace IronPython.Compiler {
         internal const int NotStarted = -1;
         internal const int Finished = 0;
         internal static ParameterExpression _generatorParam = Expression.Parameter(typeof(PythonGenerator), "$generator");
-        
+
         internal GeneratorRewriter(string name, Expression body) {
             _body = body;
             _name = name;
@@ -64,8 +63,8 @@ namespace IronPython.Compiler {
             _gotoRouter = Expression.Variable(typeof(int), "$gotoRouter");
         }
 
-        internal Expression Reduce(bool shouldInterpret, bool emitDebugSymbols, int compilationThreshold, 
-            IList<ParameterExpression> parameters, Func<Expression<Func<MutableTuple, object>>, 
+        internal Expression Reduce(bool shouldInterpret, bool emitDebugSymbols, int compilationThreshold,
+            IList<ParameterExpression> parameters, Func<Expression<Func<MutableTuple, object>>,
             Expression<Func<MutableTuple, object>>> bodyConverter) {
 
             _state = LiftVariable(Expression.Parameter(typeof(int), "state"));
@@ -132,7 +131,7 @@ namespace IronPython.Compiler {
                 _name,
                 new ParameterExpression[] { tupleArg }
             );
-            
+
             // Generate a call to PythonOps.MakeGeneratorClosure(Tuple data, object generatorCode)
             return Expression.Block(
                 new[] { tupleTmp, ret },
@@ -232,7 +231,7 @@ namespace IronPython.Compiler {
             private readonly GotoRewriteInfo _gotoInfo;
             private readonly LabelTarget _target;
             private readonly GeneratorRewriter _rewriter;
-            
+
             public GotoRewriter(GeneratorRewriter rewriter, GotoRewriteInfo gotoInfo, LabelTarget target) {
                 _gotoInfo = gotoInfo;
                 _target = target;
@@ -262,12 +261,12 @@ namespace IronPython.Compiler {
             if (blockRhs.NodeType == ExpressionType.Label) {
                 var label = (LabelExpression)blockRhs;
                 GotoRewriteInfo curVariable = new GotoRewriteInfo(variable, Expression.Label(label.Target.Name + "_voided"));
-                
+
                 var rewriter = new GotoRewriter(this, curVariable, label.Target);
                 for (int i = 0; i < newBlock.Count - 1; i++) {
                     newBlock[i] = rewriter.Visit(newBlock[i]);
                 }
-                
+
                 newBlock[newBlock.Count - 1] = MakeAssignLabel(variable, curVariable, label.Target, rewriter.Visit(label.DefaultValue));
             } else {
                 newBlock[newBlock.Count - 1] = MakeAssign(variable, newBlock[newBlock.Count - 1]);
@@ -372,7 +371,7 @@ namespace IronPython.Compiler {
                     // the catch block had one. It needs to be hoisted because
                     // the catch might contain yields.
                     var deferredVar = c.Variable ?? Expression.Variable(c.Test, null);
-                    LiftVariable(deferredVar);                    
+                    LiftVariable(deferredVar);
 
                     // We need to ensure that filters can access the exception
                     // variable
@@ -395,7 +394,7 @@ namespace IronPython.Compiler {
 
                     // We need to rewrite rethrows into "throw deferredVar"
                     var catchBody = new RethrowRewriter { Exception = deferredVar }.Visit(c.Body);
-                    
+
                     // if (deferredVar != null) {
                     //     ... catch body ...
                     // }
@@ -547,7 +546,7 @@ namespace IronPython.Compiler {
                 // No one needs this yet, and it's not clear what it should even do
                 throw new NotSupportedException("yield in filter is not allowed");
             }
-            
+
             Expression b = Visit(node.Body);
             if (v == node.Variable && b == node.Body && f == node.Filter) {
                 return node;
@@ -973,7 +972,7 @@ namespace IronPython.Compiler {
             internal YieldMarker(int state) {
                 State = state;
             }
-        }        
+        }
     }
 
     /// <summary>
@@ -1025,7 +1024,7 @@ namespace IronPython.Compiler {
 
     internal sealed class DelayedTupleAssign : Expression {
         private readonly Expression _lhs, _rhs;
-        
+
         public DelayedTupleAssign(Expression lhs, Expression rhs) {
             _lhs = lhs;
             _rhs = rhs;

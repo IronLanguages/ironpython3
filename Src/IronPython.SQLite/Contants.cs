@@ -7,10 +7,8 @@
 
 using Community.CsharpSqlite;
 
-namespace IronPython.SQLite
-{
-    public static partial class PythonSQLite
-    {
+namespace IronPython.SQLite {
+    public static partial class PythonSQLite {
         public const int SQLITE_OK = Sqlite3.SQLITE_OK;
 
         public const int SQLITE_DENY = 1;

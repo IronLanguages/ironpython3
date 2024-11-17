@@ -5,13 +5,13 @@
 using System;
 using System.Collections.Generic;
 
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Hosting.Providers;
-
 using IronPython.Modules;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
+
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Hosting.Providers;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
 
@@ -198,11 +198,11 @@ namespace IronPython.Hosting {
         /// </summary>
         /// <param name="scope"></param>
         /// <param name="moduleName"></param>
-        public static void ImportModule (this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
-            ContractUtils.RequiresNotNull (scope, nameof(scope));
-            ContractUtils.RequiresNotNull (moduleName, nameof(moduleName));
+        public static void ImportModule(this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
+            ContractUtils.RequiresNotNull(scope, nameof(scope));
+            ContractUtils.RequiresNotNull(moduleName, nameof(moduleName));
 
-            scope.SetVariable (moduleName, scope.Engine.ImportModule (moduleName));
+            scope.SetVariable(moduleName, scope.Engine.ImportModule(moduleName));
         }
 
         /// <summary>

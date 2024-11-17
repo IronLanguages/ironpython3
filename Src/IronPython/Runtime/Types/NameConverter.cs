@@ -4,12 +4,12 @@
 
 using System;
 using System.Reflection;
+using System.Text;
+
+using IronPython.Runtime.Binding;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Text;
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -21,7 +21,7 @@ namespace IronPython.Runtime.Types {
 
             return GetNameFromMethod(dt, mi, NameType.Method, ref name);
         }
-       
+
         public static NameType TryGetName(PythonType dt, EventInfo ei, MethodInfo eventMethod, out string name) {
             name = ei.Name;
             NameType res = dt.IsPythonType ? NameType.PythonEvent : NameType.Event;
@@ -63,7 +63,7 @@ namespace IronPython.Runtime.Types {
                     sb.Append(GetTypeName(tof));
                 }
                 sb.Append(']');
-                name = sb.ToString();                
+                name = sb.ToString();
             }
             return name;
         }

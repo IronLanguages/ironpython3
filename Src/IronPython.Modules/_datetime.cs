@@ -1037,8 +1037,7 @@ namespace IronPython.Modules {
             public double timestamp() {
                 if (tzinfo is null) {
                     return PythonTime.TicksToTimestamp(_dateTime.ToUniversalTime().Ticks);
-                }
-                else {
+                } else {
                     return (this - new datetime(new DateTime(1970, 1, 1), timezone.utc)).total_seconds();
                 }
             }

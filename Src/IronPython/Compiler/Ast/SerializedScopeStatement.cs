@@ -3,14 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Microsoft.Scripting;
 
 using IronPython.Runtime;
-
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     /// <summary>

@@ -6,13 +6,13 @@ using System;
 using System.Collections;
 using System.Reflection;
 
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_bisect", typeof(IronPython.Modules.PythonBisectModule))]
 
@@ -201,7 +201,7 @@ If x is already in a, insert it to the right of the rightmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void InsortRight(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
+        public static void InsortRight(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
                 return;
@@ -227,7 +227,7 @@ If x is already in a, insert it to the left of the leftmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_left(CodeContext/*!*/ context, object a, object x, int lo=0,  int hi=-1) {
+        public static void insort_left(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectLeft(context, l, x, lo, hi), x);
                 return;

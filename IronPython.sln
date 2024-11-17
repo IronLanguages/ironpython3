@@ -71,8 +71,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{EE77D917
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonConsole32", "Src\IronPythonConsole32\IronPythonConsole32.csproj", "{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonAnalyzer", "IronPythonAnalyzer\IronPythonAnalyzer\IronPythonAnalyzer.csproj", "{DA3415F3-6922-42D0-93D7-BEE2E8603A18}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{EA550FD8-2241-4131-8292-619D009E0199}"
 	ProjectSection(SolutionItems) = preProject
 		Package\choco\Choco.Packaging.targets = Package\choco\Choco.Packaging.targets
@@ -105,6 +103,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msi", "msi", "{450F93D5-DF0
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonWindow32", "Src\IronPythonWindow32\IronPythonWindow32.csproj", "{8F177DC2-9822-45BD-AB05-1F40FCA86168}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.DiagnosticAnalyzer", "DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj", "{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -164,14 +164,14 @@ Global
 		{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DA3415F3-6922-42D0-93D7-BEE2E8603A18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DA3415F3-6922-42D0-93D7-BEE2E8603A18}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DA3415F3-6922-42D0-93D7-BEE2E8603A18}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DA3415F3-6922-42D0-93D7-BEE2E8603A18}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

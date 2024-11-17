@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "Src\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Modules", "Src\Modules\IronPython.Modules.csproj", "{155CE436-1669-4A48-8095-410F2430237F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Modules", "Modules\IronPython.Modules.csproj", "{155CE436-1669-4A48-8095-410F2430237F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Wpf", "Src\Wpf\IronPython.Wpf.csproj", "{65E997B7-E99B-4C83-B29E-9951429BB293}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Wpf", "Wpf\IronPython.Wpf.csproj", "{65E997B7-E99B-4C83-B29E-9951429BB293}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console", "Src\Console\IronPython.Console.csproj", "{811AC32C-11F3-4ED8-92A7-A7E39C2BB704}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console", "Console\IronPython.Console.csproj", "{811AC32C-11F3-4ED8-92A7-A7E39C2BB704}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Tests", "Src\Tests\IronPython.Tests.csproj", "{B6B42537-07F8-4F6C-A99A-B155CAEB124E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Tests", "Tests\IronPython.Tests.csproj", "{B6B42537-07F8-4F6C-A99A-B155CAEB124E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console.Host", "Src\Console.Host\IronPython.Console.Host.csproj", "{81DA19C7-4FEC-47E7-981B-D9310D549F95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console.Host", "Console.Host\IronPython.Console.Host.csproj", "{81DA19C7-4FEC-47E7-981B-D9310D549F95}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
 	ProjectSection(SolutionItems) = preProject
@@ -45,19 +45,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\Tasks.Targets = Build\Tasks.Targets
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.CompilerServices", "Src\CompilerServices\IronPython.CompilerServices.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.CompilerServices", "CompilerServices\IronPython.CompilerServices.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DLR", "DLR", "{AC38EFB1-820D-4E90-BF40-BEF3AC825542}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Dynamic", "Src\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj", "{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Dynamic", "DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj", "{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting", "Src\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj", "{02FF0909-F5AD-48CF-A86A-345E721B7E40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting", "DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj", "{02FF0909-F5AD-48CF-A86A-345E721B7E40}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting.Metadata", "Src\DLR\Src\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj", "{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting.Metadata", "DLR\Src\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj", "{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{60836ADE-CAB7-4587-B6FB-8C4FEB872752}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClrAssembly", "Src\DLR\Tests\ClrAssembly\ClrAssembly.csproj", "{BEE737B9-18D5-48D9-8672-9A896213C98B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClrAssembly", "DLR\Tests\ClrAssembly\ClrAssembly.csproj", "{BEE737B9-18D5-48D9-8672-9A896213C98B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}"
 EndProject
@@ -67,7 +67,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{EE77D917
 		Package\nuget\IronPython.StdLib.nuspec = Package\nuget\IronPython.StdLib.nuspec
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console32", "Src\Console32\IronPython.Console32.csproj", "{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console32", "Console32\IronPython.Console32.csproj", "{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{EA550FD8-2241-4131-8292-619D009E0199}"
 	ProjectSection(SolutionItems) = preProject
@@ -100,11 +100,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msi", "msi", "{450F93D5-DF0
 		Package\msi\Version.wxi = Package\msi\Version.wxi
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console32.Host", "Src\Console32.Host\IronPython.Console32.Host.csproj", "{8F177DC2-9822-45BD-AB05-1F40FCA86168}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console32.Host", "Console32.Host\IronPython.Console32.Host.csproj", "{8F177DC2-9822-45BD-AB05-1F40FCA86168}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.DiagnosticAnalyzer", "DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj", "{2DFE89D7-0C39-44E9-94CD-496CC985DFC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.SQLite", "Src\SQLite\IronPython.SQLite.csproj", "{2F1071BF-891C-42A3-8A82-6B8A168BDE64}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.SQLite", "SQLite\IronPython.SQLite.csproj", "{2F1071BF-891C-42A3-8A82-6B8A168BDE64}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

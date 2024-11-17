@@ -59,31 +59,31 @@ The current target is Python 3.4, although features and behaviors from later ver
 
 See the following lists for features from each version of CPython that have been implemented:
 
-- [What's New In Python 3.0](WhatsNewInPython30.md)
-- [What's New In Python 3.1](WhatsNewInPython31.md)
-- [What's New In Python 3.2](WhatsNewInPython32.md)
-- [What's New In Python 3.3](WhatsNewInPython33.md)
-- [What's New In Python 3.4](WhatsNewInPython34.md)
-- [What's New In Python 3.5](WhatsNewInPython35.md)
-- [What's New In Python 3.6](WhatsNewInPython36.md)
+- [`Python3.0`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.0)
+- [`Python3.1`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.1)
+- [`Python3.2`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.2)
+- [`Python3.3`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.3)
+- [`Python3.4`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.4)
+- [`Python3.5`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.5)
+- [`Python3.6`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.6)
 
 ## Contributing
 For details on contributing see the [Contributing](CONTRIBUTING.md) article.
 
 ## Upgrading from IronPython 2
-For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](Documentation/upgrading-from-ipy2.md) article.
+For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](https://github.com/IronLanguages/ironpython3/wiki/Upgrading-from-IronPython2) article.
 
 ## Differences with CPython
-While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](Documentation/differences-from-c-python.md) for details.
+While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/wiki/Differences-from-CPython) for details.
 
 ## Package compatibility
-See the [Package compatibility](Documentation/package-compatibility.md) document for information on compatibility with popular packages.
+See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wiki/Package-compatibility) document for information on compatibility with popular packages.
 
 ## Installation
-Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](Documentation/installing.md) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
+Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
 
 ## Build
-See the [building document](Documentation/building.md). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
+See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Building). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
 
 ## Supported Platforms
 IronPython 3 targets .NET Framework 4.6.2, .NET Standard 2.0 and .NET 6.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).

@@ -18,6 +18,23 @@ body:
   - type: textarea
     attributes:
       label: 🔢 What version are you on?
+      placeholder: '3.4.1 (3.4.1.1000) [.NETFramework,Version=v4.6.2 on .NET Framework 4.8.9282.0 (64-bit)]'
+      description: If you are using the console program, provide the value of `sys.version`. If it is a local build, provide also the git hash of the commit used to build IronPython. If you are using IronPython embedded inside a .NET app, provide the version of the NuGet package you installed.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: 📦 What .NET platform did you use?
+      multiple: false
+      options:
+        - .NET
+        - .NET Core
+        - .NET Framework
+        - Mono
+        - Unity
+        - Xamarin
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: 📄 Description

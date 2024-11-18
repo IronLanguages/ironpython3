@@ -3,7 +3,7 @@ description: An official specification for enhancements.
 labels: ["enhancement"]
 assignees: []
 title: "Spec: "
-type: Spec
+# type: Spec
 body:
   - type: markdown
     attributes:

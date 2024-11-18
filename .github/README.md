@@ -62,6 +62,8 @@ System.Console.WriteLine(greetings("world"));
 
 > This example assumes that `IronPython` has been added to the C# project as a NuGet package.
 
+More examples and documentation on how to use IronPython outside the interactive console can be found [here](https://github.com/IronLanguages/ironpython3/wiki/Using-IronPython).
+
 ## 🐍 State of the Project
 
 The current target is Python 3.4, although features and behaviors from later versions may be included.

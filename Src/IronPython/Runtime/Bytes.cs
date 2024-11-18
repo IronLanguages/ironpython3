@@ -1060,6 +1060,11 @@ namespace IronPython.Runtime {
         }
 
         internal static Bytes Concat(IList<Bytes> list, int length) {
+            if (list.Count == 1) {
+                Debug.Assert(list[0].Count == length);
+                return list[0];
+            }
+
             byte[] res = new byte[length];
             int count = 0;
             for (int i = 0; i < list.Count; i++) {

@@ -70,13 +70,13 @@ The current target is Python 3.4, although features and behaviors from later ver
 
 See the following lists for features from each version of CPython that have been implemented:
 
-- [`Python3.0`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.0)
-- [`Python3.1`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.1)
-- [`Python3.2`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.2)
-- [`Python3.3`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.3)
-- [`Python3.4`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.4)
-- [`Python3.5`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.5)
-- [`Python3.6`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew%E2%80%90Python3.6)
+- [`Python3.0`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.0)
+- [`Python3.1`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.1)
+- [`Python3.2`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.2)
+- [`Python3.3`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.3)
+- [`Python3.4`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.4)
+- [`Python3.5`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.5)
+- [`Python3.6`](https://github.com/IronLanguages/ironpython3/wiki/WhatsNew–Python3.6)
 
 ## 🙋 Contributing
 

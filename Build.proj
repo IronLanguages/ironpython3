@@ -44,8 +44,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MainStageFiles Include="$(RootDir)README.md" />
-    <MainStageFiles Include="$(RootDir)LICENSE" />
+    <MainStageFiles Include="$(RootDir).github\README.md" />
+    <MainStageFiles Include="$(RootDir)LICENSE.md" />
   </ItemGroup>
 
   <Target Name="RestoreReferences">

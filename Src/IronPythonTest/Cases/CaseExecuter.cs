@@ -30,7 +30,7 @@ namespace IronPythonTest.Cases {
                 var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string runner;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    runner = Path.Combine(folder, "ipy.exe");
+                    runner = Path.Combine(folder, IntPtr.Size == 4 ? "ipy32.exe" : "ipy.exe");
                     if (File.Exists(runner)) return runner;
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     runner = Path.Combine(folder, "ipy");

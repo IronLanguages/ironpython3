@@ -5,7 +5,7 @@
 import math
 import os
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp21, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cli32, is_netcoreapp, is_netcoreapp21, big, run_test, skipUnlessIronPython
 
 class A:
     def __str__(self):
@@ -407,6 +407,13 @@ class FormattingTest(IronPythonTestCase):
 %r 0.999999999999e-4 -> 9.99999999999e-05
 %r 0.999e-4 -> 9.99e-05
 %r 1e-5 -> 1e-05
+""".strip().split("\n")
+
+        if is_cli32:
+            expected_failures += """
+%r 1.0000000000000001e-4 -> 0.0001
+%r 1e-4 -> 0.0001
+%r 0.99999999999999999e-4 -> 0.0001
 """.strip().split("\n")
 
         if not format_rounds_to_even:

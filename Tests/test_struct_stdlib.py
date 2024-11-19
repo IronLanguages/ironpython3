@@ -6,7 +6,7 @@
 ## Run selected tests from test_struct from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_64, generate_suite, run_test
 
 import test.test_struct
 
@@ -17,11 +17,15 @@ def load_tests(loader, standard_tests, pattern):
         failing_tests = [
             test.test_struct.StructTest('test_705836'), # TODO: figure out
             test.test_struct.StructTest('test_bool'), # TODO: figure out
-            test.test_struct.StructTest('test_calcsize'), # TODO: figure out
             test.test_struct.StructTest('test_count_overflow'), # TODO: figure out
             test.test_struct.StructTest('test_trailing_counter'), # TODO: figure out
             test.test_struct.UnpackIteratorTest('test_construct'), # TODO: figure out
         ]
+
+        if is_64:
+            failing_tests += [
+                test.test_struct.StructTest('test_calcsize'), # https://github.com/IronLanguages/ironpython3/pull/869
+            ]
 
         return generate_suite(tests, failing_tests)
 

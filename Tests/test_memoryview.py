@@ -205,10 +205,16 @@ class MemoryViewTests(unittest.TestCase):
         self.assertFalse(mv_d == mv_f)
 
         mv_P = mv.cast('P')
-        self.assertFalse(mv_P == mv_i)
-        self.assertFalse(mv_P == mv_L)
-        self.assertTrue(mv_P == mv_q)
-        self.assertTrue(mv_P == mv_Q)
+        if is_64:
+            self.assertFalse(mv_P == mv_i)
+            self.assertFalse(mv_P == mv_L)
+            self.assertTrue(mv_P == mv_q)
+            self.assertTrue(mv_P == mv_Q)
+        else:
+            self.assertTrue(mv_P == mv_i)
+            self.assertTrue(mv_P == mv_L)
+            self.assertFalse(mv_P == mv_q)
+            self.assertFalse(mv_P == mv_Q)
 
         # Comparing different formats works if the values are the same
         b = bytes(range(8))

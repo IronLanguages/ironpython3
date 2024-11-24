@@ -688,10 +688,6 @@ namespace IronPython.Modules {
             return intPtrHandle;
         }
 
-        private static void ValidateArraySizes(ArrayModule.array array, int offset, int size) {
-            ValidateArraySizes(array.__len__() * array.itemsize, offset, size);
-        }
-
         private static void ValidateArraySizes(int arraySize, int offset, int size) {
             if (offset < 0) {
                 throw PythonOps.ValueError("offset cannot be negative");

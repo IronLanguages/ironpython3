@@ -393,13 +393,13 @@ namespace IronPython.Modules {
             }
 
             [Documentation("iteratively unpack the current format from the specified array.")]
-            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer, int offset = 0) {
-                return new PythonUnpackIterator(this, context, buffer, offset);
+            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
+                return new PythonUnpackIterator(this, context, buffer);
             }
 
             [Documentation("iteratively unpack the current format from the specified array.")]
-            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer, int offset = 0) {
-                return new PythonUnpackIterator(this, context, buffer, offset);
+            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer) {
+                return new PythonUnpackIterator(this, context, buffer.ToByteArray());
             }
 
             [Documentation("gets the number of bytes that the serialized string will occupy or are required to deserialize the data")]
@@ -559,14 +559,19 @@ namespace IronPython.Modules {
                             fLittleEndian = false;
                             fStandardized = true;
                             break;
+                        case '\x00':
+                            throw Error(context, "embedded null character");
                         default:
                             if (char.IsDigit(fmt[i])) {
                                 count = 0;
                                 while (char.IsDigit(fmt[i])) {
                                     count = count * 10 + (fmt[i] - '0');
                                     i++;
+                                    if (i >= fmt.Length) {
+                                        throw Error(context, "repeat count given without format specifier");
+                                    }
                                 }
-                                if (char.IsWhiteSpace(fmt[i])) Error(context, "white space not allowed between count and format");
+                                if (char.IsWhiteSpace(fmt[i])) throw Error(context, "white space not allowed between count and format");
                                 i--;
                                 break;
                             }
@@ -633,25 +638,13 @@ namespace IronPython.Modules {
 
             private readonly CodeContext _context;
             private readonly IList<byte> _buffer;
-            private readonly int _start_offset;
             private readonly Struct _owner;
 
             private PythonUnpackIterator() { }
 
-            internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, IList<byte>/*!*/ buffer, int offset) {
+            internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, IList<byte>/*!*/ buffer) {
                 _context = context;
                 _buffer = buffer;
-                _start_offset = offset;
-                _owner = owner;
-
-                Reset();
-                ValidateBufferLength();
-            }
-
-            internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, ArrayModule.array/*!*/ buffer, int offset) {
-                _context = context;
-                _buffer = buffer.ToByteArray();
-                _start_offset = offset;
                 _owner = owner;
 
                 Reset();
@@ -659,7 +652,10 @@ namespace IronPython.Modules {
             }
 
             private void ValidateBufferLength() {
-                if (_buffer.Count - _start_offset < _owner.size) {
+                if (_owner.size == 0) {
+                    throw Error(_context, "cannot iteratively unpack with a struct of length 0");
+                }
+                if (_buffer.Count % _owner.size != 0) {
                     throw Error(_context, $"iterative unpacking requires a buffer of a multiple of {_owner.size} bytes");
                 }
             }
@@ -689,7 +685,7 @@ namespace IronPython.Modules {
             [PythonHidden]
             public void Reset() {
                 _iter_current = null;
-                _next_offset = _start_offset;
+                _next_offset = 0;
             }
             #endregion
 
@@ -869,13 +865,13 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [BytesLike][NotNone] IList<byte>/*!*/ buffer, int offset = 0) {
-            return GetStructFromCache(context, fmt).iter_unpack(context, buffer, offset);
+        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
+            return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
         }
 
         [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer, int offset = 0) {
-            return GetStructFromCache(context, fmt).iter_unpack(context, buffer, offset);
+        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer) {
+            return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
         }
         #endregion
 
@@ -1361,6 +1357,7 @@ namespace IronPython.Modules {
 
         internal static Bytes CreatePascalString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
             int realLen = (int)data[index++];
+            if (realLen > count) realLen = count;
             using var res = new MemoryStream();
             for (int i = 0; i < realLen; i++) {
                 res.WriteByte(data[index++]);

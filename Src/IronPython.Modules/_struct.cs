@@ -60,7 +60,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct([ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+            public Struct([ParamDictionary] IDictionary<object, object> kwArgs, params object[] args) {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]
@@ -372,7 +372,6 @@ namespace IronPython.Modules {
                 System.Diagnostics.Debug.Assert(res_idx == res.Length);
 
                 return PythonTuple.MakeTuple(res);
-
             }
 
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer)
@@ -1207,16 +1206,16 @@ namespace IronPython.Modules {
         #region Data creater helpers
 
         internal static bool CreateBoolValue(CodeContext/*!*/ context, ref int index, IList<byte> data) {
-            return (int)ReadData(context, ref index, data) != 0;
+            return data[index++] != 0;
         }
 
         internal static byte CreateCharValue(CodeContext/*!*/ context, ref int index, IList<byte> data) {
-            return ReadData(context, ref index, data);
+            return data[index++];
         }
 
         internal static short CreateShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = (byte)ReadData(context, ref index, data);
-            byte b2 = (byte)ReadData(context, ref index, data);
+            byte b1 = data[index++];
+            byte b2 = data[index++];
 
             if (fLittleEndian) {
                 return (short)((b2 << 8) | b1);
@@ -1226,8 +1225,8 @@ namespace IronPython.Modules {
         }
 
         internal static ushort CreateUShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = (byte)ReadData(context, ref index, data);
-            byte b2 = (byte)ReadData(context, ref index, data);
+            byte b1 = data[index++];
+            byte b2 = data[index++];
 
             if (fLittleEndian) {
                 return (ushort)((b2 << 8) | b1);
@@ -1238,16 +1237,16 @@ namespace IronPython.Modules {
 
         internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte[] bytes = new byte[4];
-            if (fLittleEndian) {
-                bytes[0] = (byte)ReadData(context, ref index, data);
-                bytes[1] = (byte)ReadData(context, ref index, data);
-                bytes[2] = (byte)ReadData(context, ref index, data);
-                bytes[3] = (byte)ReadData(context, ref index, data);
+            if (fLittleEndian == BitConverter.IsLittleEndian) {
+                bytes[0] = data[index++];
+                bytes[1] = data[index++];
+                bytes[2] = data[index++];
+                bytes[3] = data[index++];
             } else {
-                bytes[3] = (byte)ReadData(context, ref index, data);
-                bytes[2] = (byte)ReadData(context, ref index, data);
-                bytes[1] = (byte)ReadData(context, ref index, data);
-                bytes[0] = (byte)ReadData(context, ref index, data);
+                bytes[3] = data[index++];
+                bytes[2] = data[index++];
+                bytes[1] = data[index++];
+                bytes[0] = data[index++];
             }
             float res = BitConverter.ToSingle(bytes, 0);
 
@@ -1261,10 +1260,10 @@ namespace IronPython.Modules {
         }
 
         internal static int CreateIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = (byte)ReadData(context, ref index, data);
-            byte b2 = (byte)ReadData(context, ref index, data);
-            byte b3 = (byte)ReadData(context, ref index, data);
-            byte b4 = (byte)ReadData(context, ref index, data);
+            byte b1 = data[index++];
+            byte b2 = data[index++];
+            byte b3 = data[index++];
+            byte b4 = data[index++];
 
             if (fLittleEndian)
                 return (int)((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
@@ -1273,10 +1272,10 @@ namespace IronPython.Modules {
         }
 
         internal static uint CreateUIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = (byte)ReadData(context, ref index, data);
-            byte b2 = (byte)ReadData(context, ref index, data);
-            byte b3 = (byte)ReadData(context, ref index, data);
-            byte b4 = (byte)ReadData(context, ref index, data);
+            byte b1 = data[index++];
+            byte b2 = data[index++];
+            byte b3 = data[index++];
+            byte b4 = data[index++];
 
             if (fLittleEndian)
                 return (uint)((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
@@ -1285,14 +1284,14 @@ namespace IronPython.Modules {
         }
 
         internal static long CreateLongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            long b1 = (byte)ReadData(context, ref index, data);
-            long b2 = (byte)ReadData(context, ref index, data);
-            long b3 = (byte)ReadData(context, ref index, data);
-            long b4 = (byte)ReadData(context, ref index, data);
-            long b5 = (byte)ReadData(context, ref index, data);
-            long b6 = (byte)ReadData(context, ref index, data);
-            long b7 = (byte)ReadData(context, ref index, data);
-            long b8 = (byte)ReadData(context, ref index, data);
+            long b1 = data[index++];
+            long b2 = data[index++];
+            long b3 = data[index++];
+            long b4 = data[index++];
+            long b5 = data[index++];
+            long b6 = data[index++];
+            long b7 = data[index++];
+            long b8 = data[index++];
 
             if (fLittleEndian)
                 return (long)((b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
@@ -1303,14 +1302,14 @@ namespace IronPython.Modules {
         }
 
         internal static ulong CreateULongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            ulong b1 = (byte)ReadData(context, ref index, data);
-            ulong b2 = (byte)ReadData(context, ref index, data);
-            ulong b3 = (byte)ReadData(context, ref index, data);
-            ulong b4 = (byte)ReadData(context, ref index, data);
-            ulong b5 = (byte)ReadData(context, ref index, data);
-            ulong b6 = (byte)ReadData(context, ref index, data);
-            ulong b7 = (byte)ReadData(context, ref index, data);
-            ulong b8 = (byte)ReadData(context, ref index, data);
+            ulong b1 = data[index++];
+            ulong b2 = data[index++];
+            ulong b3 = data[index++];
+            ulong b4 = data[index++];
+            ulong b5 = data[index++];
+            ulong b6 = data[index++];
+            ulong b7 = data[index++];
+            ulong b8 = data[index++];
             if (fLittleEndian)
                 return (ulong)((b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
                                 (b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
@@ -1321,24 +1320,24 @@ namespace IronPython.Modules {
 
         internal static double CreateDoubleValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte[] bytes = new byte[8];
-            if (fLittleEndian) {
-                bytes[0] = (byte)ReadData(context, ref index, data);
-                bytes[1] = (byte)ReadData(context, ref index, data);
-                bytes[2] = (byte)ReadData(context, ref index, data);
-                bytes[3] = (byte)ReadData(context, ref index, data);
-                bytes[4] = (byte)ReadData(context, ref index, data);
-                bytes[5] = (byte)ReadData(context, ref index, data);
-                bytes[6] = (byte)ReadData(context, ref index, data);
-                bytes[7] = (byte)ReadData(context, ref index, data);
+            if (fLittleEndian == BitConverter.IsLittleEndian) {
+                bytes[0] = data[index++];
+                bytes[1] = data[index++];
+                bytes[2] = data[index++];
+                bytes[3] = data[index++];
+                bytes[4] = data[index++];
+                bytes[5] = data[index++];
+                bytes[6] = data[index++];
+                bytes[7] = data[index++];
             } else {
-                bytes[7] = (byte)ReadData(context, ref index, data);
-                bytes[6] = (byte)ReadData(context, ref index, data);
-                bytes[5] = (byte)ReadData(context, ref index, data);
-                bytes[4] = (byte)ReadData(context, ref index, data);
-                bytes[3] = (byte)ReadData(context, ref index, data);
-                bytes[2] = (byte)ReadData(context, ref index, data);
-                bytes[1] = (byte)ReadData(context, ref index, data);
-                bytes[0] = (byte)ReadData(context, ref index, data);
+                bytes[7] = data[index++];
+                bytes[6] = data[index++];
+                bytes[5] = data[index++];
+                bytes[4] = data[index++];
+                bytes[3] = data[index++];
+                bytes[2] = data[index++];
+                bytes[1] = data[index++];
+                bytes[0] = data[index++];
             }
 
             double res = BitConverter.ToDouble(bytes, 0);
@@ -1354,30 +1353,25 @@ namespace IronPython.Modules {
         internal static Bytes CreateString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
             using var res = new MemoryStream();
             for (int i = 0; i < count; i++) {
-                res.WriteByte(ReadData(context, ref index, data));
+                res.WriteByte(data[index++]);
             }
             return Bytes.Make(res.ToArray());
         }
 
 
         internal static Bytes CreatePascalString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
-            int realLen = (int)ReadData(context, ref index, data);
+            int realLen = (int)data[index++];
             using var res = new MemoryStream();
             for (int i = 0; i < realLen; i++) {
-                res.WriteByte(ReadData(context, ref index, data));
+                res.WriteByte(data[index++]);
             }
             for (int i = realLen; i < count; i++) {
                 // throw away null bytes
-                ReadData(context, ref index, data);
+                index++;
             }
             return Bytes.Make(res.ToArray());
         }
 
-        private static byte ReadData(CodeContext/*!*/ context, ref int index, IList<byte> data) {
-            if (index >= data.Count) throw Error(context, "not enough data while reading");
-
-            return data[index++];
-        }
         #endregion
 
         #region Misc. Private APIs

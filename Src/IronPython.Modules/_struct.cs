@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
@@ -208,7 +209,7 @@ namespace IronPython.Modules {
 
             [Documentation("Stores the deserialized data into the provided array")]
             public void pack_into(CodeContext/*!*/ context, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
-                IList<byte> existing = buffer.UnsafeByteList;
+                var existing = buffer.UnsafeByteList;
 
                 if (offset + size > existing.Count) {
                     throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
@@ -617,7 +618,7 @@ namespace IronPython.Modules {
         }
 
         [PythonType("unpack_iterator"), Documentation("Represents an iterator returned by _struct.iter_unpack()")]
-        public class PythonUnpackIterator : System.Collections.IEnumerator, System.Collections.IEnumerable {
+        public sealed class PythonUnpackIterator : IEnumerator<object>, IEnumerable<object> {
             private object _iter_current;
             private int _next_offset;
 
@@ -625,14 +626,13 @@ namespace IronPython.Modules {
             private readonly IList<byte> _buffer;
             private readonly Struct _owner;
 
-            private PythonUnpackIterator() { }
-
             internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, IList<byte>/*!*/ buffer) {
                 _context = context;
                 _buffer = buffer;
                 _owner = owner;
 
-                Reset();
+                _iter_current = null;
+                _next_offset = 0;
                 ValidateBufferLength();
             }
 
@@ -645,14 +645,17 @@ namespace IronPython.Modules {
                 }
             }
 
-            #region IEnumerable
+            #region IEnumerable<object> Members
+
             [PythonHidden]
-            public System.Collections.IEnumerator GetEnumerator() {
-                return this;
-            }
+            public System.Collections.IEnumerator GetEnumerator() => this;
+
+            IEnumerator<object> IEnumerable<object>.GetEnumerator() => this;
+
             #endregion
 
-            #region IEnumerator
+            #region IEnumerator<object> Members
+
             [PythonHidden]
             public object Current => _iter_current;
 
@@ -667,28 +670,17 @@ namespace IronPython.Modules {
                 return true;
             }
 
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
             [PythonHidden]
-            public void Reset() {
-                _iter_current = null;
-                _next_offset = 0;
-            }
+            public void Dispose() { }
+
             #endregion
 
-            public object __iter__() {
-                return this;
-            }
-
-            public object __next__() {
-                if (!MoveNext()) {
-                    throw PythonOps.StopIteration();
-                }
-                return Current;
-            }
-
-            public int __length_hint__() {
-                return (_buffer.Count - _next_offset) / _owner.size;
-            }
+            public int __length_hint__()
+                => (_buffer.Count - _next_offset) / _owner.size;
         }
+
         #endregion
 
         #region Compiled Format

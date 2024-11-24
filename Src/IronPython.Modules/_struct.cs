@@ -207,23 +207,6 @@ namespace IronPython.Modules {
             }
 
             [Documentation("Stores the deserialized data into the provided array")]
-            public void pack_into(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
-                byte[] existing = buffer.ToByteArray();
-
-                if (offset + size > existing.Length) {
-                    throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
-                }
-
-                var data = pack(context, args).UnsafeByteArray;
-
-                for (int i = 0; i < data.Length; i++) {
-                    existing[i + offset] = data[i];
-                }
-
-                buffer.Clear();
-                buffer.FromStream(new MemoryStream(existing));
-            }
-
             public void pack_into(CodeContext/*!*/ context, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
                 IList<byte> existing = buffer.UnsafeByteList;
 
@@ -236,6 +219,21 @@ namespace IronPython.Modules {
                 for (int i = 0; i < data.Length; i++) {
                     existing[i + offset] = data[i];
                 }
+            }
+
+            public void pack_into(CodeContext/*!*/ context, [NotNone] IBufferProtocol/*!*/ buffer, int offset, params object[] args) {
+                using var existing = buffer.GetBufferNoThrow(BufferFlags.Writable)
+                    ?? throw PythonOps.TypeError("argument must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
+
+                var span = existing.AsSpan();
+
+                if (offset + size > span.Length) {
+                    throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
+                }
+
+                var data = pack(context, args).UnsafeByteArray;
+
+                data.CopyTo(span.Slice(offset));
             }
 
             [Documentation("deserializes the string using the structs specified format")]
@@ -374,9 +372,6 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(res);
             }
 
-            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer)
-                => unpack(context, buffer.ToByteArray());
-
             [Documentation("reads the current format from the specified array")]
             public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer, int offset = 0) {
                 int bytesAvail = buffer.Count - offset;
@@ -387,19 +382,9 @@ namespace IronPython.Modules {
                 return unpack(context, buffer.Substring(offset, size));
             }
 
-            [Documentation("reads the current format from the specified array")]
-            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer, int offset = 0) {
-                return unpack_from(context, buffer.ToByteArray(), offset);
-            }
-
             [Documentation("iteratively unpack the current format from the specified array.")]
             public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
                 return new PythonUnpackIterator(this, context, buffer);
-            }
-
-            [Documentation("iteratively unpack the current format from the specified array.")]
-            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [NotNone] ArrayModule.array/*!*/ buffer) {
-                return new PythonUnpackIterator(this, context, buffer.ToByteArray());
             }
 
             [Documentation("gets the number of bytes that the serialized string will occupy or are required to deserialize the data")]
@@ -836,11 +821,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
-        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
-        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] IBufferProtocol/*!*/ buffer, int offset, params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
@@ -849,18 +834,8 @@ namespace IronPython.Modules {
             return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
-        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer) {
-            return GetStructFromCache(context, fmt).unpack(context, buffer);
-        }
-
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
         public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, object fmt, [BytesLike][NotNone] IList<byte>/*!*/ buffer, int offset = 0) {
-            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
-        }
-
-        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
@@ -869,10 +844,6 @@ namespace IronPython.Modules {
             return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
         }
 
-        [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [NotNone] ArrayModule.array/*!*/ buffer) {
-            return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
-        }
         #endregion
 
         #region Write Helpers

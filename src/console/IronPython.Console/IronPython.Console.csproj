@@ -14,14 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
-    <ProjectReference Include="..\Modules\IronPython.Modules.csproj">
+    <ProjectReference Include="..\..\ipy\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\ipy\IronPython.Modules\IronPython.Modules.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
     <!-- add reference so it gets copied to the netcoreapp3.1 folder for testing -->
-    <ProjectReference Include="..\SQLite\IronPython.SQLite.csproj" Condition="$(TargetFramework) == 'netcoreapp3.1'">
+    <ProjectReference Include="..\..\extensions\IronPython.SQLite\IronPython.SQLite.csproj" Condition="$(TargetFramework) == 'netcoreapp3.1'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

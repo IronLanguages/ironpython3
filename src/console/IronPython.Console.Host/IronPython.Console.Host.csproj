@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\ipy\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\src\ipy\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
@@ -28,15 +28,15 @@
 
   <ItemGroup>
     <!-- ensure ClrAssembly is built before IronPythonTest -->
-    <ProjectReference Include="..\DLR\Tests\ClrAssembly\ClrAssembly.csproj">
+    <ProjectReference Include="..\..\src\runtime\Tests\ClrAssembly\ClrAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
 
   <Target Name="CopyRowanTestFiles" AfterTargets="AfterBuild">
     <ItemGroup>
-      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\net462\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net462' " />
-      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net462' " />
+      <RowanTestFiles Include="..\..\src\runtime\bin\$(Configuration)\net462\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net462' " />
+      <RowanTestFiles Include="..\..\src\runtime\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net462' " />
     </ItemGroup>
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />
   </Target>

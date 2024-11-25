@@ -10,7 +10,7 @@
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="Mono.Posix" Version="4.0.0">
       <Private>True</Private>
-      <HintPath>..\..\Utils\References\Mono.Posix.dll</HintPath>
+      <HintPath>..\..\..\utils\References\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" $(TargetFrameworkIdentifier) != '.NETFramework' ">
-    <ProjectReference Include="..\..\DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj">
+    <ProjectReference Include="..\..\roslyn\IronPython.DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>

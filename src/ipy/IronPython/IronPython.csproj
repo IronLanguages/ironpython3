@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" />
+    <ProjectReference Include="..\..\runtime\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +23,7 @@
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="Mono.Posix" Version="4.0.0">
       <Private>True</Private>
-      <HintPath>..\..\Utils\References\Mono.Posix.dll</HintPath>
+      <HintPath>..\..\..\utils\References\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
@@ -38,7 +38,7 @@
     <None Include="Lib\**\*.py" Link="lib\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\StdLib\Lib\os.py" Link="lib\os.py">
+    <None Include="..\..\extensions\StdLib\Lib\os.py" Link="lib\os.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -46,7 +46,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData-3.2.0.txt.gz" />
-    <EmbeddedResource Include="..\StdLib\Lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
+    <EmbeddedResource Include="..\..\extensions\StdLib\Lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,7 +58,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" $(TargetFrameworkIdentifier) != '.NETFramework' ">
-    <ProjectReference Include="..\..\DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj">
+    <ProjectReference Include="..\..\roslyn\IronPython.DiagnosticAnalyzer\IronPython.DiagnosticAnalyzer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>

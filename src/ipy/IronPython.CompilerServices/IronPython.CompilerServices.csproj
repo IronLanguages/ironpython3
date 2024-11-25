@@ -15,12 +15,12 @@
 
   <ItemGroup>
     <StageItem Include="$(TargetDir)\IKVM.Reflection.dll" />
-    <StageItem Include="$(RootDir)Util\References\IKVM\IKVM.Reflection.License.txt" />
+    <StageItem Include="$(RootDir)utils\References\IKVM\IKVM.Reflection.License.txt" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="IKVM.Reflection" CopyLocal="true">
-      <HintPath>..\..\Util\References\IKVM\IKVM.Reflection.dll</HintPath>
+      <HintPath>..\..\..\utils\References\IKVM\IKVM.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>

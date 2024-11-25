@@ -22,7 +22,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Build.proj = Build.proj
 		CurrentVersion.props = CurrentVersion.props
 		Directory.Build.props = Directory.Build.props
-		IronPython.ruleset = IronPython.ruleset
 		LICENSE = LICENSE
 		make.ps1 = make.ps1
 		NuGet.config = NuGet.config

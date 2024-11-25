@@ -5,8 +5,8 @@
   <PropertyGroup>
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)</RootDir>
-    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)Build</BuildSysDir>
-    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)Util\References</ReferenceDir>
+    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)eng</BuildSysDir>
+    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)utils\References</ReferenceDir>
 
     <Mono Condition=" '$(Mono)' == '' AND '$(MSBuildRuntimeType)' == 'Mono' ">true</Mono>
     

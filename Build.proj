@@ -9,10 +9,10 @@
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)IronPython.sln</Solution>
-    <UtilDir>$(RootDir)Util</UtilDir>
-    <ReferenceDir>$(RootDir)Util\References</ReferenceDir>
+    <UtilDir>$(RootDir)utils</UtilDir>
+    <ReferenceDir>$(RootDir)utils\References</ReferenceDir>
     <BinDir>$(RootDir)bin</BinDir>
-    <BuildSysDir>$(RootDir)Build</BuildSysDir>
+    <BuildSysDir>$(RootDir)eng</BuildSysDir>
   </PropertyGroup>
 
   <Import Project="$(BuildSysDir)\Tasks.Targets" />
@@ -21,8 +21,8 @@
   <PropertyGroup>
     <PackageVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</PackageVersion>
     <PackageVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</PackageVersion>
-    <StageDir>$(RootDir)Package\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
-    <PackageDir>$(RootDir)Package\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
+    <StageDir>$(RootDir)eng\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
+    <PackageDir>$(RootDir)eng\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
     <StdLibDirName>lib</StdLibDirName>
   </PropertyGroup>
 
@@ -117,7 +117,7 @@
   </Target>
 
   <Target Name="_CopyStdLib" DependsOnTargets="_MakeStageDir">
-    <MSBuild Projects="$(RootDir)\Src\StdLib\StdLib.pyproj"
+    <MSBuild Projects="$(RootDir)\src\extensions\StdLib\StdLib.pyproj"
              Properties="OutputPath=$(StageDir);StdLibDirName=$(StdLibDirName)"
              Targets="Stage" />
   </Target>
@@ -138,5 +138,5 @@
   <!-- This looks like an empty target, but the targets files use it as an AfterTargets -->
   <Target Name="Package" DependsOnTargets="Stage" />
 
-  <Import Project="$(RootDir)\Package\**\*.Packaging.targets" />
+  <Import Project="$(RootDir)\eng\**\*.Packaging.targets" />
 </Project>

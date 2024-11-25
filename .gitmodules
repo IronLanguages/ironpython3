@@ -1,4 +1,4 @@
-[submodule "Src/DLR"]
-	path = Src/DLR
+[submodule "src/DLR"]
+	path = src/DLR
 	url = https://github.com/IronLanguages/dlr
 	branch = main

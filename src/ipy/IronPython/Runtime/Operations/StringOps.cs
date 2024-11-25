@@ -155,7 +155,7 @@ namespace IronPython.Runtime.Operations {
     /// defined in the CLS System.String type.
     /// </summary>
     public static partial class StringOps {
-        internal static Encoding Latin1Encoding => _latin1 ??= Encoding.GetEncoding(28591, new EncoderExceptionFallback(), new DecoderExceptionFallback()); // ISO-8859-1
+        public static Encoding Latin1Encoding => _latin1 ??= Encoding.GetEncoding(28591, new EncoderExceptionFallback(), new DecoderExceptionFallback()); // ISO-8859-1
         [DisallowNull] private static Encoding? _latin1;
 
         internal static object FastNew(CodeContext/*!*/ context, object? x) {
